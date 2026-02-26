@@ -156,3 +156,4 @@ const instructions = await onlineSdk.collectCoinCreatorFeeInstructions(creator);
 const balance = await onlineSdk.getCreatorVaultBalanceBothPrograms(creator);
 console.log("Uncollected fees:", balance.toString(), "lamports");
 ```
+
