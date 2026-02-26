@@ -26,7 +26,7 @@ export function Navigation() {
           <span className="text-lg font-semibold tracking-tight">
             <span className="text-solana">◎</span>{' '}
             <span className="text-white group-hover:text-gradient-solana transition-all">
-              Solana Wallet Toolkit
+              Pump Fun SDK
             </span>
           </span>
         </Link>
@@ -48,7 +48,7 @@ export function Navigation() {
             </Link>
           ))}
           <a
-            href="https://github.com/nirholas/solana-wallet-toolkit"
+            href="https://github.com/nirholas/pump-fun-sdk"
             target="_blank"
             rel="noopener noreferrer"
             className="ml-2 px-3 py-1.5 text-sm text-muted-foreground hover:text-white transition-colors"
@@ -97,7 +97,7 @@ export function Navigation() {
               </Link>
             ))}
             <a
-              href="https://github.com/nirholas/solana-wallet-toolkit"
+              href="https://github.com/nirholas/pump-fun-sdk"
               target="_blank"
               rel="noopener noreferrer"
               className="block px-3 py-2 text-sm text-muted-foreground hover:text-white"

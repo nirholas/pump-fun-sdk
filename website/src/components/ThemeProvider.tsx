@@ -13,7 +13,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>('dark');
 
   useEffect(() => {
-    const saved = localStorage.getItem('swt-theme') as Theme | null;
+    const saved = localStorage.getItem('pump-sdk-theme') as Theme | null;
     if (saved) {
       setTheme(saved);
       document.documentElement.classList.toggle('light', saved === 'light');
@@ -24,7 +24,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   function toggle() {
     const next = theme === 'dark' ? 'light' : 'dark';
     setTheme(next);
-    localStorage.setItem('swt-theme', next);
+    localStorage.setItem('pump-sdk-theme', next);
     document.documentElement.classList.toggle('light', next === 'light');
     document.documentElement.classList.toggle('dark', next === 'dark');
   }

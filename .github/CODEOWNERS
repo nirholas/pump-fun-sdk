@@ -1,1 +1,28 @@
+# Global owner
 * @nirholas
+
+# Core SDK
+/src/ @nirholas
+
+# Rust vanity generator
+/rust/ @nirholas
+
+# TypeScript vanity generator
+/typescript/ @nirholas
+
+# MCP server
+/mcp-server/ @nirholas
+
+# Shell scripts
+/scripts/ @nirholas
+
+# Security-critical files
+/security/ @nirholas
+SECURITY.md @nirholas
+
+# CI/CD
+/.github/workflows/ @nirholas
+
+# Documentation
+/docs/ @nirholas
+README.md @nirholas

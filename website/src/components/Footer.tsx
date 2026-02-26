@@ -4,8 +4,7 @@ export function Footer() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="text-sm text-muted-foreground">
-            <span className="text-solana">◎</span> Solana Wallet Toolkit — Uses
-            only official{' '}
+            <span className="text-solana">◎</span> Pump Fun SDK — Official Solana token launchpad SDK powered by{' '}
             <a
               href="https://github.com/solana-labs"
               target="_blank"
@@ -18,7 +17,7 @@ export function Footer() {
           </div>
           <div className="flex items-center gap-4 text-sm text-muted-foreground">
             <a
-              href="https://github.com/nirholas/solana-wallet-toolkit"
+              href="https://github.com/nirholas/pump-fun-sdk"
               target="_blank"
               rel="noopener noreferrer"
               className="hover:text-white transition-colors"
@@ -29,19 +28,19 @@ export function Footer() {
             <span>MIT License</span>
             <span className="text-border">|</span>
             <a
-              href="https://x.com/nichxbt"
+              href="https://x.com/paboracle"
               target="_blank"
               rel="noopener noreferrer"
               className="hover:text-white transition-colors"
             >
-              @nichxbt
+              @paboracle
             </a>
           </div>
         </div>
         <div className="mt-4 pt-4 border-t border-border text-center">
           <p className="text-xs text-muted">
-            Educational tool for understanding Solana wallet mechanics. Not
-            financial advice. Use at your own risk.
+            Community SDK for the Pump protocol on Solana. Create, buy, sell, and migrate tokens
+            with bonding curve pricing. Use at your own risk.
           </p>
         </div>
       </div>

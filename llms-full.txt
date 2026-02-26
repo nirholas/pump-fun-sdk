@@ -1,10 +1,10 @@
-# Solana Wallet Toolkit - Full Context
+# Pump SDK - Full Context
 
 This file provides comprehensive context for AI assistants working with this codebase.
 
 ## Project Overview
 
-A secure toolkit for generating Solana wallets and vanity addresses using ONLY official Solana Labs libraries. No third-party cryptographic dependencies.
+The Pump SDK (`@pump-fun/pump-sdk`) is a TypeScript SDK for the Pump protocol — a Solana-based token launchpad with bonding curve pricing, automatic AMM migration, tiered fees, creator fee sharing, and token incentives. Also includes vanity address generators (Rust + TypeScript), MCP server, and production shell scripts. Uses ONLY official Solana Labs libraries for all cryptographic operations.
 
 ## Official Libraries Only
 
@@ -14,45 +14,48 @@ A secure toolkit for generating Solana wallets and vanity addresses using ONLY o
 | TypeScript | @solana/web3.js | Solana Labs |
 | Shell | solana-keygen | Solana Labs |
 
+## On-Chain Programs
+
+| Program | ID | Purpose |
+|---------|-----|---------|
+| Pump | `6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P` | Bonding curve (create/buy/sell) |
+| PumpAMM | `pAMMBay6oceH9fJKBRHGP5D4bD4sWpmSwMn52FMfXEA` | Graduated AMM pools |
+| PumpFees | `FeesoLMvuSJeJdhTpaLMjdiEE9NtNzx5bVHUvgWe7XjB` | Fee sharing |
+
 ## Architecture
 
-### Rust Implementation (rust/)
+### Core SDK (src/)
 
-Entry point: src/main.rs
-Core modules:
-- generator.rs - Parallel key generation using rayon
-- matcher.rs - Pattern matching (prefix/suffix/case-insensitive)
-- output.rs - File output in Solana CLI format
-- security.rs - Memory zeroization, RNG verification
+**Offline SDK (`PumpSdk`)** — Builds `TransactionInstruction[]` without a connection. Exported as singleton `PUMP_SDK`.
 
-Key generation flow:
-1. Parse CLI args with clap
-2. Spawn rayon thread pool
-3. Each thread: generate Keypair::new() via solana-sdk
-4. Check if pubkey matches pattern
-5. On match: save to JSON, zeroize memory
+Key methods:
+- `createV2Instruction` — Token creation (Token-2022)
+- `createV2AndBuyInstructions` — Create + first purchase atomically
+- `buyInstructions` / `sellInstructions` — Bonding curve trading
+- `migrateInstruction` — Graduate token to AMM
+- `createFeeSharingConfig` / `updateFeeShares` / `distributeCreatorFees` — Fee sharing
+- `initUserVolumeAccumulator` / `syncUserVolumeAccumulator` — Token incentives
+- Decoder methods: `decodeGlobal`, `decodeBondingCurve`, `decodeFeeConfig`, etc.
 
-### TypeScript Implementation (typescript/)
+**Online SDK (`OnlinePumpSdk`)** — Extends offline with RPC fetchers:
+- `fetchGlobal`, `fetchBondingCurve`, `fetchBuyState`, `fetchSellState`
+- `collectCoinCreatorFeeInstructions`, `getCreatorVaultBalanceBothPrograms`
+- `claimTokenIncentivesBothPrograms`, `buildDistributeCreatorFeesInstructions`
 
-Entry point: src/index.ts
-Core modules:
-- lib/generator.ts - Key generation using @solana/web3.js
-- lib/matcher.ts - Pattern matching
-- lib/output.ts - File output
-- lib/security.ts - Security utilities
+**Bonding Curve Math (`bondingCurve.ts`):**
+- Constant-product formula: `x * y = k`
+- `getBuyTokenAmountFromSolAmount` / `getSellSolAmountFromTokenAmount`
+- Fee-aware quoting with tiered fees
+- Market cap calculation
 
-Key generation flow:
-1. Parse CLI args
-2. Loop: Keypair.generate() via @solana/web3.js
-3. Check if publicKey.toBase58() matches pattern
-4. On match: save secretKey array to JSON
+**Fee System (`fees.ts`):**
+- Tiered fees based on market cap
+- `computeFeesBps`, `calculateFeeTier`, `getFee`
+- Ceiling division for dust prevention
 
-### Shell Scripts (scripts/)
-
-Wrappers around `solana-keygen grind` CLI tool.
-- generate-vanity.sh - Single address
-- batch-generate.sh - Multiple from file
-- verify-keypair.sh - Verify keypair file
+**Token Incentives (`tokenIncentives.ts`):**
+- `totalUnclaimedTokens`, `currentDayTokens` — Pure math
+- Day-indexed volume tracking with pro-rata distribution
 
 ## Solana Address Format
 
@@ -75,6 +78,39 @@ Load with: `solana config set --keypair keypair.json`
 
 ## Non-Cryptographic Dependencies
 
+### Rust Vanity Generator (rust/)
+
+High-performance multi-threaded vanity address generator:
+- `generator.rs` — Parallel key generation using rayon (100K+ keys/sec)
+- `matcher.rs` — Pattern matching (prefix/suffix/case-insensitive)
+- `output.rs` — File output in Solana CLI format
+- `security.rs` — Memory zeroization, RNG verification
+
+### TypeScript Vanity Generator (typescript/)
+
+Educational reference implementation:
+- `lib/generator.ts` — Async key generation using @solana/web3.js
+- `lib/matcher.ts` — Pattern matching
+- `lib/output.ts` — File output
+- `lib/security.ts` — Security utilities
+
+### MCP Server (mcp-server/)
+
+Model Context Protocol server for AI agent integration:
+- 7 tools: generate_keypair, generate_vanity, sign_message, verify_signature, validate_address, estimate_vanity_time, restore_keypair
+- 3 resource URIs: solana://config, solana://keypair/{id}, solana://address/{pubkey}
+- 3 prompts: create_wallet, security_audit, batch_generate
+- stdio transport, session keypair management with zeroization on shutdown
+
+### Shell Scripts (scripts/)
+
+Production wrappers around `solana-keygen grind`:
+- generate-vanity.sh — Single address with GPG encryption support
+- batch-generate.sh — Parallel batch with resume
+- verify-keypair.sh — 7-point verification
+
+## Non-Cryptographic Dependencies
+
 These DO NOT touch private keys:
 
 Rust:
@@ -87,7 +123,11 @@ Rust:
 - num_cpus: CPU detection
 - libc/nix: Unix permissions
 
-TypeScript:
+TypeScript SDK:
+- @coral-xyz/anchor: Anchor IDL-based instruction building
+- bn.js: Arbitrary-precision integer arithmetic
+
+TypeScript Vanity:
 - commander: CLI parsing
 - chalk: Terminal colors
 
@@ -101,6 +141,15 @@ TypeScript:
 ✅ Open source and auditable
 
 ## Common Operations
+
+### SDK Usage
+```typescript
+import { OnlinePumpSdk, PUMP_SDK, getBuyTokenAmountFromSolAmount } from "@pump-fun/pump-sdk";
+
+const sdk = new OnlinePumpSdk(connection);
+const global = await sdk.fetchGlobal();
+const ix = await PUMP_SDK.createV2Instruction({ mint, name, symbol, uri, creator, user });
+```
 
 ### Generate vanity address (Rust)
 ```bash
@@ -125,14 +174,14 @@ cd tools && npx ts-node verify-keypair.ts ../output/keypair.json
 ## Testing
 
 ```bash
+# TypeScript SDK
+cd typescript && npm test
+
 # Rust
 cd rust && cargo test
 
-# TypeScript
-cd typescript && npm test
-
 # Integration
-./tests/integration/test_keypair_validity.sh
+./docs/run-all-tests.sh
 ```
 
 ## AI Assistant Guidelines
@@ -143,6 +192,11 @@ When modifying this codebase:
 3. Maintain Solana CLI output format compatibility
 4. Keep file permissions at 0600
 5. Test across all implementations (Rust, TS, Shell)
+6. All amounts use BN (bn.js) — never JavaScript number for financial math
+7. Instruction builders return TransactionInstruction[], never Transaction objects
+8. createInstruction (v1) is deprecated — use createV2Instruction
+9. BondingCurve.complete === true means graduated to AMM
+10. Shares must total exactly 10,000 BPS
 
 Approved official dependencies:
 - Rust: solana-sdk (solana-labs/solana)
@@ -151,9 +205,26 @@ Approved official dependencies:
 
 DO NOT add: web3.py, solders, or any third-party crypto libraries.
 
+## Agent Skill Files
+
+See `.github/skills/` for 15 detailed skill documents:
+- pump-sdk-core, bonding-curve, bonding-curve-math, token-lifecycle
+- fee-system, fee-sharing, token-incentives
+- solana-program-architecture, solana-wallet, security-practices
+- rust-vanity-gen, rust-vanity-generator, typescript-vanity-generator
+- mcp-server, shell-scripting-cli
+
+## Well-Known Files
+
+- `.well-known/skills.json` — Skills registry
+- `.well-known/agent.json` — Agent capabilities
+- `.well-known/ai-plugin.json` — AI plugin manifest
+- `.well-known/security.txt` — Security contact
+
 ## Repository
 
-- URL: https://github.com/nirholas/solana-wallet-toolkit
+- URL: https://github.com/nirholas/pump-fun-sdk
+- npm: https://www.npmjs.com/package/@pump-fun/pump-sdk
 - Language: TypeScript
 - License: MIT
 - Author: nirholas

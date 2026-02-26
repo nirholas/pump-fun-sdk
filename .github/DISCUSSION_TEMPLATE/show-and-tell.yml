@@ -1,0 +1,26 @@
+labels: [show-and-tell]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        # 🌟 Show & Tell
+        Share what you've built with pump-fun-sdk! Bots, agents, tools, dashboards — we want to see it all.
+  - type: textarea
+    id: project
+    attributes:
+      label: What did you build?
+      description: Tell us about your project
+      placeholder: I built a...
+    validations:
+      required: true
+  - type: input
+    id: link
+    attributes:
+      label: Link
+      description: URL to your project, demo, or repo
+      placeholder: https://github.com/...
+  - type: textarea
+    id: how
+    attributes:
+      label: How does it use pump-fun-sdk?
+      description: Which features do you use? Any interesting patterns?

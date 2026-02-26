@@ -6,15 +6,16 @@ import { ThemeProvider } from '@/components/ThemeProvider';
 import { ServiceWorkerRegistrar } from '@/components/ServiceWorkerRegistrar';
 
 export const metadata: Metadata = {
-  title: 'Solana Wallet Toolkit',
+  title: 'Pump Fun SDK',
   description:
-    'Secure, auditable toolkit for Solana wallet generation and vanity addresses — using only official Solana Labs libraries.',
+    'Community TypeScript SDK for the Pump protocol on Solana — create, buy, sell, and migrate tokens with bonding curve pricing, AMM migration, and fee sharing.',
   keywords: [
+    'pump fun',
+    'pump sdk',
     'solana',
-    'wallet',
-    'vanity address',
-    'keypair',
-    'ed25519',
+    'token launchpad',
+    'bonding curve',
+    'AMM',
     'cryptocurrency',
     'blockchain',
   ],

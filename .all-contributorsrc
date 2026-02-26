@@ -1,0 +1,32 @@
+{
+  "projectName": "pump-fun-sdk",
+  "projectOwner": "nirholas",
+  "repoType": "github",
+  "repoHost": "https://github.com",
+  "files": [
+    "README.md"
+  ],
+  "imageSize": 100,
+  "commit": true,
+  "commitConvention": "angular",
+  "contributors": [
+    {
+      "login": "nirholas",
+      "name": "nich",
+      "avatar_url": "https://github.com/nirholas.png",
+      "profile": "https://github.com/nirholas",
+      "contributions": [
+        "code",
+        "doc",
+        "infra",
+        "maintenance",
+        "security",
+        "ideas",
+        "projectManagement"
+      ]
+    }
+  ],
+  "contributorsPerLine": 7,
+  "skipCi": true,
+  "commitType": "docs"
+}

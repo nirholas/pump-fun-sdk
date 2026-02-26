@@ -8,11 +8,11 @@
 
 ### What is pump-fun-sdk?
 
-The official TypeScript SDK for the [Pump](https://pump.fun) protocol on Solana. It lets you create tokens, trade on bonding curves, collect creator fees, distribute fees to shareholders, and earn volume-based rewards — all programmatically.
+A community TypeScript SDK for the [Pump](https://pump.fun) protocol on Solana. It lets you create tokens, trade on bonding curves, collect creator fees, distribute fees to shareholders, and earn volume-based rewards — all programmatically.
 
-### Is this the official Pumpfun SDK?
+### Is this an official Pumpfun SDK?
 
-The SDK is published as `@pump-fun/pump-sdk` on npm. It was reverse-engineered from the on-chain Pumpfun programs and provides the same functionality as the official protocol interface. The IDLs (Interface Definition Languages) were extracted directly from the deployed Solana programs.
+No. This is a community-built SDK, not affiliated with or endorsed by Pump.fun. It is published as `@pump-fun/pump-sdk` on npm. It was reverse-engineered from the on-chain Pumpfun programs and provides the same functionality as the protocol interface. The IDLs (Interface Definition Languages) were extracted directly from the deployed Solana programs.
 
 ### Is it free to use?
 

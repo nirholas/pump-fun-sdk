@@ -1,4 +1,4 @@
-const CACHE_NAME = 'swt-v1';
+const CACHE_NAME = 'pump-sdk-v1';
 const STATIC_ASSETS = [
   '/',
   '/tools',

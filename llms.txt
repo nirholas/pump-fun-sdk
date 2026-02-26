@@ -1,6 +1,6 @@
 # Pump SDK
 
-> Official Pump program SDK for creating, buying, and selling tokens on the Solana blockchain. Bonding curve pricing, AMM migration, tiered fees, creator fee sharing, token incentives, and vanity address generation.
+> Community Pump program SDK for creating, buying, and selling tokens on the Solana blockchain. Bonding curve pricing, AMM migration, tiered fees, creator fee sharing, token incentives, and vanity address generation.
 
 ## Critical Security Notice
 
@@ -84,29 +84,50 @@ Difficulty estimates:
 
 ## Project Structure
 
-- rust/ - High-performance Rust implementation (solana-sdk)
-- typescript/ - Node.js implementation (@solana/web3.js)
+- src/ - Core SDK (instruction builders, bonding curve math, fees, PDAs, state)
+- rust/ - High-performance Rust vanity address generator (solana-sdk + rayon)
+- typescript/ - TypeScript vanity address generator (@solana/web3.js)
+- mcp-server/ - Model Context Protocol server for AI agents
 - scripts/ - Shell scripts wrapping solana-keygen
-- tools/ - Verification utilities
-- tests/ - Test suites
+- tools/ - Verification and audit utilities
+- tests/ - Cross-language test suites
+- docs/ - API reference, architecture, guides
+- website/ - Next.js documentation site
+- .github/skills/ - 15 agent skill documents
+- .well-known/ - AI plugin, agent config, skills registry
 
 ## Important Files
 
-- rust/Cargo.toml - Rust dependencies
-- typescript/package.json - Node.js dependencies
-- rust/src/generator.rs - Core Rust generation logic
-- typescript/src/lib/generator.ts - Core TS generation logic
+- src/sdk.ts - PumpSdk class (offline instruction builders)
+- src/onlineSdk.ts - OnlinePumpSdk class (RPC fetchers)
+- src/bondingCurve.ts - AMM pricing math
+- src/fees.ts - Tiered fee calculations
+- src/tokenIncentives.ts - Volume-based reward math
+- src/pda.ts - Program Derived Addresses
+- src/state.ts - On-chain state interfaces
+- rust/src/generator.rs - Rust vanity generation engine
+- typescript/src/lib/generator.ts - TS vanity generation engine
 
 ## Security Features
 
 1. Memory zeroization (zeroize crate)
 2. File permissions 0600
 3. RNG quality verification
-4. No network calls (fully offline)
+4. No network calls (fully offline key generation)
 5. Auditable open source code
+6. Official Solana Labs crypto only
+
+## Agent Resources
+
+- .well-known/skills.json - Skills registry (15 skills)
+- .well-known/agent.json - Agent capabilities
+- .well-known/ai-plugin.json - AI plugin manifest
+- AGENTS.md, CLAUDE.md, GEMINI.md, COPILOT.md - Agent-specific instructions
+- llms-full.txt - Comprehensive LLM context
 
 ## Links
 
-- Repository: https://github.com/nirholas/solana-wallet-toolkit
+- Repository: https://github.com/nirholas/pump-fun-sdk
+- npm: https://www.npmjs.com/package/@pump-fun/pump-sdk
 - Author: https://github.com/nirholas
-- Full documentation: https://raw.githubusercontent.com/nirholas/solana-wallet-toolkit/main/llms-full.txt
+- Full documentation: https://raw.githubusercontent.com/nirholas/pump-fun-sdk/main/llms-full.txt
