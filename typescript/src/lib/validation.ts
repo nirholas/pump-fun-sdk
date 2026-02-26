@@ -236,3 +236,4 @@ export function formatTimeEstimate(estimatedAttempts: number, ratePerSecond: num
     return `~${Math.round(seconds / 31536000)} years`;
   }
 }
+
