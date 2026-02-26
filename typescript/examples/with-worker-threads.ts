@@ -193,3 +193,4 @@ if (isMainThread) {
     console.error('Worker error:', error);
   });
 }
+
