@@ -196,3 +196,4 @@ export class VanityError extends Error {
     }
   }
 }
+
