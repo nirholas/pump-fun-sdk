@@ -4,7 +4,7 @@ export function Footer() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="text-sm text-muted-foreground">
-            <span className="text-solana">◎</span> Pump Fun SDK — Community Solana token launchpad SDK powered by{' '}
+            <span className="text-solana">◎</span> Pump Fun SDK — Community token launchpad SDK powered by{' '}
             <a
               href="https://github.com/solana-labs"
               target="_blank"

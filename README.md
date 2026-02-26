@@ -10,7 +10,7 @@
 </pre>
 
 <p>
-  <img src=".github/banner.svg" alt="Pump SDK — A Community Solana SDK for the Pump Protocol" width="720">
+  <img src=".github/banner.svg" alt="Pump SDK — Community SDK for the Pump Protocol" width="720">
 </p>
 
 <h3>A community TypeScript SDK for the <a href="https://pump.fun">Pump</a> protocol on Solana</h3>
