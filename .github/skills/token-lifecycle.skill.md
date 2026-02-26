@@ -228,3 +228,4 @@ const ixs = await onlineSdk.adminSetCoinCreatorInstructions(newCreator, mint);
 - Creator vault PDAs differ between programs: `"creator-vault"` (Pump, hyphen) vs `"creator_vault"` (AMM, underscore)
 - `fetchSellState` requires ATA to exist (unlike `fetchBuyState` which handles creation)
 - Fee recipient is selected randomly from `global.feeRecipients[]` — non-deterministic
+
