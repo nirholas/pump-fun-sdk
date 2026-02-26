@@ -79,3 +79,4 @@ The SDK randomly selects from `global.feeRecipients[]` (normal mode) or `global.
 - Unit tests in `tests/` directory using Jest with `ts-jest`
 - Test against devnet using `new Connection("https://api.devnet.solana.com", "confirmed")`
 - Mock Anchor programs for offline SDK tests; use real connections for online SDK integration tests
+
