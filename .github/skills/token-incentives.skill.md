@@ -93,3 +93,4 @@ Since users trade on both the bonding curve (Pump) and AMM (PumpAMM), volume tra
 - Day indices are zero-based and computed from `startTime`, not from epoch 0
 - The `solVolumes` and `totalTokenSupply` arrays may have different lengths — only compute for indices within both arrays
 - Volume accumulator PDAs are different between Pump and PumpAMM programs despite using the same seed structure
+
