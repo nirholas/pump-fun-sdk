@@ -98,3 +98,4 @@ This server implements MCP protocol version `2024-11-05`.
 ## License
 
 MIT
+
