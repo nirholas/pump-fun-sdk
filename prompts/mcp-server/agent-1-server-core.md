@@ -696,3 +696,4 @@ echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":
 2. **Zeroize on shutdown** - Already implemented in server.ts
 3. **Validate all inputs** - Use Zod schemas
 4. **Stdout is sacred** - Only JSON-RPC messages go to stdout
+
