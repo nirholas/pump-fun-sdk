@@ -387,3 +387,4 @@ mod tests {
         assert!(rate > 1000, "Generation rate too low: {} keys/sec", rate);
     }
 }
+
