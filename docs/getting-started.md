@@ -2,6 +2,10 @@
 
 A quick-start guide for integrating the Pump SDK into your TypeScript/JavaScript project.
 
+<div align="center">
+  <img src="assets/bonding-curve.svg" alt="Bonding curve price mechanics" width="720">
+</div>
+
 ## Installation
 
 ```bash

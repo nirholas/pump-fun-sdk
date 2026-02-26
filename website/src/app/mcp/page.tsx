@@ -164,7 +164,7 @@ npm run build`}
         <div className="p-4 border border-border rounded-lg bg-dark-800/30 text-xs text-muted-foreground">
           <p>Protocol version: <code className="text-white font-mono">2024-11-05</code></p>
           <p className="mt-1">
-            <Link href="https://github.com/nirholas/solana-wallet-toolkit/tree/main/mcp-server" target="_blank" className="text-solana hover:underline">
+            <Link href="https://github.com/nirholas/pump-fun-sdk/tree/main/mcp-server" target="_blank" className="text-solana hover:underline">
               View source on GitHub ↗
             </Link>
           </p>
