@@ -626,3 +626,4 @@ export interface DistributeCreatorFeeResult {
   instructions: TransactionInstruction[];
   isGraduated: boolean;
 }
+
