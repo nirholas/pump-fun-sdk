@@ -96,3 +96,4 @@ app.listen(PORT, () => {
   console.log(`  GET  /status/:tx — Check settlement status`);
   console.log(`  GET  /health   — Health check`);
 });
+
