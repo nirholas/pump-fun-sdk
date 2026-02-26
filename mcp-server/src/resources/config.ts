@@ -79,3 +79,4 @@ export function readConfigResource(state: ServerState): ResourceResult {
     ],
   };
 }
+
