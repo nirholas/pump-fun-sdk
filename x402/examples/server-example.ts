@@ -97,3 +97,4 @@ app.listen(PORT, () => {
   console.log(`  curl http://localhost:${PORT}/`);
   console.log(`  curl http://localhost:${PORT}/premium  → 402 Payment Required`);
 });
+
