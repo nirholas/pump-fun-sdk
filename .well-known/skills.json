@@ -117,6 +117,48 @@
             "description": "Design, package, and deploy OpenClaw-compatible skill packages for AI agent discovery, MCP runtime integration, SperaxOS agent teams, and plug-and-play deployment across Claude, Copilot, and other LLM agents.",
             "path": ".github/skills/openclaw.skill.md",
             "tags": ["openclaw", "ai", "agents", "mcp", "skills", "discovery"]
+        },
+        {
+            "id": "openclaw-wallet-ops",
+            "name": "OpenClaw Wallet Operations — Keypair Generation, Signing & Validation",
+            "description": "Generate Solana Ed25519 keypairs, sign and verify messages, validate addresses, and manage session-based key storage through MCP tools using official Solana Labs cryptographic libraries.",
+            "path": ".github/skills/openclaw-wallet-ops.skill.md",
+            "tags": ["openclaw", "wallet", "keypair", "signing", "ed25519"]
+        },
+        {
+            "id": "openclaw-token-creation",
+            "name": "OpenClaw Token Creation — Mint New Tokens on Pumpfun",
+            "description": "Create new tokens on the Pumpfun protocol using createV2Instruction with Token-2022, optional mayhem mode, initial buy bundling, and metadata URI configuration.",
+            "path": ".github/skills/openclaw-token-creation.skill.md",
+            "tags": ["openclaw", "token", "creation", "mint", "pumpfun"]
+        },
+        {
+            "id": "openclaw-token-trading",
+            "name": "OpenClaw Token Trading — Buy & Sell on Bonding Curves",
+            "description": "Buy and sell tokens on Pumpfun bonding curves with slippage protection, fee-aware quoting, and automatic ATA creation for both Token and Token-2022 programs.",
+            "path": ".github/skills/openclaw-token-trading.skill.md",
+            "tags": ["openclaw", "trading", "buy", "sell", "bonding-curve"]
+        },
+        {
+            "id": "openclaw-fee-management",
+            "name": "OpenClaw Fee Management — Creator Fee Collection & Distribution",
+            "description": "Collect accumulated creator fees, configure fee sharing among shareholders, and distribute earnings proportionally across Pump and PumpAMM programs.",
+            "path": ".github/skills/openclaw-fee-management.skill.md",
+            "tags": ["openclaw", "fees", "creator", "distribution", "shareholders"]
+        },
+        {
+            "id": "openclaw-vanity-address",
+            "name": "OpenClaw Vanity Address — Custom Solana Address Generation",
+            "description": "Generate Solana keypairs with custom Base58 prefix and suffix patterns using MCP tools, with Rust high-performance and TypeScript reference implementations.",
+            "path": ".github/skills/openclaw-vanity-address.skill.md",
+            "tags": ["openclaw", "vanity", "address", "generation", "base58"]
+        },
+        {
+            "id": "openclaw-market-data",
+            "name": "OpenClaw Market Data — Bonding Curve Quoting & Analytics",
+            "description": "Query bonding curve state, compute fee-aware buy/sell quotes, calculate market cap, detect graduation status, and read token incentive accumulators for informed trading decisions.",
+            "path": ".github/skills/openclaw-market-data.skill.md",
+            "tags": ["openclaw", "market-data", "quoting", "analytics", "pricing"]
         }
     ]
 }

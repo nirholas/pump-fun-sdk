@@ -10,26 +10,32 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        primary: '#000000',
-        'primary-foreground': '#ffffff',
-        muted: '#737373',
-        'muted-foreground': '#a3a3a3',
-        border: '#262626',
-        'border-light': '#e5e5e5',
-        card: '#0a0a0a',
-        'card-light': '#ffffff',
-        solana: '#9945FF',
-        'solana-green': '#14F195',
+        /* Lair Ultramarine palette */
+        primary: '#080A19',
+        'primary-foreground': '#A7C2F3',
+        muted: '#4B5E8C',
+        'muted-foreground': '#7B93C4',
+        border: '#1A1E3D',
+        'border-light': '#2A3060',
+        card: '#0C0F27',
+        'card-light': '#15183E',
+        accent: 'rgb(97, 121, 255)',
+        'accent-hover': '#70BCF9',
+        'accent-text': '#0F1538',
+        good: '#85FF85',
+        bad: '#AC4949',
+        solana: '#6179FF',
+        'solana-green': '#85FF85',
         dark: {
-          900: '#000000',
-          800: '#0a0a0a',
-          700: '#171717',
-          600: '#262626',
+          900: '#080A19',
+          800: '#0C0F27',
+          700: '#15183E',
+          600: '#1A1E3D',
         },
       },
       fontFamily: {
         mono: ['JetBrains Mono', 'Fira Code', 'SF Mono', 'monospace'],
-        sans: ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+        sans: ['Poppins', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
       },
       animation: {
         'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
@@ -39,11 +45,12 @@ const config: Config = {
         gradient: 'gradient 8s ease infinite',
         'fade-in': 'fadeIn 0.5s ease-out',
         'slide-up': 'slideUp 0.5s ease-out',
+        pop: 'pop 0.5s cubic-bezier(0.36, 0.38, 0, 0.94)',
       },
       keyframes: {
         glow: {
-          '0%': { boxShadow: '0 0 5px rgba(153, 69, 255, 0.3), 0 0 10px rgba(153, 69, 255, 0.1)' },
-          '100%': { boxShadow: '0 0 10px rgba(153, 69, 255, 0.5), 0 0 20px rgba(153, 69, 255, 0.2)' },
+          '0%': { boxShadow: '0 0 5px rgba(97, 121, 255, 0.3), 0 0 10px rgba(97, 121, 255, 0.1)' },
+          '100%': { boxShadow: '0 0 10px rgba(97, 121, 255, 0.5), 0 0 20px rgba(97, 121, 255, 0.2)' },
         },
         scan: {
           '0%': { transform: 'translateY(-100%)' },
@@ -65,13 +72,21 @@ const config: Config = {
           '0%': { opacity: '0', transform: 'translateY(20px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
         },
+        pop: {
+          '0%': { opacity: '0', transform: 'scale(0.95)' },
+          '100%': { opacity: '1', transform: 'scale(1)' },
+        },
       },
       backgroundImage: {
         'grid-pattern':
-          'linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px), linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px)',
+          'linear-gradient(to right, rgba(167, 194, 243, 0.03) 1px, transparent 1px), linear-gradient(to bottom, rgba(167, 194, 243, 0.03) 1px, transparent 1px)',
       },
       backgroundSize: {
         grid: '24px 24px',
+      },
+      borderRadius: {
+        lair: '0.7em',
+        'lair-sm': '0.35em',
       },
     },
   },

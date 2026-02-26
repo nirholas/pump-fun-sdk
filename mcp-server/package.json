@@ -1,32 +1,42 @@
 {
-  "name": "solana-wallet-toolkit-mcp",
+  "name": "@nirholas/pump-fun-sdk",
   "version": "1.0.0",
-  "description": "MCP server for Solana Wallet Toolkit — vanity addresses, key management, signing",
+  "mcpName": "io.github.nirholas/pump-fun-sdk",
+  "description": "Pump SDK MCP Server — Solana token launchpad with bonding curves, vanity addresses, key management, and transaction building",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "solana-wallet-mcp": "dist/index.js"
+    "pump-fun-sdk-mcp": "dist/index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nirholas/pump-fun-sdk.git"
   },
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
     "start": "node dist/index.js",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "dev:worker": "wrangler dev src/worker.ts",
+    "deploy": "wrangler deploy",
+    "cf-typegen": "wrangler types"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.1",
     "@solana/web3.js": "^1.98.2",
+    "agents": "^0.1.0",
     "bs58": "^6.0.0",
     "tweetnacl": "^1.0.3",
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^4.0.0",
     "@types/node": "^20.0.0",
-    "typescript": "^5.5.0"
+    "typescript": "^5.5.0",
+    "wrangler": "^4.69.0"
   },
   "engines": {
     "node": ">=18"
   },
   "license": "MIT"
 }
-

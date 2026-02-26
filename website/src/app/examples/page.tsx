@@ -184,10 +184,10 @@ export default function ExamplesPage() {
           <button
             key={f.id}
             onClick={() => setActiveFilter(f.id)}
-            className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded transition-all ${
+            className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lair-sm transition-all ${
               activeFilter === f.id
-                ? 'bg-white text-black'
-                : 'text-muted-foreground hover:text-white hover:bg-dark-700'
+                ? 'bg-accent text-white'
+                : 'text-muted-foreground hover:text-primary-foreground hover:bg-dark-700'
             }`}
           >
             {f.label}
@@ -198,10 +198,10 @@ export default function ExamplesPage() {
       {/* Examples */}
       <div className="space-y-6">
         {filtered.map((ex) => (
-          <div key={ex.id} className="border border-border rounded-lg overflow-hidden">
+          <div key={ex.id} className="border border-border rounded-lair overflow-hidden">
             <div className="flex items-center justify-between px-4 py-2 bg-dark-800 border-b border-border">
               <div className="flex items-center gap-2">
-                <span className={`px-1.5 py-0.5 text-[10px] font-bold rounded uppercase ${
+                <span className={`px-1.5 py-0.5 text-[10px] font-bold rounded-lair-sm uppercase ${
                   ex.lang === 'rust'
                     ? 'bg-orange-500/20 text-orange-400'
                     : ex.lang === 'typescript'
@@ -210,11 +210,11 @@ export default function ExamplesPage() {
                 }`}>
                   {ex.lang}
                 </span>
-                <span className="text-sm font-medium text-white">{ex.title}</span>
+                <span className="text-sm font-medium text-primary-foreground">{ex.title}</span>
               </div>
               <button
                 onClick={() => copyCode(ex.id, ex.code)}
-                className="px-2 py-1 text-xs border border-border rounded hover:bg-dark-700 transition-colors text-muted-foreground hover:text-white"
+                className="px-2 py-1 text-xs border border-border rounded-lair-sm hover:bg-dark-700 transition-colors text-muted-foreground hover:text-primary-foreground"
               >
                 {copied === ex.id ? '✓ Copied' : 'Copy'}
               </button>

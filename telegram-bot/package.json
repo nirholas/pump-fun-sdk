@@ -1,0 +1,25 @@
+{
+    "name": "pumpfun-telegram-bot",
+    "version": "1.0.0",
+    "private": true,
+    "description": "Telegram bot that monitors PumpFun creator fee & cashback claims on Solana and sends real-time notifications",
+    "type": "module",
+    "main": "dist/index.js",
+    "scripts": {
+        "dev": "tsx watch src/index.ts",
+        "start": "node dist/index.js",
+        "build": "tsc",
+        "typecheck": "tsc --noEmit"
+    },
+    "dependencies": {
+        "@solana/web3.js": "^1.98.0",
+        "bs58": "^6.0.0",
+        "dotenv": "^16.4.7",
+        "grammy": "^1.35.0"
+    },
+    "devDependencies": {
+        "@types/node": "^22.13.0",
+        "tsx": "^4.19.0",
+        "typescript": "^5.7.0"
+    }
+}

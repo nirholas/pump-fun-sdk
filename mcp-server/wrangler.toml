@@ -1,0 +1,13 @@
+name = "solana-wallet-mcp"
+main = "src/worker.ts"
+compatibility_date = "2025-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+[durable_objects]
+bindings = [
+  { name = "MCP_OBJECT", class_name = "SolanaWalletMCP" }
+]
+
+[[migrations]]
+tag = "v1"
+new_classes = ["SolanaWalletMCP"]

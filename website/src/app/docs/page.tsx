@@ -12,17 +12,17 @@ export default function DocsPage() {
 
       {/* Quick Start */}
       <section className="mb-12">
-        <h2 className="text-xl font-semibold text-white mb-4 border-b border-border pb-2">
+        <h2 className="text-xl font-semibold text-primary-foreground mb-4 border-b border-border pb-2">
           Quick Start
         </h2>
         <div className="space-y-4">
-          <div className="p-4 border border-border rounded-lg bg-dark-800/30">
-            <h3 className="text-sm font-semibold text-solana mb-2">
+          <div className="p-4 border border-border rounded-lair bg-dark-800/30">
+            <h3 className="text-sm font-semibold text-accent mb-2">
               Web (This Site)
             </h3>
             <p className="text-sm text-muted-foreground">
               Use the{' '}
-              <Link href="/tools" className="text-white underline hover:text-solana">
+              <Link href="/tools" className="text-primary-foreground underline hover:text-accent">
                 Tools page
               </Link>{' '}
               directly in your browser. No installation required. All
@@ -30,11 +30,11 @@ export default function DocsPage() {
             </p>
           </div>
 
-          <div className="p-4 border border-border rounded-lg bg-dark-800/30">
-            <h3 className="text-sm font-semibold text-solana mb-2">
+          <div className="p-4 border border-border rounded-lair bg-dark-800/30">
+            <h3 className="text-sm font-semibold text-accent mb-2">
               Rust CLI (Fastest)
             </h3>
-            <pre className="mt-2 p-3 bg-dark-900 border border-border rounded font-mono text-xs text-muted-foreground overflow-x-auto">
+            <pre className="mt-2 p-3 bg-dark-900 border border-border rounded-lair-sm font-mono text-xs text-muted-foreground overflow-x-auto">
 {`git clone https://github.com/nirholas/pump-fun-sdk.git
 cd pump-fun-sdk/rust
 cargo build --release
@@ -42,22 +42,22 @@ cargo build --release
             </pre>
           </div>
 
-          <div className="p-4 border border-border rounded-lg bg-dark-800/30">
-            <h3 className="text-sm font-semibold text-solana mb-2">
+          <div className="p-4 border border-border rounded-lair bg-dark-800/30">
+            <h3 className="text-sm font-semibold text-accent mb-2">
               TypeScript / Node.js
             </h3>
-            <pre className="mt-2 p-3 bg-dark-900 border border-border rounded font-mono text-xs text-muted-foreground overflow-x-auto">
+            <pre className="mt-2 p-3 bg-dark-900 border border-border rounded-lair-sm font-mono text-xs text-muted-foreground overflow-x-auto">
 {`cd pump-fun-sdk/typescript
 npm install && npm run build
 node dist/index.js --prefix ABC`}
             </pre>
           </div>
 
-          <div className="p-4 border border-border rounded-lg bg-dark-800/30">
-            <h3 className="text-sm font-semibold text-solana mb-2">
+          <div className="p-4 border border-border rounded-lair bg-dark-800/30">
+            <h3 className="text-sm font-semibold text-accent mb-2">
               Shell Scripts
             </h3>
-            <pre className="mt-2 p-3 bg-dark-900 border border-border rounded font-mono text-xs text-muted-foreground overflow-x-auto">
+            <pre className="mt-2 p-3 bg-dark-900 border border-border rounded-lair-sm font-mono text-xs text-muted-foreground overflow-x-auto">
 {`# Requires Solana CLI tools installed
 cd pump-fun-sdk/scripts
 chmod +x *.sh
@@ -69,11 +69,11 @@ chmod +x *.sh
 
       {/* CLI Reference */}
       <section className="mb-12">
-        <h2 className="text-xl font-semibold text-white mb-4 border-b border-border pb-2">
+        <h2 className="text-xl font-semibold text-primary-foreground mb-4 border-b border-border pb-2">
           CLI Reference
         </h2>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm border border-border rounded-lg overflow-hidden">
+          <table className="w-full text-sm border border-border rounded-lair overflow-hidden">
             <thead>
               <tr className="bg-dark-800">
                 <th className="px-4 py-2 text-left text-xs text-muted-foreground font-medium uppercase">
@@ -99,9 +99,9 @@ chmod +x *.sh
                 ['--quiet', 'Minimal output', '--quiet'],
               ].map(([flag, desc, example]) => (
                 <tr key={flag} className="border-t border-border/50">
-                  <td className="px-4 py-2 text-solana">{flag}</td>
+                  <td className="px-4 py-2 text-accent">{flag}</td>
                   <td className="px-4 py-2 text-muted-foreground">{desc}</td>
-                  <td className="px-4 py-2 text-white">{example}</td>
+                  <td className="px-4 py-2 text-primary-foreground">{example}</td>
                 </tr>
               ))}
             </tbody>
@@ -111,13 +111,13 @@ chmod +x *.sh
 
       {/* Security */}
       <section className="mb-12">
-        <h2 className="text-xl font-semibold text-white mb-4 border-b border-border pb-2">
+        <h2 className="text-xl font-semibold text-primary-foreground mb-4 border-b border-border pb-2">
           Security
         </h2>
         <div className="space-y-3">
           {[
             {
-              title: 'Official Libraries Only',
+              title: 'Libraries Only',
               desc: 'All Ed25519 key generation uses solana-sdk (Rust) and @solana/web3.js (TypeScript) from Solana Labs.',
             },
             {
@@ -139,9 +139,9 @@ chmod +x *.sh
           ].map((item) => (
             <div
               key={item.title}
-              className="p-4 border border-border rounded-lg bg-dark-800/30"
+              className="p-4 border border-border rounded-lair bg-dark-800/30"
             >
-              <h3 className="text-sm font-semibold text-white mb-1">
+              <h3 className="text-sm font-semibold text-primary-foreground mb-1">
                 {item.title}
               </h3>
               <p className="text-xs text-muted-foreground">{item.desc}</p>
@@ -152,15 +152,15 @@ chmod +x *.sh
 
       {/* How it works */}
       <section className="mb-12">
-        <h2 className="text-xl font-semibold text-white mb-4 border-b border-border pb-2">
+        <h2 className="text-xl font-semibold text-primary-foreground mb-4 border-b border-border pb-2">
           How It Works
         </h2>
-        <div className="p-4 border border-border rounded-lg bg-dark-800/30">
+        <div className="p-4 border border-border rounded-lair bg-dark-800/30">
           <ol className="space-y-2 text-sm text-muted-foreground list-decimal list-inside">
             <li>
               Generate random Ed25519 keypair using{' '}
-              <code className="text-solana font-mono text-xs">solana-sdk</code> /{' '}
-              <code className="text-solana font-mono text-xs">@solana/web3.js</code>
+              <code className="text-accent font-mono text-xs">solana-sdk</code> /{' '}
+              <code className="text-accent font-mono text-xs">@solana/web3.js</code>
             </li>
             <li>Get the public key (32 bytes)</li>
             <li>Encode as Base58 string (Solana address format)</li>
@@ -173,20 +173,20 @@ chmod +x *.sh
 
       {/* Output format */}
       <section className="mb-12">
-        <h2 className="text-xl font-semibold text-white mb-4 border-b border-border pb-2">
+        <h2 className="text-xl font-semibold text-primary-foreground mb-4 border-b border-border pb-2">
           Output Format
         </h2>
-        <div className="p-4 border border-border rounded-lg bg-dark-800/30">
+        <div className="p-4 border border-border rounded-lair bg-dark-800/30">
           <p className="text-sm text-muted-foreground mb-3">
             Keypairs are saved in Solana CLI JSON format — a JSON array of 64
             bytes (32 secret + 32 public):
           </p>
-          <pre className="p-3 bg-dark-900 border border-border rounded font-mono text-xs text-muted-foreground overflow-x-auto">
+          <pre className="p-3 bg-dark-900 border border-border rounded-lair-sm font-mono text-xs text-muted-foreground overflow-x-auto">
             {`[174,47,154,16,202,193,206,113,199,190,53,133,169,175,31,56,...]`}
           </pre>
           <p className="text-xs text-muted mt-3">
             Compatible with{' '}
-            <code className="text-white">solana config set --keypair</code> and
+            <code className="text-primary-foreground">solana config set --keypair</code> and
             other Solana CLI tools.
           </p>
         </div>
@@ -194,14 +194,14 @@ chmod +x *.sh
 
       {/* Comparison table */}
       <section>
-        <h2 className="text-xl font-semibold text-white mb-4 border-b border-border pb-2">
+        <h2 className="text-xl font-semibold text-primary-foreground mb-4 border-b border-border pb-2">
           Comparison
         </h2>
         <p className="text-sm text-muted-foreground mb-4">
           How this toolkit compares to other Solana vanity address tools:
         </p>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm border border-border rounded-lg overflow-hidden">
+          <table className="w-full text-sm border border-border rounded-lair overflow-hidden">
             <thead>
               <tr className="bg-dark-800">
                 <th className="px-4 py-2 text-left text-xs text-muted-foreground font-medium uppercase">Feature</th>
@@ -226,8 +226,8 @@ chmod +x *.sh
                 ['Memory Zeroization', '✅ zeroize crate', '✅ Yes', '❌ Rarely'],
               ].map(([feature, us, keygen, others]) => (
                 <tr key={feature} className="border-t border-border/50">
-                  <td className="px-4 py-2 text-white font-medium">{feature}</td>
-                  <td className="px-4 py-2 text-solana-green">{us}</td>
+                  <td className="px-4 py-2 text-primary-foreground font-medium">{feature}</td>
+                  <td className="px-4 py-2 text-good">{us}</td>
                   <td className="px-4 py-2 text-muted-foreground">{keygen}</td>
                   <td className="px-4 py-2 text-muted-foreground">{others}</td>
                 </tr>

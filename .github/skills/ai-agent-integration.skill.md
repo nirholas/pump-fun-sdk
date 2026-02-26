@@ -63,6 +63,12 @@ The Pump SDK has first-class AI agent support, designed so that coding assistant
 | [.github/skills/nextjs-website.skill.md](.github/skills/nextjs-website.skill.md) | Documentation website |
 | [.github/skills/ai-agent-integration.skill.md](.github/skills/ai-agent-integration.skill.md) | This file |
 | [.github/skills/openclaw.skill.md](.github/skills/openclaw.skill.md) | OpenClaw skill packaging & discovery |
+| [.github/skills/openclaw-wallet-ops.skill.md](.github/skills/openclaw-wallet-ops.skill.md) | OpenClaw wallet operations |
+| [.github/skills/openclaw-token-creation.skill.md](.github/skills/openclaw-token-creation.skill.md) | OpenClaw token creation |
+| [.github/skills/openclaw-token-trading.skill.md](.github/skills/openclaw-token-trading.skill.md) | OpenClaw token trading |
+| [.github/skills/openclaw-fee-management.skill.md](.github/skills/openclaw-fee-management.skill.md) | OpenClaw fee management |
+| [.github/skills/openclaw-vanity-address.skill.md](.github/skills/openclaw-vanity-address.skill.md) | OpenClaw vanity address generation |
+| [.github/skills/openclaw-market-data.skill.md](.github/skills/openclaw-market-data.skill.md) | OpenClaw market data & quoting |
 
 ## Architecture
 

@@ -19,13 +19,13 @@ export function Navigation() {
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
-    <nav className="relative z-50 border-b border-border bg-black/80 backdrop-blur-md">
+    <nav className="relative z-50 border-b border-border glass-panel !rounded-none">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 group">
           <span className="text-lg font-semibold tracking-tight">
-            <span className="text-solana">◎</span>{' '}
-            <span className="text-white group-hover:text-gradient-solana transition-all">
+            <span className="text-accent">◎</span>{' '}
+            <span className="text-primary-foreground group-hover:text-gradient-solana transition-all">
               Pump Fun SDK
             </span>
           </span>
@@ -38,10 +38,10 @@ export function Navigation() {
               key={link.href}
               href={link.href}
               className={clsx(
-                'px-3 py-1.5 text-sm rounded transition-colors',
+                'px-3 py-1.5 text-sm rounded-lair-sm transition-colors',
                 pathname === link.href
-                  ? 'text-white bg-dark-600'
-                  : 'text-muted-foreground hover:text-white hover:bg-dark-700'
+                  ? 'text-accent-hover bg-dark-700'
+                  : 'text-muted-foreground hover:text-primary-foreground hover:bg-dark-700'
               )}
             >
               {link.label}
@@ -51,7 +51,7 @@ export function Navigation() {
             href="https://github.com/nirholas/pump-fun-sdk"
             target="_blank"
             rel="noopener noreferrer"
-            className="ml-2 px-3 py-1.5 text-sm text-muted-foreground hover:text-white transition-colors"
+            className="ml-2 px-3 py-1.5 text-sm text-muted-foreground hover:text-primary-foreground transition-colors"
           >
             GitHub
           </a>
@@ -79,7 +79,7 @@ export function Navigation() {
 
       {/* Mobile menu */}
       {menuOpen && (
-        <div className="sm:hidden border-t border-border bg-black/95 backdrop-blur-md">
+        <div className="sm:hidden border-t border-border glass-panel !rounded-none">
           <div className="px-4 py-3 space-y-1">
             {links.map((link) => (
               <Link
@@ -87,10 +87,10 @@ export function Navigation() {
                 href={link.href}
                 onClick={() => setMenuOpen(false)}
                 className={clsx(
-                  'block px-3 py-2 text-sm rounded transition-colors',
+                  'block px-3 py-2 text-sm rounded-lair-sm transition-colors',
                   pathname === link.href
-                    ? 'text-white bg-dark-600'
-                    : 'text-muted-foreground hover:text-white'
+                    ? 'text-accent-hover bg-dark-700'
+                    : 'text-muted-foreground hover:text-primary-foreground'
                 )}
               >
                 {link.label}
@@ -100,7 +100,7 @@ export function Navigation() {
               href="https://github.com/nirholas/pump-fun-sdk"
               target="_blank"
               rel="noopener noreferrer"
-              className="block px-3 py-2 text-sm text-muted-foreground hover:text-white"
+              className="block px-3 py-2 text-sm text-muted-foreground hover:text-primary-foreground"
             >
               GitHub ↗
             </a>

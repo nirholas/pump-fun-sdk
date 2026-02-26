@@ -1,15 +1,15 @@
 export function Footer() {
   return (
-    <footer className="relative z-10 border-t border-border bg-black/80">
+    <footer className="relative z-10 border-t border-border glass-panel !rounded-none">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="text-sm text-muted-foreground">
-            <span className="text-solana">◎</span> Pump Fun SDK — Official community PumpFun SDK powered by{' '}
+            <span className="text-accent">◎</span> Pump Fun SDK — Community PumpFun SDK powered by{' '}
             <a
               href="https://github.com/solana-labs"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-white hover:text-solana transition-colors"
+              className="text-primary-foreground hover:text-accent transition-colors"
             >
               Solana Labs
             </a>{' '}
@@ -20,7 +20,7 @@ export function Footer() {
               href="https://github.com/nirholas/pump-fun-sdk"
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:text-white transition-colors"
+              className="hover:text-primary-foreground transition-colors"
             >
               GitHub
             </a>
@@ -31,7 +31,7 @@ export function Footer() {
               href="https://x.com/paboracle"
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:text-white transition-colors"
+              className="hover:text-primary-foreground transition-colors"
             >
               @paboracle
             </a>
@@ -39,7 +39,7 @@ export function Footer() {
         </div>
         <div className="mt-4 pt-4 border-t border-border text-center">
           <p className="text-xs text-muted">
-            Official community PumpFun SDK. Create, buy, sell, and migrate tokens on Solana
+            Community PumpFun SDK. Create, buy, sell, and migrate tokens on Solana
             with bonding curve pricing. Use at your own risk.
           </p>
         </div>

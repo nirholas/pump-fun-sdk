@@ -250,15 +250,11 @@ console.log("Created & bought:", sig);
 
 ## 🔄 Token Lifecycle
 
-```
-┌─────────────────────────┐                          ┌───────────────────────┐
-│     Bonding Curve        │    graduation           │      AMM Pool         │
-│     (Pump Program)       │ ─────────────────────►  │      (PumpAMM Program │
-│                          │   complete = true       │                       │
-│  • createV2              │                         │  • Pool-based swap    │
-│  • buy / sell            │                         │  • LP fees            │
-│  • Price discovery       │                         │  • Graduated trading  │
-└─────────────────────────┘                          └───────────────────────┘
+```mermaid
+flowchart LR
+  A["🔄 Bonding Curve\n(Pump Program)\n\n• createV2\n• buy / sell\n• Price discovery"]
+  B["💱 AMM Pool\n(PumpAMM Program)\n\n• Pool-based swap\n• LP fees\n• Graduated trading"]
+  A -- "graduation\ncomplete = true" --> B
 ```
 
 <br>
@@ -457,23 +453,14 @@ const instructions = await sdk.claimTokenIncentivesBothPrograms(
 
 The SDK is split into two layers:
 
-```
-┌──────────────────────────────────────────────────────────────────┐
-│                        Your Application                          │
-├──────────────────────────────┬───────────────────────────────────┤
-│      PumpSdk (Offline)       │      OnlinePumpSdk (Online)       │
-│                              │                                   │
-│  • Build instructions        │  • Fetch on-chain state           │
-│  • Decode accounts           │  • Simulate transactions          │
-│  • Pure computation          │  • *BothPrograms variants         │
-│  • No connection needed      │  • Wraps PumpSdk + Connection     │
-│                              │                                   │
-│  Export: PUMP_SDK singleton   │  Export: OnlinePumpSdk class      │
-├──────────────────────────────┴───────────────────────────────────┤
-│  bondingCurve.ts │ fees.ts │ pda.ts │ state.ts │ tokenIncentives │
-├──────────────────────────────────────────────────────────────────┤
-│             Anchor IDLs: pump │ pump_amm │ pump_fees              │
-└──────────────────────────────────────────────────────────────────┘
+```mermaid
+block-beta
+  columns 2
+  A["Your Application"]:2
+  B["PumpSdk — Offline\n• Build instructions\n• Decode accounts\n• Pure computation\n• No connection needed\n\nExport: PUMP_SDK singleton"]
+  C["OnlinePumpSdk — Online\n• Fetch on-chain state\n• Simulate transactions\n• BothPrograms variants\n• Wraps PumpSdk + Connection\n\nExport: OnlinePumpSdk class"]
+  D["bondingCurve.ts · fees.ts · pda.ts · state.ts · tokenIncentives.ts"]:2
+  E["Anchor IDLs: pump · pump_amm · pump_fees"]:2
 ```
 
 <details>

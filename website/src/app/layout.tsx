@@ -30,13 +30,13 @@ export default function RootLayout({
     <html lang="en" className="dark" suppressHydrationWarning>
       <head>
         <link rel="manifest" href="/manifest.json" />
-        <meta name="theme-color" content="#9945FF" />
+        <meta name="theme-color" content="#080A19" />
       </head>
-      <body className="min-h-screen bg-black text-white antialiased dark:bg-black dark:text-white">
+      <body className="min-h-screen bg-dark-900 text-primary-foreground antialiased">
         <div className="relative min-h-screen flex flex-col">
-          {/* Grid background */}
+          {/* Grid background — Ultramarine */}
           <div className="fixed inset-0 bg-grid opacity-100 pointer-events-none" />
-          <div className="fixed inset-0 bg-gradient-to-b from-black via-transparent to-black pointer-events-none" />
+          <div className="fixed inset-0 bg-gradient-to-b from-dark-900 via-transparent to-dark-900 pointer-events-none" />
 
           <ThemeProvider>
             <Navigation />

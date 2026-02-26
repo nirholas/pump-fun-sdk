@@ -1,35 +1,35 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
-  "name": "io.github.nirholas/solana-wallet-toolkit",
-  "title": "Solana Wallet Toolkit MCP",
-  "description": "Complete Solana wallet toolkit with vanity address generation, key management, and transaction building",
+  "name": "io.github.nirholas/pump-fun-sdk",
+  "title": "Pump SDK MCP Server",
+  "description": "Pump SDK MCP Server — Solana token launchpad with bonding curves, vanity addresses, key management, and transaction building",
   "license": "MIT",
   "authors": [
     {
-      "name": "nich",
+      "name": "nirholas",
       "url": "https://github.com/nirholas"
     }
   ],
   "repository": {
-    "url": "https://github.com/nirholas/solana-wallet-toolkit",
+    "url": "https://github.com/nirholas/pump-fun-sdk",
     "source": "github"
   },
-  "version": "0.1.0",
+  "version": "1.0.0",
   "links": {
-    "homepage": "https://github.com/nirholas/solana-wallet-toolkit",
-    "bugs": "https://github.com/nirholas/solana-wallet-toolkit/issues"
+    "homepage": "https://github.com/nirholas/pump-fun-sdk",
+    "bugs": "https://github.com/nirholas/pump-fun-sdk/issues"
   },
   "icons": [
     {
-      "url": "https://raw.githubusercontent.com/nirholas/solana-wallet-toolkit/main/assets/milady.svg",
+      "url": "https://raw.githubusercontent.com/nirholas/pump-fun-sdk/main/assets/milady.svg",
       "type": "svg"
     }
   ],
   "packages": [
     {
       "registryType": "npm",
-      "identifier": "solana-wallet-toolkit",
-      "version": "0.1.0",
+      "identifier": "@nirholas/pump-fun-sdk",
+      "version": "1.0.0",
       "runtimeHint": "npx",
       "transport": {
         "type": "stdio"
@@ -54,12 +54,15 @@
     "io.modelcontextprotocol.registry/publisher-provided": {
       "keywords": [
         "solana",
-        "wallet",
+        "pump",
+        "sdk",
+        "bonding-curve",
         "vanity",
         "keypair",
         "mcp",
         "blockchain",
-        "web3"
+        "web3",
+        "token-launchpad"
       ],
       "category": "Blockchain"
     }

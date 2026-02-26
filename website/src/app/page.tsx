@@ -67,8 +67,8 @@ export default function HomePage() {
     <div className="relative">
       {/* Hero */}
       <section className="relative min-h-[85vh] flex items-center justify-center px-4">
-        {/* Subtle radial glow */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-solana/5 blur-[120px] pointer-events-none" />
+        {/* Subtle radial glow — Ultramarine */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-accent/5 blur-[120px] pointer-events-none" />
 
         <div className="relative max-w-4xl mx-auto text-center">
           <motion.div
@@ -78,8 +78,8 @@ export default function HomePage() {
           >
             {/* Badge */}
             <div className="inline-flex items-center gap-2 px-3 py-1 mb-6 border border-border rounded-full text-xs text-muted-foreground">
-              <span className="w-1.5 h-1.5 rounded-full bg-solana-green animate-pulse" />
-              Official Community PumpFun SDK for Solana
+              <span className="w-1.5 h-1.5 rounded-full bg-good animate-pulse" />
+              Community PumpFun SDK for Solana
             </div>
 
             <h1 className="text-4xl sm:text-6xl lg:text-7xl font-bold tracking-tight mb-6">
@@ -89,7 +89,7 @@ export default function HomePage() {
             </h1>
 
             <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-8 leading-relaxed">
-              The official community TypeScript SDK for the Pump protocol on Solana.
+              The community TypeScript SDK for the Pump protocol on Solana.
               Create, buy, sell, and migrate tokens with bonding curve pricing,
               AMM pools, fee sharing, and token incentives.
             </p>
@@ -97,7 +97,7 @@ export default function HomePage() {
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
               <Link
                 href="/tools"
-                className="px-6 py-3 bg-white text-black font-semibold text-sm rounded hover:bg-white/90 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                className="px-6 py-3 bg-accent text-white font-semibold text-sm rounded-lair hover:brightness-110 transition-all hover:scale-[1.02] active:scale-[0.98]"
               >
                 Launch Tools →
               </Link>
@@ -105,7 +105,7 @@ export default function HomePage() {
                 href="https://github.com/nirholas/pump-fun-sdk"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-6 py-3 border border-border text-white font-semibold text-sm rounded hover:bg-dark-700 transition-all"
+                className="px-6 py-3 border border-border text-primary-foreground font-semibold text-sm rounded-lair hover:bg-dark-700 transition-all"
               >
                 View Source
               </a>
@@ -119,23 +119,23 @@ export default function HomePage() {
             transition={{ duration: 0.7, delay: 0.3, ease: 'easeOut' }}
             className="mt-16 max-w-2xl mx-auto"
           >
-            <div className="border border-border rounded-lg overflow-hidden bg-dark-800">
+            <div className="border border-border rounded-lair overflow-hidden bg-dark-800">
               <div className="flex items-center gap-1.5 px-4 py-2.5 border-b border-border bg-dark-900">
-                <div className="w-2.5 h-2.5 rounded-full bg-dark-600" />
-                <div className="w-2.5 h-2.5 rounded-full bg-dark-600" />
-                <div className="w-2.5 h-2.5 rounded-full bg-dark-600" />
+                <div className="w-2.5 h-2.5 rounded-full bg-bad/60" />
+                <div className="w-2.5 h-2.5 rounded-full bg-accent/40" />
+                <div className="w-2.5 h-2.5 rounded-full bg-good/40" />
                 <span className="ml-2 text-xs text-muted font-mono">terminal</span>
               </div>
               <div className="p-4 font-mono text-sm leading-relaxed text-left">
                 <div className="text-muted-foreground">
-                  <span className="text-solana-green">$</span> npm install @pump-fun/pump-sdk
+                  <span className="text-good">$</span> npm install @pump-fun/pump-sdk
                 </div>
                 <div className="mt-2 text-muted">+ @pump-fun/pump-sdk@1.0.0</div>
                 <div className="text-muted">added 42 packages in 3.2s</div>
-                <div className="mt-2 text-solana-green">✓ Ready to use!</div>
-                <div className="text-white mt-1">
-                  import {'{'} <span className="text-solana">PUMP_SDK</span> {'}'} from{' '}
-                  <span className="text-solana-green">'@pump-fun/pump-sdk'</span>
+                <div className="mt-2 text-good">✓ Ready to use!</div>
+                <div className="text-primary-foreground mt-1">
+                  import {'{'} <span className="text-accent">PUMP_SDK</span> {'}'} from{' '}
+                  <span className="text-good">'@pump-fun/pump-sdk'</span>
                 </div>
                 <div className="text-muted mt-1">// Build instructions offline, sign & send</div>
               </div>
@@ -157,7 +157,7 @@ export default function HomePage() {
               variants={fadeUp}
               className="text-center"
             >
-              <div className="text-2xl sm:text-3xl font-bold text-white">{stat.value}</div>
+              <div className="text-2xl sm:text-3xl font-bold text-accent-hover">{stat.value}</div>
               <div className="text-sm text-muted-foreground mt-1">{stat.label}</div>
               <div className="text-xs text-muted mt-0.5">{stat.detail}</div>
             </motion.div>
@@ -194,10 +194,10 @@ export default function HomePage() {
             >
               <Link
                 href="/tools"
-                className="block h-full p-5 border border-border rounded-lg bg-dark-800/30 hover:bg-dark-700/50 hover:border-dark-600 transition-all group"
+                className="block h-full p-5 border border-border rounded-lair bg-dark-800/30 hover:bg-dark-700/50 hover:border-accent/30 transition-all group"
               >
                 <div className="text-2xl mb-3">{feature.icon}</div>
-                <h3 className="text-sm font-semibold text-white mb-2 group-hover:text-solana transition-colors">
+                <h3 className="text-sm font-semibold text-primary-foreground mb-2 group-hover:text-accent transition-colors">
                   {feature.title}
                 </h3>
                 <p className="text-xs text-muted-foreground leading-relaxed">
@@ -222,7 +222,7 @@ export default function HomePage() {
               Security First
             </h2>
             <p className="text-muted-foreground max-w-xl mx-auto">
-              Built on official Solana Labs libraries. Offline-first instruction
+              Built on Solana Labs libraries. Offline-first instruction
               builders that never touch your private keys.
             </p>
           </motion.div>
@@ -252,10 +252,10 @@ export default function HomePage() {
                 whileInView="visible"
                 viewport={{ once: true }}
                 variants={fadeUp}
-                className="p-4 border border-border rounded-lg bg-dark-800/50 text-center"
+                className="p-4 border border-border rounded-lair bg-dark-800/50 text-center"
               >
-                <div className="text-xs text-solana font-mono mb-1">{item.lang}</div>
-                <div className="text-sm font-semibold text-white font-mono">{item.lib}</div>
+                <div className="text-xs text-accent font-mono mb-1">{item.lang}</div>
+                <div className="text-sm font-semibold text-primary-foreground font-mono">{item.lib}</div>
                 <div className="text-xs text-muted mt-1">{item.repo}</div>
               </motion.div>
             ))}
@@ -284,7 +284,7 @@ export default function HomePage() {
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="max-w-2xl mx-auto border border-border rounded-lg overflow-hidden"
+          className="max-w-2xl mx-auto border border-border rounded-lair overflow-hidden"
         >
           <table className="w-full text-sm">
             <thead>
@@ -311,9 +311,9 @@ export default function HomePage() {
                 ['7+', '1 in 2+ trillion', 'Weeks+'],
               ].map(([chars, diff, time]) => (
                 <tr key={chars} className="border-b border-border/50 hover:bg-dark-700/30">
-                  <td className="px-4 py-2.5 text-solana font-semibold">{chars}</td>
+                  <td className="px-4 py-2.5 text-accent font-semibold">{chars}</td>
                   <td className="px-4 py-2.5 text-muted-foreground">{diff}</td>
-                  <td className="px-4 py-2.5 text-white">{time}</td>
+                  <td className="px-4 py-2.5 text-primary-foreground">{time}</td>
                 </tr>
               ))}
             </tbody>
@@ -337,7 +337,7 @@ export default function HomePage() {
           </p>
           <Link
             href="/tools"
-            className="inline-block px-8 py-3 bg-white text-black font-semibold text-sm rounded hover:bg-white/90 transition-all hover:scale-[1.02] active:scale-[0.98]"
+            className="inline-block px-8 py-3 bg-accent text-white font-semibold text-sm rounded-lair hover:brightness-110 transition-all hover:scale-[1.02] active:scale-[0.98]"
           >
             Launch Tools →
           </Link>
