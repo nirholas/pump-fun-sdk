@@ -467,3 +467,4 @@ mod tests {
         assert_eq!(cli.threads, Some(4));
     }
 }
+
