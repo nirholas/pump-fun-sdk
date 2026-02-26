@@ -238,3 +238,4 @@ if (reserves.isZero()) { ... }
 - Anchor's `instruction()` method is async — don't forget `await`
 - `BN` division truncates (floor division) — use ceiling division for fee calculations
 - Commitment levels matter: `confirmed` vs `finalized` affects account state freshness
+
