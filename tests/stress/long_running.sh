@@ -208,3 +208,4 @@ else
     echo -e "${RED}Total errors: $TOTAL_ERRORS${NC}"
     exit 1
 fi
+
