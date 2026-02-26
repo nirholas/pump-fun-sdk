@@ -15,3 +15,4 @@ shell=bash
 # SC1090: Can't follow non-constant source - We use dynamic sourcing for utils.sh
 # SC2034: Variable appears unused - Some are used by sourced scripts
 disable=SC1090,SC2034
+
