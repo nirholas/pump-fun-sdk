@@ -1,0 +1,67 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.nirholas/solana-wallet-toolkit",
+  "title": "Solana Wallet Toolkit MCP",
+  "description": "Complete Solana wallet toolkit with vanity address generation, key management, and transaction building",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "nich",
+      "url": "https://github.com/nirholas"
+    }
+  ],
+  "repository": {
+    "url": "https://github.com/nirholas/solana-wallet-toolkit",
+    "source": "github"
+  },
+  "version": "0.1.0",
+  "links": {
+    "homepage": "https://github.com/nirholas/solana-wallet-toolkit",
+    "bugs": "https://github.com/nirholas/solana-wallet-toolkit/issues"
+  },
+  "icons": [
+    {
+      "url": "https://raw.githubusercontent.com/nirholas/solana-wallet-toolkit/main/assets/milady.svg",
+      "type": "svg"
+    }
+  ],
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "solana-wallet-toolkit",
+      "version": "0.1.0",
+      "runtimeHint": "npx",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "SOLANA_RPC_URL",
+          "description": "Solana RPC endpoint URL",
+          "required": false,
+          "secret": false
+        },
+        {
+          "name": "SOLANA_PRIVATE_KEY",
+          "description": "Solana wallet private key (base58)",
+          "required": false,
+          "secret": true
+        }
+      ]
+    }
+  ],
+  "_meta": {
+    "io.modelcontextprotocol.registry/publisher-provided": {
+      "keywords": [
+        "solana",
+        "wallet",
+        "vanity",
+        "keypair",
+        "mcp",
+        "blockchain",
+        "web3"
+      ],
+      "category": "Blockchain"
+    }
+  }
+}

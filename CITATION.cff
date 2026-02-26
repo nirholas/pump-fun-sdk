@@ -1,0 +1,16 @@
+cff-version: 1.2.0
+message: "If you use solana-wallet-toolkit, please cite it as below."
+type: software
+title: "solana-wallet-toolkit"
+abstract: "☀️ Solana Development Toolkit ⚒️Official Solana Labs libraries 🔑 Vanity Address Generation — custom wallet addresses, OG names on the blockchain 😎 Multi-threaded Search 🔍 Parallel generation using all CPU cores 💨 Rust & TypeScript, Node.js ⛓"
+authors:
+  - alias: nirholas
+    name: nirholas
+repository-code: "https://github.com/nirholas/solana-wallet-toolkit"
+url: "https://github.com/nirholas/solana-wallet-toolkit"
+license: MIT
+version: "1.0.0"
+date-released: "2026-02-11"
+keywords:
+  - open-source
+  - nirholas

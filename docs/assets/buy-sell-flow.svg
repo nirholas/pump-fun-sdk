@@ -1,0 +1,193 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 340" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f0f23" />
+      <stop offset="100%" style="stop-color:#1a1a3e" />
+    </linearGradient>
+    <linearGradient id="solana" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#9945FF" />
+      <stop offset="100%" style="stop-color:#14F195" />
+    </linearGradient>
+    <linearGradient id="buyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#14F195" />
+      <stop offset="100%" style="stop-color:#0be080" />
+    </linearGradient>
+    <linearGradient id="sellGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#FF6B6B" />
+      <stop offset="100%" style="stop-color:#ee5a5a" />
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <style>
+    @keyframes flowRight { 0% { stroke-dashoffset: 20; } 100% { stroke-dashoffset: 0; } }
+    @keyframes flowLeft { 0% { stroke-dashoffset: -20; } 100% { stroke-dashoffset: 0; } }
+    @keyframes pulse { 0%,100% { opacity: 0.5; } 50% { opacity: 1; } }
+    @keyframes solIn {
+      0% { transform: translateX(0); opacity: 1; }
+      50% { transform: translateX(40px); opacity: 0.5; }
+      100% { transform: translateX(0); opacity: 1; }
+    }
+    @keyframes tokOut {
+      0% { transform: translateX(0); opacity: 1; }
+      50% { transform: translateX(-40px); opacity: 0.5; }
+      100% { transform: translateX(0); opacity: 1; }
+    }
+    @keyframes solOut {
+      0% { transform: translateX(0); opacity: 1; }
+      50% { transform: translateX(-40px); opacity: 0.5; }
+      100% { transform: translateX(0); opacity: 1; }
+    }
+    @keyframes tokIn {
+      0% { transform: translateX(0); opacity: 1; }
+      50% { transform: translateX(40px); opacity: 0.5; }
+      100% { transform: translateX(0); opacity: 1; }
+    }
+    @keyframes barGrow { 0% { height: 0; } 100% { height: var(--h); } }
+    @keyframes priceUp {
+      0% { d: path("M0 80 Q40 78 80 70 Q120 55 160 40 Q200 28 240 20"); }
+      50% { d: path("M0 80 Q40 75 80 60 Q120 40 160 25 Q200 15 240 10"); }
+      100% { d: path("M0 80 Q40 78 80 70 Q120 55 160 40 Q200 28 240 20"); }
+    }
+    .flow-r { stroke-dasharray: 6 4; animation: flowRight 0.8s linear infinite; }
+    .flow-l { stroke-dasharray: 6 4; animation: flowLeft 0.8s linear infinite; }
+    .pulse { animation: pulse 1.5s ease-in-out infinite; }
+    .sol-in { animation: solIn 2.5s ease-in-out infinite; }
+    .tok-out { animation: tokOut 2.5s ease-in-out infinite; }
+    .sol-out { animation: solOut 2.5s ease-in-out infinite; }
+    .tok-in { animation: tokIn 2.5s ease-in-out infinite; }
+  </style>
+
+  <!-- Background -->
+  <rect width="800" height="340" rx="12" fill="url(#bg)"/>
+  <rect x="0" y="0" width="800" height="2.5" rx="1" fill="url(#solana)" opacity="0.8"/>
+
+  <!-- Title -->
+  <text x="400" y="35" text-anchor="middle" font-family="'SF Mono','Fira Code',monospace" font-size="18" font-weight="700" fill="url(#solana)" filter="url(#glow)">Buy &amp; Sell Flow</text>
+
+  <!-- ======================== BUY SIDE ======================== -->
+  <g transform="translate(20, 55)">
+    <text x="175" y="12" text-anchor="middle" font-family="monospace" font-size="13" font-weight="700" fill="#14F195">BUY</text>
+
+    <!-- User wallet -->
+    <rect x="0" y="25" width="90" height="55" rx="8" fill="#1e1e3f" stroke="#14F195" stroke-width="1.2"/>
+    <text x="45" y="48" text-anchor="middle" font-family="monospace" font-size="10" font-weight="600" fill="#14F195">WALLET</text>
+    <text x="45" y="63" text-anchor="middle" font-family="sans-serif" font-size="8" fill="#8b8bae">SOL balance</text>
+
+    <!-- SOL flowing right -->
+    <g class="sol-in">
+      <rect x="105" y="37" width="40" height="20" rx="4" fill="#14F195" opacity="0.2"/>
+      <text x="125" y="51" text-anchor="middle" font-family="monospace" font-size="8" font-weight="600" fill="#14F195">SOL ▸</text>
+    </g>
+    <line x1="95" y1="52" x2="160" y2="52" stroke="#14F195" stroke-width="1" class="flow-r" opacity="0.4"/>
+
+    <!-- Bonding Curve (center) -->
+    <rect x="160" y="22" width="120" height="62" rx="8" fill="#1e1e3f" stroke="url(#solana)" stroke-width="1.5"/>
+    <text x="220" y="44" text-anchor="middle" font-family="monospace" font-size="10" font-weight="600" fill="url(#solana)">BONDING</text>
+    <text x="220" y="58" text-anchor="middle" font-family="monospace" font-size="10" font-weight="600" fill="url(#solana)">CURVE</text>
+    <text x="220" y="74" text-anchor="middle" font-family="sans-serif" font-size="7" fill="#8b8bae">+ slippage protection</text>
+
+    <!-- Tokens flowing left -->
+    <g class="tok-out">
+      <rect x="295" y="37" width="45" height="20" rx="4" fill="#14F195" opacity="0.2"/>
+      <text x="317" y="51" text-anchor="middle" font-family="monospace" font-size="8" font-weight="600" fill="#14F195">▸ TKN</text>
+    </g>
+    <line x1="285" y1="52" x2="355" y2="52" stroke="#14F195" stroke-width="1" class="flow-r" opacity="0.4"/>
+
+    <!-- Token account -->
+    <rect x="355" y="25" width="90" height="55" rx="8" fill="#1e1e3f" stroke="#14F195" stroke-width="1.2"/>
+    <text x="400" y="48" text-anchor="middle" font-family="monospace" font-size="10" font-weight="600" fill="#14F195">ATA</text>
+    <text x="400" y="63" text-anchor="middle" font-family="sans-serif" font-size="8" fill="#8b8bae">Token account</text>
+
+    <!-- Code snippet -->
+    <g transform="translate(0, 95)">
+      <rect x="0" y="0" width="445" height="48" rx="6" fill="#12122a" stroke="#333" stroke-width="0.5"/>
+      <text x="10" y="16" font-family="'SF Mono','Fira Code',monospace" font-size="8" fill="#8b8bae">const tokens = </text>
+      <text x="90" y="16" font-family="'SF Mono','Fira Code',monospace" font-size="8" fill="#14F195">getBuyTokenAmountFromSolAmount</text>
+      <text x="282" y="16" font-family="'SF Mono','Fira Code',monospace" font-size="8" fill="#8b8bae">({...});</text>
+      <text x="10" y="30" font-family="'SF Mono','Fira Code',monospace" font-size="8" fill="#8b8bae">const ixs = await </text>
+      <text x="100" y="30" font-family="'SF Mono','Fira Code',monospace" font-size="8" fill="#9945FF">PUMP_SDK</text>
+      <text x="148" y="30" font-family="'SF Mono','Fira Code',monospace" font-size="8" fill="#8b8bae">.</text>
+      <text x="152" y="30" font-family="'SF Mono','Fira Code',monospace" font-size="8" fill="#14F195">buyInstructions</text>
+      <text x="238" y="30" font-family="'SF Mono','Fira Code',monospace" font-size="8" fill="#8b8bae">({...});</text>
+      <text x="10" y="43" font-family="'SF Mono','Fira Code',monospace" font-size="8" fill="#666">// Auto-creates ATA + extends account if needed</text>
+    </g>
+  </g>
+
+  <!-- ======================== SELL SIDE ======================== -->
+  <g transform="translate(470, 55)">
+    <text x="155" y="12" text-anchor="middle" font-family="monospace" font-size="13" font-weight="700" fill="#FF6B6B">SELL</text>
+
+    <!-- Token account -->
+    <rect x="0" y="25" width="90" height="55" rx="8" fill="#1e1e3f" stroke="#FF6B6B" stroke-width="1.2"/>
+    <text x="45" y="48" text-anchor="middle" font-family="monospace" font-size="10" font-weight="600" fill="#FF6B6B">ATA</text>
+    <text x="45" y="63" text-anchor="middle" font-family="sans-serif" font-size="8" fill="#8b8bae">Token account</text>
+
+    <!-- Tokens flowing right -->
+    <g class="tok-in">
+      <rect x="100" y="37" width="45" height="20" rx="4" fill="#FF6B6B" opacity="0.2"/>
+      <text x="122" y="51" text-anchor="middle" font-family="monospace" font-size="8" font-weight="600" fill="#FF6B6B">TKN ▸</text>
+    </g>
+    <line x1="95" y1="52" x2="160" y2="52" stroke="#FF6B6B" stroke-width="1" class="flow-r" opacity="0.4"/>
+
+    <!-- Bonding Curve -->
+    <rect x="155" y="22" width="120" height="62" rx="8" fill="#1e1e3f" stroke="#FF6B6B" stroke-width="1.2" opacity="0.8"/>
+    <text x="215" y="44" text-anchor="middle" font-family="monospace" font-size="10" font-weight="600" fill="#FF6B6B">BONDING</text>
+    <text x="215" y="58" text-anchor="middle" font-family="monospace" font-size="10" font-weight="600" fill="#FF6B6B">CURVE</text>
+    <text x="215" y="74" text-anchor="middle" font-family="sans-serif" font-size="7" fill="#8b8bae">- slippage protection</text>
+
+    <!-- SOL flowing left (back to wallet) -->
+    <!-- Arrow indicating SOL returns -->
+    <line x1="157" y1="52" x2="157" y2="52" stroke="#FF6B6B" stroke-width="1" opacity="0"/>
+
+    <!-- Code snippet -->
+    <g transform="translate(-10, 95)">
+      <rect x="0" y="0" width="335" height="48" rx="6" fill="#12122a" stroke="#333" stroke-width="0.5"/>
+      <text x="10" y="16" font-family="'SF Mono','Fira Code',monospace" font-size="8" fill="#8b8bae">const sol = </text>
+      <text x="73" y="16" font-family="'SF Mono','Fira Code',monospace" font-size="8" fill="#FF6B6B">getSellSolAmountFromTokenAmount</text>
+      <text x="271" y="16" font-family="'SF Mono','Fira Code',monospace" font-size="8" fill="#8b8bae">({...});</text>
+      <text x="10" y="30" font-family="'SF Mono','Fira Code',monospace" font-size="8" fill="#8b8bae">const ixs = await </text>
+      <text x="100" y="30" font-family="'SF Mono','Fira Code',monospace" font-size="8" fill="#9945FF">PUMP_SDK</text>
+      <text x="148" y="30" font-family="'SF Mono','Fira Code',monospace" font-size="8" fill="#8b8bae">.</text>
+      <text x="152" y="30" font-family="'SF Mono','Fira Code',monospace" font-size="8" fill="#FF6B6B">sellInstructions</text>
+      <text x="240" y="30" font-family="'SF Mono','Fira Code',monospace" font-size="8" fill="#8b8bae">({...});</text>
+      <text x="10" y="43" font-family="'SF Mono','Fira Code',monospace" font-size="8" fill="#666">// Returns SOL minus fees to user wallet</text>
+    </g>
+  </g>
+
+  <!-- ======================== FEE BREAKDOWN ======================== -->
+  <g transform="translate(20, 230)">
+    <rect x="0" y="0" width="760" height="90" rx="10" fill="#1e1e3f" stroke="#444" stroke-width="0.5"/>
+    <text x="20" y="22" font-family="monospace" font-size="11" font-weight="700" fill="url(#solana)">Fee Breakdown per Trade</text>
+
+    <!-- Fee tiers -->
+    <g transform="translate(20, 35)">
+      <!-- Protocol fee -->
+      <rect x="0" y="0" width="160" height="40" rx="6" fill="#9945FF" opacity="0.08" stroke="#9945FF" stroke-width="0.5"/>
+      <text x="80" y="16" text-anchor="middle" font-family="monospace" font-size="9" font-weight="600" fill="#9945FF">Protocol Fee</text>
+      <text x="80" y="30" text-anchor="middle" font-family="sans-serif" font-size="8" fill="#8b8bae">protocolFeeBps → treasury</text>
+
+      <!-- Creator fee -->
+      <rect x="180" y="0" width="160" height="40" rx="6" fill="#14F195" opacity="0.08" stroke="#14F195" stroke-width="0.5"/>
+      <text x="260" y="16" text-anchor="middle" font-family="monospace" font-size="9" font-weight="600" fill="#14F195">Creator Fee</text>
+      <text x="260" y="30" text-anchor="middle" font-family="sans-serif" font-size="8" fill="#8b8bae">creatorFeeBps → creator vault</text>
+
+      <!-- LP fee (AMM only) -->
+      <rect x="360" y="0" width="160" height="40" rx="6" fill="#E8590C" opacity="0.08" stroke="#E8590C" stroke-width="0.5"/>
+      <text x="440" y="16" text-anchor="middle" font-family="monospace" font-size="9" font-weight="600" fill="#E8590C">LP Fee</text>
+      <text x="440" y="30" text-anchor="middle" font-family="sans-serif" font-size="8" fill="#8b8bae">lpFeeBps → pool (AMM only)</text>
+
+      <!-- Market cap note -->
+      <rect x="540" y="0" width="180" height="40" rx="6" fill="#333" opacity="0.3"/>
+      <text x="630" y="16" text-anchor="middle" font-family="sans-serif" font-size="8" fill="#8b8bae">Rates vary by market cap tier</text>
+      <text x="630" y="30" text-anchor="middle" font-family="sans-serif" font-size="8" fill="#8b8bae">via FeeConfig.feeTiers[]</text>
+      <circle cx="560" cy="20" r="3" fill="url(#solana)" class="pulse"/>
+    </g>
+  </g>
+
+  <!-- Bottom accent -->
+  <rect x="0" y="337.5" width="800" height="2.5" rx="1" fill="url(#solana)" opacity="0.8"/>
+</svg>

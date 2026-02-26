@@ -1,0 +1,17 @@
+# ==============================================================================
+# ShellCheck Configuration
+# ==============================================================================
+# Configuration file for ShellCheck static analysis
+# https://github.com/koalaman/shellcheck
+# ==============================================================================
+
+# Enable external sourcing
+external-sources=true
+
+# Shell dialect (bash)
+shell=bash
+
+# Disable specific warnings (with justification)
+# SC1090: Can't follow non-constant source - We use dynamic sourcing for utils.sh
+# SC2034: Variable appears unused - Some are used by sourced scripts
+disable=SC1090,SC2034

@@ -1,0 +1,26 @@
+labels: [question]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        # ❓ Q&A
+        Ask questions about pump-fun-sdk. Check the [FAQ](../../FAQ.md) and [Troubleshooting](../../docs/TROUBLESHOOTING.md) first!
+  - type: textarea
+    id: question
+    attributes:
+      label: Question
+      description: What do you need help with?
+      placeholder: How do I...
+    validations:
+      required: true
+  - type: input
+    id: sdk-version
+    attributes:
+      label: SDK Version
+      description: Which version of @pump-fun/pump-sdk are you using?
+      placeholder: "1.28.0"
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional Context
+      description: Code snippets, error messages, or screenshots

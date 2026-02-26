@@ -1,0 +1,129 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --bg: #000000;
+  --fg: #ffffff;
+  --border: #262626;
+  --muted: #737373;
+  --card: #0a0a0a;
+  --solana: #9945FF;
+  --solana-green: #14F195;
+}
+
+html.light {
+  --bg: #fafafa;
+  --fg: #0a0a0a;
+  --border: #e5e5e5;
+  --muted: #737373;
+  --card: #ffffff;
+}
+
+html.light body {
+  background: var(--bg);
+  color: var(--fg);
+}
+
+html.light .bg-black { background: var(--bg); }
+html.light .bg-dark-800, html.light .bg-dark-800\/20, html.light .bg-dark-800\/30, html.light .bg-dark-800\/50 { background: var(--card); }
+html.light .bg-dark-900 { background: #f5f5f5; }
+html.light .bg-dark-700 { background: #e5e5e5; }
+html.light .bg-dark-600 { background: #d4d4d4; }
+html.light .text-white { color: var(--fg); }
+html.light .text-muted-foreground { color: var(--muted); }
+html.light .border-border { border-color: var(--border); }
+html.light .bg-black\/80 { background: rgba(250,250,250,0.8); }
+html.light .bg-black\/95 { background: rgba(250,250,250,0.95); }
+html.light .text-gradient { background: linear-gradient(135deg, #0a0a0a 0%, #525252 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+html.light .bg-grid { background-image: linear-gradient(to right, rgba(0,0,0,0.04) 1px, transparent 1px), linear-gradient(to bottom, rgba(0,0,0,0.04) 1px, transparent 1px); }
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0a0a0a;
+}
+::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Grid background */
+.bg-grid {
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* Glow effects */
+.glow-solana {
+  box-shadow: 0 0 20px rgba(153, 69, 255, 0.15), 0 0 40px rgba(153, 69, 255, 0.05);
+}
+
+.glow-green {
+  box-shadow: 0 0 20px rgba(20, 241, 149, 0.15), 0 0 40px rgba(20, 241, 149, 0.05);
+}
+
+.text-gradient {
+  background: linear-gradient(135deg, #ffffff 0%, #a3a3a3 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.text-gradient-solana {
+  background: linear-gradient(135deg, #9945FF 0%, #14F195 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Selection */
+::selection {
+  background: rgba(153, 69, 255, 0.3);
+  color: #fff;
+}
+
+/* Focus ring */
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  border-color: #9945FF !important;
+  box-shadow: 0 0 0 1px rgba(153, 69, 255, 0.3);
+}
+
+/* Mono text */
+.font-mono {
+  font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace;
+}
+
+/* Animated border */
+@keyframes borderGlow {
+  0%, 100% { border-color: #262626; }
+  50% { border-color: rgba(153, 69, 255, 0.4); }
+}
+
+.animate-border-glow {
+  animation: borderGlow 3s ease-in-out infinite;
+}

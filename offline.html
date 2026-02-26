@@ -1,0 +1,1039 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solana Wallet Toolkit (Offline)</title>
+    <style>
+        :root {
+            --bg: #000;
+            --fg: #fff;
+            --border: #333;
+            --muted: #888;
+            --accent: #9945FF;
+        }
+        .light-mode {
+            --bg: #fff;
+            --fg: #000;
+            --border: #ccc;
+            --muted: #666;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, monospace;
+            background: var(--bg);
+            color: var(--fg);
+            min-height: 100vh;
+            padding: 1rem;
+            transition: background 0.2s, color 0.2s;
+        }
+        .container { max-width: 800px; margin: 0 auto; }
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 1rem; }
+        h1 { font-size: 1.25rem; font-weight: 600; }
+        .theme-toggle { background: none; border: 1px solid var(--border); color: var(--fg); padding: 0.5rem; cursor: pointer; font-size: 1rem; }
+        .warning { border: 1px solid var(--border); padding: 0.75rem; margin-bottom: 1rem; font-size: 0.8rem; }
+        .tabs { display: flex; flex-wrap: wrap; gap: 0.25rem; margin-bottom: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; }
+        .tab { background: none; border: 1px solid var(--border); color: var(--muted); padding: 0.5rem 0.75rem; cursor: pointer; font-size: 0.75rem; transition: all 0.2s; }
+        .tab:hover { color: var(--fg); }
+        .tab.active { background: var(--fg); color: var(--bg); }
+        .panel { display: none; }
+        .panel.active { display: block; }
+        .card { border: 1px solid var(--border); padding: 1rem; margin-bottom: 1rem; }
+        .card-title { font-size: 0.9rem; font-weight: 600; margin-bottom: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; }
+        label { display: block; margin-bottom: 0.25rem; color: var(--muted); font-size: 0.75rem; text-transform: uppercase; }
+        input, textarea, select {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid var(--border);
+            background: var(--bg);
+            color: var(--fg);
+            font-family: monospace;
+            font-size: 0.85rem;
+            margin-bottom: 0.75rem;
+        }
+        input:focus, textarea:focus, select:focus { outline: none; border-color: var(--fg); }
+        textarea { resize: vertical; min-height: 80px; }
+        button {
+            padding: 0.6rem 1rem;
+            border: 1px solid var(--fg);
+            background: var(--fg);
+            color: var(--bg);
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.1s;
+        }
+        button:hover { opacity: 0.9; }
+        button:active { transform: scale(0.98); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-secondary { background: var(--bg); color: var(--fg); }
+        .btn-small { padding: 0.3rem 0.6rem; font-size: 0.7rem; }
+        .btn-group { display: flex; gap: 0.5rem; margin-top: 0.5rem; flex-wrap: wrap; }
+        .row { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+        .row > * { flex: 1; min-width: 200px; }
+        .checkbox-row { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; }
+        .checkbox-row input { width: auto; margin: 0; }
+        .checkbox-row label { margin: 0; text-transform: none; color: var(--fg); }
+        .result { margin-top: 1rem; padding: 1rem; border: 1px solid var(--border); background: var(--bg); }
+        .result-title { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; margin-bottom: 0.25rem; }
+        .result-value { font-family: monospace; font-size: 0.8rem; word-break: break-all; padding: 0.5rem; border: 1px solid var(--border); margin-bottom: 0.75rem; background: var(--bg); }
+        .status { color: var(--muted); font-size: 0.8rem; margin-top: 0.5rem; }
+        .success { color: #00ff00; }
+        .error { color: #ff4444; font-weight: bold; }
+        .hidden { display: none !important; }
+        .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.5rem; }
+        footer { text-align: center; margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.7rem; }
+        footer a { color: var(--fg); }
+        .lib-status { font-size: 0.7rem; padding: 0.25rem 0.5rem; border-radius: 3px; }
+        .lib-status.loaded { color: #00ff00; }
+        .lib-status.error { color: #ff4444; }
+        @media (max-width: 600px) {
+            .tabs { gap: 0.15rem; }
+            .tab { padding: 0.4rem 0.5rem; font-size: 0.65rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>◎ Solana Wallet Toolkit</h1>
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <span id="lib-status" class="lib-status">Loading...</span>
+                <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">◐</button>
+            </div>
+        </header>
+
+        <div class="warning">
+            <strong>⚠ OFFLINE USE:</strong> Disconnect from internet before use. Save page (Ctrl+S) for offline access. Never share private keys. Uses official @solana/web3.js only.
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" data-panel="generate">Generate</button>
+            <button class="tab" data-panel="vanity">Vanity</button>
+            <button class="tab" data-panel="restore">Restore</button>
+            <button class="tab" data-panel="sign">Sign</button>
+            <button class="tab" data-panel="verify">Verify</button>
+            <button class="tab" data-panel="validate">Validate</button>
+            <button class="tab" data-panel="estimate">Estimate</button>
+        </div>
+
+        <!-- GENERATE PANEL -->
+        <div class="panel active" id="panel-generate">
+            <div class="card">
+                <div class="card-title">Generate Random Wallet</div>
+                <p style="color: var(--muted); font-size: 0.8rem; margin-bottom: 1rem;">
+                    Generates a new Ed25519 keypair using @solana/web3.js Keypair.generate()
+                </p>
+                <button onclick="generateWallet()">Generate New Wallet</button>
+                <div id="generate-result" class="result hidden"></div>
+            </div>
+        </div>
+
+        <!-- VANITY PANEL -->
+        <div class="panel" id="panel-vanity">
+            <div class="card">
+                <div class="card-title">Vanity Address Generator</div>
+                <p style="color: var(--muted); font-size: 0.8rem; margin-bottom: 1rem;">
+                    Generate addresses with custom prefixes/suffixes. Solana addresses use Base58 encoding.
+                </p>
+                <div class="row">
+                    <div>
+                        <label>Prefix (start of address)</label>
+                        <input type="text" id="vanity-prefix" placeholder="e.g., So1" maxlength="6">
+                    </div>
+                    <div>
+                        <label>Suffix (end of address)</label>
+                        <input type="text" id="vanity-suffix" placeholder="e.g., xyz" maxlength="6">
+                    </div>
+                </div>
+                
+                <div class="grid-2" style="margin: 0.75rem 0;">
+                    <div class="checkbox-row">
+                        <input type="checkbox" id="vanity-ignore-case">
+                        <label for="vanity-ignore-case">Case-insensitive</label>
+                    </div>
+                </div>
+                
+                <div class="btn-group">
+                    <button id="vanity-btn" onclick="startVanity()">Start Mining</button>
+                    <button class="btn-secondary" onclick="stopVanity()">Stop</button>
+                </div>
+                <p class="status" id="vanity-status"></p>
+                <div id="vanity-result" class="result hidden"></div>
+            </div>
+        </div>
+
+        <!-- RESTORE PANEL -->
+        <div class="panel" id="panel-restore">
+            <div class="card">
+                <div class="card-title">Restore from Secret Key (JSON Array)</div>
+                <p style="color: var(--muted); font-size: 0.8rem; margin-bottom: 1rem;">
+                    Paste a Solana CLI compatible keypair JSON (64-byte array)
+                </p>
+                <label>Secret Key JSON Array</label>
+                <textarea id="restore-json" placeholder="[174,47,154,16,202,193,206,113,199,190,53,133,...]"></textarea>
+                <button onclick="restoreFromJson()">Restore Wallet</button>
+                <div id="restore-json-result" class="result hidden"></div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">Restore from Base58 Secret Key</div>
+                <p style="color: var(--muted); font-size: 0.8rem; margin-bottom: 1rem;">
+                    Enter a Base58-encoded secret key (as exported by some wallets)
+                </p>
+                <label>Base58 Secret Key</label>
+                <input type="text" id="restore-base58" placeholder="Base58 encoded secret key...">
+                <button onclick="restoreFromBase58()">Restore Wallet</button>
+                <div id="restore-base58-result" class="result hidden"></div>
+            </div>
+        </div>
+
+        <!-- SIGN PANEL -->
+        <div class="panel" id="panel-sign">
+            <div class="card">
+                <div class="card-title">Sign Message</div>
+                <p style="color: var(--muted); font-size: 0.8rem; margin-bottom: 1rem;">
+                    Sign a message using Ed25519 (via @solana/web3.js)
+                </p>
+                <label>Message</label>
+                <textarea id="sign-message" placeholder="Enter message to sign"></textarea>
+                <label>Secret Key (JSON Array)</label>
+                <textarea id="sign-key" placeholder="[174,47,154,16,202,193,206,113,199,190,53,133,...]"></textarea>
+                <button onclick="signMessageAction()">Sign Message</button>
+                <div id="sign-result" class="result hidden"></div>
+            </div>
+        </div>
+
+        <!-- VERIFY PANEL -->
+        <div class="panel" id="panel-verify">
+            <div class="card">
+                <div class="card-title">Verify Message Signature</div>
+                <p style="color: var(--muted); font-size: 0.8rem; margin-bottom: 1rem;">
+                    Verify an Ed25519 signature against a public key
+                </p>
+                <label>Message</label>
+                <textarea id="verify-message" placeholder="Original message"></textarea>
+                <label>Signature (Base58 or Hex)</label>
+                <input type="text" id="verify-signature" placeholder="Signature...">
+                <label>Public Key (Address)</label>
+                <input type="text" id="verify-address" placeholder="Address (Base58)...">
+                <button onclick="verifyMessageAction()">Verify Signature</button>
+                <div id="verify-result" class="result hidden"></div>
+            </div>
+        </div>
+
+        <!-- VALIDATE PANEL -->
+        <div class="panel" id="panel-validate">
+            <div class="card">
+                <div class="card-title">Validate Address</div>
+                <p style="color: var(--muted); font-size: 0.8rem; margin-bottom: 1rem;">
+                    Check if a Solana address is valid Base58
+                </p>
+                <label>Solana Address</label>
+                <input type="text" id="validate-address" placeholder="Address (Base58)...">
+                <button onclick="validateAddress()">Validate Address</button>
+                <div id="validate-address-result" class="result hidden"></div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">Validate Keypair JSON</div>
+                <p style="color: var(--muted); font-size: 0.8rem; margin-bottom: 1rem;">
+                    Verify a keypair JSON file is valid and can construct a Keypair
+                </p>
+                <label>Keypair JSON Array</label>
+                <textarea id="validate-keypair" placeholder="[174,47,154,16,202,193,206,113,199,190,53,133,...]"></textarea>
+                <button onclick="validateKeypair()">Validate Keypair</button>
+                <div id="validate-keypair-result" class="result hidden"></div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">Verify Key-Address Pair</div>
+                <p style="color: var(--muted); font-size: 0.8rem; margin-bottom: 1rem;">
+                    Verify that a secret key derives to the expected address
+                </p>
+                <label>Secret Key (JSON Array)</label>
+                <textarea id="pair-key" placeholder="[174,47,154,16,202,193,206,113,199,190,53,133,...]"></textarea>
+                <label>Expected Address</label>
+                <input type="text" id="pair-address" placeholder="Address (Base58)...">
+                <button onclick="validatePair()">Verify Match</button>
+                <div id="pair-result" class="result hidden"></div>
+            </div>
+        </div>
+
+        <!-- ESTIMATE PANEL -->
+        <div class="panel" id="panel-estimate">
+            <div class="card">
+                <div class="card-title">Difficulty Estimation (Dry Run)</div>
+                <p style="color: var(--muted); font-size: 0.8rem; margin-bottom: 1rem;">
+                    Estimate how long it will take to find a vanity address
+                </p>
+                <div class="row">
+                    <div>
+                        <label>Prefix</label>
+                        <input type="text" id="estimate-prefix" placeholder="e.g., ABC" maxlength="8">
+                    </div>
+                    <div>
+                        <label>Suffix</label>
+                        <input type="text" id="estimate-suffix" placeholder="e.g., xyz" maxlength="8">
+                    </div>
+                </div>
+                <div class="checkbox-row">
+                    <input type="checkbox" id="estimate-ignore-case">
+                    <label for="estimate-ignore-case">Case-insensitive</label>
+                </div>
+                <button onclick="runBenchmark()">Run Benchmark & Estimate</button>
+                <div id="estimate-result" class="result hidden"></div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">Base58 Character Reference</div>
+                <p style="color: var(--muted); font-size: 0.8rem; margin-bottom: 0.5rem;">
+                    Solana addresses use Base58 encoding (58 characters):
+                </p>
+                <div class="result-value" style="margin-bottom: 0;">
+                    123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz
+                </div>
+                <p style="color: var(--muted); font-size: 0.75rem; margin-top: 0.5rem;">
+                    Note: No 0 (zero), O (capital o), I (capital i), or l (lowercase L)
+                </p>
+            </div>
+        </div>
+
+        <footer>
+            Solana Wallet Toolkit — Uses official <a href="https://github.com/solana-labs/solana-web3.js" target="_blank">@solana/web3.js</a> — <a href="https://github.com/nirholas/solana-wallet-toolkit" target="_blank">GitHub</a>
+        </footer>
+    </div>
+
+    <!-- Official @solana/web3.js from Solana Labs -->
+    <script src="https://unpkg.com/@solana/web3.js@1.98.0/lib/index.iife.min.js"></script>
+
+    <script>
+    // ============================================================
+    // INITIALIZATION & LIBRARY CHECK
+    // ============================================================
+    
+    let solana = null;
+    let nacl = null;
+    
+    function initLibrary() {
+        const statusEl = document.getElementById('lib-status');
+        
+        if (typeof solanaWeb3 !== 'undefined') {
+            solana = solanaWeb3;
+            // nacl is included in @solana/web3.js bundle
+            statusEl.textContent = '✓ @solana/web3.js loaded';
+            statusEl.className = 'lib-status loaded';
+            return true;
+        } else {
+            statusEl.textContent = '✗ Library not loaded';
+            statusEl.className = 'lib-status error';
+            return false;
+        }
+    }
+    
+    // Initialize on load
+    document.addEventListener('DOMContentLoaded', () => {
+        setTimeout(initLibrary, 100);
+    });
+    
+    function checkLibrary() {
+        if (!solana) {
+            if (!initLibrary()) {
+                alert('Error: @solana/web3.js not loaded. Please refresh the page or check your internet connection.');
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // ============================================================
+    // THEME TOGGLE
+    // ============================================================
+    
+    function toggleTheme() {
+        document.body.classList.toggle('light-mode');
+    }
+
+    // ============================================================
+    // TAB NAVIGATION
+    // ============================================================
+    
+    document.querySelectorAll('.tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+            tab.classList.add('active');
+            document.getElementById('panel-' + tab.dataset.panel).classList.add('active');
+        });
+    });
+
+    // ============================================================
+    // UTILITY FUNCTIONS
+    // ============================================================
+    
+    const BASE58_ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+    
+    function isValidBase58(str) {
+        for (const char of str) {
+            if (!BASE58_ALPHABET.includes(char)) {
+                return false;
+            }
+        }
+        return true;
+    }
+    
+    function bytesToHex(bytes) {
+        return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+    
+    function hexToBytes(hex) {
+        const bytes = [];
+        for (let i = 0; i < hex.length; i += 2) {
+            bytes.push(parseInt(hex.substr(i, 2), 16));
+        }
+        return new Uint8Array(bytes);
+    }
+    
+    function formatNumber(n) {
+        return n.toLocaleString();
+    }
+    
+    function formatDuration(seconds) {
+        if (seconds < 1) return '< 1 second';
+        if (seconds < 60) return `${Math.round(seconds)} seconds`;
+        if (seconds < 3600) return `${Math.round(seconds / 60)} minutes`;
+        if (seconds < 86400) return `${(seconds / 3600).toFixed(1)} hours`;
+        return `${(seconds / 86400).toFixed(1)} days`;
+    }
+    
+    function copyToClipboard(text) {
+        navigator.clipboard.writeText(text).catch(() => {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+        });
+    }
+    
+    function showResult(elementId, html) {
+        const el = document.getElementById(elementId);
+        el.innerHTML = html;
+        el.classList.remove('hidden');
+    }
+    
+    function resultField(label, value, copyable = true) {
+        const escapedValue = value.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+        const copyBtn = copyable ? `<button class="btn-small btn-secondary" onclick="copyToClipboard('${escapedValue}')">Copy</button>` : '';
+        return `<div class="result-title">${label}</div><div class="result-value">${value}</div>${copyBtn}`;
+    }
+    
+    function downloadKeypair(secretKeyArray, address) {
+        const json = JSON.stringify(Array.from(secretKeyArray));
+        const blob = new Blob([json], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${address}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    // ============================================================
+    // GENERATE WALLET
+    // ============================================================
+    
+    function generateWallet() {
+        if (!checkLibrary()) return;
+        
+        try {
+            const keypair = solana.Keypair.generate();
+            const address = keypair.publicKey.toBase58();
+            const secretKeyArray = Array.from(keypair.secretKey);
+            const secretKeyJson = JSON.stringify(secretKeyArray);
+            
+            showResult('generate-result', `
+                ${resultField('Public Key (Address)', address)}
+                ${resultField('Secret Key (JSON Array)', secretKeyJson)}
+                <div style="margin-top: 0.5rem;">
+                    <button class="btn-small" onclick='downloadKeypair(${secretKeyJson}, "${address}")'>Download Keypair JSON</button>
+                </div>
+                <p style="color: var(--muted); font-size: 0.75rem; margin-top: 0.75rem;">
+                    ⚠ Save this keypair securely. The secret key is needed to sign transactions.
+                </p>
+            `);
+        } catch (e) {
+            showResult('generate-result', `<p class="error">Error: ${e.message}</p>`);
+        }
+    }
+
+    // ============================================================
+    // VANITY ADDRESS GENERATION
+    // ============================================================
+    
+    let vanityRunning = false;
+    let vanityAttempts = 0;
+    let vanityStartTime = 0;
+    
+    function matchesPattern(address, prefix, suffix, ignoreCase) {
+        let addr = address;
+        let pre = prefix || '';
+        let suf = suffix || '';
+        
+        if (ignoreCase) {
+            addr = addr.toLowerCase();
+            pre = pre.toLowerCase();
+            suf = suf.toLowerCase();
+        }
+        
+        if (pre && !addr.startsWith(pre)) return false;
+        if (suf && !addr.endsWith(suf)) return false;
+        return true;
+    }
+    
+    function startVanity() {
+        if (!checkLibrary()) return;
+        if (vanityRunning) return;
+        
+        const prefix = document.getElementById('vanity-prefix').value.trim();
+        const suffix = document.getElementById('vanity-suffix').value.trim();
+        const ignoreCase = document.getElementById('vanity-ignore-case').checked;
+        const statusEl = document.getElementById('vanity-status');
+        const resultEl = document.getElementById('vanity-result');
+        
+        // Validate inputs
+        if (!prefix && !suffix) {
+            statusEl.textContent = '❌ Please enter a prefix or suffix';
+            return;
+        }
+        
+        if (prefix && !isValidBase58(prefix)) {
+            statusEl.textContent = '❌ Prefix contains invalid Base58 characters';
+            return;
+        }
+        
+        if (suffix && !isValidBase58(suffix)) {
+            statusEl.textContent = '❌ Suffix contains invalid Base58 characters';
+            return;
+        }
+        
+        const totalLength = (prefix?.length || 0) + (suffix?.length || 0);
+        if (totalLength > 6) {
+            statusEl.textContent = '⚠ Warning: Long patterns may take a very long time';
+        }
+        
+        vanityRunning = true;
+        vanityAttempts = 0;
+        vanityStartTime = performance.now();
+        resultEl.classList.add('hidden');
+        
+        document.getElementById('vanity-btn').disabled = true;
+        
+        const batchSize = 100;
+        
+        function search() {
+            if (!vanityRunning) {
+                document.getElementById('vanity-btn').disabled = false;
+                return;
+            }
+            
+            for (let i = 0; i < batchSize; i++) {
+                vanityAttempts++;
+                
+                const keypair = solana.Keypair.generate();
+                const address = keypair.publicKey.toBase58();
+                
+                if (matchesPattern(address, prefix, suffix, ignoreCase)) {
+                    // Found!
+                    vanityRunning = false;
+                    document.getElementById('vanity-btn').disabled = false;
+                    
+                    const elapsed = (performance.now() - vanityStartTime) / 1000;
+                    const rate = Math.round(vanityAttempts / elapsed);
+                    const secretKeyArray = Array.from(keypair.secretKey);
+                    const secretKeyJson = JSON.stringify(secretKeyArray);
+                    
+                    statusEl.textContent = `✅ Found in ${formatNumber(vanityAttempts)} attempts (${elapsed.toFixed(2)}s, ${formatNumber(rate)}/sec)`;
+                    
+                    showResult('vanity-result', `
+                        ${resultField('Public Key (Address)', address)}
+                        ${resultField('Secret Key (JSON Array)', secretKeyJson)}
+                        <div style="margin-top: 0.5rem;">
+                            <button class="btn-small" onclick='downloadKeypair(${secretKeyJson}, "${address}")'>Download Keypair JSON</button>
+                        </div>
+                    `);
+                    return;
+                }
+            }
+            
+            // Update status
+            const elapsed = (performance.now() - vanityStartTime) / 1000;
+            const rate = Math.round(vanityAttempts / elapsed);
+            statusEl.textContent = `Mining... ${formatNumber(vanityAttempts)} attempts (${elapsed.toFixed(1)}s, ~${formatNumber(rate)}/sec)`;
+            
+            // Continue searching
+            setTimeout(search, 0);
+        }
+        
+        setTimeout(search, 10);
+    }
+    
+    function stopVanity() {
+        vanityRunning = false;
+        document.getElementById('vanity-btn').disabled = false;
+        document.getElementById('vanity-status').textContent = 'Stopped';
+    }
+
+    // ============================================================
+    // RESTORE FROM SECRET KEY
+    // ============================================================
+    
+    function restoreFromJson() {
+        if (!checkLibrary()) return;
+        
+        const jsonInput = document.getElementById('restore-json').value.trim();
+        
+        try {
+            const secretKeyArray = JSON.parse(jsonInput);
+            
+            if (!Array.isArray(secretKeyArray)) {
+                throw new Error('Input must be a JSON array');
+            }
+            
+            if (secretKeyArray.length !== 64) {
+                throw new Error(`Expected 64 bytes, got ${secretKeyArray.length}`);
+            }
+            
+            const secretKey = new Uint8Array(secretKeyArray);
+            const keypair = solana.Keypair.fromSecretKey(secretKey);
+            const address = keypair.publicKey.toBase58();
+            
+            showResult('restore-json-result', `
+                ${resultField('Public Key (Address)', address)}
+                <p class="success" style="margin-top: 0.5rem;">✅ Keypair restored successfully</p>
+            `);
+        } catch (e) {
+            showResult('restore-json-result', `<p class="error">Error: ${e.message}</p>`);
+        }
+    }
+    
+    function restoreFromBase58() {
+        if (!checkLibrary()) return;
+        
+        const base58Input = document.getElementById('restore-base58').value.trim();
+        
+        try {
+            if (!isValidBase58(base58Input)) {
+                throw new Error('Invalid Base58 characters in input');
+            }
+            
+            // Decode Base58 to bytes using PublicKey's internal decoder
+            // This is a workaround since @solana/web3.js doesn't expose bs58 directly
+            const decoded = solana.bs58.decode(base58Input);
+            
+            if (decoded.length !== 64) {
+                throw new Error(`Expected 64 bytes, got ${decoded.length}`);
+            }
+            
+            const keypair = solana.Keypair.fromSecretKey(decoded);
+            const address = keypair.publicKey.toBase58();
+            const secretKeyJson = JSON.stringify(Array.from(keypair.secretKey));
+            
+            showResult('restore-base58-result', `
+                ${resultField('Public Key (Address)', address)}
+                ${resultField('Secret Key (JSON Array)', secretKeyJson)}
+                <p class="success" style="margin-top: 0.5rem;">✅ Keypair restored successfully</p>
+            `);
+        } catch (e) {
+            showResult('restore-base58-result', `<p class="error">Error: ${e.message}</p>`);
+        }
+    }
+
+    // ============================================================
+    // SIGN MESSAGE
+    // ============================================================
+    
+    function signMessageAction() {
+        if (!checkLibrary()) return;
+        
+        const message = document.getElementById('sign-message').value;
+        const keyJson = document.getElementById('sign-key').value.trim();
+        
+        try {
+            const secretKeyArray = JSON.parse(keyJson);
+            const secretKey = new Uint8Array(secretKeyArray);
+            const keypair = solana.Keypair.fromSecretKey(secretKey);
+            
+            // Encode message as bytes
+            const messageBytes = new TextEncoder().encode(message);
+            
+            // Sign using nacl (included in @solana/web3.js)
+            const signature = solana.nacl.sign.detached(messageBytes, keypair.secretKey);
+            
+            const signatureHex = bytesToHex(signature);
+            const signatureBase58 = solana.bs58.encode(signature);
+            
+            showResult('sign-result', `
+                ${resultField('Signer Address', keypair.publicKey.toBase58())}
+                ${resultField('Signature (Base58)', signatureBase58)}
+                ${resultField('Signature (Hex)', signatureHex)}
+            `);
+        } catch (e) {
+            showResult('sign-result', `<p class="error">Error: ${e.message}</p>`);
+        }
+    }
+
+    // ============================================================
+    // VERIFY SIGNATURE
+    // ============================================================
+    
+    function verifyMessageAction() {
+        if (!checkLibrary()) return;
+        
+        const message = document.getElementById('verify-message').value;
+        const signatureInput = document.getElementById('verify-signature').value.trim();
+        const addressInput = document.getElementById('verify-address').value.trim();
+        
+        try {
+            // Parse public key
+            const publicKey = new solana.PublicKey(addressInput);
+            
+            // Parse signature (try Base58 first, then hex)
+            let signatureBytes;
+            if (signatureInput.startsWith('0x') || /^[0-9a-fA-F]+$/.test(signatureInput)) {
+                // Hex format
+                const hex = signatureInput.replace('0x', '');
+                signatureBytes = hexToBytes(hex);
+            } else {
+                // Base58 format
+                signatureBytes = solana.bs58.decode(signatureInput);
+            }
+            
+            if (signatureBytes.length !== 64) {
+                throw new Error(`Signature must be 64 bytes, got ${signatureBytes.length}`);
+            }
+            
+            // Encode message as bytes
+            const messageBytes = new TextEncoder().encode(message);
+            
+            // Verify using nacl
+            const isValid = solana.nacl.sign.detached.verify(
+                messageBytes,
+                signatureBytes,
+                publicKey.toBytes()
+            );
+            
+            if (isValid) {
+                showResult('verify-result', `
+                    <p class="success" style="font-size: 1.1rem;">✅ SIGNATURE VALID</p>
+                    <p style="color: var(--muted); margin-top: 0.5rem;">
+                        The message was signed by ${addressInput}
+                    </p>
+                `);
+            } else {
+                showResult('verify-result', `
+                    <p class="error" style="font-size: 1.1rem;">❌ SIGNATURE INVALID</p>
+                    <p style="color: var(--muted); margin-top: 0.5rem;">
+                        The signature does not match the message and address
+                    </p>
+                `);
+            }
+        } catch (e) {
+            showResult('verify-result', `<p class="error">Error: ${e.message}</p>`);
+        }
+    }
+
+    // ============================================================
+    // VALIDATE ADDRESS
+    // ============================================================
+    
+    function validateAddress() {
+        if (!checkLibrary()) return;
+        
+        const address = document.getElementById('validate-address').value.trim();
+        
+        try {
+            // Check Base58 characters
+            if (!isValidBase58(address)) {
+                throw new Error('Contains invalid Base58 characters');
+            }
+            
+            // Try to create PublicKey (this validates the address)
+            const publicKey = new solana.PublicKey(address);
+            const bytes = publicKey.toBytes();
+            
+            // Check it's on the Ed25519 curve (32 bytes)
+            if (bytes.length !== 32) {
+                throw new Error('Invalid public key length');
+            }
+            
+            showResult('validate-address-result', `
+                <p class="success" style="font-size: 1.1rem;">✅ VALID SOLANA ADDRESS</p>
+                <div style="margin-top: 0.75rem;">
+                    ${resultField('Address', address)}
+                    ${resultField('Bytes (Hex)', bytesToHex(bytes))}
+                    <div class="result-title">Length</div>
+                    <div class="result-value">${address.length} characters (${bytes.length} bytes)</div>
+                </div>
+            `);
+        } catch (e) {
+            showResult('validate-address-result', `
+                <p class="error" style="font-size: 1.1rem;">❌ INVALID ADDRESS</p>
+                <p style="color: var(--muted); margin-top: 0.5rem;">${e.message}</p>
+            `);
+        }
+    }
+
+    // ============================================================
+    // VALIDATE KEYPAIR
+    // ============================================================
+    
+    function validateKeypair() {
+        if (!checkLibrary()) return;
+        
+        const jsonInput = document.getElementById('validate-keypair').value.trim();
+        const checks = [];
+        
+        try {
+            // Check 1: Valid JSON
+            let secretKeyArray;
+            try {
+                secretKeyArray = JSON.parse(jsonInput);
+                checks.push({ name: 'Valid JSON', passed: true, message: 'Input is valid JSON' });
+            } catch {
+                checks.push({ name: 'Valid JSON', passed: false, message: 'Input is not valid JSON' });
+                throw new Error('Invalid JSON');
+            }
+            
+            // Check 2: Is array
+            if (Array.isArray(secretKeyArray)) {
+                checks.push({ name: 'Is Array', passed: true, message: 'Input is an array' });
+            } else {
+                checks.push({ name: 'Is Array', passed: false, message: 'Input must be an array' });
+                throw new Error('Not an array');
+            }
+            
+            // Check 3: Correct length (64 bytes)
+            if (secretKeyArray.length === 64) {
+                checks.push({ name: 'Correct Length', passed: true, message: '64 bytes (correct)' });
+            } else {
+                checks.push({ name: 'Correct Length', passed: false, message: `${secretKeyArray.length} bytes (expected 64)` });
+                throw new Error('Invalid length');
+            }
+            
+            // Check 4: All values are valid bytes (0-255)
+            const allBytes = secretKeyArray.every(v => Number.isInteger(v) && v >= 0 && v <= 255);
+            if (allBytes) {
+                checks.push({ name: 'Valid Bytes', passed: true, message: 'All values are 0-255' });
+            } else {
+                checks.push({ name: 'Valid Bytes', passed: false, message: 'Some values are not valid bytes (0-255)' });
+                throw new Error('Invalid byte values');
+            }
+            
+            // Check 5: Can construct Keypair
+            const secretKey = new Uint8Array(secretKeyArray);
+            let keypair;
+            try {
+                keypair = solana.Keypair.fromSecretKey(secretKey);
+                checks.push({ name: 'Keypair Construction', passed: true, message: 'Successfully created Keypair' });
+            } catch (e) {
+                checks.push({ name: 'Keypair Construction', passed: false, message: e.message });
+                throw e;
+            }
+            
+            // Check 6: Public key derivation
+            const derivedPubkey = keypair.publicKey.toBase58();
+            const storedPubkeyBytes = secretKey.slice(32);
+            const storedPubkey = new solana.PublicKey(storedPubkeyBytes).toBase58();
+            
+            if (derivedPubkey === storedPubkey) {
+                checks.push({ name: 'Public Key Derivation', passed: true, message: 'Stored public key matches derived' });
+            } else {
+                checks.push({ name: 'Public Key Derivation', passed: false, message: 'Public key mismatch' });
+            }
+            
+            // Check 7: Sign and verify test
+            try {
+                const testMessage = new TextEncoder().encode('test message');
+                const signature = solana.nacl.sign.detached(testMessage, keypair.secretKey);
+                const verified = solana.nacl.sign.detached.verify(testMessage, signature, keypair.publicKey.toBytes());
+                
+                if (verified) {
+                    checks.push({ name: 'Sign/Verify Test', passed: true, message: 'Can sign and verify messages' });
+                } else {
+                    checks.push({ name: 'Sign/Verify Test', passed: false, message: 'Signature verification failed' });
+                }
+            } catch (e) {
+                checks.push({ name: 'Sign/Verify Test', passed: false, message: e.message });
+            }
+            
+            // Display results
+            const allPassed = checks.every(c => c.passed);
+            const checksHtml = checks.map(c => 
+                `<div style="margin-bottom: 0.25rem;">${c.passed ? '✅' : '❌'} <strong>${c.name}</strong>: ${c.message}</div>`
+            ).join('');
+            
+            showResult('validate-keypair-result', `
+                <p class="${allPassed ? 'success' : 'error'}" style="font-size: 1.1rem; margin-bottom: 0.75rem;">
+                    ${allPassed ? '✅ KEYPAIR VALID' : '❌ KEYPAIR INVALID'}
+                </p>
+                ${checksHtml}
+                ${allPassed ? `
+                    <div style="margin-top: 0.75rem;">
+                        ${resultField('Public Key', derivedPubkey)}
+                    </div>
+                ` : ''}
+            `);
+            
+        } catch (e) {
+            const checksHtml = checks.map(c => 
+                `<div style="margin-bottom: 0.25rem;">${c.passed ? '✅' : '❌'} <strong>${c.name}</strong>: ${c.message}</div>`
+            ).join('');
+            
+            showResult('validate-keypair-result', `
+                <p class="error" style="font-size: 1.1rem; margin-bottom: 0.75rem;">❌ KEYPAIR INVALID</p>
+                ${checksHtml}
+            `);
+        }
+    }
+
+    // ============================================================
+    // VERIFY KEY-ADDRESS PAIR
+    // ============================================================
+    
+    function validatePair() {
+        if (!checkLibrary()) return;
+        
+        const keyJson = document.getElementById('pair-key').value.trim();
+        const expectedAddress = document.getElementById('pair-address').value.trim();
+        
+        try {
+            const secretKeyArray = JSON.parse(keyJson);
+            const secretKey = new Uint8Array(secretKeyArray);
+            const keypair = solana.Keypair.fromSecretKey(secretKey);
+            const derivedAddress = keypair.publicKey.toBase58();
+            
+            if (derivedAddress === expectedAddress) {
+                showResult('pair-result', `
+                    <p class="success" style="font-size: 1.1rem;">✅ MATCH</p>
+                    <p style="color: var(--muted); margin-top: 0.5rem;">
+                        The secret key correctly derives to the expected address.
+                    </p>
+                    ${resultField('Derived Address', derivedAddress)}
+                `);
+            } else {
+                showResult('pair-result', `
+                    <p class="error" style="font-size: 1.1rem;">❌ MISMATCH</p>
+                    <p style="color: var(--muted); margin-top: 0.5rem;">
+                        The secret key does not derive to the expected address.
+                    </p>
+                    ${resultField('Expected', expectedAddress)}
+                    ${resultField('Derived', derivedAddress)}
+                `);
+            }
+        } catch (e) {
+            showResult('pair-result', `<p class="error">Error: ${e.message}</p>`);
+        }
+    }
+
+    // ============================================================
+    // BENCHMARK & ESTIMATE
+    // ============================================================
+    
+    function runBenchmark() {
+        if (!checkLibrary()) return;
+        
+        const prefix = document.getElementById('estimate-prefix').value.trim();
+        const suffix = document.getElementById('estimate-suffix').value.trim();
+        const ignoreCase = document.getElementById('estimate-ignore-case').checked;
+        
+        if (!prefix && !suffix) {
+            showResult('estimate-result', `<p class="error">Please enter a prefix or suffix</p>`);
+            return;
+        }
+        
+        // Validate Base58
+        if (prefix && !isValidBase58(prefix)) {
+            showResult('estimate-result', `<p class="error">Prefix contains invalid Base58 characters</p>`);
+            return;
+        }
+        if (suffix && !isValidBase58(suffix)) {
+            showResult('estimate-result', `<p class="error">Suffix contains invalid Base58 characters</p>`);
+            return;
+        }
+        
+        // Run 1-second benchmark
+        const benchmarkDuration = 1000; // 1 second
+        const startTime = performance.now();
+        let count = 0;
+        
+        while (performance.now() - startTime < benchmarkDuration) {
+            solana.Keypair.generate();
+            count++;
+        }
+        
+        const actualDuration = (performance.now() - startTime) / 1000;
+        const rate = Math.round(count / actualDuration);
+        
+        // Calculate difficulty
+        const alphabetSize = 58;
+        const prefixLen = prefix?.length || 0;
+        const suffixLen = suffix?.length || 0;
+        
+        // If case-insensitive, effective alphabet is smaller for letters
+        // Letters in Base58: A-H, J-N, P-Z (25 uppercase) + a-k, m-z (24 lowercase) = 49 letters
+        // Numbers: 1-9 (9 numbers)
+        // Case-insensitive means upper and lower are equivalent, so ~25 distinct letters + 9 numbers = 34
+        let effectiveAlphabetSize = ignoreCase ? 34 : 58;
+        
+        const prefixDifficulty = Math.pow(effectiveAlphabetSize, prefixLen);
+        const suffixDifficulty = Math.pow(effectiveAlphabetSize, suffixLen);
+        const totalDifficulty = prefixDifficulty * suffixDifficulty;
+        
+        const expectedAttempts = totalDifficulty;
+        const expectedSeconds = expectedAttempts / rate;
+        
+        // Probability calculations
+        const probabilities = [0.5, 1.0, 2.0, 5.0].map(mult => ({
+            time: formatDuration(expectedSeconds * mult),
+            prob: ((1 - Math.exp(-mult)) * 100).toFixed(1)
+        }));
+        
+        const probHtml = probabilities.map(p => 
+            `<div>${p.time} → ${p.prob}% chance</div>`
+        ).join('');
+        
+        const patternDesc = [
+            prefix ? `prefix "${prefix}"` : null,
+            suffix ? `suffix "${suffix}"` : null
+        ].filter(Boolean).join(' + ');
+        
+        showResult('estimate-result', `
+            <div class="result-title">Benchmark Results</div>
+            <div class="result-value">
+                <div><strong>Pattern:</strong> ${patternDesc}${ignoreCase ? ' (case-insensitive)' : ''}</div>
+                <div><strong>Generation Rate:</strong> ${formatNumber(rate)} keys/second</div>
+            </div>
+            
+            <div class="result-title">Difficulty</div>
+            <div class="result-value">
+                <div><strong>Expected Attempts:</strong> ${formatNumber(Math.round(expectedAttempts))}</div>
+                <div><strong>Estimated Time:</strong> ${formatDuration(expectedSeconds)}</div>
+            </div>
+            
+            <div class="result-title">Probability of Finding Within</div>
+            <div class="result-value">
+                ${probHtml}
+            </div>
+            
+            <p style="color: var(--muted); font-size: 0.75rem; margin-top: 0.75rem;">
+                Note: These are estimates based on probability. Actual time may vary.
+            </p>
+        `);
+    }
+    </script>
+</body>
+</html>

@@ -1,0 +1,26 @@
+labels: [ideas]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        # 💡 Feature Idea
+        Share your idea with the community. If it gains traction, consider opening a formal [Feature Request](https://github.com/nirholas/pump-fun-sdk/issues/new?template=feature_request.md).
+  - type: textarea
+    id: idea
+    attributes:
+      label: Your Idea
+      description: Describe your feature idea or improvement
+      placeholder: I think pump-fun-sdk should...
+    validations:
+      required: true
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Use Case
+      description: Who would benefit and how?
+      placeholder: This would help developers who...
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Current Workaround
+      description: How do you accomplish this today (if at all)?

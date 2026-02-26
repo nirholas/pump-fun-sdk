@@ -1,0 +1,78 @@
+name: Deploy Docs
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/**'
+      - 'README.md'
+      - 'FAQ.md'
+      - 'ROADMAP.md'
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build Docs
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build docs index
+        run: |
+          mkdir -p _site
+
+          # Copy all markdown docs
+          cp README.md _site/
+          cp FAQ.md _site/
+          cp ROADMAP.md _site/
+          cp VISION.md _site/
+          cp SUPPORT.md _site/
+          cp GOVERNANCE.md _site/
+          cp ADOPTERS.md _site/
+          cp ACKNOWLEDGMENTS.md _site/
+          cp CONTRIBUTING.md _site/
+          cp SECURITY.md _site/
+          cp CHANGELOG.md _site/
+          cp CODE_OF_CONDUCT.md _site/
+          cp -r docs/ _site/docs/
+
+          # Create index
+          cat > _site/index.html << 'EOF'
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="utf-8">
+            <title>pump-fun-sdk Documentation</title>
+            <meta http-equiv="refresh" content="0; url=https://github.com/nirholas/pump-fun-sdk">
+          </head>
+          <body>
+            <p>Redirecting to <a href="https://github.com/nirholas/pump-fun-sdk">pump-fun-sdk on GitHub</a>...</p>
+          </body>
+          </html>
+          EOF
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

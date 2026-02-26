@@ -1,0 +1,25 @@
+# Test Fixtures - Invalid Inputs
+# Each line represents an invalid input that should be rejected
+# Format: <input> # <reason>
+
+0abc        # Contains invalid '0' (zero)
+Oabc        # Contains invalid 'O' (capital O)
+Iabc        # Contains invalid 'I' (capital I)
+labc        # Contains invalid 'l' (lowercase L)
+            # Empty line
+   abc      # Leading whitespace
+abc         # Trailing whitespace
+abc def     # Space in middle
+0OIl        # All invalid Base58 characters
+test0       # Zero at end
+testO       # Capital O at end
+testI       # Capital I at end
+testl       # Lowercase L at end
+0test       # Zero at start
+Otest       # Capital O at start
+Itest       # Capital I at start
+ltest       # Lowercase L at start
+a0b         # Zero in middle
+aOb         # Capital O in middle
+aIb         # Capital I in middle
+alb         # Lowercase L in middle

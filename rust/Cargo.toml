@@ -1,0 +1,79 @@
+[package]
+name = "solana-vanity"
+version = "0.1.0"
+edition = "2021"
+authors = ["Solana Vanity Address Generator"]
+description = "A high-performance, secure vanity address generator for Solana"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/hippopotomonstrosesquippedaliophobi/solana-vanity-address"
+keywords = ["solana", "vanity", "address", "cryptocurrency", "keypair"]
+categories = ["cryptography", "command-line-utilities"]
+readme = "README.md"
+
+[dependencies]
+# Official Solana SDK - the ONLY source for key generation
+solana-sdk = "1.18"
+
+# CLI parsing with derive macros
+clap = { version = "4", features = ["derive", "env"] }
+
+# Parallel iteration for multi-threaded generation
+rayon = "1.10"
+
+# CRITICAL: Secure memory wiping for sensitive data
+# Using 1.3 to match solana-sdk's curve25519-dalek requirement
+zeroize = { version = "1.3", features = ["zeroize_derive"] }
+
+# Serialization (used by Solana internally)
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# Error handling (used by Solana internally)
+thiserror = "1"
+
+# CPU detection for thread count (used by Solana internally via solana-rayon-threadlimit)
+num_cpus = "1.16"
+
+# Logging
+log = "0.4"
+
+# Ctrl+C signal handling
+ctrlc = "3.4"
+
+# Unix-specific functionality
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"
+nix = { version = "0.30", features = ["user"] }
+
+[dev-dependencies]
+# Benchmarking framework
+criterion = { version = "0.5", features = ["html_reports"] }
+
+# Temporary file handling for tests
+tempfile = "3"
+
+# Property-based testing
+proptest = "1"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
+
+[profile.bench]
+opt-level = 3
+lto = true
+
+[[bench]]
+name = "generation_bench"
+harness = false
+
+[[bin]]
+name = "solana-vanity"
+path = "src/main.rs"
+
+[lib]
+name = "solana_vanity"
+path = "src/lib.rs"

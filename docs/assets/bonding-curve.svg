@@ -1,0 +1,181 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 320" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f0f23" />
+      <stop offset="100%" style="stop-color:#1a1a3e" />
+    </linearGradient>
+    <linearGradient id="solana" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#9945FF" />
+      <stop offset="100%" style="stop-color:#14F195" />
+    </linearGradient>
+    <linearGradient id="curveGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#14F195;stop-opacity:0.05" />
+      <stop offset="100%" style="stop-color:#14F195;stop-opacity:0.25" />
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <clipPath id="chartClip">
+      <rect x="60" y="55" width="360" height="200"/>
+    </clipPath>
+  </defs>
+
+  <style>
+    @keyframes drawCurve {
+      0% { stroke-dashoffset: 500; }
+      100% { stroke-dashoffset: 0; }
+    }
+    @keyframes dotMove {
+      0% { cx: 80; cy: 230; }
+      15% { cx: 140; cy: 222; }
+      30% { cx: 190; cy: 205; }
+      50% { cx: 250; cy: 170; }
+      70% { cx: 310; cy: 120; }
+      85% { cx: 360; cy: 85; }
+      100% { cx: 400; cy: 62; }
+    }
+    @keyframes labelMove {
+      0% { transform: translate(80px, 220px); }
+      15% { transform: translate(140px, 212px); }
+      30% { transform: translate(190px, 195px); }
+      50% { transform: translate(250px, 160px); }
+      70% { transform: translate(310px, 110px); }
+      85% { transform: translate(360px, 75px); }
+      100% { transform: translate(400px, 52px); }
+    }
+    @keyframes pulse { 0%,100% { opacity: 0.5; } 50% { opacity: 1; } }
+    @keyframes priceCount {
+      0% { opacity: 1; }
+      50% { opacity: 0.6; }
+      100% { opacity: 1; }
+    }
+    @keyframes fillArea {
+      0% { opacity: 0; }
+      100% { opacity: 0.15; }
+    }
+    @keyframes gradLine {
+      0%,70% { opacity: 0; }
+      80%,100% { opacity: 1; }
+    }
+    .curve-draw { stroke-dasharray: 500; animation: drawCurve 4s ease-out forwards; }
+    .dot-travel { animation: dotMove 6s ease-in-out infinite; }
+    .label-travel { animation: labelMove 6s ease-in-out infinite; }
+    .pulse { animation: pulse 2s ease-in-out infinite; }
+    .area-fill { animation: fillArea 2s ease-out forwards; }
+    .grad-line { animation: gradLine 6s ease-in-out infinite; }
+    .price-tick { animation: priceCount 3s ease-in-out infinite; }
+  </style>
+
+  <!-- Background -->
+  <rect width="800" height="320" rx="12" fill="url(#bg)"/>
+  <rect x="0" y="0" width="800" height="2.5" rx="1" fill="url(#solana)" opacity="0.8"/>
+
+  <!-- Title -->
+  <text x="240" y="35" text-anchor="middle" font-family="'SF Mono','Fira Code',monospace" font-size="18" font-weight="700" fill="url(#solana)" filter="url(#glow)">Bonding Curve</text>
+
+  <!-- ========== Chart Area ========== -->
+  <!-- Axes -->
+  <line x1="60" y1="255" x2="420" y2="255" stroke="#444" stroke-width="1"/>
+  <line x1="60" y1="55" x2="60" y2="255" stroke="#444" stroke-width="1"/>
+
+  <!-- Y-axis label -->
+  <text x="25" y="155" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#8b8bae" transform="rotate(-90, 25, 155)">Price (SOL)</text>
+
+  <!-- X-axis label -->
+  <text x="240" y="275" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#8b8bae">Token Supply Sold</text>
+
+  <!-- Grid lines -->
+  <g opacity="0.08" stroke="#14F195">
+    <line x1="60" y1="205" x2="420" y2="205"/>
+    <line x1="60" y1="155" x2="420" y2="155"/>
+    <line x1="60" y1="105" x2="420" y2="105"/>
+    <line x1="150" y1="55" x2="150" y2="255"/>
+    <line x1="240" y1="55" x2="240" y2="255"/>
+    <line x1="330" y1="55" x2="330" y2="255"/>
+  </g>
+
+  <!-- Y-axis tick labels -->
+  <text x="52" y="258" text-anchor="end" font-family="monospace" font-size="7" fill="#666">0</text>
+  <text x="52" y="208" text-anchor="end" font-family="monospace" font-size="7" fill="#666">25%</text>
+  <text x="52" y="158" text-anchor="end" font-family="monospace" font-size="7" fill="#666">50%</text>
+  <text x="52" y="108" text-anchor="end" font-family="monospace" font-size="7" fill="#666">75%</text>
+  <text x="52" y="62" text-anchor="end" font-family="monospace" font-size="7" fill="#666">100%</text>
+
+  <!-- Area under curve -->
+  <path d="M60 255 L60 248 Q100 245 140 235 Q180 220 220 195 Q260 162 300 120 Q340 82 380 65 Q400 58 410 55 L420 55 L420 255 Z"
+        fill="url(#curveGrad)" class="area-fill" clip-path="url(#chartClip)"/>
+
+  <!-- The bonding curve itself -->
+  <path d="M60 248 Q100 245 140 235 Q180 220 220 195 Q260 162 300 120 Q340 82 380 65 Q400 58 410 55"
+        stroke="#14F195" stroke-width="2.5" fill="none" stroke-linecap="round" filter="url(#glow)" class="curve-draw"/>
+
+  <!-- Graduation threshold line -->
+  <g class="grad-line">
+    <line x1="385" y1="55" x2="385" y2="255" stroke="#E8590C" stroke-width="1" stroke-dasharray="4 3" opacity="0.7"/>
+    <text x="388" y="52" font-family="monospace" font-size="8" font-weight="600" fill="#E8590C">GRADUATE</text>
+    <text x="388" y="268" font-family="sans-serif" font-size="7" fill="#E8590C">complete = true</text>
+  </g>
+
+  <!-- Traveling dot on curve -->
+  <circle r="5" fill="#14F195" filter="url(#glow)" class="dot-travel">
+    <animate attributeName="cx" values="80;140;190;250;310;360;400;80" dur="6s" repeatCount="indefinite"/>
+    <animate attributeName="cy" values="248;235;215;180;125;75;58;248" dur="6s" repeatCount="indefinite"/>
+  </circle>
+  <!-- Pulse ring around dot -->
+  <circle r="10" fill="none" stroke="#14F195" stroke-width="1" opacity="0.3">
+    <animate attributeName="cx" values="80;140;190;250;310;360;400;80" dur="6s" repeatCount="indefinite"/>
+    <animate attributeName="cy" values="248;235;215;180;125;75;58;248" dur="6s" repeatCount="indefinite"/>
+    <animate attributeName="r" values="5;12;5" dur="1.5s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0.4;0;0.4" dur="1.5s" repeatCount="indefinite"/>
+  </circle>
+
+  <!-- ========== Right panel: Math formulas ========== -->
+  <g transform="translate(460, 50)">
+    <rect x="0" y="0" width="310" height="255" rx="10" fill="#12122a" stroke="#333" stroke-width="0.5"/>
+
+    <text x="155" y="25" text-anchor="middle" font-family="monospace" font-size="12" font-weight="700" fill="url(#solana)">Price Functions</text>
+
+    <!-- Buy function -->
+    <g transform="translate(15, 40)">
+      <rect x="0" y="0" width="280" height="50" rx="6" fill="#14F195" opacity="0.06" stroke="#14F195" stroke-width="0.5"/>
+      <text x="10" y="17" font-family="monospace" font-size="9" font-weight="600" fill="#14F195">getBuyTokenAmountFromSolAmount</text>
+      <text x="10" y="32" font-family="sans-serif" font-size="8" fill="#8b8bae">SOL in → tokens out (with fee deduction)</text>
+      <text x="10" y="44" font-family="monospace" font-size="7" fill="#666">virtualSOL × virtualToken / (virtualSOL + Δ)</text>
+    </g>
+
+    <!-- Reverse buy -->
+    <g transform="translate(15, 97)">
+      <rect x="0" y="0" width="280" height="50" rx="6" fill="#9945FF" opacity="0.06" stroke="#9945FF" stroke-width="0.5"/>
+      <text x="10" y="17" font-family="monospace" font-size="9" font-weight="600" fill="#9945FF">getBuySolAmountFromTokenAmount</text>
+      <text x="10" y="32" font-family="sans-serif" font-size="8" fill="#8b8bae">tokens wanted → SOL needed</text>
+      <text x="10" y="44" font-family="monospace" font-size="7" fill="#666">Inverse of buy quote + fee markup</text>
+    </g>
+
+    <!-- Sell function -->
+    <g transform="translate(15, 154)">
+      <rect x="0" y="0" width="280" height="50" rx="6" fill="#FF6B6B" opacity="0.06" stroke="#FF6B6B" stroke-width="0.5"/>
+      <text x="10" y="17" font-family="monospace" font-size="9" font-weight="600" fill="#FF6B6B">getSellSolAmountFromTokenAmount</text>
+      <text x="10" y="32" font-family="sans-serif" font-size="8" fill="#8b8bae">tokens in → SOL out (minus fees)</text>
+      <text x="10" y="44" font-family="monospace" font-size="7" fill="#666">virtualSOL - (virtualSOL × virtualToken / (virtualToken + Δ))</text>
+    </g>
+
+    <!-- Market cap -->
+    <g transform="translate(15, 211)">
+      <rect x="0" y="0" width="280" height="32" rx="6" fill="url(#solana)" opacity="0.06" stroke="url(#solana)" stroke-width="0.5"/>
+      <text x="10" y="15" font-family="monospace" font-size="9" font-weight="600" fill="url(#solana)">bondingCurveMarketCap</text>
+      <text x="10" y="27" font-family="monospace" font-size="7" fill="#666">mintSupply × virtualSOL / virtualToken</text>
+    </g>
+  </g>
+
+  <!-- ========== State box at bottom of chart ========== -->
+  <g transform="translate(60, 283)">
+    <text x="0" y="10" font-family="monospace" font-size="7" fill="#9945FF">virtualSolReserves</text>
+    <text x="105" y="10" font-family="monospace" font-size="7" fill="#14F195">virtualTokenReserves</text>
+    <text x="225" y="10" font-family="monospace" font-size="7" fill="#E8590C">realSolReserves</text>
+    <text x="325" y="10" font-family="monospace" font-size="7" fill="#8b8bae">← BondingCurve state</text>
+  </g>
+
+  <!-- Bottom accent -->
+  <rect x="0" y="317.5" width="800" height="2.5" rx="1" fill="url(#solana)" opacity="0.8"/>
+</svg>

@@ -1,0 +1,165 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 420" fill="none">
+  <defs>
+    <linearGradient id="termBg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#1e1e2e"/>
+      <stop offset="100%" style="stop-color:#181825"/>
+    </linearGradient>
+    <linearGradient id="solGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#9945FF"/>
+      <stop offset="100%" style="stop-color:#14F195"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Window frame -->
+  <rect width="720" height="420" rx="10" fill="url(#termBg)" stroke="#313244" stroke-width="1.5"/>
+  
+  <!-- Title bar -->
+  <rect width="720" height="36" rx="10" fill="#1e1e2e"/>
+  <rect x="0" y="26" width="720" height="10" fill="#1e1e2e"/>
+  <line x1="0" y1="36" x2="720" y2="36" stroke="#313244" stroke-width="1"/>
+  
+  <!-- Window buttons -->
+  <circle cx="20" cy="18" r="6" fill="#f38ba8"/>
+  <circle cx="40" cy="18" r="6" fill="#f9e2af"/>
+  <circle cx="60" cy="18" r="6" fill="#a6e3a1"/>
+  
+  <!-- Title text -->
+  <text x="360" y="23" font-family="'SF Mono', monospace" font-size="13" fill="#6c7086" text-anchor="middle">pump-sdk — node</text>
+
+  <!-- Terminal content -->
+  <g font-family="'SF Mono', 'Fira Code', 'Cascadia Code', 'Menlo', monospace" font-size="13">
+
+    <!-- Line 1: Comment -->
+    <text x="20" y="62" fill="#6c7086">// 1. Create a token on the bonding curve</text>
+
+    <!-- Line 2: Import -->
+    <text x="20" y="82">
+      <tspan fill="#cba6f7">import</tspan>
+      <tspan fill="#cdd6f4"> { </tspan>
+      <tspan fill="#f9e2af">PUMP_SDK</tspan>
+      <tspan fill="#cdd6f4">, </tspan>
+      <tspan fill="#f9e2af">OnlinePumpSdk</tspan>
+      <tspan fill="#cdd6f4"> } </tspan>
+      <tspan fill="#cba6f7">from</tspan>
+      <tspan fill="#a6e3a1"> "@pump-fun/pump-sdk"</tspan>
+    </text>
+
+    <!-- Line 3: blank -->
+
+    <!-- Line 4: const sdk -->
+    <text x="20" y="112">
+      <tspan fill="#cba6f7">const</tspan>
+      <tspan fill="#89b4fa"> sdk</tspan>
+      <tspan fill="#89dceb"> = </tspan>
+      <tspan fill="#cba6f7">new</tspan>
+      <tspan fill="#f9e2af"> OnlinePumpSdk</tspan>
+      <tspan fill="#cdd6f4">(connection)</tspan>
+    </text>
+
+    <!-- Line 5: const mint -->
+    <text x="20" y="132">
+      <tspan fill="#cba6f7">const</tspan>
+      <tspan fill="#89b4fa"> mint</tspan>
+      <tspan fill="#89dceb"> = </tspan>
+      <tspan fill="#cdd6f4">Keypair.</tspan>
+      <tspan fill="#f9e2af">generate</tspan>
+      <tspan fill="#cdd6f4">()</tspan>
+    </text>
+
+    <!-- Line 6: blank -->
+
+    <!-- Line 7: Comment -->
+    <text x="20" y="162" fill="#6c7086">// 2. Launch the token</text>
+
+    <!-- Line 8-11: createV2Instruction -->
+    <text x="20" y="182">
+      <tspan fill="#cba6f7">const</tspan>
+      <tspan fill="#89b4fa"> ix</tspan>
+      <tspan fill="#89dceb"> = </tspan>
+      <tspan fill="#cba6f7">await</tspan>
+      <tspan fill="#cdd6f4"> PUMP_SDK.</tspan>
+      <tspan fill="#f9e2af">createV2Instruction</tspan>
+      <tspan fill="#cdd6f4">({</tspan>
+    </text>
+    <text x="40" y="202">
+      <tspan fill="#89b4fa">  mint</tspan>
+      <tspan fill="#cdd6f4">: mint.publicKey,</tspan>
+      <tspan fill="#89b4fa"> name</tspan>
+      <tspan fill="#cdd6f4">: </tspan>
+      <tspan fill="#a6e3a1">"PUMP"</tspan>
+      <tspan fill="#cdd6f4">,</tspan>
+    </text>
+    <text x="40" y="222">
+      <tspan fill="#89b4fa">  symbol</tspan>
+      <tspan fill="#cdd6f4">: </tspan>
+      <tspan fill="#a6e3a1">"PUMP"</tspan>
+      <tspan fill="#cdd6f4">,</tspan>
+      <tspan fill="#89b4fa"> uri</tspan>
+      <tspan fill="#cdd6f4">: </tspan>
+      <tspan fill="#a6e3a1">"https://..."</tspan>
+      <tspan fill="#cdd6f4">,</tspan>
+    </text>
+    <text x="40" y="242">
+      <tspan fill="#89b4fa">  creator</tspan>
+      <tspan fill="#cdd6f4">: wallet.publicKey,</tspan>
+      <tspan fill="#89b4fa"> mayhemMode</tspan>
+      <tspan fill="#cdd6f4">: </tspan>
+      <tspan fill="#fab387">false</tspan>
+    </text>
+    <text x="20" y="262" fill="#cdd6f4">})</text>
+
+    <!-- Line: blank -->
+
+    <!-- Line: Comment -->
+    <text x="20" y="292" fill="#6c7086">// 3. Buy tokens on the bonding curve</text>
+
+    <!-- Lines: buy -->
+    <text x="20" y="312">
+      <tspan fill="#cba6f7">const</tspan>
+      <tspan fill="#89b4fa"> solAmount</tspan>
+      <tspan fill="#89dceb"> = </tspan>
+      <tspan fill="#cba6f7">new</tspan>
+      <tspan fill="#f9e2af"> BN</tspan>
+      <tspan fill="#cdd6f4">(</tspan>
+      <tspan fill="#fab387">0.5</tspan>
+      <tspan fill="#89dceb"> * </tspan>
+      <tspan fill="#fab387">1e9</tspan>
+      <tspan fill="#cdd6f4">)</tspan>
+      <tspan fill="#6c7086">  // 0.5 SOL</tspan>
+    </text>
+    <text x="20" y="332">
+      <tspan fill="#cba6f7">const</tspan>
+      <tspan fill="#89b4fa"> ixs</tspan>
+      <tspan fill="#89dceb"> = </tspan>
+      <tspan fill="#cba6f7">await</tspan>
+      <tspan fill="#cdd6f4"> PUMP_SDK.</tspan>
+      <tspan fill="#f9e2af">buyInstructions</tspan>
+      <tspan fill="#cdd6f4">({ mint, solAmount, </tspan>
+      <tspan fill="#89b4fa">slippage</tspan>
+      <tspan fill="#cdd6f4">: </tspan>
+      <tspan fill="#fab387">2</tspan>
+      <tspan fill="#cdd6f4"> })</tspan>
+    </text>
+
+    <!-- Output -->
+    <text x="20" y="362" fill="#6c7086">// 4. Submit transaction</text>
+    <text x="20" y="382">
+      <tspan fill="#cba6f7">const</tspan>
+      <tspan fill="#89b4fa"> sig</tspan>
+      <tspan fill="#89dceb"> = </tspan>
+      <tspan fill="#cba6f7">await</tspan>
+      <tspan fill="#f9e2af"> sendAndConfirmTransaction</tspan>
+      <tspan fill="#cdd6f4">(connection, tx, [wallet])</tspan>
+    </text>
+    
+    <!-- Blinking cursor -->
+    <rect x="538" y="370" width="8" height="16" fill="#14F195" opacity="0.8">
+      <animate attributeName="opacity" values="0.8;0;0.8" dur="1.2s" repeatCount="indefinite"/>
+    </rect>
+
+    <!-- Result badge -->
+    <g transform="translate(20, 396)">
+      <rect width="680" height="1" fill="url(#solGrad)" opacity="0.3"/>
+    </g>
+  </g>
+</svg>

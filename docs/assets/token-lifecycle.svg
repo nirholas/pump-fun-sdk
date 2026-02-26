@@ -1,0 +1,179 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 320" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f0f23" />
+      <stop offset="100%" style="stop-color:#1a1a3e" />
+    </linearGradient>
+    <linearGradient id="solana" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#9945FF" />
+      <stop offset="100%" style="stop-color:#14F195" />
+    </linearGradient>
+    <linearGradient id="green" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#14F195" />
+      <stop offset="100%" style="stop-color:#0be080" />
+    </linearGradient>
+    <linearGradient id="purple" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#9945FF" />
+      <stop offset="100%" style="stop-color:#b16bff" />
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="2.5" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="glow-lg">
+      <feGaussianBlur stdDeviation="5" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <style>
+    @keyframes slideRight {
+      0% { transform: translateX(-60px); opacity: 0; }
+      20% { transform: translateX(0); opacity: 1; }
+      80% { transform: translateX(0); opacity: 1; }
+      100% { transform: translateX(60px); opacity: 0; }
+    }
+    @keyframes fadeIn1 { 0%,10% { opacity: 0; } 20% { opacity: 1; } 100% { opacity: 1; } }
+    @keyframes fadeIn2 { 0%,25% { opacity: 0; } 35% { opacity: 1; } 100% { opacity: 1; } }
+    @keyframes fadeIn3 { 0%,40% { opacity: 0; } 50% { opacity: 1; } 100% { opacity: 1; } }
+    @keyframes fadeIn4 { 0%,55% { opacity: 0; } 65% { opacity: 1; } 100% { opacity: 1; } }
+    @keyframes fadeIn5 { 0%,70% { opacity: 0; } 80% { opacity: 1; } 100% { opacity: 1; } }
+    @keyframes pulse { 0%,100% { opacity: 0.6; } 50% { opacity: 1; } }
+    @keyframes arrowFlow {
+      0% { stroke-dashoffset: 24; }
+      100% { stroke-dashoffset: 0; }
+    }
+    @keyframes dotPulse { 0%,100% { r: 4; opacity: 0.8; } 50% { r: 6; opacity: 1; } }
+    .step1 { animation: fadeIn1 4s ease-out infinite; }
+    .step2 { animation: fadeIn2 4s ease-out infinite; }
+    .step3 { animation: fadeIn3 4s ease-out infinite; }
+    .step4 { animation: fadeIn4 4s ease-out infinite; }
+    .step5 { animation: fadeIn5 4s ease-out infinite; }
+    .arrow-flow { stroke-dasharray: 8 4; animation: arrowFlow 1s linear infinite; }
+    .pulse { animation: pulse 2s ease-in-out infinite; }
+    .dot-pulse { animation: dotPulse 1.5s ease-in-out infinite; }
+  </style>
+
+  <!-- Background -->
+  <rect width="800" height="320" rx="12" fill="url(#bg)"/>
+  <rect x="0" y="0" width="800" height="2.5" rx="1" fill="url(#solana)" opacity="0.8"/>
+
+  <!-- Title -->
+  <text x="400" y="38" text-anchor="middle" font-family="'SF Mono','Fira Code',monospace" font-size="18" font-weight="700" fill="url(#solana)" filter="url(#glow)">Token Lifecycle</text>
+
+  <!-- ====== STEP 1: Create ====== -->
+  <g class="step1">
+    <rect x="30" y="70" width="130" height="80" rx="10" fill="#1e1e3f" stroke="#9945FF" stroke-width="1.5"/>
+    <text x="95" y="100" text-anchor="middle" font-family="monospace" font-size="12" font-weight="700" fill="#9945FF">CREATE</text>
+    <text x="95" y="118" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#8b8bae">createV2</text>
+    <text x="95" y="132" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#8b8bae">Instruction</text>
+    <!-- step number -->
+    <circle cx="45" cy="68" r="10" fill="#9945FF" opacity="0.9"/>
+    <text x="45" y="72" text-anchor="middle" font-family="monospace" font-size="10" font-weight="700" fill="#fff">1</text>
+  </g>
+
+  <!-- Arrow 1→2 -->
+  <line x1="165" y1="110" x2="205" y2="110" stroke="#9945FF" stroke-width="1.5" class="arrow-flow" opacity="0.7"/>
+  <polygon points="205,105 215,110 205,115" fill="#9945FF" class="pulse"/>
+
+  <!-- ====== STEP 2: Bonding Curve ====== -->
+  <g class="step2">
+    <rect x="220" y="70" width="150" height="80" rx="10" fill="#1e1e3f" stroke="#14F195" stroke-width="1.5"/>
+    <text x="295" y="98" text-anchor="middle" font-family="monospace" font-size="12" font-weight="700" fill="#14F195">BONDING CURVE</text>
+    <text x="295" y="116" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#8b8bae">buy / sell</text>
+    <text x="295" y="130" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#8b8bae">price discovery</text>
+    <!-- mini bonding curve -->
+    <path d="M240 140 Q260 138 275 130 Q290 118 305 100 Q310 93 315 88" stroke="#14F195" stroke-width="1" fill="none" opacity="0.3" stroke-linecap="round"/>
+    <circle cx="220" cy="68" r="10" fill="#14F195" opacity="0.9"/>
+    <text x="220" y="72" text-anchor="middle" font-family="monospace" font-size="10" font-weight="700" fill="#0f0f23">2</text>
+  </g>
+
+  <!-- Arrow 2→3 -->
+  <line x1="375" y1="110" x2="415" y2="110" stroke="#14F195" stroke-width="1.5" class="arrow-flow" opacity="0.7"/>
+  <polygon points="415,105 425,110 415,115" fill="#14F195" class="pulse"/>
+
+  <!-- ====== STEP 3: Graduate ====== -->
+  <g class="step3">
+    <rect x="430" y="70" width="130" height="80" rx="10" fill="#1e1e3f" stroke="#E8590C" stroke-width="1.5"/>
+    <text x="495" y="100" text-anchor="middle" font-family="monospace" font-size="12" font-weight="700" fill="#E8590C">GRADUATE</text>
+    <text x="495" y="118" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#8b8bae">complete = true</text>
+    <text x="495" y="132" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#8b8bae">threshold met</text>
+    <circle cx="430" cy="68" r="10" fill="#E8590C" opacity="0.9"/>
+    <text x="430" y="72" text-anchor="middle" font-family="monospace" font-size="10" font-weight="700" fill="#fff">3</text>
+  </g>
+
+  <!-- Arrow 3→4 -->
+  <line x1="565" y1="110" x2="605" y2="110" stroke="#E8590C" stroke-width="1.5" class="arrow-flow" opacity="0.7"/>
+  <polygon points="605,105 615,110 605,115" fill="#E8590C" class="pulse"/>
+
+  <!-- ====== STEP 4: Migrate ====== -->
+  <g class="step4">
+    <rect x="620" y="70" width="150" height="80" rx="10" fill="#1e1e3f" stroke="url(#solana)" stroke-width="1.5"/>
+    <text x="695" y="98" text-anchor="middle" font-family="monospace" font-size="12" font-weight="700" fill="url(#solana)">AMM POOL</text>
+    <text x="695" y="116" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#8b8bae">migrateInstruction</text>
+    <text x="695" y="130" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#8b8bae">PumpAMM program</text>
+    <circle cx="620" cy="68" r="10" fill="url(#solana)" opacity="0.9"/>
+    <text x="620" y="72" text-anchor="middle" font-family="monospace" font-size="10" font-weight="700" fill="#fff">4</text>
+  </g>
+
+  <!-- ====== Bottom: Fee & Reward tracks ====== -->
+  <!-- Fee sharing track -->
+  <g class="step5">
+    <rect x="30" y="190" width="360" height="110" rx="10" fill="#1e1e3f" stroke="#9945FF" stroke-width="1" opacity="0.8"/>
+    <text x="50" y="215" font-family="monospace" font-size="11" font-weight="700" fill="#9945FF">Creator Fees</text>
+
+    <!-- Fee flow visualization -->
+    <rect x="50" y="230" width="70" height="30" rx="5" fill="#9945FF" opacity="0.15"/>
+    <text x="85" y="250" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#9945FF">Trading</text>
+
+    <line x1="125" y1="245" x2="155" y2="245" stroke="#9945FF" stroke-width="1" class="arrow-flow" opacity="0.6"/>
+    <polygon points="155,242 161,245 155,248" fill="#9945FF" class="pulse"/>
+
+    <rect x="165" y="230" width="70" height="30" rx="5" fill="#9945FF" opacity="0.15"/>
+    <text x="200" y="250" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#9945FF">Vault</text>
+
+    <line x1="240" y1="245" x2="270" y2="235" stroke="#9945FF" stroke-width="1" class="arrow-flow" opacity="0.6"/>
+    <line x1="240" y1="245" x2="270" y2="245" stroke="#9945FF" stroke-width="1" class="arrow-flow" opacity="0.6"/>
+    <line x1="240" y1="245" x2="270" y2="255" stroke="#9945FF" stroke-width="1" class="arrow-flow" opacity="0.6"/>
+
+    <rect x="275" y="225" width="55" height="18" rx="4" fill="#9945FF" opacity="0.1"/>
+    <text x="302" y="237" text-anchor="middle" font-family="sans-serif" font-size="8" fill="#9945FF">50% → A</text>
+    <rect x="275" y="245" width="55" height="18" rx="4" fill="#9945FF" opacity="0.1"/>
+    <text x="302" y="257" text-anchor="middle" font-family="sans-serif" font-size="8" fill="#9945FF">30% → B</text>
+    <rect x="275" y="265" width="55" height="18" rx="4" fill="#9945FF" opacity="0.1"/>
+    <text x="302" y="277" text-anchor="middle" font-family="sans-serif" font-size="8" fill="#9945FF">20% → C</text>
+
+    <text x="50" y="290" font-family="sans-serif" font-size="8" fill="#8b8bae">createFeeSharingConfig → updateFeeShares → distributeCreatorFees</text>
+  </g>
+
+  <!-- Volume rewards track -->
+  <g class="step5">
+    <rect x="410" y="190" width="360" height="110" rx="10" fill="#1e1e3f" stroke="#14F195" stroke-width="1" opacity="0.8"/>
+    <text x="430" y="215" font-family="monospace" font-size="11" font-weight="700" fill="#14F195">Volume Rewards</text>
+
+    <!-- Volume bars animation -->
+    <g transform="translate(430, 235)">
+      <rect x="0" y="30" width="16" height="20" rx="2" fill="#14F195" opacity="0.3"><animate attributeName="height" values="20;40;20" dur="2s" repeatCount="indefinite"/><animate attributeName="y" values="30;10;30" dur="2s" repeatCount="indefinite"/></rect>
+      <rect x="22" y="20" width="16" height="30" rx="2" fill="#14F195" opacity="0.4"><animate attributeName="height" values="30;15;30" dur="2s" begin="0.3s" repeatCount="indefinite"/><animate attributeName="y" values="20;35;20" dur="2s" begin="0.3s" repeatCount="indefinite"/></rect>
+      <rect x="44" y="10" width="16" height="40" rx="2" fill="#14F195" opacity="0.5"><animate attributeName="height" values="40;25;40" dur="2s" begin="0.6s" repeatCount="indefinite"/><animate attributeName="y" values="10;25;10" dur="2s" begin="0.6s" repeatCount="indefinite"/></rect>
+      <rect x="66" y="5" width="16" height="45" rx="2" fill="#14F195" opacity="0.6"><animate attributeName="height" values="45;30;45" dur="2s" begin="0.9s" repeatCount="indefinite"/><animate attributeName="y" values="5;20;5" dur="2s" begin="0.9s" repeatCount="indefinite"/></rect>
+      <rect x="88" y="0" width="16" height="50" rx="2" fill="#14F195" opacity="0.7"><animate attributeName="height" values="50;35;50" dur="2s" begin="1.2s" repeatCount="indefinite"/><animate attributeName="y" values="0;15;0" dur="2s" begin="1.2s" repeatCount="indefinite"/></rect>
+    </g>
+
+    <!-- Reward arrow -->
+    <line x1="555" y1="260" x2="585" y2="260" stroke="#14F195" stroke-width="1" class="arrow-flow" opacity="0.6"/>
+    <polygon points="585,257 591,260 585,263" fill="#14F195" class="pulse"/>
+
+    <g transform="translate(600, 240)">
+      <rect x="0" y="0" width="80" height="40" rx="6" fill="#14F195" opacity="0.12"/>
+      <text x="40" y="18" text-anchor="middle" font-family="monospace" font-size="10" font-weight="700" fill="#14F195">CLAIM</text>
+      <text x="40" y="32" text-anchor="middle" font-family="sans-serif" font-size="8" fill="#8b8bae">Token rewards</text>
+      <circle cx="72" cy="8" r="4" fill="#14F195" class="dot-pulse"/>
+    </g>
+
+    <text x="430" y="290" font-family="sans-serif" font-size="8" fill="#8b8bae">initVolumeAccumulator → trade → claimTokenIncentives</text>
+  </g>
+
+  <!-- Bottom accent -->
+  <rect x="0" y="317.5" width="800" height="2.5" rx="1" fill="url(#solana)" opacity="0.8"/>
+</svg>

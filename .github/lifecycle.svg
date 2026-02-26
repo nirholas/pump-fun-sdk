@@ -1,0 +1,104 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 280" fill="none">
+  <defs>
+    <linearGradient id="lcBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f0f23"/>
+      <stop offset="100%" style="stop-color:#1a1a3e"/>
+    </linearGradient>
+    <linearGradient id="lcAccent" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#9945FF"/>
+      <stop offset="100%" style="stop-color:#14F195"/>
+    </linearGradient>
+    <linearGradient id="curveGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#9945FF"/>
+      <stop offset="50%" style="stop-color:#14F195"/>
+      <stop offset="100%" style="stop-color:#14F195"/>
+    </linearGradient>
+    <linearGradient id="ammGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#14F195"/>
+      <stop offset="100%" style="stop-color:#00D1FF"/>
+    </linearGradient>
+    <filter id="lcGlow">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="softGlow">
+      <feGaussianBlur stdDeviation="2"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="720" height="280" rx="10" fill="url(#lcBg)" stroke="#313244" stroke-width="1"/>
+
+  <!-- Grid -->
+  <g opacity="0.05" stroke="#cdd6f4">
+    <line x1="80" y1="30" x2="80" y2="240" stroke-width="0.5"/>
+    <line x1="190" y1="30" x2="190" y2="240" stroke-width="0.5"/>
+    <line x1="300" y1="30" x2="300" y2="240" stroke-width="0.5"/>
+    <line x1="410" y1="30" x2="410" y2="240" stroke-width="0.5"/>
+    <line x1="520" y1="30" x2="520" y2="240" stroke-width="0.5"/>
+    <line x1="630" y1="30" x2="630" y2="240" stroke-width="0.5"/>
+    <line x1="80" y1="70" x2="680" y2="70" stroke-width="0.5"/>
+    <line x1="80" y1="120" x2="680" y2="120" stroke-width="0.5"/>
+    <line x1="80" y1="170" x2="680" y2="170" stroke-width="0.5"/>
+    <line x1="80" y1="220" x2="680" y2="220" stroke-width="0.5"/>
+  </g>
+
+  <!-- Phase 1: Bonding Curve box -->
+  <rect x="40" y="38" width="200" height="28" rx="6" fill="#9945FF" opacity="0.12" stroke="#9945FF" stroke-width="0.5" stroke-opacity="0.3"/>
+  <text x="140" y="57" font-family="'SF Mono', monospace" font-size="12" fill="#9945FF" text-anchor="middle" font-weight="600">BONDING CURVE</text>
+
+  <!-- Phase 2: Migration arrow -->
+  <text x="360" y="57" font-family="'SF Mono', monospace" font-size="11" fill="#6c7086" text-anchor="middle">── graduation ──►</text>
+
+  <!-- Phase 3: AMM box -->
+  <rect x="480" y="38" width="200" height="28" rx="6" fill="#14F195" opacity="0.12" stroke="#14F195" stroke-width="0.5" stroke-opacity="0.3"/>
+  <text x="580" y="57" font-family="'SF Mono', monospace" font-size="12" fill="#14F195" text-anchor="middle" font-weight="600">AMM POOL</text>
+
+  <!-- Bonding curve (exponential rise) -->
+  <path d="M 80 220 Q 120 218 160 210 Q 200 195 240 170 Q 280 135 320 90 Q 340 70 355 60"
+        stroke="url(#curveGrad)" stroke-width="3" fill="none" stroke-linecap="round" filter="url(#lcGlow)"/>
+
+  <!-- Glow under curve -->
+  <path d="M 80 220 Q 120 218 160 210 Q 200 195 240 170 Q 280 135 320 90 Q 340 70 355 60 L 355 220 Z"
+        fill="url(#curveGrad)" opacity="0.04"/>
+
+  <!-- Migration dashed line -->
+  <line x1="355" y1="60" x2="410" y2="130" stroke="#6c7086" stroke-width="1.5" stroke-dasharray="6 4" opacity="0.5"/>
+
+  <!-- AMM pool horizontal band -->
+  <rect x="410" y="115" width="260" height="30" rx="4" fill="url(#ammGrad)" opacity="0.08"/>
+  <line x1="410" y1="130" x2="670" y2="130" stroke="url(#ammGrad)" stroke-width="2.5" stroke-linecap="round" filter="url(#lcGlow)"/>
+
+  <!-- Trade dots on bonding curve -->
+  <circle cx="120" cy="216" r="4" fill="#9945FF" opacity="0.7"/>
+  <circle cx="200" cy="195" r="4" fill="#b16dff" opacity="0.7"/>
+  <circle cx="280" cy="135" r="5" fill="#14F195" opacity="0.8"/>
+  <circle cx="320" cy="90" r="4" fill="#14F195" opacity="0.7"/>
+
+  <!-- Graduation marker -->
+  <circle cx="355" cy="60" r="7" fill="none" stroke="#14F195" stroke-width="2" opacity="0.9"/>
+  <circle cx="355" cy="60" r="3" fill="#14F195" opacity="0.9"/>
+
+  <!-- Trade dots on AMM -->
+  <circle cx="450" cy="130" r="4" fill="#14F195" opacity="0.6"/>
+  <circle cx="530" cy="130" r="4" fill="#00D1FF" opacity="0.6"/>
+  <circle cx="610" cy="130" r="4" fill="#00D1FF" opacity="0.6"/>
+
+  <!-- Labels -->
+  <text x="80" y="250" font-family="'SF Mono', monospace" font-size="10" fill="#6c7086">create</text>
+  <text x="170" y="250" font-family="'SF Mono', monospace" font-size="10" fill="#6c7086">buy/sell</text>
+  <text x="310" y="250" font-family="'SF Mono', monospace" font-size="10" fill="#6c7086">migrate</text>
+  <text x="500" y="250" font-family="'SF Mono', monospace" font-size="10" fill="#6c7086">AMM trading</text>
+  <text x="610" y="250" font-family="'SF Mono', monospace" font-size="10" fill="#6c7086">LP fees</text>
+
+  <!-- Y axis labels -->
+  <text x="60" y="224" font-family="'SF Mono', monospace" font-size="9" fill="#6c7086" text-anchor="end">low</text>
+  <text x="60" y="74" font-family="'SF Mono', monospace" font-size="9" fill="#6c7086" text-anchor="end">high</text>
+  <text x="25" y="150" font-family="'SF Mono', monospace" font-size="9" fill="#6c7086" text-anchor="middle" transform="rotate(-90, 25, 150)">price</text>
+
+  <!-- Bottom accent -->
+  <rect x="0" y="277" width="720" height="3" rx="1.5" fill="url(#lcAccent)" opacity="0.6"/>
+</svg>

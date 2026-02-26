@@ -1,0 +1,76 @@
+{
+  "name": "@pump-fun/x402",
+  "version": "0.1.0",
+  "description": "x402 Payment Protocol for Solana — HTTP 402 paywalled APIs with USDC payments",
+  "type": "module",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./client": {
+      "types": "./dist/client.d.ts",
+      "import": "./dist/client.js"
+    },
+    "./server": {
+      "types": "./dist/server.d.ts",
+      "import": "./dist/server.js"
+    },
+    "./facilitator": {
+      "types": "./dist/facilitator.d.ts",
+      "import": "./dist/facilitator.js"
+    },
+    "./types": {
+      "types": "./dist/types.d.ts",
+      "import": "./dist/types.js"
+    }
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist",
+    "test": "node --experimental-vm-modules node_modules/.bin/jest",
+    "lint": "eslint src/"
+  },
+  "dependencies": {
+    "@solana/web3.js": "^1.98.2",
+    "@solana/spl-token": "^0.4.13",
+    "bs58": "^6.0.0",
+    "tweetnacl": "^1.0.3"
+  },
+  "peerDependencies": {
+    "express": "^4.18.0 || ^5.0.0"
+  },
+  "peerDependenciesMeta": {
+    "express": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.5.0"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "x402",
+    "http-402",
+    "payment-required",
+    "solana",
+    "usdc",
+    "paywall",
+    "micropayments",
+    "ai-payments",
+    "agent-payments"
+  ],
+  "license": "MIT"
+}

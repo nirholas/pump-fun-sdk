@@ -1,0 +1,58 @@
+{
+    "schema_version": "v1",
+    "name": "pump-fun-sdk",
+    "display_name": "Pump SDK Agent",
+    "description": "AI agent capabilities for the Pump SDK — a Solana token launchpad SDK with bonding curves, AMM migration, fee sharing, token incentives, and vanity address generation.",
+    "repository": "https://github.com/nirholas/pump-fun-sdk",
+    "author": "nirholas",
+    "license": "MIT",
+    "capabilities": {
+        "code_generation": true,
+        "code_review": true,
+        "debugging": true,
+        "testing": true,
+        "documentation": true,
+        "refactoring": true
+    },
+    "languages": ["typescript", "rust", "shell"],
+    "frameworks": ["anchor", "solana-sdk", "solana-web3.js", "rayon", "jest"],
+    "agent_files": {
+        "copilot": ".github/copilot-instructions.md",
+        "claude": "CLAUDE.md",
+        "gemini": "GEMINI.md",
+        "agents": "AGENTS.md",
+        "copilot_root": "COPILOT.md"
+    },
+    "context_files": {
+        "llms_txt": "llms.txt",
+        "llms_full": "llms-full.txt",
+        "skills": ".well-known/skills.json",
+        "ai_plugin": ".well-known/ai-plugin.json"
+    },
+    "skills_directory": ".github/skills/",
+    "programs": {
+        "pump": {
+            "id": "6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P",
+            "description": "Bonding curve token creation and trading"
+        },
+        "pump_amm": {
+            "id": "pAMMBay6oceH9fJKBRHGP5D4bD4sWpmSwMn52FMfXEA",
+            "description": "Graduated token AMM pools"
+        },
+        "pump_fees": {
+            "id": "FeesoLMvuSJeJdhTpaLMjdiEE9NtNzx5bVHUvgWe7XjB",
+            "description": "Creator fee sharing and distribution"
+        }
+    },
+    "security": {
+        "official_libraries_only": true,
+        "approved_crypto_deps": [
+            "solana-sdk (Solana Labs)",
+            "@solana/web3.js (Solana Labs)",
+            "solana-keygen CLI (Solana Labs)"
+        ],
+        "memory_zeroization": true,
+        "offline_capable": true,
+        "no_network_for_keys": true
+    }
+}
