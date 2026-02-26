@@ -97,3 +97,4 @@ export class SolanaWalletMCPServer {
 export function createServer(): SolanaWalletMCPServer {
   return new SolanaWalletMCPServer();
 }
+
