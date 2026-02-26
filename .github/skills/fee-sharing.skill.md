@@ -216,3 +216,4 @@ const balance = await onlineSdk.getCreatorVaultBalanceBothPrograms(creator);
 - `getMinimumDistributableFee` requires a simulation signer — any valid PublicKey works (doesn't actually sign)
 - Basis points use integer arithmetic — you cannot have fractional bps (33.33% must be 3333 bps, with 1 bps allocated elsewhere)
 - `feeSharingConfigPda` is per-mint — each token has its own sharing config
+
