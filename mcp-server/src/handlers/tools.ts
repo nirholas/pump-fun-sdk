@@ -188,3 +188,4 @@ export function registerToolHandlers(server: Server, state: ServerState): void {
     }
   });
 }
+
