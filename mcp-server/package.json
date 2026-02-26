@@ -1,0 +1,31 @@
+{
+  "name": "solana-wallet-toolkit-mcp",
+  "version": "1.0.0",
+  "description": "MCP server for Solana Wallet Toolkit — vanity addresses, key management, signing",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "solana-wallet-mcp": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "node dist/index.js",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "@solana/web3.js": "^1.98.2",
+    "bs58": "^6.0.0",
+    "tweetnacl": "^1.0.3",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.5.0"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT"
+}
