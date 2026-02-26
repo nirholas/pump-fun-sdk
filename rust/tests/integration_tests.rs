@@ -396,3 +396,4 @@ fn test_solana_sdk_compatibility() {
         assert!(sig.verify(loaded.pubkey().as_ref(), msg));
     }
 }
+
