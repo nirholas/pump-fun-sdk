@@ -5,51 +5,51 @@ import { motion } from 'framer-motion';
 
 const features = [
   {
-    icon: '🔑',
-    title: 'Vanity Address Generation',
-    description: 'Generate Solana addresses with custom prefixes and suffixes. Your OG name on the blockchain.',
+    icon: '�',
+    title: 'Token Creation',
+    description: 'Create tokens on the Pump bonding curve with customizable parameters using createV2Instruction.',
   },
   {
-    icon: '⚡',
-    title: 'Instant Wallet Creation',
-    description: 'Generate secure Ed25519 keypairs instantly using official @solana/web3.js.',
+    icon: '💰',
+    title: 'Buy & Sell Tokens',
+    description: 'Trade tokens on the bonding curve with slippage protection and exact-output swaps.',
   },
   {
-    icon: '✍️',
-    title: 'Message Signing',
-    description: 'Sign and verify messages with Ed25519 signatures. Prove ownership of any address.',
-  },
-  {
-    icon: '🔍',
-    title: 'Address Validation',
-    description: 'Validate any Solana address format. Check Base58 encoding and key structure.',
-  },
-  {
-    icon: '🔐',
-    title: 'Keypair Verification',
-    description: 'Full 7-point keypair validation. Verify key-address pairs match correctly.',
+    icon: '🌉',
+    title: 'AMM Migration',
+    description: 'Seamless migration from bonding curve to PumpAMM when tokens graduate.',
   },
   {
     icon: '📊',
-    title: 'Difficulty Estimation',
-    description: 'Benchmark your device and estimate vanity address mining time before you start.',
+    title: 'Bonding Curve Math',
+    description: 'Precise virtual reserve pricing with BN arithmetic. Never use JavaScript number for financial math.',
   },
   {
-    icon: '🔄',
-    title: 'Wallet Restore',
-    description: 'Restore wallets from JSON arrays or Base58 secret keys. Solana CLI compatible.',
+    icon: '💸',
+    title: 'Fee Sharing',
+    description: 'Creator fee sharing with configurable BPS shares. Claim and manage fee distributions.',
   },
   {
-    icon: '🛡️',
-    title: '100% Client-Side',
-    description: 'All cryptography runs in your browser. No server calls. Fully air-gappable.',
+    icon: '🏆',
+    title: 'Token Incentives',
+    description: 'Volume-based token rewards for creators and traders on the Pump protocol.',
+  },
+  {
+    icon: '🔑',
+    title: 'Vanity Addresses',
+    description: 'Generate custom Solana addresses with prefixes and suffixes using Rust, TypeScript, or Shell.',
+  },
+  {
+    icon: '🤖',
+    title: 'MCP Server',
+    description: 'Model Context Protocol server for AI agent integration with all SDK tools.',
   },
 ];
 
 const stats = [
-  { label: 'Implementations', value: '3', detail: 'Rust · TypeScript · Shell' },
-  { label: 'Libraries', value: '100%', detail: 'Official Solana Labs' },
-  { label: 'Network Calls', value: '0', detail: 'Fully offline capable' },
+  { label: 'Programs', value: '3', detail: 'Pump · PumpAMM · PumpFees' },
+  { label: 'Pattern', value: 'Offline', detail: 'Instruction builders' },
+  { label: 'Math', value: 'BN.js', detail: 'No floating point' },
   { label: 'License', value: 'MIT', detail: 'Open source' },
 ];
 
@@ -79,19 +79,19 @@ export default function HomePage() {
             {/* Badge */}
             <div className="inline-flex items-center gap-2 px-3 py-1 mb-6 border border-border rounded-full text-xs text-muted-foreground">
               <span className="w-1.5 h-1.5 rounded-full bg-solana-green animate-pulse" />
-              100% Official Solana Labs Libraries
+              Community Pump Protocol SDK for Solana
             </div>
 
             <h1 className="text-4xl sm:text-6xl lg:text-7xl font-bold tracking-tight mb-6">
-              <span className="text-gradient">Solana Wallet</span>
+              <span className="text-gradient">Pump Fun</span>
               <br />
-              <span className="text-gradient-solana">Toolkit</span>
+              <span className="text-gradient-solana">SDK</span>
             </h1>
 
             <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-8 leading-relaxed">
-              Secure, auditable toolkit for Solana wallet generation and vanity
-              addresses. Generate custom wallet addresses, sign messages, and
-              manage keys — all client-side.
+              A community TypeScript SDK for the Pump protocol on Solana.
+              Create, buy, sell, and migrate tokens with bonding curve pricing,
+              AMM pools, fee sharing, and token incentives.
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
@@ -102,7 +102,7 @@ export default function HomePage() {
                 Launch Tools →
               </Link>
               <a
-                href="https://github.com/nirholas/solana-wallet-toolkit"
+                href="https://github.com/nirholas/pump-fun-sdk"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="px-6 py-3 border border-border text-white font-semibold text-sm rounded hover:bg-dark-700 transition-all"
@@ -128,17 +128,16 @@ export default function HomePage() {
               </div>
               <div className="p-4 font-mono text-sm leading-relaxed text-left">
                 <div className="text-muted-foreground">
-                  <span className="text-solana-green">$</span> solana-vanity --prefix Sol --suffix 99
+                  <span className="text-solana-green">$</span> npm install @pump-fun/pump-sdk
                 </div>
-                <div className="mt-2 text-muted">Searching with 8 threads...</div>
-                <div className="text-muted">Attempts: 2,847,391 | Rate: 94,213/sec</div>
-                <div className="mt-2 text-solana-green">✓ Found match!</div>
+                <div className="mt-2 text-muted">+ @pump-fun/pump-sdk@1.0.0</div>
+                <div className="text-muted">added 42 packages in 3.2s</div>
+                <div className="mt-2 text-solana-green">✓ Ready to use!</div>
                 <div className="text-white mt-1">
-                  Address: <span className="text-solana">Sol</span>
-                  <span className="text-muted-foreground">k7Df...mRx</span>
-                  <span className="text-solana">99</span>
+                  import {'{'} <span className="text-solana">PUMP_SDK</span> {'}'} from{' '}
+                  <span className="text-solana-green">'@pump-fun/pump-sdk'</span>
                 </div>
-                <div className="text-muted mt-1">Saved to: Sol...99.json (0600)</div>
+                <div className="text-muted mt-1">// Build instructions offline, sign & send</div>
               </div>
             </div>
           </motion.div>
@@ -175,11 +174,11 @@ export default function HomePage() {
           className="text-center mb-12"
         >
           <h2 className="text-3xl sm:text-4xl font-bold text-gradient mb-4">
-            Every Tool You Need
+            Everything You Need
           </h2>
           <p className="text-muted-foreground max-w-xl mx-auto">
-            Complete Solana wallet toolkit running entirely in your browser.
-            No servers. No tracking. No compromise.
+            Complete SDK for the Pump protocol covering token lifecycle,
+            bonding curves, AMM pools, fees, and more.
           </p>
         </motion.div>
 
@@ -223,8 +222,8 @@ export default function HomePage() {
               Security First
             </h2>
             <p className="text-muted-foreground max-w-xl mx-auto">
-              Only official Solana Labs libraries touch your keys. The code is
-              auditable, open-source, and designed for air-gapped use.
+              Built on official Solana Labs libraries. Offline-first instruction
+              builders that never touch your private keys.
             </p>
           </motion.div>
 
@@ -330,11 +329,11 @@ export default function HomePage() {
           viewport={{ once: true }}
         >
           <h2 className="text-3xl sm:text-4xl font-bold text-gradient mb-4">
-            Ready to Generate?
+            Ready to Build?
           </h2>
           <p className="text-muted-foreground mb-8 max-w-md mx-auto">
-            All tools run entirely in your browser. No sign-up, no tracking, no
-            server-side processing.
+            Install the SDK and start building on the Pump protocol.
+            Offline-first, type-safe, and fully open source.
           </p>
           <Link
             href="/tools"
@@ -347,3 +346,4 @@ export default function HomePage() {
     </div>
   );
 }
+
