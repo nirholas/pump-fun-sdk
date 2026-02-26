@@ -179,3 +179,4 @@ interface BondingCurve {
 - Verify fee calculations match the on-chain Rust implementation (`pump-fees-math::calculate_fee_tier()`)
 - Test tiered fee transitions at boundary market caps
 - Test both legacy (flat fees from Global) and new (tiered from FeeConfig) paths
+
