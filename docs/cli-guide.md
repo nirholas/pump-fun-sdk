@@ -468,3 +468,4 @@ chmod 600 <file>.json
 ---
 
 *This documentation is part of the Solana Vanity Address Toolkit. Always prioritize security when handling cryptocurrency private keys.*
+
