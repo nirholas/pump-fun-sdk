@@ -93,3 +93,4 @@ This governance model may evolve as the project grows. Significant changes to go
 ---
 
 *Inspired by governance models from Node.js, Rust, and other successful open-source projects.*
+
