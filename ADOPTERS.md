@@ -50,3 +50,4 @@ Please include:
 - **Link** — website, GitHub repo, or relevant URL
 
 We accept all legitimate use cases. Open-source and commercial projects welcome.
+
