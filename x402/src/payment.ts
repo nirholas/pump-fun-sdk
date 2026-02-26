@@ -199,3 +199,4 @@ export function generateNonce(): string {
   crypto.getRandomValues(bytes);
   return bs58.encode(bytes);
 }
+
