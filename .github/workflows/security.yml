@@ -116,3 +116,4 @@ jobs:
           if [ -f tools/check-file-permissions.sh ]; then
             bash tools/check-file-permissions.sh
           fi
+
