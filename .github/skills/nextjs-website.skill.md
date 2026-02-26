@@ -220,3 +220,4 @@ layout.tsx (root)
 - Automatic deploys from `main` branch
 - No server-side secrets needed (client-side only)
 - Static optimization for marketing pages, client rendering for tools
+
