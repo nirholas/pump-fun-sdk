@@ -193,3 +193,4 @@ export function BatchGenerator() {
     </div>
   );
 }
+
