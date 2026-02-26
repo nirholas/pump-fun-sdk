@@ -2,6 +2,10 @@
 
 Set up and manage creator fee distribution among multiple shareholders.
 
+<div align="center">
+  <img src="assets/fee-sharing.svg" alt="Fee sharing flow — trades to creator vault to shareholders" width="720">
+</div>
+
 ## Overview
 
 Fee sharing allows token creators to split their accumulated trading fees among up to 10 shareholders. This is managed through the **PumpFees** program and works for both bonding curve tokens and graduated AMM tokens.

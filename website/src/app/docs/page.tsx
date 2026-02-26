@@ -7,7 +7,7 @@ export default function DocsPage() {
         Documentation
       </h1>
       <p className="text-sm text-muted-foreground mb-8">
-        Everything you need to get started with the Solana Wallet Toolkit.
+        Everything you need to get started with the Pump Fun SDK.
       </p>
 
       {/* Quick Start */}
@@ -35,8 +35,8 @@ export default function DocsPage() {
               Rust CLI (Fastest)
             </h3>
             <pre className="mt-2 p-3 bg-dark-900 border border-border rounded font-mono text-xs text-muted-foreground overflow-x-auto">
-{`git clone https://github.com/nirholas/solana-wallet-toolkit.git
-cd solana-wallet-toolkit/rust
+{`git clone https://github.com/nirholas/pump-fun-sdk.git
+cd pump-fun-sdk/rust
 cargo build --release
 ./target/release/solana-vanity --prefix Sol`}
             </pre>
@@ -47,7 +47,7 @@ cargo build --release
               TypeScript / Node.js
             </h3>
             <pre className="mt-2 p-3 bg-dark-900 border border-border rounded font-mono text-xs text-muted-foreground overflow-x-auto">
-{`cd solana-wallet-toolkit/typescript
+{`cd pump-fun-sdk/typescript
 npm install && npm run build
 node dist/index.js --prefix ABC`}
             </pre>
@@ -59,7 +59,7 @@ node dist/index.js --prefix ABC`}
             </h3>
             <pre className="mt-2 p-3 bg-dark-900 border border-border rounded font-mono text-xs text-muted-foreground overflow-x-auto">
 {`# Requires Solana CLI tools installed
-cd solana-wallet-toolkit/scripts
+cd pump-fun-sdk/scripts
 chmod +x *.sh
 ./generate-vanity.sh Sol`}
             </pre>

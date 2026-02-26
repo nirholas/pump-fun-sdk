@@ -51,6 +51,10 @@ The SDK interacts with three on-chain programs:
 
 ### Token Lifecycle
 
+<div align="center">
+  <img src="assets/token-lifecycle.svg" alt="Token lifecycle — bonding curve to AMM graduation" width="720">
+</div>
+
 ```
 ┌─────────────────────┐      complete = true      ┌─────────────────────┐
 │   Bonding Curve      │ ──────────────────────►  │    AMM Pool          │
@@ -84,6 +88,10 @@ All Program Derived Addresses are computed deterministically in `pda.ts`. Key PD
 | `AMM_GLOBAL_PDA` | Constant | AMM global configuration |
 
 ### Fee System
+
+<div align="center">
+  <img src="assets/fee-sharing.svg" alt="Fee sharing flow — trades to shareholders" width="720">
+</div>
 
 Fees are calculated based on market cap tiers:
 

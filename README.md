@@ -275,6 +275,10 @@ console.log("Created & bought:", sig);
 
 ## 💻 Usage
 
+<div align="center">
+  <img src="docs/assets/buy-sell-flow.svg" alt="Buy and sell transaction flow" width="720">
+</div>
+
 ### Create a Token
 
 ```typescript
@@ -446,6 +450,10 @@ const instructions = await sdk.claimTokenIncentivesBothPrograms(
 ---
 
 ## 🏗️ Architecture
+
+<div align="center">
+  <img src="docs/assets/bonding-curve.svg" alt="Bonding curve price mechanics" width="720">
+</div>
 
 The SDK is split into two layers:
 
