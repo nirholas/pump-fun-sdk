@@ -10,3 +10,4 @@ export function ServiceWorkerRegistrar() {
   }, []);
   return null;
 }
+
