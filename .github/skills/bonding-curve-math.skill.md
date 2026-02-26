@@ -95,3 +95,4 @@ $$\text{ceilDiv}(a, b) = \frac{a + b - 1}{b}$$
 - Test edge cases: zero amount, zero reserves, null bonding curve, maximum token purchase
 - Verify fee calculations match the on-chain Rust implementation (`pump-fees-math::calculate_fee_tier()`)
 - Test tiered fee transitions at boundary market caps
+
