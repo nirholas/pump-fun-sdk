@@ -120,3 +120,4 @@ export function getFeeRecipient(
   const feeRecipients = [global.feeRecipient, ...global.feeRecipients];
   return feeRecipients[Math.floor(Math.random() * feeRecipients.length)];
 }
+
