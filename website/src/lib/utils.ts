@@ -28,3 +28,4 @@ export function formatDuration(seconds: number): string {
   if (seconds < 86400) return `${(seconds / 3600).toFixed(1)} hours`;
   return `${(seconds / 86400).toFixed(1)} days`;
 }
+
