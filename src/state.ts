@@ -105,3 +105,4 @@ export interface MinimumDistributableFeeEvent {
   distributableFees: BN;
   canDistribute: boolean;
 }
+
