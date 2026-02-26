@@ -244,3 +244,4 @@ This is the zombie terminal problem. See [auto-kill-terminal](https://github.com
 1. Search [existing issues](https://github.com/nirholas/pump-fun-sdk/issues)
 2. Check [Discussions](https://github.com/nirholas/pump-fun-sdk/discussions)
 3. Open a [new issue](https://github.com/nirholas/pump-fun-sdk/issues/new?template=bug_report.md) with your error message, environment, and reproduction steps
+
