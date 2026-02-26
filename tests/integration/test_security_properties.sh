@@ -301,3 +301,4 @@ else
     echo -e "${RED}$FAILED security test(s) failed${NC}"
     exit 1
 fi
+
