@@ -55,6 +55,6 @@ export function registerResourceHandlers(server: Server, state: ServerState): vo
     const { uri } = request.params;
 
     const { handleReadResource } = await import('../resources/index.js');
-    return handleReadResource(uri, state);
+    return handleReadResource(uri, state) as any;
   });
 }

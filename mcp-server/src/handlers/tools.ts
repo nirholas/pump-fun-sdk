@@ -165,7 +165,7 @@ export function registerToolHandlers(server: Server, state: ServerState): void {
     };
   });
 
-  // Handle tool calls - Agent 2 will implement the actual logic
+  // Handle tool calls
   server.setRequestHandler(CallToolRequestSchema, async (request, _extra) => {
     const { name, arguments: args } = request.params;
 
@@ -174,7 +174,7 @@ export function registerToolHandlers(server: Server, state: ServerState): void {
 
     try {
       const result = await handleToolCall(name, args || {}, state);
-      return result;
+      return result as any;
     } catch (error) {
       return {
         content: [
@@ -184,7 +184,7 @@ export function registerToolHandlers(server: Server, state: ServerState): void {
           },
         ],
         isError: true,
-      };
+      } as any;
     }
   });
 }

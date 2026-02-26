@@ -157,7 +157,7 @@ export function registerToolHandlers(server, state) {
             })),
         };
     });
-    // Handle tool calls - Agent 2 will implement the actual logic
+    // Handle tool calls
     server.setRequestHandler(CallToolRequestSchema, async (request, _extra) => {
         const { name, arguments: args } = request.params;
         // Import tool implementations dynamically
