@@ -171,3 +171,4 @@ Sequential 10-step test suite:
 - GPG encryption requires `gpg` in PATH — check availability before offering `--encrypt`
 - Job control (`wait`, background processes) behaves differently in subshells
 - `umask 077` affects all files created in the session — set it at the start of generation scripts
+
