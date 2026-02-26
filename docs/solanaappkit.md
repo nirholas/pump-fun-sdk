@@ -10633,3 +10633,4 @@ After setting up both Cursor and MCP:
 2. Test the AI-powered documentation queries in your development workflow
 3. Start building your Solana application with enhanced AI assistance
 
+
