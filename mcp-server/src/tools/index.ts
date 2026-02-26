@@ -10,6 +10,9 @@ import bs58 from 'bs58';
 import nacl from 'tweetnacl';
 import { z } from 'zod';
 import { ServerState, ToolResult } from '../types/index.js';
+
+// Use ToolResult as the call result type
+type CallToolResult = ToolResult;
 import { 
   PrefixSchema, 
   SuffixSchema, 
