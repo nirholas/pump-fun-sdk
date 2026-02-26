@@ -186,3 +186,4 @@ Typed errors via `VanityError` class:
 - Test both the library API and CLI arg parser
 - Test file output format matches Solana CLI expectations
 - Test Base58 validation edge cases
+
