@@ -274,3 +274,4 @@ cargo run --release -- -p A -o /tmp/test.json     # Real generation
 - Not checking `is_valid_base58_char()` before searching wastes compute time
 - Using `Mutex` instead of atomics for hot-path counters creates contention
 - Case-insensitive matching changes effective alphabet from 58 to ~34 unique characters
+
