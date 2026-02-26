@@ -404,3 +404,4 @@ mod tests {
         assert!(MatchTarget::suffix("", false).is_err());
     }
 }
+
