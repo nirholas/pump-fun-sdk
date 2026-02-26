@@ -283,3 +283,4 @@ export function createFacilitator(
 ): X402Facilitator {
   return new X402Facilitator(options);
 }
+
