@@ -104,3 +104,4 @@ Bonding curve accounts may need to be extended to `BONDING_CURVE_NEW_SIZE = 151`
 - Token-2022 ATAs use `getAssociatedTokenAddressSync` with the Token-2022 program ID, not the default SPL Token program
 - Event authority PDAs use `"__event_authority"` (double underscore prefix) — this is an Anchor convention
 - `getMayhemStatePda` uses the Mayhem program ID, not the Pump program ID
+
