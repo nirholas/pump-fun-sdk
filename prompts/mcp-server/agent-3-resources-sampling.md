@@ -571,3 +571,4 @@ echo '{"jsonrpc":"2.0","id":3,"method":"resources/read","params":{"uri":"solana:
 - Verify private keys are never exposed
 - Test resource listing with multiple keypairs
 - Test invalid URI handling
+
