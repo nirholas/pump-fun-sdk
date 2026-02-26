@@ -250,3 +250,4 @@ Key dependencies:
 - Semantic release requires specific commit message format — squash commits lose conventions
 - The `devnet` branch publishes prerelease versions — consumers must opt in with `@next` tag
 - Website and SDK have separate `package.json` files — dependencies are not shared
+
