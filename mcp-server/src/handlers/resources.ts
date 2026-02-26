@@ -58,3 +58,4 @@ export function registerResourceHandlers(server: Server, state: ServerState): vo
     return handleReadResource(uri, state) as any;
   });
 }
+
