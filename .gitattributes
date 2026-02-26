@@ -30,6 +30,15 @@
 # SVG
 *.svg text eol=lf
 
+# Rust
+*.rs text eol=lf
+*.toml text eol=lf
+
+# Lock files — do not diff
+package-lock.json binary
+yarn.lock binary
+Cargo.lock binary
+
 # Binary files
 *.png binary
 *.jpg binary
@@ -37,3 +46,7 @@
 *.ico binary
 *.woff binary
 *.woff2 binary
+
+# Keypair files should never be committed
+*.keypair binary
+
