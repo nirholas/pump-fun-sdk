@@ -82,3 +82,4 @@ export function validateSuffix(suffix: string): { valid: boolean; error?: string
 
 // Export the character set for use in other modules
 export { BASE58_CHARS };
+
