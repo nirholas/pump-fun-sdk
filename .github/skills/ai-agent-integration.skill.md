@@ -62,6 +62,7 @@ The Pump SDK has first-class AI agent support, designed so that coding assistant
 | [.github/skills/build-release.skill.md](.github/skills/build-release.skill.md) | Build tooling & releases |
 | [.github/skills/nextjs-website.skill.md](.github/skills/nextjs-website.skill.md) | Documentation website |
 | [.github/skills/ai-agent-integration.skill.md](.github/skills/ai-agent-integration.skill.md) | This file |
+| [.github/skills/openclaw.skill.md](.github/skills/openclaw.skill.md) | OpenClaw skill packaging & discovery |
 
 ## Architecture
 

@@ -110,6 +110,13 @@
             "description": "Defense-in-depth security across Rust, TypeScript, and Bash: key handling, memory zeroization, secure file I/O, input validation, privilege management, and dependency auditing.",
             "path": ".github/skills/security-practices.skill.md",
             "tags": ["security", "zeroization", "crypto", "audit", "hardening"]
+        },
+        {
+            "id": "openclaw",
+            "name": "OpenClaw — AI Agent Skill Packaging & Discovery",
+            "description": "Design, package, and deploy OpenClaw-compatible skill packages for AI agent discovery, MCP runtime integration, SperaxOS agent teams, and plug-and-play deployment across Claude, Copilot, and other LLM agents.",
+            "path": ".github/skills/openclaw.skill.md",
+            "tags": ["openclaw", "ai", "agents", "mcp", "skills", "discovery"]
         }
     ]
 }

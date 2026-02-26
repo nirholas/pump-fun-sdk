@@ -2,7 +2,7 @@
 
 ## Overview
 
-pump-fun-sdk is the official community PumpFun SDK for the Pump protocol on Solana. It handles bonding curve trading, fee management, keypair generation, and AI agent integration. Security is foundational — not optional.
+pump-fun-sdk is an unofficial community PumpFun SDK for the Pump protocol on Solana. It handles bonding curve trading, fee management, keypair generation, and AI agent integration. Security is foundational — not optional.
 
 ---
 
