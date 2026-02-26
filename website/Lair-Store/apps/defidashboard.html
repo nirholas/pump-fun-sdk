@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="lair-include" content="lair.css">
+    <meta name="capabilities" content="defi_dashboard">
+    <meta name="lair-icon" content="dashboard">
+    <meta name="lair-perms" content="network" />
+    <title>DeFi Dashboard</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            background: var(--col-bg1, #101010);
+            color: var(--col-txt1, #fff);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            overflow-y: auto;
+            overflow-x: hidden;
+            scroll-behavior: smooth;
+        }
+
+        .app-container {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .header h1 {
+            font-size: 1.3rem;
+            font-weight: 700;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 0.8rem;
+        }
+
+        .time-filters {
+            display: flex;
+            gap: 0.25rem;
+        }
+
+        .time-btn {
+            background: var(--col-bg2, #171717);
+            border: 1px solid var(--col-bg3, #262626);
+            color: var(--col-txt1, #fff);
+            padding: 0.3rem 0.65rem;
+            border-radius: var(--siz-radius2, 0.35em);
+            cursor: pointer;
+            font-size: 0.75rem;
+            opacity: 0.6;
+            transition: all 0.2s;
+        }
+
+        .time-btn:hover { opacity: 0.85; }
+        .time-btn.active {
+            opacity: 1;
+            background: var(--colors-accent, rgb(97, 121, 255));
+            border-color: transparent;
+        }
+
+        .refresh-btn {
+            background: none;
+            border: 1px solid var(--col-bg3, #262626);
+            color: var(--col-txt1, #fff);
+            padding: 0.3rem 0.6rem;
+            border-radius: var(--siz-radius2, 0.35em);
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: background 0.2s;
+        }
+
+        .refresh-btn:hover { background: var(--col-bg2, #171717); }
+        .refresh-btn.spinning svg { animation: spin 0.8s linear infinite; }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .last-updated {
+            font-size: 0.7rem;
+            opacity: 0.5;
+        }
+
+        /* Section titles */
+        .section-title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .section-title .icon { font-size: 1.1rem; }
+
+        /* Hero stat cards */
+        .stat-cards {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.75rem;
+        }
+
+        .stat-card {
+            background: var(--col-bg2, #171717);
+            border: 1px solid transparent;
+            border-radius: var(--siz-radius1, 0.5em);
+            padding: 1.1rem 1rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            padding: 1px;
+            background: linear-gradient(135deg, rgba(97,121,255,0.3), rgba(97,121,255,0.05), rgba(255,255,255,0.04));
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            pointer-events: none;
+        }
+
+        .stat-card .value {
+            font-size: 1.6rem;
+            font-weight: 800;
+            line-height: 1.2;
+        }
+
+        .stat-card .label {
+            font-size: 0.75rem;
+            opacity: 0.5;
+            margin-top: 0.25rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .stat-card .change {
+            font-size: 0.8rem;
+            margin-top: 0.35rem;
+            font-weight: 600;
+        }
+
+        .change.positive { color: var(--col-good, #5be45b); }
+        .change.negative { color: var(--col-bad, #d44343); }
+
+        /* Bar chart */
+        .bar-chart {
+            display: flex;
+            flex-direction: column;
+            gap: 0.45rem;
+        }
+
+        .bar-row {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            font-size: 0.8rem;
+        }
+
+        .bar-rank {
+            width: 1.5rem;
+            text-align: right;
+            opacity: 0.4;
+            font-size: 0.7rem;
+            flex-shrink: 0;
+        }
+
+        .bar-label {
+            width: 6rem;
+            font-weight: 600;
+            flex-shrink: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .bar-track {
+            flex: 1;
+            height: 22px;
+            background: var(--col-bg2, #171717);
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .bar-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+            min-width: 2px;
+        }
+
+        .bar-value {
+            width: 5.5rem;
+            text-align: right;
+            font-weight: 600;
+            flex-shrink: 0;
+            font-size: 0.8rem;
+        }
+
+        /* Protocol table */
+        .table-wrapper {
+            overflow-x: auto;
+            border-radius: var(--siz-radius1, 0.5em);
+            border: 1px solid var(--col-bg3, #262626);
+        }
+
+        .proto-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.8rem;
+        }
+
+        .proto-table thead th {
+            background: var(--col-bg2, #171717);
+            padding: 0.65rem 0.75rem;
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            opacity: 0.7;
+            cursor: pointer;
+            white-space: nowrap;
+            user-select: none;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+
+        .proto-table thead th:hover { opacity: 1; }
+
+        .proto-table thead th .sort-arrow {
+            display: inline-block;
+            margin-left: 0.25rem;
+            opacity: 0.3;
+            font-size: 0.65rem;
+        }
+
+        .proto-table thead th.sorted .sort-arrow { opacity: 1; }
+        .proto-table thead th.sorted { opacity: 1; }
+
+        .proto-table tbody tr {
+            border-top: 1px solid var(--col-bg3, #262626);
+            transition: background 0.15s;
+        }
+
+        .proto-table tbody tr:hover { background: var(--col-bg2, #171717); }
+
+        .proto-table td {
+            padding: 0.6rem 0.75rem;
+            white-space: nowrap;
+        }
+
+        .proto-table td:first-child { opacity: 0.4; width: 2rem; text-align: center; }
+
+        .proto-name {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .proto-logo {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--col-bg3, #262626);
+            flex-shrink: 0;
+        }
+
+        .proto-chain-badge {
+            display: inline-block;
+            padding: 0.15rem 0.4rem;
+            border-radius: 0.25rem;
+            font-size: 0.65rem;
+            font-weight: 600;
+            background: var(--col-bg3, #262626);
+        }
+
+        /* Donut chart section */
+        .donut-section {
+            display: flex;
+            gap: 1.5rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .donut-wrapper {
+            position: relative;
+            width: 180px;
+            height: 180px;
+            flex-shrink: 0;
+        }
+
+        .donut {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            position: relative;
+        }
+
+        .donut-hole {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: var(--col-bg1, #101010);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+
+        .donut-hole .total-label {
+            font-size: 0.6rem;
+            opacity: 0.5;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .donut-hole .total-count {
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
+
+        .legend {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .legend-row {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.8rem;
+        }
+
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 3px;
+            flex-shrink: 0;
+        }
+
+        .legend-label {
+            flex: 1;
+            opacity: 0.8;
+        }
+
+        .legend-value {
+            font-weight: 600;
+        }
+
+        .legend-pct {
+            width: 3.5rem;
+            text-align: right;
+            opacity: 0.5;
+            font-size: 0.75rem;
+        }
+
+        /* Skeleton loading */
+        .skeleton {
+            background: linear-gradient(90deg, var(--col-bg2, #171717) 25%, var(--col-bg3, #262626) 50%, var(--col-bg2, #171717) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            border-radius: var(--siz-radius2, 0.35em);
+        }
+
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        .skeleton-card {
+            height: 90px;
+            border-radius: var(--siz-radius1, 0.5em);
+        }
+
+        .skeleton-bar {
+            height: 22px;
+            margin-bottom: 0.45rem;
+        }
+
+        .skeleton-row {
+            height: 38px;
+            margin-bottom: 1px;
+        }
+
+        .skeleton-donut {
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+        }
+
+        /* Error / empty states */
+        .error-msg {
+            text-align: center;
+            padding: 2rem;
+            opacity: 0.5;
+            font-size: 0.85rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .stat-cards { grid-template-columns: 1fr; }
+            .stat-card .value { font-size: 1.3rem; }
+            .bar-label { width: 4.5rem; font-size: 0.75rem; }
+            .bar-value { width: 4.5rem; font-size: 0.75rem; }
+            .donut-section { flex-direction: column; align-items: center; }
+            .proto-table { font-size: 0.7rem; }
+            .proto-table td, .proto-table th { padding: 0.5rem 0.5rem; }
+        }
+
+        @media (min-width: 601px) and (max-width: 768px) {
+            .stat-cards { grid-template-columns: repeat(3, 1fr); }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <div class="header">
+            <h1>📊 DeFi Dashboard</h1>
+            <div class="header-right">
+                <div class="time-filters">
+                    <button class="time-btn" data-days="7">7D</button>
+                    <button class="time-btn active" data-days="30">30D</button>
+                    <button class="time-btn" data-days="90">90D</button>
+                    <button class="time-btn" data-days="365">1Y</button>
+                </div>
+                <button class="refresh-btn" onclick="refreshData()" title="Refresh">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>
+                </button>
+                <span class="last-updated" id="lastUpdated"></span>
+            </div>
+        </div>
+
+        <!-- Stat Cards -->
+        <section id="statsSection">
+            <div class="stat-cards" id="statCards">
+                <div class="stat-card skeleton skeleton-card"></div>
+                <div class="stat-card skeleton skeleton-card"></div>
+                <div class="stat-card skeleton skeleton-card"></div>
+            </div>
+        </section>
+
+        <!-- Chains Bar Chart -->
+        <section id="chainsSection">
+            <div class="section-title"><span class="icon">⛓️</span> Top 10 Chains by TVL</div>
+            <div class="bar-chart" id="barChart">
+                <div class="skeleton skeleton-bar" style="width:100%"></div>
+                <div class="skeleton skeleton-bar" style="width:90%"></div>
+                <div class="skeleton skeleton-bar" style="width:80%"></div>
+                <div class="skeleton skeleton-bar" style="width:65%"></div>
+                <div class="skeleton skeleton-bar" style="width:50%"></div>
+            </div>
+        </section>
+
+        <!-- Top Protocols Table -->
+        <section id="protocolsSection">
+            <div class="section-title"><span class="icon">🏛️</span> Top 20 Protocols</div>
+            <div class="table-wrapper">
+                <table class="proto-table" id="protoTable">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th data-key="name">Name <span class="sort-arrow">▲</span></th>
+                            <th data-key="chain">Chain <span class="sort-arrow">▲</span></th>
+                            <th data-key="tvl" class="sorted">TVL <span class="sort-arrow">▼</span></th>
+                            <th data-key="change_1d">1d Chg <span class="sort-arrow">▲</span></th>
+                            <th data-key="category">Category <span class="sort-arrow">▲</span></th>
+                        </tr>
+                    </thead>
+                    <tbody id="protoBody">
+                        <tr><td colspan="6"><div class="skeleton skeleton-row" style="width:100%"></div></td></tr>
+                        <tr><td colspan="6"><div class="skeleton skeleton-row" style="width:100%"></div></td></tr>
+                        <tr><td colspan="6"><div class="skeleton skeleton-row" style="width:100%"></div></td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Category Breakdown Donut -->
+        <section id="categorySection">
+            <div class="section-title"><span class="icon">📁</span> TVL by Category</div>
+            <div class="donut-section" id="donutSection">
+                <div class="donut-wrapper"><div class="skeleton skeleton-donut"></div></div>
+                <div class="legend" id="legendPlaceholder">
+                    <div class="skeleton" style="height:16px;width:70%;margin-bottom:0.3rem"></div>
+                    <div class="skeleton" style="height:16px;width:60%;margin-bottom:0.3rem"></div>
+                    <div class="skeleton" style="height:16px;width:55%;margin-bottom:0.3rem"></div>
+                    <div class="skeleton" style="height:16px;width:45%;margin-bottom:0.3rem"></div>
+                    <div class="skeleton" style="height:16px;width:35%"></div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+    (function() {
+        'use strict';
+        const fetchFn = window.cfetch || fetch;
+
+        const CACHE_KEY = 'defi_dashboard_cache';
+        const CACHE_TTL = 10 * 60 * 1000; // 10 minutes
+
+        const CHAIN_COLORS = {
+            'Ethereum': '#627eea',
+            'BSC': '#f3ba2f',
+            'Arbitrum': '#28a0f0',
+            'Polygon': '#8247e5',
+            'Optimism': '#ff0420',
+            'Avalanche': '#e84142',
+            'Solana': '#14f195',
+            'Base': '#0052ff',
+            'Tron': '#ff0013',
+            'Fantom': '#1969ff',
+            'Sui': '#4da2ff',
+            'Manta': '#1e1e2e',
+            'Blast': '#fcfc03',
+            'Cronos': '#002d74',
+            'Sonic': '#5b21b6',
+            'Aptos': '#2dd8a3',
+            'Mantle': '#000',
+            'Linea': '#61dfff',
+            'zkSync Era': '#4e529a',
+            'Pulsechain': '#9b59b6'
+        };
+
+        const CATEGORY_COLORS = [
+            '#627eea', '#f3ba2f', '#28a0f0', '#8247e5', '#ff0420',
+            '#e84142', '#14f195', '#0052ff', '#ff6b6b', '#51cf66',
+            '#ffd43b', '#845ef7', '#ff922b', '#22b8cf', '#e64980'
+        ];
+
+        let rawProtocols = [];
+        let rawChains = [];
+        let rawTvlHistory = [];
+        let sortKey = 'tvl';
+        let sortDir = -1; // -1 = descending
+        let selectedDays = 30;
+
+        // ---------- Helpers ----------
+
+        function formatTVL(v) {
+            if (v == null || isNaN(v)) return '—';
+            const abs = Math.abs(v);
+            if (abs >= 1e12) return '$' + (v / 1e12).toFixed(2) + 'T';
+            if (abs >= 1e9) return '$' + (v / 1e9).toFixed(2) + 'B';
+            if (abs >= 1e6) return '$' + (v / 1e6).toFixed(2) + 'M';
+            if (abs >= 1e3) return '$' + (v / 1e3).toFixed(1) + 'K';
+            return '$' + v.toFixed(0);
+        }
+
+        function formatPct(v) {
+            if (v == null || isNaN(v)) return '—';
+            const sign = v >= 0 ? '+' : '';
+            return sign + (v * 100).toFixed(2) + '%';
+        }
+
+        function getChangeClass(v) {
+            if (v == null || isNaN(v)) return '';
+            return v >= 0 ? 'positive' : 'negative';
+        }
+
+        function getChainColor(name) {
+            return CHAIN_COLORS[name] || '#' + ((Math.abs(hashStr(name)) % 0xFFFFFF).toString(16).padStart(6, '0'));
+        }
+
+        function hashStr(s) {
+            let h = 0;
+            for (let i = 0; i < s.length; i++) { h = ((h << 5) - h) + s.charCodeAt(i); h |= 0; }
+            return h;
+        }
+
+        // ---------- Cache ----------
+
+        function getCached() {
+            try {
+                const raw = sessionStorage.getItem(CACHE_KEY);
+                if (!raw) return null;
+                const data = JSON.parse(raw);
+                if (Date.now() - data.ts > CACHE_TTL) {
+                    sessionStorage.removeItem(CACHE_KEY);
+                    return null;
+                }
+                return data;
+            } catch { return null; }
+        }
+
+        function setCache(protocols, chains, tvlHistory) {
+            try {
+                sessionStorage.setItem(CACHE_KEY, JSON.stringify({
+                    ts: Date.now(),
+                    protocols, chains, tvlHistory
+                }));
+            } catch {}
+        }
+
+        // ---------- Data Fetching ----------
+
+        async function fetchData(force) {
+            if (!force) {
+                const cached = getCached();
+                if (cached) {
+                    rawProtocols = cached.protocols;
+                    rawChains = cached.chains;
+                    rawTvlHistory = cached.tvlHistory;
+                    renderAll();
+                    return;
+                }
+            }
+
+            const btn = document.querySelector('.refresh-btn');
+            btn.classList.add('spinning');
+
+            try {
+                const [protocolsRes, chainsRes, tvlRes] = await Promise.all([
+                    fetchFn('https://api.llama.fi/protocols').then(r => r.json()),
+                    fetchFn('https://api.llama.fi/v2/chains').then(r => r.json()),
+                    fetchFn('https://api.llama.fi/v2/historicalChainTvl').then(r => r.json())
+                ]);
+
+                rawProtocols = protocolsRes;
+                rawChains = chainsRes;
+                rawTvlHistory = tvlRes;
+                setCache(rawProtocols, rawChains, rawTvlHistory);
+                renderAll();
+            } catch (err) {
+                console.error('DeFi Dashboard fetch error:', err);
+                showError('Failed to load data. Check network and try again.');
+            } finally {
+                btn.classList.remove('spinning');
+            }
+        }
+
+        function showError(msg) {
+            ['statCards', 'barChart', 'protoBody', 'donutSection'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.innerHTML = '<div class="error-msg">' + msg + '</div>';
+            });
+        }
+
+        // ---------- Render ----------
+
+        function renderAll() {
+            renderStats();
+            renderChainBars();
+            renderProtocolTable();
+            renderCategoryDonut();
+            document.getElementById('lastUpdated').textContent = 'Updated ' + new Date().toLocaleTimeString();
+        }
+
+        // --- Stats ---
+        function renderStats() {
+            const currentTvl = rawTvlHistory.length ? rawTvlHistory[rawTvlHistory.length - 1].tvl : 0;
+
+            // Calculate change based on selected time period
+            let pastTvl = 0;
+            if (rawTvlHistory.length > selectedDays) {
+                pastTvl = rawTvlHistory[rawTvlHistory.length - 1 - selectedDays].tvl;
+            } else if (rawTvlHistory.length > 1) {
+                pastTvl = rawTvlHistory[0].tvl;
+            }
+            const tvlChange = pastTvl > 0 ? (currentTvl - pastTvl) / pastTvl : 0;
+
+            const numProtocols = rawProtocols.length;
+
+            const periodLabels = { 7: '7D', 30: '30D', 90: '90D', 365: '1Y' };
+
+            document.getElementById('statCards').innerHTML = `
+                <div class="stat-card">
+                    <div class="value">${formatTVL(currentTvl)}</div>
+                    <div class="label">Total DeFi TVL</div>
+                </div>
+                <div class="stat-card">
+                    <div class="value change ${getChangeClass(tvlChange)}">${formatPct(tvlChange)}</div>
+                    <div class="label">${periodLabels[selectedDays] || selectedDays + 'D'} Change</div>
+                </div>
+                <div class="stat-card">
+                    <div class="value">${numProtocols.toLocaleString()}</div>
+                    <div class="label">Protocols Tracked</div>
+                </div>
+            `;
+        }
+
+        // --- Chain Bars ---
+        function renderChainBars() {
+            const sorted = [...rawChains]
+                .filter(c => c.tvl > 0)
+                .sort((a, b) => b.tvl - a.tvl)
+                .slice(0, 10);
+
+            if (!sorted.length) {
+                document.getElementById('barChart').innerHTML = '<div class="error-msg">No chain data</div>';
+                return;
+            }
+
+            const maxTvl = sorted[0].tvl;
+
+            document.getElementById('barChart').innerHTML = sorted.map((chain, i) => {
+                const pct = (chain.tvl / maxTvl * 100).toFixed(1);
+                const color = getChainColor(chain.name);
+                return `
+                    <div class="bar-row">
+                        <span class="bar-rank">${i + 1}</span>
+                        <span class="bar-label" style="color:${color}">${chain.name}</span>
+                        <div class="bar-track">
+                            <div class="bar-fill" style="width:${pct}%;background:${color}"></div>
+                        </div>
+                        <span class="bar-value">${formatTVL(chain.tvl)}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // --- Protocol Table ---
+        function renderProtocolTable() {
+            const top = [...rawProtocols]
+                .filter(p => p.tvl > 0)
+                .sort((a, b) => {
+                    let aVal, bVal;
+                    switch (sortKey) {
+                        case 'name': aVal = (a.name || '').toLowerCase(); bVal = (b.name || '').toLowerCase(); break;
+                        case 'chain': aVal = (a.chain || '').toLowerCase(); bVal = (b.chain || '').toLowerCase(); break;
+                        case 'tvl': aVal = a.tvl || 0; bVal = b.tvl || 0; break;
+                        case 'change_1d': aVal = a.change_1d || 0; bVal = b.change_1d || 0; break;
+                        case 'category': aVal = (a.category || '').toLowerCase(); bVal = (b.category || '').toLowerCase(); break;
+                        default: aVal = a.tvl || 0; bVal = b.tvl || 0;
+                    }
+                    if (typeof aVal === 'string') return sortDir * aVal.localeCompare(bVal);
+                    return sortDir * (aVal - bVal);
+                })
+                .slice(0, 20);
+
+            const tbody = document.getElementById('protoBody');
+            if (!top.length) {
+                tbody.innerHTML = '<tr><td colspan="6" class="error-msg">No protocol data</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = top.map((p, i) => {
+                const chain = p.chain || p.chains?.[0] || '—';
+                const chgVal = p.change_1d != null ? p.change_1d / 100 : null;
+                const logoUrl = p.logo;
+                return `
+                    <tr>
+                        <td>${i + 1}</td>
+                        <td>
+                            <div class="proto-name">
+                                ${logoUrl ? `<img class="proto-logo" src="${logoUrl}" alt="" onerror="this.style.display='none'">` : '<div class="proto-logo"></div>'}
+                                ${escHtml(p.name || '—')}
+                            </div>
+                        </td>
+                        <td><span class="proto-chain-badge" style="border-left:3px solid ${getChainColor(chain)}">${escHtml(chain)}</span></td>
+                        <td>${formatTVL(p.tvl)}</td>
+                        <td class="change ${getChangeClass(chgVal)}">${chgVal != null ? formatPct(chgVal) : '—'}</td>
+                        <td>${escHtml(p.category || '—')}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            updateSortHeaders();
+        }
+
+        function escHtml(s) {
+            const d = document.createElement('div');
+            d.textContent = s;
+            return d.innerHTML;
+        }
+
+        function updateSortHeaders() {
+            document.querySelectorAll('.proto-table thead th[data-key]').forEach(th => {
+                const key = th.dataset.key;
+                const arrow = th.querySelector('.sort-arrow');
+                if (key === sortKey) {
+                    th.classList.add('sorted');
+                    arrow.textContent = sortDir === 1 ? '▲' : '▼';
+                } else {
+                    th.classList.remove('sorted');
+                    arrow.textContent = '▲';
+                }
+            });
+        }
+
+        // --- Category Donut ---
+        function renderCategoryDonut() {
+            const catMap = {};
+            rawProtocols.forEach(p => {
+                if (!p.tvl || p.tvl <= 0) return;
+                const cat = p.category || 'Other';
+                catMap[cat] = (catMap[cat] || 0) + p.tvl;
+            });
+
+            const sorted = Object.entries(catMap)
+                .sort((a, b) => b[1] - a[1]);
+
+            // Top 10 + aggregate rest as "Other"
+            const topN = 10;
+            let displayed = sorted.slice(0, topN);
+            const rest = sorted.slice(topN);
+            if (rest.length) {
+                const restSum = rest.reduce((s, e) => s + e[1], 0);
+                displayed.push(['Other', restSum]);
+            }
+
+            const total = displayed.reduce((s, e) => s + e[1], 0);
+            if (total === 0) {
+                document.getElementById('donutSection').innerHTML = '<div class="error-msg">No category data</div>';
+                return;
+            }
+
+            // Build conic gradient
+            let gradParts = [];
+            let angle = 0;
+            displayed.forEach((entry, i) => {
+                const pct = entry[1] / total * 360;
+                const color = CATEGORY_COLORS[i % CATEGORY_COLORS.length];
+                gradParts.push(`${color} ${angle.toFixed(2)}deg ${(angle + pct).toFixed(2)}deg`);
+                angle += pct;
+            });
+
+            const donutStyle = `background: conic-gradient(${gradParts.join(', ')});`;
+
+            const legendHtml = displayed.map((entry, i) => {
+                const color = CATEGORY_COLORS[i % CATEGORY_COLORS.length];
+                const pct = (entry[1] / total * 100).toFixed(1);
+                return `
+                    <div class="legend-row">
+                        <div class="legend-color" style="background:${color}"></div>
+                        <span class="legend-label">${escHtml(entry[0])}</span>
+                        <span class="legend-value">${formatTVL(entry[1])}</span>
+                        <span class="legend-pct">${pct}%</span>
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('donutSection').innerHTML = `
+                <div class="donut-wrapper">
+                    <div class="donut" style="${donutStyle}"></div>
+                    <div class="donut-hole">
+                        <span class="total-label">Categories</span>
+                        <span class="total-count">${Object.keys(catMap).length}</span>
+                    </div>
+                </div>
+                <div class="legend">${legendHtml}</div>
+            `;
+        }
+
+        // ---------- Events ----------
+
+        // Time filter buttons
+        document.querySelectorAll('.time-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                selectedDays = parseInt(btn.dataset.days, 10);
+                if (rawTvlHistory.length) renderStats();
+            });
+        });
+
+        // Sortable table headers
+        document.querySelectorAll('.proto-table thead th[data-key]').forEach(th => {
+            th.addEventListener('click', () => {
+                const key = th.dataset.key;
+                if (sortKey === key) {
+                    sortDir *= -1;
+                } else {
+                    sortKey = key;
+                    sortDir = key === 'tvl' || key === 'change_1d' ? -1 : 1;
+                }
+                renderProtocolTable();
+            });
+        });
+
+        // Refresh button
+        window.refreshData = function() {
+            sessionStorage.removeItem(CACHE_KEY);
+            fetchData(true);
+        };
+
+        // Init
+        fetchData(false);
+    })();
+    </script>
+</body>
+</html>

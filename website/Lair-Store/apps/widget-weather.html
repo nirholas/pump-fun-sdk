@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="lair-include" content="lair.css">
+    <meta name="lair-widget" content="true">
+    <meta name="lair-widget-size" content="2x2">
+    <meta name="lair-icon" content="cloud">
+    <meta name="lair-perms" content="network" />
+    <title>Weather</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: transparent;
+            color: var(--col-txt1, #fff);
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
+            user-select: none;
+        }
+        .weather {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            padding: 8px;
+        }
+        .weather-icon {
+            font-size: 2.8rem;
+            line-height: 1;
+            filter: drop-shadow(0 2px 6px rgba(0,0,0,0.3));
+        }
+        .weather-temp {
+            font-size: 2rem;
+            font-weight: 200;
+            letter-spacing: 0.02em;
+            line-height: 1.1;
+        }
+        .weather-desc {
+            font-size: 0.75rem;
+            opacity: 0.5;
+            text-transform: capitalize;
+        }
+        .weather-detail {
+            display: flex;
+            gap: 12px;
+            margin-top: 4px;
+        }
+        .weather-detail span {
+            font-size: 0.65rem;
+            opacity: 0.4;
+            display: flex;
+            align-items: center;
+            gap: 3px;
+        }
+        .weather-location {
+            font-size: 0.7rem;
+            opacity: 0.35;
+            margin-top: 2px;
+        }
+        .loading {
+            opacity: 0.3;
+            font-size: 0.8rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="weather" id="weather">
+        <div class="loading">Loading weather...</div>
+    </div>
+    <script>
+        const fetchFn = window.cfetch || fetch;
+        // WMO weather code to emoji mapping
+        const WMO_ICONS = {
+            0: '☀️', 1: '🌤️', 2: '⛅', 3: '☁️',
+            45: '🌫️', 48: '🌫️',
+            51: '🌦️', 53: '🌦️', 55: '🌧️',
+            56: '🌨️', 57: '🌨️',
+            61: '🌧️', 63: '🌧️', 65: '🌧️',
+            66: '🌨️', 67: '🌨️',
+            71: '🌨️', 73: '🌨️', 75: '❄️',
+            77: '❄️',
+            80: '🌦️', 81: '🌧️', 82: '⛈️',
+            85: '🌨️', 86: '🌨️',
+            95: '⛈️', 96: '⛈️', 99: '⛈️',
+        };
+
+        const WMO_DESC = {
+            0: 'Clear sky', 1: 'Mainly clear', 2: 'Partly cloudy', 3: 'Overcast',
+            45: 'Fog', 48: 'Rime fog',
+            51: 'Light drizzle', 53: 'Drizzle', 55: 'Dense drizzle',
+            56: 'Freezing drizzle', 57: 'Dense freezing drizzle',
+            61: 'Light rain', 63: 'Rain', 65: 'Heavy rain',
+            66: 'Freezing rain', 67: 'Heavy freezing rain',
+            71: 'Light snow', 73: 'Snow', 75: 'Heavy snow',
+            77: 'Snow grains',
+            80: 'Light showers', 81: 'Showers', 82: 'Heavy showers',
+            85: 'Light snow showers', 86: 'Heavy snow showers',
+            95: 'Thunderstorm', 96: 'Thunderstorm w/ hail', 99: 'Severe thunderstorm',
+        };
+
+        // Settings: unit (celsius/fahrenheit), location
+        const settings = window.__widgetSettings || {};
+        let unit = settings.unit || 'celsius';
+        let customCity = settings.city || '';
+
+        // Declare settings schema to parent
+        window.parent.postMessage({
+            type: 'widgetDeclareSettings',
+            widgetId: window.__widgetId,
+            settings: [
+                {
+                    key: 'unit', label: 'Temperature', type: 'select', value: unit,
+                    options: [
+                        { value: 'celsius', label: '°C (Celsius)' },
+                        { value: 'fahrenheit', label: '°F (Fahrenheit)' },
+                    ]
+                },
+                { key: 'city', label: 'City (blank = auto)', type: 'text', value: customCity },
+            ]
+        }, '*');
+
+        // Listen for settings updates
+        window.addEventListener('message', (e) => {
+            if (e.data && e.data.type === 'widgetSettingsUpdate') {
+                unit = e.data.settings.unit || 'celsius';
+                customCity = e.data.settings.city || '';
+                loadWeather();
+            }
+        });
+
+        async function geocodeCity(city) {
+            const r = await fetchFn(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1`);
+            if (!r.ok) return null;
+            const d = await r.json();
+            if (d.results && d.results.length > 0) {
+                return { lat: d.results[0].latitude, lon: d.results[0].longitude, name: d.results[0].name };
+            }
+            return null;
+        }
+
+        async function getLocation() {
+            if (customCity) {
+                const geo = await geocodeCity(customCity);
+                if (geo) return geo;
+            }
+            // Fallback: IP-based geolocation
+            try {
+                const r = await fetchFn('https://ipapi.co/json/');
+                if (!r.ok) throw new Error(`Geo API ${r.status}`);
+                const d = await r.json();
+                return { lat: d.latitude, lon: d.longitude, name: d.city || 'Unknown' };
+            } catch (_) {
+                // Default: New York
+                return { lat: 40.71, lon: -74.01, name: 'New York' };
+            }
+        }
+
+        async function loadWeather() {
+            const el = document.getElementById('weather');
+            try {
+                const loc = await getLocation();
+                const tempUnit = unit === 'fahrenheit' ? '&temperature_unit=fahrenheit' : '';
+                const url = `https://api.open-meteo.com/v1/forecast?latitude=${loc.lat}&longitude=${loc.lon}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code${tempUnit}`;
+                const r = await fetchFn(url);
+                if (!r.ok) throw new Error(`Weather API ${r.status}`);
+                const d = await r.json();
+                if (!d.current) throw new Error('Weather payload missing current data');
+                const c = d.current;
+                const code = c.weather_code;
+                const icon = WMO_ICONS[code] || '🌡️';
+                const desc = WMO_DESC[code] || 'Unknown';
+                const tempSymbol = unit === 'fahrenheit' ? '°F' : '°C';
+
+                el.innerHTML = `
+                    <div class="weather-icon">${icon}</div>
+                    <div class="weather-temp">${Math.round(c.temperature_2m)}${tempSymbol}</div>
+                    <div class="weather-desc">${desc}</div>
+                    <div class="weather-detail">
+                        <span>💧 ${c.relative_humidity_2m}%</span>
+                        <span>💨 ${Math.round(c.wind_speed_10m)} km/h</span>
+                    </div>
+                    <div class="weather-location">${loc.name}</div>
+                `;
+            } catch (e) {
+                el.innerHTML = '<div class="loading">Weather unavailable</div>';
+            }
+        }
+
+        loadWeather();
+        setInterval(loadWeather, 600000); // refresh every 10 min
+    </script>
+</body>
+</html>

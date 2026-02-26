@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="lair-include" content="lair.css">
+    <meta name="capabilities" content="stablecoin_analytics">
+    <meta name="lair-icon" content="<svg width='232' height='232' viewBox='0 0 232 232' fill='none' xmlns='http://www.w3.org/2000/svg'><rect width='232' height='232' rx='40' fill='#0A1418'/><circle cx='116' cy='100' r='50' stroke='#06B6D4' stroke-width='4' fill='none'/><text x='116' y='112' text-anchor='middle' fill='#06B6D4' font-size='40' font-weight='bold'>$</text><path d='M50 170 Q116 150 182 170' stroke='#22C55E' stroke-width='3' fill='none'/><path d='M50 185 Q116 165 182 185' stroke='#F59E0B' stroke-width='2' fill='none' stroke-dasharray='4,3'/></svg>">
+    <meta name="lair-perms" content="network" />
+    <title>Stablecoin Intel</title>
+    <style>
+        :root {
+            --bg1: #0a0f14; --bg2: #0e1520; --bg3: #162030; --bg4: #1e2d42;
+            --txt1: #e2e8f0; --txt2: #94a3b8; --txt3: #64748b;
+            --accent: #06b6d4; --green: #22c55e; --red: #ef4444; --yellow: #f59e0b;
+            --blue: #3b82f6; --purple: #a855f7; --radius: 8px;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body { height: 100%; background: var(--bg1); color: var(--txt1); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        .app { height: 100%; display: grid; grid-template-rows: auto auto 1fr; overflow: hidden; }
+        .header { padding: 10px 16px; background: var(--bg2); border-bottom: 1px solid rgba(6,182,212,.15); display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .header h1 { font-size: 15px; font-weight: 700; }
+        .header h1 span { color: var(--accent); }
+        .controls { display: flex; gap: 6px; margin-left: auto; flex-wrap: wrap; }
+        select, button { background: var(--bg3); color: var(--txt1); border: 1px solid rgba(6,182,212,.15); border-radius: 6px; padding: 5px 10px; font-size: 12px; cursor: pointer; font-family: inherit; }
+        button:hover { background: var(--accent); color: #000; }
+        .tabs { display: flex; gap: 4px; padding: 8px 16px; background: var(--bg1); border-bottom: 1px solid rgba(255,255,255,.05); overflow-x: auto; }
+        .tab { padding: 5px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; background: transparent; color: var(--txt2); border: 1px solid transparent; transition: all .15s; white-space: nowrap; }
+        .tab:hover { color: var(--txt1); background: var(--bg3); }
+        .tab.active { background: var(--accent); color: #000; font-weight: 600; }
+        .content { overflow: auto; padding: 12px 16px; }
+        .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        .grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+        .grid5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+        .card { background: var(--bg2); border: 1px solid rgba(255,255,255,.06); border-radius: var(--radius); padding: 12px; }
+        .card-title { font-size: 10px; text-transform: uppercase; letter-spacing: .5px; color: var(--txt3); margin-bottom: 6px; }
+        .card-value { font-size: 22px; font-weight: 700; font-family: 'SF Mono', 'Fira Code', monospace; }
+        .card-sub { font-size: 11px; color: var(--txt2); margin-top: 4px; }
+        .up { color: var(--green); } .down { color: var(--red); }
+        table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        th { position: sticky; top: 0; background: var(--bg2); text-align: left; padding: 8px; font-size: 10px; text-transform: uppercase; letter-spacing: .5px; color: var(--txt3); border-bottom: 1px solid rgba(255,255,255,.08); }
+        td { padding: 7px 8px; border-bottom: 1px solid rgba(255,255,255,.04); }
+        tr:hover td { background: rgba(6,182,212,.04); }
+        .mono { font-family: 'SF Mono', 'Fira Code', monospace; }
+        .badge { font-size: 10px; padding: 2px 7px; border-radius: 999px; font-weight: 600; }
+        .peg-ok { background: rgba(34,197,94,.12); color: var(--green); }
+        .peg-warn { background: rgba(245,158,11,.12); color: var(--yellow); }
+        .peg-danger { background: rgba(239,68,68,.12); color: var(--red); }
+        .type-fiat { background: rgba(59,130,246,.12); color: var(--blue); }
+        .type-algo { background: rgba(168,85,247,.12); color: var(--purple); }
+        .type-crypto { background: rgba(6,182,212,.12); color: var(--accent); }
+        .bar-h { height: 6px; border-radius: 3px; background: var(--bg3); overflow: hidden; margin-top: 4px; }
+        .bar-fill { height: 100%; border-radius: 3px; transition: width .4s; }
+        .donut-ring { fill: none; stroke-width: 20; }
+        .loading { display: flex; align-items: center; justify-content: center; height: 200px; color: var(--txt3); font-size: 13px; }
+        .loading::after { content:''; width:16px; height:16px; border:2px solid var(--accent); border-top-color:transparent; border-radius:50%; animation:spin .6s linear infinite; margin-left:8px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .depeg-indicator { display: inline-flex; align-items: center; gap: 4px; }
+        .depeg-dot { width: 6px; height: 6px; border-radius: 50%; }
+        @media (max-width: 900px) { .grid3, .grid4, .grid5 { grid-template-columns: 1fr 1fr; } }
+        @media (max-width: 500px) { .grid3, .grid4, .grid5 { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+<div class="app">
+    <div class="header">
+        <h1><span>◎</span> Stablecoin Intelligence</h1>
+        <div class="controls">
+            <select id="pegType"><option value="">All Types</option><option value="USD">USD-pegged</option><option value="EUR">EUR-pegged</option></select>
+            <button id="refreshBtn">↻ Refresh</button>
+        </div>
+    </div>
+    <div class="tabs" id="tabs"></div>
+    <div class="content" id="content"></div>
+</div>
+
+<script>
+(function() {
+    const F = window.cfetch || fetch;
+    const $ = s => document.querySelector(s);
+    const TABS = ['overview','market-share','chain-distribution','depeg-monitor','flows'];
+    const LABELS = {'overview':'Overview','market-share':'Market Share','chain-distribution':'Chain Distribution','depeg-monitor':'Depeg Monitor','flows':'Capital Flows'};
+    let tab = 'overview', data = null, pegFilter = '';
+
+    function init() {
+        renderTabs();
+        $('#pegType').onchange = e => { pegFilter = e.target.value; render(); };
+        $('#refreshBtn').onclick = load;
+        load();
+    }
+
+    function renderTabs() {
+        $('#tabs').innerHTML = TABS.map(t =>
+            `<div class="tab ${t===tab?'active':''}" data-t="${t}">${LABELS[t]}</div>`
+        ).join('');
+        $('#tabs').querySelectorAll('.tab').forEach(el => {
+            el.onclick = () => { tab = el.dataset.t; renderTabs(); render(); };
+        });
+    }
+
+    async function load() {
+        $('#content').innerHTML = '<div class="loading">Loading stablecoin data from DeFi Llama</div>';
+        try {
+            const [stables, chains] = await Promise.all([
+                F('https://stablecoins.llama.fi/stablecoins?includePrices=true').then(r => r.json()),
+                F('https://stablecoins.llama.fi/stablecoinchains').then(r => r.json())
+            ]);
+            data = processData(stables, chains);
+            render();
+        } catch(e) {
+            $('#content').innerHTML = `<div class="card" style="color:var(--red)">Error: ${e.message}</div>`;
+        }
+    }
+
+    function processData(stablesResp, chainsResp) {
+        const stables = (stablesResp.peggedAssets || []).map(s => {
+            const currentMcap = extractPegged(s.circulating);
+            const prevDay = extractPegged(s.circulatingPrevDay);
+            const prevWeek = extractPegged(s.circulatingPrevWeek);
+            const prevMonth = extractPegged(s.circulatingPrevMonth);
+            const price = s.price || 1;
+            const depeg = Math.abs(price - 1);
+            const dayChange = prevDay > 0 ? (currentMcap - prevDay) / prevDay * 100 : 0;
+            const weekChange = prevWeek > 0 ? (currentMcap - prevWeek) / prevWeek * 100 : 0;
+            const monthChange = prevMonth > 0 ? (currentMcap - prevMonth) / prevMonth * 100 : 0;
+
+            // Chain breakdown
+            const chainBreakdown = {};
+            if (s.chainCirculating) {
+                Object.entries(s.chainCirculating).forEach(([chain, val]) => {
+                    chainBreakdown[chain] = extractPegged(val);
+                });
+            }
+
+            const pegType = s.pegType || 'fiat';
+            const pegMechanism = s.pegMechanism || 'unknown';
+
+            return {
+                name: s.name || 'Unknown',
+                symbol: s.symbol || '?',
+                id: s.id,
+                mcap: currentMcap,
+                price,
+                depeg,
+                depegBps: Math.round(depeg * 10000),
+                pegType: s.pegType || 'fiat',
+                pegMechanism,
+                dayChange, weekChange, monthChange,
+                dayFlowUSD: currentMcap - prevDay,
+                weekFlowUSD: currentMcap - prevWeek,
+                monthFlowUSD: currentMcap - prevMonth,
+                chains: Object.keys(chainBreakdown).length,
+                chainBreakdown
+            };
+        }).filter(s => s.mcap > 1e5).sort((a,b) => b.mcap - a.mcap);
+
+        const totalMcap = stables.reduce((s,v) => s + v.mcap, 0);
+        const totalDayFlow = stables.reduce((s,v) => s + v.dayFlowUSD, 0);
+        const totalWeekFlow = stables.reduce((s,v) => s + v.weekFlowUSD, 0);
+
+        // Chain aggregation
+        const chainAgg = {};
+        chainsResp.forEach(c => {
+            chainAgg[c.name] = { name: c.name, totalCirculating: extractPegged(c), geckoId: c.gecko_id };
+        });
+
+        return { stables, totalMcap, totalDayFlow, totalWeekFlow, chains: chainAgg };
+    }
+
+    function extractPegged(obj) {
+        if (!obj) return 0;
+        return (obj.peggedUSD || 0) + (obj.peggedEUR || 0) * 1.08 + (obj.peggedVAR || 0);
+    }
+
+    function fmtUSD(n) {
+        const a = Math.abs(n);
+        const s = n < 0 ? '-' : '';
+        if (a >= 1e12) return s + '$' + (a/1e12).toFixed(2) + 'T';
+        if (a >= 1e9) return s + '$' + (a/1e9).toFixed(2) + 'B';
+        if (a >= 1e6) return s + '$' + (a/1e6).toFixed(2) + 'M';
+        if (a >= 1e3) return s + '$' + (a/1e3).toFixed(1) + 'K';
+        return s + '$' + a.toFixed(0);
+    }
+    function pct(n) { return (n > 0 ? '+' : '') + n.toFixed(2) + '%'; }
+
+    function filtered() {
+        let list = data.stables;
+        if (pegFilter) list = list.filter(s => s.pegType === pegFilter || (pegFilter === 'USD' && s.pegType === 'fiat'));
+        return list;
+    }
+
+    function render() {
+        if (!data) return;
+        const fn = { 'overview': renderOverview, 'market-share': renderMarketShare, 'chain-distribution': renderChainDist, 'depeg-monitor': renderDepeg, 'flows': renderFlows };
+        (fn[tab] || renderOverview)();
+    }
+
+    function pegStatus(depegBps) {
+        if (depegBps <= 10) return { text: 'STABLE', cls: 'peg-ok' };
+        if (depegBps <= 50) return { text: 'MINOR DEVIATION', cls: 'peg-warn' };
+        if (depegBps <= 200) return { text: 'DEPEGGING', cls: 'peg-warn' };
+        return { text: 'DEPEGGED', cls: 'peg-danger' };
+    }
+
+    function renderOverview() {
+        const stables = filtered();
+        const depegged = stables.filter(s => s.depegBps > 50).length;
+        const top5 = stables.slice(0, 5);
+        const top5Mcap = top5.reduce((s,v) => s + v.mcap, 0);
+        const dominance = data.totalMcap > 0 ? (stables[0]?.mcap / data.totalMcap * 100) : 0;
+
+        $('#content').innerHTML = `
+            <div class="grid5" style="margin-bottom:12px">
+                <div class="card">
+                    <div class="card-title">Total Stablecoin Supply</div>
+                    <div class="card-value" style="color:var(--accent)">${fmtUSD(data.totalMcap)}</div>
+                    <div class="card-sub">${stables.length} stablecoins tracked</div>
+                </div>
+                <div class="card">
+                    <div class="card-title">24h Net Flow</div>
+                    <div class="card-value ${data.totalDayFlow >= 0 ? 'up' : 'down'}">${fmtUSD(data.totalDayFlow)}</div>
+                    <div class="card-sub">${data.totalDayFlow >= 0 ? 'Inflow (minting)' : 'Outflow (redemption)'}</div>
+                </div>
+                <div class="card">
+                    <div class="card-title">7d Net Flow</div>
+                    <div class="card-value ${data.totalWeekFlow >= 0 ? 'up' : 'down'}">${fmtUSD(data.totalWeekFlow)}</div>
+                    <div class="card-sub">Weekly capital movement</div>
+                </div>
+                <div class="card">
+                    <div class="card-title">#1 Dominance</div>
+                    <div class="card-value">${dominance.toFixed(1)}%</div>
+                    <div class="card-sub">${stables[0]?.name || '—'}</div>
+                </div>
+                <div class="card">
+                    <div class="card-title">Depeg Alerts</div>
+                    <div class="card-value" style="color:${depegged > 0 ? 'var(--red)' : 'var(--green)'}">${depegged}</div>
+                    <div class="card-sub">${depegged > 0 ? 'Stablecoins off peg' : 'All stable'}</div>
+                </div>
+            </div>
+            <div class="card" style="margin-bottom:12px">
+                <div class="card-title">Top Stablecoins</div>
+                <div style="overflow-x:auto">
+                <table>
+                    <thead><tr><th>#</th><th>Stablecoin</th><th>Symbol</th><th>Type</th><th>Market Cap</th><th>Price</th><th>Peg Status</th><th>24h Δ</th><th>7d Δ</th><th>30d Δ</th><th>24h Flow</th><th>Chains</th></tr></thead>
+                    <tbody>${stables.slice(0, 50).map((s, i) => {
+                        const ps = pegStatus(s.depegBps);
+                        return `<tr>
+                            <td style="color:var(--txt3)">${i+1}</td>
+                            <td style="font-weight:600">${s.name}</td>
+                            <td class="mono">${s.symbol}</td>
+                            <td><span class="badge type-${s.pegType === 'fiat' ? 'fiat' : s.pegType === 'algorithmic' ? 'algo' : 'crypto'}">${s.pegMechanism}</span></td>
+                            <td class="mono" style="font-weight:600">${fmtUSD(s.mcap)}</td>
+                            <td class="mono">$${s.price.toFixed(4)}</td>
+                            <td><span class="badge ${ps.cls}">${ps.text}</span></td>
+                            <td class="mono ${s.dayChange >= 0 ? 'up' : 'down'}">${pct(s.dayChange)}</td>
+                            <td class="mono ${s.weekChange >= 0 ? 'up' : 'down'}">${pct(s.weekChange)}</td>
+                            <td class="mono ${s.monthChange >= 0 ? 'up' : 'down'}">${pct(s.monthChange)}</td>
+                            <td class="mono ${s.dayFlowUSD >= 0 ? 'up' : 'down'}">${fmtUSD(s.dayFlowUSD)}</td>
+                            <td class="mono">${s.chains}</td>
+                        </tr>`;
+                    }).join('')}
+                    </tbody>
+                </table>
+                </div>
+            </div>`;
+    }
+
+    function renderMarketShare() {
+        const stables = filtered();
+        const total = stables.reduce((s,v) => s + v.mcap, 0);
+        const colors = ['#06b6d4','#3b82f6','#22c55e','#f59e0b','#ef4444','#a855f7','#ec4899','#84cc16','#f97316','#8b5cf6','#64748b'];
+
+        // Create visual treemap-like blocks
+        const top10 = stables.slice(0, 10);
+        const others = stables.slice(10);
+        const otherMcap = others.reduce((s,v) => s + v.mcap, 0);
+
+        $('#content').innerHTML = `
+            <div class="card" style="margin-bottom:12px">
+                <div class="card-title">Stablecoin Market Share — Total: ${fmtUSD(total)}</div>
+                <div style="display:flex;gap:3px;height:60px;border-radius:6px;overflow:hidden;margin-top:10px">
+                    ${top10.map((s, i) => {
+                        const w = total > 0 ? (s.mcap / total * 100) : 0;
+                        return w > 0.3 ? `<div style="width:${w}%;background:${colors[i]};display:flex;align-items:center;justify-content:center;font-size:${w > 10 ? 12 : 9}px;font-weight:700;color:#000;overflow:hidden;white-space:nowrap;padding:0 4px;cursor:pointer" title="${s.name}: ${fmtUSD(s.mcap)} (${w.toFixed(1)}%)">${w > 8 ? s.symbol : w > 3 ? s.symbol.slice(0,4) : ''}</div>` : '';
+                    }).join('')}
+                    ${otherMcap > 0 ? `<div style="width:${total > 0 ? otherMcap/total*100 : 0}%;background:var(--bg4);display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--txt2)">Others</div>` : ''}
+                </div>
+                <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px">
+                    ${top10.map((s, i) => `<div style="display:flex;align-items:center;gap:4px;font-size:10px"><div style="width:8px;height:8px;border-radius:50%;background:${colors[i]}"></div><span style="color:var(--txt2)">${s.symbol} ${(s.mcap/total*100).toFixed(1)}%</span></div>`).join('')}
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-title">Market Share Details</div>
+                <table>
+                    <thead><tr><th>#</th><th>Stablecoin</th><th>Market Cap</th><th>Share</th><th>Dominance Bar</th><th>24h Flow</th><th>Mechanism</th></tr></thead>
+                    <tbody>${stables.slice(0, 30).map((s, i) => {
+                        const share = total > 0 ? s.mcap / total * 100 : 0;
+                        return `<tr>
+                            <td style="color:var(--txt3)">${i+1}</td>
+                            <td style="font-weight:600">${s.name} <span style="color:var(--txt3)">(${s.symbol})</span></td>
+                            <td class="mono">${fmtUSD(s.mcap)}</td>
+                            <td class="mono" style="font-weight:600">${share.toFixed(2)}%</td>
+                            <td style="min-width:100px"><div class="bar-h"><div class="bar-fill" style="width:${Math.min(share / (stables[0]?.mcap/total*100 || 1) * 100, 100)}%;background:${colors[i % colors.length]}"></div></div></td>
+                            <td class="mono ${s.dayFlowUSD >= 0 ? 'up' : 'down'}">${fmtUSD(s.dayFlowUSD)}</td>
+                            <td><span class="badge type-fiat">${s.pegMechanism}</span></td>
+                        </tr>`;
+                    }).join('')}</tbody>
+                </table>
+            </div>`;
+    }
+
+    function renderChainDist() {
+        const chains = Object.values(data.chains).sort((a,b) => b.totalCirculating - a.totalCirculating);
+        const total = chains.reduce((s,c) => s + c.totalCirculating, 0);
+        const colors = ['#06b6d4','#3b82f6','#22c55e','#f59e0b','#ef4444','#a855f7','#ec4899','#84cc16','#f97316','#8b5cf6'];
+
+        $('#content').innerHTML = `
+            <div class="card" style="margin-bottom:12px">
+                <div class="card-title">Stablecoin Distribution by Chain</div>
+                <div style="font-size:11px;color:var(--txt2);margin-bottom:10px">Where are stablecoins deployed? Chain with more stablecoin liquidity = more DeFi activity potential.</div>
+                <div style="display:flex;gap:3px;height:50px;border-radius:6px;overflow:hidden">
+                    ${chains.slice(0, 12).map((c, i) => {
+                        const w = total > 0 ? (c.totalCirculating / total * 100) : 0;
+                        return w > 0.3 ? `<div style="width:${w}%;background:${colors[i % colors.length]};display:flex;align-items:center;justify-content:center;font-size:${w > 8 ? 11 : 8}px;font-weight:600;color:#000;overflow:hidden;white-space:nowrap;padding:0 2px">${w > 5 ? c.name : ''}</div>` : '';
+                    }).join('')}
+                </div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+                    ${chains.slice(0, 12).map((c, i) => `<div style="display:flex;align-items:center;gap:4px;font-size:10px"><div style="width:8px;height:8px;border-radius:50%;background:${colors[i % colors.length]}"></div><span style="color:var(--txt2)">${c.name}</span></div>`).join('')}
+                </div>
+            </div>
+            <div class="card">
+                <table>
+                    <thead><tr><th>#</th><th>Chain</th><th>Stablecoin TVL</th><th>Share</th><th>Distribution</th></tr></thead>
+                    <tbody>${chains.slice(0, 30).map((c, i) => {
+                        const share = total > 0 ? c.totalCirculating / total * 100 : 0;
+                        return `<tr>
+                            <td style="color:var(--txt3)">${i+1}</td>
+                            <td style="font-weight:600">${c.name}</td>
+                            <td class="mono" style="font-weight:600">${fmtUSD(c.totalCirculating)}</td>
+                            <td class="mono">${share.toFixed(2)}%</td>
+                            <td style="min-width:120px"><div class="bar-h"><div class="bar-fill" style="width:${Math.min(share / (chains[0]?.totalCirculating/total*100 || 1) * 100, 100)}%;background:var(--accent)"></div></div></td>
+                        </tr>`;
+                    }).join('')}</tbody>
+                </table>
+            </div>`;
+    }
+
+    function renderDepeg() {
+        const stables = filtered().filter(s => s.mcap > 1e6);
+        const risky = stables.filter(s => s.depegBps > 10).sort((a,b) => b.depegBps - a.depegBps);
+        const stable = stables.filter(s => s.depegBps <= 10);
+
+        $('#content').innerHTML = `
+            <div class="grid3" style="margin-bottom:12px">
+                <div class="card">
+                    <div class="card-title">Stable (≤10bps off)</div>
+                    <div class="card-value up">${stable.length}</div>
+                    <div class="card-sub">Within normal range</div>
+                </div>
+                <div class="card">
+                    <div class="card-title">Minor Deviation (10-50bps)</div>
+                    <div class="card-value" style="color:var(--yellow)">${risky.filter(s => s.depegBps > 10 && s.depegBps <= 50).length}</div>
+                    <div class="card-sub">Watch closely</div>
+                </div>
+                <div class="card">
+                    <div class="card-title">Depegging (&gt;50bps)</div>
+                    <div class="card-value down">${risky.filter(s => s.depegBps > 50).length}</div>
+                    <div class="card-sub">Active risk</div>
+                </div>
+            </div>
+            <div class="card" style="margin-bottom:12px">
+                <div class="card-title">⚠️ Depeg Risk Monitor — Sorted by deviation from peg</div>
+                <div style="font-size:11px;color:var(--txt2);margin-bottom:8px">1 basis point (bps) = 0.01%. Normal range is &lt;10bps. Deviations above 50bps often signal liquidity or solvency concerns.</div>
+                <table>
+                    <thead><tr><th>Stablecoin</th><th>Symbol</th><th>Price</th><th>Deviation</th><th>BPS Off</th><th>Market Cap</th><th>Risk Level</th><th>24h Flow</th><th>Mechanism</th></tr></thead>
+                    <tbody>${risky.map(s => {
+                        const ps = pegStatus(s.depegBps);
+                        return `<tr>
+                            <td style="font-weight:600">${s.name}</td>
+                            <td class="mono">${s.symbol}</td>
+                            <td class="mono">$${s.price.toFixed(4)}</td>
+                            <td class="mono ${s.price < 1 ? 'down' : 'up'}">${s.price < 1 ? '-' : '+'}${(s.depeg * 100).toFixed(2)}%</td>
+                            <td class="mono" style="font-weight:700;color:${ps.cls === 'peg-danger' ? 'var(--red)' : ps.cls === 'peg-warn' ? 'var(--yellow)' : 'var(--green)'}">${s.depegBps} bps</td>
+                            <td class="mono">${fmtUSD(s.mcap)}</td>
+                            <td><span class="badge ${ps.cls}">${ps.text}</span></td>
+                            <td class="mono ${s.dayFlowUSD >= 0 ? 'up' : 'down'}">${fmtUSD(s.dayFlowUSD)}</td>
+                            <td style="font-size:10px">${s.pegMechanism}</td>
+                        </tr>`;
+                    }).join('')}
+                    ${risky.length === 0 ? '<tr><td colspan="9" style="text-align:center;color:var(--green);padding:20px">✓ All tracked stablecoins are within 10bps of peg</td></tr>' : ''}
+                    </tbody>
+                </table>
+            </div>
+            <div class="card">
+                <div class="card-title">All Stablecoins — Peg Health Overview</div>
+                <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:4px">
+                    ${stables.slice(0, 50).map(s => {
+                        const ps = pegStatus(s.depegBps);
+                        const bgColor = ps.cls === 'peg-ok' ? 'rgba(34,197,94,.12)' : ps.cls === 'peg-warn' ? 'rgba(245,158,11,.15)' : 'rgba(239,68,68,.15)';
+                        const borderColor = ps.cls === 'peg-ok' ? 'rgba(34,197,94,.2)' : ps.cls === 'peg-warn' ? 'rgba(245,158,11,.3)' : 'rgba(239,68,68,.3)';
+                        return `<div style="background:${bgColor};border:1px solid ${borderColor};border-radius:6px;padding:6px 10px;font-size:10px;cursor:pointer" title="${s.name}: $${s.price.toFixed(4)} (${s.depegBps}bps off)">
+                            <div style="font-weight:600">${s.symbol}</div>
+                            <div style="color:var(--txt3);font-size:9px">${s.depegBps}bps</div>
+                        </div>`;
+                    }).join('')}
+                </div>
+            </div>`;
+    }
+
+    function renderFlows() {
+        const stables = filtered().sort((a,b) => b.dayFlowUSD - a.dayFlowUSD);
+        const inflows = stables.filter(s => s.dayFlowUSD > 0);
+        const outflows = stables.filter(s => s.dayFlowUSD < 0);
+        const totalIn = inflows.reduce((s,v) => s + v.dayFlowUSD, 0);
+        const totalOut = outflows.reduce((s,v) => s + v.dayFlowUSD, 0);
+
+        const weekStables = [...stables].sort((a,b) => b.weekFlowUSD - a.weekFlowUSD);
+        const weekIn = weekStables.filter(s => s.weekFlowUSD > 0);
+        const weekOut = weekStables.filter(s => s.weekFlowUSD < 0);
+
+        $('#content').innerHTML = `
+            <div class="grid4" style="margin-bottom:12px">
+                <div class="card">
+                    <div class="card-title">24h Inflows (Minting)</div>
+                    <div class="card-value up">${fmtUSD(totalIn)}</div>
+                    <div class="card-sub">${inflows.length} stablecoins growing</div>
+                </div>
+                <div class="card">
+                    <div class="card-title">24h Outflows (Redemption)</div>
+                    <div class="card-value down">${fmtUSD(totalOut)}</div>
+                    <div class="card-sub">${outflows.length} stablecoins shrinking</div>
+                </div>
+                <div class="card">
+                    <div class="card-title">Net 24h Flow</div>
+                    <div class="card-value ${data.totalDayFlow >= 0 ? 'up' : 'down'}">${fmtUSD(data.totalDayFlow)}</div>
+                    <div class="card-sub">${data.totalDayFlow >= 0 ? 'Net expansion' : 'Net contraction'}</div>
+                </div>
+                <div class="card">
+                    <div class="card-title">Signal</div>
+                    <div class="card-value" style="font-size:14px;color:${data.totalDayFlow > 0 ? 'var(--green)' : 'var(--red)'}">${data.totalDayFlow > 1e8 ? '🟢 RISK-ON' : data.totalDayFlow < -1e8 ? '🔴 RISK-OFF' : '🟡 NEUTRAL'}</div>
+                    <div class="card-sub">Stablecoin minting = capital entering crypto</div>
+                </div>
+            </div>
+            <div class="grid2" style="margin-bottom:12px;display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                <div class="card">
+                    <div class="card-title">Biggest 24h Inflows</div>
+                    ${inflows.slice(0, 8).map(s => `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.04)">
+                        <span style="font-size:12px;font-weight:600">${s.symbol}</span>
+                        <span class="mono up" style="font-size:12px">+${fmtUSD(s.dayFlowUSD)}</span>
+                    </div>`).join('')}
+                </div>
+                <div class="card">
+                    <div class="card-title">Biggest 24h Outflows</div>
+                    ${outflows.slice(0, 8).map(s => `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.04)">
+                        <span style="font-size:12px;font-weight:600">${s.symbol}</span>
+                        <span class="mono down" style="font-size:12px">${fmtUSD(s.dayFlowUSD)}</span>
+                    </div>`).join('')}
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-title">7-Day Capital Flows</div>
+                <table>
+                    <thead><tr><th>Stablecoin</th><th>Market Cap</th><th>24h Flow</th><th>7d Flow</th><th>30d Flow</th><th>30d Δ%</th><th>Trend</th></tr></thead>
+                    <tbody>${weekStables.slice(0, 30).map(s => {
+                        const trend = s.monthChange > 5 ? '📈 Growing' : s.monthChange < -5 ? '📉 Shrinking' : '➡️ Stable';
+                        return `<tr>
+                            <td style="font-weight:600">${s.name} <span style="color:var(--txt3)">(${s.symbol})</span></td>
+                            <td class="mono">${fmtUSD(s.mcap)}</td>
+                            <td class="mono ${s.dayFlowUSD >= 0 ? 'up' : 'down'}">${fmtUSD(s.dayFlowUSD)}</td>
+                            <td class="mono ${s.weekFlowUSD >= 0 ? 'up' : 'down'}">${fmtUSD(s.weekFlowUSD)}</td>
+                            <td class="mono ${s.monthFlowUSD >= 0 ? 'up' : 'down'}">${fmtUSD(s.monthFlowUSD)}</td>
+                            <td class="mono ${s.monthChange >= 0 ? 'up' : 'down'}">${pct(s.monthChange)}</td>
+                            <td style="font-size:11px">${trend}</td>
+                        </tr>`;
+                    }).join('')}</tbody>
+                </table>
+            </div>`;
+    }
+
+    init();
+})();
+</script>
+</body>
+</html>

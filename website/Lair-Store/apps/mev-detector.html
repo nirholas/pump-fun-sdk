@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="lair-include" content="lair.css">
+    <meta name="capabilities" content="token_scanner">
+    <meta name="lair-icon" content="verified_user">
+    <meta name="lair-perms" content="network" />
+    <title>Token Scanner</title>
+    <style>
+        :root {
+            --col-bg1: #101010;
+            --col-bg2: #171717;
+            --col-bg3: #262626;
+            --col-txt1: #fff;
+            --col-txt2: #aaa;
+            --colors-accent: rgb(97, 121, 255);
+            --col-good: #5be45b;
+            --col-bad: #d44343;
+            --col-warn: #f0b232;
+            --siz-radius1: 0.5em;
+            --siz-radius2: 0.375em;
+            --box-crisp-col: #ffffff0c;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html { height: 100%; }
+
+        body {
+            height: 100%;
+            background: var(--col-bg1);
+            color: var(--col-txt1);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            overflow-y: auto;
+            line-height: 1.5;
+        }
+
+        .app {
+            max-width: 640px;
+            margin: 0 auto;
+            padding: 1em;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75em;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 0.5em;
+        }
+        .header-icon {
+            font-size: 1.5em;
+        }
+        .header h1 {
+            font-size: 1.15em;
+            font-weight: 700;
+        }
+
+        /* Search area */
+        .search-row {
+            display: flex;
+            gap: 0.5em;
+        }
+        .search-row select {
+            background: var(--col-bg2);
+            color: var(--col-txt1);
+            border: 1px solid var(--col-bg3);
+            border-radius: var(--siz-radius2);
+            padding: 0.5em 0.6em;
+            font-size: 0.85em;
+            cursor: pointer;
+            outline: none;
+            flex-shrink: 0;
+        }
+        .search-row select:focus {
+            border-color: var(--colors-accent);
+        }
+        .search-row input {
+            flex: 1;
+            background: var(--col-bg2);
+            color: var(--col-txt1);
+            border: 1px solid var(--col-bg3);
+            border-radius: var(--siz-radius2);
+            padding: 0.55em 0.75em;
+            font-size: 0.9em;
+            font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .search-row input::placeholder {
+            color: #555;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        .search-row input:focus {
+            border-color: var(--colors-accent);
+        }
+        .scan-btn {
+            background: var(--colors-accent);
+            color: #fff;
+            border: none;
+            border-radius: var(--siz-radius2);
+            padding: 0.5em 1em;
+            font-size: 0.85em;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: opacity 0.2s;
+        }
+        .scan-btn:hover { opacity: 0.85; }
+        .scan-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* Recent scans */
+        .recent-section {
+            display: flex;
+            flex-direction: column;
+            gap: 0.3em;
+        }
+        .recent-label {
+            font-size: 0.7em;
+            color: var(--col-txt2);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+        .recent-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.35em;
+        }
+        .recent-chip {
+            background: var(--col-bg2);
+            border: 1px solid var(--col-bg3);
+            border-radius: var(--siz-radius2);
+            padding: 0.25em 0.6em;
+            font-size: 0.72em;
+            font-family: monospace;
+            color: var(--col-txt2);
+            cursor: pointer;
+            transition: border-color 0.2s, color 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.4em;
+        }
+        .recent-chip:hover {
+            border-color: var(--colors-accent);
+            color: var(--col-txt1);
+        }
+        .recent-chip .chain-tag {
+            font-size: 0.85em;
+            color: var(--colors-accent);
+            font-family: -apple-system, sans-serif;
+        }
+
+        /* Loading */
+        .loader {
+            text-align: center;
+            padding: 2em 0;
+            display: none;
+        }
+        .loader.active { display: block; }
+        .spinner {
+            width: 36px; height: 36px;
+            border: 3px solid var(--col-bg3);
+            border-top-color: var(--colors-accent);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 0.75em;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loader-text { color: var(--col-txt2); font-size: 0.85em; }
+
+        /* Error */
+        .error-box {
+            background: rgba(212, 67, 67, 0.12);
+            border: 1px solid var(--col-bad);
+            border-radius: var(--siz-radius1);
+            padding: 0.75em 1em;
+            font-size: 0.85em;
+            color: var(--col-bad);
+            display: none;
+        }
+        .error-box.active { display: block; }
+
+        /* Results container */
+        .results { display: none; flex-direction: column; gap: 0.65em; }
+        .results.active { display: flex; }
+
+        /* Verdict banner */
+        .verdict-banner {
+            border-radius: var(--siz-radius1);
+            padding: 1em 1.25em;
+            display: flex;
+            align-items: center;
+            gap: 0.75em;
+            animation: fadeSlideIn 0.4s ease;
+        }
+        .verdict-banner.safe {
+            background: rgba(91, 228, 91, 0.1);
+            border: 1px solid rgba(91, 228, 91, 0.3);
+        }
+        .verdict-banner.caution {
+            background: rgba(240, 178, 50, 0.1);
+            border: 1px solid rgba(240, 178, 50, 0.3);
+        }
+        .verdict-banner.danger {
+            background: rgba(212, 67, 67, 0.1);
+            border: 1px solid rgba(212, 67, 67, 0.3);
+        }
+        .verdict-icon { font-size: 2em; }
+        .verdict-text { display: flex; flex-direction: column; }
+        .verdict-label { font-size: 0.75em; color: var(--col-txt2); }
+        .verdict-value { font-size: 1.15em; font-weight: 700; }
+        .verdict-banner.safe .verdict-value { color: var(--col-good); }
+        .verdict-banner.caution .verdict-value { color: var(--col-warn); }
+        .verdict-banner.danger .verdict-value { color: var(--col-bad); }
+
+        /* Risk gauge */
+        .gauge-container {
+            background: var(--col-bg2);
+            border: 1px solid var(--col-bg3);
+            border-radius: var(--siz-radius1);
+            padding: 1.25em 1em 1em;
+            text-align: center;
+            animation: fadeSlideIn 0.5s ease;
+        }
+        .gauge-label {
+            font-size: 0.75em;
+            color: var(--col-txt2);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-bottom: 0.5em;
+        }
+        .gauge-svg {
+            display: block;
+            margin: 0 auto;
+        }
+        .gauge-score {
+            font-size: 1.8em;
+            font-weight: 800;
+            margin-top: -0.1em;
+        }
+        .gauge-score-label {
+            font-size: 0.75em;
+            color: var(--col-txt2);
+        }
+
+        /* Check sections */
+        .check-section {
+            background: var(--col-bg2);
+            border: 1px solid var(--col-bg3);
+            border-radius: var(--siz-radius1);
+            overflow: hidden;
+            animation: fadeSlideIn 0.5s ease;
+        }
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.65em 0.85em;
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.15s;
+        }
+        .section-header:hover {
+            background: var(--col-bg3);
+        }
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 0.5em;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+        .section-chevron {
+            font-size: 0.75em;
+            color: var(--col-txt2);
+            transition: transform 0.2s;
+        }
+        .section-header.open .section-chevron {
+            transform: rotate(180deg);
+        }
+        .section-body {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+        .section-body.open {
+            max-height: 600px;
+        }
+        .check-list {
+            padding: 0.25em 0.85em 0.65em;
+            display: flex;
+            flex-direction: column;
+            gap: 0.4em;
+        }
+        .check-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.35em 0;
+            border-bottom: 1px solid var(--box-crisp-col);
+            font-size: 0.82em;
+        }
+        .check-item:last-child { border-bottom: none; }
+        .check-item-label {
+            color: var(--col-txt2);
+        }
+        .check-item-value {
+            display: flex;
+            align-items: center;
+            gap: 0.4em;
+            font-weight: 600;
+        }
+
+        /* Traffic lights */
+        .tl { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+        .tl-safe { background: var(--col-good); box-shadow: 0 0 6px rgba(91,228,91,0.4); }
+        .tl-warn { background: var(--col-warn); box-shadow: 0 0 6px rgba(240,178,50,0.4); }
+        .tl-danger { background: var(--col-bad); box-shadow: 0 0 6px rgba(212,67,67,0.4); }
+        .tl-unknown { background: #555; }
+
+        .val-safe { color: var(--col-good); }
+        .val-warn { color: var(--col-warn); }
+        .val-danger { color: var(--col-bad); }
+        .val-neutral { color: var(--col-txt2); }
+
+        /* Holders bar */
+        .holders-bar {
+            height: 6px;
+            background: var(--col-bg3);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 0.25em;
+        }
+        .holders-bar-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.6s ease;
+        }
+
+        /* Animation */
+        @keyframes fadeSlideIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            .search-row { flex-wrap: wrap; }
+            .search-row select { width: 100%; }
+            .search-row input { min-width: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <!-- Header -->
+        <div class="header">
+            <span class="header-icon">🛡️</span>
+            <h1>Token Scanner</h1>
+        </div>
+
+        <!-- Search -->
+        <div class="search-row">
+            <select id="chainSelect">
+                <option value="1">Ethereum</option>
+                <option value="56">BSC</option>
+                <option value="8453">Base</option>
+                <option value="42161">Arbitrum</option>
+                <option value="137">Polygon</option>
+            </select>
+            <input type="text" id="addressInput" placeholder="Paste token address (0x...)" spellcheck="false" autocomplete="off">
+            <button class="scan-btn" id="scanBtn">Scan</button>
+        </div>
+
+        <!-- Recent scans -->
+        <div class="recent-section" id="recentSection" style="display:none;">
+            <span class="recent-label">Recent Scans</span>
+            <div class="recent-list" id="recentList"></div>
+        </div>
+
+        <!-- Loading -->
+        <div class="loader" id="loader">
+            <div class="spinner"></div>
+            <div class="loader-text">Scanning token security...</div>
+        </div>
+
+        <!-- Error -->
+        <div class="error-box" id="errorBox"></div>
+
+        <!-- Results -->
+        <div class="results" id="results">
+            <div id="verdictBanner"></div>
+            <div id="gaugeContainer"></div>
+            <div id="checkSections"></div>
+        </div>
+    </div>
+
+    <script>
+    (function() {
+        const fetchFn = window.cfetch || fetch;
+        const CHAINS = { 1: 'ETH', 56: 'BSC', 8453: 'Base', 42161: 'ARB', 137: 'MATIC' };
+        const STORAGE_KEY = 'tokenscanner_recent';
+        const MAX_RECENT = 10;
+
+        const $ = id => document.getElementById(id);
+        const chainSelect = $('chainSelect');
+        const addressInput = $('addressInput');
+        const scanBtn = $('scanBtn');
+        const loader = $('loader');
+        const errorBox = $('errorBox');
+        const results = $('results');
+        const verdictBanner = $('verdictBanner');
+        const gaugeContainer = $('gaugeContainer');
+        const checkSections = $('checkSections');
+        const recentSection = $('recentSection');
+        const recentList = $('recentList');
+
+        // --- Validation ---
+        function isValidAddress(addr) {
+            return /^0x[a-fA-F0-9]{40}$/.test(addr.trim());
+        }
+
+        // --- Recent scans ---
+        function getRecent() {
+            try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
+            catch { return []; }
+        }
+        function saveRecent(chainId, address) {
+            let list = getRecent();
+            list = list.filter(r => !(r.address === address && r.chainId === chainId));
+            list.unshift({ chainId, address, time: Date.now() });
+            if (list.length > MAX_RECENT) list = list.slice(0, MAX_RECENT);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+            renderRecent();
+        }
+        function renderRecent() {
+            const list = getRecent();
+            if (!list.length) { recentSection.style.display = 'none'; return; }
+            recentSection.style.display = '';
+            recentList.innerHTML = list.map(r =>
+                `<div class="recent-chip" data-chain="${r.chainId}" data-addr="${r.address}">` +
+                `<span class="chain-tag">${CHAINS[r.chainId] || r.chainId}</span>` +
+                `${r.address.slice(0,6)}…${r.address.slice(-4)}</div>`
+            ).join('');
+            recentList.querySelectorAll('.recent-chip').forEach(chip => {
+                chip.addEventListener('click', () => {
+                    chainSelect.value = chip.dataset.chain;
+                    addressInput.value = chip.dataset.addr;
+                    doScan();
+                });
+            });
+        }
+
+        // --- UI State ---
+        function showLoader() { loader.classList.add('active'); errorBox.classList.remove('active'); results.classList.remove('active'); }
+        function hideLoader() { loader.classList.remove('active'); }
+        function showError(msg) { hideLoader(); errorBox.textContent = msg; errorBox.classList.add('active'); results.classList.remove('active'); }
+        function showResults() { hideLoader(); errorBox.classList.remove('active'); results.classList.add('active'); }
+
+        // --- GoPlus API ---
+        async function fetchSecurity(chainId, address) {
+            const url = `https://api.gopluslabs.io/api/v1/token_security/${chainId}?contract_addresses=${address}`;
+            const res = await fetchFn(url);
+            if (!res.ok) throw new Error(`API error: ${res.status}`);
+            const json = await res.json();
+            if (json.code !== 1) throw new Error(json.message || 'API returned an error');
+            const data = json.result && json.result[address.toLowerCase()];
+            if (!data) throw new Error('Token not found on this chain. Try a different network.');
+            return data;
+        }
+
+        // --- Risk calculation ---
+        function calcRisk(d) {
+            let penalties = 0;
+            let maxPenalties = 0;
+
+            function flag(val, weight) {
+                maxPenalties += weight;
+                if (val === '1' || val === 1 || val === true) penalties += weight;
+            }
+            function flagInverse(val, weight) {
+                maxPenalties += weight;
+                if (val === '0' || val === 0 || val === false || val === '' || val == null) penalties += weight;
+            }
+
+            // Honeypot (critical)
+            flag(d.is_honeypot, 25);
+            // Can't sell all
+            flag(d.cannot_sell_all, 10);
+            // Owner can mint
+            flag(d.owner_change_balance, 10);
+            flag(d.can_take_back_ownership, 8);
+            flag(d.is_blacklisted, 8);
+            // Hidden owner
+            flag(d.hidden_owner, 8);
+            // Proxy contract
+            flag(d.is_proxy, 5);
+            // External call
+            flag(d.external_call, 5);
+            // Self destruct
+            flag(d.selfdestruct, 8);
+            // Not open source (inverse - bad if not open)
+            flagInverse(d.is_open_source, 8);
+            // Buy/sell tax
+            const buyTax = parseFloat(d.buy_tax) || 0;
+            const sellTax = parseFloat(d.sell_tax) || 0;
+            maxPenalties += 10;
+            if (buyTax > 0.1) penalties += Math.min(10, Math.round(buyTax * 10));
+            maxPenalties += 10;
+            if (sellTax > 0.1) penalties += Math.min(10, Math.round(sellTax * 10));
+            // LP not locked
+            if (d.lp_holders) {
+                const locked = d.lp_holders.some(h => h.is_locked === 1 || h.is_locked === '1');
+                maxPenalties += 8;
+                if (!locked) penalties += 8;
+            }
+            // Top holder concentration
+            if (d.holders && d.holders.length) {
+                const top10pct = d.holders.slice(0, 10).reduce((s, h) => s + parseFloat(h.percent || 0), 0) * 100;
+                maxPenalties += 10;
+                if (top10pct > 80) penalties += 10;
+                else if (top10pct > 50) penalties += 6;
+                else if (top10pct > 30) penalties += 3;
+            }
+
+            const riskScore = maxPenalties > 0 ? Math.round((penalties / maxPenalties) * 100) : 0;
+            const safeScore = 100 - riskScore;
+            return { riskScore, safeScore };
+        }
+
+        function getVerdict(safeScore) {
+            if (safeScore >= 70) return { level: 'safe', label: 'SAFE', icon: '🟢', cls: 'safe' };
+            if (safeScore >= 40) return { level: 'caution', label: 'CAUTION', icon: '🟡', cls: 'caution' };
+            return { level: 'danger', label: 'DANGEROUS', icon: '🔴', cls: 'danger' };
+        }
+
+        // --- Rendering ---
+        function renderVerdict(verdict, safeScore) {
+            verdictBanner.className = 'verdict-banner ' + verdict.cls;
+            verdictBanner.innerHTML =
+                `<span class="verdict-icon">${verdict.icon}</span>` +
+                `<div class="verdict-text">` +
+                `<span class="verdict-label">Overall Verdict</span>` +
+                `<span class="verdict-value">${verdict.label} — Score ${safeScore}/100</span>` +
+                `</div>`;
+        }
+
+        function gaugeColor(score) {
+            if (score >= 70) return 'var(--col-good)';
+            if (score >= 40) return 'var(--col-warn)';
+            return 'var(--col-bad)';
+        }
+
+        function renderGauge(safeScore) {
+            const angle = (safeScore / 100) * 180;
+            const rad = (a) => (a - 180) * Math.PI / 180;
+            const cx = 100, cy = 90, r = 75;
+            const startX = cx + r * Math.cos(rad(0));
+            const startY = cy + r * Math.sin(rad(0));
+            const endX = cx + r * Math.cos(rad(angle));
+            const endY = cy + r * Math.sin(rad(angle));
+            const largeArc = angle > 180 ? 1 : 0;
+            const color = gaugeColor(safeScore);
+
+            gaugeContainer.className = 'gauge-container';
+            gaugeContainer.innerHTML =
+                `<div class="gauge-label">Safety Score</div>` +
+                `<svg class="gauge-svg" width="200" height="110" viewBox="0 0 200 110">` +
+                    `<path d="M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}" fill="none" stroke="#262626" stroke-width="10" stroke-linecap="round"/>` +
+                    (safeScore > 0
+                        ? `<path d="M ${startX} ${startY} A ${r} ${r} 0 ${largeArc} 0 ${endX} ${endY}" fill="none" stroke="${color}" stroke-width="10" stroke-linecap="round" class="gauge-arc"/>`
+                        : '') +
+                `</svg>` +
+                `<div class="gauge-score" style="color:${color}">${safeScore}</div>` +
+                `<div class="gauge-score-label">out of 100</div>`;
+        }
+
+        function tl(level) {
+            return `<span class="tl tl-${level}"></span>`;
+        }
+
+        function statusBadge(isRisky, safeLabel, dangerLabel) {
+            if (isRisky === '1' || isRisky === 1 || isRisky === true) {
+                return `${tl('danger')}<span class="val-danger">${dangerLabel || 'Yes'}</span>`;
+            }
+            if (isRisky === '0' || isRisky === 0 || isRisky === false) {
+                return `${tl('safe')}<span class="val-safe">${safeLabel || 'No'}</span>`;
+            }
+            return `${tl('unknown')}<span class="val-neutral">Unknown</span>`;
+        }
+
+        function statusBadgeInverse(val, safeLabel, dangerLabel) {
+            if (val === '1' || val === 1 || val === true) {
+                return `${tl('safe')}<span class="val-safe">${safeLabel || 'Yes'}</span>`;
+            }
+            if (val === '0' || val === 0 || val === false) {
+                return `${tl('danger')}<span class="val-danger">${dangerLabel || 'No'}</span>`;
+            }
+            return `${tl('unknown')}<span class="val-neutral">Unknown</span>`;
+        }
+
+        function taxBadge(val) {
+            const pct = parseFloat(val);
+            if (isNaN(pct)) return `${tl('unknown')}<span class="val-neutral">Unknown</span>`;
+            const display = (pct * 100).toFixed(1) + '%';
+            if (pct <= 0.05) return `${tl('safe')}<span class="val-safe">${display}</span>`;
+            if (pct <= 0.15) return `${tl('warn')}<span class="val-warn">${display}</span>`;
+            return `${tl('danger')}<span class="val-danger">${display}</span>`;
+        }
+
+        function makeSection(icon, title, items, startOpen) {
+            const id = 'sec_' + Math.random().toString(36).slice(2, 8);
+            const rows = items.map(i =>
+                `<div class="check-item"><span class="check-item-label">${i.label}</span><span class="check-item-value">${i.value}</span></div>`
+            ).join('');
+            return `<div class="check-section" style="animation-delay:${Math.random()*0.2}s">` +
+                `<div class="section-header${startOpen ? ' open' : ''}" data-target="${id}">` +
+                `<span class="section-title">${icon} ${title}</span>` +
+                `<span class="section-chevron">▼</span></div>` +
+                `<div class="section-body${startOpen ? ' open' : ''}" id="${id}">` +
+                `<div class="check-list">${rows}</div></div></div>`;
+        }
+
+        function renderChecks(d) {
+            const sections = [];
+
+            // Honeypot & Sellability
+            sections.push(makeSection('🍯', 'Honeypot & Sellability', [
+                { label: 'Is Honeypot', value: statusBadge(d.is_honeypot, 'No', 'YES — Cannot Sell!') },
+                { label: 'Cannot Sell All', value: statusBadge(d.cannot_sell_all, 'Can sell all', 'Restricted') },
+                { label: 'Transfer Pausable', value: statusBadge(d.transfer_pausable, 'No', 'Yes') },
+                { label: 'Anti-Whale Modifier', value: statusBadge(d.is_anti_whale, 'No', 'Yes') },
+            ], true));
+
+            // Owner Privileges
+            sections.push(makeSection('👑', 'Owner Privileges', [
+                { label: 'Can Change Balance', value: statusBadge(d.owner_change_balance, 'No', 'Yes — Can Mint/Burn!') },
+                { label: 'Can Take Back Ownership', value: statusBadge(d.can_take_back_ownership, 'No', 'Yes') },
+                { label: 'Hidden Owner', value: statusBadge(d.hidden_owner, 'No', 'Yes') },
+                { label: 'Blacklist Function', value: statusBadge(d.is_blacklisted, 'No', 'Yes') },
+                { label: 'Can Whitelist', value: statusBadge(d.is_whitelisted, 'No', 'Yes') },
+                { label: 'Owner Address', value: `<span class="val-neutral" style="font-family:monospace;font-size:0.85em">${d.owner_address || 'Renounced / None'}</span>` },
+            ], true));
+
+            // Tax Info
+            sections.push(makeSection('💸', 'Tax Info', [
+                { label: 'Buy Tax', value: taxBadge(d.buy_tax) },
+                { label: 'Sell Tax', value: taxBadge(d.sell_tax) },
+                { label: 'Slippage Modifiable', value: statusBadge(d.slippage_modifiable, 'No', 'Yes') },
+                { label: 'Personal Slippage Modifiable', value: statusBadge(d.personal_slippage_modifiable, 'No', 'Yes') },
+            ], true));
+
+            // Contract Info
+            sections.push(makeSection('📄', 'Contract', [
+                { label: 'Open Source', value: statusBadgeInverse(d.is_open_source, 'Yes', 'No — Unverified') },
+                { label: 'Proxy Contract', value: statusBadge(d.is_proxy, 'No', 'Yes — Upgradable') },
+                { label: 'External Call', value: statusBadge(d.external_call, 'No', 'Yes') },
+                { label: 'Self Destruct', value: statusBadge(d.selfdestruct, 'No', 'Yes — Can destroy contract!') },
+            ], false));
+
+            // Liquidity
+            let lpItems = [];
+            if (d.lp_holders && d.lp_holders.length) {
+                const totalLp = d.lp_holders.reduce((s, h) => s + parseFloat(h.percent || 0), 0);
+                const locked = d.lp_holders.filter(h => h.is_locked === 1 || h.is_locked === '1');
+                const lockedPct = locked.reduce((s, h) => s + parseFloat(h.percent || 0), 0);
+                const lockStatus = lockedPct > 0
+                    ? `${tl('safe')}<span class="val-safe">${(lockedPct * 100).toFixed(1)}% Locked</span>`
+                    : `${tl('danger')}<span class="val-danger">Not Locked</span>`;
+                lpItems.push({ label: 'LP Lock Status', value: lockStatus });
+                lpItems.push({ label: 'LP Holder Count', value: `<span class="val-neutral">${d.lp_holder_count || d.lp_holders.length}</span>` });
+                lpItems.push({ label: 'Total LP Supply', value: `<span class="val-neutral">${d.lp_total_supply ? parseFloat(d.lp_total_supply).toExponential(2) : 'N/A'}</span>` });
+            } else {
+                lpItems.push({ label: 'LP Lock Status', value: `${tl('unknown')}<span class="val-neutral">No LP data</span>` });
+            }
+            sections.push(makeSection('💧', 'Liquidity', lpItems, false));
+
+            // Holders
+            let holderItems = [];
+            holderItems.push({ label: 'Total Holders', value: `<span class="val-neutral">${d.holder_count || 'N/A'}</span>` });
+            if (d.holders && d.holders.length) {
+                const top10 = d.holders.slice(0, 10);
+                const top10pct = top10.reduce((s, h) => s + parseFloat(h.percent || 0), 0) * 100;
+                const barColor = top10pct > 80 ? 'var(--col-bad)' : top10pct > 50 ? 'var(--col-warn)' : 'var(--col-good)';
+                const level = top10pct > 80 ? 'danger' : top10pct > 50 ? 'warn' : 'safe';
+                holderItems.push({
+                    label: 'Top 10 Holders',
+                    value: `${tl(level)}<span class="val-${level}">${top10pct.toFixed(1)}%</span>`
+                });
+                holderItems.push({
+                    label: '',
+                    value: `<div style="width:120px"><div class="holders-bar"><div class="holders-bar-fill" style="width:${Math.min(top10pct,100)}%;background:${barColor}"></div></div></div>`
+                });
+                // Show top 3 holders
+                top10.slice(0, 3).forEach((h, i) => {
+                    const pct = (parseFloat(h.percent || 0) * 100).toFixed(1);
+                    const tag = h.is_contract === 1 ? ' (contract)' : '';
+                    const locked = h.is_locked === 1 ? ' 🔒' : '';
+                    holderItems.push({
+                        label: `#${i + 1} Holder${tag}${locked}`,
+                        value: `<span class="val-neutral" style="font-family:monospace;font-size:0.85em">${h.address ? h.address.slice(0,6)+'…'+h.address.slice(-4) : '?'} (${pct}%)</span>`
+                    });
+                });
+            }
+            sections.push(makeSection('👥', 'Holders', holderItems, false));
+
+            // Token info
+            const infoItems = [
+                { label: 'Token Name', value: `<span class="val-neutral">${d.token_name || 'N/A'}</span>` },
+                { label: 'Token Symbol', value: `<span class="val-neutral">${d.token_symbol || 'N/A'}</span>` },
+                { label: 'Total Supply', value: `<span class="val-neutral" style="font-family:monospace;font-size:0.85em">${d.total_supply ? parseFloat(d.total_supply).toLocaleString() : 'N/A'}</span>` },
+                { label: 'Creator', value: `<span class="val-neutral" style="font-family:monospace;font-size:0.85em">${d.creator_address ? d.creator_address.slice(0,6)+'…'+d.creator_address.slice(-4) : 'N/A'}</span>` },
+            ];
+            sections.push(makeSection('ℹ️', 'Token Info', infoItems, false));
+
+            checkSections.innerHTML = sections.join('');
+
+            // Bind section toggles
+            checkSections.querySelectorAll('.section-header').forEach(header => {
+                header.addEventListener('click', () => {
+                    header.classList.toggle('open');
+                    const body = document.getElementById(header.dataset.target);
+                    if (body) body.classList.toggle('open');
+                });
+            });
+        }
+
+        // --- Main scan ---
+        async function doScan() {
+            const address = addressInput.value.trim();
+            const chainId = chainSelect.value;
+
+            if (!isValidAddress(address)) {
+                showError('Invalid address. Must be 0x followed by 40 hex characters.');
+                return;
+            }
+
+            showLoader();
+            scanBtn.disabled = true;
+
+            try {
+                const data = await fetchSecurity(chainId, address);
+                const { riskScore, safeScore } = calcRisk(data);
+                const verdict = getVerdict(safeScore);
+
+                renderVerdict(verdict, safeScore);
+                renderGauge(safeScore);
+                renderChecks(data);
+                showResults();
+
+                saveRecent(chainId, address);
+            } catch (err) {
+                showError(err.message || 'Failed to scan token. Please try again.');
+            } finally {
+                scanBtn.disabled = false;
+            }
+        }
+
+        // --- Event listeners ---
+        scanBtn.addEventListener('click', doScan);
+        addressInput.addEventListener('keydown', e => {
+            if (e.key === 'Enter') doScan();
+        });
+        addressInput.addEventListener('paste', () => {
+            setTimeout(doScan, 100);
+        });
+
+        // Init recent scans
+        renderRecent();
+    })();
+    </script>
+</body>
+</html>

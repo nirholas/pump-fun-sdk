@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="lair-include" content="lair.css">
+    <meta name="lair-widget" content="true">
+    <meta name="lair-widget-size" content="2x1">
+    <meta name="lair-icon" content='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="24" height="24" fill="white"><path d="M160-120v-640q0-33 23.5-56.5T240-840h280q33 0 56.5 23.5T600-760v280h40q33 0 56.5 23.5T720-400v120q0 17 11.5 28.5T760-240q17 0 28.5-11.5T800-280v-320h-40q-17 0-28.5-11.5T720-640v-80l-40-40 54-54 126 126v368q0 50-35 85t-85 35q-50 0-85-35t-35-85v-120h-80v320H160Zm120-360h200v-200H280v200Z"/></svg>'>
+    <meta name="capabilities" content="widget,gas_tracker">
+    <meta name="lair-perms" content="network" />
+    <title>Gas Tracker</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{
+            background:transparent;
+            color:var(--col-txt1,#A7C2F3);
+            font-family:'Segoe UI',system-ui,sans-serif;
+            height:100vh;overflow:hidden;user-select:none;
+        }
+
+        /* ─── Animated spinner ─── */
+        .spin{
+            width:14px;height:14px;
+            border:2px solid rgba(255,255,255,.08);
+            border-top-color:var(--colors-accent,rgb(97,121,255));
+            border-radius:50%;
+            animation:sp .7s linear infinite;
+            flex-shrink:0;
+        }
+        @keyframes sp{to{transform:rotate(360deg)}}
+
+        .loading-state{
+            width:100%;height:100%;display:flex;
+            align-items:center;justify-content:center;gap:8px;
+        }
+        .loading-state .text{font-size:.7rem;opacity:.35}
+
+        .error-state{
+            width:100%;height:100%;display:flex;
+            flex-direction:column;align-items:center;justify-content:center;gap:4px;
+            cursor:pointer;
+        }
+        .error-state .icon{font-size:1rem;opacity:.25}
+        .error-state .text{font-size:.6rem;opacity:.3}
+        .error-state .retry{
+            font-size:.55rem;opacity:.4;
+            padding:2px 8px;border-radius:4px;
+            background:rgba(255,255,255,.05);
+            transition:opacity .15s,background .15s;
+        }
+        .error-state:hover .retry{opacity:.7;background:rgba(255,255,255,.1)}
+
+        /* ─── Chain icon (inline SVG) ─── */
+        .chain-icon{
+            width:14px;height:14px;flex-shrink:0;border-radius:50%;
+            display:flex;align-items:center;justify-content:center;
+            overflow:hidden;
+        }
+        .chain-icon svg{width:100%;height:100%}
+
+        /* ─── Trend arrow ─── */
+        .trend{font-size:.55rem;font-weight:700;opacity:.6;flex-shrink:0}
+        .trend.up{color:var(--col-bad,#EF4444)}  /* gas rising is bad */
+        .trend.down{color:var(--col-good,#10B981)} /* gas falling is good */
+        .trend.flat{opacity:.2}
+
+        /* ─── Gas level bar ─── */
+        .gas-bar{
+            width:28px;height:3px;border-radius:2px;
+            background:rgba(255,255,255,.06);flex-shrink:0;
+            position:relative;overflow:hidden;
+        }
+        .gas-bar-fill{
+            position:absolute;left:0;top:0;height:100%;
+            border-radius:2px;
+            transition:width .6s ease, background .4s ease;
+        }
+
+        /* ─── Pulse glow for high gas ─── */
+        @keyframes pulse-glow{
+            0%,100%{box-shadow:none}
+            50%{box-shadow:0 0 6px var(--glow-color,#EF4444)}
+        }
+        .dot-pulse{animation:pulse-glow 2s ease-in-out infinite}
+
+        /* ─── Sparkline (2x2 only) ─── */
+        .sparkline{display:block}
+
+        /* ════════════════════════════════════
+           2x1 Compact Strip
+           ════════════════════════════════════ */
+        .strip{
+            display:flex;align-items:center;
+            gap:8px;padding:0 10px;height:100%;
+            overflow-x:auto;scrollbar-width:none;
+        }
+        .strip::-webkit-scrollbar{display:none}
+
+        .strip .gas-icon{
+            font-size:.85rem;opacity:.4;flex-shrink:0;
+        }
+        .strip .chain-item{
+            display:flex;align-items:center;gap:5px;flex-shrink:0;
+        }
+        .strip .chain-name{
+            font-size:.65rem;font-weight:600;opacity:.45;
+            text-transform:uppercase;letter-spacing:.02em;
+        }
+        .strip .chain-gas{
+            font-size:.8rem;font-weight:500;
+            font-variant-numeric:tabular-nums;
+        }
+        .strip .dot{
+            width:6px;height:6px;border-radius:50%;flex-shrink:0;
+            transition:background .4s ease;
+        }
+        .strip .sep{
+            width:1px;height:20px;
+            background:var(--col-txt1,#fff);opacity:.07;flex-shrink:0;
+        }
+
+        /* ════════════════════════════════════
+           2x2 Detailed Card
+           ════════════════════════════════════ */
+        .card{
+            display:none;flex-direction:column;
+            padding:12px 14px;height:100%;gap:0;
+        }
+        .card .header{
+            display:flex;align-items:center;gap:6px;
+            margin-bottom:6px;
+        }
+        .card .header .icon{font-size:.85rem;opacity:.35}
+        .card .header .title{
+            font-size:.7rem;font-weight:600;opacity:.45;
+            text-transform:uppercase;letter-spacing:.06em;
+        }
+        .card .header .status{
+            margin-left:auto;display:flex;align-items:center;gap:4px;
+        }
+        .card .header .live-dot{
+            width:5px;height:5px;border-radius:50%;
+            background:var(--col-good,#10B981);
+            animation:live-blink 2s ease-in-out infinite;
+        }
+        @keyframes live-blink{0%,100%{opacity:1}50%{opacity:.3}}
+        .card .header .ago{font-size:.55rem;opacity:.25}
+
+        .card .rows{
+            display:flex;flex-direction:column;gap:4px;flex:1;
+            justify-content:center;
+        }
+        .card .row{
+            display:flex;align-items:center;gap:7px;
+            padding:3px 4px;border-radius:4px;
+            transition:background .15s ease;
+        }
+        .card .row:hover{background:rgba(255,255,255,.03)}
+
+        .card .row .c-name{
+            font-size:.72rem;font-weight:600;width:38px;opacity:.55;
+        }
+        .card .row .c-gas{
+            font-size:.85rem;font-weight:500;
+            font-variant-numeric:tabular-nums;flex:1;
+        }
+        .card .row .c-unit{
+            font-size:.55rem;opacity:.25;flex-shrink:0;
+        }
+
+        .card .tiers{
+            display:flex;gap:10px;
+            margin-top:4px;padding-top:4px;
+            border-top:1px solid rgba(255,255,255,.04);
+        }
+        .card .tier{
+            display:flex;flex-direction:column;align-items:center;flex:1;gap:1px;
+        }
+        .card .tier .t-label{
+            font-size:.5rem;font-weight:600;opacity:.25;text-transform:uppercase;
+        }
+        .card .tier .t-val{
+            font-size:.75rem;font-weight:500;
+            font-variant-numeric:tabular-nums;
+        }
+
+        .card .sparkline-row{
+            margin-top:4px;height:20px;flex-shrink:0;
+        }
+
+        .card .footer{
+            display:flex;align-items:center;gap:4px;
+            font-size:.55rem;opacity:.2;margin-top:auto;
+            padding-top:2px;
+        }
+        .card .footer .icon{font-size:.65rem}
+
+        /* ─── Size toggling ─── */
+        body.size-2x2 .strip{display:none}
+        body.size-2x2 .card{display:flex}
+        body.size-2x1 .strip{display:flex}
+        body.size-2x1 .card{display:none}
+    </style>
+</head>
+<body class="size-2x1">
+    <!-- 2x1 compact strip -->
+    <div class="strip" id="strip">
+        <div class="loading-state"><div class="spin"></div><span class="text">Loading gas…</span></div>
+    </div>
+    <!-- 2x2 detailed card -->
+    <div class="card" id="card">
+        <div class="header">
+            <span class="icon">⛽</span>
+            <span class="title">Gas Tracker</span>
+            <div class="status">
+                <div class="live-dot" id="liveDot"></div>
+                <span class="ago" id="ago">…</span>
+            </div>
+        </div>
+        <div class="rows" id="rows">
+            <div class="loading-state"><div class="spin"></div><span class="text">Fetching gas prices…</span></div>
+        </div>
+        <div class="tiers" id="tiers" style="display:none"></div>
+        <div class="sparkline-row" id="sparkRow" style="display:none">
+            <canvas class="sparkline" id="sparkCanvas"></canvas>
+        </div>
+    </div>
+    <script>
+    (function(){
+        'use strict';
+
+        /* ══════════════════════════════════════
+           Chain Configuration
+           ══════════════════════════════════════ */
+        const CHAINS = {
+            ethereum: {
+                name: 'ETH',
+                color: '#627EEA',
+                icon: '<svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="16" fill="#627EEA"/><path d="M16.5 4v8.87l7.5 3.35L16.5 4z" fill="#fff" opacity=".6"/><path d="M16.5 4L9 16.22l7.5-3.35V4z" fill="#fff"/><path d="M16.5 21.97v6.03l7.5-10.38-7.5 4.35z" fill="#fff" opacity=".6"/><path d="M16.5 28V21.97L9 17.62l7.5 10.38z" fill="#fff"/><path d="M16.5 20.57l7.5-4.35-7.5-3.35v7.7z" fill="#fff" opacity=".2"/><path d="M9 16.22l7.5 4.35v-7.7L9 16.22z" fill="#fff" opacity=".6"/></svg>',
+                rpcs: ['https://eth.llamarpc.com', 'https://cloudflare-eth.com', 'https://rpc.ankr.com/eth'],
+                unit: 'gwei',
+                thresholds: { low: 15, medium: 40 },
+                maxGwei: 200,
+                hasEtherscan: true
+            },
+            base: {
+                name: 'Base',
+                color: '#0052FF',
+                icon: '<svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="16" fill="#0052FF"/><path d="M16 6C10.48 6 6 10.48 6 16s4.48 10 10 10c5.18 0 9.44-3.95 9.95-9H18.2c-.48 2.84-2.96 5-5.95 5-3.31 0-6-2.69-6-6s2.69-6 6-6c2.99 0 5.47 2.16 5.95 5h7.75C25.44 9.95 21.18 6 16 6z" fill="#fff"/></svg>',
+                rpcs: ['https://mainnet.base.org', 'https://base.llamarpc.com', 'https://rpc.ankr.com/base'],
+                unit: 'gwei',
+                thresholds: { low: 0.05, medium: 0.15 },
+                maxGwei: 1
+            },
+            arbitrum: {
+                name: 'ARB',
+                color: '#28A0F0',
+                icon: '<svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="16" fill="#28A0F0"/><path d="M21.5 20.5l2.5 4-7.5-10.5 5 6.5zm-4-5.5L12 7h4l5.5 8-4-5.5zM8 22l4.5-6.5L17 22H8z" fill="#fff"/></svg>',
+                rpcs: ['https://arb1.arbitrum.io/rpc', 'https://arbitrum.llamarpc.com', 'https://rpc.ankr.com/arbitrum'],
+                unit: 'gwei',
+                thresholds: { low: 0.1, medium: 0.5 },
+                maxGwei: 5
+            },
+            bsc: {
+                name: 'BSC',
+                color: '#F0B90B',
+                icon: '<svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="16" fill="#F0B90B"/><path d="M16 6l2.5 2.5-6.5 6.5L9.5 12.5 16 6zm-6.5 10L7 18.5 9.5 21l2.5-2.5-2.5-2.5zm6.5 6.5L13.5 20l-2.5 2.5L16 27.5l5-5-2.5-2.5L16 22.5zM22.5 16l2.5 2.5-2.5 2.5-2.5-2.5 2.5-2.5zM16 13.5L18.5 16 16 18.5 13.5 16 16 13.5z" fill="#fff"/></svg>',
+                rpcs: ['https://bsc-dataseed.binance.org', 'https://bsc-dataseed1.binance.org', 'https://rpc.ankr.com/bsc'],
+                unit: 'gwei',
+                thresholds: { low: 3, medium: 8 },
+                maxGwei: 30
+            },
+            polygon: {
+                name: 'POL',
+                color: '#8247E5',
+                icon: '<svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="16" fill="#8247E5"/><path d="M21.1 13.3c-.4-.2-.9-.2-1.2 0l-2.8 1.6-1.9 1.1-2.8 1.6c-.4.2-.9.2-1.2 0l-2.2-1.3c-.4-.2-.6-.6-.6-1.1v-2.5c0-.4.2-.9.6-1.1l2.2-1.2c.4-.2.9-.2 1.2 0l2.2 1.3c.4.2.6.6.6 1.1v1.6l1.9-1.1v-1.7c0-.4-.2-.9-.6-1.1l-4-2.3c-.4-.2-.9-.2-1.2 0l-4.1 2.4c-.4.2-.6.6-.6 1v4.7c0 .4.2.9.6 1.1l4.1 2.3c.4.2.9.2 1.2 0l2.8-1.6 1.9-1.1 2.8-1.6c.4-.2.9-.2 1.2 0l2.2 1.2c.4.2.6.6.6 1.1v2.5c0 .4-.2.9-.6 1.1l-2.1 1.3c-.4.2-.9.2-1.2 0l-2.2-1.3c-.4-.2-.6-.6-.6-1.1v-1.5l-1.9 1.1v1.6c0 .4.2.9.6 1.1l4.1 2.3c.4.2.9.2 1.2 0l4.1-2.3c.4-.2.6-.6.6-1.1v-4.7c0-.4-.2-.9-.6-1.1l-4.2-2.4z" fill="#fff"/></svg>',
+                rpcs: ['https://polygon-rpc.com', 'https://polygon.llamarpc.com', 'https://rpc.ankr.com/polygon'],
+                unit: 'gwei',
+                thresholds: { low: 30, medium: 80 },
+                maxGwei: 300
+            }
+        };
+
+        /* ══════════════════════════════════════
+           Settings
+           ══════════════════════════════════════ */
+        const sObj = window.__widgetSettings || {};
+        let enabledChains = sObj.chains
+            ? sObj.chains.split(',').map(c => c.trim().toLowerCase()).filter(c => CHAINS[c])
+            : ['ethereum', 'base', 'arbitrum'];
+        let refreshRate = parseInt(sObj.refreshRate, 10) || 30;
+        let widgetSize = sObj.size || '2x1';
+
+        window.parent.postMessage({
+            type: 'widgetDeclareSettings',
+            widgetId: window.__widgetId,
+            settings: [
+                { key: 'chains', label: 'Chains (comma-sep)', type: 'text', value: enabledChains.join(',') },
+                { key: 'refreshRate', label: 'Refresh (sec)', type: 'number', value: refreshRate },
+                { key: 'size', label: 'Size (2x1 or 2x2)', type: 'text', value: widgetSize }
+            ]
+        }, '*');
+
+        window.addEventListener('message', e => {
+            if (e.data && e.data.type === 'widgetSettingsUpdate') {
+                const s = e.data.settings;
+                if (s.chains) enabledChains = s.chains.split(',').map(c => c.trim().toLowerCase()).filter(c => CHAINS[c]);
+                if (s.refreshRate) refreshRate = parseInt(s.refreshRate, 10) || 30;
+                if (s.size) { widgetSize = s.size; applySize(); }
+                clearInterval(mainTimer);
+                mainTimer = setInterval(fetchAll, refreshRate * 1000);
+                fetchAll();
+            }
+        });
+
+        function applySize() {
+            document.body.className = widgetSize === '2x2' ? 'size-2x2' : 'size-2x1';
+        }
+        applySize();
+
+        /* ══════════════════════════════════════
+           Fetch Helpers — with fallback RPCs
+           ══════════════════════════════════════ */
+        async function rpcFetch(url, body) {
+            const opts = {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            };
+            if (window.cfetch) return window.cfetch(url, opts);
+            return fetch(url, opts);
+        }
+
+        async function getGasPrice(chain) {
+            const cfg = CHAINS[chain];
+            if (!cfg) return null;
+            const request = { jsonrpc: '2.0', method: 'eth_gasPrice', params: [], id: 1 };
+            for (const rpc of cfg.rpcs) {
+                try {
+                    const res = await rpcFetch(rpc, request);
+                    if (!res.ok) continue;
+                    const data = await res.json();
+                    if (data.result) {
+                        return parseInt(data.result, 16) / 1e9;
+                    }
+                } catch (_) { /* try next RPC */ }
+            }
+            return null;
+        }
+
+        /** Etherscan gas oracle — returns {low, medium, high} in gwei (Ethereum only) */
+        async function getEtherscanTiers() {
+            try {
+                const url = 'https://api.etherscan.io/api?module=gastracker&action=gasoracle';
+                const fn = window.cfetch || fetch;
+                const res = await fn(url);
+                if (!res.ok) throw new Error(`Etherscan ${res.status}`);
+                const data = await res.json();
+                if (data.status === '1' && data.result) {
+                    return {
+                        low: parseFloat(data.result.SafeGasPrice),
+                        medium: parseFloat(data.result.ProposeGasPrice),
+                        high: parseFloat(data.result.FastGasPrice)
+                    };
+                }
+            } catch (_) {}
+            return null;
+        }
+
+        /* ══════════════════════════════════════
+           State
+           ══════════════════════════════════════ */
+        let prices = {};
+        let prevPrices = {};
+        let history = {};
+        let ethTiers = null;
+        let lastFetch = 0;
+        let fetchCount = 0;
+        let errorCount = 0;
+        let mainTimer = null;
+        const HISTORY_LEN = 20;
+        const CACHE_KEY = 'lair_gas_widget_cache';
+        const CACHE_TTL = 25 * 1000;
+
+        /* Load cache on init */
+        try {
+            const c = sessionStorage.getItem(CACHE_KEY);
+            if (c) {
+                const { ts, data } = JSON.parse(c);
+                if (Date.now() - ts < CACHE_TTL) {
+                    prices = data.prices || {};
+                    history = data.history || {};
+                    ethTiers = data.ethTiers || null;
+                    lastFetch = ts;
+                }
+            }
+        } catch (_) {}
+
+        /* ══════════════════════════════════════
+           Helpers
+           ══════════════════════════════════════ */
+        function gasColor(chain, gwei) {
+            const t = CHAINS[chain]?.thresholds;
+            if (!t) return '#888';
+            if (gwei <= t.low) return '#10B981';
+            if (gwei <= t.medium) return '#F59E0B';
+            return '#EF4444';
+        }
+
+        function gasLevel(chain, gwei) {
+            const t = CHAINS[chain]?.thresholds;
+            if (!t) return 'low';
+            if (gwei <= t.low) return 'low';
+            if (gwei <= t.medium) return 'medium';
+            return 'high';
+        }
+
+        function fmtGas(gwei) {
+            if (gwei == null) return '—';
+            if (gwei >= 100) return Math.round(gwei).toString();
+            if (gwei >= 10) return gwei.toFixed(1);
+            if (gwei >= 1) return gwei.toFixed(1);
+            if (gwei >= 0.01) return gwei.toFixed(2);
+            if (gwei >= 0.001) return gwei.toFixed(3);
+            return gwei.toFixed(4);
+        }
+
+        function gasFillPct(chain, gwei) {
+            const max = CHAINS[chain]?.maxGwei || 100;
+            return Math.min(100, Math.max(2, (gwei / max) * 100));
+        }
+
+        function trendArrow(chain) {
+            const cur = prices[chain];
+            const prev = prevPrices[chain];
+            if (cur == null || prev == null) return { cls: 'flat', txt: '' };
+            const diff = cur - prev;
+            const pct = prev > 0 ? Math.abs(diff / prev) * 100 : 0;
+            if (pct < 2) return { cls: 'flat', txt: '' };
+            if (diff > 0) return { cls: 'up', txt: '▲' };
+            return { cls: 'down', txt: '▼' };
+        }
+
+        function timeAgo() {
+            if (!lastFetch) return '…';
+            const sec = Math.round((Date.now() - lastFetch) / 1000);
+            if (sec < 5) return 'just now';
+            return sec + 's ago';
+        }
+
+        /* ══════════════════════════════════════
+           Render: 2x1 Strip
+           ══════════════════════════════════════ */
+        function renderStrip() {
+            const el = document.getElementById('strip');
+            if (!enabledChains.length) {
+                el.innerHTML = '<div class="loading-state"><span class="text">No chains</span></div>';
+                return;
+            }
+            if (!lastFetch && !Object.keys(prices).length) return;
+
+            let html = '<span class="gas-icon">⛽</span>';
+            enabledChains.forEach((chain, i) => {
+                if (i > 0) html += '<div class="sep"></div>';
+                const g = prices[chain];
+                const cfg = CHAINS[chain];
+                const t = trendArrow(chain);
+
+                if (g == null) {
+                    html += `<div class="chain-item">
+                        <div class="chain-icon">${cfg.icon}</div>
+                        <span class="chain-name">${cfg.name}</span>
+                        <span class="chain-gas" style="opacity:.2">—</span>
+                    </div>`;
+                } else {
+                    const col = gasColor(chain, g);
+                    const lvl = gasLevel(chain, g);
+                    const dotCls = lvl === 'high' ? 'dot-pulse' : '';
+                    html += `<div class="chain-item">
+                        <div class="chain-icon">${cfg.icon}</div>
+                        <span class="chain-name">${cfg.name}</span>
+                        <div class="dot ${dotCls}" style="width:6px;height:6px;border-radius:50%;background:${col};--glow-color:${col}"></div>
+                        <span class="chain-gas">${fmtGas(g)}</span>
+                        ${t.txt ? `<span class="trend ${t.cls}">${t.txt}</span>` : ''}
+                    </div>`;
+                }
+            });
+            el.innerHTML = html;
+        }
+
+        /* ══════════════════════════════════════
+           Render: 2x2 Card
+           ══════════════════════════════════════ */
+        function renderCard() {
+            const rowsEl = document.getElementById('rows');
+            const tiersEl = document.getElementById('tiers');
+            const agoEl = document.getElementById('ago');
+
+            if (!enabledChains.length) {
+                rowsEl.innerHTML = '<div class="loading-state"><span class="text">No chains selected</span></div>';
+                return;
+            }
+            if (!lastFetch && !Object.keys(prices).length) return;
+
+            let html = '';
+            enabledChains.forEach(chain => {
+                const g = prices[chain];
+                const cfg = CHAINS[chain];
+                const t = trendArrow(chain);
+
+                if (g == null) {
+                    html += `<div class="row">
+                        <div class="chain-icon">${cfg.icon}</div>
+                        <span class="c-name">${cfg.name}</span>
+                        <span class="c-gas" style="opacity:.2">—</span>
+                    </div>`;
+                } else {
+                    const col = gasColor(chain, g);
+                    const lvl = gasLevel(chain, g);
+                    const dotCls = lvl === 'high' ? 'dot-pulse' : '';
+                    const fillPct = gasFillPct(chain, g);
+                    html += `<div class="row">
+                        <div class="chain-icon">${cfg.icon}</div>
+                        <span class="c-name">${cfg.name}</span>
+                        <div class="dot ${dotCls}" style="width:7px;height:7px;border-radius:50%;background:${col};--glow-color:${col};flex-shrink:0"></div>
+                        <span class="c-gas">${fmtGas(g)}</span>
+                        <span class="c-unit">${cfg.unit}</span>
+                        <div class="gas-bar"><div class="gas-bar-fill" style="width:${fillPct}%;background:${col}"></div></div>
+                        ${t.txt ? `<span class="trend ${t.cls}">${t.txt}</span>` : '<span class="trend flat">•</span>'}
+                    </div>`;
+                }
+            });
+            rowsEl.innerHTML = html;
+
+            /* Ethereum gas tiers */
+            if (ethTiers && enabledChains.includes('ethereum')) {
+                tiersEl.style.display = '';
+                tiersEl.innerHTML = `
+                    <div class="tier"><span class="t-label">🐢 Slow</span><span class="t-val" style="color:${gasColor('ethereum', ethTiers.low)}">${fmtGas(ethTiers.low)}</span></div>
+                    <div class="tier"><span class="t-label">🚶 Std</span><span class="t-val" style="color:${gasColor('ethereum', ethTiers.medium)}">${fmtGas(ethTiers.medium)}</span></div>
+                    <div class="tier"><span class="t-label">⚡ Fast</span><span class="t-val" style="color:${gasColor('ethereum', ethTiers.high)}">${fmtGas(ethTiers.high)}</span></div>
+                `;
+            } else {
+                tiersEl.style.display = 'none';
+            }
+
+            renderSparkline();
+            if (agoEl) agoEl.textContent = timeAgo();
+        }
+
+        /* ══════════════════════════════════════
+           Sparkline (primary chain gas history)
+           ══════════════════════════════════════ */
+        function renderSparkline() {
+            const primary = enabledChains[0];
+            const h = history[primary];
+            const sparkRow = document.getElementById('sparkRow');
+            if (!h || h.length < 3) { if (sparkRow) sparkRow.style.display = 'none'; return; }
+
+            sparkRow.style.display = '';
+            const canvas = document.getElementById('sparkCanvas');
+            const rect = sparkRow.getBoundingClientRect();
+            const W = Math.max(rect.width, 100);
+            const H = Math.max(rect.height, 20);
+            canvas.width = W * 2; canvas.height = H * 2;
+            canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const min = Math.min(...h) * 0.9;
+            const max = Math.max(...h) * 1.1 || 1;
+            const scale = v => canvas.height - ((v - min) / (max - min)) * canvas.height;
+            const stepX = canvas.width / (h.length - 1);
+
+            const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            const col = gasColor(primary, h[h.length - 1]);
+            grad.addColorStop(0, col + '30');
+            grad.addColorStop(1, col + '00');
+
+            ctx.beginPath();
+            ctx.moveTo(0, scale(h[0]));
+            for (let i = 1; i < h.length; i++) ctx.lineTo(i * stepX, scale(h[i]));
+            ctx.strokeStyle = col;
+            ctx.lineWidth = 2;
+            ctx.lineJoin = 'round';
+            ctx.lineCap = 'round';
+            ctx.stroke();
+
+            ctx.lineTo(canvas.width, canvas.height);
+            ctx.lineTo(0, canvas.height);
+            ctx.closePath();
+            ctx.fillStyle = grad;
+            ctx.fill();
+
+            const lastX = (h.length - 1) * stepX;
+            const lastY = scale(h[h.length - 1]);
+            ctx.beginPath();
+            ctx.arc(lastX, lastY, 3, 0, Math.PI * 2);
+            ctx.fillStyle = col;
+            ctx.fill();
+        }
+
+        /* ══════════════════════════════════════
+           Render dispatch
+           ══════════════════════════════════════ */
+        function render() { renderStrip(); renderCard(); }
+
+        /* ══════════════════════════════════════
+           Error state
+           ══════════════════════════════════════ */
+        function showError(target) {
+            const el = document.getElementById(target);
+            if (!el) return;
+            el.innerHTML = `<div class="error-state" onclick="window.__gasRetry()">
+                <span class="icon">⚠️</span>
+                <span class="text">Failed to fetch gas</span>
+                <span class="retry">tap to retry</span>
+            </div>`;
+        }
+        window.__gasRetry = function() { fetchAll(); };
+
+        /* ══════════════════════════════════════
+           Fetch All Chains
+           ══════════════════════════════════════ */
+        async function fetchAll() {
+            fetchCount++;
+            prevPrices = { ...prices };
+
+            let anySuccess = false;
+            await Promise.allSettled(
+                enabledChains.map(async chain => {
+                    const g = await getGasPrice(chain);
+                    if (g != null) {
+                        prices[chain] = g;
+                        anySuccess = true;
+                        if (!history[chain]) history[chain] = [];
+                        history[chain].push(g);
+                        if (history[chain].length > HISTORY_LEN) history[chain].shift();
+                    }
+                })
+            );
+
+            // Etherscan tiers (non-blocking)
+            if (enabledChains.includes('ethereum')) {
+                getEtherscanTiers().then(t => { if (t) { ethTiers = t; render(); } });
+            }
+
+            if (anySuccess) {
+                lastFetch = Date.now();
+                errorCount = 0;
+                render();
+                try {
+                    sessionStorage.setItem(CACHE_KEY, JSON.stringify({
+                        ts: lastFetch, data: { prices, history, ethTiers }
+                    }));
+                } catch (_) {}
+            } else {
+                errorCount++;
+                if (errorCount >= 3 && !Object.keys(prices).length) {
+                    showError('strip');
+                    const rowsEl = document.getElementById('rows');
+                    if (rowsEl) rowsEl.innerHTML = '';
+                    showError('card');
+                }
+            }
+        }
+
+        /* ══════════════════════════════════════
+           Time-ago ticker
+           ══════════════════════════════════════ */
+        setInterval(() => {
+            const agoEl = document.getElementById('ago');
+            if (agoEl && lastFetch) agoEl.textContent = timeAgo();
+        }, 3000);
+
+        /* ══════════════════════════════════════
+           Visibility-aware refresh
+           ══════════════════════════════════════ */
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                clearInterval(mainTimer);
+                mainTimer = null;
+            } else {
+                fetchAll();
+                mainTimer = setInterval(fetchAll, refreshRate * 1000);
+            }
+        });
+
+        /* ══════════════════════════════════════
+           Init
+           ══════════════════════════════════════ */
+        if (Object.keys(prices).length) render();
+        fetchAll();
+        mainTimer = setInterval(fetchAll, refreshRate * 1000);
+
+    })();
+    </script>
+</body>
+</html>

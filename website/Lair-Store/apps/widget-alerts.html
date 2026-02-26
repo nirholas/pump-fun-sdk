@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="lair-include" content="lair.css">
+    <meta name="lair-widget" content="true">
+    <meta name="lair-widget-size" content="3x2">
+    <meta name="lair-icon" content='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="24" height="24" fill="white"><path d="M80-560q0-100 44.5-183.5T244-882l47 64q-60 44-95.5 111T160-560H80Zm720 0q0-80-35.5-147T669-818l47-64q75 55 119.5 138.5T880-560h-80ZM160-200v-80h80v-280q0-83 50-147.5T420-792v-28q0-25 17.5-42.5T480-880q25 0 42.5 17.5T540-820v28q80 20 130 84.5T720-560v280h80v80H160Zm320-300Zm0 420q-33 0-56.5-23.5T400-160h160q0 33-23.5 56.5T480-80ZM320-280h320v-280q0-66-47-113t-113-47q-66 0-113 47t-47 113v280Z"/></svg>'>
+    <meta name="capabilities" content="widget,price_alerts">
+    <meta name="lair-perms" content="network" />
+    <title>Price Alerts</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: transparent;
+            color: var(--col-txt1, #fff);
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            height: 100vh;
+            overflow: hidden;
+            user-select: none;
+            display: flex;
+            flex-direction: column;
+        }
+        .header {
+            display: flex;
+            align-items: center;
+            padding: 5px 10px;
+            flex-shrink: 0;
+        }
+        .title {
+            font-size: 0.65rem;
+            font-weight: 700;
+            opacity: 0.5;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .status {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .dot { width: 5px; height: 5px; border-radius: 50%; background: #555; }
+        .dot.live { background: #5be45b; }
+        .status-text { font-size: 0.45rem; opacity: 0.3; }
+        .alerts-list {
+            flex: 1;
+            padding: 2px 8px 4px;
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            overflow: hidden;
+        }
+        .alert-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 3px 6px;
+            border-radius: 5px;
+            transition: background 0.15s;
+            min-height: 0;
+        }
+        .alert-row:hover { background: rgba(255,255,255,0.04); }
+        .alert-row.triggered { animation: flash 1s ease-in-out 2; }
+        @keyframes flash {
+            0%, 100% { background: transparent; }
+            50% { background: rgba(255,200,0,0.12); }
+        }
+        .a-icon { width: 16px; height: 16px; border-radius: 50%; flex-shrink: 0; }
+        .a-sym { font-size: 0.65rem; font-weight: 700; min-width: 32px; }
+        .a-price { font-size: 0.6rem; opacity: 0.5; font-variant-numeric: tabular-nums; flex: 1; }
+        .a-dir {
+            font-size: 0.55rem; font-weight: 700; padding: 1px 4px;
+            border-radius: 3px; min-width: 20px; text-align: center;
+        }
+        .a-dir.above { color: var(--col-good, #85FF85); background: rgba(133,255,133,0.08); }
+        .a-dir.below { color: var(--col-bad, #AC4949); background: rgba(172,73,73,0.08); }
+        .a-target { font-size: 0.6rem; font-weight: 600; font-variant-numeric: tabular-nums; min-width: 52px; text-align: right; }
+        .a-dist { font-size: 0.5rem; opacity: 0.4; font-variant-numeric: tabular-nums; min-width: 38px; text-align: right; }
+        .loading-msg {
+            flex: 1; display: flex; align-items: center; justify-content: center;
+            font-size: 0.6rem; opacity: 0.3;
+        }
+        .empty-state {
+            flex: 1; display: flex; flex-direction: column; align-items: center;
+            justify-content: center; gap: 4px; opacity: 0.25;
+        }
+        .empty-state .icon { font-size: 1.4rem; }
+        .empty-state .text { font-size: 0.55rem; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <span class="title">Price Alerts</span>
+        <div class="status">
+            <div class="dot" id="dot"></div>
+            <span class="status-text" id="statusText">—</span>
+        </div>
+    </div>
+    <div class="alerts-list" id="list">
+        <div class="loading-msg">Loading...</div>
+    </div>
+    <script>
+    (() => {
+        const COINS = {
+            bitcoin:    { sym: 'BTC',  img: 'https://assets.coingecko.com/coins/images/1/small/bitcoin.png' },
+            ethereum:   { sym: 'ETH',  img: 'https://assets.coingecko.com/coins/images/279/small/ethereum.png' },
+            solana:     { sym: 'SOL',  img: 'https://assets.coingecko.com/coins/images/4128/small/solana.png' },
+            dogecoin:   { sym: 'DOGE', img: 'https://assets.coingecko.com/coins/images/5/small/dogecoin.png' },
+            cardano:    { sym: 'ADA',  img: 'https://assets.coingecko.com/coins/images/975/small/cardano.png' },
+            polkadot:   { sym: 'DOT',  img: 'https://assets.coingecko.com/coins/images/12171/small/polkadot.png' },
+        };
+
+        const DEFAULT_ALERTS = [
+            { coin: 'bitcoin',  target: 100000, dir: 'above' },
+            { coin: 'bitcoin',  target: 80000,  dir: 'below' },
+            { coin: 'ethereum', target: 5000,   dir: 'above' },
+            { coin: 'ethereum', target: 3000,   dir: 'below' },
+            { coin: 'solana',   target: 200,    dir: 'above' },
+            { coin: 'solana',   target: 120,    dir: 'below' },
+        ];
+
+        const settings = window.__widgetSettings || {};
+        let alertsConfig;
+        try { alertsConfig = settings.alerts ? JSON.parse(settings.alerts) : DEFAULT_ALERTS; }
+        catch (_) { alertsConfig = DEFAULT_ALERTS; }
+
+        window.parent.postMessage({
+            type: 'widgetDeclareSettings',
+            widgetId: window.__widgetId,
+            settings: [
+                { key: 'alerts', label: 'Alerts (JSON array)', type: 'text', value: JSON.stringify(alertsConfig) },
+            ]
+        }, '*');
+
+        window.addEventListener('message', (e) => {
+            if (e.data && e.data.type === 'widgetSettingsUpdate') {
+                try { alertsConfig = JSON.parse(e.data.settings.alerts); } catch (_) {}
+                load();
+            }
+        });
+
+        const $list = document.getElementById('list');
+        const $dot = document.getElementById('dot');
+        const $st = document.getElementById('statusText');
+        let prevPrices = {};
+        let refreshTimer = null;
+
+        async function proxyFetch(url) {
+            if (window.cfetch) return window.cfetch(url);
+            const base = (window.location.ancestorOrigins?.[0] || window.location.origin).replace(/\/$/, '');
+            return fetch(`${base}/api/proxy?url=${encodeURIComponent(url)}`);
+        }
+
+        function fmt(n) {
+            if (n >= 1000) return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+            if (n >= 1) return '$' + n.toFixed(2);
+            return '$' + n.toFixed(4);
+        }
+
+        async function load() {
+            try {
+                const coinIds = [...new Set(alertsConfig.map(a => a.coin))];
+                const r = await proxyFetch(`https://api.coingecko.com/api/v3/simple/price?ids=${coinIds.join(',')}&vs_currencies=usd`);
+                const data = await r.json();
+                if (!data || typeof data !== 'object') throw new Error('Invalid');
+
+                $dot.className = 'dot live';
+                $st.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+                if (!alertsConfig.length) {
+                    $list.innerHTML = '<div class="empty-state"><div class="icon">🔔</div><div class="text">No alerts configured</div></div>';
+                    return;
+                }
+
+                $list.innerHTML = alertsConfig.map(alert => {
+                    const price = data[alert.coin]?.usd;
+                    if (!price) return '';
+                    const meta = COINS[alert.coin] || { sym: alert.coin.toUpperCase().slice(0, 5), img: '' };
+                    const dist = ((price - alert.target) / alert.target * 100);
+                    const wasTriggered = prevPrices[alert.coin] && (alert.dir === 'above'
+                        ? prevPrices[alert.coin] < alert.target && price >= alert.target
+                        : prevPrices[alert.coin] > alert.target && price <= alert.target);
+
+                    return `<div class="alert-row${wasTriggered ? ' triggered' : ''}">
+                        ${meta.img ? `<img class="a-icon" src="${meta.img}" alt="${meta.sym}">` : ''}
+                        <span class="a-sym">${meta.sym}</span>
+                        <span class="a-price">${fmt(price)}</span>
+                        <span class="a-dir ${alert.dir}">${alert.dir === 'above' ? '▲' : '▼'}</span>
+                        <span class="a-target">${fmt(alert.target)}</span>
+                        <span class="a-dist">${dist >= 0 ? '+' : ''}${dist.toFixed(1)}%</span>
+                    </div>`;
+                }).join('');
+
+                coinIds.forEach(id => { if (data[id]?.usd) prevPrices[id] = data[id].usd; });
+            } catch (e) {
+                if (!$list.querySelector('.alert-row')) $list.innerHTML = '<div class="loading-msg">Offline</div>';
+                $dot.className = 'dot';
+                $st.textContent = 'Offline';
+            }
+            clearTimeout(refreshTimer);
+            refreshTimer = setTimeout(load, 30000);
+        }
+
+        load();
+    })();
+    </script>
+</body>
+</html>

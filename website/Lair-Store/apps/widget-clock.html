@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="lair-include" content="lair.css">
+    <meta name="lair-widget" content="true">
+    <meta name="lair-widget-size" content="2x2">
+    <meta name="lair-icon" content='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="24" height="24" fill="white"><path d="m612-292 56-56-148-148v-184h-80v216l172 172ZM480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Z"/></svg>'>
+    <title>Clock</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: transparent;
+            color: var(--col-txt1, #fff);
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
+            user-select: none;
+        }
+        .clock-container {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+        .time {
+            font-size: 3.2rem;
+            font-weight: 200;
+            letter-spacing: 0.04em;
+            line-height: 1;
+            font-variant-numeric: tabular-nums;
+        }
+        .seconds {
+            font-size: 1.2rem;
+            opacity: 0.35;
+            font-weight: 300;
+            vertical-align: super;
+        }
+        .date {
+            font-size: 0.85rem;
+            opacity: 0.5;
+            font-weight: 400;
+        }
+        .ampm {
+            font-size: 0.9rem;
+            opacity: 0.4;
+            font-weight: 500;
+            margin-left: 2px;
+        }
+    </style>
+</head>
+<body>
+    <div class="clock-container">
+        <div class="time" id="time"></div>
+        <div class="date" id="date"></div>
+    </div>
+    <script>
+        // Settings support
+        const settings = window.__widgetSettings || {};
+        let use24h = settings.format === '24h';
+        let showSeconds = settings.showSeconds !== false; // default on
+
+        // Declare settings to parent
+        window.parent.postMessage({
+            type: 'widgetDeclareSettings',
+            widgetId: window.__widgetId,
+            settings: [
+                {
+                    key: 'format', label: 'Time format', type: 'select', value: use24h ? '24h' : '12h',
+                    options: [
+                        { value: '12h', label: '12-hour' },
+                        { value: '24h', label: '24-hour' },
+                    ]
+                },
+                { key: 'showSeconds', label: 'Show seconds', type: 'toggle', value: showSeconds },
+            ]
+        }, '*');
+
+        // Listen for settings changes
+        window.addEventListener('message', (e) => {
+            if (e.data && e.data.type === 'widgetSettingsUpdate') {
+                use24h = e.data.settings.format === '24h';
+                showSeconds = e.data.settings.showSeconds !== false;
+                update();
+            }
+        });
+
+        function update() {
+            const now = new Date();
+            let h = now.getHours();
+            const m = String(now.getMinutes()).padStart(2, '0');
+            const s = String(now.getSeconds()).padStart(2, '0');
+
+            let timeStr = '';
+            if (use24h) {
+                timeStr = `${String(h).padStart(2, '0')}:${m}`;
+                if (showSeconds) timeStr += `<span class="seconds">${s}</span>`;
+            } else {
+                const ampm = h >= 12 ? 'PM' : 'AM';
+                h = h % 12 || 12;
+                timeStr = `${h}:${m}`;
+                if (showSeconds) timeStr += `<span class="seconds">${s}</span>`;
+                timeStr += `<span class="ampm">${ampm}</span>`;
+            }
+
+            document.getElementById('time').innerHTML = timeStr;
+
+            const opts = { weekday: 'long', month: 'long', day: 'numeric' };
+            document.getElementById('date').textContent = now.toLocaleDateString('en-US', opts);
+        }
+        update();
+        setInterval(update, 1000);
+    </script>
+</body>
+</html>

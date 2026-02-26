@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="lair-include" content="lair.css material-symbols-rounded">
+    <meta name="lair-icon" content='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="24" height="24" fill="white"><path d="M40-160v-112q0-34 17.5-62.5T104-378q62-31 126-46.5T360-440q66 0 130 15.5T616-378q29 15 46.5 43.5T680-272v112H40Zm720 0v-120q0-44-24.5-84.5T666-434q51 6 96 20.5t84 35.5q36 20 55 44.5t19 53.5v120H760ZM360-480q-66 0-113-47t-47-113q0-66 47-113t113-47q66 0 113 47t47 113q0 66-47 113t-113 47Zm400-160q0 66-47 113t-113 47q-11 0-28-2.5t-28-5.5q27-32 41.5-71t14.5-81q0-42-14.5-81T544-792q14-5 28-6.5t28-1.5q66 0 113 47t47 113Z"/></svg>'>
+    <meta name="permissions" content="appStorage, network">
+    <meta name="capabilities" content="smart_money">
+    <title>Smart Money Tracker</title>
+    <style>
+        :root {
+            --bg1: #080A19; --bg2: #0C0F27; --bg3: #151840;
+            --txt1: #c8d6f0; --txt2: #8899bb; --txt3: #556688;
+            --accent: #6179ff; --good: #5be45b; --bad: #ef4444;
+            --warn: #f59e0b; --purple: #a855f7;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body { height: 100%; background: var(--bg1); color: var(--txt1); font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 13px; }
+        .app { height: 100%; display: flex; flex-direction: column; }
+        .header { display: flex; align-items: center; gap: 10px; padding: 10px 16px; border-bottom: 1px solid rgba(97,121,255,.12); flex-shrink: 0; flex-wrap: wrap; }
+        .header h1 { font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+        .header h1 .material-symbols-rounded { font-size: 18px; color: var(--accent); }
+        .header-right { margin-left: auto; display: flex; gap: 6px; align-items: center; }
+        select, button, input { background: var(--bg3); color: var(--txt1); border: 1px solid rgba(97,121,255,.16); border-radius: 6px; padding: 5px 10px; font-size: 11px; font-family: inherit; cursor: pointer; }
+        select:focus, input:focus { outline: none; border-color: var(--accent); }
+        button:hover { border-color: var(--accent); background: rgba(97,121,255,.1); }
+        .btn-accent { background: var(--accent); border-color: transparent; color: #fff; font-weight: 600; }
+        .btn-accent:hover { background: #4d65ee; }
+        .tab-bar { display: flex; gap: 2px; padding: 8px 16px; border-bottom: 1px solid rgba(97,121,255,.08); background: var(--bg2); flex-shrink: 0; overflow-x: auto; }
+        .tab { background: transparent; border: 1px solid transparent; border-radius: 6px; padding: 6px 14px; font-size: 12px; font-weight: 500; color: var(--txt2); transition: all .15s; display: flex; align-items: center; gap: 5px; white-space: nowrap; }
+        .tab:hover { color: var(--txt1); background: rgba(97,121,255,.06); }
+        .tab.active { background: var(--accent); color: #fff; border-color: transparent; }
+        .tab .material-symbols-rounded { font-size: 15px; }
+        .summary { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; padding: 14px 16px; flex-shrink: 0; }
+        .stat-card { background: var(--bg2); border: 1px solid rgba(97,121,255,.1); border-radius: 10px; padding: 12px 14px; }
+        .stat-label { font-size: 10px; text-transform: uppercase; letter-spacing: .5px; color: var(--txt3); margin-bottom: 4px; }
+        .stat-value { font-size: 20px; font-weight: 700; }
+        .stat-sub { font-size: 10px; color: var(--txt2); margin-top: 2px; }
+        .content { flex: 1; overflow-y: auto; padding: 0 16px 16px; }
+        .content::-webkit-scrollbar { width: 5px; }
+        .content::-webkit-scrollbar-thumb { background: var(--bg3); border-radius: 3px; }
+        .data-table { width: 100%; border-collapse: collapse; }
+        .data-table th { text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: .5px; color: var(--txt3); padding: 10px; border-bottom: 1px solid rgba(97,121,255,.1); position: sticky; top: 0; background: var(--bg1); z-index: 1; }
+        .data-table td { padding: 10px; border-bottom: 1px solid rgba(255,255,255,.02); font-size: 12px; vertical-align: middle; }
+        .data-table tr:hover td { background: rgba(97,121,255,.03); }
+        .feed { display: flex; flex-direction: column; gap: 8px; padding-top: 8px; }
+        .feed-item { background: var(--bg2); border: 1px solid rgba(97,121,255,.08); border-radius: 10px; padding: 12px 14px; transition: border-color .15s; }
+        .feed-item:hover { border-color: rgba(97,121,255,.2); }
+        .feed-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+        .feed-side { font-weight: 700; font-size: 11px; text-transform: uppercase; padding: 2px 8px; border-radius: 4px; }
+        .feed-side.buy { background: rgba(91,228,91,.12); color: var(--good); }
+        .feed-side.sell { background: rgba(239,68,68,.12); color: var(--bad); }
+        .feed-amount { font-weight: 700; font-size: 14px; }
+        .feed-token { font-weight: 600; color: var(--accent); }
+        .feed-meta { font-size: 11px; color: var(--txt2); display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+        .feed-meta a { color: var(--accent); text-decoration: none; }
+        .feed-meta a:hover { text-decoration: underline; }
+        .wallet-label { font-weight: 600; color: var(--txt1); }
+        .wallet-addr { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11px; color: var(--txt3); }
+        .badge { display: inline-flex; align-items: center; gap: 3px; font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 4px; }
+        .badge-whale { background: rgba(168,85,247,.12); color: var(--purple); }
+        .badge-shark { background: rgba(97,121,255,.12); color: var(--accent); }
+        .badge-dolphin { background: rgba(91,228,91,.1); color: var(--good); }
+        .badge-fund { background: rgba(245,158,11,.12); color: var(--warn); }
+        .badge-exchange { background: rgba(239,68,68,.1); color: var(--bad); }
+        .flow-bar { display: flex; align-items: center; gap: 6px; }
+        .flow-bg { flex: 1; height: 5px; background: var(--bg3); border-radius: 3px; overflow: hidden; display: flex; }
+        .flow-buy { height: 100%; background: var(--good); border-radius: 3px 0 0 3px; }
+        .flow-sell { height: 100%; background: var(--bad); border-radius: 0 3px 3px 0; }
+        .plus { color: var(--good); } .minus { color: var(--bad); }
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 100; display: flex; align-items: center; justify-content: center; }
+        .modal-overlay.hidden { display: none; }
+        .modal { background: var(--bg2); border: 1px solid rgba(97,121,255,.15); border-radius: 14px; padding: 24px; width: 380px; max-width: 90vw; }
+        .modal h3 { font-size: 15px; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+        .modal label { font-size: 11px; color: var(--txt2); display: block; margin-bottom: 4px; }
+        .modal input, .modal select { width: 100%; margin-bottom: 12px; padding: 8px 10px; font-size: 13px; }
+        .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px; }
+        .state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 48px; color: var(--txt3); }
+        .spinner { width: 28px; height: 28px; border: 3px solid var(--bg3); border-top-color: var(--accent); border-radius: 50%; animation: spin .7s linear infinite; margin-bottom: 12px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .toast { position: fixed; bottom: 16px; right: 16px; background: var(--accent); color: #fff; padding: 10px 18px; border-radius: 8px; font-size: 12px; font-weight: 600; z-index: 200; opacity: 0; transform: translateY(10px); transition: all .3s; pointer-events: none; }
+        .toast.show { opacity: 1; transform: translateY(0); }
+        @media (max-width: 700px) {
+            .summary { grid-template-columns: repeat(2, 1fr); }
+            .data-table th:nth-child(n+5), .data-table td:nth-child(n+5) { display: none; }
+        }
+    </style>
+</head>
+<body>
+<div class="app">
+    <div class="header">
+        <h1><span class="material-symbols-rounded">psychology</span> Smart Money Tracker</h1>
+        <div class="header-right">
+            <select id="networkSel">
+                <option value="eth">Ethereum</option>
+                <option value="arbitrum">Arbitrum</option>
+                <option value="base">Base</option>
+                <option value="bsc">BSC</option>
+                <option value="solana">Solana</option>
+                <option value="polygon_pos">Polygon</option>
+            </select>
+            <button id="addWalletBtn"><span class="material-symbols-rounded" style="font-size:14px;vertical-align:middle;">add</span> Track Wallet</button>
+            <button id="refreshBtn"><span class="material-symbols-rounded" style="font-size:14px;vertical-align:middle;">refresh</span></button>
+        </div>
+    </div>
+    <div class="tab-bar">
+        <button class="tab active" data-tab="wallets"><span class="material-symbols-rounded">account_balance_wallet</span> Top Wallets</button>
+        <button class="tab" data-tab="trades"><span class="material-symbols-rounded">swap_horiz</span> Recent Trades</button>
+        <button class="tab" data-tab="accumulation"><span class="material-symbols-rounded">trending_up</span> Accumulation</button>
+        <button class="tab" data-tab="new-positions"><span class="material-symbols-rounded">fiber_new</span> New Positions</button>
+    </div>
+    <div class="summary" id="summary"></div>
+    <div class="content" id="main"><div class="state"><div class="spinner"></div><p>Loading smart money data…</p></div></div>
+</div>
+<div class="modal-overlay hidden" id="modalOverlay">
+    <div class="modal">
+        <h3><span class="material-symbols-rounded" style="font-size:20px;color:var(--accent);">person_add</span> Track Wallet</h3>
+        <label>Wallet Address</label>
+        <input id="walletInput" placeholder="0x... or Solana address" />
+        <label>Label</label>
+        <input id="labelInput" placeholder="e.g. Jump Trading" />
+        <label>Category</label>
+        <select id="categoryInput">
+            <option value="whale">🐋 Whale</option>
+            <option value="fund">🏦 Fund/VC</option>
+            <option value="degen">💎 Degen Star</option>
+            <option value="exchange">🏛️ Exchange</option>
+        </select>
+        <div class="modal-actions">
+            <button id="modalCancel">Cancel</button>
+            <button class="btn-accent" id="modalSave">Add Wallet</button>
+        </div>
+    </div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+(function() {
+    'use strict';
+    const STORAGE_KEY = 'lair-smart-money-wallets';
+    const REFRESH_MS = 120000;
+
+    const KNOWN_WALLETS = [
+        { address: '0x28C6c06298d514Db089934071355E5743bf21d60', label: 'Binance Hot Wallet', category: 'exchange' },
+        { address: '0x21a31Ee1afC51d94C2eFcCAa2092aD1028285549', label: 'Binance Cold', category: 'exchange' },
+        { address: '0x47ac0Fb4F2D84898e4D9E7b4DaB3C24507a6D503', label: 'Justin Sun', category: 'whale' },
+        { address: '0x56Eddb7aa87536c09CCc2793473599fD21A8b17F', label: 'a16z Crypto', category: 'fund' },
+        { address: '0x1B7BAa734C00298b9429b518D621753Bb0f6efF2', label: 'Paradigm', category: 'fund' },
+        { address: '0x2FAF487A4414Fe77e2327F0bf4AE2a264a776AD2', label: 'FTX Bankruptcy Estate', category: 'fund' },
+        { address: '0x40B38765696E3d5d8d9d834D8AaD4bB6e418E489', label: 'Robinhood', category: 'exchange' },
+        { address: '0xBE0eB53F46cd790Cd13851d5EFf43D12404d33E8', label: 'Binance 7', category: 'exchange' },
+        { address: '0xF977814e90dA44bFA03b6295A0616a897441aceC', label: 'Binance 8', category: 'exchange' },
+        { address: '0xa7efae728d2936e78bda97dc267687568dd593f3', label: 'OKX', category: 'exchange' },
+        { address: '0x6cC5F688a315f3dC28A7781717a9A798a59fDA7b', label: 'OKX Cold', category: 'exchange' },
+        { address: '0x4862733B5FdDFd35f35ea8CCf08F5045e57388B3', label: 'Galaxy Digital', category: 'fund' },
+        { address: '0x742d35Cc6634C0532925a3b844Bc9e7595f2bD30', label: 'Bitfinex', category: 'exchange' },
+        { address: '0x267be1C1D684F78cb4F6a176C4911b741E4Ffdc0', label: 'Kraken', category: 'exchange' },
+        { address: '0xd24400ae8BfEBb18cA49Be86258a3C749cf46853', label: 'Gemini', category: 'exchange' },
+        { address: '0xE92d1A43983F5010475EcF15b077623907e35B63', label: 'Jump Trading', category: 'fund' },
+        { address: '0x0716a17FBAeE714f1E6aB0f9d59edbC5f09815C0', label: 'Jump Trading 2', category: 'fund' },
+        { address: '0x66F049111958809841Bbe4b81c034Da2D953AA0c', label: 'Wintermute', category: 'fund' },
+        { address: '0x4f3a120E72C76c22ae802D129F599BbDDF7CB72f', label: 'Cumberland', category: 'fund' },
+    ];
+
+    let activeTab = 'wallets', network = 'eth', refreshTimer = null;
+    let data = { wallets: [], trades: [], tokenFlows: [], pools: [], newPositions: [] };
+    let customWallets = [];
+
+    const $summary = document.getElementById('summary');
+    const $main = document.getElementById('main');
+    const $modal = document.getElementById('modalOverlay');
+    const $toast = document.getElementById('toast');
+
+    function shortAddr(a) { return a ? a.slice(0, 6) + '\u2026' + a.slice(-4) : '\u2014'; }
+    function fmtUsd(v) {
+        if (!Number.isFinite(v) || v === 0) return '$0';
+        if (v >= 1e9) return '$' + (v / 1e9).toFixed(2) + 'B';
+        if (v >= 1e6) return '$' + (v / 1e6).toFixed(2) + 'M';
+        if (v >= 1e3) return '$' + (v / 1e3).toFixed(1) + 'K';
+        return '$' + v.toFixed(0);
+    }
+    function timeAgo(iso) {
+        const ms = Date.now() - new Date(iso).getTime();
+        const m = Math.max(1, Math.floor(ms / 60000));
+        if (m < 60) return m + 'm ago';
+        const h = Math.floor(m / 60);
+        if (h < 24) return h + 'h ago';
+        return Math.floor(h / 24) + 'd ago';
+    }
+    function tierBadge(vol) {
+        if (vol > 10000000) return '<span class="badge badge-whale">\uD83D\uDC0B Whale</span>';
+        if (vol > 1000000) return '<span class="badge badge-shark">\uD83E\uDD88 Shark</span>';
+        return '<span class="badge badge-dolphin">\uD83D\uDC2C Dolphin</span>';
+    }
+    function catBadge(cat) {
+        var m = { whale: 'badge-whale', fund: 'badge-fund', degen: 'badge-shark', exchange: 'badge-exchange' };
+        var e = { whale: '\uD83D\uDC0B', fund: '\uD83C\uDFE6', degen: '\uD83D\uDC8E', exchange: '\uD83C\uDFDB\uFE0F' };
+        return '<span class="badge ' + (m[cat]||'badge-dolphin') + '">' + (e[cat]||'\uD83D\uDC0B') + ' ' + cat + '</span>';
+    }
+    function toast(msg) { $toast.textContent = msg; $toast.classList.add('show'); setTimeout(function(){$toast.classList.remove('show');}, 2500); }
+    function loadCustom() { try { customWallets = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch(e) { customWallets = []; } }
+    function saveCustom() { localStorage.setItem(STORAGE_KEY, JSON.stringify(customWallets)); }
+    function allWallets() { loadCustom(); return KNOWN_WALLETS.concat(customWallets); }
+    function walletLabel(addr) { var l = addr.toLowerCase(); var w = allWallets().find(function(x){return x.address.toLowerCase()===l;}); return w ? w.label : null; }
+    function walletCat(addr) { var l = addr.toLowerCase(); var w = allWallets().find(function(x){return x.address.toLowerCase()===l;}); return w ? w.category : null; }
+
+    var _f = window.cfetch || fetch;
+    async function fetchJson(url) { var r = await _f(url); if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); }
+
+    async function loadData() {
+        $main.innerHTML = '<div class="state"><div class="spinner"></div><p>Scanning trending pools for smart money activity\u2026</p></div>';
+        try {
+            var pools = await fetchJson('https://api.geckoterminal.com/api/v2/networks/' + network + '/trending_pools?page=1');
+            var poolList = (pools.data || []).slice(0, 8);
+            data.pools = poolList;
+
+            var allTrades = [];
+            for (var i = 0; i < poolList.length; i += 3) {
+                var batch = poolList.slice(i, i + 3);
+                var results = await Promise.allSettled(batch.map(function(p) {
+                    var addr = p.attributes ? p.attributes.address : (p.id ? p.id.split('_').pop() : '');
+                    return fetchJson('https://api.geckoterminal.com/api/v2/networks/' + network + '/pools/' + addr + '/trades');
+                }));
+                results.forEach(function(r) { if (r.status === 'fulfilled') { (r.value.data || []).slice(0, 50).forEach(function(d) { allTrades.push(d.attributes); }); } });
+                if (i + 3 < poolList.length) await new Promise(function(r){setTimeout(r, 500);});
+            }
+
+            var byWallet = {}, byToken = {}, walletTokenHist = {};
+            allTrades.forEach(function(t) {
+                var addr = (t.tx_from_address || '').toLowerCase();
+                if (!addr) return;
+                var usd = Number(t.volume_in_usd || 0);
+                var token = t.token_symbol || t.base_token_symbol || t.to_token_symbol || 'Unknown';
+                var kind = t.kind || 'trade';
+                var w = byWallet[addr] || (byWallet[addr] = { address: addr, trades: 0, buy: 0, sell: 0, volume: 0, last: t.block_timestamp, tokenSet: {} });
+                w.trades++; w.volume += usd;
+                if (kind === 'buy') w.buy += usd; else w.sell += usd;
+                if (!w.last || new Date(t.block_timestamp) > new Date(w.last)) w.last = t.block_timestamp;
+                w.tokenSet[token] = 1;
+                if (!w.firstSeen) w.firstSeen = {};
+                if (!w.firstSeen[token]) w.firstSeen[token] = t.block_timestamp;
+
+                var tok = byToken[token] || (byToken[token] = { token: token, buy: 0, sell: 0, walletSet: {}, trades: 0 });
+                tok.trades++; tok.walletSet[addr] = 1;
+                if (kind === 'buy') tok.buy += usd; else tok.sell += usd;
+
+                var wk = addr + ':' + token;
+                if (!walletTokenHist[wk]) walletTokenHist[wk] = { wallet: addr, token: token, firstBuy: t.block_timestamp };
+            });
+
+            data.wallets = Object.values(byWallet).map(function(w) { return Object.assign({}, w, { tokens: Object.keys(w.tokenSet) }); }).sort(function(a,b){return b.volume - a.volume;}).slice(0, 200);
+            data.trades = allTrades.sort(function(a,b){return new Date(b.block_timestamp) - new Date(a.block_timestamp);}).slice(0, 300);
+            data.tokenFlows = Object.values(byToken).map(function(t) { return Object.assign({}, t, { net: t.buy - t.sell, wallets: Object.keys(t.walletSet).length }); }).sort(function(a,b){return Math.abs(b.net) - Math.abs(a.net);}).slice(0, 100);
+
+            var topAddrs = {};
+            data.wallets.filter(function(w){return w.volume > 50000;}).forEach(function(w){topAddrs[w.address]=1;});
+            var newPos = {};
+            Object.values(walletTokenHist).forEach(function(h) {
+                if (topAddrs[h.wallet]) {
+                    if (!newPos[h.token]) newPos[h.token] = { token: h.token, walletCount: 0, wallets: [], firstSeen: h.firstBuy };
+                    newPos[h.token].walletCount++;
+                    newPos[h.token].wallets.push(h.wallet);
+                }
+            });
+            data.newPositions = Object.values(newPos).sort(function(a,b){return b.walletCount - a.walletCount;});
+        } catch(err) {
+            console.error('Smart money load error:', err);
+            data = { wallets: [], trades: [], tokenFlows: [], pools: [], newPositions: [] };
+        }
+        render();
+    }
+
+    function renderSummary() {
+        var totalVol = data.wallets.reduce(function(s,w){return s+w.volume;}, 0);
+        var whaleCount = data.wallets.filter(function(w){return w.volume > 10000000;}).length;
+        var sharkCount = data.wallets.filter(function(w){return w.volume > 1000000 && w.volume <= 10000000;}).length;
+        var buyVol = data.wallets.reduce(function(s,w){return s+w.buy;}, 0);
+        var sellVol = data.wallets.reduce(function(s,w){return s+w.sell;}, 0);
+        var netFlow = buyVol - sellVol;
+        $summary.innerHTML =
+            '<div class="stat-card"><div class="stat-label">Tracked Wallets</div><div class="stat-value">' + data.wallets.length + '</div><div class="stat-sub">' + whaleCount + ' whales \u2022 ' + sharkCount + ' sharks</div></div>' +
+            '<div class="stat-card"><div class="stat-label">Observed Volume</div><div class="stat-value">' + fmtUsd(totalVol) + '</div><div class="stat-sub">' + data.trades.length + ' trades scanned</div></div>' +
+            '<div class="stat-card"><div class="stat-label">Net Smart Flow</div><div class="stat-value ' + (netFlow >= 0 ? 'plus' : 'minus') + '">' + (netFlow >= 0 ? '+' : '') + fmtUsd(Math.abs(netFlow)) + '</div><div class="stat-sub">Buy: ' + fmtUsd(buyVol) + ' \u2022 Sell: ' + fmtUsd(sellVol) + '</div></div>' +
+            '<div class="stat-card"><div class="stat-label">Unique Tokens</div><div class="stat-value">' + data.tokenFlows.length + '</div><div class="stat-sub">' + (data.newPositions ? data.newPositions.length : 0) + ' new position entries</div></div>';
+    }
+
+    function explorerUrl(type) {
+        var m = { eth: 'https://etherscan.io/', arbitrum: 'https://arbiscan.io/', base: 'https://basescan.org/', bsc: 'https://bscscan.com/', solana: 'https://solscan.io/', polygon_pos: 'https://polygonscan.com/' };
+        return (m[network] || 'https://etherscan.io/') + (type === 'tx' ? 'tx/' : 'address/');
+    }
+
+    function renderWallets() {
+        if (!data.wallets.length) { $main.innerHTML = '<div class="state"><p>No wallet data. Try refreshing.</p></div>'; return; }
+        var html = '<table class="data-table"><thead><tr><th>Wallet</th><th>Tier</th><th>Trades</th><th>Volume</th><th>Buy / Sell</th><th>Active Tokens</th><th>Last</th></tr></thead><tbody>';
+        data.wallets.slice(0, 100).forEach(function(w) {
+            var label = walletLabel(w.address);
+            var cat = walletCat(w.address);
+            var buyPct = w.volume > 0 ? (w.buy / w.volume * 100) : 50;
+            html += '<tr><td><div class="wallet-label">' + (label || shortAddr(w.address)) + '</div><div class="wallet-addr"><a href="' + explorerUrl('addr') + w.address + '" target="_blank" rel="noreferrer" style="color:var(--txt3);text-decoration:none;">' + shortAddr(w.address) + '</a></div>' + (cat ? catBadge(cat) : '') + '</td><td>' + tierBadge(w.volume) + '</td><td>' + w.trades + '</td><td style="font-weight:600;">' + fmtUsd(w.volume) + '</td><td><div class="flow-bar"><div class="flow-bg"><div class="flow-buy" style="width:' + buyPct + '%"></div><div class="flow-sell" style="width:' + (100 - buyPct) + '%"></div></div></div><div style="font-size:10px;color:var(--txt3);margin-top:2px;"><span class="plus">' + fmtUsd(w.buy) + '</span> / <span class="minus">' + fmtUsd(w.sell) + '</span></div></td><td style="font-size:11px;">' + (w.tokens || []).slice(0, 4).join(', ') + (w.tokens && w.tokens.length > 4 ? ' +' + (w.tokens.length - 4) : '') + '</td><td style="font-size:11px;color:var(--txt2);">' + (w.last ? timeAgo(w.last) : '\u2014') + '</td></tr>';
+        });
+        html += '</tbody></table>';
+        $main.innerHTML = html;
+    }
+
+    function renderTrades() {
+        if (!data.trades.length) { $main.innerHTML = '<div class="state"><p>No trades found. Try refreshing.</p></div>'; return; }
+        var html = '<div class="feed">';
+        data.trades.slice(0, 120).forEach(function(t) {
+            var addr = (t.tx_from_address || '').toLowerCase();
+            var label = walletLabel(addr);
+            var usd = Number(t.volume_in_usd || 0);
+            var kind = t.kind || 'trade';
+            var isBuy = kind === 'buy';
+            var token = t.token_symbol || t.base_token_symbol || 'TOKEN';
+            var amount = t.from_token_amount || t.to_token_amount || '';
+            html += '<div class="feed-item"><div class="feed-header"><span class="feed-side ' + (isBuy ? 'buy' : 'sell') + '">' + (isBuy ? '\uD83D\uDFE2 BUY' : '\uD83D\uDD34 SELL') + '</span><span class="feed-amount">' + fmtUsd(usd) + '</span><span class="feed-token">' + token + '</span></div><div class="feed-meta"><span>Wallet: <strong>' + (label || shortAddr(addr)) + '</strong></span>' + (t.block_timestamp ? '<span>' + timeAgo(t.block_timestamp) + '</span>' : '') + (t.tx_hash ? '<a href="' + explorerUrl('tx') + t.tx_hash + '" target="_blank" rel="noreferrer">View TX \u2197</a>' : '') + (amount ? '<span>' + Number(amount).toLocaleString(undefined, { maximumFractionDigits: 4 }) + ' ' + token + '</span>' : '') + '</div></div>';
+        });
+        html += '</div>';
+        $main.innerHTML = html;
+    }
+
+    function renderAccumulation() {
+        if (!data.tokenFlows.length) { $main.innerHTML = '<div class="state"><p>No accumulation data. Try refreshing.</p></div>'; return; }
+        var html = '<table class="data-table"><thead><tr><th>Token</th><th>Buy Volume</th><th>Sell Volume</th><th>Net Flow</th><th>Flow</th><th>Wallets</th><th>Signal</th></tr></thead><tbody>';
+        data.tokenFlows.slice(0, 80).forEach(function(t) {
+            var isAccum = t.net >= 0;
+            var total = t.buy + t.sell;
+            var buyPct = total > 0 ? (t.buy / total * 100) : 50;
+            html += '<tr><td><strong>' + t.token + '</strong><div style="font-size:10px;color:var(--txt3);">' + t.trades + ' trades</div></td><td class="plus">' + fmtUsd(t.buy) + '</td><td class="minus">' + fmtUsd(t.sell) + '</td><td style="font-weight:700;" class="' + (isAccum ? 'plus' : 'minus') + '">' + (isAccum ? '+' : '') + fmtUsd(Math.abs(t.net)) + '</td><td><div class="flow-bar"><div class="flow-bg"><div class="flow-buy" style="width:' + buyPct + '%"></div><div class="flow-sell" style="width:' + (100 - buyPct) + '%"></div></div></div></td><td>' + t.wallets + '</td><td><span class="badge ' + (isAccum ? 'badge-dolphin' : 'badge-exchange') + '">' + (isAccum ? '\uD83D\uDCC8 Accumulation' : '\uD83D\uDCC9 Distribution') + '</span></td></tr>';
+        });
+        html += '</tbody></table>';
+        $main.innerHTML = html;
+    }
+
+    function renderNewPositions() {
+        var positions = data.newPositions || [];
+        if (!positions.length) { $main.innerHTML = '<div class="state"><p>No new position entries detected yet.</p></div>'; return; }
+        var html = '<div style="margin-bottom:12px;font-size:12px;color:var(--txt2);">Tokens recently acquired by high-volume wallets for the first time</div>';
+        html += '<table class="data-table"><thead><tr><th>Token</th><th>Smart Wallets</th><th>First Seen</th><th>Status</th></tr></thead><tbody>';
+        positions.slice(0, 50).forEach(function(p) {
+            var labels = p.wallets.slice(0, 3).map(function(a){return walletLabel(a) || shortAddr(a);}).join(', ');
+            html += '<tr><td><strong style="color:var(--accent);">' + p.token + '</strong></td><td><span style="font-weight:700;color:var(--warn);">' + p.walletCount + '</span> wallets<div style="font-size:10px;color:var(--txt3);margin-top:2px;">' + labels + '</div></td><td style="font-size:11px;color:var(--txt2);">' + (p.firstSeen ? timeAgo(p.firstSeen) : '\u2014') + '</td><td><span class="badge badge-fund">\uD83C\uDD95 New Entry</span></td></tr>';
+        });
+        html += '</tbody></table>';
+        $main.innerHTML = html;
+    }
+
+    function render() {
+        renderSummary();
+        document.querySelectorAll('.tab').forEach(function(t){t.classList.toggle('active', t.dataset.tab === activeTab);});
+        switch(activeTab) {
+            case 'wallets': renderWallets(); break;
+            case 'trades': renderTrades(); break;
+            case 'accumulation': renderAccumulation(); break;
+            case 'new-positions': renderNewPositions(); break;
+        }
+    }
+
+    document.querySelectorAll('.tab').forEach(function(t) { t.addEventListener('click', function(){activeTab = t.dataset.tab; render();}); });
+    document.getElementById('networkSel').addEventListener('change', function(e) { network = e.target.value; data = { wallets: [], trades: [], tokenFlows: [], pools: [], newPositions: [] }; loadData(); });
+    document.getElementById('refreshBtn').addEventListener('click', function() { data = { wallets: [], trades: [], tokenFlows: [], pools: [], newPositions: [] }; loadData(); });
+    document.getElementById('addWalletBtn').addEventListener('click', function() { $modal.classList.remove('hidden'); document.getElementById('walletInput').focus(); });
+    document.getElementById('modalCancel').addEventListener('click', function() { $modal.classList.add('hidden'); });
+    $modal.addEventListener('click', function(e) { if (e.target === $modal) $modal.classList.add('hidden'); });
+    document.getElementById('modalSave').addEventListener('click', function() {
+        var address = document.getElementById('walletInput').value.trim();
+        var label = document.getElementById('labelInput').value.trim();
+        var category = document.getElementById('categoryInput').value;
+        if (!address) { toast('Please enter a wallet address'); return; }
+        if (!label) { toast('Please enter a label'); return; }
+        loadCustom();
+        if (customWallets.some(function(w){return w.address.toLowerCase() === address.toLowerCase();})) { toast('Wallet already tracked'); $modal.classList.add('hidden'); return; }
+        customWallets.push({ address: address, label: label, category: category });
+        saveCustom();
+        toast('Now tracking ' + label);
+        $modal.classList.add('hidden');
+        document.getElementById('walletInput').value = '';
+        document.getElementById('labelInput').value = '';
+        render();
+    });
+
+    loadCustom();
+    loadData();
+    refreshTimer = setInterval(loadData, REFRESH_MS);
+    window.addEventListener('beforeunload', function() { if (refreshTimer) clearInterval(refreshTimer); });
+})();
+</script>
+</body>
+</html>

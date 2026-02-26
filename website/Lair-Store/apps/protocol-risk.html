@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="lair-include" content="lair.css">
+    <meta name="lair-icon" content='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="24" height="24" fill="white"><path d="M480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-120q-100 0-170-70t-70-170q0-100 70-170t170-70q100 0 170 70t70 170q0 100-70 170t-170 70Zm0-80q66 0 113-47t47-113q0-66-47-113t-113-47q-66 0-113 47t-47 113q0 66 47 113t113 47Zm0-160Z"/></svg>'>
+    <meta name="capabilities" content="protocol_risk,defi_tools">
+    <meta name="lair-perms" content="network" />
+    <title>Protocol Risk Scanner</title>
+    <style>
+        :root {
+            --bg1:#080A19; --bg2:#0C0F27; --bg3:#15183E; --bg4:#1C2050;
+            --txt1:#E2E8F0; --txt2:#94A3B8; --accent:#6179FF;
+            --good:#34D399; --bad:#F87171; --warn:#FBBF24; --radius:10px;
+        }
+        *{box-sizing:border-box;margin:0;padding:0;}
+        html,body{height:100%;background:var(--bg1);color:var(--txt1);font-family:'Inter',-apple-system,system-ui,sans-serif;font-size:13px;}
+        .app{height:100%;display:grid;grid-template-rows:auto 1fr;overflow:hidden;}
+
+        .header{padding:12px 16px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+        .header h1{font-size:15px;font-weight:700;}
+        .badge{font-size:10px;padding:2px 8px;border-radius:999px;font-weight:600;}
+        .badge-live{background:rgba(52,211,153,.15);color:var(--good);}
+        .search-box{margin-left:auto;background:var(--bg3);border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:6px 10px;color:var(--txt1);font-size:12px;outline:none;width:240px;}
+        .search-box:focus{border-color:var(--accent);}
+
+        .content{overflow-y:auto;padding:16px;}
+        .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:14px;}
+
+        /* Protocol Card */
+        .card{background:var(--bg2);border:1px solid rgba(255,255,255,.08);border-radius:var(--radius);overflow:hidden;transition:border-color .2s;}
+        .card:hover{border-color:rgba(97,121,255,.3);}
+        .card-head{padding:14px 16px;display:flex;align-items:center;gap:12px;border-bottom:1px solid rgba(255,255,255,.05);}
+        .card-icon{width:36px;height:36px;border-radius:8px;background:var(--bg3);display:flex;align-items:center;justify-content:center;overflow:hidden;}
+        .card-icon img{width:100%;height:100%;object-fit:cover;}
+        .card-info h3{font-size:14px;font-weight:600;}
+        .card-info .sub{font-size:11px;color:var(--txt2);display:flex;gap:8px;margin-top:2px;}
+        .chain-tag{font-size:9px;padding:1px 5px;border-radius:999px;background:var(--bg3);border:1px solid rgba(255,255,255,.08);}
+
+        /* Score Ring */
+        .score-ring{margin-left:auto;position:relative;width:50px;height:50px;}
+        .score-ring svg{width:50px;height:50px;transform:rotate(-90deg);}
+        .score-ring circle{fill:none;stroke-width:4;}
+        .ring-bg{stroke:var(--bg3);}
+        .ring-fill{stroke-linecap:round;transition:stroke-dashoffset .6s ease;}
+        .score-label{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;}
+
+        .card-body{padding:14px 16px;}
+        .metrics{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;}
+        .metric{background:var(--bg3);border-radius:6px;padding:8px 10px;}
+        .metric .mk{font-size:9px;text-transform:uppercase;color:var(--txt2);letter-spacing:.3px;}
+        .metric .mv{font-size:14px;font-weight:600;margin-top:2px;font-variant-numeric:tabular-nums;}
+        .metric .md{font-size:10px;margin-top:1px;}
+
+        .risk-factors{margin-top:10px;}
+        .risk-factors .rf-title{font-size:10px;text-transform:uppercase;color:var(--txt2);margin-bottom:6px;font-weight:600;}
+        .risk-item{display:flex;align-items:center;gap:8px;padding:4px 0;font-size:11px;}
+        .risk-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+        .risk-bar-h{flex:1;height:4px;border-radius:2px;background:var(--bg4);overflow:hidden;}
+        .risk-bar-fill{height:100%;border-radius:2px;transition:width .4s ease;}
+
+        .loading{display:flex;align-items:center;justify-content:center;padding:60px;font-size:14px;color:var(--txt2);}
+        .spinner{width:24px;height:24px;border:3px solid var(--bg3);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin-right:10px;}
+        @keyframes spin{to{transform:rotate(360deg);}}
+    </style>
+</head>
+<body>
+<div class="app">
+    <div class="header">
+        <h1>Protocol Risk Scanner</h1>
+        <span class="badge badge-live">LIVE</span>
+        <span class="badge" style="background:rgba(97,121,255,.15);color:var(--accent);" id="count">Loading...</span>
+        <input class="search-box" type="text" id="search" placeholder="Search protocols...">
+    </div>
+    <div class="content" id="content">
+        <div class="loading" id="loading"><div class="spinner"></div>Scanning DeFi protocols...</div>
+    </div>
+</div>
+<script>
+(() => {
+    const fetchFn = window.cfetch || fetch;
+    let protocols = [];
+    let scored = [];
+
+    /* ── Load Protocol Data ─────────── */
+    async function load() {
+        try {
+            const [protoRes, tvlRes] = await Promise.all([
+                fetchFn('https://api.llama.fi/protocols').then(r => r.json()),
+                fetchFn('https://api.llama.fi/v2/historicalChainTvl').then(r => r.json())
+            ]);
+
+            protocols = protoRes.filter(p => p.tvl > 0).slice(0, 300);
+            scored = protocols.map(scoreProtocol).sort((a, b) => a.riskScore - b.riskScore);
+
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('count').textContent = scored.length + ' protocols';
+            render();
+        } catch (e) {
+            document.getElementById('loading').innerHTML = 'Failed to load. <button onclick="location.reload()" style="color:var(--accent);background:none;border:none;cursor:pointer;">Retry</button>';
+        }
+    }
+
+    /* ── Risk Scoring Engine ─────────── */
+    function scoreProtocol(p) {
+        const factors = {};
+        let total = 0;
+        const maxScore = 100;
+
+        // 1. TVL Size (0-20 points, higher TVL = lower risk)
+        const tvl = p.tvl || 0;
+        if (tvl > 1e9) factors.tvlSize = { score: 0, label: 'Very Large TVL', detail: '$' + fmt(tvl) };
+        else if (tvl > 100e6) factors.tvlSize = { score: 5, label: 'Large TVL', detail: '$' + fmt(tvl) };
+        else if (tvl > 10e6) factors.tvlSize = { score: 10, label: 'Medium TVL', detail: '$' + fmt(tvl) };
+        else if (tvl > 1e6) factors.tvlSize = { score: 15, label: 'Small TVL', detail: '$' + fmt(tvl) };
+        else factors.tvlSize = { score: 20, label: 'Micro TVL', detail: '$' + fmt(tvl) };
+        total += factors.tvlSize.score;
+
+        // 2. TVL Change 1d (0-15 points)
+        const change1d = p.change_1d || 0;
+        if (Math.abs(change1d) < 5) factors.tvlStability = { score: 0, label: 'Stable TVL (1d)', detail: (change1d >= 0 ? '+' : '') + change1d.toFixed(1) + '%' };
+        else if (Math.abs(change1d) < 15) factors.tvlStability = { score: 5, label: 'Moderate TVL shift', detail: (change1d >= 0 ? '+' : '') + change1d.toFixed(1) + '%' };
+        else if (Math.abs(change1d) < 30) factors.tvlStability = { score: 10, label: 'High TVL volatility', detail: (change1d >= 0 ? '+' : '') + change1d.toFixed(1) + '%' };
+        else factors.tvlStability = { score: 15, label: 'Extreme TVL movement', detail: (change1d >= 0 ? '+' : '') + change1d.toFixed(1) + '%' };
+        total += factors.tvlStability.score;
+
+        // 3. Chain diversity (0-15 points, more chains = more resilient)
+        const chainCount = p.chains ? p.chains.length : 1;
+        if (chainCount >= 5) factors.chainDiversity = { score: 0, label: 'Multi-chain (' + chainCount + ')', detail: (p.chains || []).slice(0, 5).join(', ') };
+        else if (chainCount >= 3) factors.chainDiversity = { score: 5, label: 'Some diversity (' + chainCount + ')', detail: (p.chains || []).join(', ') };
+        else if (chainCount >= 2) factors.chainDiversity = { score: 10, label: 'Limited chains (' + chainCount + ')', detail: (p.chains || []).join(', ') };
+        else factors.chainDiversity = { score: 15, label: 'Single chain', detail: p.chain || '?' };
+        total += factors.chainDiversity.score;
+
+        // 4. Category risk (0-15 points)
+        const cat = (p.category || '').toLowerCase();
+        if (['lending', 'dexes', 'liquid staking'].includes(cat)) factors.categoryRisk = { score: 0, label: 'Established category', detail: p.category };
+        else if (['bridge', 'cdp', 'yield'].includes(cat)) factors.categoryRisk = { score: 5, label: 'Moderate category', detail: p.category };
+        else if (['algo-stables', 'derivatives'].includes(cat)) factors.categoryRisk = { score: 10, label: 'Higher risk category', detail: p.category };
+        else factors.categoryRisk = { score: 8, label: 'Other category', detail: p.category || 'Unknown' };
+        total += factors.categoryRisk.score;
+
+        // 5. Age / Audit signals (0-15 points)
+        const audited = p.audits ? p.audits > 0 : !!(p.audit_links && p.audit_links.length > 0);
+        const auditCount = p.audits || (p.audit_links ? p.audit_links.length : 0);
+        if (auditCount >= 3) factors.auditStatus = { score: 0, label: 'Multiple audits', detail: auditCount + ' audits' };
+        else if (auditCount >= 1) factors.auditStatus = { score: 5, label: 'Audited', detail: auditCount + ' audit' + (auditCount > 1 ? 's' : '') };
+        else if (p.openSource || p.url) factors.auditStatus = { score: 10, label: 'No audit found', detail: 'Open source' };
+        else factors.auditStatus = { score: 15, label: 'No audit, closed source', detail: 'High risk' };
+        total += factors.auditStatus.score;
+
+        // 6. TVL 7d change (0-10 points)
+        const change7d = p.change_7d || 0;
+        if (change7d < -30) factors.weekTrend = { score: 10, label: 'Major TVL decline (7d)', detail: change7d.toFixed(1) + '%' };
+        else if (change7d < -10) factors.weekTrend = { score: 5, label: 'TVL declining (7d)', detail: change7d.toFixed(1) + '%' };
+        else factors.weekTrend = { score: 0, label: 'TVL stable/growing (7d)', detail: (change7d >= 0 ? '+' : '') + change7d.toFixed(1) + '%' };
+        total += factors.weekTrend.score;
+
+        // 7. Stablecoin exposure (0-10 points)
+        const stablesTvl = p.stablecoins || 0;
+        const stableRatio = tvl > 0 ? stablesTvl / tvl : 0;
+        if (stableRatio > 0.5) factors.stableExposure = { score: 0, label: 'High stablecoin TVL', detail: (stableRatio * 100).toFixed(0) + '%' };
+        else factors.stableExposure = { score: 5, label: 'Low stablecoin ratio', detail: (stableRatio * 100).toFixed(0) + '%' };
+        total += factors.stableExposure.score;
+
+        const grade = total <= 15 ? 'A' : total <= 30 ? 'B' : total <= 50 ? 'C' : total <= 70 ? 'D' : 'F';
+
+        return { ...p, riskScore: total, maxScore, factors, grade };
+    }
+
+    function fmt(n) {
+        if (n >= 1e9) return (n / 1e9).toFixed(2) + 'B';
+        if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+        if (n >= 1e3) return (n / 1e3).toFixed(0) + 'K';
+        return n.toFixed(0);
+    }
+
+    function scoreColor(score) {
+        if (score <= 15) return 'var(--good)';
+        if (score <= 30) return '#6EE7B7';
+        if (score <= 50) return 'var(--warn)';
+        if (score <= 70) return '#FF8C42';
+        return 'var(--bad)';
+    }
+
+    function gradeColor(grade) {
+        return { A: 'var(--good)', B: '#6EE7B7', C: 'var(--warn)', D: '#FF8C42', F: 'var(--bad)' }[grade] || 'var(--txt2)';
+    }
+
+    /* ── Render ───────────────────────── */
+    function render(filter = '') {
+        const list = filter
+            ? scored.filter(p => (p.name + ' ' + p.chain + ' ' + p.category).toLowerCase().includes(filter))
+            : scored;
+
+        const $content = document.getElementById('content');
+        if (!list.length) {
+            $content.innerHTML = '<div style="text-align:center;padding:40px;color:var(--txt2);">No protocols found.</div>';
+            return;
+        }
+
+        let html = '<div class="grid">';
+        for (const p of list) {
+            const sc = p.riskScore;
+            const col = scoreColor(sc);
+            const circumference = 2 * Math.PI * 20;
+            const offset = circumference - (sc / p.maxScore) * circumference;
+
+            html += `<div class="card">
+                <div class="card-head">
+                    <div class="card-icon">${p.logo ? `<img src="${esc(p.logo)}" alt="" onerror="this.remove()">` : esc((p.name || '?')[0])}</div>
+                    <div class="card-info">
+                        <h3>${esc(p.name)}</h3>
+                        <div class="sub">
+                            <span class="chain-tag">${esc(p.category || '?')}</span>
+                            ${(p.chains || [p.chain]).slice(0, 3).map(c => `<span class="chain-tag">${esc(c)}</span>`).join('')}
+                        </div>
+                    </div>
+                    <div class="score-ring">
+                        <svg viewBox="0 0 44 44">
+                            <circle class="ring-bg" cx="22" cy="22" r="20"/>
+                            <circle class="ring-fill" cx="22" cy="22" r="20" stroke="${col}"
+                                stroke-dasharray="${circumference}" stroke-dashoffset="${offset}"/>
+                        </svg>
+                        <div class="score-label" style="color:${col};">${p.grade}</div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="metrics">
+                        <div class="metric"><div class="mk">TVL</div><div class="mv">$${fmt(p.tvl || 0)}</div></div>
+                        <div class="metric"><div class="mk">Risk Score</div><div class="mv" style="color:${col};">${sc}/${p.maxScore}</div></div>
+                        <div class="metric"><div class="mk">1d Change</div><div class="mv ${(p.change_1d||0) >= 0 ? 'positive' : 'negative'}">${(p.change_1d||0) >= 0 ? '+' : ''}${(p.change_1d||0).toFixed(1)}%</div></div>
+                        <div class="metric"><div class="mk">7d Change</div><div class="mv ${(p.change_7d||0) >= 0 ? 'positive' : 'negative'}">${(p.change_7d||0) >= 0 ? '+' : ''}${(p.change_7d||0).toFixed(1)}%</div></div>
+                    </div>
+                    <div class="risk-factors">
+                        <div class="rf-title">Risk Factors</div>
+                        ${Object.entries(p.factors).map(([key, f]) => {
+                            const pct = (f.score / 20) * 100;
+                            const c = f.score <= 5 ? 'var(--good)' : f.score <= 10 ? 'var(--warn)' : 'var(--bad)';
+                            return `<div class="risk-item">
+                                <div class="risk-dot" style="background:${c};"></div>
+                                <span style="flex:1;">${esc(f.label)}</span>
+                                <span style="color:var(--txt2);font-size:10px;">${esc(f.detail)}</span>
+                                <div class="risk-bar-h"><div class="risk-bar-fill" style="width:${pct}%;background:${c};"></div></div>
+                            </div>`;
+                        }).join('')}
+                    </div>
+                </div>
+            </div>`;
+        }
+        html += '</div>';
+        $content.innerHTML = html;
+    }
+
+    function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+    document.getElementById('search').addEventListener('input', e => render(e.target.value.toLowerCase()));
+
+    load();
+    setInterval(load, 5 * 60 * 1000);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="lair-include" content="lair.css">
+    <meta name="capabilities" content="fear_greed">
+    <meta name="lair-icon" content="speed">
+    <meta name="lair-perms" content="network" />
+    <title>Fear & Greed</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body, html {
+            width: 100%; height: 100%;
+            overflow-y: auto; overflow-x: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: var(--col-bg1, #101010);
+            color: var(--col-txt1, #fff);
+        }
+        .app {
+            display: flex; flex-direction: column; align-items: center;
+            padding: 20px 16px 32px;
+            min-height: 100%;
+            position: relative;
+        }
+        .glow {
+            position: fixed; top: 0; left: 50%; transform: translateX(-50%);
+            width: 400px; height: 400px;
+            border-radius: 50%;
+            filter: blur(120px);
+            opacity: 0.18;
+            pointer-events: none;
+            transition: background 1s ease;
+            z-index: 0;
+        }
+        .title {
+            font-size: 18px; font-weight: 700;
+            margin-bottom: 4px;
+            letter-spacing: 0.5px;
+            z-index: 1;
+        }
+        .subtitle {
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 20px;
+            z-index: 1;
+        }
+
+        /* Gauge */
+        .gauge-wrap {
+            position: relative;
+            width: min(320px, 80vw);
+            height: min(200px, 50vw);
+            z-index: 1;
+            margin-bottom: 8px;
+        }
+        .gauge-svg {
+            width: 100%; height: 100%;
+            overflow: visible;
+        }
+        .gauge-bg-arc { fill: none; stroke: var(--col-bg3, #262626); stroke-width: 18; }
+        .gauge-arc-ef { fill: none; stroke: #ea3943; stroke-width: 18; }
+        .gauge-arc-f  { fill: none; stroke: #ea8c00; stroke-width: 18; }
+        .gauge-arc-n  { fill: none; stroke: #f5e100; stroke-width: 18; }
+        .gauge-arc-g  { fill: none; stroke: #16c784; stroke-width: 18; }
+        .gauge-arc-eg { fill: none; stroke: #00b7a8; stroke-width: 18; }
+
+        .needle {
+            transform-origin: 160px 160px;
+            transition: transform 1.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .needle line {
+            stroke: var(--col-txt1, #fff);
+            stroke-width: 2.5;
+            stroke-linecap: round;
+        }
+        .needle circle { fill: var(--col-txt1, #fff); }
+
+        .gauge-value {
+            position: absolute;
+            bottom: 0; left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            z-index: 2;
+        }
+        .gauge-value .number {
+            font-size: 48px; font-weight: 800;
+            line-height: 1;
+            transition: color 0.5s ease;
+        }
+        .gauge-value .label {
+            font-size: 14px; font-weight: 600;
+            margin-top: 2px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: color 0.5s ease;
+        }
+
+        /* Labels at gauge ends */
+        .gauge-labels {
+            width: min(320px, 80vw);
+            display: flex; justify-content: space-between;
+            font-size: 10px; color: #666;
+            margin-bottom: 24px;
+            z-index: 1;
+        }
+
+        /* Comparison cards */
+        .compare {
+            display: flex; gap: 12px;
+            flex-wrap: wrap; justify-content: center;
+            margin-bottom: 28px;
+            z-index: 1;
+        }
+        .compare-card {
+            background: var(--col-bg2, #171717);
+            border: 1px solid var(--col-bg3, #262626);
+            border-radius: 10px;
+            padding: 12px 18px;
+            text-align: center;
+            min-width: 100px;
+        }
+        .compare-card .c-label {
+            font-size: 10px; color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+        .compare-card .c-value {
+            font-size: 24px; font-weight: 700;
+        }
+        .compare-card .c-sent {
+            font-size: 10px; margin-top: 2px; font-weight: 500;
+        }
+
+        /* History chart */
+        .history-section {
+            width: 100%; max-width: 480px;
+            z-index: 1;
+        }
+        .history-title {
+            font-size: 13px; font-weight: 600;
+            margin-bottom: 10px;
+            color: #aaa;
+        }
+        .chart {
+            width: 100%;
+            height: 120px;
+            display: flex;
+            align-items: flex-end;
+            gap: 2px;
+            background: var(--col-bg2, #171717);
+            border-radius: 10px;
+            padding: 12px 8px 8px;
+            border: 1px solid var(--col-bg3, #262626);
+            position: relative;
+        }
+        .chart-bar {
+            flex: 1;
+            border-radius: 3px 3px 0 0;
+            min-width: 2px;
+            transition: height 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+            position: relative;
+            cursor: default;
+        }
+        .chart-bar:hover { opacity: 0.8; }
+        .chart-bar .tooltip {
+            display: none;
+            position: absolute;
+            bottom: calc(100% + 6px);
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--col-bg1, #101010);
+            border: 1px solid var(--col-bg3, #262626);
+            border-radius: 6px;
+            padding: 4px 8px;
+            font-size: 10px;
+            white-space: nowrap;
+            z-index: 10;
+            pointer-events: none;
+        }
+        .chart-bar:hover .tooltip { display: block; }
+        .chart-dates {
+            display: flex; justify-content: space-between;
+            font-size: 9px; color: #555;
+            margin-top: 4px;
+            max-width: 480px;
+            width: 100%;
+        }
+
+        /* Loading / Error */
+        .loading {
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            height: 100vh; gap: 12px;
+        }
+        .spinner {
+            width: 32px; height: 32px;
+            border: 3px solid var(--col-bg3, #262626);
+            border-top-color: var(--colors-accent, rgb(97, 121, 255));
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .error-msg {
+            color: #ea3943;
+            font-size: 14px;
+            text-align: center;
+            padding: 40px;
+        }
+        .retry-btn {
+            margin-top: 12px;
+            background: var(--col-bg2, #171717);
+            color: var(--col-txt1, #fff);
+            border: 1px solid var(--col-bg3, #262626);
+            border-radius: 8px;
+            padding: 8px 20px;
+            font-size: 13px;
+            cursor: pointer;
+        }
+        .retry-btn:hover { border-color: #555; }
+
+        @media (max-width: 360px) {
+            .gauge-wrap { width: 260px; height: 165px; }
+            .gauge-value .number { font-size: 36px; }
+            .compare-card { min-width: 80px; padding: 8px 12px; }
+            .compare-card .c-value { font-size: 20px; }
+        }
+    </style>
+</head>
+<body>
+    <div id="loading" class="loading">
+        <div class="spinner"></div>
+        <span style="font-size:13px;color:#888;">Loading index data...</span>
+    </div>
+    <div id="app" class="app" style="display:none;">
+        <div class="glow" id="glow"></div>
+        <div class="title">Crypto Fear & Greed Index</div>
+        <div class="subtitle">Data by Alternative.me</div>
+
+        <div class="gauge-wrap">
+            <svg class="gauge-svg" viewBox="0 0 320 200">
+                <defs>
+                    <linearGradient id="gaugeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stop-color="#ea3943"/>
+                        <stop offset="25%" stop-color="#ea8c00"/>
+                        <stop offset="50%" stop-color="#f5e100"/>
+                        <stop offset="75%" stop-color="#16c784"/>
+                        <stop offset="100%" stop-color="#00b7a8"/>
+                    </linearGradient>
+                </defs>
+                <!-- Background arc -->
+                <path class="gauge-bg-arc" d="M 30 170 A 130 130 0 0 1 290 170" />
+                <!-- Colored arcs: Extreme Fear 0-24, Fear 25-49, Neutral 50, Greed 51-74, Extreme Greed 75-100 -->
+                <path class="gauge-arc-ef" id="arc-ef" d="" />
+                <path class="gauge-arc-f"  id="arc-f"  d="" />
+                <path class="gauge-arc-n"  id="arc-n"  d="" />
+                <path class="gauge-arc-g"  id="arc-g"  d="" />
+                <path class="gauge-arc-eg" id="arc-eg" d="" />
+                <!-- Tick marks -->
+                <g id="ticks"></g>
+                <!-- Needle -->
+                <g class="needle" id="needle">
+                    <line x1="160" y1="170" x2="160" y2="50" />
+                    <circle cx="160" cy="170" r="5" />
+                </g>
+            </svg>
+            <div class="gauge-value">
+                <div class="number" id="value-num">--</div>
+                <div class="label" id="value-label">Loading</div>
+            </div>
+        </div>
+        <div class="gauge-labels">
+            <span>Extreme Fear</span>
+            <span>Extreme Greed</span>
+        </div>
+
+        <div class="compare" id="compare"></div>
+
+        <div class="history-section">
+            <div class="history-title">Last 30 Days</div>
+            <div class="chart" id="chart"></div>
+            <div class="chart-dates" id="chart-dates"></div>
+        </div>
+    </div>
+    <div id="error" style="display:none;" class="loading">
+        <div class="error-msg">
+            <div>Failed to load Fear & Greed data</div>
+            <button class="retry-btn" onclick="loadData()">Retry</button>
+        </div>
+    </div>
+
+    <script>
+    (function() {
+        const fetchFn = window.cfetch || fetch;
+        const CACHE_KEY = 'fng_cache';
+        const CACHE_TTL = 5 * 60 * 1000;
+        const API_URL = 'https://api.alternative.me/fng/?limit=30&format=json';
+
+        const SENTIMENTS = [
+            { min: 0,  max: 24, label: 'Extreme Fear',  color: '#ea3943' },
+            { min: 25, max: 49, label: 'Fear',           color: '#ea8c00' },
+            { min: 50, max: 50, label: 'Neutral',        color: '#f5e100' },
+            { min: 51, max: 74, label: 'Greed',          color: '#16c784' },
+            { min: 75, max: 100,label: 'Extreme Greed',  color: '#00b7a8' }
+        ];
+
+        function getSentiment(val) {
+            val = parseInt(val, 10);
+            for (const s of SENTIMENTS) {
+                if (val >= s.min && val <= s.max) return s;
+            }
+            return SENTIMENTS[2];
+        }
+
+        function polarToCart(cx, cy, r, angleDeg) {
+            const rad = (angleDeg - 180) * Math.PI / 180;
+            return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
+        }
+
+        function describeArc(cx, cy, r, startAngle, endAngle) {
+            const s = polarToCart(cx, cy, r, startAngle);
+            const e = polarToCart(cx, cy, r, endAngle);
+            const large = (endAngle - startAngle) > 180 ? 1 : 0;
+            return `M ${s.x} ${s.y} A ${r} ${r} 0 ${large} 1 ${e.x} ${e.y}`;
+        }
+
+        function buildGauge() {
+            const cx = 160, cy = 170, r = 130;
+            // Arcs: map 0-100 to 0-180 degrees
+            const ranges = [
+                { id: 'arc-ef', start: 0,    end: 24 },
+                { id: 'arc-f',  start: 24,   end: 49 },
+                { id: 'arc-n',  start: 49,   end: 51 },
+                { id: 'arc-g',  start: 51,   end: 74 },
+                { id: 'arc-eg', start: 74,   end: 100 }
+            ];
+            ranges.forEach(rng => {
+                const startA = (rng.start / 100) * 180;
+                const endA = (rng.end / 100) * 180;
+                const el = document.getElementById(rng.id);
+                if (el) el.setAttribute('d', describeArc(cx, cy, r, startA, endA));
+            });
+
+            // Tick marks
+            const ticksG = document.getElementById('ticks');
+            for (let i = 0; i <= 100; i += 10) {
+                const angle = (i / 100) * 180;
+                const outer = polarToCart(cx, cy, r + 12, angle);
+                const inner = polarToCart(cx, cy, r + 4, angle);
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', inner.x);
+                line.setAttribute('y1', inner.y);
+                line.setAttribute('x2', outer.x);
+                line.setAttribute('y2', outer.y);
+                line.setAttribute('stroke', '#444');
+                line.setAttribute('stroke-width', '1.5');
+                line.setAttribute('stroke-linecap', 'round');
+                ticksG.appendChild(line);
+            }
+        }
+
+        function setNeedle(value) {
+            const angle = (value / 100) * 180 - 90;
+            const needle = document.getElementById('needle');
+            needle.style.transform = `rotate(${angle}deg)`;
+        }
+
+        function formatDate(ts) {
+            const d = new Date(parseInt(ts) * 1000);
+            return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        }
+
+        function render(data) {
+            const entries = data.data;
+            if (!entries || entries.length === 0) { showError(); return; }
+
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('error').style.display = 'none';
+            document.getElementById('app').style.display = '';
+
+            buildGauge();
+
+            const current = parseInt(entries[0].value, 10);
+            const sentiment = getSentiment(current);
+
+            // Value & label
+            document.getElementById('value-num').textContent = current;
+            document.getElementById('value-num').style.color = sentiment.color;
+            document.getElementById('value-label').textContent = sentiment.label;
+            document.getElementById('value-label').style.color = sentiment.color;
+
+            // Glow
+            document.getElementById('glow').style.background = sentiment.color;
+
+            // Needle: start at 0, animate to value
+            requestAnimationFrame(() => {
+                setNeedle(0);
+                requestAnimationFrame(() => setNeedle(current));
+            });
+
+            // Comparison cards
+            const comparisons = [
+                { label: 'Yesterday', index: 1 },
+                { label: 'Last Week', index: 7 },
+                { label: 'Last Month', index: 29 }
+            ];
+            const compareEl = document.getElementById('compare');
+            compareEl.innerHTML = '';
+            comparisons.forEach(c => {
+                if (entries[c.index]) {
+                    const v = parseInt(entries[c.index].value, 10);
+                    const s = getSentiment(v);
+                    const card = document.createElement('div');
+                    card.className = 'compare-card';
+                    card.innerHTML = `
+                        <div class="c-label">${c.label}</div>
+                        <div class="c-value" style="color:${s.color}">${v}</div>
+                        <div class="c-sent" style="color:${s.color}">${s.label}</div>
+                    `;
+                    compareEl.appendChild(card);
+                }
+            });
+
+            // History chart (reverse so oldest is first)
+            const history = entries.slice().reverse();
+            const chartEl = document.getElementById('chart');
+            chartEl.innerHTML = '';
+            const maxVal = 100;
+            const chartHeight = 96; // px available
+            history.forEach((entry, i) => {
+                const v = parseInt(entry.value, 10);
+                const s = getSentiment(v);
+                const bar = document.createElement('div');
+                bar.className = 'chart-bar';
+                bar.style.height = '0px';
+                bar.style.background = s.color;
+                bar.innerHTML = `<div class="tooltip">${formatDate(entry.timestamp)}: ${v} (${s.label})</div>`;
+                chartEl.appendChild(bar);
+                // Animate in
+                setTimeout(() => {
+                    bar.style.height = Math.max((v / maxVal) * chartHeight, 3) + 'px';
+                }, 100 + i * 20);
+            });
+
+            // Date labels
+            const datesEl = document.getElementById('chart-dates');
+            if (history.length > 0) {
+                datesEl.innerHTML = `<span>${formatDate(history[0].timestamp)}</span><span>${formatDate(history[history.length - 1].timestamp)}</span>`;
+            }
+        }
+
+        function showError() {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('app').style.display = 'none';
+            document.getElementById('error').style.display = '';
+        }
+
+        function loadData() {
+            document.getElementById('loading').style.display = '';
+            document.getElementById('app').style.display = 'none';
+            document.getElementById('error').style.display = 'none';
+
+            // Check cache
+            try {
+                const cached = sessionStorage.getItem(CACHE_KEY);
+                if (cached) {
+                    const { ts, data } = JSON.parse(cached);
+                    if (Date.now() - ts < CACHE_TTL) {
+                        render(data);
+                        return;
+                    }
+                }
+            } catch(e) {}
+
+            fetchFn(API_URL)
+                .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+                .then(data => {
+                    try {
+                        sessionStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data }));
+                    } catch(e) {}
+                    render(data);
+                })
+                .catch(() => showError());
+        }
+
+        window.loadData = loadData;
+        loadData();
+    })();
+    </script>
+</body>
+</html>

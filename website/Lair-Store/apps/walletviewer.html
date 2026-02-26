@@ -1,0 +1,1074 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="lair-include" content="lair.css">
+    <meta name="capabilities" content="wallet_viewer">
+    <meta name="lair-icon" content="account_balance_wallet">
+    <meta name="lair-perms" content="network" />
+    <title>Wallet Viewer</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            background: var(--col-bg1, #101010);
+            color: var(--col-txt1, #fff);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            overflow-y: auto;
+        }
+
+        .app-container {
+            max-width: 860px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+
+        /* ---------- Header ---------- */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .header h1 {
+            font-size: 1.3rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .header h1 .icon { font-size: 1.4rem; }
+
+        /* ---------- Search ---------- */
+        .search-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1.2rem;
+        }
+
+        .search-row {
+            display: flex;
+            width: 100%;
+            max-width: 600px;
+            gap: 0.5rem;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 0.65rem 0.9rem;
+            background: var(--col-bg2, #171717);
+            border: 1px solid var(--col-bg3, #262626);
+            border-radius: var(--siz-radius1, 0.5em);
+            color: var(--col-txt1, #fff);
+            font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', Consolas, monospace;
+            font-size: 0.88rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .search-input:focus {
+            border-color: var(--colors-accent, rgb(97, 121, 255));
+        }
+
+        .search-input::placeholder {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            color: #666;
+        }
+
+        .search-btn {
+            padding: 0.65rem 1.1rem;
+            background: var(--colors-accent, rgb(97, 121, 255));
+            color: #fff;
+            border: none;
+            border-radius: var(--siz-radius1, 0.5em);
+            font-size: 0.88rem;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: opacity 0.15s;
+        }
+
+        .search-btn:hover { opacity: 0.85; }
+        .search-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .search-hint {
+            font-size: 0.75rem;
+            color: #666;
+        }
+
+        /* ---------- Bookmarks bar ---------- */
+        .bookmarks-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            margin-bottom: 1rem;
+            min-height: 0;
+        }
+
+        .bookmark-chip {
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.3rem 0.6rem;
+            background: var(--col-bg2, #171717);
+            border: 1px solid var(--col-bg3, #262626);
+            border-radius: 2rem;
+            font-size: 0.78rem;
+            color: var(--col-txt1, #fff);
+            cursor: pointer;
+            transition: background 0.15s, border-color 0.15s;
+        }
+
+        .bookmark-chip:hover {
+            border-color: var(--colors-accent, rgb(97, 121, 255));
+            background: var(--col-bg3, #262626);
+        }
+
+        .bookmark-chip .remove-bm {
+            font-size: 0.7rem;
+            opacity: 0.5;
+            cursor: pointer;
+            margin-left: 0.1rem;
+        }
+
+        .bookmark-chip .remove-bm:hover { opacity: 1; color: var(--col-bad, #d44343); }
+
+        /* ---------- Loading / Error ---------- */
+        .status-box {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: #777;
+            font-size: 0.95rem;
+        }
+
+        .status-box.error { color: var(--col-bad, #d44343); }
+
+        .spinner {
+            width: 32px;
+            height: 32px;
+            border: 3px solid var(--col-bg3, #333);
+            border-top-color: var(--colors-accent, rgb(97, 121, 255));
+            border-radius: 50%;
+            animation: spin 0.75s linear infinite;
+            margin: 0 auto 0.8rem;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ---------- Profile ---------- */
+        .profile { display: none; }
+        .profile.visible { display: block; }
+
+        .profile-header {
+            background: var(--col-bg2, #171717);
+            border: 1px solid var(--col-bg3, #262626);
+            border-radius: 0.75rem;
+            padding: 1.2rem;
+            margin-bottom: 1rem;
+            position: relative;
+        }
+
+        .profile-top-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.5rem;
+            margin-bottom: 0.6rem;
+        }
+
+        .profile-addr-row {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .profile-addr {
+            font-family: 'SF Mono', 'Fira Code', Consolas, monospace;
+            font-size: 0.85rem;
+            color: #aaa;
+            word-break: break-all;
+        }
+
+        .ens-badge {
+            background: var(--colors-accent, rgb(97, 121, 255));
+            color: #fff;
+            font-size: 0.75rem;
+            padding: 0.15rem 0.5rem;
+            border-radius: 1rem;
+            font-weight: 600;
+        }
+
+        .copy-btn {
+            background: none;
+            border: 1px solid var(--col-bg3, #262626);
+            color: #888;
+            font-size: 0.75rem;
+            padding: 0.2rem 0.45rem;
+            border-radius: 0.3rem;
+            cursor: pointer;
+            transition: color 0.15s, border-color 0.15s;
+            position: relative;
+        }
+
+        .copy-btn:hover { color: var(--col-txt1, #fff); border-color: #555; }
+
+        .copy-tooltip {
+            position: absolute;
+            bottom: 110%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--col-bg3, #262626);
+            color: var(--col-txt1, #fff);
+            font-size: 0.7rem;
+            padding: 0.2rem 0.5rem;
+            border-radius: 0.3rem;
+            white-space: nowrap;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .copy-tooltip.show { opacity: 1; }
+
+        .bookmark-btn {
+            background: none;
+            border: none;
+            font-size: 1.3rem;
+            cursor: pointer;
+            color: #555;
+            transition: color 0.15s, transform 0.15s;
+            padding: 0.1rem;
+            line-height: 1;
+        }
+
+        .bookmark-btn:hover { transform: scale(1.15); }
+        .bookmark-btn.active { color: #f5c518; }
+
+        .total-balance {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-top: 0.4rem;
+            line-height: 1.1;
+        }
+
+        .total-balance .currency { font-size: 0.9rem; color: #888; font-weight: 400; }
+
+        .profile-stats {
+            display: flex;
+            gap: 1.5rem;
+            margin-top: 0.8rem;
+            font-size: 0.82rem;
+            color: #888;
+        }
+
+        .profile-stats span strong {
+            color: var(--col-txt1, #fff);
+            font-weight: 600;
+        }
+
+        /* ---------- Tabs ---------- */
+        .tabs {
+            display: flex;
+            gap: 0;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid var(--col-bg3, #262626);
+        }
+
+        .tab-btn {
+            background: none;
+            border: none;
+            color: #777;
+            padding: 0.6rem 1rem;
+            font-size: 0.88rem;
+            font-weight: 500;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: color 0.15s, border-color 0.15s;
+        }
+
+        .tab-btn:hover { color: #ccc; }
+
+        .tab-btn.active {
+            color: var(--col-txt1, #fff);
+            border-bottom-color: var(--colors-accent, rgb(97, 121, 255));
+        }
+
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; }
+
+        /* ---------- Token List ---------- */
+        .token-row {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.65rem 0.5rem;
+            border-bottom: 1px solid var(--col-bg3, #1e1e1e);
+            transition: background 0.12s;
+        }
+
+        .token-row:hover { background: var(--col-bg2, #171717); }
+
+        .token-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.75rem;
+            color: #fff;
+            flex-shrink: 0;
+            background: var(--col-bg3, #262626);
+            overflow: hidden;
+        }
+
+        .token-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .token-info { flex: 1; min-width: 0; }
+
+        .token-name {
+            font-weight: 600;
+            font-size: 0.88rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .token-symbol {
+            font-size: 0.75rem;
+            color: #777;
+        }
+
+        .token-values {
+            text-align: right;
+            flex-shrink: 0;
+        }
+
+        .token-usd {
+            font-weight: 600;
+            font-size: 0.88rem;
+        }
+
+        .token-amount {
+            font-size: 0.75rem;
+            color: #777;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 2rem;
+            color: #555;
+            font-size: 0.9rem;
+        }
+
+        /* ---------- Activity List ---------- */
+        .tx-row {
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+            padding: 0.55rem 0.5rem;
+            border-bottom: 1px solid var(--col-bg3, #1e1e1e);
+            font-size: 0.84rem;
+            transition: background 0.12s;
+        }
+
+        .tx-row:hover { background: var(--col-bg2, #171717); }
+
+        .tx-type-icon {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85rem;
+            flex-shrink: 0;
+        }
+
+        .tx-type-icon.send { background: rgba(212,67,67,0.15); color: var(--col-bad, #d44343); }
+        .tx-type-icon.receive { background: rgba(91,228,91,0.15); color: var(--col-good, #5be45b); }
+        .tx-type-icon.contract { background: rgba(97,121,255,0.15); color: var(--colors-accent, rgb(97,121,255)); }
+
+        .tx-details { flex: 1; min-width: 0; }
+
+        .tx-label {
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .tx-parties {
+            font-size: 0.73rem;
+            color: #777;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .tx-right {
+            text-align: right;
+            flex-shrink: 0;
+        }
+
+        .tx-value {
+            font-weight: 600;
+        }
+
+        .tx-value.send { color: var(--col-bad, #d44343); }
+        .tx-value.receive { color: var(--col-good, #5be45b); }
+
+        .tx-time {
+            font-size: 0.72rem;
+            color: #666;
+        }
+
+        /* ---------- Responsive ---------- */
+        @media (max-width: 500px) {
+            .app-container { padding: 0.6rem; }
+            .total-balance { font-size: 1.5rem; }
+            .profile-stats { flex-wrap: wrap; gap: 0.8rem; }
+            .search-row { flex-direction: column; }
+            .search-btn { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <!-- Header -->
+    <div class="header">
+        <h1><span class="icon">👛</span> Wallet Viewer</h1>
+    </div>
+
+    <!-- Search -->
+    <div class="search-section">
+        <div class="search-row">
+            <input type="text" class="search-input" id="addressInput"
+                   placeholder="0x... or vitalik.eth"
+                   spellcheck="false" autocomplete="off">
+            <button class="search-btn" id="searchBtn" onclick="handleSearch()">Lookup</button>
+        </div>
+        <div class="search-hint">Enter an Ethereum address or ENS name</div>
+    </div>
+
+    <!-- Bookmarks -->
+    <div class="bookmarks-bar" id="bookmarksBar"></div>
+
+    <!-- Status -->
+    <div class="status-box" id="statusBox" style="display:none;">
+        <div class="spinner" id="statusSpinner" style="display:none;"></div>
+        <div id="statusText"></div>
+    </div>
+
+    <!-- Profile -->
+    <div class="profile" id="profileSection">
+        <!-- Profile Header -->
+        <div class="profile-header">
+            <div class="profile-top-row">
+                <div class="profile-addr-row">
+                    <span class="ens-badge" id="ensBadge" style="display:none;"></span>
+                    <span class="profile-addr" id="profileAddr"></span>
+                    <button class="copy-btn" id="copyAddrBtn" onclick="copyAddress()">
+                        📋
+                        <span class="copy-tooltip" id="copyTooltip">Copied!</span>
+                    </button>
+                </div>
+                <button class="bookmark-btn" id="bookmarkBtn" onclick="toggleBookmark()" title="Bookmark this wallet">☆</button>
+            </div>
+            <div class="total-balance" id="totalBalance">$0.00</div>
+            <div class="profile-stats">
+                <span>ETH: <strong id="ethBalance">0</strong></span>
+                <span>Tokens: <strong id="tokenCount">0</strong></span>
+                <span>Txns: <strong id="txCount">0</strong></span>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="tokens" onclick="switchTab('tokens')">Tokens</button>
+            <button class="tab-btn" data-tab="activity" onclick="switchTab('activity')">Activity</button>
+        </div>
+
+        <!-- Token List -->
+        <div class="tab-panel active" id="tab-tokens">
+            <div id="tokenList"></div>
+        </div>
+
+        <!-- Activity -->
+        <div class="tab-panel" id="tab-activity">
+            <div id="activityList"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function() {
+    'use strict';
+
+    const fetchFn = window.cfetch || fetch;
+
+    /* ============================================================
+       State
+    ============================================================ */
+    const STORAGE_KEY = 'walletviewer_bookmarks';
+    let currentAddress = '';
+    let currentEns = '';
+    let bookmarks = loadBookmarks();
+
+    /* ============================================================
+       DOM refs
+    ============================================================ */
+    const $input       = document.getElementById('addressInput');
+    const $searchBtn   = document.getElementById('searchBtn');
+    const $bookmarksBar= document.getElementById('bookmarksBar');
+    const $statusBox   = document.getElementById('statusBox');
+    const $statusText  = document.getElementById('statusText');
+    const $statusSpin  = document.getElementById('statusSpinner');
+    const $profile     = document.getElementById('profileSection');
+    const $ensBadge    = document.getElementById('ensBadge');
+    const $profileAddr = document.getElementById('profileAddr');
+    const $totalBal    = document.getElementById('totalBalance');
+    const $ethBalance  = document.getElementById('ethBalance');
+    const $tokenCount  = document.getElementById('tokenCount');
+    const $txCount     = document.getElementById('txCount');
+    const $bookmarkBtn = document.getElementById('bookmarkBtn');
+    const $tokenList   = document.getElementById('tokenList');
+    const $activityList= document.getElementById('activityList');
+    const $copyTooltip = document.getElementById('copyTooltip');
+
+    /* ============================================================
+       Init
+    ============================================================ */
+    renderBookmarks();
+    $input.addEventListener('keydown', e => { if (e.key === 'Enter') handleSearch(); });
+
+    /* ============================================================
+       Search handler
+    ============================================================ */
+    window.handleSearch = async function() {
+        const raw = $input.value.trim();
+        if (!raw) return;
+
+        showStatus('Loading…', true);
+        hideProfile();
+
+        let address = raw;
+        currentEns = '';
+
+        try {
+            // ENS resolution
+            if (raw.endsWith('.eth') || raw.endsWith('.xyz') || (raw.includes('.') && !raw.startsWith('0x'))) {
+                showStatus('Resolving ENS name…', true);
+                const ensData = await resolveENS(raw);
+                if (!ensData || !ensData.address) {
+                    showError('Could not resolve ENS name "' + raw + '"');
+                    return;
+                }
+                address = ensData.address;
+                currentEns = ensData.name || raw;
+            }
+
+            // Validate address
+            if (!/^0x[a-fA-F0-9]{40}$/.test(address)) {
+                showError('Invalid Ethereum address');
+                return;
+            }
+
+            currentAddress = address.toLowerCase();
+            showStatus('Fetching wallet data…', true);
+
+            // Fetch data in parallel
+            const [balanceData, txData] = await Promise.all([
+                fetchBalanceAnkr(currentAddress),
+                fetchTransactions(currentAddress)
+            ]);
+
+            renderProfile(balanceData, txData);
+        } catch (err) {
+            console.error(err);
+            showError('Failed to load wallet data. ' + (err.message || ''));
+        }
+    };
+
+    /* ============================================================
+       ENS Resolution
+    ============================================================ */
+    async function resolveENS(name) {
+        try {
+            const resp = await fetchFn('https://api.ensideas.com/ens/resolve/' + encodeURIComponent(name));
+            if (!resp.ok) return null;
+            const data = await resp.json();
+            return data && data.address ? data : null;
+        } catch {
+            return null;
+        }
+    }
+
+    /* ============================================================
+       Balance (Ankr multichain)
+    ============================================================ */
+    async function fetchBalanceAnkr(addr) {
+        try {
+            const resp = await fetchFn('https://rpc.ankr.com/multichain', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    jsonrpc: '2.0',
+                    method: 'ankr_getAccountBalance',
+                    params: {
+                        blockchain: ['eth'],
+                        walletAddress: addr,
+                        onlyWhitelisted: true
+                    },
+                    id: 1
+                })
+            });
+            const json = await resp.json();
+            if (json.result) return json.result;
+            throw new Error(json.error ? json.error.message : 'Ankr API error');
+        } catch (ankrErr) {
+            console.warn('Ankr failed, trying Blockchair…', ankrErr);
+            return fetchBalanceBlockchair(addr);
+        }
+    }
+
+    /* ============================================================
+       Balance fallback (Blockchair)
+    ============================================================ */
+    async function fetchBalanceBlockchair(addr) {
+        const resp = await fetchFn(
+            'https://api.blockchair.com/ethereum/dashboards/address/' + addr + '?erc_20=true&limit=50'
+        );
+        if (!resp.ok) throw new Error('Blockchair API error (' + resp.status + ')');
+        const json = await resp.json();
+        const dash = json.data && json.data[addr.toLowerCase()];
+        if (!dash) throw new Error('No data from Blockchair');
+
+        // Convert to a common shape
+        const ethBalWei = dash.address.balance || '0';
+        const ethBal = parseFloat(ethBalWei) / 1e18;
+        const ethPrice = json.context && json.context.market_price_usd ? json.context.market_price_usd : 0;
+
+        const assets = [];
+        // ETH
+        assets.push({
+            tokenName: 'Ethereum',
+            tokenSymbol: 'ETH',
+            tokenDecimals: 18,
+            balance: ethBalWei,
+            balanceUsd: (ethBal * ethPrice).toFixed(2),
+            tokenType: 'native',
+            thumbnail: ''
+        });
+
+        // ERC-20
+        if (dash.layer_2 && dash.layer_2.erc_20) {
+            for (const tok of dash.layer_2.erc_20) {
+                const rawBal = parseFloat(tok.balance) || 0;
+                const decimals = tok.token_decimals || 18;
+                const amount = rawBal / Math.pow(10, decimals);
+                assets.push({
+                    tokenName: tok.token_name || 'Unknown',
+                    tokenSymbol: tok.token_symbol || '???',
+                    tokenDecimals: decimals,
+                    balance: tok.balance,
+                    balanceUsd: tok.balance_usd ? String(tok.balance_usd) : '0',
+                    tokenType: 'ERC-20',
+                    thumbnail: ''
+                });
+            }
+        }
+
+        const totalUsd = assets.reduce((s, a) => s + parseFloat(a.balanceUsd || 0), 0);
+
+        return {
+            totalBalanceUsd: String(totalUsd),
+            assets,
+            _source: 'blockchair',
+            _txCount: dash.address.transaction_count || 0
+        };
+    }
+
+    /* ============================================================
+       Transactions (Blockchair)
+    ============================================================ */
+    async function fetchTransactions(addr) {
+        try {
+            const resp = await fetchFn(
+                'https://api.blockchair.com/ethereum/dashboards/address/' + addr + '?limit=10&offset=0'
+            );
+            if (!resp.ok) return [];
+            const json = await resp.json();
+            const dash = json.data && json.data[addr.toLowerCase()];
+            if (!dash || !dash.transactions) return [];
+
+            // Fetch individual transaction details (up to 10)
+            const txHashes = dash.transactions.slice(0, 10);
+            if (txHashes.length === 0) return [];
+
+            const txResp = await fetchFn(
+                'https://api.blockchair.com/ethereum/dashboards/transactions/' + txHashes.join(',')
+            );
+            if (!txResp.ok) return [];
+            const txJson = await txResp.json();
+            if (!txJson.data) return [];
+
+            const txs = [];
+            for (const hash of txHashes) {
+                const td = txJson.data[hash];
+                if (!td || !td.transaction) continue;
+                const t = td.transaction;
+                const isSend = t.sender && t.sender.toLowerCase() === addr.toLowerCase();
+                const valueEth = parseFloat(t.value || 0) / 1e18;
+                txs.push({
+                    hash: t.hash,
+                    type: t.recipient === null ? 'contract' : (isSend ? 'send' : 'receive'),
+                    from: t.sender || '',
+                    to: t.recipient || 'Contract Creation',
+                    value: valueEth,
+                    time: t.time || '',
+                    gasUsed: t.gas_used || 0
+                });
+            }
+            return txs;
+        } catch (err) {
+            console.warn('Tx fetch failed:', err);
+            return [];
+        }
+    }
+
+    /* ============================================================
+       Render Profile
+    ============================================================ */
+    function renderProfile(balanceData, txData) {
+        hideStatus();
+
+        // Address display
+        $profileAddr.textContent = truncateAddr(currentAddress);
+        $profileAddr.title = currentAddress;
+
+        // ENS badge
+        if (currentEns) {
+            $ensBadge.textContent = currentEns;
+            $ensBadge.style.display = 'inline-block';
+        } else {
+            $ensBadge.style.display = 'none';
+        }
+
+        // Total balance
+        const totalUsd = parseFloat(balanceData.totalBalanceUsd || 0);
+        $totalBal.innerHTML = formatUSD(totalUsd);
+
+        // Assets / tokens
+        const assets = balanceData.assets || [];
+        const ethAsset = assets.find(a => a.tokenSymbol === 'ETH' || a.tokenType === 'native');
+        const ethBal = ethAsset ? formatTokenAmount(ethAsset.balance, ethAsset.tokenDecimals || 18) : '0';
+        $ethBalance.textContent = parseFloat(ethBal).toFixed(4);
+        $tokenCount.textContent = assets.length;
+
+        // Tx count
+        const txCount = balanceData._txCount || txData.length || 0;
+        $txCount.textContent = txCount.toLocaleString();
+
+        // Bookmark state
+        updateBookmarkBtn();
+
+        // Render tokens
+        renderTokens(assets);
+
+        // Render activity
+        renderActivity(txData);
+
+        showProfile();
+    }
+
+    function renderTokens(assets) {
+        if (!assets || assets.length === 0) {
+            $tokenList.innerHTML = '<div class="empty-state">No tokens found for this address</div>';
+            return;
+        }
+
+        // Sort by USD value desc
+        const sorted = [...assets].sort((a, b) => parseFloat(b.balanceUsd || 0) - parseFloat(a.balanceUsd || 0));
+
+        let html = '';
+        for (const tok of sorted) {
+            const usd = parseFloat(tok.balanceUsd || 0);
+            const amount = formatTokenAmount(tok.balance || '0', tok.tokenDecimals || 18);
+            const symbol = tok.tokenSymbol || '???';
+            const name = tok.tokenName || 'Unknown Token';
+            const initial = symbol.charAt(0).toUpperCase();
+            const color = stringToColor(symbol);
+
+            const imgHtml = tok.thumbnail
+                ? '<img src="' + escapeHtml(tok.thumbnail) + '" alt="" onerror="this.parentElement.textContent=\'' + initial + '\'">'
+                : initial;
+
+            html += '<div class="token-row">'
+                + '<div class="token-icon" style="background:' + color + '">' + imgHtml + '</div>'
+                + '<div class="token-info">'
+                + '<div class="token-name">' + escapeHtml(name) + '</div>'
+                + '<div class="token-symbol">' + escapeHtml(symbol) + '</div>'
+                + '</div>'
+                + '<div class="token-values">'
+                + '<div class="token-usd">' + (usd > 0 ? formatUSD(usd) : '—') + '</div>'
+                + '<div class="token-amount">' + formatNum(parseFloat(amount)) + ' ' + escapeHtml(symbol) + '</div>'
+                + '</div>'
+                + '</div>';
+        }
+        $tokenList.innerHTML = html;
+    }
+
+    function renderActivity(txData) {
+        if (!txData || txData.length === 0) {
+            $activityList.innerHTML = '<div class="empty-state">No recent transactions found</div>';
+            return;
+        }
+
+        let html = '';
+        for (const tx of txData) {
+            const typeClass = tx.type || 'send';
+            const typeLabel = typeClass === 'receive' ? 'Received' : typeClass === 'contract' ? 'Contract' : 'Sent';
+            const typeIcon = typeClass === 'receive' ? '↓' : typeClass === 'contract' ? '⚙' : '↑';
+            const valueClass = typeClass === 'receive' ? 'receive' : typeClass === 'send' ? 'send' : '';
+            const prefix = typeClass === 'receive' ? '+' : typeClass === 'send' ? '-' : '';
+            const valueStr = tx.value ? (prefix + tx.value.toFixed(4) + ' ETH') : '0 ETH';
+            const timeStr = tx.time ? timeAgo(tx.time) : '';
+
+            const from = truncateAddr(tx.from);
+            const to = tx.to === 'Contract Creation' ? 'Contract Creation' : truncateAddr(tx.to);
+
+            html += '<div class="tx-row">'
+                + '<div class="tx-type-icon ' + typeClass + '">' + typeIcon + '</div>'
+                + '<div class="tx-details">'
+                + '<div class="tx-label">' + typeLabel + '</div>'
+                + '<div class="tx-parties">' + escapeHtml(from) + ' → ' + escapeHtml(to) + '</div>'
+                + '</div>'
+                + '<div class="tx-right">'
+                + '<div class="tx-value ' + valueClass + '">' + valueStr + '</div>'
+                + '<div class="tx-time">' + escapeHtml(timeStr) + '</div>'
+                + '</div>'
+                + '</div>';
+        }
+        $activityList.innerHTML = html;
+    }
+
+    /* ============================================================
+       Tab Switching
+    ============================================================ */
+    window.switchTab = function(tab) {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'tab-' + tab));
+    };
+
+    /* ============================================================
+       Bookmarks
+    ============================================================ */
+    function loadBookmarks() {
+        try {
+            return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+        } catch {
+            return [];
+        }
+    }
+
+    function saveBookmarks() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(bookmarks));
+    }
+
+    window.toggleBookmark = function() {
+        if (!currentAddress) return;
+        const idx = bookmarks.findIndex(b => b.address === currentAddress);
+        if (idx >= 0) {
+            bookmarks.splice(idx, 1);
+        } else {
+            bookmarks.push({
+                address: currentAddress,
+                ens: currentEns || '',
+                addedAt: Date.now()
+            });
+        }
+        saveBookmarks();
+        updateBookmarkBtn();
+        renderBookmarks();
+    };
+
+    function updateBookmarkBtn() {
+        const isBookmarked = bookmarks.some(b => b.address === currentAddress);
+        $bookmarkBtn.textContent = isBookmarked ? '★' : '☆';
+        $bookmarkBtn.classList.toggle('active', isBookmarked);
+        $bookmarkBtn.title = isBookmarked ? 'Remove bookmark' : 'Bookmark this wallet';
+    }
+
+    function renderBookmarks() {
+        if (bookmarks.length === 0) {
+            $bookmarksBar.innerHTML = '';
+            return;
+        }
+        let html = '';
+        for (let i = 0; i < bookmarks.length; i++) {
+            const bm = bookmarks[i];
+            const label = bm.ens || truncateAddr(bm.address);
+            html += '<div class="bookmark-chip" onclick="loadBookmark(' + i + ')">'
+                + '<span>👛 ' + escapeHtml(label) + '</span>'
+                + '<span class="remove-bm" onclick="event.stopPropagation(); removeBookmark(' + i + ')" title="Remove">✕</span>'
+                + '</div>';
+        }
+        $bookmarksBar.innerHTML = html;
+    }
+
+    window.loadBookmark = function(idx) {
+        const bm = bookmarks[idx];
+        if (!bm) return;
+        $input.value = bm.ens || bm.address;
+        handleSearch();
+    };
+
+    window.removeBookmark = function(idx) {
+        bookmarks.splice(idx, 1);
+        saveBookmarks();
+        renderBookmarks();
+        if (currentAddress) updateBookmarkBtn();
+    };
+
+    /* ============================================================
+       Copy address
+    ============================================================ */
+    window.copyAddress = function() {
+        if (!currentAddress) return;
+        navigator.clipboard.writeText(currentAddress).then(() => {
+            $copyTooltip.classList.add('show');
+            setTimeout(() => $copyTooltip.classList.remove('show'), 1200);
+        }).catch(() => {
+            // Fallback
+            const ta = document.createElement('textarea');
+            ta.value = currentAddress;
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+            $copyTooltip.classList.add('show');
+            setTimeout(() => $copyTooltip.classList.remove('show'), 1200);
+        });
+    };
+
+    /* ============================================================
+       UI helpers
+    ============================================================ */
+    function showStatus(text, loading) {
+        $statusBox.style.display = 'block';
+        $statusText.textContent = text;
+        $statusSpin.style.display = loading ? 'block' : 'none';
+        $statusBox.className = 'status-box';
+    }
+
+    function showError(text) {
+        $statusBox.style.display = 'block';
+        $statusText.textContent = text;
+        $statusSpin.style.display = 'none';
+        $statusBox.className = 'status-box error';
+    }
+
+    function hideStatus() {
+        $statusBox.style.display = 'none';
+    }
+
+    function showProfile() {
+        $profile.classList.add('visible');
+    }
+
+    function hideProfile() {
+        $profile.classList.remove('visible');
+    }
+
+    /* ============================================================
+       Formatting helpers
+    ============================================================ */
+    function truncateAddr(addr) {
+        if (!addr || addr.length < 12) return addr || '';
+        return addr.slice(0, 6) + '…' + addr.slice(-4);
+    }
+
+    function formatUSD(val) {
+        if (val >= 1e9) return '$' + (val / 1e9).toFixed(2) + 'B';
+        if (val >= 1e6) return '$' + (val / 1e6).toFixed(2) + 'M';
+        if (val >= 1e3) return '$' + val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        if (val >= 0.01) return '$' + val.toFixed(2);
+        if (val > 0) return '$' + val.toFixed(4);
+        return '$0.00';
+    }
+
+    function formatTokenAmount(balanceRaw, decimals) {
+        const raw = typeof balanceRaw === 'string' ? balanceRaw : String(balanceRaw);
+        const dec = parseInt(decimals) || 18;
+        if (raw === '0') return '0';
+
+        // Handle large numbers safely
+        if (raw.length <= 15) {
+            return (parseFloat(raw) / Math.pow(10, dec)).toString();
+        }
+
+        // String-based division for big numbers
+        const padded = raw.padStart(dec + 1, '0');
+        const intPart = padded.slice(0, padded.length - dec) || '0';
+        const fracPart = padded.slice(padded.length - dec).replace(/0+$/, '');
+        return fracPart ? (intPart + '.' + fracPart) : intPart;
+    }
+
+    function formatNum(val) {
+        if (Math.abs(val) >= 1e6) return (val / 1e6).toFixed(2) + 'M';
+        if (Math.abs(val) >= 1e3) return val.toLocaleString('en-US', { maximumFractionDigits: 2 });
+        if (Math.abs(val) >= 1) return val.toFixed(4);
+        if (Math.abs(val) >= 0.0001) return val.toFixed(6);
+        if (val === 0) return '0';
+        return val.toExponential(2);
+    }
+
+    function timeAgo(dateStr) {
+        const now = Date.now();
+        const then = new Date(dateStr).getTime();
+        if (isNaN(then)) return dateStr;
+        const diff = Math.floor((now - then) / 1000);
+        if (diff < 60) return diff + 's ago';
+        if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+        if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+        if (diff < 2592000) return Math.floor(diff / 86400) + 'd ago';
+        return new Date(then).toLocaleDateString();
+    }
+
+    function stringToColor(str) {
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) {
+            hash = str.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        const h = Math.abs(hash) % 360;
+        return 'hsl(' + h + ', 55%, 35%)';
+    }
+
+    function escapeHtml(str) {
+        const d = document.createElement('div');
+        d.textContent = str;
+        return d.innerHTML;
+    }
+
+})();
+</script>
+</body>
+</html>

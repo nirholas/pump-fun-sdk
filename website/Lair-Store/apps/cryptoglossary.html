@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="lair-include" content="lair.css">
+    <meta name="capabilities" content="crypto_glossary">
+    <meta name="lair-icon" content="school">
+    <title>Crypto Glossary</title>
+    <style>
+        :root {
+            --col-bg1: #101010;
+            --col-bg2: #171717;
+            --col-bg3: #222222;
+            --col-txt1: white;
+            --col-txt2: #aaa;
+            --colors-accent: rgb(97, 121, 255);
+            --col-good: #5be45b;
+            --col-bad: #d44343;
+            --col-warn: #f0a030;
+            --siz-radius1: 0.5em;
+            --siz-radius2: 0.375em;
+            --font-size-small: 0.75em;
+        }
+
+        html { height: 100%; }
+
+        body {
+            margin: 0;
+            height: 100%;
+            background: var(--col-bg1);
+            color: var(--col-txt1);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            overflow-y: auto;
+        }
+
+        * { box-sizing: border-box; }
+
+        .app {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 0.75em;
+        }
+
+        /* Header */
+        .app-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5em;
+            margin-bottom: 0.75em;
+            flex-wrap: wrap;
+        }
+        .app-header h1 {
+            font-size: 1.2em;
+            margin: 0;
+            font-weight: 700;
+        }
+        .app-header h1 span { margin-right: 0.3em; }
+
+        /* Mode tabs */
+        .mode-tabs {
+            display: flex;
+            gap: 0.35em;
+            margin-left: auto;
+        }
+        .mode-tab {
+            background: var(--col-bg3);
+            border: 1px solid #333;
+            color: var(--col-txt2);
+            border-radius: var(--siz-radius2);
+            padding: 0.3em 0.7em;
+            font-size: 0.8em;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .mode-tab:hover { color: var(--col-txt1); }
+        .mode-tab.active {
+            background: var(--colors-accent);
+            color: white;
+            border-color: var(--colors-accent);
+        }
+
+        /* Search bar */
+        .search-bar {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background: var(--col-bg2);
+            padding: 0.6em;
+            border-radius: var(--siz-radius1);
+            margin-bottom: 0.6em;
+            display: flex;
+            gap: 0.5em;
+            align-items: center;
+        }
+        .search-bar input {
+            flex: 1;
+            background: var(--col-bg3);
+            border: 1px solid #333;
+            color: var(--col-txt1);
+            border-radius: var(--siz-radius2);
+            padding: 0.45em 0.7em;
+            font-size: 0.9em;
+            outline: none;
+        }
+        .search-bar input::placeholder { color: #666; }
+        .search-bar input:focus { border-color: var(--colors-accent); }
+        .bookmark-toggle {
+            background: var(--col-bg3);
+            border: 1px solid #333;
+            color: var(--col-txt2);
+            border-radius: var(--siz-radius2);
+            padding: 0.4em 0.65em;
+            font-size: 0.85em;
+            cursor: pointer;
+            transition: all 0.15s;
+            white-space: nowrap;
+        }
+        .bookmark-toggle:hover { color: var(--col-txt1); }
+        .bookmark-toggle.active { color: var(--col-warn); border-color: var(--col-warn); }
+
+        /* A-Z nav */
+        .az-nav {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.2em;
+            margin-bottom: 0.6em;
+            justify-content: center;
+        }
+        .az-btn {
+            background: var(--col-bg3);
+            border: 1px solid #333;
+            color: var(--col-txt2);
+            border-radius: 4px;
+            width: 1.8em;
+            height: 1.8em;
+            font-size: 0.7em;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s;
+        }
+        .az-btn:hover { color: var(--col-txt1); background: var(--colors-accent); }
+        .az-btn.has-terms { color: var(--col-txt1); }
+        .az-btn.disabled { opacity: 0.3; cursor: default; }
+
+        /* Category tabs */
+        .cat-tabs {
+            display: flex;
+            gap: 0.3em;
+            margin-bottom: 0.75em;
+            overflow-x: auto;
+            padding-bottom: 0.3em;
+            scrollbar-width: thin;
+            scrollbar-color: #333 transparent;
+        }
+        .cat-tab {
+            background: var(--col-bg3);
+            border: 1px solid #333;
+            color: var(--col-txt2);
+            border-radius: 999px;
+            padding: 0.25em 0.7em;
+            font-size: 0.75em;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.15s;
+        }
+        .cat-tab:hover { color: var(--col-txt1); }
+        .cat-tab.active { color: white; }
+        .cat-tab[data-cat="All"].active { background: var(--colors-accent); border-color: var(--colors-accent); }
+        .cat-tab[data-cat="Basics"].active { background: #3b82f6; border-color: #3b82f6; }
+        .cat-tab[data-cat="DeFi"].active { background: #8b5cf6; border-color: #8b5cf6; }
+        .cat-tab[data-cat="Trading"].active { background: #f59e0b; border-color: #f59e0b; }
+        .cat-tab[data-cat="Technical"].active { background: #10b981; border-color: #10b981; }
+        .cat-tab[data-cat="Security"].active { background: #ef4444; border-color: #ef4444; }
+        .cat-tab[data-cat="NFT"].active { background: #ec4899; border-color: #ec4899; }
+        .cat-tab[data-cat="Layer 2"].active { background: #06b6d4; border-color: #06b6d4; }
+
+        /* Word of the day hero */
+        .wotd-card {
+            background: var(--col-bg2);
+            border: 2px solid transparent;
+            border-image: linear-gradient(135deg, var(--colors-accent), #8b5cf6, #ec4899) 1;
+            border-radius: 0;
+            padding: 1em;
+            margin-bottom: 0.75em;
+            position: relative;
+        }
+        .wotd-card .wotd-label {
+            font-size: 0.65em;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--colors-accent);
+            margin-bottom: 0.4em;
+            font-weight: 600;
+        }
+        .wotd-card .wotd-term {
+            font-size: 1.3em;
+            font-weight: 700;
+            margin-bottom: 0.3em;
+        }
+        .wotd-card .wotd-def {
+            font-size: 0.85em;
+            color: var(--col-txt2);
+            line-height: 1.5;
+        }
+        .wotd-card .wotd-cat {
+            display: inline-block;
+            font-size: 0.65em;
+            padding: 0.15em 0.5em;
+            border-radius: 999px;
+            margin-top: 0.5em;
+        }
+
+        /* Letter group heading */
+        .letter-heading {
+            font-size: 1.1em;
+            font-weight: 700;
+            color: var(--colors-accent);
+            padding: 0.4em 0;
+            margin-top: 0.5em;
+            border-bottom: 1px solid #333;
+        }
+
+        /* Term card */
+        .term-card {
+            background: var(--col-bg2);
+            border: 1px solid #2a2a2a;
+            border-radius: var(--siz-radius1);
+            margin-top: 0.4em;
+            cursor: pointer;
+            transition: border-color 0.15s;
+            overflow: hidden;
+        }
+        .term-card:hover { border-color: #444; }
+        .term-card.expanded { border-color: var(--colors-accent); }
+
+        .term-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5em;
+            padding: 0.6em 0.75em;
+        }
+        .term-title {
+            font-weight: 600;
+            font-size: 0.9em;
+            flex: 1;
+        }
+        .term-short {
+            font-size: 0.75em;
+            color: var(--col-txt2);
+            flex: 2;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .term-cat-badge {
+            font-size: 0.6em;
+            padding: 0.15em 0.5em;
+            border-radius: 999px;
+            white-space: nowrap;
+        }
+        .term-bm-btn {
+            background: none;
+            border: none;
+            color: var(--col-txt2);
+            cursor: pointer;
+            font-size: 1em;
+            padding: 0.2em;
+            transition: color 0.15s;
+        }
+        .term-bm-btn:hover { color: var(--col-warn); }
+        .term-bm-btn.bookmarked { color: var(--col-warn); }
+        .term-chevron {
+            font-size: 0.7em;
+            color: var(--col-txt2);
+            transition: transform 0.2s;
+        }
+        .term-card.expanded .term-chevron { transform: rotate(90deg); }
+
+        .term-detail {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+        .term-card.expanded .term-detail { max-height: 500px; }
+        .term-detail-inner {
+            padding: 0 0.75em 0.75em;
+            border-top: 1px solid #2a2a2a;
+        }
+        .term-detail-inner p {
+            font-size: 0.82em;
+            color: var(--col-txt2);
+            line-height: 1.6;
+            margin: 0.5em 0 0;
+        }
+        .related-terms {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.3em;
+            margin-top: 0.5em;
+        }
+        .related-tag {
+            font-size: 0.65em;
+            background: var(--col-bg3);
+            border: 1px solid #333;
+            color: var(--col-txt2);
+            border-radius: 999px;
+            padding: 0.2em 0.5em;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .related-tag:hover { color: var(--col-txt1); border-color: var(--colors-accent); }
+
+        /* Count */
+        .results-count {
+            font-size: 0.7em;
+            color: var(--col-txt2);
+            margin-bottom: 0.4em;
+        }
+
+        .no-results {
+            text-align: center;
+            color: var(--col-txt2);
+            padding: 2em;
+            font-size: 0.9em;
+        }
+
+        /* category colors */
+        .cat-basics { background: rgba(59,130,246,0.2); color: #60a5fa; }
+        .cat-defi { background: rgba(139,92,246,0.2); color: #a78bfa; }
+        .cat-trading { background: rgba(245,158,11,0.2); color: #fbbf24; }
+        .cat-technical { background: rgba(16,185,129,0.2); color: #34d399; }
+        .cat-security { background: rgba(239,68,68,0.2); color: #f87171; }
+        .cat-nft { background: rgba(236,72,153,0.2); color: #f472b6; }
+        .cat-layer2 { background: rgba(6,182,212,0.2); color: #22d3ee; }
+
+        /* Quiz mode */
+        .quiz-container { display: none; }
+        .quiz-container.active { display: block; }
+        .glossary-container.hidden { display: none; }
+
+        .quiz-score {
+            display: flex;
+            align-items: center;
+            gap: 1em;
+            background: var(--col-bg2);
+            border-radius: var(--siz-radius1);
+            padding: 0.75em;
+            margin-bottom: 0.75em;
+        }
+        .quiz-score-item {
+            font-size: 0.8em;
+            color: var(--col-txt2);
+        }
+        .quiz-score-item span {
+            font-size: 1.3em;
+            font-weight: 700;
+            display: block;
+        }
+        .quiz-score-item .correct span { color: var(--col-good); }
+        .quiz-score-item .wrong span { color: var(--col-bad); }
+
+        .quiz-card {
+            background: var(--col-bg2);
+            border-radius: var(--siz-radius1);
+            padding: 1.2em;
+            text-align: center;
+            margin-bottom: 0.75em;
+            perspective: 800px;
+        }
+        .quiz-prompt {
+            font-size: 0.8em;
+            color: var(--col-txt2);
+            margin-bottom: 0.5em;
+        }
+        .quiz-term {
+            font-size: 1.6em;
+            font-weight: 700;
+            margin-bottom: 0.3em;
+        }
+        .quiz-cat-badge {
+            display: inline-block;
+            font-size: 0.65em;
+            padding: 0.15em 0.5em;
+            border-radius: 999px;
+        }
+
+        .quiz-options {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4em;
+        }
+        .quiz-option {
+            background: var(--col-bg2);
+            border: 1px solid #333;
+            color: var(--col-txt1);
+            border-radius: var(--siz-radius1);
+            padding: 0.7em 1em;
+            font-size: 0.85em;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.2s;
+            line-height: 1.4;
+        }
+        .quiz-option:hover:not(.disabled) { border-color: var(--colors-accent); background: var(--col-bg3); }
+        .quiz-option.correct { border-color: var(--col-good); background: rgba(91,228,91,0.1); }
+        .quiz-option.wrong { border-color: var(--col-bad); background: rgba(212,67,67,0.1); }
+        .quiz-option.disabled { cursor: default; opacity: 0.6; }
+        .quiz-option.correct.disabled { opacity: 1; }
+
+        .quiz-next {
+            background: var(--colors-accent);
+            border: none;
+            color: white;
+            border-radius: var(--siz-radius2);
+            padding: 0.6em 1.5em;
+            font-size: 0.9em;
+            cursor: pointer;
+            margin-top: 0.75em;
+            display: none;
+            transition: opacity 0.15s;
+        }
+        .quiz-next:hover { opacity: 0.85; }
+        .quiz-next.visible { display: inline-block; }
+
+        .quiz-flip {
+            animation: flipIn 0.4s ease;
+        }
+        @keyframes flipIn {
+            0% { transform: rotateY(90deg); opacity: 0; }
+            100% { transform: rotateY(0deg); opacity: 1; }
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+    </style>
+</head>
+<body>
+<div class="app">
+    <!-- Header -->
+    <div class="app-header">
+        <h1><span>📖</span> Crypto Glossary</h1>
+        <div class="mode-tabs">
+            <button class="mode-tab active" data-mode="glossary">Dictionary</button>
+            <button class="mode-tab" data-mode="quiz">Quiz</button>
+        </div>
+    </div>
+
+    <!-- GLOSSARY MODE -->
+    <div class="glossary-container">
+        <!-- Search -->
+        <div class="search-bar">
+            <input type="text" id="search" placeholder="Search terms…" autocomplete="off">
+            <button class="bookmark-toggle" id="bmToggle" title="Show bookmarks">★</button>
+        </div>
+
+        <!-- Word of the Day -->
+        <div class="wotd-card" id="wotd"></div>
+
+        <!-- Category tabs -->
+        <div class="cat-tabs" id="catTabs"></div>
+
+        <!-- A-Z navigation -->
+        <div class="az-nav" id="azNav"></div>
+
+        <!-- Results count -->
+        <div class="results-count" id="resultsCount"></div>
+
+        <!-- Terms list -->
+        <div id="termsList"></div>
+    </div>
+
+    <!-- QUIZ MODE -->
+    <div class="quiz-container" id="quizContainer">
+        <div class="quiz-score" id="quizScore">
+            <div class="quiz-score-item"><div>Questions</div><span id="qTotal">0</span></div>
+            <div class="quiz-score-item correct"><div>Correct</div><span id="qCorrect">0</span></div>
+            <div class="quiz-score-item wrong"><div>Wrong</div><span id="qWrong">0</span></div>
+            <div class="quiz-score-item"><div>Streak</div><span id="qStreak">0</span></div>
+        </div>
+        <div class="quiz-card" id="quizCard"></div>
+        <div class="quiz-options" id="quizOptions"></div>
+        <div style="text-align:center;">
+            <button class="quiz-next" id="quizNext">Next Question →</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// ── Glossary Data ──────────────────────────────────────────────────
+const TERMS = [
+    // ── BASICS (20) ──
+    { term: "Blockchain", short: "Distributed, immutable digital ledger", detail: "A blockchain is a decentralized data structure consisting of blocks linked via cryptographic hashes. Each block contains a batch of verified transactions. Once written, data is practically immutable, ensuring trust without a central authority.", cat: "Basics", related: ["Block", "Hash", "Node", "Consensus"] },
+    { term: "Bitcoin", short: "First decentralized cryptocurrency", detail: "Created in 2009 by the pseudonymous Satoshi Nakamoto, Bitcoin (BTC) introduced peer-to-peer electronic cash using proof-of-work consensus. It has a fixed supply cap of 21 million coins and remains the largest cryptocurrency by market cap.", cat: "Basics", related: ["Mining", "Blockchain", "Wallet", "HODL"] },
+    { term: "Ethereum", short: "Programmable blockchain with smart contracts", detail: "Ethereum (ETH) launched in 2015 and introduced smart contracts — self-executing programs stored on the blockchain. It transitioned from proof-of-work to proof-of-stake in 2022 ('The Merge'). It is the foundation for DeFi, NFTs, and most DApps.", cat: "Basics", related: ["Smart Contract", "EVM", "Gas", "Solidity"] },
+    { term: "Altcoin", short: "Any cryptocurrency other than Bitcoin", detail: "Short for 'alternative coin,' altcoin refers to every cryptocurrency that isn't Bitcoin. Examples include ETH, SOL, ADA, and thousands of others. They vary widely in purpose, technology, and market cap.", cat: "Basics", related: ["Token", "Bitcoin", "Market Cap"] },
+    { term: "Token", short: "Digital asset on an existing blockchain", detail: "Unlike coins that have their own blockchain, tokens are created on existing networks (e.g., ERC-20 on Ethereum). They can represent utility, governance rights, real-world assets, or anything programmable via smart contracts.", cat: "Basics", related: ["ERC-20", "Smart Contract", "Altcoin"] },
+    { term: "Wallet", short: "Software or hardware to manage crypto keys", detail: "A crypto wallet doesn't actually store coins — it stores the private keys needed to sign transactions. Wallets come as software (mobile, browser extension, desktop) or hardware (physical devices). They generate addresses derived from your public key.", cat: "Basics", related: ["Private Key", "Public Key", "Seed Phrase", "Cold Wallet"] },
+    { term: "Private Key", short: "Secret number that controls your funds", detail: "A private key is a 256-bit random number that grants full control over the associated blockchain address. Anyone who knows your private key can spend your funds. It must be kept absolutely secret. All signatures and transactions originate from this key.", cat: "Basics", related: ["Public Key", "Seed Phrase", "Wallet", "Multi-sig"] },
+    { term: "Public Key", short: "Cryptographic identifier derived from private key", detail: "The public key is mathematically derived from your private key via elliptic curve cryptography. It can be shared freely and is used to generate your wallet address. Others use it to verify your digital signatures without learning your private key.", cat: "Basics", related: ["Private Key", "Wallet", "Hash"] },
+    { term: "Seed Phrase", short: "12-24 word backup of your wallet", detail: "A seed phrase (mnemonic) is a human-readable representation of your master private key, typically 12 or 24 words following the BIP-39 standard. It can regenerate all your keys and addresses. Losing it means losing access to your funds permanently.", cat: "Basics", related: ["Private Key", "Wallet", "Cold Wallet"] },
+    { term: "Mining", short: "Using computational power to validate blocks", detail: "Mining is the proof-of-work process where computers race to solve cryptographic puzzles. The winner gets to add the next block and earns a block reward plus transaction fees. Bitcoin mining uses SHA-256; Ethereum used Ethash before moving to proof-of-stake.", cat: "Basics", related: ["Consensus", "Block", "Hash", "Staking"] },
+    { term: "Staking", short: "Locking tokens to secure a PoS network", detail: "In proof-of-stake blockchains, validators lock (stake) tokens as collateral to participate in block validation. They earn rewards proportional to their stake. Misbehaving validators can be 'slashed' — losing part of their stake as penalty.", cat: "Basics", related: ["Consensus", "Mining", "Validator", "Node"] },
+    { term: "Consensus", short: "Agreement mechanism for blockchain state", detail: "Consensus mechanisms allow distributed network participants to agree on which transactions are valid. Major types include Proof of Work (energy-intensive computation), Proof of Stake (economic collateral), and variations like Delegated PoS and BFT.", cat: "Basics", related: ["Mining", "Staking", "Node", "Block"] },
+    { term: "Hash", short: "Fixed-length cryptographic fingerprint", detail: "A hash function takes any input and produces a fixed-size output (e.g., SHA-256 → 256 bits). It's deterministic, fast, and practically irreversible. Blockchains use hashes to link blocks, verify data integrity, and power mining puzzles.", cat: "Basics", related: ["Block", "Mining", "Merkle Tree"] },
+    { term: "Block", short: "Bundle of transactions on a blockchain", detail: "A block is a data structure containing a batch of validated transactions, a timestamp, the hash of the previous block, and a nonce. Blocks are appended sequentially, forming the chain. Block size and time vary by network.", cat: "Basics", related: ["Blockchain", "Hash", "Mining", "Nonce"] },
+    { term: "Node", short: "Computer that maintains the blockchain", detail: "A node is any computer running the blockchain's software and maintaining a copy of the ledger. Full nodes validate all rules independently. Light nodes rely on full nodes for verification. More nodes mean greater decentralization and security.", cat: "Basics", related: ["Blockchain", "Consensus", "Validator"] },
+    { term: "Gas", short: "Fee unit for Ethereum transactions", detail: "Gas is the unit measuring computational effort on Ethereum. Each operation costs a specific amount of gas. Users set a gas price (in gwei) and a gas limit. Total fee = gas used × gas price. EIP-1559 introduced base fees that are burned.", cat: "Basics", related: ["Ethereum", "Smart Contract", "EVM", "Gwei"] },
+    { term: "Smart Contract", short: "Self-executing code on a blockchain", detail: "Smart contracts are programs deployed to a blockchain that automatically execute when conditions are met. They enable trustless agreements without intermediaries. Written in languages like Solidity (Ethereum), they power DeFi, NFTs, DAOs, and more.", cat: "Basics", related: ["Ethereum", "Solidity", "DApp", "Gas"] },
+    { term: "DApp", short: "Decentralized application on a blockchain", detail: "A DApp (decentralized application) runs on a blockchain or peer-to-peer network instead of centralized servers. It typically has a web frontend that interacts with smart contracts. Examples include Uniswap, Aave, and OpenSea.", cat: "Basics", related: ["Smart Contract", "Web3", "DeFi"] },
+    { term: "DAO", short: "Decentralized autonomous organization", detail: "A DAO is an organization governed by smart contracts and token holder votes rather than a centralized leadership. Members propose and vote on decisions like fund allocation, protocol upgrades, and partnerships. Examples: MakerDAO, Uniswap governance.", cat: "Basics", related: ["Smart Contract", "Token", "Web3"] },
+    { term: "Web3", short: "Decentralized internet built on blockchain", detail: "Web3 is the vision of a user-owned internet powered by blockchain, cryptography, and token economics. Unlike Web2 (platforms own your data), Web3 gives users control over their data, identity, and digital assets through wallets and decentralized protocols.", cat: "Basics", related: ["DApp", "Wallet", "DAO", "Blockchain"] },
+
+    // ── DeFi (16) ──
+    { term: "DEX", short: "Decentralized exchange for trading tokens", detail: "A DEX (decentralized exchange) allows peer-to-peer token trading without a centralized intermediary. Most DEXs use automated market makers (AMMs) or on-chain order books. Traders interact directly with smart contracts. Examples: Uniswap, SushiSwap, Curve.", cat: "DeFi", related: ["AMM", "Liquidity Pool", "Slippage", "Smart Contract"] },
+    { term: "AMM", short: "Automated Market Maker algorithm", detail: "An AMM replaces traditional order books with a mathematical pricing algorithm. Liquidity providers deposit token pairs into pools, and the AMM uses a formula (e.g., x*y=k) to determine prices. Trades execute against the pool rather than matching buyers and sellers.", cat: "DeFi", related: ["DEX", "Liquidity Pool", "Impermanent Loss", "Bonding Curve"] },
+    { term: "Liquidity Pool", short: "Token reserves enabling decentralized trading", detail: "A liquidity pool is a smart contract holding reserves of two or more tokens. LPs (liquidity providers) deposit equal-value token pairs and earn a share of trading fees. Pools enable instant swaps without traditional market makers.", cat: "DeFi", related: ["AMM", "DEX", "Yield Farming", "Impermanent Loss"] },
+    { term: "Yield Farming", short: "Maximizing returns across DeFi protocols", detail: "Yield farming involves strategically deploying crypto assets across DeFi protocols to earn the highest possible returns. Farmers may provide liquidity, lend, stake, or combine strategies. Returns come from trading fees, interest, and token rewards.", cat: "DeFi", related: ["Liquidity Pool", "Staking", "TVL", "Lending Protocol"] },
+    { term: "Impermanent Loss", short: "Value loss from providing liquidity vs holding", detail: "Impermanent loss occurs when the price ratio of tokens in a liquidity pool changes. The AMM rebalances your position, leaving you with less value than if you had simply held the tokens. The loss is 'impermanent' because it reverses if prices return to the entry ratio.", cat: "DeFi", related: ["AMM", "Liquidity Pool", "DEX"] },
+    { term: "TVL", short: "Total Value Locked in a DeFi protocol", detail: "TVL (Total Value Locked) measures the total dollar value of assets deposited in a DeFi protocol's smart contracts. It's a key metric for gauging a protocol's adoption, trust, and size. Higher TVL generally indicates greater liquidity and reliability.", cat: "DeFi", related: ["DeFi", "Liquidity Pool", "Yield Farming"] },
+    { term: "Flash Loan", short: "Uncollateralized loan repaid in one transaction", detail: "Flash loans allow borrowing any amount without collateral, as long as the loan is repaid within the same blockchain transaction. If repayment fails, the entire transaction reverts. Used for arbitrage, liquidations, and collateral swaps. Pioneered by Aave.", cat: "DeFi", related: ["Smart Contract", "DeFi", "Lending Protocol", "MEV"] },
+    { term: "Lending Protocol", short: "Platform to lend and borrow crypto", detail: "Lending protocols like Aave and Compound allow users to earn interest by depositing assets, while borrowers supply collateral to take loans. Interest rates adjust algorithmically based on supply and demand. Liquidation occurs if collateral value drops too low.", cat: "DeFi", related: ["Flash Loan", "TVL", "Stablecoin", "Yield Farming"] },
+    { term: "Stablecoin", short: "Cryptocurrency pegged to a stable asset", detail: "Stablecoins maintain a stable value, usually $1 USD. Types include fiat-backed (USDC, USDT), crypto-collateralized (DAI), and algorithmic. They serve as a safe haven and are essential for DeFi trading pairs, lending, and payments.", cat: "DeFi", related: ["DeFi", "Lending Protocol", "Liquidity Pool"] },
+    { term: "Wrapped Token", short: "Token representing another asset on a different chain", detail: "A wrapped token is a tokenized version of a cryptocurrency from another blockchain. For example, WBTC (Wrapped Bitcoin) is an ERC-20 token pegged 1:1 to BTC, enabling Bitcoin to be used in Ethereum DeFi. Wrapping usually involves a custodian or smart contract bridge.", cat: "DeFi", related: ["Bridge", "ERC-20", "DeFi"] },
+    { term: "Bonding Curve", short: "Math-based pricing for token issuance", detail: "A bonding curve is a mathematical function that determines a token's price based on its supply. As more tokens are minted (bought), the price increases along the curve. Selling tokens decreases supply and lowers the price. Used in platforms like Nad.fun for fair token launches.", cat: "DeFi", related: ["AMM", "Token", "DEX"] },
+    { term: "Slippage", short: "Difference between expected and actual trade price", detail: "Slippage occurs when a trade executes at a different price than expected, typically due to low liquidity or large trade sizes. DEXs let users set a slippage tolerance (e.g., 0.5%). If slippage exceeds the tolerance, the trade reverts.", cat: "DeFi", related: ["DEX", "AMM", "Liquidity Pool"] },
+    { term: "MEV", short: "Maximal Extractable Value from block ordering", detail: "MEV (Maximal Extractable Value) is profit that block producers or searchers can capture by reordering, inserting, or censoring transactions within a block. Strategies include sandwich attacks, arbitrage, and liquidations. It's a major challenge for DeFi fairness.", cat: "DeFi", related: ["Front-running", "Flash Loan", "Gas"] },
+    { term: "Oracle", short: "Off-chain data feed for smart contracts", detail: "Oracles bridge off-chain real-world data (prices, weather, sports scores) into on-chain smart contracts. Since blockchains can't access external APIs natively, oracles like Chainlink provide decentralized data feeds critical for DeFi, insurance, and more.", cat: "DeFi", related: ["Smart Contract", "DeFi", "Lending Protocol"] },
+    { term: "Liquidity Mining", short: "Earning tokens for providing liquidity", detail: "Liquidity mining rewards users with extra tokens (on top of trading fees) for providing liquidity to a protocol. It's a form of yield farming where protocols distribute their governance tokens to bootstrap liquidity and attract users.", cat: "DeFi", related: ["Yield Farming", "Liquidity Pool", "Token"] },
+    { term: "Protocol", short: "Set of smart contracts forming a DeFi service", detail: "A DeFi protocol is a system of smart contracts that together provide a financial service — lending, trading, insurance, etc. Protocols are composable ('money legos'), meaning they can be combined with other protocols to create complex financial strategies.", cat: "DeFi", related: ["Smart Contract", "DeFi", "TVL", "DAO"] },
+
+    // ── TRADING (17) ──
+    { term: "HODL", short: "Long-term holding strategy (hold on for dear life)", detail: "HODL originated from a typo of 'HOLD' in a 2013 Bitcoin forum post and became a meme/philosophy. It means holding your crypto through market volatility instead of panic selling. HODLers believe in long-term appreciation regardless of short-term price swings.", cat: "Trading", related: ["DYOR", "FUD", "FOMO", "Bitcoin"] },
+    { term: "DYOR", short: "Do Your Own Research", detail: "DYOR is a common crypto community mantra urging investors to research projects independently rather than relying on influencers or hype. This includes reading whitepapers, checking team backgrounds, analyzing tokenomics, auditing smart contracts, and evaluating utility.", cat: "Trading", related: ["FUD", "HODL", "Rug Pull"] },
+    { term: "FUD", short: "Fear, Uncertainty, and Doubt", detail: "FUD refers to negative information (often misleading or exaggerated) spread to create panic and drive prices down. It can be legitimate warnings or deliberate manipulation. Critical thinking and DYOR help distinguish useful concern from malicious FUD.", cat: "Trading", related: ["DYOR", "FOMO", "Pump and Dump"] },
+    { term: "FOMO", short: "Fear Of Missing Out", detail: "FOMO is the anxiety of missing a profitable opportunity, often driving impulsive buying at market peaks. In crypto, FOMO leads to chasing pumps, buying at ATH, and foregoing analysis. Disciplined investors resist FOMO through strategy and research.", cat: "Trading", related: ["FUD", "ATH", "Pump and Dump", "DYOR"] },
+    { term: "ATH", short: "All-Time High price", detail: "ATH (All-Time High) is the highest price ever reached by a cryptocurrency. When a coin breaks its ATH, it's in 'price discovery' with no overhead resistance. ATHs generate excitement but can also indicate overheated markets near a correction.", cat: "Trading", related: ["ATL", "FOMO", "Market Cap"] },
+    { term: "ATL", short: "All-Time Low price", detail: "ATL (All-Time Low) is the lowest price a cryptocurrency has ever traded at. Buying near ATL can offer maximum upside but also high risk, as the asset may still be declining. ATLs often coincide with capitulation events and extreme fear.", cat: "Trading", related: ["ATH", "FUD", "Market Cap"] },
+    { term: "Market Cap", short: "Total value of a cryptocurrency's supply", detail: "Market capitalization = current price × circulating supply. It's the primary metric for ranking cryptocurrencies. Large cap (>$10B) assets like BTC and ETH are considered safer, while micro caps offer higher risk/reward. Fully diluted market cap includes all future supply.", cat: "Trading", related: ["Volume", "ATH", "Liquidity"] },
+    { term: "Volume", short: "Amount of an asset traded in a time period", detail: "Trading volume measures how much of a cryptocurrency was bought and sold in a given period (usually 24 hours). High volume indicates strong interest and better liquidity. Suspiciously low or fake volume can indicate manipulated or illiquid markets.", cat: "Trading", related: ["Market Cap", "Liquidity", "Order Book"] },
+    { term: "Liquidity", short: "Ease of buying/selling without moving price", detail: "Liquidity measures how easily an asset can be traded without significant price impact. High liquidity means tight spreads and minimal slippage. Low liquidity means even small trades can cause large price swings. Liquidity is provided by market makers and LPs.", cat: "Trading", related: ["Volume", "Liquidity Pool", "Slippage", "Order Book"] },
+    { term: "Order Book", short: "List of buy and sell orders at various prices", detail: "An order book displays all pending buy (bid) and sell (ask) orders for an asset, organized by price level. The gap between highest bid and lowest ask is the 'spread.' Centralized exchanges use order books; most DEXs use AMMs instead.", cat: "Trading", related: ["Limit Order", "DEX", "Liquidity"] },
+    { term: "Limit Order", short: "Order to buy/sell at a specific price", detail: "A limit order is an instruction to trade an asset at a specific price or better. Buy limits execute at or below the set price; sell limits at or above. Unlike market orders, they don't guarantee execution but protect against unfavorable prices.", cat: "Trading", related: ["Stop Loss", "Order Book", "Slippage"] },
+    { term: "Stop Loss", short: "Automatic sell order at a set price to limit loss", detail: "A stop-loss order automatically sells an asset when its price drops to a specified level, limiting potential losses. It's a risk management tool essential for leveraged trading. Some advanced versions include trailing stops that adjust as prices rise.", cat: "Trading", related: ["Limit Order", "Leverage", "Long/Short"] },
+    { term: "Leverage", short: "Borrowing funds to amplify trading positions", detail: "Leverage allows traders to open positions larger than their capital by borrowing funds. For example, 10x leverage means a $100 deposit controls $1,000. While amplifying profits, it equally amplifies losses — a small adverse move can liquidate the entire position.", cat: "Trading", related: ["Long/Short", "Stop Loss", "Liquidation"] },
+    { term: "Long/Short", short: "Betting on price going up or down", detail: "Going 'long' means buying an asset expecting its price to rise. Going 'short' means betting the price will fall, typically by borrowing and selling the asset, then repurchasing it cheaper. Both strategies can use leverage for amplified returns.", cat: "Trading", related: ["Leverage", "Stop Loss", "HODL"] },
+    { term: "Whale", short: "Entity holding a very large amount of crypto", detail: "A whale is a wallet or entity holding enough cryptocurrency to influence market prices. Whale movements — large transfers to exchanges — are tracked as potential indicators of upcoming sells. On-chain analytics help monitor whale activity.", cat: "Trading", related: ["Market Cap", "Volume", "Pump and Dump"] },
+    { term: "Pump and Dump", short: "Manipulative scheme to inflate then crash price", detail: "A pump and dump is a fraudulent scheme where organizers secretly buy a token, hype it to inflate the price, then sell their holdings at the peak, crashing the price and leaving other buyers with losses. It's illegal in regulated markets.", cat: "Trading", related: ["Rug Pull", "FUD", "Whale", "DYOR"] },
+    { term: "Rug Pull", short: "Developers abandoning a project with investors' funds", detail: "A rug pull occurs when project developers drain liquidity, dump tokens, or disable selling mechanisms, stealing investor funds. Red flags include anonymous teams, no audit, locked liquidity claims without proof, and unsustainable APY promises.", cat: "Trading", related: ["DYOR", "Audit", "Honeypot", "Pump and Dump"] },
+
+    // ── TECHNICAL (17) ──
+    { term: "EVM", short: "Ethereum Virtual Machine runtime environment", detail: "The EVM (Ethereum Virtual Machine) is the stack-based runtime that executes smart contract bytecode on Ethereum and compatible chains (Polygon, BSC, Avalanche, Monad). Every node runs the EVM to independently verify execution results, ensuring consensus.", cat: "Technical", related: ["Ethereum", "Solidity", "Smart Contract", "Gas"] },
+    { term: "Solidity", short: "Primary programming language for Ethereum", detail: "Solidity is a statically-typed, contract-oriented language for writing Ethereum smart contracts. It compiles to EVM bytecode. Features include inheritance, libraries, and complex user-defined types. Most DeFi, NFT, and DAO contracts are written in Solidity.", cat: "Technical", related: ["EVM", "Smart Contract", "ABI"] },
+    { term: "ABI", short: "Application Binary Interface for contracts", detail: "An ABI (Application Binary Interface) is a JSON specification describing a smart contract's functions, inputs, outputs, and events. Frontend applications and other contracts use the ABI to encode function calls and decode return data when interacting with deployed contracts.", cat: "Technical", related: ["Solidity", "Smart Contract", "EVM"] },
+    { term: "ERC-20", short: "Fungible token standard on Ethereum", detail: "ERC-20 is the standard interface for fungible tokens on Ethereum, defining functions like transfer(), approve(), and balanceOf(). Any token following this standard can be traded on DEXs, stored in wallets, and integrated into DeFi protocols seamlessly.", cat: "Technical", related: ["Token", "ERC-721", "Smart Contract", "Ethereum"] },
+    { term: "ERC-721", short: "Non-fungible token (NFT) standard on Ethereum", detail: "ERC-721 defines the standard for non-fungible tokens (NFTs) — unique, indivisible tokens each with a distinct ID. Used for digital art, collectibles, game items, domain names, and certificates. Each token has a unique tokenURI pointing to its metadata.", cat: "Technical", related: ["ERC-20", "NFT", "Smart Contract"] },
+    { term: "Layer 1", short: "Base blockchain network (e.g., Ethereum, Bitcoin)", detail: "Layer 1 refers to the base blockchain protocol that processes and finalizes transactions on its own network. Examples include Ethereum, Bitcoin, Solana, and Monad. L1 improvements focus on throughput, security, and decentralization trade-offs (the blockchain trilemma).", cat: "Technical", related: ["Layer 2", "Blockchain", "Consensus"] },
+    { term: "Layer 2", short: "Scaling solution built on top of Layer 1", detail: "Layer 2 solutions process transactions off the main chain (L1) but settle security back to it. This increases throughput and reduces fees while inheriting L1 security. Major types include rollups (optimistic and ZK), state channels, and plasma chains.", cat: "Technical", related: ["Layer 1", "Rollup", "ZK Proof", "Bridge"] },
+    { term: "Rollup", short: "L2 technique bundling transactions for L1 settlement", detail: "Rollups execute transactions off-chain and post compressed data on-chain. Optimistic rollups assume validity and use fraud proofs; ZK rollups use zero-knowledge proofs for instant verification. Both dramatically reduce gas costs while preserving Ethereum security.", cat: "Technical", related: ["Layer 2", "ZK Proof", "Gas", "Ethereum"] },
+    { term: "ZK Proof", short: "Zero-Knowledge proof for private verification", detail: "A zero-knowledge proof allows one party to prove knowledge of a fact without revealing the fact itself. ZK-SNARKs and ZK-STARKs are used in blockchain for privacy (Zcash), scalability (zkSync, StarkNet), and identity verification.", cat: "Technical", related: ["Rollup", "Layer 2", "Bridge"] },
+    { term: "Bridge", short: "Protocol connecting two different blockchains", detail: "A bridge is a protocol that enables transferring assets and data between different blockchains. Lock-and-mint bridges lock tokens on the source chain and mint wrapped versions on the destination. Bridges vary in trust assumptions and are frequent hack targets.", cat: "Technical", related: ["Wrapped Token", "Layer 2", "Sidechain"] },
+    { term: "Sidechain", short: "Independent blockchain linked to a parent chain", detail: "A sidechain is a separate blockchain connected to a main chain via a two-way peg. It has its own consensus mechanism and block parameters. Unlike rollups, sidechains don't inherit full L1 security. Examples: Polygon PoS (for Ethereum).", cat: "Technical", related: ["Bridge", "Layer 1", "Layer 2"] },
+    { term: "Sharding", short: "Splitting blockchain into parallel partitions", detail: "Sharding divides a blockchain into smaller pieces ('shards') that process transactions in parallel. This dramatically increases throughput since each shard handles a subset of the network's load. Ethereum's roadmap includes danksharding for data availability.", cat: "Technical", related: ["Layer 1", "Blockchain", "Consensus"] },
+    { term: "Fork", short: "Blockchain split into two diverging chains", detail: "A fork occurs when a blockchain diverges into two paths. Soft forks are backward-compatible upgrades (old nodes still work). Hard forks are not backward-compatible and create a permanent split (e.g., Ethereum Classic from Ethereum). Forks can be planned upgrades or contentious splits.", cat: "Technical", related: ["Blockchain", "Consensus", "Node"] },
+    { term: "Merkle Tree", short: "Hash-based data structure for efficient verification", detail: "A Merkle tree is a binary tree of hash values. The root hash efficiently summarizes all data in the tree. Changing any leaf changes the root. Blockchains use Merkle trees to verify transaction inclusion without downloading the full block — essential for light clients.", cat: "Technical", related: ["Hash", "Block", "Node"] },
+    { term: "Nonce", short: "Number used once in cryptographic operations", detail: "In mining, the nonce is the variable miners change to produce a block hash below the difficulty target. In transactions, the nonce is a counter preventing replay attacks — each transaction from an account must have a sequential nonce.", cat: "Technical", related: ["Mining", "Hash", "Block"] },
+    { term: "Gwei", short: "Smallest ETH unit used for gas pricing", detail: "Gwei is a denomination of Ether equal to 10⁻⁹ ETH (one billionth). It's the standard unit for measuring gas prices on Ethereum. Typical gas prices range from 1-100+ gwei depending on network congestion.", cat: "Technical", related: ["Gas", "Ethereum", "EVM"] },
+    { term: "Validator", short: "Node that validates blocks in proof-of-stake", detail: "A validator is a network participant who stakes tokens and runs software to propose and attest to new blocks. On Ethereum, validators require 32 ETH staked. They earn rewards for honest participation and face slashing penalties for downtime or malicious behavior.", cat: "Technical", related: ["Staking", "Consensus", "Node"] },
+
+    // ── SECURITY (12) ──
+    { term: "Cold Wallet", short: "Offline wallet for maximum security", detail: "A cold wallet stores private keys completely offline — never connected to the internet. This makes it immune to remote hacking. Examples include hardware wallets (Ledger, Trezor), paper wallets, and air-gapped computers. Best for long-term storage.", cat: "Security", related: ["Hot Wallet", "Hardware Wallet", "Private Key", "Seed Phrase"] },
+    { term: "Hot Wallet", short: "Internet-connected wallet for active use", detail: "A hot wallet remains connected to the internet for convenient daily transactions. Browser extensions (MetaMask), mobile apps, and exchange wallets are hot wallets. They're more vulnerable to hacking but necessary for active trading and DeFi interaction.", cat: "Security", related: ["Cold Wallet", "Wallet", "Private Key"] },
+    { term: "Hardware Wallet", short: "Physical device for secure key storage", detail: "A hardware wallet is a dedicated physical device (like Ledger Nano or Trezor) that stores private keys in a secure element chip. Transactions are signed on the device and broadcast to the network. Even if your computer is compromised, the keys remain safe.", cat: "Security", related: ["Cold Wallet", "Private Key", "Seed Phrase"] },
+    { term: "Multi-sig", short: "Wallet requiring multiple signatures to transact", detail: "A multi-signature (multisig) wallet requires M of N designated signers to approve a transaction before it executes. For example, a 2-of-3 multisig needs any two of three keyholders to sign. Used by DAOs, treasuries, and security-conscious individuals.", cat: "Security", related: ["Wallet", "Private Key", "DAO", "Smart Contract"] },
+    { term: "Audit", short: "Security review of smart contract code", detail: "A smart contract audit is a professional review of code to identify vulnerabilities, logic errors, and economic exploits before or after deployment. Top firms include Trail of Bits, OpenZeppelin, and Certik. Audits reduce but don't eliminate risk.", cat: "Security", related: ["Smart Contract", "Rug Pull", "Reentrancy"] },
+    { term: "Honeypot", short: "Scam token that can be bought but not sold", detail: "A honeypot is a smart contract designed to lure victims by allowing them to buy a token but preventing them from selling. The contract contains hidden code that blocks sell transactions while allowing the deployer to withdraw all ETH.", cat: "Security", related: ["Rug Pull", "Audit", "Smart Contract"] },
+    { term: "Phishing", short: "Fraudulent attempt to steal credentials or keys", detail: "Phishing in crypto involves fake websites, emails, or DMs impersonating legitimate projects to steal private keys, seed phrases, or wallet approvals. Common tactics include fake airdrops, forged dApp interfaces, and malicious transaction signing requests.", cat: "Security", related: ["Private Key", "Seed Phrase", "Wallet"] },
+    { term: "Front-running", short: "Exploiting pending transactions by executing first", detail: "Front-running is when someone spots a pending transaction in the mempool and submits their own transaction with a higher gas fee to execute first, profiting from the anticipated price movement. Common in DEX trades. Also called sandwich attacks when both front and back-running.", cat: "Security", related: ["MEV", "Gas", "DEX"] },
+    { term: "Reentrancy", short: "Exploit where a contract is called recursively", detail: "A reentrancy attack occurs when a vulnerable contract calls an external contract, which calls back into the original contract before the first execution completes. The attacker repeatedly drains funds. The 2016 DAO hack exploited reentrancy, leading to an Ethereum fork.", cat: "Security", related: ["Smart Contract", "Audit", "Fork"] },
+    { term: "Slashing", short: "Penalty for misbehaving validators", detail: "Slashing is a mechanism in proof-of-stake networks that destroys a portion of a validator's staked tokens as punishment for malicious behavior (double signing, extended downtime). It incentivizes honest participation and secures the network.", cat: "Security", related: ["Staking", "Validator", "Consensus"] },
+    { term: "Approval", short: "Permission for a contract to spend your tokens", detail: "Token approvals allow smart contracts to transfer tokens on your behalf. Unlimited approvals are risky — if the contract is compromised, all approved tokens can be stolen. Tools like Revoke.cash help manage and revoke unnecessary approvals.", cat: "Security", related: ["ERC-20", "Smart Contract", "Phishing"] },
+    { term: "Rugcheck", short: "Tools to analyze token contract safety", detail: "Rugcheck tools (GoPlus, TokenSniffer, etc.) analyze smart contract code and on-chain data to identify red flags: hidden mint functions, locked selling, concentrated ownership, missing renouncement. Essential due diligence before buying any token.", cat: "Security", related: ["Rug Pull", "Honeypot", "Audit", "DYOR"] },
+
+    // ── NFT (10) ──
+    { term: "NFT", short: "Non-Fungible Token — unique digital asset", detail: "An NFT is a unique, indivisible token on a blockchain representing ownership of a specific digital or physical asset. Unlike fungible tokens (each BTC is identical), each NFT has a unique identifier. Used for art, music, gaming, identity, and more.", cat: "NFT", related: ["ERC-721", "Smart Contract", "Ethereum"] },
+    { term: "Mint", short: "Creating a new NFT on the blockchain", detail: "Minting is the process of creating a new NFT by deploying its data to the blockchain. The creator calls a smart contract function that assigns a unique token ID and stores the metadata URI. Gas fees apply. Free mints (no cost except gas) are common for new collections.", cat: "NFT", related: ["NFT", "Gas", "Smart Contract"] },
+    { term: "Floor Price", short: "Lowest listed price in an NFT collection", detail: "The floor price is the cheapest NFT available for purchase in a given collection. It represents the minimum cost of entry. Floor prices fluctuate based on demand, rarity perceptions, and broader market conditions. Tracked on marketplaces like OpenSea.", cat: "NFT", related: ["NFT", "Volume", "Market Cap"] },
+    { term: "Metadata", short: "Description data attached to an NFT", detail: "NFT metadata includes the name, description, image URL, traits/attributes, and other properties of the token. It's typically stored off-chain (IPFS, Arweave) with the URI stored on-chain. Metadata defines rarity traits used for valuation.", cat: "NFT", related: ["NFT", "IPFS", "Mint"] },
+    { term: "IPFS", short: "InterPlanetary File System for decentralized storage", detail: "IPFS is a peer-to-peer file system where content is addressed by its hash rather than its location. NFT images and metadata are often stored on IPFS to prevent centralized servers from going offline. Content persists as long as at least one node pins it.", cat: "NFT", related: ["NFT", "Metadata", "Blockchain"] },
+    { term: "Royalty", short: "Creator fee on secondary NFT sales", detail: "NFT royalties are percentage fees automatically paid to the original creator on every secondary sale. Typical royalties range from 2.5-10%. Enforcement has evolved — early standards relied on marketplace honor; newer standards embed royalties in the contract.", cat: "NFT", related: ["NFT", "Smart Contract", "Floor Price"] },
+    { term: "PFP", short: "Profile Picture NFT collection", detail: "PFP (profile picture) NFTs are avatar-style collections designed as social identity tokens. Owners use them as profile pictures on social media. Examples include CryptoPunks, Bored Ape Yacht Club, and Azuki. They signal community membership and status.", cat: "NFT", related: ["NFT", "Floor Price", "Mint"] },
+    { term: "Airdrop", short: "Free distribution of tokens to wallet holders", detail: "An airdrop is a distribution of free tokens or NFTs to eligible wallet addresses, often as a marketing strategy, reward for early adopters, or governance token distribution. Eligibility criteria might include holding certain tokens, using a protocol, or community participation.", cat: "NFT", related: ["Token", "Wallet", "DAO"] },
+    { term: "Whitelist", short: "Pre-approved list for early/guaranteed access", detail: "A whitelist (allowlist) gives selected wallet addresses priority access to an NFT mint or token sale. Getting whitelisted often requires community activity, holding specific tokens, or winning competitions. Whitelisted users may get lower prices or guaranteed allocations.", cat: "NFT", related: ["Mint", "NFT", "Airdrop"] },
+    { term: "Reveal", short: "Showing final NFT art after mint", detail: "A reveal is when an NFT collection's final artwork is shown to holders after minting. Pre-reveal, all NFTs show a placeholder image. This creates excitement and ensures fair rarity distribution — buyers don't know which traits they'll receive.", cat: "NFT", related: ["NFT", "Mint", "Metadata"] },
+
+    // ── LAYER 2 (10) ──
+    { term: "Optimistic Rollup", short: "L2 that assumes transactions are valid", detail: "Optimistic rollups assume all transactions are valid by default and only compute fraud proofs when a transaction is challenged during a dispute period (typically 7 days). This approach is simpler but has longer withdrawal times. Examples: Optimism, Arbitrum, Base.", cat: "Layer 2", related: ["Rollup", "Layer 2", "ZK Proof"] },
+    { term: "ZK-Rollup", short: "L2 using zero-knowledge proofs for instant validity", detail: "ZK-rollups generate cryptographic proofs (ZK-SNARKs/STARKs) that verify the correctness of all transactions in each batch. These proofs are submitted on-chain, enabling instant verification without a dispute period. Examples: zkSync, StarkNet, Polygon zkEVM.", cat: "Layer 2", related: ["ZK Proof", "Rollup", "Layer 2"] },
+    { term: "Sequencer", short: "Entity that orders transactions in a rollup", detail: "A sequencer is the operator responsible for ordering transactions, executing them, and submitting batches to Layer 1 in a rollup. Most current rollups have a single centralized sequencer (controlled by the team), with plans to decentralize over time.", cat: "Layer 2", related: ["Rollup", "Layer 2", "MEV"] },
+    { term: "Data Availability", short: "Ensuring transaction data is accessible", detail: "Data availability means ensuring that the data needed to verify a rollup's state transitions is actually published and accessible. Without it, users can't detect fraud. Solutions include on-chain data (expensive), DACs, and dedicated DA layers like Celestia and EigenDA.", cat: "Layer 2", related: ["Rollup", "Layer 1", "Sharding"] },
+    { term: "State Channel", short: "Off-chain transaction channel between parties", detail: "State channels allow two or more parties to transact off-chain, only settling the final state on-chain. This enables instant, feeless transactions between channel participants. Bitcoin's Lightning Network is the most well-known state channel implementation.", cat: "Layer 2", related: ["Layer 2", "Bitcoin", "Bridge"] },
+    { term: "Plasma", short: "Framework for child chains anchored to Ethereum", detail: "Plasma is an early L2 scaling framework where child chains periodically commit state roots to Ethereum. It was largely superseded by rollups due to data availability limitations and complex exit procedures. Polygon originally launched as a Plasma implementation.", cat: "Layer 2", related: ["Layer 2", "Rollup", "Sidechain"] },
+    { term: "Fraud Proof", short: "Challenge mechanism for optimistic systems", detail: "A fraud proof is submitted when someone believes an invalid state transition was posted by an optimistic rollup. A verifier re-executes the disputed transaction on-chain. If fraud is confirmed, the invalid state is reverted and the malicious actor's bond is slashed.", cat: "Layer 2", related: ["Optimistic Rollup", "Sequencer", "Rollup"] },
+    { term: "Validity Proof", short: "Cryptographic proof that state transitions are correct", detail: "Validity proofs (used by ZK-rollups) mathematically prove that every transaction in a batch was computed correctly. Unlike fraud proofs, they provide immediate finality — no dispute period needed. The L1 smart contract verifies the proof before accepting the batch.", cat: "Layer 2", related: ["ZK-Rollup", "ZK Proof", "Rollup"] },
+    { term: "Account Abstraction", short: "Making smart contracts act as wallets", detail: "Account abstraction (ERC-4337) allows smart contracts to function as user accounts, enabling features like social recovery, gas sponsorship, batched transactions, and custom validation logic. It improves UX by removing the need for seed phrase management.", cat: "Layer 2", related: ["Smart Contract", "Wallet", "Gas", "EVM"] },
+    { term: "Monad", short: "High-performance EVM-compatible Layer 1", detail: "Monad is a next-generation Layer 1 blockchain that achieves high throughput while maintaining full EVM compatibility. It uses optimistic parallel execution, MonadBFT consensus, and MonadDb for state storage. Designed for DeFi and consumer applications at scale.", cat: "Layer 2", related: ["EVM", "Layer 1", "Consensus"] },
+
+    // ── ADDITIONAL TERMS (to exceed 100) ──
+    { term: "Liquidation", short: "Forced closure of an under-collateralized position", detail: "Liquidation occurs when a borrower's collateral value drops below the required ratio. The protocol (or liquidator bots) sells the collateral to repay the debt plus a penalty. In leveraged trading, it means losing your margin. Essential for protocol solvency.", cat: "Trading", related: ["Leverage", "Lending Protocol", "Stop Loss"] },
+    { term: "Tokenomics", short: "Economic design of a token's supply and distribution", detail: "Tokenomics refers to a token's economic model — total supply, inflation/deflation mechanics, vesting schedules, utility, burning mechanisms, and distribution across team, investors, community, and treasury. Good tokenomics aligns incentives; bad tokenomics leads to sell pressure.", cat: "Trading", related: ["Token", "Market Cap", "DAO"] },
+    { term: "DeFi", short: "Decentralized Finance ecosystem", detail: "DeFi (Decentralized Finance) is an ecosystem of financial applications built on blockchains, eliminating traditional intermediaries like banks and brokers. Users can lend, borrow, trade, earn interest, and insure assets through smart contracts, maintaining full custody of funds.", cat: "Basics", related: ["DEX", "Lending Protocol", "Smart Contract", "TVL"] },
+    { term: "Mempool", short: "Pool of pending unconfirmed transactions", detail: "The mempool (memory pool) is where pending transactions wait before being included in a block. Miners/validators select transactions from the mempool, usually prioritizing higher gas fees. MEV searchers monitor the mempool for arbitrage and front-running opportunities.", cat: "Technical", related: ["Gas", "MEV", "Front-running", "Block"] },
+    { term: "Testnet", short: "Testing blockchain with no real value", detail: "A testnet is a separate blockchain used by developers to test smart contracts and applications without risking real assets. Testnet tokens have no monetary value and are obtained from 'faucets.' Major testnets include Ethereum's Sepolia and Monad's testnet.", cat: "Technical", related: ["Smart Contract", "Ethereum", "Monad"] },
+    { term: "Mainnet", short: "Live production blockchain network", detail: "Mainnet refers to the live, production version of a blockchain where real transactions with real value occur. Projects launch on testnet first, then deploy to mainnet. 'Mainnet launch' is a major milestone for any blockchain project.", cat: "Technical", related: ["Testnet", "Blockchain", "Smart Contract"] },
+    { term: "Gas War", short: "Competition driving transaction fees up", detail: "A gas war occurs when many users simultaneously compete to get their transactions included in the next block, bidding up gas prices. This commonly happens during popular NFT mints, token launches, and airdrops. Gas wars can push fees to extreme levels.", cat: "Trading", related: ["Gas", "Mint", "FOMO"] },
+    { term: "Whale Watching", short: "Tracking large holders' on-chain activity", detail: "Whale watching involves monitoring the blockchain transactions of large holders ('whales'). Tools like Arkham, Nansen, and DeBank alert when whales move tokens to exchanges (potential sell signal), accumulate, or interact with specific DeFi protocols.", cat: "Trading", related: ["Whale", "Volume", "DYOR"] },
+];
+
+// ── State ──
+const CATS = ['All', 'Basics', 'DeFi', 'Trading', 'Technical', 'Security', 'NFT', 'Layer 2'];
+const CAT_CLASS = { Basics:'cat-basics', DeFi:'cat-defi', Trading:'cat-trading', Technical:'cat-technical', Security:'cat-security', NFT:'cat-nft', 'Layer 2':'cat-layer2' };
+let activeCat = 'All';
+let searchQuery = '';
+let showBookmarksOnly = false;
+let bookmarks = JSON.parse(localStorage.getItem('cg_bookmarks') || '[]');
+
+// ── Helpers ──
+function saveBookmarks() { localStorage.setItem('cg_bookmarks', JSON.stringify(bookmarks)); }
+function isBookmarked(t) { return bookmarks.includes(t); }
+function toggleBookmark(t) {
+    if (isBookmarked(t)) bookmarks = bookmarks.filter(b => b !== t);
+    else bookmarks.push(t);
+    saveBookmarks();
+}
+
+function catClass(cat) { return CAT_CLASS[cat] || 'cat-basics'; }
+
+function getFiltered() {
+    let list = TERMS;
+    if (activeCat !== 'All') list = list.filter(t => t.cat === activeCat);
+    if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        list = list.filter(t => t.term.toLowerCase().includes(q) || t.short.toLowerCase().includes(q) || t.detail.toLowerCase().includes(q));
+    }
+    if (showBookmarksOnly) list = list.filter(t => isBookmarked(t.term));
+    return list.sort((a, b) => a.term.localeCompare(b.term));
+}
+
+// ── Word of the Day ──
+function renderWOTD() {
+    const dayIdx = (Date.now() / 86400000 | 0) % TERMS.length;
+    const w = TERMS[dayIdx];
+    document.getElementById('wotd').innerHTML = `
+        <div class="wotd-label">✦ Word of the Day</div>
+        <div class="wotd-term">${w.term}</div>
+        <div class="wotd-def">${w.detail}</div>
+        <span class="wotd-cat ${catClass(w.cat)}">${w.cat}</span>`;
+}
+
+// ── Category Tabs ──
+function renderCatTabs() {
+    const el = document.getElementById('catTabs');
+    el.innerHTML = CATS.map(c => `<button class="cat-tab${c === activeCat ? ' active' : ''}" data-cat="${c}">${c} <span style="opacity:0.6">(${c === 'All' ? TERMS.length : TERMS.filter(t => t.cat === c).length})</span></button>`).join('');
+    el.querySelectorAll('.cat-tab').forEach(btn => {
+        btn.onclick = () => { activeCat = btn.dataset.cat; renderCatTabs(); renderAZ(); renderTerms(); };
+    });
+}
+
+// ── A-Z Nav ──
+function renderAZ() {
+    const el = document.getElementById('azNav');
+    const filtered = getFiltered();
+    const letters = new Set(filtered.map(t => t.term[0].toUpperCase()));
+    el.innerHTML = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map(l =>
+        `<button class="az-btn${letters.has(l) ? ' has-terms' : ' disabled'}" data-letter="${l}">${l}</button>`
+    ).join('');
+    el.querySelectorAll('.az-btn:not(.disabled)').forEach(btn => {
+        btn.onclick = () => {
+            const heading = document.getElementById('letter-' + btn.dataset.letter);
+            if (heading) heading.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        };
+    });
+}
+
+// ── Terms List ──
+function renderTerms() {
+    const filtered = getFiltered();
+    document.getElementById('resultsCount').textContent = `${filtered.length} term${filtered.length !== 1 ? 's' : ''}`;
+
+    if (!filtered.length) {
+        document.getElementById('termsList').innerHTML = '<div class="no-results">No terms found.</div>';
+        return;
+    }
+
+    let html = '';
+    let currentLetter = '';
+    filtered.forEach(t => {
+        const letter = t.term[0].toUpperCase();
+        if (letter !== currentLetter) {
+            currentLetter = letter;
+            html += `<div class="letter-heading" id="letter-${letter}">${letter}</div>`;
+        }
+        const bm = isBookmarked(t.term);
+        html += `<div class="term-card" data-term="${t.term}">
+            <div class="term-header">
+                <span class="term-title">${highlight(t.term)}</span>
+                <span class="term-short">${highlight(t.short)}</span>
+                <span class="term-cat-badge ${catClass(t.cat)}">${t.cat}</span>
+                <button class="term-bm-btn ${bm ? 'bookmarked' : ''}" data-bm="${t.term}" title="Bookmark">★</button>
+                <span class="term-chevron">▶</span>
+            </div>
+            <div class="term-detail">
+                <div class="term-detail-inner">
+                    <p>${highlight(t.detail)}</p>
+                    ${t.related.length ? `<div class="related-terms">${t.related.map(r => `<span class="related-tag" data-rel="${r}">${r}</span>`).join('')}</div>` : ''}
+                </div>
+            </div>
+        </div>`;
+    });
+    document.getElementById('termsList').innerHTML = html;
+
+    // Expand/collapse
+    document.querySelectorAll('.term-card').forEach(card => {
+        card.querySelector('.term-header').addEventListener('click', e => {
+            if (e.target.closest('.term-bm-btn')) return;
+            card.classList.toggle('expanded');
+        });
+    });
+    // Bookmark buttons
+    document.querySelectorAll('.term-bm-btn').forEach(btn => {
+        btn.onclick = e => {
+            e.stopPropagation();
+            toggleBookmark(btn.dataset.bm);
+            btn.classList.toggle('bookmarked');
+            if (showBookmarksOnly) renderTerms();
+        };
+    });
+    // Related tags
+    document.querySelectorAll('.related-tag').forEach(tag => {
+        tag.onclick = e => {
+            e.stopPropagation();
+            document.getElementById('search').value = tag.dataset.rel;
+            searchQuery = tag.dataset.rel;
+            activeCat = 'All';
+            renderCatTabs(); renderAZ(); renderTerms();
+        };
+    });
+}
+
+function highlight(text) {
+    if (!searchQuery) return text;
+    const re = new RegExp(`(${searchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+    return text.replace(re, '<mark style="background:rgba(97,121,255,0.3);color:inherit;border-radius:2px;padding:0 1px;">$1</mark>');
+}
+
+// ── Quiz Mode ──
+let quizStats = { total: 0, correct: 0, wrong: 0, streak: 0 };
+let quizCurrent = null;
+let quizAnswered = false;
+
+function startQuiz() {
+    quizAnswered = false;
+    quizCurrent = TERMS[Math.floor(Math.random() * TERMS.length)];
+
+    // Get 3 wrong answers
+    const wrongPool = TERMS.filter(t => t.term !== quizCurrent.term);
+    const wrongs = [];
+    while (wrongs.length < 3 && wrongPool.length) {
+        const idx = Math.floor(Math.random() * wrongPool.length);
+        wrongs.push(wrongPool.splice(idx, 1)[0]);
+    }
+
+    const options = [quizCurrent, ...wrongs].sort(() => Math.random() - 0.5);
+
+    const card = document.getElementById('quizCard');
+    card.innerHTML = `
+        <div class="quiz-prompt">What is the definition of:</div>
+        <div class="quiz-term">${quizCurrent.term}</div>
+        <span class="quiz-cat-badge ${catClass(quizCurrent.cat)}">${quizCurrent.cat}</span>`;
+    card.classList.remove('quiz-flip');
+    void card.offsetWidth; // reflow
+    card.classList.add('quiz-flip');
+
+    const optsEl = document.getElementById('quizOptions');
+    optsEl.innerHTML = options.map(o => `<button class="quiz-option" data-term="${o.term}">${o.short}</button>`).join('');
+    optsEl.querySelectorAll('.quiz-option').forEach(btn => {
+        btn.onclick = () => {
+            if (quizAnswered) return;
+            quizAnswered = true;
+            quizStats.total++;
+            const isCorrect = btn.dataset.term === quizCurrent.term;
+            if (isCorrect) { quizStats.correct++; quizStats.streak++; }
+            else { quizStats.wrong++; quizStats.streak = 0; }
+
+            // Highlight
+            optsEl.querySelectorAll('.quiz-option').forEach(b => {
+                b.classList.add('disabled');
+                if (b.dataset.term === quizCurrent.term) b.classList.add('correct');
+                else if (b === btn && !isCorrect) b.classList.add('wrong');
+            });
+            updateQuizStats();
+            document.getElementById('quizNext').classList.add('visible');
+        };
+    });
+    document.getElementById('quizNext').classList.remove('visible');
+}
+
+function updateQuizStats() {
+    document.getElementById('qTotal').textContent = quizStats.total;
+    document.getElementById('qCorrect').textContent = quizStats.correct;
+    document.getElementById('qWrong').textContent = quizStats.wrong;
+    document.getElementById('qStreak').textContent = quizStats.streak;
+}
+
+// ── Mode Switching ──
+document.querySelectorAll('.mode-tab').forEach(tab => {
+    tab.onclick = () => {
+        document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        const mode = tab.dataset.mode;
+        document.querySelector('.glossary-container').classList.toggle('hidden', mode !== 'glossary');
+        document.getElementById('quizContainer').classList.toggle('active', mode === 'quiz');
+        if (mode === 'quiz') startQuiz();
+    };
+});
+
+// ── Search ──
+document.getElementById('search').addEventListener('input', e => {
+    searchQuery = e.target.value.trim();
+    renderAZ();
+    renderTerms();
+});
+
+// ── Bookmark toggle ──
+document.getElementById('bmToggle').addEventListener('click', () => {
+    showBookmarksOnly = !showBookmarksOnly;
+    document.getElementById('bmToggle').classList.toggle('active', showBookmarksOnly);
+    renderAZ();
+    renderTerms();
+});
+
+// ── Quiz next ──
+document.getElementById('quizNext').addEventListener('click', startQuiz);
+
+// ── Init ──
+renderWOTD();
+renderCatTabs();
+renderAZ();
+renderTerms();
+</script>
+</body>
+</html>

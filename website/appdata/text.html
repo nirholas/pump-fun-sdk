@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Text App</title>
+    <meta name="capabilities" content=".json,.txt,text_editor">
+    <meta name="permissions" content="utility, fileGet, olp, fileSet">
+    <meta name="lair-include" content="lair.css">
+    <meta name="lair-icon"
+        content="<svg width='214' height='214' viewBox='0 0 214 214' fill='none' xmlns='http://www.w3.org/2000/svg'> <g clip-path='url(#clip0_6_14)'> <rect x='7' y='7' width='199' height='199' rx='22' fill='#6179FF'/> <rect x='32' y='134' width='137' height='30' rx='15' fill='white' fill-opacity='0.5'/> <rect x='32' y='86' width='103' height='30' rx='15' fill='white' fill-opacity='0.5'/> <rect x='32' y='38' width='146' height='30' rx='15' fill='white' fill-opacity='0.5'/> <path d='M150.254 161.311L134.35 70.829L209.268 90.9032L150.254 161.311Z' fill='#FFC853'/> <path d='M150.512 161.177L145.221 130.666L170.349 137.399L150.512 161.177Z' fill='#484848'/> <rect x='207.532' y='94.611' width='76.1255' height='256.654' transform='rotate(-165 207.532 94.611)' fill='#856644'/> <rect x='177.012' y='86.4332' width='44.5291' height='256.654' transform='rotate(-165 177.012 86.4332)' fill='#D19450'/> </g> <defs> <clipPath id='clip0_6_14'> <rect width='214' height='214' fill='white'/> </clipPath> </defs> </svg>">
+    <style>
+        ::selection {
+            background-color: var(--col-bgh);
+            color: var(--col-txth);
+        }
+
+        html {
+            height: 100%;
+        }
+
+        body {
+            color: var(--col-txt1);
+            box-sizing: border-box;
+            transition: .2s;
+            margin: 0.5rem !important;
+            display: flex;
+            flex-direction: column;
+            height: calc(100% - 1rem);
+        }
+
+        body.dark-mode {
+            background-color: #141414;
+            color: #ffe4bb;
+        }
+
+        textarea {
+            font-size: 1rem;
+            display: block;
+            padding: 10px;
+            margin-top: 0.5rem;
+            outline: none;
+            background: var(--col-bg2);
+            border-radius: 0.5rem;
+            height: calc(100vh - 63px);
+            resize: none;
+            font-family: 'Courier New', Courier, monospace !important;
+            border: none;
+            color: var(--col-txt1);
+        }
+
+        textarea.dark-mode {
+            background: transparent;
+            color: inherit;
+            font-family: serif !important;
+            font-size: var(--font-size-subheading);
+        }
+
+        nav {
+            border-radius: 0.5rem;
+            display: flex;
+            flex-direction: row;
+            align-items: stretch;
+            gap: 0.3rem;
+            flex-wrap: wrap;
+        }
+
+        .navbutton {
+            background: var(--col-bg2);
+            color: inherit;
+            padding: 5px 6px;
+            padding-top: 4px;
+            cursor: pointer;
+            border-radius: 0.3rem;
+            border: none;
+            font-family: inherit;
+            font-size: .7rem;
+
+        }
+
+        .dark-mode .navbutton {
+            background-color: #1f1f1f;
+        }
+
+        nav button:hover {
+            background: var(--col-bgh);
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/mime-db@1.52.0/db.json"></script>
+
+</head>
+
+<body>
+
+    <nav>
+        <button onclick="ntxSession.send('olp.useHandler', 'text_editor')" class="navbutton">New</button>
+        <button onclick="openfromfiles()" class="navbutton">Open</button>
+        <button onclick="savetx(1)" id="sbtn" class="navbutton">Save</button>
+        <button onclick="toggleDarkMode()" class="navbutton">Reading Mode</button>
+    </nav>
+    <textarea id="thedisplay" spellcheck="false" onkeyup="sbtn.innerHTML = '*Save'"
+        placeholder="Click Open to open a file from your files app."></textarea>
+
+    <script>
+        var mode = "new";
+        var currentfile = {};
+        var currentMime = 'text/plain';
+        var currentreqID = null;
+
+        var ntxSession;
+        async function openfromfiles() {
+            document.getElementById("thedisplay").value = "Waiting for you to open a file...";
+            const fileID = await ntxSession.send("olp.useHandler", "file_manager", { "opener": 'any', "dir": "Downloads/" });
+            const file = await ntxSession.send("fileGet.byId", fileID);
+            console.log(4534, fileID, file)
+            readthefile(file);
+        }
+
+        async function savetx() {
+            sbtn.innerHTML = '* Saving';
+
+            try {
+                const content = document.getElementById("thedisplay").value;
+                const encodedContent = btoa(content);
+
+                if (mode === "edit") {
+                    const dataUri = `data:${currentMime};base64,${encodedContent}`;
+                    ntxSession.send("fileSet.updateFile", currentfile.path, currentfile.id, {
+                        metadata: currentfile.metadata,
+                        content: dataUri,
+                        fileName: currentfile.fileName
+                    });
+                } else {
+                    const dataUri = `data:text/plain;base64,${encodedContent}`;
+                    let toBeSavedToData = await ntxSession.send("olp.useHandler", "file_manager", { "opener": 'saveas',  "value":"Text file.txt"});
+                    await ntxSession.send("fileSet.createFile", toBeSavedToData.path, toBeSavedToData.name, false, dataUri);
+                }
+            } catch (e) { console.log(e) }
+            ntxSession.send("sysUI.toast", "File saved")
+            sbtn.innerHTML = 'Save';
+            mode = "edit";
+        }
+
+        function toggleDarkMode() {
+            document.body.classList.toggle('dark-mode');
+            document.querySelector('textarea').classList.toggle('dark-mode');
+        }
+
+        function jsonFromDataURI(dataURI) {
+            const splitDataURI = dataURI.split(',');
+            if (splitDataURI.length !== 2 || splitDataURI[0].indexOf('application/json') === -1) {
+                throw new Error('Invalid Data URI. Expected a Data URI containing JSON data.');
+            }
+            let jsonData = splitDataURI[1];
+            if (isBase64(jsonData)) {
+                jsonData = window.atob(jsonData)
+            }
+            const decodedData = decodeURIComponent(jsonData);
+            const jsonObject = JSON.parse(decodedData);
+            return jsonObject;
+        }
+
+        function isBase64(str) {
+            try {
+                return btoa(atob(str)) === str;
+            } catch (err) {
+                return false;
+            }
+        }
+
+        function formatJS(code) {
+            let formattedCode = '';
+
+            let level = 0;
+            for (let i = 0; i < code.length; i++) {
+                const char = code[i];
+                if (char === '{' || char === '[') {
+                    level++;
+                    formattedCode += char + ' '.repeat(level * 4);
+                } else if (char === '}' || char === ']') {
+                    level--;
+                    formattedCode = formattedCode.trimEnd() + '' + ' '.repeat(level * 4) + char;
+                } else {
+                    formattedCode += char;
+                }
+            }
+
+            return formattedCode;
+        }
+
+
+        async function greenflag() {
+            ntxSession = new NTXSession();
+            var sbtn = document.getElementById("sbtn");
+            var disp = document.getElementById("thedisplay")
+            disp.focus()
+
+            var defile
+            try {
+                if (myWindow.params) {
+                    document.getElementById("thedisplay").value = "Loading...";
+                    defile = myWindow.params.data;
+                    const file = await ntxSession.send("fileGet.byId", defile);
+                    readthefile(file);
+                } else {
+                    document.getElementById("thedisplay").value = "";
+                }
+            } catch (e) { }
+
+        }
+
+
+        async function readthefile(file) {
+            currentfile = file;
+            mode = "edit";
+            const mimePrefix = file.content.match(/^data:([^;]+);base64,/i);
+
+            if (mimePrefix) {
+                file.type = mimePrefix[1];
+                currentMime = mimePrefix[1];
+                file.content = file.content.replace(/^data:([^;]+);base64,/i, '');
+                processFileContent(file);
+            } else {
+                const extension = await ntxSession.send("utility.mtpetxt", file.fileName);
+                await ntxSession.send("utility.getMimeType", extension).then(mimeType => {
+                    file.type = mimeType || 'application/octet-stream';
+                    processFileContent(file);
+                });
+            }
+        }
+
+        async function processFileContent(file) {
+            file.content = await ntxSession.send("utility.decodeBase64Content", file.content);
+
+            if (file.content == undefined) {
+                await ntxSession.send("sysUI.say", "Currupted file", "Your file is having no reader data.")
+
+                document.getElementById("thedisplay").value = file.content;
+                return;
+            }
+
+            if (file.type === "application/json") {
+                try {
+                    file.content = formatJS(JSON.stringify(JSON.parse(file.content)));
+                } catch (e) {
+                    console.error("Error parsing JSON content", e);
+                }
+            }
+
+            if (file) {
+                document.getElementById("thedisplay").value = file.content;
+                console.log("Content displayed successfully");
+            } else {
+                console.error("Error displaying content");
+            }
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,1152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="lair-include" content="lair.css material-symbols-rounded">
+    <meta name="permissions" content="appStorage">
+    <meta name="capabilities" content="calendar">
+    <meta name="lair-icon" content="<svg width='232' height='232' viewBox='0 0 232 232' fill='none' xmlns='http://www.w3.org/2000/svg'><rect width='232' height='232' rx='40' fill='#6366F1'/><text x='116' y='140' text-anchor='middle' fill='white' font-size='100' font-weight='bold'>📅</text></svg>">
+    <title>Economic Calendar</title>
+    <style>
+        :root {
+            --col-bg1: #101010;
+            --col-bg2: #171717;
+            --col-bg3: #222222;
+            --col-txt1: white;
+            --col-txt2: #aaa;
+            --col-accent: #6366F1;
+            --col-high: #EF4444;
+            --col-med: #F59E0B;
+            --col-low: #3B82F6;
+            --col-macro: #A855F7;
+            --col-crypto: #10B981;
+            --col-unlock: #F59E0B;
+            --col-custom: #EC4899;
+            --radius: 8px;
+            --radius-sm: 6px;
+        }
+        html { height: 100%; }
+        body {
+            margin: 0; height: 100%;
+            background: var(--col-bg1); color: var(--col-txt1);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            overflow-y: auto; overflow-x: hidden;
+        }
+        * { box-sizing: border-box; }
+        .app { max-width: 900px; margin: 0 auto; padding: 12px; }
+
+        /* Header */
+        .app-header {
+            display: flex; align-items: center; gap: 8px;
+            margin-bottom: 8px; flex-wrap: wrap;
+        }
+        .app-header h1 { font-size: 1.15em; margin: 0; font-weight: 700; white-space: nowrap; }
+        .header-actions { margin-left: auto; display: flex; gap: 6px; align-items: center; }
+        .btn {
+            background: var(--col-bg3); border: 1px solid #333; color: var(--col-txt2);
+            border-radius: var(--radius-sm); padding: 5px 10px; font-size: 0.78em;
+            cursor: pointer; transition: all 0.15s; white-space: nowrap;
+        }
+        .btn:hover { background: var(--col-accent); color: #fff; border-color: var(--col-accent); }
+        .btn.active { background: var(--col-accent); color: #fff; border-color: var(--col-accent); }
+        .btn-primary { background: var(--col-accent); color: #fff; border-color: var(--col-accent); }
+        .btn-primary:hover { opacity: 0.85; }
+
+        /* Countdown bar */
+        .countdown-bar {
+            background: var(--col-bg2); border: 1px solid var(--col-bg3); border-radius: var(--radius);
+            padding: 10px 14px; margin-bottom: 10px;
+            display: flex; align-items: center; gap: 10px; overflow-x: auto;
+        }
+        .countdown-item {
+            display: flex; align-items: center; gap: 8px;
+            min-width: 0; flex-shrink: 0;
+        }
+        .countdown-dot {
+            width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+            box-shadow: 0 0 6px currentColor;
+        }
+        .countdown-name {
+            font-size: 0.82em; font-weight: 600; white-space: nowrap;
+            overflow: hidden; text-overflow: ellipsis; max-width: 180px;
+        }
+        .countdown-time {
+            font-size: 0.78em; color: var(--col-txt2); white-space: nowrap;
+            font-variant-numeric: tabular-nums;
+        }
+        .countdown-sep {
+            width: 1px; height: 20px; background: var(--col-bg3); flex-shrink: 0;
+        }
+
+        /* Filters bar */
+        .filter-bar {
+            display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+        .filter-group { display: flex; gap: 4px; }
+
+        /* Nav bar */
+        .nav-bar {
+            display: flex; align-items: center; gap: 8px;
+            margin-bottom: 10px;
+        }
+        .nav-title {
+            font-size: 1em; font-weight: 700; min-width: 160px;
+            text-align: center;
+        }
+        .nav-btn {
+            background: var(--col-bg3); border: 1px solid #333; color: var(--col-txt2);
+            border-radius: var(--radius-sm); width: 30px; height: 30px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: all 0.15s; font-size: 1em;
+        }
+        .nav-btn:hover { background: var(--col-accent); color: #fff; }
+        .nav-spacer { flex: 1; }
+
+        /* Calendar month grid */
+        .cal-grid {
+            display: grid; grid-template-columns: repeat(7, 1fr);
+            gap: 2px; margin-bottom: 12px;
+        }
+        .cal-header {
+            text-align: center; font-size: 0.7em; font-weight: 600;
+            color: var(--col-txt2); padding: 6px 0;
+            text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .cal-cell {
+            background: var(--col-bg2); border: 1px solid transparent;
+            border-radius: var(--radius-sm); padding: 4px;
+            min-height: 72px; cursor: pointer;
+            transition: all 0.15s; position: relative;
+        }
+        .cal-cell:hover { border-color: var(--col-accent); }
+        .cal-cell.today { border-color: var(--col-accent); background: rgba(99,102,241,0.08); }
+        .cal-cell.other-month { opacity: 0.3; }
+        .cal-cell.selected { border-color: #fff; background: rgba(255,255,255,0.05); }
+        .cal-day {
+            font-size: 0.75em; font-weight: 600; display: block;
+            margin-bottom: 3px; color: var(--col-txt2);
+        }
+        .cal-cell.today .cal-day { color: var(--col-accent); }
+        .cal-event {
+            font-size: 0.62em; padding: 2px 4px; margin-bottom: 2px;
+            border-radius: 3px; white-space: nowrap;
+            overflow: hidden; text-overflow: ellipsis;
+            line-height: 1.4;
+        }
+        .cal-more {
+            font-size: 0.6em; color: var(--col-txt2); padding: 1px 4px;
+        }
+        .imp-high { background: rgba(239,68,68,0.15); border-left: 2px solid var(--col-high); color: #FCA5A5; }
+        .imp-medium { background: rgba(245,158,11,0.15); border-left: 2px solid var(--col-med); color: #FCD34D; }
+        .imp-low { background: rgba(59,130,246,0.15); border-left: 2px solid var(--col-low); color: #93C5FD; }
+
+        /* Event dots for compact view */
+        .event-dots {
+            display: flex; gap: 3px; flex-wrap: wrap; margin-top: 2px;
+        }
+        .event-dot {
+            width: 6px; height: 6px; border-radius: 50%;
+        }
+        .event-dot.high { background: var(--col-high); }
+        .event-dot.medium { background: var(--col-med); }
+        .event-dot.low { background: var(--col-low); }
+
+        /* Week view */
+        .week-grid {
+            display: grid; grid-template-columns: repeat(7, 1fr);
+            gap: 4px; margin-bottom: 12px;
+        }
+        .week-col-header {
+            text-align: center; font-size: 0.72em; font-weight: 600;
+            color: var(--col-txt2); padding: 4px;
+            border-bottom: 1px solid var(--col-bg3);
+        }
+        .week-col-header.today-col { color: var(--col-accent); border-bottom-color: var(--col-accent); }
+        .week-col-header .dow { text-transform: uppercase; letter-spacing: 0.5px; }
+        .week-col-header .date { font-size: 1.3em; font-weight: 700; color: var(--col-txt1); margin: 2px 0; }
+        .week-col-header.today-col .date { color: var(--col-accent); }
+        .week-col {
+            min-height: 200px; padding: 4px;
+        }
+        .week-event {
+            font-size: 0.68em; padding: 5px 6px; margin-bottom: 4px;
+            border-radius: var(--radius-sm); cursor: pointer;
+            line-height: 1.3; transition: opacity 0.15s;
+        }
+        .week-event:hover { opacity: 0.8; }
+
+        /* Day view */
+        .day-view { margin-bottom: 12px; }
+        .day-event-card {
+            background: var(--col-bg2); border: 1px solid var(--col-bg3);
+            border-radius: var(--radius); padding: 12px 14px;
+            margin-bottom: 8px; cursor: pointer;
+            transition: border-color 0.15s;
+            display: flex; gap: 12px; align-items: flex-start;
+        }
+        .day-event-card:hover { border-color: var(--col-accent); }
+        .event-imp-bar {
+            width: 4px; border-radius: 2px; min-height: 40px; flex-shrink: 0;
+        }
+        .event-imp-bar.high { background: var(--col-high); }
+        .event-imp-bar.medium { background: var(--col-med); }
+        .event-imp-bar.low { background: var(--col-low); }
+        .event-details { flex: 1; min-width: 0; }
+        .event-top {
+            display: flex; align-items: center; gap: 6px; margin-bottom: 4px;
+            flex-wrap: wrap;
+        }
+        .event-name { font-weight: 600; font-size: 0.9em; }
+        .event-badge {
+            font-size: 0.62em; padding: 2px 6px; border-radius: 3px;
+            font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px;
+        }
+        .badge-macro { background: rgba(168,85,247,0.2); color: #C084FC; }
+        .badge-crypto { background: rgba(16,185,129,0.2); color: #6EE7B7; }
+        .badge-unlock { background: rgba(245,158,11,0.2); color: #FCD34D; }
+        .badge-custom { background: rgba(236,72,153,0.2); color: #F9A8D4; }
+        .badge-high { background: rgba(239,68,68,0.2); color: #FCA5A5; }
+        .badge-medium { background: rgba(245,158,11,0.2); color: #FCD34D; }
+        .badge-low { background: rgba(59,130,246,0.2); color: #93C5FD; }
+        .event-desc {
+            font-size: 0.78em; color: var(--col-txt2); line-height: 1.4;
+            margin-top: 4px;
+        }
+        .event-countdown {
+            font-size: 0.72em; color: var(--col-accent); margin-top: 4px;
+            font-variant-numeric: tabular-nums;
+        }
+        .event-meta {
+            font-size: 0.68em; color: #666; margin-top: 4px;
+        }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center; padding: 40px 20px; color: var(--col-txt2);
+        }
+        .empty-state .material-symbols-rounded { font-size: 48px; opacity: 0.3; display: block; margin-bottom: 8px; }
+        .empty-state p { font-size: 0.85em; }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+            display: none; align-items: center; justify-content: center;
+            z-index: 100; padding: 20px;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal {
+            background: var(--col-bg2); border: 1px solid var(--col-bg3);
+            border-radius: 12px; padding: 20px; width: 100%;
+            max-width: 420px; max-height: 80vh; overflow-y: auto;
+        }
+        .modal h2 {
+            font-size: 1em; margin: 0 0 16px; display: flex;
+            align-items: center; justify-content: space-between;
+        }
+        .modal-close {
+            background: none; border: none; color: var(--col-txt2);
+            cursor: pointer; font-size: 1.2em; padding: 4px;
+        }
+        .modal-close:hover { color: var(--col-txt1); }
+        .form-group { margin-bottom: 12px; }
+        .form-group label {
+            display: block; font-size: 0.75em; font-weight: 600;
+            color: var(--col-txt2); margin-bottom: 4px;
+            text-transform: uppercase; letter-spacing: 0.3px;
+        }
+        .form-input {
+            width: 100%; background: var(--col-bg1); border: 1px solid var(--col-bg3);
+            border-radius: var(--radius-sm); padding: 8px 10px; color: var(--col-txt1);
+            font-size: 0.85em; outline: none; transition: border-color 0.15s;
+        }
+        .form-input:focus { border-color: var(--col-accent); }
+        select.form-input { cursor: pointer; }
+        textarea.form-input { resize: vertical; min-height: 60px; font-family: inherit; }
+        .form-row { display: flex; gap: 8px; }
+        .form-row .form-group { flex: 1; }
+        .form-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+
+        /* Event detail modal */
+        .event-detail-header {
+            display: flex; align-items: center; gap: 8px; margin-bottom: 12px;
+        }
+        .event-detail-name { font-size: 1.05em; font-weight: 700; }
+        .detail-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 8px 0; border-bottom: 1px solid var(--col-bg3);
+            font-size: 0.82em;
+        }
+        .detail-row:last-child { border-bottom: none; }
+        .detail-label { color: var(--col-txt2); }
+        .detail-value { font-weight: 600; }
+        .detail-desc {
+            font-size: 0.82em; color: var(--col-txt2); line-height: 1.5;
+            padding: 10px 0; border-bottom: 1px solid var(--col-bg3);
+        }
+        .delete-btn {
+            background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3);
+            color: #FCA5A5; border-radius: var(--radius-sm); padding: 6px 12px;
+            font-size: 0.78em; cursor: pointer; transition: all 0.15s;
+        }
+        .delete-btn:hover { background: rgba(239,68,68,0.3); }
+
+        /* Loading */
+        .loading { text-align: center; padding: 40px; color: var(--col-txt2); }
+        .spinner {
+            width: 24px; height: 24px; border: 2px solid var(--col-bg3);
+            border-top-color: var(--col-accent); border-radius: 50%;
+            animation: spin 0.8s linear infinite; margin: 0 auto 8px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .cal-cell { min-height: 54px; padding: 3px; }
+            .cal-event { font-size: 0.55em; }
+            .nav-title { font-size: 0.85em; min-width: 120px; }
+            .countdown-bar { padding: 8px 10px; }
+        }
+    </style>
+</head>
+<body>
+<div class="app">
+    <!-- Header -->
+    <div class="app-header">
+        <h1>📅 Economic Calendar</h1>
+        <div class="header-actions">
+            <button class="btn" id="exportBtn" title="Export events as JSON">Export</button>
+            <button class="btn btn-primary" id="addEventBtn">+ Add Event</button>
+        </div>
+    </div>
+
+    <!-- Countdown bar -->
+    <div class="countdown-bar" id="countdownBar">
+        <div class="loading"><div class="spinner"></div></div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filter-bar">
+        <div class="filter-group" id="viewBtns">
+            <button class="btn active" data-view="month">Month</button>
+            <button class="btn" data-view="week">Week</button>
+            <button class="btn" data-view="day">Day</button>
+        </div>
+        <div style="width:1px;height:20px;background:var(--col-bg3);margin:0 4px"></div>
+        <div class="filter-group" id="catBtns">
+            <button class="btn active" data-cat="all">All</button>
+            <button class="btn" data-cat="macro">Macro</button>
+            <button class="btn" data-cat="crypto">Crypto</button>
+            <button class="btn" data-cat="unlock">Unlocks</button>
+            <button class="btn" data-cat="custom">Custom</button>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <div class="nav-bar">
+        <button class="nav-btn" id="prevBtn">◀</button>
+        <button class="btn" id="todayBtn">Today</button>
+        <div class="nav-title" id="navTitle">February 2026</div>
+        <div class="nav-spacer"></div>
+        <button class="nav-btn" id="nextBtn">▶</button>
+    </div>
+
+    <!-- Calendar area -->
+    <div id="calendarArea"></div>
+</div>
+
+<!-- Add event modal -->
+<div class="modal-overlay" id="addModal">
+    <div class="modal">
+        <h2>Add Event <button class="modal-close" onclick="closeAddModal()">✕</button></h2>
+        <div class="form-group">
+            <label>Event Name</label>
+            <input class="form-input" id="fName" placeholder="e.g. ETH Prague Conference" maxlength="100">
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Date</label>
+                <input class="form-input" id="fDate" type="date">
+            </div>
+            <div class="form-group">
+                <label>Time (optional)</label>
+                <input class="form-input" id="fTime" type="time">
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Category</label>
+                <select class="form-input" id="fCategory">
+                    <option value="macro">Macro</option>
+                    <option value="crypto" selected>Crypto</option>
+                    <option value="unlock">Token Unlock</option>
+                    <option value="custom">Custom</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Importance</label>
+                <select class="form-input" id="fImportance">
+                    <option value="high">🔴 High</option>
+                    <option value="medium" selected>🟡 Medium</option>
+                    <option value="low">🔵 Low</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Description</label>
+            <textarea class="form-input" id="fDesc" placeholder="Optional details about this event..." rows="2"></textarea>
+        </div>
+        <div class="form-group">
+            <label>Recurring</label>
+            <select class="form-input" id="fRecurring">
+                <option value="none">None</option>
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+                <option value="monthly">Monthly</option>
+            </select>
+        </div>
+        <div class="form-actions">
+            <button class="btn" onclick="closeAddModal()">Cancel</button>
+            <button class="btn btn-primary" onclick="saveEvent()">Save Event</button>
+        </div>
+    </div>
+</div>
+
+<!-- Event detail modal -->
+<div class="modal-overlay" id="detailModal">
+    <div class="modal" id="detailContent"></div>
+</div>
+
+<script>
+(function() {
+    'use strict';
+
+    // ==================== STATE ====================
+    const TODAY = new Date();
+    const TODAY_STR = fmtDate(TODAY);
+    let currentView = 'month';
+    let currentFilter = 'all';
+    let viewYear = TODAY.getFullYear();
+    let viewMonth = TODAY.getMonth();
+    let viewWeekStart = getWeekStart(TODAY);
+    let viewDay = new Date(TODAY);
+    let countdownInterval = null;
+
+    // ==================== RECURRING MACRO EVENTS 2026 ====================
+    const FOMC_DATES_2026 = [
+        '2026-01-28','2026-03-18','2026-05-06','2026-06-17',
+        '2026-07-29','2026-09-16','2026-11-04','2026-12-16'
+    ];
+
+    const CPI_DATES_2026 = [
+        '2026-01-13','2026-02-11','2026-03-11','2026-04-14',
+        '2026-05-12','2026-06-10','2026-07-14','2026-08-12',
+        '2026-09-11','2026-10-13','2026-11-12','2026-12-10'
+    ];
+
+    const PPI_DATES_2026 = [
+        '2026-01-14','2026-02-13','2026-03-12','2026-04-09',
+        '2026-05-14','2026-06-11','2026-07-15','2026-08-13',
+        '2026-09-15','2026-10-08','2026-11-13','2026-12-11'
+    ];
+
+    const GDP_DATES_2026 = [
+        '2026-01-29','2026-04-29','2026-07-30','2026-10-29'
+    ];
+
+    const PCE_DATES_2026 = [
+        '2026-01-30','2026-02-27','2026-03-27','2026-04-30',
+        '2026-05-29','2026-06-26','2026-07-31','2026-08-28',
+        '2026-09-25','2026-10-30','2026-11-25','2026-12-23'
+    ];
+
+    const JACKSON_HOLE_2026 = '2026-08-27';
+
+    function generateMacroEvents() {
+        const events = [];
+
+        FOMC_DATES_2026.forEach(function(d) { events.push({
+            id: 'fomc-' + d, name: 'FOMC Rate Decision', date: d,
+            importance: 'high', category: 'macro',
+            description: 'Federal Open Market Committee interest rate decision and economic projections. Historically causes significant crypto volatility.',
+            source: 'Federal Reserve'
+        }); });
+
+        CPI_DATES_2026.forEach(function(d) { events.push({
+            id: 'cpi-' + d, name: 'US CPI Release', date: d,
+            importance: 'high', category: 'macro',
+            description: 'Consumer Price Index — key inflation indicator. Higher than expected = bearish for risk assets.',
+            source: 'Bureau of Labor Statistics'
+        }); });
+
+        PPI_DATES_2026.forEach(function(d) { events.push({
+            id: 'ppi-' + d, name: 'US PPI Release', date: d,
+            importance: 'medium', category: 'macro',
+            description: 'Producer Price Index — leading indicator for consumer inflation.',
+            source: 'Bureau of Labor Statistics'
+        }); });
+
+        GDP_DATES_2026.forEach(function(d) { events.push({
+            id: 'gdp-' + d, name: 'US GDP (Advance)', date: d,
+            importance: 'medium', category: 'macro',
+            description: 'Gross Domestic Product advance estimate. Strong GDP = hawkish Fed expectations.',
+            source: 'Bureau of Economic Analysis'
+        }); });
+
+        PCE_DATES_2026.forEach(function(d) { events.push({
+            id: 'pce-' + d, name: 'Core PCE Price Index', date: d,
+            importance: 'high', category: 'macro',
+            description: "The Fed's preferred inflation gauge. Most important inflation metric for monetary policy.",
+            source: 'Bureau of Economic Analysis'
+        }); });
+
+        events.push({
+            id: 'jackson-2026', name: 'Jackson Hole Symposium', date: JACKSON_HOLE_2026,
+            importance: 'high', category: 'macro',
+            description: 'Annual central banking conference. Fed Chair speech often signals future policy direction.',
+            source: 'Federal Reserve Bank of Kansas City'
+        });
+
+        // Non-Farm Payrolls — first Friday of each month in 2026
+        for (var m = 0; m < 12; m++) {
+            var first = new Date(2026, m, 1);
+            var dow = first.getDay();
+            var offset = dow <= 5 ? (5 - dow) : (5 + 7 - dow);
+            var friday = new Date(2026, m, 1 + offset);
+            var d = fmtDate(friday);
+            events.push({
+                id: 'nfp-' + d, name: 'US Non-Farm Payrolls', date: d,
+                importance: 'high', category: 'macro',
+                description: 'Monthly jobs report. Strong labor market = higher rates for longer. Watch hourly earnings and unemployment rate.',
+                source: 'Bureau of Labor Statistics'
+            });
+        }
+
+        // Monthly options expiry — last Friday of each month
+        for (var m2 = 0; m2 < 12; m2++) {
+            var last = new Date(2026, m2 + 1, 0);
+            while (last.getDay() !== 5) last.setDate(last.getDate() - 1);
+            var d2 = fmtDate(last);
+            events.push({
+                id: 'opx-' + d2, name: 'BTC/ETH Monthly Options Expiry', date: d2,
+                importance: 'medium', category: 'crypto',
+                description: 'Deribit monthly options expiry. Expect increased volatility and max-pain gravitational pull.',
+                source: 'Deribit'
+            });
+        }
+
+        // Quarterly witching — third Friday of Mar, Jun, Sep, Dec
+        [2, 5, 8, 11].forEach(function(mo) {
+            var f = new Date(2026, mo, 1);
+            var dw = f.getDay();
+            var off = dw <= 5 ? (5 - dw) : (5 + 7 - dw);
+            var thirdFri = new Date(2026, mo, 1 + off + 14);
+            var ds = fmtDate(thirdFri);
+            events.push({
+                id: 'witch-' + ds, name: 'Quadruple Witching', date: ds,
+                importance: 'medium', category: 'macro',
+                description: 'Quarterly expiration of stock index futures, stock index options, stock options, and single stock futures. Increased volatility.',
+                source: 'CME Group'
+            });
+        });
+
+        // CME Bitcoin Futures Open — each Monday in 2026
+        var rangeStart = new Date(2026, 0, 1);
+        var rangeEnd = new Date(2026, 11, 31);
+        for (var cd = new Date(rangeStart); cd <= rangeEnd; cd.setDate(cd.getDate() + 1)) {
+            if (cd.getDay() === 1) {
+                var cds = fmtDate(cd);
+                events.push({
+                    id: 'cme-' + cds, name: 'CME BTC Futures Open', date: cds,
+                    importance: 'low', category: 'crypto',
+                    description: 'CME Bitcoin futures re-open after weekend close. Check for gap fills.',
+                    source: 'CME Group'
+                });
+            }
+        }
+
+        return events;
+    }
+
+    // ==================== CRYPTO ECOSYSTEM EVENTS 2026 ====================
+    function generateCryptoEvents() {
+        return [
+            { id: 'eth-pectra', name: 'Ethereum Pectra Upgrade', date: '2026-03-15', importance: 'high', category: 'crypto',
+              description: 'Major Ethereum upgrade including EIP-7702 (account abstraction), EIP-7251 (max effective balance), and blob throughput improvements.', source: 'ethereum.org' },
+            { id: 'btc-halving-anniv', name: 'BTC Halving Anniversary', date: '2026-04-20', importance: 'medium', category: 'crypto',
+              description: 'Two-year anniversary of the 2024 Bitcoin halving. Historically, peak bull market activity occurs 12-18 months post-halving.', source: 'Bitcoin Protocol' },
+            { id: 'eth-devcon', name: 'Devcon 8', date: '2026-10-12', importance: 'medium', category: 'crypto',
+              description: 'Ethereum Foundation annual developer conference. Major announcements expected.', source: 'Ethereum Foundation' },
+            { id: 'sol-breakpoint', name: 'Solana Breakpoint 2026', date: '2026-09-20', importance: 'medium', category: 'crypto',
+              description: 'Solana annual conference. New product launches and ecosystem updates.', source: 'Solana Foundation' },
+            { id: 'btc-nashville', name: 'Bitcoin Nashville 2026', date: '2026-07-24', importance: 'medium', category: 'crypto',
+              description: 'Major Bitcoin conference. Historically significant announcements — 2024 saw Strategic Reserve reveal.', source: 'Bitcoin Magazine' },
+            { id: 'consensus-2026', name: 'Consensus 2026', date: '2026-06-08', importance: 'medium', category: 'crypto',
+              description: 'CoinDesk Consensus — largest crypto industry conference.', source: 'CoinDesk' },
+            { id: 'ethcc-2026', name: 'EthCC 2026', date: '2026-07-06', importance: 'low', category: 'crypto',
+              description: 'Ethereum Community Conference — largest annual European Ethereum event.', source: 'EthCC' },
+            { id: 'token2049-sg', name: 'Token2049 Singapore', date: '2026-09-14', importance: 'medium', category: 'crypto',
+              description: 'Premier crypto conference in Asia. Significant for market sentiment and announcements.', source: 'Token2049' },
+            { id: 'token2049-dubai', name: 'Token2049 Dubai', date: '2026-04-28', importance: 'medium', category: 'crypto',
+              description: 'Token2049 Dubai edition — major crypto conference in MENA region.', source: 'Token2049' }
+        ];
+    }
+
+    // ==================== TOKEN UNLOCK EVENTS 2026 ====================
+    function generateUnlockEvents() {
+        return [
+            { id: 'arb-unlock-mar', name: 'ARB Token Unlock', date: '2026-03-16', importance: 'high', category: 'unlock',
+              description: 'Arbitrum investor & team token unlock tranche. ~1.1B ARB entering circulation.', source: 'Token Unlocks' },
+            { id: 'op-unlock-apr', name: 'OP Token Unlock', date: '2026-04-30', importance: 'medium', category: 'unlock',
+              description: 'Optimism core contributor and investor unlock.', source: 'Token Unlocks' },
+            { id: 'apt-unlock-mar', name: 'APT Token Unlock', date: '2026-03-12', importance: 'high', category: 'unlock',
+              description: 'Aptos Foundation, community, and investor token unlock.', source: 'Token Unlocks' },
+            { id: 'sui-unlock-may', name: 'SUI Token Unlock', date: '2026-05-03', importance: 'medium', category: 'unlock',
+              description: 'Sui investor and contributor token unlock tranche.', source: 'Token Unlocks' },
+            { id: 'strk-unlock-apr', name: 'STRK Token Unlock', date: '2026-04-15', importance: 'medium', category: 'unlock',
+              description: 'StarkNet early contributor and investor token unlock.', source: 'Token Unlocks' },
+            { id: 'sei-unlock-jun', name: 'SEI Token Unlock', date: '2026-06-15', importance: 'medium', category: 'unlock',
+              description: 'Sei ecosystem fund and early backer unlock.', source: 'Token Unlocks' },
+            { id: 'jto-unlock-jul', name: 'JTO Token Unlock', date: '2026-07-07', importance: 'medium', category: 'unlock',
+              description: 'Jito core contributor unlock tranche.', source: 'Token Unlocks' },
+            { id: 'pyth-unlock-may', name: 'PYTH Token Unlock', date: '2026-05-20', importance: 'medium', category: 'unlock',
+              description: 'Pyth Network publisher rewards and ecosystem unlock.', source: 'Token Unlocks' },
+            { id: 'w-unlock-apr', name: 'W Token Unlock', date: '2026-04-03', importance: 'medium', category: 'unlock',
+              description: 'Wormhole token unlock for early contributors.', source: 'Token Unlocks' },
+            { id: 'zk-unlock-jun', name: 'ZK Token Unlock', date: '2026-06-24', importance: 'high', category: 'unlock',
+              description: 'ZKsync investor and team token unlock — first major tranche.', source: 'Token Unlocks' },
+            { id: 'avax-unlock-aug', name: 'AVAX Foundation Unlock', date: '2026-08-22', importance: 'medium', category: 'unlock',
+              description: 'Avalanche Foundation strategic partner unlock.', source: 'Token Unlocks' }
+        ];
+    }
+
+    // ==================== CUSTOM EVENTS (localStorage) ====================
+    var STORAGE_KEY = 'lair_econ_cal_events';
+
+    function loadCustomEvents() {
+        try {
+            var raw = localStorage.getItem(STORAGE_KEY);
+            return raw ? JSON.parse(raw) : [];
+        } catch(e) { return []; }
+    }
+
+    function saveCustomEvents(events) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(events));
+    }
+
+    function addCustomEvent(evt) {
+        var custom = loadCustomEvents();
+        custom.push(evt);
+        saveCustomEvents(custom);
+    }
+
+    function deleteCustomEvent(id) {
+        var custom = loadCustomEvents().filter(function(e) { return e.id !== id; });
+        saveCustomEvents(custom);
+    }
+
+    // ==================== ALL EVENTS ====================
+    function getAllEvents() {
+        var macro = generateMacroEvents();
+        var crypto = generateCryptoEvents();
+        var unlocks = generateUnlockEvents();
+        var custom = loadCustomEvents().map(function(e) {
+            return Object.assign({}, e, { category: e.category || 'custom' });
+        });
+        return macro.concat(crypto, unlocks, custom);
+    }
+
+    function getFilteredEvents() {
+        var events = getAllEvents();
+        if (currentFilter !== 'all') {
+            events = events.filter(function(e) { return e.category === currentFilter; });
+        }
+        return events;
+    }
+
+    function getEventsForDate(dateStr) {
+        return getFilteredEvents().filter(function(e) { return e.date === dateStr; });
+    }
+
+    // ==================== DATE UTILITIES ====================
+    function fmtDate(d) {
+        var y = d.getFullYear();
+        var m = String(d.getMonth() + 1).padStart(2, '0');
+        var day = String(d.getDate()).padStart(2, '0');
+        return y + '-' + m + '-' + day;
+    }
+
+    function parseDate(s) {
+        var parts = s.split('-');
+        return new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+    }
+
+    function getWeekStart(d) {
+        var dt = new Date(d);
+        var day = dt.getDay();
+        dt.setDate(dt.getDate() - day);
+        dt.setHours(0, 0, 0, 0);
+        return dt;
+    }
+
+    function addDays(d, n) {
+        var r = new Date(d);
+        r.setDate(r.getDate() + n);
+        return r;
+    }
+
+    var MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    var DAYS_SHORT = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+    function formatCountdown(ms) {
+        if (ms <= 0) return 'Now';
+        var days = Math.floor(ms / 86400000);
+        var hrs = Math.floor((ms % 86400000) / 3600000);
+        var mins = Math.floor((ms % 3600000) / 60000);
+        var secs = Math.floor((ms % 60000) / 1000);
+        if (days > 0) return days + 'd ' + hrs + 'h ' + mins + 'm';
+        if (hrs > 0) return hrs + 'h ' + mins + 'm ' + secs + 's';
+        return mins + 'm ' + secs + 's';
+    }
+
+    function formatDatePretty(dateStr) {
+        var d = parseDate(dateStr);
+        return DAYS_SHORT[d.getDay()] + ', ' + MONTHS[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
+    }
+
+    // ==================== COUNTDOWN BAR ====================
+    function renderCountdown() {
+        var el = document.getElementById('countdownBar');
+        var now = Date.now();
+        var events = getAllEvents()
+            .filter(function(e) { return e.importance === 'high'; })
+            .map(function(e) { return Object.assign({}, e, { ts: parseDate(e.date).getTime() }); })
+            .filter(function(e) { return e.ts >= now - 86400000; })
+            .sort(function(a, b) { return a.ts - b.ts; })
+            .slice(0, 6);
+
+        if (!events.length) {
+            el.innerHTML = '<span style="color:var(--col-txt2);font-size:0.82em;">No upcoming high-impact events</span>';
+            return;
+        }
+
+        var html = '';
+        events.forEach(function(e, i) {
+            if (i > 0) html += '<div class="countdown-sep"></div>';
+            var diff = e.ts - now;
+            var color = e.category === 'macro' ? 'var(--col-macro)' :
+                        e.category === 'crypto' ? 'var(--col-crypto)' :
+                        e.category === 'unlock' ? 'var(--col-unlock)' : 'var(--col-custom)';
+            html += '<div class="countdown-item">' +
+                '<div class="countdown-dot" style="color:' + color + ';background:' + color + '"></div>' +
+                '<span class="countdown-name">' + e.name + '</span>' +
+                '<span class="countdown-time">' + (diff <= 0 ? 'Today' : formatCountdown(diff)) + '</span>' +
+            '</div>';
+        });
+        el.innerHTML = html;
+    }
+
+    // ==================== MONTH VIEW ====================
+    function renderMonth() {
+        var area = document.getElementById('calendarArea');
+        var firstDay = new Date(viewYear, viewMonth, 1);
+        var lastDay = new Date(viewYear, viewMonth + 1, 0);
+        var startDow = firstDay.getDay();
+        var daysInMonth = lastDay.getDate();
+        var prevLast = new Date(viewYear, viewMonth, 0).getDate();
+
+        var events = getFilteredEvents();
+
+        var html = '<div class="cal-grid">';
+        DAYS_SHORT.forEach(function(d) { html += '<div class="cal-header">' + d + '</div>'; });
+
+        // Previous month trailing days
+        for (var i = startDow - 1; i >= 0; i--) {
+            var day = prevLast - i;
+            var prevMonth = viewMonth === 0 ? 11 : viewMonth - 1;
+            var prevYear = viewMonth === 0 ? viewYear - 1 : viewYear;
+            var dateStr = prevYear + '-' + String(prevMonth + 1).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+            var dayEvents = events.filter(function(e) { return e.date === dateStr; });
+            html += buildDayCell(day, dateStr, dayEvents, true, false);
+        }
+
+        // Current month days
+        for (var d = 1; d <= daysInMonth; d++) {
+            var dateStr2 = viewYear + '-' + String(viewMonth + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+            var dayEvents2 = events.filter(function(e) { return e.date === dateStr2; });
+            var isToday = dateStr2 === TODAY_STR;
+            html += buildDayCell(d, dateStr2, dayEvents2, false, isToday);
+        }
+
+        // Next month leading days
+        var totalCells = startDow + daysInMonth;
+        var remaining = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
+        for (var j = 1; j <= remaining; j++) {
+            var nextMonth = viewMonth === 11 ? 0 : viewMonth + 1;
+            var nextYear = viewMonth === 11 ? viewYear + 1 : viewYear;
+            var dateStr3 = nextYear + '-' + String(nextMonth + 1).padStart(2, '0') + '-' + String(j).padStart(2, '0');
+            var dayEvents3 = events.filter(function(e) { return e.date === dateStr3; });
+            html += buildDayCell(j, dateStr3, dayEvents3, true, false);
+        }
+
+        html += '</div>';
+        area.innerHTML = html;
+
+        document.getElementById('navTitle').textContent = MONTHS[viewMonth] + ' ' + viewYear;
+    }
+
+    function buildDayCell(day, dateStr, dayEvents, otherMonth, isToday) {
+        var cls = 'cal-cell';
+        if (otherMonth) cls += ' other-month';
+        if (isToday) cls += ' today';
+
+        var html = '<div class="' + cls + '" onclick="window.__showDay(\'' + dateStr + '\')">';
+        html += '<span class="cal-day">' + day + '</span>';
+
+        if (dayEvents.length <= 3) {
+            dayEvents.forEach(function(e) {
+                html += '<div class="cal-event imp-' + e.importance + '" title="' + e.name + '">' + e.name + '</div>';
+            });
+        } else {
+            dayEvents.slice(0, 2).forEach(function(e) {
+                html += '<div class="cal-event imp-' + e.importance + '" title="' + e.name + '">' + e.name + '</div>';
+            });
+            html += '<div class="cal-more">+' + (dayEvents.length - 2) + ' more</div>';
+        }
+
+        html += '</div>';
+        return html;
+    }
+
+    // ==================== WEEK VIEW ====================
+    function renderWeek() {
+        var area = document.getElementById('calendarArea');
+        var events = getFilteredEvents();
+
+        var headerHtml = '<div class="week-grid">';
+        var bodyHtml = '<div class="week-grid">';
+
+        for (var i = 0; i < 7; i++) {
+            var d = addDays(viewWeekStart, i);
+            var dateStr = fmtDate(d);
+            var isToday = dateStr === TODAY_STR;
+            var dayEvents = events.filter(function(e) { return e.date === dateStr; });
+
+            headerHtml += '<div class="week-col-header ' + (isToday ? 'today-col' : '') + '">' +
+                '<div class="dow">' + DAYS_SHORT[d.getDay()] + '</div>' +
+                '<div class="date">' + d.getDate() + '</div>' +
+            '</div>';
+
+            bodyHtml += '<div class="week-col" onclick="window.__showDay(\'' + dateStr + '\')">';
+            dayEvents.forEach(function(e) {
+                var bg = e.importance === 'high' ? 'rgba(239,68,68,0.15)' :
+                         e.importance === 'medium' ? 'rgba(245,158,11,0.15)' : 'rgba(59,130,246,0.15)';
+                var border = e.importance === 'high' ? 'var(--col-high)' :
+                             e.importance === 'medium' ? 'var(--col-med)' : 'var(--col-low)';
+                bodyHtml += '<div class="week-event" style="background:' + bg + ';border-left:2px solid ' + border + '" ' +
+                    'onclick="event.stopPropagation();window.__showDetail(\'' + e.id + '\')" title="' + e.name + '">' +
+                    e.name +
+                '</div>';
+            });
+            if (!dayEvents.length) {
+                bodyHtml += '<div style="font-size:0.68em;color:#555;text-align:center;padding:20px 0">—</div>';
+            }
+            bodyHtml += '</div>';
+        }
+
+        headerHtml += '</div>';
+        bodyHtml += '</div>';
+
+        area.innerHTML = headerHtml + bodyHtml;
+
+        var weekEnd = addDays(viewWeekStart, 6);
+        var startMonth = MONTHS[viewWeekStart.getMonth()].slice(0, 3);
+        var endMonth = MONTHS[weekEnd.getMonth()].slice(0, 3);
+        var label;
+        if (viewWeekStart.getMonth() === weekEnd.getMonth()) {
+            label = startMonth + ' ' + viewWeekStart.getDate() + ' – ' + weekEnd.getDate() + ', ' + viewWeekStart.getFullYear();
+        } else {
+            label = startMonth + ' ' + viewWeekStart.getDate() + ' – ' + endMonth + ' ' + weekEnd.getDate() + ', ' + weekEnd.getFullYear();
+        }
+        document.getElementById('navTitle').textContent = label;
+    }
+
+    // ==================== DAY VIEW ====================
+    function renderDay() {
+        var area = document.getElementById('calendarArea');
+        var dateStr = fmtDate(viewDay);
+        var dayEvents = getEventsForDate(dateStr);
+
+        var html = '';
+        if (!dayEvents.length) {
+            html = '<div class="empty-state">' +
+                '<span class="material-symbols-rounded">event_busy</span>' +
+                '<p>No events on ' + formatDatePretty(dateStr) + '</p>' +
+            '</div>';
+        } else {
+            html = '<div class="day-view">';
+            var order = { high: 0, medium: 1, low: 2 };
+            dayEvents.sort(function(a, b) { return (order[a.importance] || 2) - (order[b.importance] || 2); });
+
+            dayEvents.forEach(function(e) {
+                var catBadge = e.category === 'macro' ? 'badge-macro' :
+                               e.category === 'crypto' ? 'badge-crypto' :
+                               e.category === 'unlock' ? 'badge-unlock' : 'badge-custom';
+                var catLabel = e.category === 'unlock' ? 'token unlock' : e.category;
+                var diff = parseDate(e.date).getTime() - Date.now();
+
+                html += '<div class="day-event-card" onclick="window.__showDetail(\'' + e.id + '\')">' +
+                    '<div class="event-imp-bar ' + e.importance + '"></div>' +
+                    '<div class="event-details">' +
+                        '<div class="event-top">' +
+                            '<span class="event-name">' + e.name + '</span>' +
+                            '<span class="event-badge ' + catBadge + '">' + catLabel + '</span>' +
+                            '<span class="event-badge badge-' + e.importance + '">' + e.importance + '</span>' +
+                        '</div>' +
+                        (e.description ? '<div class="event-desc">' + e.description + '</div>' : '') +
+                        (diff > 0 ? '<div class="event-countdown">⏱ ' + formatCountdown(diff) + '</div>' : '') +
+                        (e.source ? '<div class="event-meta">Source: ' + e.source + '</div>' : '') +
+                    '</div>' +
+                '</div>';
+            });
+            html += '</div>';
+        }
+
+        area.innerHTML = html;
+        document.getElementById('navTitle').textContent = formatDatePretty(dateStr);
+    }
+
+    // ==================== SHOW DAY (click from month/week) ====================
+    window.__showDay = function(dateStr) {
+        currentView = 'day';
+        viewDay = parseDate(dateStr);
+        updateViewBtns();
+        render();
+    };
+
+    // ==================== EVENT DETAIL ====================
+    window.__showDetail = function(id) {
+        var events = getAllEvents();
+        var e = null;
+        for (var i = 0; i < events.length; i++) {
+            if (events[i].id === id) { e = events[i]; break; }
+        }
+        if (!e) return;
+
+        var isCustom = loadCustomEvents().some(function(c) { return c.id === id; });
+        var diff = parseDate(e.date).getTime() - Date.now();
+        var catBadge = e.category === 'macro' ? 'badge-macro' :
+                       e.category === 'crypto' ? 'badge-crypto' :
+                       e.category === 'unlock' ? 'badge-unlock' : 'badge-custom';
+        var catLabel = e.category === 'unlock' ? 'Token Unlock' : e.category.charAt(0).toUpperCase() + e.category.slice(1);
+
+        var html = '<h2>' + e.name + ' <button class="modal-close" onclick="closeDetailModal()">✕</button></h2>';
+        if (e.description) html += '<div class="detail-desc">' + e.description + '</div>';
+        html += '<div class="detail-row"><span class="detail-label">Date</span><span class="detail-value">' + formatDatePretty(e.date) + '</span></div>';
+        html += '<div class="detail-row"><span class="detail-label">Category</span><span class="event-badge ' + catBadge + '">' + catLabel + '</span></div>';
+        html += '<div class="detail-row"><span class="detail-label">Importance</span><span class="event-badge badge-' + e.importance + '">' + e.importance.toUpperCase() + '</span></div>';
+        if (diff > 0) {
+            html += '<div class="detail-row"><span class="detail-label">Countdown</span><span class="detail-value" style="color:var(--col-accent)">' + formatCountdown(diff) + '</span></div>';
+        } else if (diff > -86400000) {
+            html += '<div class="detail-row"><span class="detail-label">Status</span><span class="detail-value" style="color:var(--col-high)">Today</span></div>';
+        } else {
+            html += '<div class="detail-row"><span class="detail-label">Status</span><span class="detail-value" style="color:var(--col-txt2)">Passed</span></div>';
+        }
+        if (e.source) {
+            html += '<div class="detail-row"><span class="detail-label">Source</span><span class="detail-value">' + e.source + '</span></div>';
+        }
+        if (isCustom) {
+            html += '<div style="margin-top:16px;display:flex;justify-content:flex-end">' +
+                '<button class="delete-btn" onclick="window.__deleteEvent(\'' + e.id + '\')">Delete Event</button>' +
+            '</div>';
+        }
+
+        document.getElementById('detailContent').innerHTML = html;
+        document.getElementById('detailModal').classList.add('active');
+    };
+
+    window.__deleteEvent = function(id) {
+        deleteCustomEvent(id);
+        closeDetailModal();
+        render();
+    };
+
+    function closeDetailModal() {
+        document.getElementById('detailModal').classList.remove('active');
+    }
+    window.closeDetailModal = closeDetailModal;
+
+    // ==================== ADD EVENT MODAL ====================
+    function openAddModal() {
+        document.getElementById('fName').value = '';
+        document.getElementById('fDate').value = fmtDate(viewDay || TODAY);
+        document.getElementById('fTime').value = '';
+        document.getElementById('fCategory').value = 'crypto';
+        document.getElementById('fImportance').value = 'medium';
+        document.getElementById('fDesc').value = '';
+        document.getElementById('fRecurring').value = 'none';
+        document.getElementById('addModal').classList.add('active');
+        document.getElementById('fName').focus();
+    }
+
+    function closeAddModal() {
+        document.getElementById('addModal').classList.remove('active');
+    }
+    window.closeAddModal = closeAddModal;
+
+    function saveEvent() {
+        var name = document.getElementById('fName').value.trim();
+        var date = document.getElementById('fDate').value;
+        var time = document.getElementById('fTime').value;
+        var category = document.getElementById('fCategory').value;
+        var importance = document.getElementById('fImportance').value;
+        var desc = document.getElementById('fDesc').value.trim();
+        var recurring = document.getElementById('fRecurring').value;
+
+        if (!name) { document.getElementById('fName').style.borderColor = 'var(--col-high)'; return; }
+        if (!date) { document.getElementById('fDate').style.borderColor = 'var(--col-high)'; return; }
+
+        if (recurring === 'none') {
+            addCustomEvent({
+                id: 'custom-' + Date.now(),
+                name: name, date: date, time: time || null, category: category, importance: importance,
+                description: desc || null, source: 'Custom', addedBy: 'user',
+                createdAt: new Date().toISOString()
+            });
+        } else {
+            // Generate recurring events for 6 months
+            var start = parseDate(date);
+            var end = new Date(start);
+            end.setMonth(end.getMonth() + 6);
+            var baseId = Date.now();
+            var idx = 0;
+            for (var d = new Date(start); d <= end; ) {
+                addCustomEvent({
+                    id: 'custom-' + baseId + '-' + idx,
+                    name: name, date: fmtDate(d), time: time || null, category: category, importance: importance,
+                    description: desc || null, source: 'Custom (recurring)', addedBy: 'user',
+                    createdAt: new Date().toISOString()
+                });
+                idx++;
+                if (recurring === 'daily') d.setDate(d.getDate() + 1);
+                else if (recurring === 'weekly') d.setDate(d.getDate() + 7);
+                else if (recurring === 'monthly') d.setMonth(d.getMonth() + 1);
+            }
+        }
+
+        closeAddModal();
+        render();
+    }
+    window.saveEvent = saveEvent;
+
+    // ==================== EXPORT ====================
+    function exportEvents() {
+        var events = getAllEvents();
+        var blob = new Blob([JSON.stringify(events, null, 2)], { type: 'application/json' });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = 'lair-economic-calendar-' + fmtDate(TODAY) + '.json';
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    // ==================== NAVIGATION ====================
+    function navigate(dir) {
+        if (currentView === 'month') {
+            viewMonth += dir;
+            if (viewMonth < 0) { viewMonth = 11; viewYear--; }
+            if (viewMonth > 11) { viewMonth = 0; viewYear++; }
+        } else if (currentView === 'week') {
+            viewWeekStart = addDays(viewWeekStart, dir * 7);
+        } else if (currentView === 'day') {
+            viewDay = addDays(viewDay, dir);
+        }
+        render();
+    }
+
+    function goToday() {
+        viewYear = TODAY.getFullYear();
+        viewMonth = TODAY.getMonth();
+        viewWeekStart = getWeekStart(TODAY);
+        viewDay = new Date(TODAY);
+        render();
+    }
+
+    function updateViewBtns() {
+        var btns = document.querySelectorAll('#viewBtns .btn');
+        for (var i = 0; i < btns.length; i++) {
+            if (btns[i].getAttribute('data-view') === currentView) {
+                btns[i].classList.add('active');
+            } else {
+                btns[i].classList.remove('active');
+            }
+        }
+    }
+
+    // ==================== RENDER ====================
+    function render() {
+        renderCountdown();
+        if (currentView === 'month') renderMonth();
+        else if (currentView === 'week') renderWeek();
+        else if (currentView === 'day') renderDay();
+    }
+
+    // ==================== EVENT LISTENERS ====================
+    var viewBtns = document.querySelectorAll('#viewBtns .btn');
+    for (var vi = 0; vi < viewBtns.length; vi++) {
+        (function(btn) {
+            btn.addEventListener('click', function() {
+                currentView = btn.getAttribute('data-view');
+                if (currentView === 'week') viewWeekStart = getWeekStart(viewDay || TODAY);
+                updateViewBtns();
+                render();
+            });
+        })(viewBtns[vi]);
+    }
+
+    var catBtns = document.querySelectorAll('#catBtns .btn');
+    for (var ci = 0; ci < catBtns.length; ci++) {
+        (function(btn) {
+            btn.addEventListener('click', function() {
+                currentFilter = btn.getAttribute('data-cat');
+                for (var k = 0; k < catBtns.length; k++) catBtns[k].classList.remove('active');
+                btn.classList.add('active');
+                render();
+            });
+        })(catBtns[ci]);
+    }
+
+    document.getElementById('prevBtn').addEventListener('click', function() { navigate(-1); });
+    document.getElementById('nextBtn').addEventListener('click', function() { navigate(1); });
+    document.getElementById('todayBtn').addEventListener('click', goToday);
+    document.getElementById('addEventBtn').addEventListener('click', openAddModal);
+    document.getElementById('exportBtn').addEventListener('click', exportEvents);
+
+    // Close modals on overlay click
+    document.getElementById('addModal').addEventListener('click', function(e) {
+        if (e.target === document.getElementById('addModal')) closeAddModal();
+    });
+    document.getElementById('detailModal').addEventListener('click', function(e) {
+        if (e.target === document.getElementById('detailModal')) closeDetailModal();
+    });
+
+    // Keyboard navigation
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') { closeAddModal(); closeDetailModal(); }
+        if (document.getElementById('addModal').classList.contains('active')) return;
+        if (e.key === 'ArrowLeft') navigate(-1);
+        if (e.key === 'ArrowRight') navigate(1);
+    });
+
+    // ==================== INIT ====================
+    render();
+
+    // Live countdown update every second
+    countdownInterval = setInterval(renderCountdown, 1000);
+
+})();
+</script>
+</body>
+</html>

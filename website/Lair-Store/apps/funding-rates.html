@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="lair-include" content="lair.css material-symbols-rounded">
+    <meta name="capabilities" content="funding_rates">
+    <meta name="lair-icon" content="<svg width='232' height='232' viewBox='0 0 232 232' fill='none' xmlns='http://www.w3.org/2000/svg'><rect width='232' height='232' rx='40' fill='#0F1729'/><path d='M60 146l30-40 25 15 35-50 22 30' stroke='#F59E0B' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/><path d='M60 170h112' stroke='#1E3A5F' stroke-width='2'/><rect x='60' y='70' width='112' height='8' rx='4' fill='#1E3A5F'/><rect x='60' y='70' width='60' height='8' rx='4' fill='#22C55E'/></svg>">
+    <meta name="lair-perms" content="network" />
+    <title>Funding Rates</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { height: 100%; background: var(--col-bg1, #080A19); color: var(--col-txt1, #A7C2F3); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+
+        .app { height: 100%; display: flex; flex-direction: column; overflow: hidden; }
+
+        .header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 10px 16px; gap: 12px;
+            background: var(--col-bg2, #0C0F27);
+            border-bottom: 1px solid rgba(112, 188, 249, 0.08);
+            flex-shrink: 0; flex-wrap: wrap;
+        }
+        .header-left { display: flex; align-items: center; gap: 8px; }
+        .header-left h1 { font-size: 14px; font-weight: 700; }
+        .header-left .material-symbols-rounded { font-size: 20px; color: #F59E0B; }
+
+        .sort-group { display: flex; gap: 3px; }
+        .sort-btn {
+            background: transparent; border: 1px solid rgba(112, 188, 249, 0.08);
+            color: #5A6080; border-radius: 4px; padding: 3px 8px;
+            font-size: 11px; cursor: pointer; transition: all 0.15s;
+            font-family: inherit; font-weight: 600;
+        }
+        .sort-btn:hover { color: var(--col-txt1, #A7C2F3); }
+        .sort-btn.active { color: #F59E0B; border-color: rgba(245, 158, 11, 0.3); background: rgba(245, 158, 11, 0.08); }
+
+        .search-input {
+            background: transparent;
+            border: 1px solid rgba(112, 188, 249, 0.08);
+            color: var(--col-txt1, #A7C2F3);
+            border-radius: 6px;
+            padding: 4px 8px;
+            font-size: 11px;
+            width: 130px;
+            outline: none;
+        }
+        .search-input::placeholder { color: #5A6080; }
+        .search-input:focus { border-color: rgba(112, 188, 249, 0.25); }
+
+        .refresh-btn {
+            background: transparent; border: 1px solid rgba(112, 188, 249, 0.08);
+            color: #5A6080; border-radius: 6px; padding: 4px 8px;
+            cursor: pointer; display: flex; align-items: center; gap: 4px;
+            font-size: 11px; font-family: inherit; transition: all 0.15s;
+        }
+        .refresh-btn:hover { color: var(--col-txt1, #A7C2F3); border-color: rgba(112, 188, 249, 0.2); }
+        .refresh-btn .material-symbols-rounded { font-size: 14px; }
+        .refresh-btn.loading .material-symbols-rounded { animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .stats-bar {
+            display: flex; gap: 16px; padding: 8px 16px;
+            background: var(--col-bg1, #080A19);
+            border-bottom: 1px solid rgba(112, 188, 249, 0.05);
+            flex-shrink: 0; flex-wrap: wrap;
+        }
+        .stat { display: flex; flex-direction: column; gap: 1px; }
+        .stat-label { font-size: 10px; color: #5A6080; text-transform: uppercase; letter-spacing: 0.5px; }
+        .stat-value { font-size: 13px; font-weight: 700; font-family: 'SF Mono', 'Fira Code', monospace; }
+        .stat-value.positive { color: #22C55E; }
+        .stat-value.negative { color: #EF4444; }
+        .stat-value.neutral { color: #F59E0B; }
+
+        .table-header {
+            display: grid; grid-template-columns: 40px 1fr 100px 100px 90px 80px;
+            padding: 6px 16px; gap: 8px;
+            background: var(--col-bg2, #0C0F27);
+            border-bottom: 1px solid rgba(112, 188, 249, 0.06);
+            font-size: 10px; color: #5A6080; text-transform: uppercase;
+            letter-spacing: 0.5px; font-weight: 600; flex-shrink: 0;
+        }
+        .table-header span:nth-child(n+3) { text-align: right; }
+
+        .table-body {
+            flex: 1; overflow-y: auto; overflow-x: hidden;
+        }
+        .table-body::-webkit-scrollbar { width: 4px; }
+        .table-body::-webkit-scrollbar-track { background: transparent; }
+        .table-body::-webkit-scrollbar-thumb { background: rgba(112, 188, 249, 0.1); border-radius: 2px; }
+
+        .row {
+            display: grid; grid-template-columns: 40px 1fr 100px 100px 90px 80px;
+            padding: 8px 16px; gap: 8px; align-items: center;
+            border-bottom: 1px solid rgba(112, 188, 249, 0.03);
+            transition: background 0.1s; cursor: default;
+        }
+        .row:hover { background: rgba(112, 188, 249, 0.03); }
+
+        .row .rank { font-size: 11px; color: #5A6080; font-weight: 600; }
+        .row .symbol-cell { display: flex; align-items: center; gap: 6px; }
+        .row .symbol { font-size: 13px; font-weight: 700; }
+        .row .base { font-size: 10px; color: #5A6080; }
+
+        .row .rate {
+            text-align: right; font-family: 'SF Mono', 'Fira Code', monospace;
+            font-size: 12px; font-weight: 600;
+        }
+        .rate.very-positive { color: #22C55E; }
+        .rate.positive { color: #4ADE80; }
+        .rate.neutral { color: #5A6080; }
+        .rate.negative { color: #FB923C; }
+        .rate.very-negative { color: #EF4444; }
+
+        .row .price {
+            text-align: right; font-family: 'SF Mono', 'Fira Code', monospace;
+            font-size: 12px; color: var(--col-txt1, #A7C2F3);
+        }
+        .row .oi {
+            text-align: right; font-family: 'SF Mono', 'Fira Code', monospace;
+            font-size: 11px; color: #5A6080;
+        }
+        .row .volume {
+            text-align: right; font-family: 'SF Mono', 'Fira Code', monospace;
+            font-size: 11px; color: #5A6080;
+        }
+
+        .rate-bar {
+            width: 100%; height: 3px; border-radius: 2px;
+            background: rgba(112, 188, 249, 0.06); margin-top: 2px;
+            position: relative; overflow: hidden;
+        }
+        .rate-bar-fill {
+            position: absolute; top: 0; height: 100%; border-radius: 2px;
+            transition: width 0.3s;
+        }
+
+        .empty-state {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            height: 100%; gap: 12px; color: #5A6080;
+        }
+        .empty-state .material-symbols-rounded { font-size: 40px; opacity: 0.3; }
+
+        .countdown { font-size: 10px; color: #5A6080; font-family: 'SF Mono', 'Fira Code', monospace; }
+
+        @media (max-width: 600px) {
+            .table-header, .row { grid-template-columns: 30px 1fr 80px 70px; }
+            .table-header span:nth-child(5), .table-header span:nth-child(6),
+            .row .oi, .row .volume { display: none; }
+            .stats-bar { gap: 10px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <div class="header">
+            <div class="header-left">
+                <span class="material-symbols-rounded">show_chart</span>
+                <h1>Funding Rates</h1>
+                <span class="countdown" id="countdown"></span>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;">
+                <div class="sort-group">
+                    <button class="sort-btn active" data-sort="rate-desc">Highest</button>
+                    <button class="sort-btn" data-sort="rate-asc">Lowest</button>
+                    <button class="sort-btn" data-sort="volume">Volume</button>
+                    <button class="sort-btn" data-sort="oi">OI</button>
+                </div>
+                <input class="search-input" id="searchInput" type="text" placeholder="Search symbol...">
+                <button class="refresh-btn" id="refreshBtn">
+                    <span class="material-symbols-rounded">refresh</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="stats-bar" id="statsBar">
+            <div class="stat">
+                <span class="stat-label">Avg Rate</span>
+                <span class="stat-value neutral" id="avgRate">—</span>
+            </div>
+            <div class="stat">
+                <span class="stat-label">Positive</span>
+                <span class="stat-value positive" id="posCount">—</span>
+            </div>
+            <div class="stat">
+                <span class="stat-label">Negative</span>
+                <span class="stat-value negative" id="negCount">—</span>
+            </div>
+            <div class="stat">
+                <span class="stat-label">Next Funding</span>
+                <span class="stat-value neutral" id="nextFunding">—</span>
+            </div>
+        </div>
+
+        <div class="table-header">
+            <span>#</span>
+            <span>Symbol</span>
+            <span>Rate (8h)</span>
+            <span>Price</span>
+            <span>Open Interest</span>
+            <span>24h Vol</span>
+        </div>
+
+        <div class="table-body" id="tableBody">
+            <div class="empty-state" id="emptyState">
+                <span class="material-symbols-rounded">hourglass_empty</span>
+                <span>Loading funding rates...</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    (function() {
+        const fetchFn = window.cfetch || fetch;
+        const tableBody = document.getElementById('tableBody');
+        const emptyState = document.getElementById('emptyState');
+        const refreshBtn = document.getElementById('refreshBtn');
+        const searchInput = document.getElementById('searchInput');
+        const countdownEl = document.getElementById('countdown');
+        let currentSort = 'rate-desc';
+        let allData = [];
+        let searchTerm = '';
+        let countdownInterval;
+
+        // Sort buttons
+        document.querySelectorAll('.sort-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentSort = btn.dataset.sort;
+                renderTable();
+            });
+        });
+
+        refreshBtn.addEventListener('click', () => loadData());
+        searchInput.addEventListener('input', (e) => {
+            searchTerm = e.target.value.trim().toUpperCase();
+            renderTable();
+        });
+
+        function formatRate(rate) {
+            const pct = (rate * 100).toFixed(4);
+            return (rate >= 0 ? '+' : '') + pct + '%';
+        }
+
+        function formatPrice(price) {
+            const p = parseFloat(price);
+            if (p >= 1000) return '$' + p.toLocaleString('en', { maximumFractionDigits: 2 });
+            if (p >= 1) return '$' + p.toFixed(2);
+            if (p >= 0.01) return '$' + p.toFixed(4);
+            return '$' + p.toFixed(6);
+        }
+
+        function formatCompact(val) {
+            const n = parseFloat(val);
+            if (n >= 1e9) return '$' + (n/1e9).toFixed(1) + 'B';
+            if (n >= 1e6) return '$' + (n/1e6).toFixed(1) + 'M';
+            if (n >= 1e3) return '$' + (n/1e3).toFixed(0) + 'K';
+            return '$' + n.toFixed(0);
+        }
+
+        function rateClass(rate) {
+            if (rate > 0.001) return 'very-positive';
+            if (rate > 0) return 'positive';
+            if (rate === 0) return 'neutral';
+            if (rate > -0.001) return 'negative';
+            return 'very-negative';
+        }
+
+        function rateColor(rate) {
+            if (rate > 0.001) return '#22C55E';
+            if (rate > 0) return '#4ADE80';
+            if (rate === 0) return '#5A6080';
+            if (rate > -0.001) return '#FB923C';
+            return '#EF4444';
+        }
+
+        function sortData(data) {
+            const sorted = [...data];
+            switch (currentSort) {
+                case 'rate-desc': return sorted.sort((a, b) => b.rate - a.rate);
+                case 'rate-asc': return sorted.sort((a, b) => a.rate - b.rate);
+                case 'volume': return sorted.sort((a, b) => b.volume - a.volume);
+                case 'oi': return sorted.sort((a, b) => b.oi - a.oi);
+            }
+            return sorted;
+        }
+
+        function updateStats(data) {
+            const rates = data.map(d => d.rate);
+            const avg = rates.reduce((a, b) => a + b, 0) / rates.length;
+            const pos = rates.filter(r => r > 0).length;
+            const neg = rates.filter(r => r < 0).length;
+
+            document.getElementById('avgRate').textContent = formatRate(avg);
+            document.getElementById('avgRate').className = 'stat-value ' + (avg > 0 ? 'positive' : avg < 0 ? 'negative' : 'neutral');
+            document.getElementById('posCount').textContent = pos + ' pairs';
+            document.getElementById('negCount').textContent = neg + ' pairs';
+
+            updateCountdown(data[0]?.nextFundingTime);
+        }
+
+        function updateCountdown(nextTime) {
+            clearInterval(countdownInterval);
+            if (!nextTime) {
+                document.getElementById('nextFunding').textContent = '—';
+                return;
+            }
+
+            function tick() {
+                const diff = nextTime - Date.now();
+                if (diff <= 0) {
+                    document.getElementById('nextFunding').textContent = 'Now';
+                    countdownEl.textContent = '';
+                    clearInterval(countdownInterval);
+                    setTimeout(loadData, 5000);
+                    return;
+                }
+                const h = Math.floor(diff / 3600000);
+                const m = Math.floor((diff % 3600000) / 60000);
+                const s = Math.floor((diff % 60000) / 1000);
+                const str = `${h}h ${m}m ${s}s`;
+                document.getElementById('nextFunding').textContent = str;
+                countdownEl.textContent = '⏱ ' + str;
+            }
+            tick();
+            countdownInterval = setInterval(tick, 1000);
+        }
+
+        function renderTable() {
+            const filtered = searchTerm
+                ? allData.filter(d => d.symbol.includes(searchTerm) || d.symbol.replace('USDT', '').includes(searchTerm))
+                : allData;
+            const sorted = sortData(filtered);
+
+            if (!sorted.length) {
+                tableBody.innerHTML = `
+                    <div class="empty-state">
+                        <span class="material-symbols-rounded">search_off</span>
+                        <span>No symbols match your search.</span>
+                    </div>`;
+                return;
+            }
+
+            const maxAbs = Math.max(...sorted.map(d => Math.abs(d.rate)), 0.001);
+
+            tableBody.innerHTML = sorted.map((d, i) => {
+                const barWidth = Math.min((Math.abs(d.rate) / maxAbs) * 100, 100);
+                const barDir = d.rate >= 0 ? 'left: 50%;' : `right: 50%;`;
+                return `
+                <div class="row">
+                    <span class="rank">${i + 1}</span>
+                    <div class="symbol-cell">
+                        <span class="symbol">${d.symbol.replace('USDT','')}</span>
+                        <span class="base">/USDT</span>
+                    </div>
+                    <div>
+                        <div class="rate ${rateClass(d.rate)}">${formatRate(d.rate)}</div>
+                        <div class="rate-bar">
+                            <div class="rate-bar-fill" style="width:${barWidth/2}%;${barDir}background:${rateColor(d.rate)};"></div>
+                        </div>
+                    </div>
+                    <span class="price">${formatPrice(d.price)}</span>
+                    <span class="oi">${formatCompact(d.oi)}</span>
+                    <span class="volume">${formatCompact(d.volume)}</span>
+                </div>`;
+            }).join('');
+        }
+
+        async function loadData() {
+            refreshBtn.classList.add('loading');
+            emptyState && (emptyState.style.display = 'flex');
+
+            try {
+                // Fetch funding rates + premium index from Binance Futures
+                const [ratesRes, tickerRes] = await Promise.all([
+                    fetchFn('https://fapi.binance.com/fapi/v1/premiumIndex'),
+                    fetchFn('https://fapi.binance.com/fapi/v1/ticker/24hr')
+                ]);
+
+                if (!ratesRes.ok || !tickerRes.ok) {
+                    throw new Error(`API error: ${ratesRes.status}/${tickerRes.status}`);
+                }
+
+                const rates = await ratesRes.json();
+                const tickers = await tickerRes.json();
+                if (!Array.isArray(rates) || !Array.isArray(tickers)) {
+                    throw new Error('Invalid API payload');
+                }
+
+                // Build ticker lookup
+                const tickerMap = {};
+                tickers.forEach(t => { tickerMap[t.symbol] = t; });
+
+                // Filter to USDT pairs only, merge data
+                allData = rates
+                    .filter(r => r.symbol.endsWith('USDT'))
+                    .map(r => {
+                        const t = tickerMap[r.symbol] || {};
+                        return {
+                            symbol: r.symbol,
+                            rate: parseFloat(r.lastFundingRate) || 0,
+                            price: parseFloat(r.markPrice) || 0,
+                            nextFundingTime: parseInt(r.nextFundingTime) || 0,
+                            oi: parseFloat(t.quoteVolume) || 0, // Using quote volume as proxy since OI needs separate endpoint
+                            volume: parseFloat(t.quoteVolume) || 0
+                        };
+                    });
+
+                // Try to get OI separately
+                try {
+                    const oiRes = await fetchFn('https://fapi.binance.com/fapi/v1/openInterest?symbol=BTCUSDT');
+                    if (!oiRes.ok) throw new Error('OI endpoint unavailable');
+                    // If single OI works, note: batch OI not available without API key
+                    // We'll use volume as fallback for ranking
+                } catch(e) {}
+
+                updateStats(allData);
+                renderTable();
+
+                if (emptyState) emptyState.style.display = 'none';
+            } catch (err) {
+                console.error('Failed to load funding rates:', err);
+                tableBody.innerHTML = `
+                    <div class="empty-state">
+                        <span class="material-symbols-rounded">error_outline</span>
+                        <span>Failed to load data. Check connection.</span>
+                    </div>`;
+            } finally {
+                refreshBtn.classList.remove('loading');
+            }
+        }
+
+        // Auto refresh every 60 seconds
+        loadData();
+        setInterval(loadData, 60000);
+    })();
+    </script>
+</body>
+</html>

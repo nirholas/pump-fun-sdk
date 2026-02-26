@@ -1,0 +1,572 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;800&display=swap');
+
+:root {
+    --font-size-base: 1rem;
+
+    --col-bg1: #101010;
+    --col-txt1: #FFFFFF;
+    --col-bg2: #171717;
+    --col-bg3: #262626;
+    --col-bgh: #44403C;
+    --col-txth: #FFFFFF;
+
+    --col-good: #5be45b;
+    --col-bad: #d44343;
+
+    --siz-radius1: 0.5em;
+    --siz-radius2: 0.35em;
+    --siz-radius3: 0.2em;
+    --time1: .3s cubic-bezier(0.36, 0.38, 0, 0.94);
+    --box-crisp: 1px solid #ffffff0c;
+    --box-crisp-col: #ffffff0c;
+
+    --sizing-normal: 0.5rem;
+    --sizing-huge: 1rem;
+    --sizing-nano: .3rem;
+
+    --spacing-normal: 0.3rem;
+    --spacing-gap: 6px;
+
+    /* Extended support */
+    --colors-accent: rgb(97, 121, 255);
+
+    --font-size-small: calc(var(--font-size-base) * 0.85);
+    --font-size-normal: var(--font-size-base);
+    --font-size-subheading: calc(var(--font-size-base) * 1.25);
+    --font-size-big: calc(var(--font-size-base) * 2);
+}
+
+@media (max-width: 768px) {
+    :root {
+        ----time1: .5s;
+    }
+}
+
+::-webkit-scrollbar {
+    width: .5rem;
+    height: .5em;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--col-bg1);
+    width: 5px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--col-bg3);
+    border-radius: var(--siz-radius1);
+    border: 1px solid #7a7a7a4a;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    cursor: grab;
+}
+
+::-webkit-scrollbar-thumb:active {
+    cursor: grabbing;
+}
+
+html {
+    height: 100%;
+    width: 100%;
+    font-size: var(--font-size-base);
+}
+
+button,
+input,
+textarea,
+select {
+    outline: none;
+    font-family: inherit;
+    font-size: inherit;
+}
+
+button {
+    cursor: pointer;
+}
+
+body {
+    margin: 0;
+    background-color: transparent;
+    color: var(--col-txt1);
+    user-select: none;
+    font-family: 'Poppins', sans-serif;
+    overflow: hidden;
+}
+
+body * {
+    transition-timing-function: cubic-bezier(0.36, 0.38, 0, 0.94);
+}
+
+input::placeholder,
+textarea::placeholder {
+    color: var(--col-txt1);
+    opacity: .5;
+}
+
+.contextmenu {
+    position: absolute;
+    text-align: center;
+    background: var(--col-bg2);
+    border: 1px solid var(--col-bg2);
+    color: var(--col-txt1);
+    border-radius: 0.5rem;
+    box-shadow: 0px 3px 5px 0px #0000005c;
+    overflow: visible;
+    animation: pop3 .2s;
+    z-index: 99;
+    font-size: var(--font-size-small);
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    padding: 0.3rem;
+    gap: 0.3rem;
+}
+
+.ctxmenuitem {
+    text-align: left;
+    border-radius: 0.3rem;
+    display: flex;
+    align-items: center;
+    padding-left: 0.3rem !important;
+    gap: 0.5rem;
+}
+
+.ctxmenuitem .material-symbols-rounded {
+    font-size: 1rem;
+    opacity: 0.5;
+}
+
+.ctxmenuitem:hover {
+    background: var(--col-bg3);
+}
+
+@keyframes pop3 {
+    from {
+        filter: opacity(0%);
+        transform: scale(0.9);
+    }
+
+    to {
+        filter: opacity(100%);
+    }
+}
+
+.material-symbols-rounded {
+    font-weight: normal !important;
+}
+
+.modal {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    min-height: 100vh;
+    padding: 0;
+    box-sizing: border-box;
+    align-items: stretch;
+    overflow: hidden;
+}
+
+.modal-content {
+    background: var(--col-bg1);
+    border-radius: 0;
+    box-shadow: none;
+    border: var(--box-crisp);
+    padding: 0;
+    width: 100%;
+    text-align: left;
+    position: relative;
+    transition: box-shadow 0.2s ease;
+    display: flex;
+    overflow: hidden;
+    max-width: none;
+    max-height: none;
+    flex-wrap: nowrap;
+    flex-direction: row;
+}
+
+.modal-content:hover {
+    box-shadow: 0 6px 25px rgba(0, 0, 0, 0.7);
+}
+
+.account-sidebar {
+    width: 280px;
+    background: var(--col-bg2);
+    border-right: var(--box-crisp);
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    height: calc(100vh - 1em);
+    padding-bottom: 1em;
+    border: none;
+}
+
+.sidebar-header {
+    padding: 16px;
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 5px;
+
+}
+
+.sidebar-header h2 {
+    font-size: 14px;
+    font-weight: normal;
+    color: var(--col-txt1);
+    margin: 0 0 4px 0;
+}
+
+.sidebar-header p {
+    display: none;
+    font-size: 14px;
+    color: var(--col-txt1);
+    opacity: .5;
+    margin: 0;
+}
+
+.account-list {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.account-item {
+    display: flex;
+    align-items: center;
+    padding: .5em;
+    margin: 0 16px 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    background: #2a2a2a;
+    border: 1px solid #333;
+    position: relative;
+    width: calc(100% – 32px);
+    text-align: left;
+}
+
+.account-item:hover {
+    background: #323232;
+    border-color: #B399D4;
+    box-shadow: 0 2px 8px rgba(179, 153, 212, 0.1);
+}
+
+.account-item.active {
+    background: #2e2a3d;
+    border-color: #B399D4;
+    box-shadow: 0 2px 8px rgba(179, 153, 212, 0.15);
+}
+
+.account-item img {
+    width: 40px;
+    height: 40px;
+    border-radius: 5px;
+    margin-right: 16px;
+    border: 2px solid #444;
+}
+
+.account-item-info h3 {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--col-txt1);
+    margin: 0 0 4px 0;
+}
+
+.account-item-info p {
+    font-size: 13px;
+    color: var(--col-txt1);
+    opacity: .5;
+    margin: 0;
+}
+
+.add-account-btn {
+    margin: 16px 24px 0 24px;
+    padding: 12px 20px;
+    background: transparent;
+    border: var(--box-crisp);
+    border-radius: 6px;
+    color: #B399D4;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    gap: .5em;
+    align-items: center;
+}
+
+.add-account-btn:hover {
+    background: #2f2f2f;
+    border-color: #d1b3ff;
+    color: #d1b3ff;
+}
+
+.main-content,
+.welcome-area {
+    flex: 1;
+    padding: 48px 40px;
+    flex-direction: column;
+    justify-content: center;
+    text-align: center;
+    justify-content: flex-start;
+    height: calc(100vh - 100px);
+    overflow: hidden;
+    overflow-y: auto;
+    background: var(--col-bg1);
+}
+
+.main-content {
+    display: none;
+}
+
+.main-content.show {
+    display: flex;
+}
+
+.welcome-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    position: relative;
+}
+
+.welcome-area.hidden {
+    display: none;
+}
+
+.welcome-logo {
+    margin-bottom: 32px;
+    position: relative;
+}
+
+.welcome-logo img {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    opacity: 0.9;
+    transition: all 0.3s ease;
+    filter: drop-shadow(0 8px 16px rgba(179, 153, 212, 0.15));
+}
+
+.welcome-logo::before {
+    content: '';
+    position: absolute;
+    top: -20px;
+    left: -20px;
+    right: -20px;
+    bottom: -20px;
+    background: radial-gradient(circle, rgba(179, 153, 212, 0.1) 0%, transparent 70%);
+    border-radius: 50%;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.welcome-logo:hover::before {
+    opacity: 1;
+}
+
+.welcome-logo:hover img {
+    transform: scale(1.05);
+    opacity: 1;
+}
+
+.welcome-content h1 {
+    font-size: 28px;
+    font-weight: 400;
+    color: #ffffff;
+    margin: 0 0 0px 0;
+    letter-spacing: -0.5px;
+}
+
+.welcome-content p {
+    font-size: 16px;
+    color: transparent;
+    margin: 0 0 40px 0;
+    line-height: 1.4;
+    max-width: 300px;
+    white-space: nowrap;
+
+    &:after {
+        content: "⚠️ RoturTW is a third party service. If enabled, RoturTW will have access to your LairOS sessions.";
+        display: flex;
+        padding: .5em;
+        background: var(--col-bg3);
+        border-radius: .5em;
+        justify-content: center;
+        margin-top: .5em;
+        white-space: wrap;
+        color: white;
+    }
+}
+
+.welcome-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+    max-width: 280px;
+}
+
+.btn-welcome {
+    padding: 14px 24px;
+    border-radius: 6px;
+    font-size: 16px;
+    font-weight: 500;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.btn-welcome-primary {
+    background: #B399D4;
+    border: none;
+    color: white;
+}
+
+.btn-welcome-primary:hover {
+    background: #9e7fca;
+    box-shadow: 0 2px 8px rgba(179, 153, 212, 0.3);
+}
+
+.btn-welcome-secondary {
+    background: transparent;
+    border: 1px solid #444;
+    color: #B399D4;
+}
+
+.btn-welcome-secondary:hover {
+    background: #2f2f2f;
+}
+
+.logo-container img {
+    width: 75px;
+    height: 75px;
+    border-radius: 50%;
+}
+
+.main-content h1 {
+    font-size: 24px;
+    font-weight: 400;
+    color: #ffffff;
+}
+
+.main-content .subtitle {
+    font-size: 16px;
+    color: #cfd1d4;
+    margin-bottom: 24px;
+    font-weight: 400;
+}
+
+.form-group {
+    margin-bottom: 16px;
+    text-align: left;
+}
+
+.main-content input {
+    background: #2c2c2c;
+    border: 1px solid #444;
+    color: var(--col-txt1);
+}
+
+.main-content input:focus {
+    border-color: #B399D4;
+    box-shadow: 0 0 0 2px rgba(179, 153, 212, 0.2);
+}
+
+.main-content input::placeholder {
+    color: #888;
+}
+
+.btn-primary {
+    background: #B399D4;
+}
+
+.btn-primary:hover {
+    background: #9e7fca;
+    box-shadow: 0 2px 8px rgba(179, 153, 212, 0.3);
+}
+
+.btn-primary:disabled {
+    background: #3a3a3a;
+    color: #777;
+}
+
+.btn-secondary {
+    background: transparent;
+    border: 1px solid #444;
+    color: #B399D4;
+}
+
+.btn-secondary:hover {
+    background: #2c2c2c;
+}
+
+.security-notice {
+    background: #2c2c2c;
+    border: 1px solid #444;
+    color: #cfd1d4;
+}
+
+.security-notice .warning-icon {
+    color: #ff6b6b;
+}
+
+.profile-section {
+    background: #2a2a2a;
+    border: 1px solid #444;
+}
+
+.profile-info h3 {
+    color: var(--col-txt1);
+}
+
+.profile-info p {
+    color: var(--col-txt1);
+    opacity: .5;
+}
+
+#loading-overlay {
+    background: rgba(0, 0, 0, 0.7);
+}
+
+.spinner {
+    border: 3px solid #2e2e2e;
+    border-top: 3px solid #B399D4;
+}
+
+@media (max-width: 650px) {
+    body {
+
+        overflow-y: scroll;
+    }
+
+    .modal-content {
+        background: var(--col-bg1);
+        flex-wrap: wrap;
+    }
+
+    .account-sidebar {
+        width: 100%;
+        height: fit-content;
+    }
+
+    .main-content,
+    .welcome-area {
+        height: fit-content;
+    }
+}
+
+.modal-content * {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-primary:focus,
+.btn-secondary:focus {
+    outline: 2px solid #B399D4;
+    outline-offset: 2px;
+}

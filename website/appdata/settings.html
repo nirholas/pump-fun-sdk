@@ -1,0 +1,3909 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Settings App</title>
+	<script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+	<script src="https://jscolor.com/release/2.5/jscolor-2.5.2/jscolor.js"></script>
+	<meta name="permissions" content="olp, settings, system, unsandboxed">
+	<meta name="capabilities" content="settings_manager">
+	<meta name="lair-include" content="lair.css material-symbols-rounded">
+	<meta name="lair-icon"
+		content="<svg width='232' height='232' viewBox='0 0 232 232' fill='none' xmlns='http://www.w3.org/2000/svg'> <g clip-path='url(#clip0_3_148)'> <rect x='28' y='28' width='175' height='175' rx='20' fill='#737373'/> <rect x='-8' y='115.5' width='174.655' height='174.655' rx='20' transform='rotate(-45 -8 115.5)' fill='#B4B4B4'/> <circle cx='115.5' cy='115.5' r='67.5' fill='white'/> <circle cx='115.5' cy='115.5' r='53.5' fill='#6179FF'/> </g> <defs> <clipPath id='clip0_3_148'> <rect width='232' height='232' fill='white'/> </clipPath> </defs> </svg>">
+
+	<style>
+		* {
+			box-sizing: border-box;
+		}
+
+		html {
+			height: 100%;
+			width: 100%;
+			scroll-behavior: smooth;
+		}
+
+		body {
+			height: 100%;
+			margin: 0px;
+			background: var(--col-bg1);
+		}
+
+		.tab {
+			flex-grow: 2;
+			height: calc(100% - 10px);
+			overflow-y: auto;
+			max-width: 200px;
+			width: 25vw;
+			min-width: 100px;
+			display: flex;
+			flex-direction: column;
+			gap: 0.2rem;
+			transition: .3s ease-out;
+			background-color: var(--col-bg2);
+			padding: .5em;
+			border-radius: var(--siz-radius1);
+			border: var(--box-crisp);
+		}
+
+		p {
+			margin: 0;
+		}
+
+		.tab::after {
+			height: 10vh;
+			width: calc(100% - 10px);
+			background: linear-gradient(0deg, var(--col-bg1), transparent);
+			content: "";
+			display: block;
+			position: absolute;
+			bottom: 0px;
+			z-index: 1;
+			left: 0;
+		}
+
+		.tab h3 {
+			padding-left: 5px;
+			margin: 5px 0px;
+			font-weight: normal;
+			font-size: var(--font-size-normal);
+		}
+
+		/* Style the buttons inside the tab */
+		.tab button.active {
+			background-color: var(--col-bg3);
+			color: var(--colors-text-sub);
+			opacity: 1;
+		}
+
+		.tab button.active:hover {
+			opacity: 0.8;
+		}
+
+		.btnlike {
+			color: inherit;
+			width: 100%;
+			flex-shrink: 0;
+			border-radius: var(--siz-radius1);
+		}
+
+		.tab button {
+			background-color: transparent;
+			padding: 4px 7px;
+			border: 2px solid transparent;
+			display: block;
+			width: 100%;
+			border-radius: var(--siz-radius2);
+			outline: none;
+			text-align: left;
+			cursor: pointer;
+			font-size: inherit;
+			overflow: hidden;
+			white-space: nowrap;
+			text-overflow: ellipsis;
+			opacity: 0.7;
+			font-family: inherit;
+		}
+
+		/* Change background color of buttons on hover */
+		.tab button:hover {
+			background-color: var(--col-bg3);
+			color: var(--colors-text-sub);
+		}
+
+		.tab button i {
+			font-size: 10px;
+			transform: translate(-6px, 0px) scale(1.5);
+			margin-left: 10px;
+		}
+
+		.advancedsettab {
+			animation: slideIn .3s ease-out !important;
+		}
+
+		@keyframes slideIn {
+			0% {
+				opacity: 0;
+				padding-left: 1rem;
+			}
+
+			100% {
+				opacity: 1;
+				transform: translateX(0rem);
+			}
+		}
+
+		.custom-select {
+			cursor: pointer;
+			padding: .3em .5em;
+			color: var(--col-txt1);
+			user-select: none;
+			background: var(--col-bg3);
+			border: var(--box-crisp);
+			border-radius: var(--siz-radius2);
+			font-size: var(--font-size-normal);
+			outline: none;
+			width: 7rem;
+			z-index: inherit;
+			text-align: center;
+		}
+
+		.custom-select-dialog {
+			border: none;
+			width: 100%;
+			height: 100%;
+			background: transparent;
+			overflow: clip;
+		}
+
+		.custom-select-dialog::backdrop {
+			background: transparent;
+		}
+
+		.custom-select-options-box {
+			background: var(--col-bg3);
+			position: absolute;
+			border-radius: var(--siz-radius1);
+			width: 7rem;
+			max-height: 8rem;
+			box-shadow: 0 5px 10px #0000007e;
+			overflow-y: auto;
+		}
+
+		.custom-select-options-box div {
+			padding: .3em .5em;
+			cursor: pointer;
+			background-color: transparent;
+			color: var(--col-txt1);
+			font-size: var(--font-size-normal);
+			text-align: center;
+			opacity: .5;
+		}
+
+		.custom-select-options-box div:hover {
+			opacity: 1;
+		}
+
+		.tabcontent {
+			padding: 0px 12px;
+			width: 0;
+			flex-grow: 3;
+			padding-bottom: 30vh;
+			background-color: inherit;
+			animation: drop .2s ease-out;
+			border-left: none;
+			border-radius: var(--siz-radius1);
+			height: calc(100% - 5px);
+			overflow-y: auto;
+			margin-left: 5px;
+		}
+
+		@keyframes tab {
+			0% {
+				opacity: 0.1;
+			}
+
+			100% {
+				opacity: 1;
+			}
+		}
+
+		container {
+			height: 100%;
+			display: flex;
+			padding: 5px;
+			flex-direction: row;
+			flex-wrap: nowrap;
+		}
+
+		td {
+			padding-bottom: var(--sizing-normal);
+			padding-top: var(--sizing-normal);
+			vertical-align: top;
+			padding-right: var(--sizing-huge);
+			border-bottom: var(--box-crisp);
+		}
+
+		td b,
+		ul li {
+			color: var(--colors-text-sub);
+			background: var(--col-bg3);
+			padding: 0.2rem 0.4rem;
+			border-radius: var(--sizing-nano);
+			cursor: pointer;
+		}
+
+		ul {
+			margin: 0;
+			padding: 0;
+		}
+
+		ul li {
+			margin-bottom: var(--sizing-normal);
+			width: fit-content;
+			list-style: none;
+		}
+
+		supportb {
+			border-radius: var(--sizing-normal);
+			background: var(--col-bg2);
+			border: var(--box-crisp);
+			display: block;
+			padding: var(--sizing-huge);
+			margin-bottom: 0.5rem;
+		}
+
+		supportb b {
+			font-size: var(--font-size-subheading);
+
+		}
+
+		supportb p {
+			margin-top: 7px;
+			margin-bottom: 0px;
+		}
+
+		supportb a {
+			display: inline-block;
+			border-radius: var(--siz-radius2);
+			background: #ffffff;
+			width: fit-content;
+			padding: var(--sizing-normal) var(--sizing-huge);
+			color: #1a4281;
+			text-decoration: none;
+			margin: 10px 0px;
+			margin-bottom: 0;
+			font-size: var(--font-size-normal);
+			transition: .3s;
+			cursor: pointer;
+			display: inline-flex;
+			align-items: center;
+			gap: .3rem;
+		}
+
+		supportb a[okay] {
+			background: var(--col-bg3);
+			color: inherit;
+		}
+
+		supportb a:hover {
+			box-shadow: 0 0 10px pink;
+		}
+
+		supportb a[okay]:hover {
+			background-color: #ffffff33;
+			box-shadow: none;
+		}
+
+		supportb a i {
+			font-size: 1rem !important;
+			opacity: 0.7;
+		}
+
+		input,
+		button {
+			z-index: 1;
+			will-change: transform;
+
+			&:hover {
+				z-index: 1;
+			}
+		}
+
+		.supportbtns {
+			display: flex;
+			gap: 0.3rem;
+			align-items: center;
+		}
+
+		#battery #batperdisp {
+			font-size: 10vw;
+			display: inline-block;
+			width: fit-content;
+			margin: 0;
+			overflow: hidden;
+		}
+
+		small {
+			display: block;
+			padding: var(--sizing-normal);
+			background: var(--col-bg2);
+			color: var(--colors-text-section);
+			border-radius: var(--siz-radius1);
+		}
+
+		segr small {
+			background: var(--col-bg1);
+			color: var(--col-txt1);
+		}
+
+		small b {
+			margin-top: 5px;
+			display: block;
+			font-size: var(--font-size-small);
+		}
+
+		.checkbox-wrapper-51 input[type="checkbox"] {
+			opacity: 0;
+			position: absolute;
+			width: 150%;
+			height: 150%;
+			cursor: pointer;
+			z-index: 2;
+			top: -40%;
+			left: -50%;
+		}
+
+		.checkbox-wrapper-51 .toggle {
+			position: relative;
+			display: block;
+			width: 42px;
+			height: 24px;
+			cursor: pointer;
+			-webkit-tap-highlight-color: transparent;
+			transform: translate3d(0, 0, 0);
+		}
+
+		.checkbox-wrapper-51 .toggle:before {
+			content: "";
+			position: relative;
+			top: 1px;
+			left: 1px;
+			width: 40px;
+			height: 22px;
+			display: block;
+			background: #2a2a2a;
+			border-radius: 12px;
+			transition: background 0.2s ease;
+		}
+
+		.checkbox-wrapper-51 .toggle span {
+			position: absolute;
+			top: 0;
+			left: 0;
+			width: 24px;
+			height: 24px;
+			display: block;
+			background: #6a6a6a;
+			border-radius: 50%;
+			transition: all 0.2s ease;
+		}
+
+		.checkbox-wrapper-51 .toggle span svg {
+			margin: 7px;
+			fill: none;
+		}
+
+		.checkbox-wrapper-51 .toggle span svg path {
+			stroke: #4c4c4c;
+			stroke-width: 2;
+			stroke-linecap: round;
+			stroke-linejoin: round;
+			stroke-dasharray: 24;
+			stroke-dashoffset: 0;
+			transition: all 0.5s linear;
+		}
+
+		.checkbox-wrapper-51 input[type="checkbox"]:checked+.toggle:before {
+			background: var(--col-good);
+			box-shadow: 0 2px var(--sizing-normal) #79e57947;
+		}
+
+		.checkbox-wrapper-51 input[type="checkbox"]:checked+.toggle span {
+			transform: translateX(18px);
+		}
+
+		.checkbox-wrapper-51 input[type="checkbox"]:checked+.toggle span path {
+			stroke: var(--col-good);
+			stroke-dasharray: 25;
+			stroke-dashoffset: 25;
+		}
+
+		.single_setting,
+		.inpbox {
+			display: flex;
+			flex-direction: row;
+			align-items: center;
+			justify-content: space-between;
+			position: relative;
+			gap: var(--spacing-gap);
+
+			margin: 0;
+			color: var(--colors-text-section);
+			padding: var(--sizing-normal);
+
+			&::after {
+				content: "";
+				display: block;
+				position: absolute;
+				background-color: var(--box-crisp-col);
+				width: 100%;
+				height: 1px;
+				left: 0;
+				bottom: 0;
+			}
+
+			&:last-child::after {
+				display: none;
+			}
+		}
+
+		.single_setting.vertical {
+			flex-direction: column;
+			gap: .5em;
+			align-items: stretch;
+			justify-content: space-between;
+		}
+
+		.inpbox[type="textInput"] {
+			flex-direction: column;
+			align-items: stretch;
+		}
+
+		.single_setting[type="advsetnav"] {
+			display: flex;
+			flex-direction: row;
+			align-items: center;
+			gap: 0.5rem;
+
+			.advseticon {
+				padding: 0.5rem;
+				background: var(--col-bg1);
+				border-radius: var(--siz-radius1);
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				font-size: 1rem;
+			}
+
+			.advsetnavbtnprt {
+				flex: 1;
+				display: flex;
+				flex-direction: row;
+				align-items: center;
+				justify-content: space-between;
+
+				div {
+					flex: 1;
+				}
+			}
+		}
+
+		.single_setting b {
+			font-weight: 500;
+		}
+
+		@keyframes drop {
+			0% {
+				transform: translateX(-5px);
+				opacity: 0;
+			}
+
+			100% {
+				opacity: 1;
+			}
+		}
+
+		.single_setting .checkbox-wrapper-51 {
+			transform: scale(0.7);
+		}
+
+		.single_setting p {
+			width: 80%;
+			opacity: 0.5;
+			margin: 0;
+			font-size: var(--font-size-small);
+		}
+
+		#chargingIcon {
+			transform: translateY(2px) scale(0.8);
+			padding: 5px 1px 7px 1px;
+			background: #054305;
+			color: #4fb64f;
+			margin-left: 5px;
+			border-radius: var(--siz-radius2);
+			display: inline-grid;
+		}
+
+		.nocss {
+			width: var(--font-size-big);
+			padding: 0;
+			display: inline;
+			outline: none;
+			font-size: var(--font-size-small);
+			color: white;
+			background: none;
+			margin: 0 3px;
+			text-align: center;
+			border: none;
+		}
+
+		.appli {
+			background-color: var(--col-bg2);
+			padding: 9px;
+			margin-bottom: 0;
+			border-radius: 0;
+			border-bottom: var(--box-crisp);
+		}
+
+		#appdi {
+			margin: 5px 0;
+			border-radius: var(--siz-radius1);
+			overflow: hidden;
+		}
+
+		.checkbox-wrapper-46 input[type="checkbox"] {
+			display: none;
+			visibility: hidden;
+		}
+
+		.checkbox-wrapper-46 .cbx {
+			margin: auto;
+			-webkit-user-select: none;
+			user-select: none;
+			cursor: pointer;
+		}
+
+		.checkbox-wrapper-46 .cbx span {
+			display: inline-block;
+			vertical-align: middle;
+			transform: translate3d(0, 0, 0);
+		}
+
+		.checkbox-wrapper-46 .cbx span:first-child {
+			position: relative;
+			width: 18px;
+			height: 18px;
+			border-radius: var(--siz-radius1);
+			transform: scale(1);
+			vertical-align: middle;
+			border: 1px solid #9098A9;
+			transition: all 0.2s ease;
+		}
+
+		.checkbox-wrapper-46 .cbx span:first-child svg {
+			position: absolute;
+			top: 3px;
+			left: 2px;
+			fill: none;
+			stroke: #FFFFFF;
+			stroke-width: 2;
+			stroke-linecap: round;
+			stroke-linejoin: round;
+			stroke-dasharray: 16px;
+			stroke-dashoffset: 16px;
+			transition: all 0.3s ease;
+			transition-delay: 0.1s;
+			transform: translate3d(0, 0, 0);
+		}
+
+		.checkbox-wrapper-46 .cbx span:first-child:before {
+			content: "";
+			width: 100%;
+			height: 100%;
+			background: #506EEC;
+			display: block;
+			transform: scale(0);
+			opacity: 1;
+			border-radius: 50%;
+		}
+
+		.checkbox-wrapper-46 .cbx span:last-child {
+			padding-left: 8px;
+		}
+
+		.checkbox-wrapper-46 .cbx:hover span:first-child {
+			border-color: #506EEC;
+		}
+
+		.checkbox-wrapper-46 .inp-cbx:checked+.cbx span:first-child {
+			background: #506EEC;
+			border-color: #506EEC;
+			animation: wave-46 0.4s ease;
+		}
+
+		.checkbox-wrapper-46 .inp-cbx:checked+.cbx span:first-child svg {
+			stroke-dashoffset: 0;
+		}
+
+		.checkbox-wrapper-46 .inp-cbx:checked+.cbx span:first-child:before {
+			transform: scale(3.5);
+			opacity: 0;
+			transition: all 0.6s ease;
+		}
+
+		@keyframes wave-46 {
+			50% {
+				transform: scale(0.9);
+			}
+		}
+
+		.progbarma {
+			width: 100%;
+			background-color: var(--col-bg3);
+			height: 1em;
+			border-radius: var(--siz-radius2);
+			overflow: hidden;
+			margin: 10px 0px;
+		}
+
+		.appli:hover {
+			filter: brightness(120%);
+		}
+
+		.progbar {
+			width: 1%;
+			height: 30px;
+			min-width: 2px;
+			background-color: var(--col-good);
+		}
+
+		button {
+			color: var(--col-txth);
+			border-radius: var(--siz-radius2);
+			border: none;
+			padding: 7px 15px;
+			background: var(--col-bgh);
+			border: var(--box-crisp);
+			font-size: inherit;
+			cursor: pointer;
+			z-index: 1;
+		}
+
+		button:hover {
+			filter: brightness(110%);
+		}
+
+		[danger] {
+			background: var(--col-bgh);
+			opacity: 1;
+			cursor: pointer;
+		}
+
+		@media only screen and (max-width: 600px) {
+			.tab .btnlike {
+				width: 38px;
+			}
+
+			.tab {
+				width: 55px;
+				flex-grow: 0;
+				overflow: hidden;
+				min-width: 0;
+			}
+
+			#navSearch {
+				display: none;
+			}
+		}
+
+		@media only screen and (max-width: 100px) {
+			.tab button i {
+				margin-bottom: 8px;
+				display: block;
+			}
+		}
+
+		h1 {
+			font-weight: normal;
+			font-size: var(--font-size-normal);
+			margin-top: var(--sizing-huge);
+			display: flex;
+			flex-direction: row;
+			gap: 0.5rem;
+			align-items: center;
+		}
+
+		h3 {
+			font-weight: normal;
+			font-size: var(--font-size-normal);
+			opacity: 0.7;
+			margin-top: var(--sizing-huge);
+			margin-bottom: var(--sizing-nano);
+
+		}
+
+		segr {
+			margin-bottom: var(--sizing-normal);
+			overflow-y: visible;
+			border-radius: var(--siz-radius1);
+			display: block;
+			border: var(--box-crisp);
+			box-shadow: 0 3px 5px #0000007e;
+			background: var(--col-bg2);
+		}
+
+		span.advancedsetsbackbtn.material-symbols-rounded {
+			display: inline-flex;
+			font-size: 20px;
+			background: var(--col-bg2);
+			color: var(--colors-text-section);
+			padding: 0.3rem;
+			border-radius: 50%;
+			align-items: center;
+			justify-content: center;
+			cursor: pointer;
+		}
+
+		.advancedsetsredbtn {
+			margin: 0;
+			padding: 0;
+			background-color: transparent;
+			color: var(--col-txt1);
+			display: flex;
+			opacity: .5;
+			justify-content: center;
+			border: 0;
+			align-items: center;
+		}
+
+		.buttongrp {
+			display: flex;
+			flex-direction: row;
+			justify-content: space-between;
+			padding: var(--spacing-normal);
+			gap: var(--spacing-gap);
+			align-items: stretch;
+		}
+
+		.btngrpelem {
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			flex: 1;
+			padding: var(--sizing-normal);
+			color: inherit;
+			border-radius: var(--siz-radius2);
+			background: inherit;
+			cursor: pointer;
+		}
+
+		.btngrpelem:hover {
+			filter: brightness(120%);
+		}
+
+		.btngrpelem b {
+
+			font-size: 0.8rem;
+			font-weight: normal;
+		}
+
+		.btngrpelem button {
+			background-color: transparent;
+			padding: 0;
+			color: var(--colors-text-section);
+			border: 0;
+		}
+
+		.btngrpelem button span {
+			font-size: 1.5em;
+			opacity: .5;
+		}
+
+		.divider {
+			width: 1px;
+			background-color: rgb(117, 117, 117);
+			opacity: 0.5;
+		}
+
+		.taskbarloader {
+			width: 20px;
+			height: 20px;
+			border-radius: 50%;
+			display: inline-block;
+			border-top: 3px solid var(--col-txt1);
+			border-right: 3px solid transparent;
+			box-sizing: border-box;
+			animation: slideIn .3s ease-out, rotation 1s linear infinite;
+		}
+
+		@keyframes rotation {
+			0% {
+				transform: rotate(0deg);
+			}
+
+			100% {
+				transform: rotate(360deg);
+			}
+		}
+
+		.settingName {
+			flex: 1;
+		}
+
+		.searchInputSec {
+			display: flex;
+			flex-direction: row;
+			align-items: center;
+			background-color: var(--col-bg3);
+			padding: 2px 5px;
+			gap: 0.3rem;
+			border-radius: var(--siz-radius2);
+			width: 100%;
+			margin-bottom: 0.3rem;
+			border: var(--box-crisp);
+		}
+
+		.searchInputSec input {
+			background-color: transparent;
+			color: var(--col-txt1);
+			outline: 0;
+			border: 0;
+			min-width: 0;
+			padding: 0.3rem;
+			text-overflow: ellipsis;
+		}
+
+		.searchInputSec i.material-symbols-rounded {
+			font-size: 20px;
+			margin-right: 5px;
+			opacity: 0.7;
+		}
+
+		div#searchResults {
+			display: none;
+			flex-direction: column;
+			gap: 0.3rem;
+			border-bottom: 1px solid #80808045;
+			border-radius: 0;
+			padding-bottom: .3em;
+			margin-bottom: .3em;
+		}
+
+		.searchResult {
+			display: flex;
+			flex-direction: column;
+			padding: .2rem 0.5rem;
+			border-radius: var(--siz-radius2);
+			background: inherit;
+			background-color: var(--col-bg3);
+			justify-content: space-between;
+		}
+
+		.searchResult:hover {
+			filter: brightness(120%);
+		}
+
+		.searchResult small {
+			all: revert;
+			font-size: small;
+			opacity: .8;
+			font-family: 'IBM Plex Sans';
+			font-weight: 200;
+		}
+
+		div#myProgress3 {
+			height: 1em;
+			background: var(--col-bg3);
+			border-radius: 1em;
+			display: flex;
+			align-items: stretch;
+			justify-content: flex-start;
+			overflow: hidden;
+			height: 1.5em;
+		}
+
+		div#myProgress3 div {
+			height: 100%;
+			width: 0;
+			overflow: hidden;
+			font-size: 14px;
+			white-space: nowrap;
+			text-align: center;
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			min-width: fit-content;
+		}
+
+		#compositionlegend {
+			display: flex;
+			flex-direction: row;
+			flex-wrap: wrap;
+			justify-content: flex-start;
+			align-items: flex-start;
+			gap: .3em;
+			margin-top: .5em;
+		}
+
+		.compositionitem {
+			display: flex;
+			flex-direction: row;
+			align-items: center;
+			gap: 5px;
+			background: var(--col-bg3);
+			padding: 1px 7px;
+			border-radius: var(--siz-radius1);
+		}
+
+		.compositionitem:hover {
+			filter: brightness(120%);
+		}
+
+		.compositionitem .coldot {
+			width: 10px;
+			height: 10px;
+			border-radius: 1em;
+		}
+
+		label[real] {
+			font-size: var(--font-size-small);
+			background-color: rgb(139 62 62);
+			color: white;
+			border-radius: 5px;
+			padding: 3px 5px;
+			margin-left: 5px;
+		}
+
+		.jscolor {
+			width: 7rem;
+			height: 35px;
+			border-radius: var(--siz-radius1);
+			font-family: monospace;
+			font-size: var(--font-size-default);
+			background-color: var(--col-bg1);
+			border: 0;
+			color: var(--col-txt1);
+		}
+
+		.jscolor-palette {
+			background: #333;
+			border: 1px solid #555;
+		}
+
+		.jscolor-palette .jscolor-palette-cell {
+			border: 1px solid #444;
+		}
+
+		.jscolor-picker {
+			background: #222;
+			color: #ddd;
+			border: 1px solid #444;
+		}
+
+		.jscolor-input {
+			background: #333;
+			color: #eee;
+		}
+
+		.jscolor-picker:hover,
+		.jscolor-picker:focus {
+			border-color: #777;
+		}
+
+		.jscolor-palette-cell:hover {
+			background: #444;
+		}
+
+		.numinp {
+			width: 7rem;
+			border-radius: var(--siz-radius2);
+			min-width: 0;
+			border: 0;
+			background-color: var(--col-bg1);
+			color: var(--col-txt1);
+			padding: 0.3rem;
+			text-align: center;
+		}
+
+		.datamangernav {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			padding: 4px 10px;
+			background: var(--col-bg2);
+			color: var(--colors-text-section);
+			border-radius: var(--sizing-normal);
+		}
+
+		.datamangernav i {
+
+			font-size: var(--font-size-normal) !important;
+			transform: translateY(3px);
+		}
+
+		.lclstr {
+			border-bottom: 2px solid var(--col-bg3);
+			color: var(--colors-text-sub);
+			padding: 0.2rem var(--sizing-normal);
+			margin-top: 0.2rem;
+			display: flex;
+			flex-direction: row;
+			flex-wrap: nowrap;
+		}
+
+		.lclstr:hover {
+			background: #1f1f1f69;
+			transition: 0.3s;
+		}
+
+		.lclstr span {
+			width: 0;
+			word-break: break-all;
+		}
+
+		.lclstr .name {
+			flex: 1;
+			margin-right: 0.2rem;
+		}
+
+		.lclstr .value {
+			flex: 3;
+		}
+
+		.lclstr .material-symbols-rounded {
+			width: 20px;
+			font-size: var(--sizing-huge);
+			display: grid;
+			justify-items: center;
+			align-items: center;
+			opacity: 0.5;
+		}
+
+		.datasmall {
+			display: flex;
+			flex-direction: row;
+			gap: 1rem;
+			padding: 1rem;
+		}
+
+		.datasmall svg {
+			aspect-ratio: 1/1;
+			width: 35px;
+			height: auto;
+		}
+
+		.datasmall p {
+			margin: 0;
+			flex: 1;
+		}
+
+		.TimeMeter {
+			position: relative;
+			height: 100px;
+			display: flex;
+			flex-direction: column;
+			align-items: flex-start;
+			justify-content: center;
+			background: linear-gradient(116deg, var(--col-bg2), transparent);
+			padding: 1em;
+			border-radius: var(--siz-radius1);
+			border: 1px solid var(--box-crisp-col);
+			margin-bottom: .5em;
+
+			&>h1 {
+				z-index: 5;
+				margin: 0;
+			}
+		}
+
+		.graphcanvas {
+			height: 100%;
+			width: 100%;
+			background: #141414;
+			border-radius: var(--sizing-normal);
+			position: absolute;
+			top: 0;
+			right: 0;
+			z-index: -1;
+		}
+
+		.bigtext {
+			font-size: 2em;
+			display: inline-block;
+			width: fit-content;
+			margin: 0;
+		}
+
+		#fpsprof::after {
+			content: 'FPS';
+			padding: 2px 8px;
+			font-size: 13px;
+			border-radius: 5px;
+			background-color: var(--col-bg2);
+			color: var(--colors-text-section);
+			display: inline-block;
+			border: var(--box-crisp);
+			margin-left: 10px;
+			transform: translate(5px, -10px);
+		}
+
+		#defaultappsforfiles {
+			svg {
+				height: 1.5rem;
+				max-width: 1.5rem;
+				background: #57575733;
+				padding: 3px;
+				min-width: var(--sizing-normal);
+				border-radius: var(--sizing-nano);
+			}
+
+			.table {
+				display: flex;
+				flex-direction: column;
+				width: 100%;
+				border-radius: var(--sizing-normal);
+				overflow: hidden;
+			}
+
+			.header-row,
+			.row {
+				display: flex;
+				border-bottom: 1px solid #333333;
+				padding: 8px 0;
+			}
+
+			.header-row {
+				background-color: var(--col-bg2);
+				color: var(--colors-text-section);
+				font-weight: normal;
+				opacity: 0.7;
+				font-size: var(--font-size-small);
+			}
+
+			.cell {
+				padding: 8px;
+				display: flex;
+				align-items: center;
+				justify-content: flex-start;
+			}
+
+			/* Apply styles to both method handlers & file types */
+			.type-cell {
+				font-size: var(--font-size-normal);
+				flex: 1;
+				border-right: 1px solid #353535;
+				padding-left: 16px;
+			}
+
+			.type-header {
+				flex: 1 !important;
+			}
+
+			.header-cell,
+			.handler-cell {
+				flex: 2;
+				padding-left: 16px;
+				display: flex;
+				flex-direction: column;
+				align-items: flex-start;
+			}
+
+			.row:last-child {
+				border-bottom: none;
+			}
+
+			.subapps {
+				.material-symbols-rounded {
+					color: var(--col-txt1);
+					opacity: 0.5;
+					font-size: var(--sizing-huge) !important;
+					transform: translateY(-2px);
+					margin-right: var(--sizing-normal);
+				}
+			}
+		}
+
+		.themestoreopner {
+			height: 2rem;
+			margin-top: 5px;
+		}
+
+		.usedetssys {
+			display: flex;
+			flex-direction: column;
+			gap: .2em;
+		}
+
+		.pfp {
+			background-color: var(--col-bg2);
+			aspect-ratio: 1 / 1;
+			height: 80px;
+			border-radius: var(--siz-radius2);
+			display: inline-flex;
+			justify-content: center;
+			align-items: center;
+			position: relative;
+		}
+
+		.usercard {
+			margin: 1em 0;
+			display: flex;
+			flex-direction: row;
+			justify-content: flex-start;
+			gap: 1em;
+		}
+
+		span.userrole {
+			opacity: .5;
+		}
+
+		b#userstatsi {
+			font-size: 2em;
+		}
+
+		.pfp span {
+			padding: .3em;
+			background: var(--col-bg2);
+			border-radius: 2em;
+			opacity: 0;
+			font-size: 1.3em;
+			transition: .2s ease-out;
+			cursor: pointer;
+			position: absolute;
+		}
+
+		.pfp:hover span {
+			opacity: 1;
+		}
+
+		.single_setting.spread {
+			display: flex;
+			flex-direction: row;
+			align-items: center;
+			justify-content: space-between;
+		}
+
+		.single_setting.formlike {
+			display: flex;
+			flex-direction: column;
+			justify-content: space-between;
+			gap: 0.3rem;
+			align-items: stretch;
+		}
+
+		.doablestep {
+			display: flex;
+			justify-content: space-between;
+			background: var(--col-bg3);
+			border-radius: var(--siz-radius2);
+			padding: .3rem;
+			cursor: pointer;
+			align-items: center;
+			transition: .3s;
+
+			&:hover {
+				padding-left: 1em;
+			}
+		}
+
+		.doablestep button {
+			padding: .3rem;
+			color: var(--col-txt1);
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			width: fit-content;
+			min-width: 0;
+			border: 0;
+			background: none;
+		}
+
+		.doablestep b {
+			font-size: var(--font-size-normal);
+			font-weight: normal;
+			margin-left: 0.5rem;
+		}
+
+		#supportexpandable {
+			display: none;
+			flex-direction: column;
+			gap: .3rem;
+			margin-top: 0.5rem;
+			animation: tab .3s;
+		}
+
+		.task {
+			padding: var(--sizing-normal);
+			background-color: var(--col-bg2);
+			color: var(--colors-text-section);
+			border-radius: var(--siz-radius1);
+			margin: 5px 0;
+			box-shadow: 0 3px 5px #0000007e;
+			display: flex;
+			flex-direction: row;
+			align-items: center;
+			justify-content: space-between;
+		}
+
+		.task .stpicn {
+			cursor: pointer;
+			width: fit-content;
+			font-size: 20px;
+			background: transparent;
+			color: var(--col-bad);
+		}
+
+		.task .tasknamespan {
+			flex: 1;
+		}
+
+		.task small {
+			display: inline-block;
+			background-color: transparent;
+			opacity: 0.5;
+			margin: 0;
+			padding: 0;
+			padding-left: 5px;
+		}
+
+		@keyframes wooboo {
+			0% {
+				transform: scale(1);
+			}
+
+			50% {
+				transform: scale(1.1);
+				filter: brightness(120%);
+			}
+
+			100% {
+				transform: scale(1);
+			}
+		}
+
+		.wooboo-animation {
+			animation: wooboo .5s infinite;
+		}
+
+		.device {
+			padding: var(--sizing-normal);
+			background: var(--col-bg2);
+			color: var(--colors-text-section);
+			border-radius: var(--siz-radius1);
+			margin: 5px 0;
+		}
+
+		.device .dic {
+			display: inline-grid;
+			width: 30px;
+			height: 30px;
+			justify-content: center;
+			align-items: center;
+			justify-items: center;
+		}
+
+		.device .ddts {
+			display: inline-block;
+			width: calc(100% - 35px);
+			overflow: hidden;
+			white-space: nowrap;
+			text-overflow: ellipsis;
+		}
+
+		.device [boo] {
+			opacity: 0.7;
+			overflow: hidden;
+			text-wrap: nowrap;
+			width: calc(100% - 20px);
+			display: block;
+			text-overflow: ellipsis;
+		}
+
+		.device-type {
+			margin-right: 3px;
+			padding-right: 3px;
+			border-right: 1px solid grey;
+		}
+
+		.colorsetting {
+			display: flex;
+			flex-direction: row;
+			justify-content: space-between;
+			align-items: center;
+		}
+
+		.inputwithbtn {
+			width: 100%;
+			display: flex;
+			flex-direction: row;
+			gap: 0.5rem;
+			margin-top: 0.5rem;
+
+			&>button {
+				min-width: 7rem;
+				padding: 5px;
+			}
+		}
+
+		input.inputtype1 {
+			background-color: var(--col-bg1);
+			color: var(--col-txt1);
+			flex: 1;
+			border: none;
+			padding: var(--sizing-nano) var(--sizing-normal);
+			border-radius: var(--siz-radius2);
+		}
+
+		#UISIZErangeslid {
+			width: 79%;
+			height: 2px;
+			display: block;
+			margin: var(--sizing-normal) auto;
+			margin-top: var(--sizing-huge);
+		}
+
+		.UISIZEslider-labels {
+			display: flex;
+			justify-content: space-between;
+			width: 100%;
+			margin-top: var(--sizing-normal);
+		}
+
+		.UISIZEslider-labels span {
+			opacity: 0.5;
+			font-size: var(--font-size-small);
+			width: 0;
+			text-align: center;
+			flex: 1;
+		}
+
+		#appslist {
+			display: grid;
+			grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+			gap: .5em;
+		}
+
+		@keyframes apppop {
+			0% {
+				opacity: 0;
+				transform: translateY(5px);
+			}
+
+			100% {
+				opacity: 1;
+			}
+		}
+
+		.singular_app {
+			animation: apppop .2s ease-out;
+			display: flex;
+			flex-direction: row;
+			background-color: var(--col-bg2);
+			padding: .5em;
+			border-radius: var(--siz-radius1);
+			border: var(--box-crisp);
+			justify-content: space-between;
+			align-items: center;
+
+			& .app_detail {
+				width: 0;
+				flex: 1;
+				overflow: hidden;
+
+				&>div {
+					overflow: hidden;
+					text-overflow: ellipsis;
+					white-space: nowrap;
+				}
+			}
+
+			& .app_options {
+				padding: 5px;
+				display: flex;
+				border-radius: 50%;
+
+				& span {
+					font-size: 1em;
+					opacity: .5;
+				}
+
+				&:hover {
+					background-color: var(--col-bg3);
+				}
+			}
+
+			& .app_risk {
+				opacity: .5;
+				font-size: small;
+			}
+
+			& .app_icon>svg {
+				width: 25px;
+				height: 25px;
+				border-radius: .5em;
+			}
+
+			& .app_left {
+				display: flex;
+				flex-direction: row;
+				gap: .5em;
+				align-items: center;
+				flex: 1;
+
+				& .app_icon {
+					display: flex;
+				}
+			}
+		}
+
+		div#big_app_card {
+			display: flex;
+			gap: .5em;
+			gap: var(--sizing-normal);
+			align-items: center;
+			justify-content: space-between;
+			width: 100%;
+
+			& .app_icon {
+				flex: 0;
+				display: flex
+			}
+
+			& .appdets {
+				flex: 2;
+			}
+
+			& .app_icon svg {
+				width: 50px;
+				height: auto;
+				aspect-ratio: 1 / 1;
+				padding: 5px;
+			}
+
+			& .appname {
+				font-size: 1.5em;
+			}
+
+			& .app_risk {
+				opacity: .5;
+				font-size: small;
+				user-select: text;
+			}
+
+			& .app_options {
+				padding: 1em;
+				display: flex;
+				border-radius: 50%;
+				font-size: 1em;
+				opacity: .5;
+
+				&:hover {
+					background-color: var(--col-bg3);
+				}
+			}
+		}
+
+		img#userpfp {
+			width: 100%;
+			height: 100%;
+			object-fit: cover;
+			border-radius: var(--siz-radius1);
+		}
+
+		.betatag {
+			background-color: var(--col-bad);
+			color: var(--col-txt1);
+			padding: 2px 7px;
+			border-radius: var(--siz-radius2);
+			display: inline;
+			font-size: var(--font-size-small);
+		}
+	</style>
+</head>
+
+<body>
+	<container>
+		<div class="tab">
+			<div id="navSearch">
+				<div class="searchInputSec btnlike">
+					<input id="searchInput" placeholder="Search settings..." spellcheck="none" autocomplete="off">
+					<i class="material-symbols-rounded">search</i>
+				</div>
+				<div id="searchResults" class="btnlike"></div>
+			</div>
+			<button class="tablinks btnlike" windowopener="System" onclick="openCity(event, 'system')"
+				id="defaultOpen"><i class="material-symbols-rounded">settings</i> System</button>
+			<button class="tablinks btnlike" windowopener="Preferences"
+				onclick="openCity(event, 'defaults'); defs5(); defs2(); defs3()"><i
+					class="material-symbols-rounded">tune</i> Preferences</button>
+			<button class="tablinks btnlike" windowopener="Display" onclick="openCity(event, 'exp'); defs();"><i
+					class="material-symbols-rounded">monitor</i>
+				Display</button>
+			<button class="tablinks btnlike" windowopener="User" onclick="openCity(event, 'password')"><i
+					class="material-symbols-rounded">person</i>
+				User</button>
+			<button class="tablinks btnlike" windowopener="Defaults" onclick="openCity(event, 'apps');loadappslist()"><i
+					class="material-symbols-rounded">apps</i> Apps</button>
+			<button class="tablinks btnlike" windowopener="Networking" onclick="openCity(event, 'network');"><i
+					class="material-symbols-rounded">language</i>
+				Network</button>
+			<button class="tablinks btnlike" windowopener="Defaults" onclick="openCity(event, 'defaultappsforfiles');
+				rldfltyptable();"><i class="material-symbols-rounded">open_in_browser</i> Defaults</button>
+			<button class="tablinks btnlike" windowopener="About" onclick="openCity(event, 'about')"><i
+					class="material-symbols-rounded">info</i>
+				About</button>
+
+		</div>
+
+		<div id="perform" class="tabcontent advancedsettab">
+			<h1><span class="material-symbols-rounded advancedsetsbackbtn" onclick="openCity(event, 'system');">
+					arrow_back
+				</span> Performance</h1>
+
+			<div class="TimeMeter">
+				<h1>Rendering</h1>
+				<h1 id="fpsprof" class="bigtext">0</h1>
+				<canvas class="graphcanvas" id="fpsCanvas" width="400" height="200"></canvas>
+			</div>
+
+			<div class="TimeMeter">
+				<h1>Memory</h1>
+				<h1 id="ramprof" class="bigtext">0</h1>
+				<canvas class="graphcanvas" id="HeapCanvas" width="400" height="200"></canvas>
+			</div>
+
+			<small>Most browsers cap the webview FPS to 60.</small>
+
+			<h1>Processes</h1>
+			<div id="taskslist">
+			</div>
+			<script>
+				async function openlink(x) {
+					let okay = await ntxSession.send("sysUI.confirm", "Are you sure?", "Open " + x + " outside of LairOS?");
+					if (okay) {
+						window.open(x);
+					}
+				}
+				function taskmg() {
+					const winds = window.parent.winds;
+					const tasksList = document.getElementById("taskslist");
+					tasksList.innerHTML = "";
+
+					Object.keys(winds).forEach(key => {
+						const taskId = key.slice(-12);
+						const taskName = winds[key].title;
+
+						const taskDiv = document.createElement("div");
+						taskDiv.classList.add("task");
+
+						const spanSettings = document.createElement("span");
+						spanSettings.classList.add("tasknamespan")
+						spanSettings.textContent = taskName;
+
+						const smallId = document.createElement("small");
+						smallId.textContent = taskId;
+
+						const spanIcon = document.createElement("span");
+						spanIcon.classList.add("material-symbols-rounded", "stpicn");
+						spanIcon.textContent = "do_disturb";
+						spanIcon.title = "Force close"
+						spanIcon.onclick = function () {
+							spanIcon.classList.add('wooboo-animation');
+							window.parent.clwin(taskId);
+
+						}
+
+						spanSettings.appendChild(smallId);
+						taskDiv.appendChild(spanSettings);
+
+						taskDiv.appendChild(spanIcon);
+
+						tasksList.appendChild(taskDiv);
+					});
+
+					setTimeout(taskmg, 5000);
+				}
+				var running, currentpage;
+
+				function updateFPS() {
+					updateRAMUsage();
+					var canvas = document.getElementById('fpsCanvas');
+					var ctx = canvas.getContext('2d');
+					var startTime = Date.now();
+					var frameCount = 0;
+					var fpsValues = [];
+
+					function calculateFPS() {
+						var elapsedTime = Date.now() - startTime;
+						var fps = Math.round((frameCount * 1000) / elapsedTime);
+						fpsValues.push(fps);
+
+						ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+						var numFrames = 30;
+						var fpsSubset = fpsValues.slice(-numFrames);
+
+						var stepX = canvas.width / fpsSubset.length;
+						var maxY = Math.max(...fpsSubset);
+						var stepY = canvas.height / (maxY + 10);
+
+						ctx.beginPath();
+						var initialX = 0;
+						var initialY = canvas.height - fpsSubset[0] * stepY;
+						ctx.moveTo(initialX, initialY);
+
+						fpsSubset.push(fpsSubset[fpsSubset.length - 1]);
+
+						fpsSubset.forEach(function (fps, index) {
+							var x = index * stepX;
+							var y = canvas.height - fps * stepY;
+							ctx.lineTo(x, y);
+						});
+
+						ctx.lineTo(canvas.width, canvas.height);
+						ctx.lineTo(0, canvas.height);
+
+						ctx.fillStyle = '#263238';
+						ctx.fill();
+
+						ctx.strokeStyle = '#7986CB';
+						ctx.lineWidth = 2;
+						ctx.stroke();
+						document.getElementById('fpsprof').innerText = fps;
+
+						frameCount = 0;
+						startTime = Date.now();
+					}
+
+					function render() {
+						frameCount++;
+						requestAnimationFrame(render);
+					}
+
+					render();
+
+					let intervalId = setInterval(function () {
+						if (currentpage === 'perform') {
+							calculateFPS();
+						} else {
+							clearInterval(intervalId);
+						}
+					}, 500);
+				}
+
+				function updateRAMUsage() {
+					var canvas = document.getElementById('HeapCanvas');
+					var ctx = canvas.getContext('2d');
+					var heapValues = [];
+
+					function getMemoryUsage() {
+						if (performance.memory) {
+							var totalMemory = performance.memory.totalJSHeapSize / (1024 * 1024);
+							var usedMemory = performance.memory.usedJSHeapSize / (1024 * 1024);
+							var memoryUsage = (usedMemory / totalMemory) * 100;
+							heapValues.push(memoryUsage);
+						}
+
+						ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+						var numFrames = 30;
+						var heapSubset = heapValues.slice(-numFrames);
+
+						var stepX = canvas.width / heapSubset.length;
+						var maxY = Math.max(...heapSubset);
+						var stepY = canvas.height / (maxY + 10);
+
+						ctx.beginPath();
+						var initialX = 0;
+						var initialY = canvas.height - heapSubset[0] * stepY;
+						ctx.moveTo(initialX, initialY);
+
+						heapSubset.push(heapSubset[heapSubset.length - 1]);
+
+						heapSubset.forEach(function (usage, index) {
+							var x = index * stepX;
+							var y = canvas.height - usage * stepY;
+							ctx.lineTo(x, y);
+						});
+
+						ctx.lineTo(canvas.width, canvas.height);
+						ctx.lineTo(0, canvas.height);
+
+						ctx.fillStyle = '#263828';
+						ctx.fill();
+
+						ctx.strokeStyle = '#4CAF50';
+						ctx.lineWidth = 2;
+						ctx.stroke();
+						document.getElementById('ramprof').innerText = `${heapSubset[heapSubset.length - 1].toFixed(0)}%`;
+
+					}
+
+					let ramIntervalId = setInterval(function () {
+						if (currentpage === 'perform') {
+							getMemoryUsage();
+						} else {
+							clearInterval(ramIntervalId);
+						}
+					}, 500);
+				}
+			</script>
+		</div>
+
+		<div id="system" class="tabcontent">
+			<h1>System</h1>
+
+			<segr>
+				<div class="single_setting" type="advsetnav" windowopener="Storage"
+					onclick="openCity(event, 'storage');">
+					<i class="material-symbols-rounded advseticon">storage</i>
+					<div class="advsetnavbtnprt">
+						<div>
+							<b>Storage</b>
+							<p>Stats, actions and more...</p>
+						</div>
+						<button class="advancedsetsredbtn"><span class="material-symbols-rounded">
+								chevron_right
+							</span></button>
+					</div>
+				</div>
+				<div class="single_setting" type="advsetnav" windowopener="Battery"
+					onclick="openCity(event, 'battery');">
+					<i class="material-symbols-rounded advseticon">battery_full</i>
+					<div class="advsetnavbtnprt">
+						<div>
+							<b>Battery</b>
+							<p>Percentage, remarks and status</p>
+						</div>
+						<button class="advancedsetsredbtn"><span class="material-symbols-rounded">
+								chevron_right
+							</span></button>
+					</div>
+				</div>
+				<div class="single_setting" type="advsetnav" windowopener="Devices"
+					onclick="openCity(event, 'devices');">
+					<i class="material-symbols-rounded advseticon">devices</i>
+					<div class="advsetnavbtnprt">
+						<div>
+							<b>Devices</b>
+							<p>Lists all connected devices</p>
+						</div>
+						<button class="advancedsetsredbtn"><span class="material-symbols-rounded">
+								chevron_right
+							</span></button>
+					</div>
+				</div>
+			</segr>
+			<h1>Performance</h1>
+
+			<segr>
+				<div class="single_setting" type="advsetnav" windowopener="Performance"
+					onclick="openCity(event, 'perform'); updateFPS(); taskmg();">
+					<i class="material-symbols-rounded advseticon">speed</i>
+					<div class="advsetnavbtnprt">
+						<div>
+							<b>Performance home</b>
+							<p>Performance metrics and processes</p>
+						</div>
+						<button class="advancedsetsredbtn"><span class="material-symbols-rounded">
+								chevron_right
+							</span></button>
+					</div>
+				</div>
+			</segr>
+		</div>
+		<div id="storage" class="tabcontent advancedsettab">
+			<h1><span class="material-symbols-rounded advancedsetsbackbtn" onclick="openCity(event, 'system');">
+					arrow_back
+				</span> Storage</h1>
+			<segr>
+				<div class="single_setting vertical">
+					<b>Available space</b>
+					<div class="progbarma" id="myProgress2">
+						<div id="myBar2" class="progbar"></div>
+					</div>
+					<small id="storemark2">Your system has crashed. Please Update.</small>
+
+					<div id="storagesuggs">
+						<p style="margin-top: 0px;">Ran out of storage?<br>Get more storage by removing some files</p>
+					</div>
+				</div>
+			</segr>
+
+			<segr>
+				<div class="single_setting vertical">
+					<b>Storage composition</b>
+					<div class="compositionbar" id="myProgress3">
+					</div>
+					<div id="compostitles"></div>
+				</div>
+				<script>
+					const countFileTypes = (root) => {
+						const typeCounts = {};
+						for (const dir in root) {
+							const files = root[dir];
+							for (const file in files) {
+								const ext = window.parent.mtpetxt(file);
+								typeCounts[ext] = (typeCounts[ext] || 0) + 1;
+							}
+						}
+						return typeCounts;
+					};
+
+					const renderCompositionBar = async (typeCounts, containerId) => {
+						const total = Object.values(typeCounts).reduce((a, b) => a + b, 0);
+						const container = document.getElementById(containerId);
+						const colors = {};
+
+						for (const type in typeCounts) {
+							if (!type)
+								continue;
+							const percent = (typeCounts[type] / total) * 100;
+							if (percent >= 1) {
+								if (!colors[type]) {
+									colors[type] = window.parent.stringToDarkPastelColor(type + "lairOs");
+								}
+								const div = document.createElement('div');
+								div.style.width = percent + '%';
+								div.style.backgroundColor = colors[type];
+								div.classList.add('composition-segment');
+								div.dataset.type = type;
+								container.appendChild(div);
+							}
+						}
+
+						const legend = document.createElement('div');
+						legend.id = "compositionlegend";
+
+						for (const type in colors) {
+							if (!type)
+								continue;
+							const item = document.createElement('div');
+							item.classList.add("compositionitem");
+
+							const colorBox = document.createElement('div');
+							colorBox.classList.add("coldot");
+							colorBox.style.backgroundColor = colors[type];
+
+							const label = document.createElement('span');
+							label.textContent = type;
+
+							item.appendChild(colorBox);
+							item.appendChild(label);
+							legend.appendChild(item);
+
+							item.addEventListener('mouseenter', () => {
+								const segments = container.querySelectorAll(`.composition-segment[data-type="${type}"]`);
+								segments.forEach(seg => seg.style.boxShadow = '0 0 20px black, 0 0 10px #00c2ff inset');
+							});
+
+							item.addEventListener('mouseleave', () => {
+								const segments = container.querySelectorAll(`.composition-segment[data-type="${type}"]`);
+								segments.forEach(seg => seg.style.boxShadow = '');
+							});
+						}
+
+						document.getElementById("compostitles").appendChild(legend);
+					};
+
+					const typeCounts = countFileTypes(window.parent.memory.root);
+					renderCompositionBar(typeCounts, 'myProgress3');
+				</script>
+			</segr>
+
+			<h3>Related settings</h3>
+
+			<segr>
+				<div class="single_setting" type="advsetnav" windowopener="User" onclick="openCity(event, 'password')">
+					<i class="material-symbols-rounded advseticon">person</i>
+					<div class="advsetnavbtnprt">
+						<div>
+							<b>User</b>
+							<p>Manage the current user...</p>
+						</div>
+						<button class="advancedsetsredbtn"><span class="material-symbols-rounded">
+								chevron_right
+							</span></button>
+					</div>
+				</div>
+			</segr>
+		</div>
+
+		<div id="defaults" class="tabcontent">
+			<h3>Multitasking</h3>
+			<segr>
+				<div class="single_setting">
+					<div class="settingName"><b>Window Snapping</b>
+						<p>Drag a window to the sides of your screen to snap it in place.
+					</p>
+					</div>
+					<input class="turnon_checkbox" type="checkbox" settingkey="wsnapping">
+				</div>
+				<div class="single_setting">
+					<div class="settingName">
+						<b>Keep visible</b>
+						<p>Push windows back in when they are overflowing the screen.
+					</p>
+					</div>
+					<input class="turnon_checkbox" type="checkbox" settingkey="keepvisible">
+				</div>
+				<div class="single_setting">
+					<div class="settingName">
+						<b>Window outline</b>
+						<p>Highlight the active window with an outline.
+					</p>
+					</div>
+					<input class="turnon_checkbox" type="checkbox" settingkey="windowoutline">
+				</div>
+
+			</segr>
+
+			<h3>Behaviours</h3>
+			<segr>
+				<div class="single_setting">
+					<div class="settingName">
+						<b>Window loader</b>
+						<p>Show an animation while the app is initializing.
+					</p>
+					</div>
+					<input class="turnon_checkbox" type="checkbox" settingkey="windowloader">
+				</div>
+				<div class="single_setting">
+					<div class="settingName">
+						<b>SmartSearch</b>
+						<p>Search through your files based on similarity algorithms.
+					</p>
+					</div>
+
+					<input class="turnon_checkbox" type="checkbox" id="cbx-69">
+				</div>
+			</segr>
+			<segr>
+				<div class="single_setting">
+					<div class="settingName">
+						<b>Use LairOS offline</b>
+						<p>If enabled, LairOS will try to cache the os and save it offline.
+					</p>
+					</div>
+					<input class="turnon_checkbox" type="checkbox" id="cbx-70">
+				</div>
+				<div class="single_setting">
+					<div class="settingName">
+						<b>Auto update checks</b>
+						<p>Automatically check and apply default app updates on startup.
+					</p>
+					</div>
+					<input class="turnon_checkbox" type="checkbox" settingkey="nvaupdcheck">
+				</div>
+			</segr>
+			<segr>
+				<div class="inpbox">
+					<span>Save Camera images as </span>
+					<select id="scapimas">
+						<option>PNG</option>
+						<option>JPEG</option>
+						<option>WEBP</option>
+					</select>
+				</div>
+				<script>
+					async function defs() {
+
+						document.getElementById('copy-theme-btn').addEventListener('click', copyCurrentTheme);
+						document.getElementById('paste-theme-btn').addEventListener('click', pasteThemeFromClipboard);
+
+						let storedwall = await ntxSession.send("settings.get", "wall");
+
+						if (storedwall) {
+							document.getElementById("wallpaperurl").value = storedwall;
+						} else {
+							console.log("No wallpaper set ", storedwall);
+						}
+
+
+					}
+
+					async function savewallpaperalginment() {
+						let newValue = document.getElementById("wallpaperPos").value
+						ntxSession.send("settings.set", "wallpaperPos", newValue);
+
+						let newValue2 = document.getElementById("wallpaperSiz").value
+						ntxSession.send("settings.set", "wallpaperSiz", newValue2);
+						console.log("alignSETTTTTT")
+					}
+
+					document.addEventListener("DOMContentLoaded", async () => {
+						document.getElementById("wallpaperPos").addEventListener("change", savewallpaperalginment)
+						document.getElementById("wallpaperSiz").addEventListener("change", savewallpaperalginment)
+						try {
+							let currentSettings = await ntxSession.send("settings.get", "wallpaperPos");
+							if (currentSettings) {
+								document.getElementById("wallpaperPos").value = currentSettings;
+							}
+							let currentSettings2 = await ntxSession.send("settings.get", "wallpaperSiz");
+							if (currentSettings2) {
+								document.getElementById("wallpaperSiz").value = currentSettings2;
+							}
+						} catch (error) {
+							console.error(error);
+						}
+					})
+
+
+					async function defs5() {
+						console.log("defs5 loaded");
+
+						// smartsearch
+						document.getElementById("cbx-69").addEventListener("change", async function () {
+							let newValue2 = document.getElementById("cbx-69").checked;
+							ntxSession.send("settings.set", "smartsearch", newValue2)
+						});
+
+						try {
+							if (await ntxSession.send("settings.get", "smartsearch")) {
+								document.getElementById("cbx-69").checked = true;
+							}
+						} catch (error) {
+							console.error(error)
+						}
+
+						// offline lairos
+						document.getElementById("cbx-70").addEventListener("change", function () {
+							let newValue2 = document.getElementById("cbx-70").checked;
+							if (newValue2) {
+								ntxSession.send("specific.useLairOffline",);
+							} else {
+								ntxSession.send("specific.removeSWs",)
+							}
+							ntxSession.send("settings.set", "lairOffline", newValue2)
+						});
+
+						try {
+							if (await ntxSession.send("settings.get", "lairOffline")) {
+								document.getElementById("cbx-70").checked = true;
+							}
+						} catch (error) {
+							console.error(error)
+						}
+
+						// save cam images as
+						let selinp;
+						selinp = document.getElementById("scapimas");
+						try {
+							if (await ntxSession.send("settings.get", "CamImgFormat")) {
+								selinp.value = await ntxSession.send("settings.get", "CamImgFormat");
+							}
+						} catch (error) {
+							console.error(error)
+						}
+						document.getElementById("scapimas").addEventListener("change", function () {
+							let newValue = document.getElementById("scapimas").value;
+							ntxSession.send("settings.set", "CamImgFormat", newValue)
+						});
+					}
+				</script>
+				<div class="inpbox">
+					<span>Default files app view mode </span>
+					<select id="defflvm">
+						<option>Grid</option>
+						<option>List</option>
+					</select>
+				</div>
+				<script>
+					async function defs2() {
+						let selinp;
+						selinp = document.getElementById("defflvm");
+						try {
+							if (await ntxSession.send("settings.get", "defflvm")) {
+								selinp.value = defflvm;
+							}
+						} catch (error) {
+							console.error(error)
+						}
+						document.getElementById("defflvm").addEventListener("change", function () {
+							let newValue = document.getElementById("defflvm").value;
+							ntxSession.send("settings.set", "defFileLayout", newValue)
+						});
+					}
+				</script>
+				<div class="inpbox">
+					<span>Time Format </span>
+					<select id="timefrmt">
+						<option>12 Hour</option>
+						<option>24 Hour</option>
+					</select>
+				</div>
+				<div class="inpbox">
+					<span>Default Search Engine </span>
+					<select id="defSearchEngine">
+						<option>NWP</option>
+						<option>Bing</option>
+					</select>
+				</div>
+				<script>
+					async function defs3() {
+						let selinp;
+						selinp = document.getElementById("timefrmt");
+						if (await ntxSession.send("settings.get", "timefrmt")) {
+							selinp.value = await ntxSession.send("settings.get", "timefrmt");
+						}
+					document.getElementById("timefrmt").addEventListener("change", function () {
+						let newValue = document.getElementById("timefrmt").value;
+						ntxSession.send("settings.set", "timefrmt", newValue);
+						ntxSession.send("sysUI.toast", "Reload LairOS for the changes to take effect.");
+						console.log("timfired")
+					});						let selinp2 = document.getElementById("defSearchEngine");
+						if (await ntxSession.send("settings.get", "defSearchEngine")) {
+							selinp2.value = await ntxSession.send("settings.get", "defSearchEngine");
+						}
+						document.getElementById("defSearchEngine").addEventListener("change", function () {
+							let newValue = document.getElementById("defSearchEngine").value;
+							ntxSession.send("settings.set", "defSearchEngine", newValue)
+						});
+					}
+				</script>
+			</segr>
+			<h3>Reset</h3>
+			<segr>
+				<div class="single_setting">
+					<div class="settingName">
+						<b>Reset Settings</b>
+						<p>Reset to default settings.</p>
+					</div>
+					<button style="float: right;" onclick="restsettings();" danger>Reset</button>
+					<script>
+						async function restsettings() {
+							try {
+								await window.parent.resetSettings();
+							} catch (error) {
+								console.error("Error updating default apps:", error);
+							}
+						}
+
+					</script>
+				</div>
+			</segr>
+		</div>
+
+		<div id="defaultappsforfiles" class="tabcontent">
+			<h1>Defaults</h1>
+			<button onclick="rldfltyptable()" style="margin-bottom: var(--sizing-normal);">Reload Tables</button>
+			<small>Default Handlers are apps that provide support for different methods and file types. You can change a
+				default handler by clicking on its icon.</small>
+			<h3>Method Handlers</h3>
+			<div id="appmethodhandles"></div>
+
+			<h3>File Type Providers</h3>
+			<div id="appfileassos"></div>
+
+			<script>
+				var currentreqID, replaceableHandler, clickedRowId;
+
+				async function rldfltyptable() {
+					document.getElementById('appmethodhandles').innerHTML = "<span class='taskbarloader' id='taskbarloader-methods'></span>";
+					document.getElementById('appfileassos').innerHTML = "<span class='taskbarloader' id='taskbarloader-files'></span>";
+
+					const associations = window.parent.fileTypeAssociations;
+					const methods = window.parent.handlers;
+
+					async function createTable(data, typeLabel, handlerLabel) {
+						const table = document.createElement('div');
+						table.className = 'table';
+
+						const headerRow = document.createElement('div');
+						headerRow.className = 'header-row';
+
+						const typeHeader = document.createElement('div');
+						typeHeader.className = 'header-cell type-header';
+						typeHeader.textContent = typeLabel;
+
+						const handlerHeader = document.createElement('div');
+						handlerHeader.className = 'header-cell handler-header';
+						handlerHeader.textContent = handlerLabel;
+
+						headerRow.appendChild(typeHeader);
+						headerRow.appendChild(handlerHeader);
+						table.appendChild(headerRow);
+
+						for (const [type, handlers] of Object.entries(data)) {
+							const row = document.createElement('div');
+							row.className = 'row';
+							row.id = `row-${type}`;
+
+							const typeCell = document.createElement('div');
+							typeCell.className = 'cell type-cell';
+							typeCell.textContent = type;
+
+							const handlerCell = document.createElement('div');
+							handlerCell.className = 'cell handler-cell';
+							handlerCell.title = handlers;
+							handlerCell.innerHTML = await ntxSession.send("apps.getIcon", false, handlers);
+							handlerCell.onclick = async () => {
+								replaceableHandler = handlers;
+								clickedRowId = `row-${type}`;
+
+								replaceableapp = handlers;
+								let newHandler = await ntxSession.send("olp.useHandler", "file_manager", { "opener": "app", "dir": "Apps/" });
+
+								for (let key in window.parent.handlers) {
+									if (window.parent.handlers.hasOwnProperty(key)) {
+										window.parent.handlers[key] = (window.parent.handlers[key] === replaceableHandler) ? newHandler : window.parent.handlers[key];
+									}
+								}
+								await ntxSession.send("settings.set", 'handlers', window.parent.handlers);
+
+								const row = document.getElementById(clickedRowId);
+								if (row) {
+									const handlerCell = row.querySelector('.handler-cell');
+									handlerCell.innerHTML = await ntxSession.send("apps.getIcon", 0, newHandler, true);
+								}
+							};
+
+							row.appendChild(typeCell);
+							row.appendChild(handlerCell);
+							table.appendChild(row);
+						}
+
+						if (!Object.keys(data).length) {
+							table.innerHTML = '';
+							const emptySpan = document.createElement("span");
+							emptySpan.style.opacity = "0.5";
+							emptySpan.innerText = window.parent.getRandomNothingQuote();
+							table.appendChild(emptySpan);
+						}
+
+						return table;
+					}
+
+					const methodTable = await createTable(methods, 'Methods', 'Handlers');
+					const fileTable = await createTable(associations, 'File Types', 'Apps');
+
+					document.getElementById('appmethodhandles').appendChild(methodTable);
+					document.getElementById('appfileassos').appendChild(fileTable);
+
+					document.querySelector('#taskbarloader-methods').remove();
+					document.querySelector('#taskbarloader-files').remove();
+				}
+			</script>
+
+		</div>
+
+		<div id="password" class="tabcontent">
+			<div class="usercard">
+				<div class="pfp" onclick="edituserpfp()">
+					<img src="#" id="userpfp" alt="User Profile Picture">
+					<span class="material-symbols-rounded">
+						edit
+					</span>
+				</div>
+				<div class="usedetssys">
+					<b id="userstatsi">Signed in as Admin</b>
+					<span class="userrole">Administrator</span>
+				</div>
+			</div>
+
+			<script>
+				async function erdbs() {
+					if (!confirm("Erase Device? \nThis will remove all data, including every user's files, folders, apps, permissions, cache and everything.\n\nWould you like to Clear your device?")) {
+						return;
+					}
+					await ntxSession.send("system.eraseLair",);
+				}
+				async function erdbsur() {
+					if (!confirm("Remove User? \nThis will remove your data, including your files, folders, apps, permissions, cache and everything.\n\nWould you like to Clear your account?")) {
+						return;
+					}
+					await ntxSession.send("accounts.removeUser",);
+				}
+
+			</script>
+			<segr>
+				<div class="buttongrp">
+					<div class="btngrpelem">
+						<button onclick="erdbsur()">
+							<span class="material-symbols-rounded">
+								person_remove
+							</span>
+						</button>
+						<b>Remove user</b>
+					</div>
+					<div class="divider"></div>
+					<div class="btngrpelem">
+						<button onclick="erdbs()">
+							<span class="material-symbols-rounded">
+								delete_sweep
+							</span>
+						</button>
+						<b>Erase device</b>
+					</div>
+					<div class="divider"></div>
+					<div class="btngrpelem">
+						<button onclick="window.parent.logoutoflair()">
+
+							<span class="material-symbols-rounded">
+								logout
+							</span>
+						</button>
+						<b>Log out</b>
+					</div>
+				</div>
+
+			</segr>
+			<script>
+				async function updefapps(elem) {
+					try {
+						elem.innerHTML = "Installing...";
+						await window.parent.installdefaultapps();
+						elem.innerHTML = "Update again";
+					} catch (error) {
+						console.error("Error updating default apps:", error);
+					}
+				}
+
+				async function edituserpfp() {
+					let fileid = await ntxSession.send("olp.useHandler", "file_manager", { "opener": 'any', "dir": "Downloads/" })
+					ntxSession.send("fileGet.byId", fileid)
+						.then(async (url) => {
+							let content = url?.content;
+							if (content) {
+								await window.parent.sharedStore.set(window.parent.CurrentUsername, "icon", content);
+								document.getElementById("userpfp").src = content;
+							} else {
+								ntxSession.send("sysUI.toast", "Unsupported file type");
+							}
+						})
+						.catch((error) => {
+							console.error("Error setting profile picture:", error);
+						});
+				}
+			</script>
+			<h1>Password</h1>
+			<segr>
+				<div class="single_setting" id="changpassthingy" class="spread">
+					<b id="passstat"></b>
+					<button onclick="chstpass()">Continue</button>
+				</div>
+			</segr>
+			<script>
+				document.getElementById("userstatsi").innerHTML = window.parent.CurrentUsername;
+				if (window.parent.password == 'lair') {
+					document.getElementById("passstat").innerHTML = "Set a password for your device:";
+				} else {
+					document.getElementById("passstat").innerHTML = "Change your password";
+				}
+				async function chstpass() {
+					var setpass = '';
+					if (window.parent.password == 'lair') {
+						setpass = await ntxSession.send("sysUI.ask", "Set a password: ", "")
+					} else {
+						setpass = await ntxSession.send("sysUI.ask", "Choose an another password: ", window.parent.password);
+						if (setpass == window.parent.password) {
+							ntxSession.send("sysUI.say", "That is your current password. Choose a different one.", "failed")
+							return;
+						}
+					}
+					if (await ntxSession.send("sysUI.confirm", "Are you sure?", "All your data will be lost if you forget this password. Re-encrypt all your files with this one?")) {
+						await window.parent.changePassword(window.parent.password, setpass);
+						await ntxSession.send("sysUI.say", "Click OK when you are ready to restart your lairOS.")
+						window.parent.location.reload()
+					} else {
+						return;
+					}
+				}
+
+				(async () => {
+					document.getElementById("userpfp").src = await window.parent.sharedStore.get(window.parent.CurrentUsername, "icon");
+				})();
+			</script>
+
+			<h3>Related settings</h3>
+
+			<segr>
+				<div class="single_setting" type="advsetnav" windowopener="User" onclick="openCity(event, 'storage')">
+					<i class="material-symbols-rounded advseticon">storage</i>
+					<div class="advsetnavbtnprt">
+						<div>
+							<b>Storage</b>
+							<p>Stats, actions and more...</p>
+						</div>
+						<button class="advancedsetsredbtn"><span class="material-symbols-rounded">
+								chevron_right
+							</span></button>
+					</div>
+				</div>
+				<div class="single_setting" type="advsetnav" windowopener="User" onclick="openCity(event, 'network')">
+					<i class="material-symbols-rounded advseticon">language</i>
+					<div class="advsetnavbtnprt">
+						<div>
+							<b>Network</b>
+							<p>Manage network connections...</p>
+						</div>
+						<button class="advancedsetsredbtn"><span class="material-symbols-rounded">
+								chevron_right
+							</span></button>
+					</div>
+				</div>
+			</segr>
+		</div>
+
+		<div id="battery" class="tabcontent advancedsettab">
+			<h1><span class="material-symbols-rounded advancedsetsbackbtn" onclick="openCity(event, 'system');">
+					arrow_back
+				</span> Battery</h1>
+			<h1 id="batperdisp">no :/</h1>
+			<p id="batperrem"></p>
+			<script>
+				var batchar;
+				navigator.getBattery().then(function (battery) {
+					updateBatteryInfo(battery);
+
+					battery.addEventListener('chargingchange', function () {
+						updateBatteryInfo(battery);
+					});
+				});
+
+				function updateBatteryInfo(battery) {
+					batchar = battery.charging;
+					console.log(batchar)
+					var batteryPercentage = (battery.level * 100).toFixed(0);
+					document.getElementById("batperdisp").innerHTML = batteryPercentage + "%";
+
+					var batteryRemark = getBatteryRemark(batteryPercentage);
+					document.getElementById("batperrem").innerHTML = batteryRemark;
+
+					var chargingIcon = document.getElementById("chargingIcon");
+					if (batchar) {
+						document.getElementById("batperdisp").innerHTML += '<g id="chargingIcon"><i class="material-symbols-rounded" >battery_charging_full</i></g>';
+					} else {
+					}
+				}
+
+				function getBatteryRemark(percentage) {
+					if (percentage == 0) {
+						if (batchar) {
+							return "Your device does not have a working battery."
+						} else {
+							return "Your battery feed is malfunctioning.";
+						}
+					} else if (percentage < 20) {
+						if (batchar) {
+							return "Your battery is still low, keep charging."
+						} else {
+							return "Your battery is running low. Please charge soon.";
+						}
+					} else if (percentage < 50) {
+						if (batchar) {
+							return "You have some battery left, But let it keep charging."
+						} else {
+							return "You have some battery left. Consider charging.";
+						}
+					} else if (percentage < 90) {
+						if (batchar) {
+							return "Your battery is in good condition. You may unplug your charger if needed."
+						} else {
+							return "Your battery is in good condition. No need to worry.";
+						}
+					} else if (batchar) {
+						return "Overcharging your device is not reccomended. You may unplug the charger now."
+					} else if (batchar && percentage == 100) {
+						return "Your device works without a battery. Remember to constantly save your files, you may lose progress otherwise."
+					} else {
+						return "Very high battery, keep it up.";
+					}
+				}</script>
+		</div>
+		<div id="about" class="tabcontent">
+			<h2 style="margin-bottom: 3px;">LairOS <span style="font-weight: normal;">Nich</span></h2>
+			<p style="margin-bottom: 1em;">Version 2.1</p>
+			<supportb>
+				<b>LairOS is Free.</b>
+				<p>Star the repo! It's Open Source:
+				</p>
+				<div class="supportbtns">
+					<a id="membershipsbtn"
+						onclick="window.open('https://github.com/nirholas/lairOS')">Star the repo</a>
+				</div>
+
+				<script>
+					function supportexpand() {
+						if (document.getElementById("membershipsbtn").style.display == "none") {
+							document.getElementById("membershipsbtn").style.display = "block";
+							document.getElementById("supportexpandable").style.display = "none"
+							document.getElementById("supportexpandbtn").innerHTML = `<i
+							class="material-symbols-rounded">expand_circle_down</i> More ways`;
+
+						} else {
+							document.getElementById("membershipsbtn").style.display = "none";
+							document.getElementById("supportexpandable").style.display = "flex"
+							document.getElementById("supportexpandbtn").innerHTML = `<i
+							class="material-symbols-rounded">expand_circle_up</i>`;
+						}
+
+					}
+				</script>
+			</supportb>
+			<h3>Come talk with us!</h3>
+			<segr>
+				<div class="single_setting">
+					<div class="settingName">
+						<b>LairOS Discord</b>
+						<p>Join us for support, exclusive news and much more.</p>
+					</div>
+					<button onclick="window.open('https://discord.gg/nichxbt')">Join</button>
+				</div>
+			</segr>
+			<h3>Credits</h3>
+			<small class="datasmall">
+				<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+					width="187.07103" height="102.19663" viewBox="0,0,187.07103,102.19663">
+					<g transform="translate(-172.62897,-123.93874)">
+						<g stroke="#ffffff" stroke-width="5" stroke-miterlimit="10">
+							<path
+								d="M224.55461,139.12731c1.93512,-7.91302 9.91863,-12.75906 17.83165,-10.82393c7.91302,1.93512 12.75905,9.91863 10.82393,17.83165c-1.93512,7.91302 -9.91863,12.75905 -17.83165,10.82393c-7.91302,-1.93512 -12.75905,-9.91862 -10.82393,-17.83164z"
+								fill="none" stroke-linecap="butt" />
+							<path
+								d="M246.49068,155.89542c0,0 4.7239,11.04796 4.92031,11.67681c1.99131,6.37553 3.32831,15.46815 3.32831,15.46815"
+								fill="none" stroke-linecap="round" />
+							<path
+								d="M242.11522,183.16604c0,0 14.09508,-15.22999 8.80374,-14.12642c-5.29134,1.10357 -23.06743,11.26253 -23.06743,11.26253"
+								fill="none" stroke-linecap="round" />
+							<path
+								d="M241.6347,221.38082c0,0 1.37914,-14.26659 4.59275,-20.76964c2.97931,-6.02892 8.61209,-16.19399 8.61209,-16.19399l10.91045,38.58282"
+								fill="none" stroke-linecap="round" />
+							<path
+								d="M207.32435,137.26268c1.93512,7.91302 -2.91091,15.89652 -10.82393,17.83164c-7.91302,1.93512 -15.89653,-2.91091 -17.83165,-10.82393c-1.93512,-7.91302 2.91091,-15.89653 10.82393,-17.83165c7.91302,-1.93513 15.89653,2.91091 17.83165,10.82393z"
+								fill="none" stroke-linecap="butt" />
+							<path
+								d="M186.13966,183.67574c0,0 1.337,-9.09262 3.32831,-15.46815c0.19641,-0.62885 0.92031,-12.67681 0.92031,-12.67681"
+								fill="none" stroke-linecap="round" />
+							<path
+								d="M199.26374,184.8014c0,0 -14.59508,-16.22999 -9.30374,-15.12642c5.29134,1.10357 20.56743,5.76253 20.56743,5.76253"
+								fill="none" stroke-linecap="round" />
+							<path
+								d="M175.12897,223.63537l10.91045,-38.58282c0,0 5.63278,10.16507 8.61209,16.19399c3.21361,6.50305 4.59275,20.76964 4.59275,20.76964"
+								fill="none" stroke-linecap="round" />
+							<path d="M203.53334,187.83333v-11.66667h34.66667v11.66667z" fill="#ffffff"
+								stroke-linecap="butt" />
+							<path d="M258.86667,218.84396v-11.66667h34.66666v11.66667z" fill="#ffffff"
+								stroke-linecap="butt" />
+							<path d="M301.2,218.84396v-11.66667h34.66667v11.66667z" fill="#ffffff"
+								stroke-linecap="butt" />
+							<path d="M280.53334,200.17729v-11.66667h34.66667v11.66667z" fill="#ffffff"
+								stroke-linecap="butt" />
+							<path d="M322.53334,199.84396v-11.66667h34.66666v11.66667z" fill="#ffffff"
+								stroke-linecap="butt" />
+							<path d="M301.53334,180.84396v-11.66667h34.66666v11.66667z" fill="#ffffff"
+								stroke-linecap="butt" />
+						</g>
+					</g>
+				</svg>
+
+				<p>Our bug hunters and the community provided valuable feedback and raised issues, helping LairOS to progress. Thank you being a part!</p>
+			</small>
+		</div>
+
+
+		<div id="apps" class="tabcontent">
+			<h1>Installed Apps</h1>
+			<div id="appslist">
+			</div>
+			<h1>Default apps</h1>
+			<segr>
+				<div class="single_setting">
+					<div class="settingName">
+						<b>Update Default Apps</b>
+						<p>Update or reinstall deleted or corrupted versions of default apps.</p>
+					</div>
+					<button style="margin-top: 5px;float: right;" onclick="updefapps(this)">Update</button>
+				</div>
+			</segr>
+			<script>
+				function handleAppClick(event, key) {
+					openCity(event, 'appsets');
+					loadAppSettings(key);
+				}
+
+				async function loadappslist() {
+					let registry = await window.parent.getSetting('full', "AppRegistry.json");
+
+					let appslist = document.getElementById("appslist");
+					appslist.innerHTML = "";
+
+					for (let key in registry) {
+						let perms = registry[key].perms || [];
+						let riskLevel = perms.length + " permissions";
+						if (perms.includes("unsandboxed")) {
+							riskLevel = "Full access";
+						}
+						let singularApp = document.createElement("div");
+						singularApp.className = "singular_app";
+						singularApp.onclick = function (event) {
+							handleAppClick(event, key);
+						};
+						singularApp.innerHTML = `
+    <div class="app_left">
+        <div class="app_icon">${await window.parent.getAppIcon(0, key)}</div>
+        <div class="app_detail">
+            <div class="app_name">${await window.parent.getFileNameByID(key)}</div>
+            <div class="app_risk">${riskLevel || "Installed"}</div>
+        </div>
+    </div>
+    <div class="app_options">
+        <span class="material-symbols-rounded">
+            chevron_forward
+        </span>
+    </div>
+`;
+						appslist.appendChild(singularApp);
+					}
+				}
+
+				async function loadAppSettings(appID) {
+					await openCity(0, 'appsets');
+					document.querySelector("#appsets").style.filter = `opacity(20%)`;
+					let registry = await window.parent.getSetting('full', "AppRegistry.json");
+
+					if (!registry[appID]) return;
+
+					let appData = registry[appID];
+					let icon = await window.parent.getAppIcon(0, appID);
+					let name = await window.parent.getFileNameByID(appID);
+
+					document.querySelector("#big_app_card .app_icon").innerHTML = icon;
+					document.querySelector("#big_app_card .app_risk").textContent = "ID: " + appID;
+					document.querySelector("#big_app_card .appname").textContent = name;
+					document.querySelector("#app_setting_nav").textContent = name;
+
+					document.querySelectorAll('.appInfoMngBtns')[0].onclick = function () {
+						window.parent.remfile(appID);
+					};
+
+					document.querySelectorAll('.appInfoMngBtns')[1].onclick = function () {
+						window.parent.extractAndRegisterCapabilities(appID);
+					};
+
+					document.querySelectorAll('.appInfoMngBtns')[2].onclick = async function () {
+						await ntxSession.send("olp.useHandler", "text_editor", appID);
+					};
+
+					document.getElementById("openappwindowbtn").onclick = async function () {
+						let appWindow = await window.parent.openfile(appID);
+					};
+
+					let permsContainer = document.querySelector("#app_perms_toggles");
+					permsContainer.innerHTML = '';
+
+					let namespaces = await window.parent.returnallnamespaces();
+
+					namespaces.sort((a, b) => {
+						if (a === 'unsandboxed') return -1;
+						if (b === 'unsandboxed') return 1;
+						if (appData.perms && appData.perms.includes(a) && !appData.perms.includes(b)) return -1;
+						if (appData.perms && !appData.perms.includes(a) && appData.perms.includes(b)) return 1;
+						return 0;
+					});
+
+					for (let i = 0; i < namespaces.length; i++) {
+						let ns = namespaces[i];
+						let div = document.createElement("div");
+						div.className = "single_setting";
+
+						let nameDiv = document.createElement("div");
+						nameDiv.className = "settingName";
+						let p = document.createElement("p");
+						p.innerHTML = window.parent.toTitleCase(window.parent.describeNamespaces(ns));
+						nameDiv.appendChild(p);
+
+						let input = document.createElement("input");
+						input.type = "checkbox";
+						input.className = "turnon_checkbox";
+						input.id = `cbx-perms-${i}`;
+
+						div.appendChild(nameDiv);
+						div.appendChild(input);
+						permsContainer.appendChild(div);
+
+						if (appData.perms && appData.perms.includes(ns)) {
+							input.checked = true;
+						}
+						input.addEventListener("change", async function () {
+							let registrykid = await window.parent.getSetting(appID, "AppRegistry.json");
+							console.log(appID, registrykid, 45)
+
+							if (input.checked) {
+								if (!registrykid.perms.includes(ns)) {
+									registrykid.perms.push(ns);
+								}
+							} else {
+								const index = registrykid.perms.indexOf(ns);
+								if (index > -1) {
+									registrykid.perms.splice(index, 1);
+								}
+							}
+
+							await window.parent.setSetting(appID, registrykid, "AppRegistry.json");
+						});
+
+					}
+
+					convertTurnonCheckboxes();
+					document.querySelector("#appsets").style.transition = `.3s`;
+					document.querySelector("#appsets").style.filter = ``;
+				}
+			</script>
+		</div>
+		<div id="appsets" class="tabcontent advancedsettab">
+			<h1><span class="material-symbols-rounded advancedsetsbackbtn" onclick="openCity(event, 'apps');">
+					arrow_back
+				</span>
+				<div id="app_setting_nav">App</div>
+			</h1>
+			<segr>
+				<div class="single_setting">
+					<div id="big_app_card">
+						<div class="app_icon"></div>
+						<div class="appdets">
+							<div class="appname">App</div>
+							<div class="app_risk">Installed</div>
+						</div>
+						<span id="openappwindowbtn" class="app_options material-symbols-rounded">
+							open_in_new
+						</span>
+					</div>
+				</div>
+			</segr>
+			<segr>
+				<div class="buttongrp">
+					<div class="btngrpelem appInfoMngBtns">
+						<button>
+							<span class="material-symbols-rounded">
+								delete_forever
+							</span>
+						</button>
+						<b>Remove app</b>
+					</div>
+					<div class="divider"></div>
+					<div class="btngrpelem appInfoMngBtns">
+						<button>
+							<span class="material-symbols-rounded">
+								download
+							</span>
+						</button>
+						<b>Reinstall</b>
+					</div>
+					<div class="divider"></div>
+					<div class="btngrpelem appInfoMngBtns">
+						<button>
+
+							<span class="material-symbols-rounded">
+								frame_inspect
+							</span>
+						</button>
+						<b>View source</b>
+					</div>
+				</div>
+
+			</segr>
+			<h1>Permissions</h1>
+			<segr id="app_perms_toggles">
+				<div class="single_setting">
+					<div class="settingName">
+						<p>key description</p>
+					</div>
+					<input class="turnon_checkbox" id="cbx-72">
+				</div>
+			</segr>
+
+		</div>
+
+		<div id="network" class="tabcontent">
+			<h1>Connect to a network</h1>
+			<segr>
+				<div class="single_setting"
+					onclick="window.parent.useHandler('content_store', {'opener':'viewapp', 'data':'Rotur Dashboard@nirholas', 'run':'true'});">
+					<div class="settingName"><b>RoturTW</b>
+						<p>Configure RoturTW networking</p>
+					</div>
+					<button class="advancedsetsredbtn"><span class="material-symbols-rounded">
+							chevron_right
+						</span></button>
+				</div>
+				<small class="datasmall">
+					<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+						width="72.15155" height="77.27406" viewBox="0,0,72.15155,77.27406">
+						<g transform="translate(-205.63971,-145.93894)">
+							<g fill="none" stroke="#ffffff" stroke-miterlimit="10">
+								<path
+									d="M271.76738,162.48658c-1.56574,7.72768 -6.59373,13.23063 -11.23034,12.29118c-4.63661,-0.93945 -7.12603,-7.96553 -5.56029,-15.69321c1.56574,-7.72768 6.59373,-13.23062 11.23033,-12.29117c4.6366,0.93945 7.12604,7.96552 5.56029,15.6932z"
+									stroke-width="1.5" stroke-linecap="butt" />
+								<path
+									d="M268.31257,153.78799c6.4411,4.54761 9.45069,11.3671 6.72212,15.23176c-2.72857,3.86465 -10.16204,3.31101 -16.60314,-1.2366c-6.44109,-4.54761 -9.45069,-11.36711 -6.72212,-15.23176c2.72857,-3.86465 10.16204,-3.31101 16.60314,1.2366z"
+									stroke-width="1.5" stroke-linecap="butt" />
+								<path
+									d="M260.27472,152.79926c7.3512,-2.85103 14.69724,-1.58666 16.40786,2.82405c1.71062,4.41072 -2.86197,10.29753 -10.21316,13.14857c-7.3512,2.85103 -14.69725,1.58666 -16.40787,-2.82406c-1.71062,-4.41072 2.86198,-10.29753 10.21317,-13.14856z"
+									stroke-width="1.5" stroke-linecap="butt" />
+								<path d="M226.99148,171.93219l-2.10561,21.19353" stroke-width="4"
+									stroke-linecap="round" />
+								<path
+									d="M219.18696,162.92221c-1.6795,-5.93099 1.76702,-12.10051 7.69801,-13.78c5.93099,-1.6795 12.1005,1.76702 13.78,7.69801c1.6795,5.93099 -1.76701,12.10051 -7.698,13.78c-5.93099,1.6795 -12.10051,-1.76702 -13.78,-7.69801z"
+									stroke-width="4" stroke-linecap="butt" />
+								<path
+									d="M227.42097,182.76548c0,0 5.93325,1.53335 9.01212,1.81865c3.20345,0.29684 14.32959,-3.595 14.32959,-3.595"
+									stroke-width="4" stroke-linecap="round" />
+								<path d="M227.41405,176.6532l15.63596,-2.81655" stroke-width="4"
+									stroke-linecap="round" />
+								<path
+									d="M207.63971,207.0706c0,0 7.29154,-2.24498 9.76022,-4.11516c3.09166,-2.34213 7.34491,-8.84304 7.34491,-8.84304c0,0 4.43312,10.81318 4.48466,14.70392c0.06742,5.08906 -11.65489,12.39669 -11.65489,12.39669"
+									stroke-width="4" stroke-linecap="round" />
+							</g>
+						</g>
+					</svg>
+
+					<p>Rotur is a cloudlink based standard for packet based communications,
+				generally for Web OSs.</p>
+				</small>
+			</segr>
+		</div>
+		<div id="rotursets" class="tabcontent advancedsettab">
+			<h1><span class="material-symbols-rounded advancedsetsbackbtn" onclick="openCity(event, 'network');">
+					arrow_back
+				</span> RoturTW</h1>
+
+
+			<div id="rotursettings">
+				<h1>Account</h1>
+				<segr id="rtrinitspace">
+				<div class="single_setting" class="spread">
+					<b>Initialize rotur</b>
+					<button onclick="loginOnceRotur()">Start</button>
+				</div>
+				<small>RoturTW is a third party service, which offers APIs. LairOS supports it but isn't affiliated
+					or
+					endorsing. Visit rotur.dev for details.</small>
+			</segr>				<segr id="rtrsignedinsec" style="display:none;">
+					<div class="single_setting" class="spread">
+						<b id="rtruserstatsi">Signed in</b>
+						<button onclick="signoutrtrsets()">Sign Out</button>
+					</div>
+				</segr>
+				<script>
+					async function loginOnceRotur() {
+						await window.parent.attemptConnection();
+						window.parent.roturExtension.login_prompt({ STYLE_URL: "https://lair2.vercel.app/lair-dev-repl-rl/libs/roturstyle.css" });
+					}
+					async function signoutrtrsets() {
+						await window.parent.logoutofrtr();
+						loaduprtour()
+					}
+					function loaduprtour() {
+						const roturExtension = window.parent.roturExtension;
+
+						if (roturExtension && roturExtension.loggedIn()) {
+							document.getElementById("rtrinitspace").style.display = "none";
+							document.getElementById("rtrsignedinsec").style.display = "block";
+							document.getElementById("rtruserstatsi").innerText = "Signed in as " + roturExtension.user.username;
+						} else {
+							document.getElementById("rtrinitspace").style.display = "block";
+							document.getElementById("rtrsignedinsec").style.display = "none";
+						}
+					}
+
+					async function initrotur() {
+						let rtrstats = await window.parent.setuprotur();
+
+						document.getElementById("rtrinitspace").style.display = "none";
+					}
+
+				</script>
+
+				</segr>
+			</div>
+		</div>
+
+		<div id="advancedthemesets" class="tabcontent advancedsettab">
+			<h1><span class="material-symbols-rounded advancedsetsbackbtn" onclick="openCity(event, 'exp');">
+					arrow_back
+				</span> Advanced theme settings</h1>
+			<h3>User Interface Colors</h3>
+			<segr>
+				<div class="single_setting" class="colorsetting">
+					<b>Primary Background</b>
+					<input class="colorpickerui" id="normal-bg" data-variable="--col-bg1"></input>
+				</div>
+				<div class="single_setting" class="colorsetting">
+					<b>Secondary Background</b>
+					<input class="colorpickerui" id="section-bg" data-variable="--col-bg2"></input>
+				</div>
+				<div class="single_setting" class="colorsetting">
+					<b>Tertiary Background</b>
+					<input class="colorpickerui" id="sub-bg" data-variable="--col-bg3"></input>
+				</div>
+				<div class="single_setting" class="colorsetting">
+					<b>Highlighted Background</b>
+					<input class="colorpickerui" id="high-bg" data-variable="--col-bgh"></input>
+				</div>
+
+			</segr>
+			<segr>
+				<div class="single_setting" class="colorsetting">
+					<b>Primary text</b>
+					<input class="colorpickerui" id="text-normal" data-variable="--col-txt1"></input>
+				</div>
+				<div class="single_setting" class="colorsetting">
+					<b>Highlighted text</b>
+					<input class="colorpickerui" id="text-high" data-variable="--col-txth"></input>
+				</div>
+			</segr>
+			<h3>Lair Nav <div class="betatag">beta</div>
+			</h3>
+			<segr>
+				<div class="single_setting">
+					<div class="settingName">
+						Transparent Background
+						</p>
+					</div>
+					<input class="turnon_checkbox" type="checkbox" id="cbx-71">
+				</div>
+				<div class="single_setting" class="colorsetting">
+					<b>Align items</b>
+					<select id="navAlignment">
+						<option value="center" selected>Center</option>
+						<option value="flex-start">Left</option>
+						<option value="flex-end">Right</option>
+					</select>
+				</div>
+			</segr>
+			<h3>Visuals</h3>
+			<segr>
+				<div class="single_setting" class="colorsetting">
+					<span class="material-symbols-rounded">
+						check_circle
+					</span>
+					<b>Confirm Color</b>
+					<input class="colorpickerui" data-variable="--col-good"></input>
+				</div>
+				<div class="single_setting" class="colorsetting">
+					<span class="material-symbols-rounded">
+						cancel
+					</span>
+					<b>Decline Color</b>
+					<input class="colorpickerui" data-variable="--col-bad"></input>
+				</div>
+
+				<div class="single_setting">
+					<span class="material-symbols-rounded">
+						rounded_corner
+					</span>
+					<b>Corner rounding</b>
+					<select data-variable="--siz-radius1" id="brdrdrp">
+						<option value="1rem">Too cute</option>
+						<option value=".7rem">Pretty round</option>
+						<option value=".5rem">Normally round</option>
+						<option value=".3rem">Barely round</option>
+						<option value="0rem">Sharp</option>
+					</select>
+				</div>
+				<div class="single_setting">
+					<span class="material-symbols-rounded">
+						space_dashboard
+					</span>
+					<b>Normal Spacing</b>
+					<input class="numinp" data-variable="--spacing-normal"></input>
+				</div>
+				<div class="single_setting">
+					<span class="material-symbols-rounded">
+						align_space_around
+					</span>
+					<b>Gap spacing</b>
+					<input class="numinp" data-variable="--spacing-gap"></input>
+				</div>
+				<div class="single_setting">
+					<span class="material-symbols-rounded">
+						aspect_ratio
+					</span>
+					<b>Normal Sizing</b>
+					<input class="numinp" min="0" max="100" data-variable="--sizing-normal"></input>
+				</div>
+			</segr>
+		</div>
+
+		<div id="devices" class="tabcontent advancedsettab">
+			<h1><span class="material-symbols-rounded advancedsetsbackbtn" onclick="openCity(event, 'system');">
+					arrow_back
+				</span> Devices</h1>
+			<div id="deviceslist">
+				<div class="device">
+					<div class="dic">
+						<span class="material-symbols-rounded">
+							refresh
+						</span>
+					</div>
+					<div class="ddts">
+						<span>Reindex Devices</span>
+					</div>
+					<button onclick="generateDeviceDivs()">Refresh</button>
+				</div>
+			</div>
+			<script>
+				function generateDeviceDivs() {
+					const devicesListDiv = document.getElementById("deviceslist");
+
+					navigator.mediaDevices.enumerateDevices().then(devices => {
+						if (devices.length === 0) {
+							devicesListDiv.innerHTML = "<p>No media devices found.</p>";
+							return;
+						}
+
+						const uniqueDevices = {};
+
+						devices.forEach(device => {
+							const deviceId = device.deviceId;
+							if (uniqueDevices[device.label]) {
+								return;
+							}
+
+							const info = {
+								id: deviceId || 'N/A',
+							};
+
+							if (device.kind === 'audioinput' && devices.some(d => d.deviceId === deviceId && d.kind === 'audiooutput')) {
+								info.type = 'both';
+							} else if (device.kind === 'audioinput') {
+								info.type = 'microphone';
+							} else if (device.kind === 'audiooutput') {
+								info.type = 'speakers';
+							} else if (device.kind === 'videoinput') {
+								info.type = 'camera';
+							}
+
+							uniqueDevices[device.label] = info;
+						});
+
+						devicesListDiv.innerHTML = ""; // Clear previous content
+
+						Object.keys(uniqueDevices).forEach(deviceLabel => {
+							const deviceInfo = uniqueDevices[deviceLabel];
+
+							const deviceDiv = document.createElement("div");
+							deviceDiv.classList.add("device");
+
+							const powerDiv = document.createElement("div");
+							powerDiv.classList.add("dic");
+							const powerIcon = document.createElement("span");
+							powerIcon.classList.add("material-symbols-rounded");
+							if (deviceInfo.type === 'microphone') {
+								powerIcon.textContent = "mic";
+							} else if (deviceInfo.type === 'camera') {
+								powerIcon.textContent = "videocam";
+							} else if (deviceInfo.type === 'speakers') {
+								powerIcon.textContent = "volume_up";
+							} else {
+								powerIcon.textContent = "power_settings_new";
+							}
+							powerDiv.appendChild(powerIcon);
+
+							const deviceTextDiv = document.createElement("div");
+							deviceTextDiv.classList.add("ddts");
+							const deviceNameSpan = document.createElement("span");
+							deviceNameSpan.textContent = deviceLabel;
+							deviceTextDiv.appendChild(deviceNameSpan);
+
+							const deviceIdSpan = document.createElement("span");
+							deviceIdSpan.textContent = deviceInfo.id;
+							deviceIdSpan.setAttribute("boo", true);
+
+							deviceDiv.appendChild(powerDiv);
+							deviceDiv.appendChild(deviceTextDiv);
+							deviceDiv.appendChild(deviceIdSpan);
+
+							devicesListDiv.appendChild(deviceDiv);
+						});
+					}).catch(err => {
+						devicesListDiv.innerHTML = "<p>Error enumerating devices: " + err + "</p>";
+					});
+				}
+			</script>
+		</div>
+
+		<div id="exp" class="tabcontent">
+			<h1>Theme</h1>
+			<segr>
+
+				<div class="buttongrp">
+					<div class="btngrpelem" id="copy-theme-btn">
+						<button>
+							<span class="material-symbols-rounded">
+								content_copy
+							</span>
+						</button>
+						<b>Copy theme</b>
+					</div>
+					<div class="divider"></div>
+					<div class="btngrpelem" id="paste-theme-btn">
+						<button>
+
+							<span class="material-symbols-rounded">
+								content_paste
+							</span>
+						</button>
+						<b>Paste theme</b>
+					</div>
+				</div>
+
+			</segr>
+			<segr style="margin-top: .5rem">
+				<div class="single_setting"
+					onclick="ntxSession.send('olp.useHandler','content_store', {'opener':'themes'})">
+
+					<div class="settingName">
+						<span>Browse themes</span>
+						<p>Browse official theme packs</p>
+					</div>
+					<button class="advancedsetsredbtn"><span class="material-symbols-rounded">
+							chevron_right
+						</span></button>
+				</div>
+				<div class="single_setting" windowopener="Advanced theme"
+					onclick="openCity(event, 'advancedthemesets');initColorPickers();">
+					<div class="settingName"><b>Advanced theme settings</b>
+						<p>Configure UI Colors, visuals...</p>
+					</div>
+					<button class="advancedsetsredbtn"><span class="material-symbols-rounded">
+							chevron_right
+						</span></button>
+				</div>
+			</segr>
+			<script>
+
+				function normalizeBorderRadius(inputRem) {
+					const allowedValues = ["1rem", ".7rem", ".5rem", ".3rem", "0rem"];
+					const parsedInput = parseFloat(inputRem);
+
+					if (isNaN(parsedInput)) {
+						return "0rem";
+					}
+
+					let closest = allowedValues[0];
+					let minDiff = Math.abs(parsedInput - parseFloat(closest));
+
+					for (const val of allowedValues) {
+						const diff = Math.abs(parsedInput - parseFloat(val));
+						if (diff < minDiff) {
+							closest = val;
+							minDiff = diff;
+						}
+					}
+
+					return closest;
+				}
+
+				async function copyCurrentTheme() {
+					const colorsToCopy = {};
+					document.querySelectorAll('[data-variable]').forEach(button => {
+						const variableName = button.dataset.variable;
+						const colorValue = button.jscolor ? button.jscolor.toHEXString() : button.value;
+						colorsToCopy[variableName] = colorValue;
+					});
+					if (await ntxSession.send("sysUI.confirm", "Include current wallpaper?", "Include the currently set wallpaper with the theme code?")) {
+						colorsToCopy['wallpaper'] = await ntxSession.send("settings.get", "wall");
+					}
+					window.parent.navigator.clipboard.writeText(JSON.stringify(colorsToCopy))
+						.then(() => ntxSession.send("sysUI.toast", 'Theme copied to clipboard!'))
+						.catch(err => console.error('Error copying theme:', err));
+				}
+
+				async function pasteThemeFromClipboard() {
+					try {
+						const text = await navigator.clipboard.readText();
+						const parsedColors = JSON.parse(text);
+						console.log(parsedColors)
+						var variableName;
+
+						if (typeof parsedColors === 'object' && parsedColors !== null) {
+							const buttons = document.querySelectorAll('[data-variable]');
+							buttons.forEach(button => {
+								const variableName = button.dataset.variable;
+								if (parsedColors[variableName]) {
+									if (button.classList.contains('colorpickerui')) {
+										button.jscolor.fromString(parsedColors[variableName]);
+										updateColor(button, variableName);
+									} else {
+										let value = parsedColors[variableName];
+										if (variableName === '--siz-radius1') {
+											const parsedValue = parseFloat(value);
+											value = normalizeBorderRadius(parsedValue);
+										}
+										button.value = value;
+									}
+
+								}
+							});
+							if (parsedColors['wallpaper']) {
+								if (await ntxSession.send("sysUI.confirm", "Include theme wallpaper?", "Include the wallpaper included in the theme code?")) {
+									document.getElementById("wallpaperurl").value = parsedColors['wallpaper'];
+									savewallpap();
+								}
+
+							}
+							saveColors();
+							ntxSession.send("sysUI.toast", 'Theme applied from clipboard!');
+						} else {
+							ntxSession.send("sysUI.say", 'Clipboard does not contain a valid theme JSON.');
+						}
+					} catch (error) {
+						console.error('Error pasting theme:', error);
+						ntxSession.send("sysUI.say", 'Failed to apply theme from clipboard. Ensure it contains valid JSON.');
+					}
+				}
+			</script>
+			<h1>Wallpaper</h1>
+			<segr>
+				<div class="inpbox" style="padding:8px 12px;">
+					<b style="display:block;margin-bottom:8px;">Lair Wallpapers</b>
+					<div id="wallpaper-gallery" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;">
+						<div class="wp-thumb" onclick="pickWallpaper('/assets/wallpapers/lairasset.jpg')" style="cursor:pointer;border-radius:8px;overflow:hidden;aspect-ratio:16/10;border:2px solid transparent;transition:border .2s;">
+							<img src="/assets/wallpapers/lairasset.jpg" style="width:100%;height:100%;object-fit:cover;display:block;" alt="Lair 1">
+						</div>
+						<div class="wp-thumb" onclick="pickWallpaper('/assets/wallpapers/lairasset2.jpg')" style="cursor:pointer;border-radius:8px;overflow:hidden;aspect-ratio:16/10;border:2px solid transparent;transition:border .2s;">
+							<img src="/assets/wallpapers/lairasset2.jpg" style="width:100%;height:100%;object-fit:cover;display:block;" alt="Lair 2">
+						</div>
+						<div class="wp-thumb" onclick="pickWallpaper('/assets/wallpapers/lairasset3.jpg')" style="cursor:pointer;border-radius:8px;overflow:hidden;aspect-ratio:16/10;border:2px solid transparent;transition:border .2s;">
+							<img src="/assets/wallpapers/lairasset3.jpg" style="width:100%;height:100%;object-fit:cover;display:block;" alt="Lair 3">
+						</div>
+						<div class="wp-thumb" onclick="pickWallpaper('/assets/wallpapers/lairasset4.jpg')" style="cursor:pointer;border-radius:8px;overflow:hidden;aspect-ratio:16/10;border:2px solid transparent;transition:border .2s;">
+							<img src="/assets/wallpapers/lairasset4.jpg" style="width:100%;height:100%;object-fit:cover;display:block;" alt="Lair 4">
+						</div>
+						<div class="wp-thumb" onclick="pickWallpaper('/assets/wallpapers/lairasset5.jpg')" style="cursor:pointer;border-radius:8px;overflow:hidden;aspect-ratio:16/10;border:2px solid transparent;transition:border .2s;">
+							<img src="/assets/wallpapers/lairasset5.jpg" style="width:100%;height:100%;object-fit:cover;display:block;" alt="Lair 5">
+						</div>
+					</div>
+				</div>
+				<div class="inpbox" type="textInput">
+					<div class="inputwithbtn">
+						<input placeholder="Paste a URL or file ID here..." id="wallpaperurl" class="inputtype1">
+						<button onclick="savewallpap()">Change</button>
+					</div>
+				</div>
+				<div class="single_setting" class="colorsetting">
+					<b>Wallpaper position</b>
+					<select id="wallpaperPos">
+						<option value="center">Center</option>
+						<option value="left">Left</option>
+						<option value="right">Right</option>
+						<option value="top">Top</option>
+						<option value="bottom">Bottom</option>
+
+					</select>
+				</div>
+				<div class="single_setting" class="colorsetting">
+					<b>Wallpaper sizing</b>
+					<select id="wallpaperSiz">
+						<option value="cover">Cover</option>
+						<option value="contain">Fit</option>
+						<option value="fill">Stretch</option>
+
+					</select>
+				</div>
+			</segr>
+			<script>
+				async function pickWallpaper(url) {
+					document.getElementById("wallpaperurl").value = url;
+					await ntxSession.send("settings.set", "wall", url);
+					// highlight selected thumbnail
+					document.querySelectorAll('.wp-thumb').forEach(t => t.style.border = '2px solid transparent');
+					event.currentTarget.closest('.wp-thumb')?.style.setProperty('border', '2px solid var(--col-txt1)');
+				}
+				// highlight current wallpaper on load
+				(async () => {
+					let currentWall = await ntxSession.send("settings.get", "wall");
+					if (currentWall) {
+						document.querySelectorAll('.wp-thumb').forEach(t => {
+							if (t.querySelector('img')?.src?.endsWith(currentWall) || t.getAttribute('onclick')?.includes(currentWall)) {
+								t.style.border = '2px solid var(--col-txt1)';
+							}
+						});
+					}
+				})();
+			</script>
+
+			<h1>Icon pack <div class="betatag">beta</div>
+			</h1>
+			<segr>
+				<div class="inpbox" type="textInput">
+					<span>Apply an icon pack: </span>
+					<div class="inputwithbtn">
+						<input placeholder="Paste a file ID here..." id="iconpackidinp" class="inputtype1">
+						<button onclick="saveiconpack()">Change</button>
+					</div>
+				</div>
+			</segr>
+
+			<script>
+				async function saveiconpack() {
+					if (document.getElementById("iconpackidinp").value == '') {
+						let packID = await ntxSession.send("olp.useHandler", "file_manager", { "opener": 'any', "dir": "Downloads/" })
+						document.getElementById("iconpackidinp").value = (packID) ? packID : '';
+					}
+					let iconp;
+					try {
+						iconp = await window.parent.getFileById(document.getElementById("iconpackidinp").value);
+						window.parent.applyIconPack(JSON.parse(window.parent.decodeBase64Content(iconp.content)));
+						window.parent.toast(`Icon pack "${iconp.fileName}" applied`)
+					} catch (err) {
+						console.warn(err);
+						window.parent.toast(`"${iconp.fileName}" isn't an icon pack`);
+						document.getElementById("iconpackidinp").value = "";
+					}
+
+				}
+
+				const debouncedSaveColor = debounce((picker, variableName) => {
+					updateColor(picker, variableName);
+					saveColors();
+				}, 300);
+				async function saveColors() {
+					const colorsToSave = {};
+					const buttons = document.querySelectorAll('[data-variable]');
+
+					buttons.forEach(button => {
+						const variableName = button.dataset.variable;
+						const colorValue = button.jscolor
+							? button.jscolor.toHEXString()
+							: button.value;
+
+						colorsToSave[variableName] = colorValue;
+					});
+					console.log(colorsToSave)
+
+					applyTheme({ colors: colorsToSave });
+					await ntxSession.send("settings.set", "themeColors", colorsToSave);
+				}
+
+				function updateColor(picker, variableName) {
+					const colorValue = picker.jscolor
+						? picker.jscolor.toHEXString()
+						: picker.value;
+
+					document.documentElement.style.setProperty(variableName, colorValue);
+				}
+
+				function getCSSVariableValue(varName) {
+					const styleTag = window.parent.document.getElementById('laircsstag');
+					if (!styleTag) return null;
+
+					const cssText = styleTag.textContent;
+					const regex = new RegExp(`${varName}\\s*:\\s*([^;]+);`);
+					const match = cssText.match(regex);
+
+					return match ? match[1].trim() : null;
+				}
+
+				function applyTheme(data) {
+					const inputs = document.querySelectorAll('[data-variable]');
+					inputs.forEach(input => {
+						const variableName = input.dataset.variable;
+						const newValue = data.colors[variableName];
+
+						if (newValue !== undefined) {
+							if (input.classList.contains('colorpickerui')) {
+								input.jscolor.fromString(newValue);
+							} else if (input.classList.contains('numinp')) {
+								input.value = newValue;
+							}
+							updateColor(input, variableName);
+						}
+					});
+
+					window.parent.applyTheme(data.colors, document);
+				}
+
+				async function initColorPickers() {
+					document.querySelectorAll('[data-variable]').forEach(button => {
+						const variableName = button.dataset.variable;
+						if (button.classList.contains('colorpickerui')) {
+							if (button.jscolor) {
+								button.jscolor.fromString(getCSSVariableValue(variableName));
+							} else {
+								button.jscolor = new jscolor(button, {
+									preset: 'dark',
+									width: 150,
+									paletteCols: 0,
+									onInput: () => debouncedSaveColor(button, variableName)
+								});
+								button.jscolor.fromString(getCSSVariableValue(variableName));
+							}
+						} else {
+							button.value = getCSSVariableValue(variableName);
+							button.addEventListener('input', () => debouncedSaveColor(button, variableName));
+							button.addEventListener('change', () => debouncedSaveColor(button, variableName));
+						}
+					});
+
+					// nav theme
+					async function saveNovNavCtrlSetting() {
+						let newValue = {
+							"bg": document.getElementById("cbx-71").checked,
+							"align": document.getElementById("navAlignment").value
+						};
+						await ntxSession.send("settings.set", "NovNavCtrl", newValue);
+					}
+
+					document.getElementById("cbx-71").addEventListener("change", saveNovNavCtrlSetting);
+					document.getElementById("navAlignment").addEventListener("change", saveNovNavCtrlSetting);
+
+					try {
+						let currentSettings = await ntxSession.send("settings.get", "NovNavCtrl");
+						if (currentSettings?.bg) {
+							document.getElementById("cbx-71").checked = true;
+						}
+						if (currentSettings?.align) {
+							document.getElementById("navAlignment").value = currentSettings.align;
+						}
+					} catch (error) {
+						console.error(error);
+					}
+
+				}
+
+				function debounce(func, wait) {
+					let timeout;
+					return function (...args) {
+						clearTimeout(timeout);
+						timeout = setTimeout(() => func.apply(this, args), wait);
+					};
+				}
+			</script>
+			</segr>
+			<script defer>
+				async function savewallpap() {
+					var newurl = document.getElementById("wallpaperurl");
+					var oldurl = await ntxSession.send("settings.get", "wall");
+					if (newurl.value == '' || newurl.value == oldurl) {
+						let fileID = await ntxSession.send("olp.useHandler", "file_manager", { "opener": 'any', "dir": "Downloads/" })
+						newurl.value = (fileID) ? fileID : '';
+					}
+					await ntxSession.send("settings.set", "wall", newurl.value);
+
+				}
+				var prevCityBtn = null;
+				function openCity(evt, cityName) {
+					currentpage = cityName;
+					var i, tabcontent, tablinks;
+					tabcontent = document.getElementsByClassName("tabcontent");
+					for (i = 0; i < tabcontent.length; i++) {
+						tabcontent[i].style.display = "none";
+					}
+					tablinks = document.getElementsByClassName("tablinks");
+					for (i = 0; i < tablinks.length; i++) {
+						tablinks[i].className = tablinks[i].className.replace(" active", "");
+					}
+					try {
+						document.getElementById(cityName).style.display = "block";
+						if (evt.currentTarget.classList.contains("tablinks")) {
+							evt.currentTarget.className += " active";
+							prevCityBtn = evt.currentTarget;
+						} else if (prevCityBtn) {
+							prevCityBtn.className += " active"
+						}
+					} catch (e) { }
+
+				}
+
+				var usedMemoryPercentage;
+				document.getElementById("defaultOpen").click();
+
+				if ('storage' in navigator && 'estimate' in navigator.storage) {
+					navigator.storage.estimate().then(({ usage, quota }) => {
+
+						const elem = document.getElementById("myBar2");
+						const storemarkElem = document.getElementById("storemark2");
+
+						// Calculate used memory percentage
+						const usedMemoryPercentage = (usage / quota) * 100;
+						elem.style.width = usedMemoryPercentage + "%";
+
+						// Convert total and used memory to GB and MB
+						const totalMemoryGB = (quota / (1024 * 1024 * 1024)).toFixed(2);
+						const usedMemoryGB = (usage / (1024 * 1024 * 1024)).toFixed(2);
+						const totalMemoryMB = (quota / (1024 * 1024)).toFixed(2);
+						const usedMemoryMB = (usage / (1024 * 1024)).toFixed(2);
+
+						// Display memory usage
+						storemarkElem.textContent = `Used ${usedMemoryGB} GB (${usedMemoryMB} MB) of available ${totalMemoryGB} GB (${totalMemoryMB} MB)`;
+						let strgsugs = document.getElementById("storagesuggs");
+						if (usedMemoryPercentage < 20) {
+							strgsugs.innerHTML = `<small><b>You have a lot of storage left!</b><p>You can import files in files app or install apps from store to use it!</p></small>`
+						}
+					});
+				}
+
+				generateDeviceDivs()
+			</script>
+	</container>
+	<script>
+		var navigation = {
+			"System": {
+				"Storage": ["storage", "erase", "saved", "files", "memory"],
+				"Battery": ["charge", "power", "battery", "plug"],
+				"Devices": ["devices", "ports", "input", "output", "keyboard", "webcam"],
+				"Activity": ["apps", "running", "process", "task", "tskmgr", "activity"],
+				"Performance": ["fps", "performance", "speed", "load", "graph", "activity", "chart"]
+			},
+			"Preferences": {
+				"Preferences": ["smart search", "control", "focus mode", "save as", "search engine", "time", "reset", "offline"]
+			},
+			"Display": {
+				"Display": ["copy", "theme", "paste", "colors", "wallpaper", "desktop", "customiz"],
+				"Advanced theme": ["colors", "visuals", "advanced theme", "more theme", "custom"],
+			},
+			"Networking": {
+				"Rotur": ["rotur", "TW"]
+			},
+			"User": {
+				"User": ["user", "account"]
+			},
+			"Defaults": {
+				"Defaults": ["default", "apps", "opener", "open with"]
+			},
+			"About": {
+				"About": ["version", "credits", "pay", "membership", "support"]
+			},
+		}
+
+		function searchNavigation(input) {
+			input = input.toLowerCase();
+			let results = [];
+			let seen = new Set();
+
+			for (const category in navigation) {
+				const categorySimilarity = window.parent.calculateSimilarity(input, category);
+				if (categorySimilarity > 0.3) {
+					const key = `${category.toLowerCase()}||null||${category.toLowerCase()}`;
+					if (!seen.has(key)) {
+						results.push({ category, subcategory: null, keyword: category, similarity: categorySimilarity });
+						seen.add(key);
+					}
+				}
+
+				for (const subcategory in navigation[category]) {
+					const subcategorySimilarity = window.parent.calculateSimilarity(input, subcategory);
+					if (subcategorySimilarity > 0.3) {
+						const key = `${category.toLowerCase()}||${subcategory.toLowerCase()}||${subcategory.toLowerCase()}`;
+						if (!seen.has(key)) {
+							results.push({ category, subcategory, keyword: subcategory, similarity: subcategorySimilarity });
+							seen.add(key);
+						}
+					}
+
+					for (const keyword of navigation[category][subcategory]) {
+						const keywordSimilarity = window.parent.calculateSimilarity(input, keyword);
+						if (keywordSimilarity > 0.3) {
+							const key = `${category.toLowerCase()}||${subcategory.toLowerCase()}||${keyword.toLowerCase()}`;
+							if (!seen.has(key)) {
+								results.push({ category, subcategory, keyword, similarity: keywordSimilarity });
+								seen.add(key);
+							}
+						}
+					}
+				}
+			}
+
+			results.sort((a, b) => b.similarity - a.similarity);
+			return results;
+		}
+		document.getElementById("searchInput").addEventListener("input", function () {
+			const input = this.value.trim();
+			const results = searchNavigation(input);
+
+			const resultsContainer = document.getElementById("searchResults");
+			resultsContainer.innerHTML = "";
+
+			if (results.length === 0 || input === "") {
+				resultsContainer.style.display = "none";
+				return;
+			}
+
+			resultsContainer.style.display = "flex";
+
+			results.forEach(result => {
+				if (!result.subcategory)
+					return;
+				const item = document.createElement("div");
+				item.classList.add("searchResult");
+				item.innerHTML = `<small>${result.category} ></small><span>${result.subcategory}</span>`;
+				item.addEventListener("click", () => openDesig(result.category, result.subcategory));
+				resultsContainer.appendChild(item);
+			});
+		});
+
+		document.getElementById("searchInput").addEventListener("keypress", function (event) {
+			if (event.key === "Enter") {
+				const results = searchNavigation(this.value.trim());
+				if (results.length > 0) {
+					openDesig(results[0].category, results[0].subcategory);
+				}
+			}
+		});
+
+		function openDesig(category, subcategory) {
+			const element = document.querySelector(`[windowopener="${subcategory}"]`);
+			if (element) {
+				element.click();
+			} else {
+				console.warn(`No windowopener found for category: ${category}`);
+			}
+		}
+		async function convertTurnonCheckboxes() {
+			const checkboxes = document.querySelectorAll('.turnon_checkbox');
+			checkboxes.forEach(async (el) => {
+				if (el.dataset.converted === '1') return;
+				el.dataset.converted = '1';
+
+				const id = el.id || 'chk_' + Math.random().toString(36).slice(2, 10);
+				el.id = id;
+
+				const wrapper = document.createElement('div');
+				wrapper.className = 'checkbox-wrapper-51';
+
+				const label = document.createElement('label');
+				label.setAttribute('for', id);
+				label.className = 'toggle';
+
+				const span = document.createElement('span');
+
+				const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+				svg.setAttribute('width', '10px');
+				svg.setAttribute('height', '10px');
+				svg.setAttribute('viewBox', '0 0 10 10');
+
+				const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+				path.setAttribute('d', 'M5,1 L5,1 C2.790861,1 1,2.790861 1,5 L1,5 C1,7.209139 2.790861,9 5,9 L5,9 C7.209139,9 9,7.209139 9,5 L9,5 C9,2.790861 7.209139,1 5,1 L5,9 L5,1 Z');
+
+				svg.appendChild(path);
+				span.appendChild(svg);
+				el.setAttribute('role', 'submit');
+
+				const parent = el.parentNode;
+				parent.insertBefore(wrapper, el);
+
+				label.appendChild(span);
+				wrapper.appendChild(el);
+				wrapper.appendChild(label);
+
+				if (el.hasAttribute('settingkey')) {
+					const key = el.getAttribute('settingkey');
+					try {
+						const val = await ntxSession.send("settings.get", key);
+						el.checked = val === true || val === 'true' || val != null;
+					} catch (e) {
+						console.error(e);
+					}
+					el.addEventListener('change', () => {
+						ntxSession.send("settings.set", key, el.checked === true);
+					});
+				}
+			});
+		}
+		async function greenflag() {
+			ntxSession = new NTXSession();
+
+			var defile;
+			convertTurnonCheckboxes();
+			try {
+				if (myWindow.params) {
+					console.log(myWindow.params.data.id)
+					if (myWindow.params.data.data == "appsets" && myWindow.params.data.id) {
+						loadAppSettings(myWindow.params.data.id);
+					}
+				}
+				function replaceSelects() {
+					let openDialog = null;
+
+					document.querySelectorAll('select').forEach(select => {
+						const wrapper = document.createElement('div');
+						wrapper.className = 'custom-select-wrapper';
+
+						const selected = document.createElement('div');
+						selected.className = 'custom-select';
+						selected.textContent = select.options[select.selectedIndex]?.textContent || 'Set';
+
+						const dialog = document.createElement('dialog');
+						dialog.className = 'custom-select-dialog';
+
+						const optionsBox = document.createElement('div');
+						optionsBox.className = 'custom-select-options-box';
+
+						Array.from(select.options).forEach(option => {
+							const optionDiv = document.createElement('div');
+							optionDiv.textContent = option.textContent;
+							optionDiv.dataset.value = option.value;
+							optionDiv.onclick = () => {
+								selected.textContent = option.textContent;
+								select.value = option.value;
+								select.dispatchEvent(new Event('change', { bubbles: true }));
+								dialog.close();
+								openDialog = null;
+							};
+							optionsBox.appendChild(optionDiv);
+						});
+
+						dialog.appendChild(optionsBox);
+
+						const reposition = () => {
+							if (!dialog.open) return;
+							const rect = selected.getBoundingClientRect();
+							if (rect.bottom < 0 || rect.top > window.innerHeight || rect.left < 0 || rect.right > window.innerWidth) {
+								dialog.close();
+								openDialog = null;
+								return;
+							}
+							optionsBox.style.top = `${rect.bottom - 15}px`;
+							optionsBox.style.left = `${rect.left - 20}px`;
+						};
+
+						selected.onclick = () => {
+							if (dialog.open) {
+								dialog.close();
+								openDialog = null;
+								return;
+							}
+							if (openDialog) {
+								openDialog.close();
+							}
+							dialog.showModal();
+							reposition();
+							window.scrollBy({
+								top: selected.getBoundingClientRect().top - 16,
+								behavior: 'smooth'
+							});
+							openDialog = dialog;
+						};
+
+						dialog.addEventListener('click', e => {
+							if (e.target === dialog) {
+								dialog.close();
+								openDialog = null;
+							}
+						});
+
+						document.addEventListener('click', e => {
+							if (!wrapper.contains(e.target) && openDialog === dialog) {
+								dialog.close();
+								openDialog = null;
+							}
+						});
+
+						select.addEventListener('change', () => {
+							selected.textContent = select.options[select.selectedIndex]?.textContent || 'Set';
+						});
+
+						new MutationObserver(() => {
+							selected.textContent = select.options[select.selectedIndex]?.textContent || 'Set';
+						}).observe(select, { attributes: true, attributeFilter: ['value'] });
+
+						wrapper.addEventListener('scroll', reposition, true);
+
+						wrapper.appendChild(selected);
+						wrapper.appendChild(dialog);
+						select.style.display = 'none';
+						select.parentNode.insertBefore(wrapper, select);
+						wrapper.appendChild(select);
+						dialog.close();
+					});
+				}
+				replaceSelects();
+			} catch (e) { }
+
+			eventBus.listen({
+				type: "rotur",
+				event: "authDone",
+				callback: () => {
+					loaduprtour();
+				}
+			});
+		}
+	</script>
+</body>
+
+</html>

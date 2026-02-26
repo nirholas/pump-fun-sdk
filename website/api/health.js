@@ -1,0 +1,11 @@
+/**
+ * Health check endpoint for LairOS.
+ * Returns 200 OK so iframe apps (e.g. Lairbot) can verify the host is reachable.
+ *
+ * GET /api/health → { status: "ok", ts: <unix ms> }
+ */
+module.exports = function handler(_req, res) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.status(200).json({ status: 'ok', ts: Date.now() });
+};

@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JSON App</title>
+    <meta name="lair-include" content="lair.css material-symbols-rounded">
+    <meta name="lair-icon"
+        content="<svg version='1.1' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' width='101.64293' height='110.83774' viewBox='0,0,101.64293,110.83774'><g transform='translate(-173.40632,-121.80926)'><g stroke-miterlimit='10'><path d='M204.95075,220.44111v-98.63186h70.0985v98.63186z' fill='#47a23e' stroke='none' stroke-width='none' stroke-linecap='butt'/><path d='M210.83983,159.23154v-30.62489h44.83985v30.62489z' fill='#242424' stroke='none' stroke-width='none' stroke-linecap='butt'/><path d='M210.72489,135.975v17.07528' fill='none' stroke='#cccccc' stroke-width='2.5' stroke-linecap='round'/><path d='M254.76113,134.62695v19.32202' fill='none' stroke='#cccccc' stroke-width='2.5' stroke-linecap='round'/><path d='M261.68111,216.09233v-87.30692h9.66101v87.30692z' fill='#ffb600' stroke='#cccccc' stroke-width='0' stroke-linecap='butt'/><path d='M210.89731,196.52754v-30.62489h44.83985v30.62489z' fill='#242424' stroke='none' stroke-width='none' stroke-linecap='butt'/><path d='M210.78236,173.27099v17.07528' fill='none' stroke='#cccccc' stroke-width='2.5' stroke-linecap='round'/><path d='M254.8186,171.92295v19.32202' fill='none' stroke='#cccccc' stroke-width='2.5' stroke-linecap='round'/><path d='M190.58444,229.09347l-13.62461,-50.05062l50.05063,-13.62461l13.6246,50.05063z' fill='#000000' stroke='#000000' stroke-width='0' stroke-linecap='butt'/><path d='M173.40632,206.88991l25.75708,-45.02518l45.02519,25.75708l-25.75708,45.02519z' fill='#000000' stroke='#000000' stroke-width='0' stroke-linecap='butt'/><path d='M192.6843,226.93342l-13.6246,-50.05062l50.05062,-13.6246l13.6246,50.05062z' fill='#e2e2e2' stroke='#000000' stroke-width='0' stroke-linecap='butt'/><path d='M175.50617,204.72985l25.75709,-45.02519l45.02519,25.75709l-25.75709,45.02519z' fill='#e2e2e2' stroke='#000000' stroke-width='0' stroke-linecap='butt'/><path d='M196.6976,195.0958c0,-7.84228 6.35742,-14.19971 14.19971,-14.19971c7.84228,0 14.19971,6.35742 14.19971,14.19971c0,7.84228 -6.35742,14.19971 -14.19971,14.19971c-7.84228,0 -14.19971,-6.35742 -14.19971,-14.19971z' fill='#969696' stroke='none' stroke-width='0' stroke-linecap='butt'/></g></g></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;1,100;1,200;1,300;1,400;1,500;1,600;1,700&display=swap"
+        rel="stylesheet">
+    <style>
+        ::selection {
+            background-color: #727272;
+            color: #ffffff;
+        }
+
+        html {
+            height: 100%;
+        }
+
+        html body {
+            color: var(--col-txt1);
+            box-sizing: border-box;
+            transition: .2s;
+            margin: 0.5rem !important;
+            display: flex;
+            flex-direction: column;
+            height: calc(100% - 1rem);
+        }
+
+        .jsonMap {
+            font-family: "IBM Plex Mono", monospace;
+            font-size: 1rem;
+            display: block;
+            padding: 10px;
+            margin-top: 0.5rem;
+            outline: none;
+            background: var(--col-bg2);
+            border-radius: 0.5rem;
+            height: calc(100vh - 63px);
+            resize: none;
+            border: none;
+            color: var(--col-txt1);
+            overflow: hidden;
+            overflow-y: auto;
+        }
+
+        .jsonMap input {
+            width: 300px;
+            background: var(--col-bg1);
+            color: inherit;
+            padding: 0.3rem;
+            border: none;
+            border-bottom: 1px solid dodgerblue;
+        }
+
+        nav {
+            border-radius: 0.5rem;
+            display: flex;
+            flex-direction: row;
+            align-items: stretch;
+            gap: 0.3rem;
+            flex-wrap: wrap;
+        }
+
+        .navbutton {
+            background: var(--col-bg2);
+            color: inherit;
+            padding: 5px 6px;
+            padding-top: 4px;
+            cursor: pointer;
+            border-radius: 0.3rem;
+            border: none;
+            font-family: inherit;
+            font-size: .7rem;
+
+        }
+
+        .jsonMap .material-symbols-rounded {
+            background: transparent;
+            font-size: 23px;
+            padding: 0px;
+            display: inline-flex;
+            transform: translate(0px, 7px);
+        }
+
+        nav button:hover {
+            background: var(--col-bg3);
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/mime-db@1.52.0/db.json"></script>
+
+</head>
+
+<body>
+
+    <nav>
+        <button onclick="window.parent.openapp('text',1)" class="navbutton">New</button>
+        <button onclick="openfromfiles()" class="navbutton">Open</button>
+        <button onclick="savetx(1)" id="sbtn" class="navbutton">Save</button>
+    </nav>
+
+    <div id="mains">
+        <center style="display: flex;align-items: center;justify-content: center;height: calc(100vh - 75px);">Click open to open a file.</center>
+    </div>
+    <script>
+        function createJsonTree(jsonString) {
+            let data;
+            try {
+                data = JSON.parse(jsonString);
+            } catch (e) {
+                console.error("Invalid JSON", e);
+                return document.createTextNode("Invalid JSON");
+            }
+
+            function createTreeElement(obj) {
+                const container = document.createElement("div");
+                container.style.paddingLeft = "15px";
+
+                Object.entries(obj).forEach(([key, value]) => {
+                    function makeEditable(span, isKey) {
+                        const input = document.createElement("input");
+                        input.type = "text";
+                        input.value = span.textContent;
+
+                        input.addEventListener("blur", saveEdit);
+                        input.addEventListener("keydown", (e) => {
+                            if (e.key === "Enter") saveEdit();
+                        });
+
+                        span.replaceWith(input);
+                        input.focus();
+
+                        function saveEdit() {
+                            const newValue = input.value.trim();
+                            if (newValue) {
+                                span.textContent = newValue;
+                                input.replaceWith(span);
+                                if (isKey) {
+                                    obj[newValue] = obj[key];
+                                    delete obj[key];
+                                } else {
+                                    obj[key] = newValue;
+                                }
+                            } else {
+                                input.replaceWith(span);
+                            }
+                        }
+                    }
+
+                    const item = document.createElement("div");
+                    item.style.marginBottom = "5px";
+
+                    const keySpan = document.createElement("span");
+                    keySpan.textContent = key;
+                    keySpan.style.cursor = "pointer";
+                    keySpan.style.fontWeight = "bold";
+                    keySpan.style.marginRight = "5px";
+
+                    const valueSpan = document.createElement("span");
+                    valueSpan.style.cursor = "pointer";
+
+                    const subTree = document.createElement("div");
+                    subTree.style.display = "none";
+
+                    if (typeof value === "object") {
+                        valueSpan.innerHTML = `<span class="material-symbols-rounded">arrow_right</span>`;
+                        valueSpan.style.color = "grey";
+                        valueSpan.style.textDecoration = "underline";
+
+                        subTree.appendChild(createTreeElement(value));
+                        valueSpan.addEventListener("click", () => {
+                            if (subTree.style.display === "none") {
+                                subTree.style.display = "block"
+                                valueSpan.innerHTML = `<span class="material-symbols-rounded">arrow_drop_down</span>`;
+                            } else {
+                                subTree.style.display = "none";
+                                valueSpan.innerHTML = `<span class="material-symbols-rounded">arrow_right</span>`;
+                            }
+                        });
+
+                    } else {
+                        valueSpan.textContent = value;
+
+                        valueSpan.addEventListener("dblclick", () => makeEditable(valueSpan, false));
+                    }
+
+
+                    keySpan.addEventListener("dblclick", () => makeEditable(keySpan, true));
+
+                    item.appendChild(keySpan);
+                    item.appendChild(document.createTextNode(": "));
+                    item.appendChild(valueSpan);
+                    item.appendChild(subTree);
+                    container.appendChild(item);
+                });
+
+                return container;
+            }
+
+            return createTreeElement(data);
+        }
+
+
+        var mode = "new";
+        var currentfile = {};
+        var currentMime = 'text/plain';
+        var currentreqID = null;
+
+        function openfromfiles() {
+            document.getElementById("mains").value = "Waiting for you to open a file...";
+            currentreqID = window.parent.genUID();
+            let appIdToOpen = window.parent.fileTypeAssociations['file'][0] || null;
+            window.parent.openlaunchprotocol(appIdToOpen, { "opener": 'any', "dir": "Downloads/" }, currentreqID, myWindow.windowID);
+        }
+
+        window.addEventListener('message', async (event) => {
+            if (event.data.action === 'loadlocalfile') {
+                if (event.data.id === myWindow.windowID) {
+                    const file = await window.parent.getFileById(event.data.returned);
+                    readthefile(file);
+                }
+            }
+        });
+
+        async function savetx() {
+            sbtn.innerHTML = '* Saving';
+
+            const content = document.getElementById("mains").value;
+            const encodedContent = btoa(content);
+
+            if (mode === "edit") {
+                const dataUri = `data:${currentMime};base64,${encodedContent}`;
+                await window.parent.updateFile(currentfile.path, currentfile.id, {
+                    metadata: currentfile.metadata,
+                    content: dataUri,
+                    fileName: currentfile.fileName
+                });
+            } else {
+                const dataUri = `data:text/plain;base64,${encodedContent}`;
+                let y = await window.parent.ask("Enter a file name:", "untitled.txt");
+                window.parent.createFile("Documents", y, false, dataUri);
+            }
+
+            sbtn.innerHTML = 'Save';
+            mode = "edit";
+        }
+
+        function isBase64(str) {
+            try {
+                return btoa(atob(str)) === str;
+            } catch (err) {
+                return false;
+            }
+        }
+
+
+        async function greenflag() {
+
+            var sbtn = document.getElementById("sbtn");
+            var disp = document.getElementById("mains")
+            disp.focus()
+
+            var defile
+            try {
+                if (myWindow.params.appid == myWindow.appID) {
+                    document.getElementById("mains").value = "Loading...";
+                    defile = myWindow.params.data;
+                    const file = await window.parent.getFileById(defile);
+                    readthefile(file)
+
+                } else {
+                    document.getElementById("mains").value = "";
+                }
+            } catch (error) {
+                console.error("Error parsing todo JSON:", error);
+            }
+
+        }
+
+
+        function readthefile(file) {
+            currentfile = file;
+            mode = "edit";
+            const mimePrefix = file.content.match(/^data:([^;]+);base64,/i);
+
+            if (mimePrefix) {
+                file.type = mimePrefix[1];
+                currentMime = mimePrefix[1];
+                file.content = file.content.replace(/^data:([^;]+);base64,/i, '');
+                processFileContent(file);
+            } else {
+                const extension = window.parent.mtpetxt(file.fileName);
+                window.parent.getMimeType(extension).then(mimeType => {
+                    file.type = mimeType || 'application/octet-stream';
+                    processFileContent(file);
+                });
+            }
+        }
+
+        function processFileContent(file) {
+            file.content = window.parent.decodeBase64Content(file.content);
+
+            if (file.content == undefined) {
+                window.parent.say("Currupted file", "Your file is having no reader data.")
+
+                myWindow.titleElement.innerText = file.fileName;
+                document.getElementById("mains").value = file.content;
+                return;
+            }
+
+            if (file) {
+                myWindow.titleElement.innerText = file.fileName;
+                const container = createJsonTree(file.content);
+                container.classList.add("jsonMap");
+                document.getElementById("mains").innerHTML = "";
+                document.getElementById("mains").appendChild(container);
+                console.log("Content displayed successfully");
+            } else {
+                console.error("Error displaying content");
+            }
+        }
+    </script>
+</body>
+
+</html>

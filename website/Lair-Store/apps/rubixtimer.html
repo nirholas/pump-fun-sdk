@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+    <meta name="lair-include" content="lair.css">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="lair-icon" content="deployed_code">
+	<title>Rubik's Cube Timer</title>
+	<style>
+		:root {
+			--col-bg1: #101010;
+			--col-bg3: #262626;
+			--col-bg2: #171717;
+			--col-bgh: #44403C;
+			--colors-BG-accent: #44403C;
+			--col-txt1: white;
+			--col-good: #49ac49;
+			--col-bad: #ac4949;
+
+			--siz-radius1: 0.5rem;
+			--siz-radius1-normal: 0.75rem;
+			--siz-radius1-full: 1rem;
+
+			--sizing-huge: 1rem;
+			--sizing-normal: 0.5rem;
+			--sizing-nano: 0.3rem;
+		}
+
+		::-webkit-scrollbar {
+			width: var(--sizing-normal);
+		}
+
+		::-webkit-scrollbar-track {
+			background: var(--col-bg1);
+			border-radius: var(--siz-radius1);
+		}
+
+		::-webkit-scrollbar-thumb {
+			background: var(--col-bgh);
+			border-radius: var(--siz-radius1);
+		}
+
+		::-webkit-scrollbar-thumb:hover {
+			background: var(--col-bg3);
+			cursor: grab;
+		}
+
+		::-webkit-scrollbar-thumb:active {
+			cursor: grabbing;
+		}
+
+		body,
+		html {
+			margin: 0;
+			padding: 0;
+			height: 100%;
+			font-family: "Gabarito", sans-serif;
+			background-color: #121212;
+			background-image: radial-gradient(ellipse at 0% 100%, #212121 0%, #000000 100%);
+			color: #ffffff;
+		}
+
+		.container {
+			display: flex;
+			height: 100%;
+			flex-direction: column;
+		}
+
+		.topbar {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			padding: 10px 20px;
+			opacity: 0.5;
+			background-color: #1e1e1e;
+			gap: 1rem;
+		}
+
+		.scramble {
+			font-size: 1.2em;
+			user-select: none;
+			word-spacing: 24px;
+			font-family: monospace;
+		}
+
+		.regenerate-btn {
+			background-color: #333;
+			color: #fff;
+			border: none;
+			padding: 10px 15px;
+			font-size: 13px;
+			cursor: pointer;
+			border-radius: 5px;
+		}
+
+		.regenerate-btn:hover {
+			background-color: #555;
+		}
+
+		.main-content {
+			display: flex;
+			flex: 1;
+		}
+
+		.timer {
+			flex: 3;
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			font-size: 15vh;
+			font-family: "Share Tech Mono", monospace;
+		}
+
+		.tools {
+			flex: 1;
+			background-color: #1e1e1e;
+			padding: 0.5rem;
+			overflow-y: auto;
+			opacity: 0.5;
+			margin: 0.5rem;
+			height: calc(100vh - 102px);
+			border-radius: 0.5rem;
+			font-size: 0.8rem;
+		}
+
+		.tools h3 {
+			margin-top: 0;
+		}
+
+		.timer-value {
+			font-size: 4em;
+		}
+
+		.help-button {
+			position: absolute;
+			right: 1rem;
+			bottom: 1rem;
+			background-color: #3d3d3d;
+			color: rgb(189, 189, 189);
+			border: none;
+			border-radius: 50%;
+			display: flex;
+			padding: 0.5rem;
+			font-size: 1.5rem;
+			align-items: center;
+			justify-content: center;
+			cursor: pointer;
+		}
+
+		#history {
+			display: flex;
+			flex-direction: column;
+			gap: 0.5rem;
+		}
+
+		.historyItem {
+			display: flex;
+			flex-direction: row;
+			background: #333333;
+			padding: 0.5rem;
+			border-radius: 0.3rem;
+		}
+
+		.historyItem kbd {
+			flex: 1;
+		}
+	</style>
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Gabarito:wght@400..900&family=Share+Tech+Mono&display=swap"
+		rel="stylesheet">
+	<script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+	<script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+</head>
+
+<body>
+	<div class="container">
+		<div class="topbar">
+			<div class="scramble" id="scramble"></div>
+			<button class="regenerate-btn" onclick="generateScramble()">Regenerate Scramble</button>
+		</div>
+		<div class="main-content">
+			<div class="timer" id="timerDisplay">0.000s</div>
+			<div class="tools">
+				<button class="help-button" onclick="document.getElementById('helpDialog').showModal()">
+					<ion-icon name="help-outline"></ion-icon>
+				</button>
+				<div id="history">
+				</div>
+				<dialog id="helpDialog">
+					<button onclick="this.parentElement.close()">Close</button>
+					<p><strong>Help:</strong> This app generates a random scramble of moves and allows you to time your
+						performance using the space key. The moves are represented as U (Up), D (Down), L (Left), R
+						(Right),
+						F (Front), and B (Back), with optional modifiers.</p>
+
+					<p><strong>How to Use:</strong></p>
+					<ul>
+						<li><strong>Generate Scramble:</strong> When the page loads, a random scramble will be displayed
+							automatically.</li>
+						<li><strong>Start Timer:</strong> Press and hold the <span class="key">Space</span> key. If held
+							for
+							at least 0.55 seconds, the timer will start 0.1 seconds after you release the key.</li>
+						<li><strong>Stop Timer:</strong> Quickly press the <span class="key">Space</span> key again to
+							stop
+							the timer immediately.</li>
+						<li><strong>Reset Timer:</strong> Press the <span class="key">Space</span> key a third time to
+							reset
+							the timer and generate a new scramble.</li>
+					</ul>
+
+					<p><strong>Notes:</strong></p>
+					<ul>
+						<li>The timer updates every millisecond while running.</li>
+						<li>All actions (stop and reset) occur instantly upon pressing the space key.</li>
+					</ul>
+					<p>By adthoughtsglobal</p>
+				</dialog>
+			</div>
+		</div>
+	</div>
+
+	<script>
+		let scrambleElement = document.getElementById("scramble");
+		let timerDisplay = document.getElementById("timerDisplay");
+		let timerInterval;
+		let startTime = 0;
+		let spaceDown = false;
+		let pressCount = 0;
+		let spaceHoldTime = 0;
+		let elapsed = 0;
+
+		var timeHistory = {
+		};
+
+		handleTimeHistory('load');
+		showHistory()
+
+		function handleTimeHistory(action) {
+			const storageKey = 'timeHistory';
+
+			if (action === 'save') {
+				localStorage.setItem(storageKey, JSON.stringify(timeHistory));
+			} else if (action === 'load') {
+				const savedHistory = localStorage.getItem(storageKey);
+				if (savedHistory) {
+					timeHistory = JSON.parse(savedHistory);
+				} else {
+					timeHistory = {};
+				}
+			}
+		}
+
+		function generateScramble() {
+			const moves = ["U", "D", "L", "R", "F", "B"];
+			const modifiers = ["", "'", "2"];
+			let scramble = [];
+			for (let i = 0; i < 20; i++) {
+				let move = moves[Math.floor(Math.random() * moves.length)];
+				let modifier = modifiers[Math.floor(Math.random() * modifiers.length)];
+				scramble.push(move + modifier);
+			}
+			scrambleElement.innerHTML = scramble.join(" ");
+		}
+
+		function startTimer() {
+			startTime = performance.now();
+			timerInterval = setInterval(updateTimer, 1);
+		}
+
+		function stopTimer() {
+			clearInterval(timerInterval);
+			generateScramble();
+			timeHistory[Date.now().toString()] = elapsed;
+			handleTimeHistory('save')
+
+			handleTimeHistory('load')
+			showHistory()
+		}
+
+		function showHistory() {
+			const historyDiv = document.getElementById('history');
+
+			historyDiv.innerHTML = '';
+
+			const sortedHistory = Object.entries(timeHistory).sort(([keyA], [keyB]) => keyB - keyA);
+
+			for (const [key, value] of sortedHistory) {
+				const historyItem = document.createElement('div');
+				historyItem.classList.add('historyItem');
+				historyItem.id = `history-${key}`;
+
+				const timeElement = document.createElement('kbd');
+				timeElement.textContent = `${value}s`;
+
+				const closeIcon = document.createElement('ion-icon');
+				closeIcon.setAttribute('name', 'close-outline');
+
+				closeIcon.addEventListener('click', () => {
+					delete timeHistory[key];
+					historyItem.remove();
+					handleTimeHistory('save')
+				});
+
+				historyItem.appendChild(timeElement);
+				historyItem.appendChild(closeIcon);
+				historyDiv.appendChild(historyItem);
+			}
+		}
+
+		function resetTimer() {
+			timerDisplay.textContent = "0.000s";
+			pressCount = 0;
+		}
+
+		function updateTimer() {
+			let currentTime = performance.now();
+			elapsed = ((currentTime - startTime) / 1000).toFixed(3);
+			timerDisplay.textContent = `${elapsed}s`;
+		}
+
+		let timerRunning = false;
+		window.addEventListener("keydown", function (event) {
+			if (event.code === "Space" && !spaceDown) {
+				spaceDown = true;
+			}
+		});
+
+		window.addEventListener("keyup", function (event) {
+			if (event.code === "Space") {
+				if (spaceHoldTime >= 550) {
+					if (!timerRunning) {
+						setTimeout(() => {
+							startTimer();
+							timerRunning = true;
+							pressCount = 1;
+						}, 100);
+					}
+				} else {
+					pressCount++;
+
+					if (pressCount === 2 && timerRunning) {
+						stopTimer();
+						timerRunning = false;
+					} else if (pressCount === 3) {
+						resetTimer();
+						pressCount = 0;
+						timerRunning = false;
+					}
+				}
+
+				spaceDown = false;
+				spaceHoldTime = 0;
+			}
+		});
+
+		setInterval(() => {
+			if (spaceDown) spaceHoldTime += 100;
+		}, 100);
+
+		generateScramble();
+	</script>
+</body>
+
+</html>

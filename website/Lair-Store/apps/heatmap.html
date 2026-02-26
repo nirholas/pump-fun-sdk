@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="lair-include" content="lair.css material-symbols-rounded" />
+  <meta name="lair-icon" content="grid_view" />
+  <meta name="permissions" content="network, appStorage" />
+  <meta name="capabilities" content="market_heatmap_treemap" />
+  <meta name="lair-perms" content="network" />
+  <title>Market Heatmap Pro</title>
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --panel: var(--col-bg2, #171717);
+      --border: #2a2a2a;
+      --txt: var(--col-txt1, #ffffff);
+      --muted: #7f879d;
+      --acc: var(--colors-accent, rgb(97,121,255));
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { width: 100%; height: 100%; overflow: hidden; background: var(--bg); color: var(--txt); font-family: Inter, system-ui, sans-serif; }
+
+    .app { height: 100%; display: grid; grid-template-rows: auto 1fr auto; }
+
+    .top {
+      display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+      background: var(--panel); border-bottom: 1px solid var(--border); padding: 10px 12px;
+    }
+    .title { font-weight: 700; font-size: 14px; display: flex; align-items: center; gap: 6px; }
+    .title .material-symbols-rounded { color: var(--acc); font-size: 18px; }
+
+    .btn, .select {
+      border: 1px solid #3a3a3a; background: #101010; color: #c6cce0;
+      border-radius: 8px; font-size: 11px; padding: 6px 9px; cursor: pointer;
+    }
+    .btn.active { border-color: var(--acc); color: #fff; background: rgba(97,121,255,.2); }
+    .select { padding-right: 24px; }
+
+    .spacer { flex: 1; }
+    .legend { display: flex; align-items: center; gap: 4px; font-size: 10px; color: var(--muted); }
+    .legend b { width: 20px; height: 10px; display: inline-block; border-radius: 2px; }
+
+    .main { position: relative; overflow: hidden; }
+    #heatmap { width: 100%; height: 100%; display: block; }
+
+    #tooltip {
+      position: fixed; display: none; z-index: 11; pointer-events: none;
+      width: 260px; background: rgba(15,15,15,.96); border: 1px solid #383f51;
+      border-radius: 10px; padding: 10px; box-shadow: 0 8px 30px rgba(0,0,0,.5);
+      font-size: 11px;
+    }
+    #tooltip .h { display: flex; justify-content: space-between; margin-bottom: 6px; font-weight: 700; font-size: 12px; }
+    #tooltip .g { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; color: #c8d0e8; }
+    #tooltip .g div span:first-child { display: block; color: #8692af; font-size: 10px; }
+
+    #detail {
+      position: absolute; right: 10px; bottom: 10px; width: 330px; max-width: calc(100% - 20px);
+      background: rgba(14,14,16,.96); border: 1px solid #3a3f52; border-radius: 12px; padding: 11px;
+      display: none; z-index: 10;
+    }
+    #detail h3 { font-size: 13px; margin-bottom: 8px; }
+    .kv { display: flex; justify-content: space-between; font-size: 11px; padding: 5px 0; border-bottom: 1px solid #232a3a; }
+    .kv span:first-child { color: #8b97b4; }
+    .kv span:last-child { color: #d5def7; font-weight: 600; }
+    #spark { width: 100%; height: 90px; border: 1px solid #2d3448; border-radius: 8px; background: #0b1020; margin: 8px 0; }
+    .links { display: grid; grid-template-columns: repeat(3,1fr); gap: 7px; }
+    .links a { text-decoration: none; text-align: center; font-size: 10px; color: #c6d0eb; border: 1px solid #2f3a53; border-radius: 7px; padding: 6px; background: #11182b; }
+
+    .bottom {
+      background: var(--panel); border-top: 1px solid var(--border); color: #8e97b0;
+      font-size: 10px; padding: 7px 12px; display: flex; flex-wrap: wrap; gap: 14px;
+    }
+    .bottom b { color: #dde6ff; }
+
+    .state { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 13px; }
+
+    @media (max-width: 760px) {
+      #detail { width: calc(100% - 20px); }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="top">
+      <div class="title"><span class="material-symbols-rounded">grid_view</span> Market Heatmap Pro</div>
+
+      <button class="btn" data-tf="1h">1H</button>
+      <button class="btn active" data-tf="24h">24H</button>
+      <button class="btn" data-tf="7d">7D</button>
+
+      <select id="count" class="select">
+        <option value="20">Top 20</option>
+        <option value="50">Top 50</option>
+        <option value="100" selected>Top 100</option>
+      </select>
+
+      <button id="sectorBtn" class="btn">Sector Grouping</button>
+      <button id="refreshBtn" class="btn">Refresh</button>
+
+      <div class="spacer"></div>
+      <div class="legend">
+        <span>-15%</span>
+        <b style="background:#d32f2f"></b><b style="background:#ff8f00"></b><b style="background:#616161"></b><b style="background:#2e7d32"></b><b style="background:#1b5e20"></b>
+        <span>+15%</span>
+      </div>
+    </div>
+
+    <div class="main" id="main">
+      <canvas id="heatmap"></canvas>
+      <div id="tooltip"></div>
+      <div id="detail">
+        <h3 id="detailTitle">Coin</h3>
+        <div id="detailKv"></div>
+        <canvas id="spark" width="300" height="90"></canvas>
+        <div class="links" id="detailLinks"></div>
+      </div>
+      <div class="state" id="state">Loading market heatmap...</div>
+    </div>
+
+    <div class="bottom" id="bottom">
+      <span>Coins: <b id="coinCount">0</b></span>
+      <span>Green: <b id="greenCount">0</b></span>
+      <span>Red: <b id="redCount">0</b></span>
+      <span>Total Cap: <b id="capTotal">$0</b></span>
+      <span>Data: CoinGecko markets + coin detail</span>
+    </div>
+  </div>
+
+  <script>
+    (() => {
+      const fetchFn = window.cfetch || fetch;
+      const canvas = document.getElementById('heatmap');
+      const ctx = canvas.getContext('2d');
+      const tooltip = document.getElementById('tooltip');
+      const detail = document.getElementById('detail');
+      const stateEl = document.getElementById('state');
+
+      const tfButtons = [...document.querySelectorAll('[data-tf]')];
+      const countSelect = document.getElementById('count');
+      const sectorBtn = document.getElementById('sectorBtn');
+      const refreshBtn = document.getElementById('refreshBtn');
+
+      const stats = {
+        coinCount: document.getElementById('coinCount'),
+        greenCount: document.getElementById('greenCount'),
+        redCount: document.getElementById('redCount'),
+        capTotal: document.getElementById('capTotal')
+      };
+
+      const state = {
+        tf: '24h',
+        limit: 100,
+        grouped: false,
+        coins: [],
+        rects: [],
+        hovered: null,
+        selected: null
+      };
+
+      function fmtUsd(v) {
+        const n = Number(v || 0);
+        if (!Number.isFinite(n)) return '$0';
+        if (n >= 1e12) return `$${(n / 1e12).toFixed(2)}T`;
+        if (n >= 1e9) return `$${(n / 1e9).toFixed(2)}B`;
+        if (n >= 1e6) return `$${(n / 1e6).toFixed(2)}M`;
+        return `$${n.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+      }
+
+      function fieldForTf(tf) {
+        if (tf === '1h') return 'price_change_percentage_1h_in_currency';
+        if (tf === '7d') return 'price_change_percentage_7d_in_currency';
+        return 'price_change_percentage_24h';
+      }
+
+      function colorForChange(v) {
+        const n = Math.max(-15, Math.min(15, Number(v || 0)));
+        if (n <= -10) return '#d32f2f';
+        if (n < 0) return '#ff8f00';
+        if (n === 0) return '#616161';
+        if (n < 10) return '#2e7d32';
+        return '#1b5e20';
+      }
+
+      function inferredSector(coin) {
+        const s = `${coin.symbol} ${coin.name}`.toLowerCase();
+        if (/usdt|usdc|dai|fdusd|usde|tusd/.test(s)) return 'Stablecoins';
+        if (/pepe|doge|shib|bonk|wif|meme|floki/.test(s)) return 'Meme';
+        if (/arb|optimism|op|zksync|stark|base|mantle/.test(s)) return 'L2';
+        if (/aave|uni|curve|maker|compound|lido|sushi/.test(s)) return 'DeFi';
+        if (/fet|render|tao|ai|agix/.test(s)) return 'AI';
+        return 'L1';
+      }
+
+      function resize() {
+        const dpr = window.devicePixelRatio || 1;
+        const r = canvas.getBoundingClientRect();
+        canvas.width = Math.floor(r.width * dpr);
+        canvas.height = Math.floor(r.height * dpr);
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        render();
+      }
+
+      function normalize(coins) {
+        const changeField = fieldForTf(state.tf);
+        return coins.slice(0, state.limit).map((c) => ({
+          ...c,
+          change: Number(c[changeField] || 0),
+          weight: Math.max(1, Number(c.market_cap || 0)),
+          sector: inferredSector(c)
+        }));
+      }
+
+      function squarify(items, x, y, w, h) {
+        const out = [];
+        const total = items.reduce((s, i) => s + i.weight, 0);
+        if (!items.length || total <= 0 || w <= 0 || h <= 0) return out;
+
+        let remaining = [...items];
+        let rx = x, ry = y, rw = w, rh = h;
+
+        while (remaining.length) {
+          const horizontal = rw >= rh;
+          const side = horizontal ? rh : rw;
+          const remWeight = remaining.reduce((s, i) => s + i.weight, 0);
+
+          let row = [remaining[0]];
+          let rowWeight = row[0].weight;
+
+          const worst = (list, rowW) => {
+            if (!list.length) return Number.MAX_VALUE;
+            const rowSize = (rowW / remWeight) * (horizontal ? rw : rh);
+            let v = 0;
+            for (const i of list) {
+              const itemSize = (i.weight / rowW) * side;
+              const ratio = Math.max(itemSize / rowSize, rowSize / itemSize);
+              if (ratio > v) v = ratio;
+            }
+            return v;
+          };
+
+          while (row.length < remaining.length) {
+            const next = remaining[row.length];
+            const currentScore = worst(row, rowWeight);
+            const nextScore = worst([...row, next], rowWeight + next.weight);
+            if (nextScore > currentScore) break;
+            row.push(next);
+            rowWeight += next.weight;
+          }
+
+          const rowSpan = (rowWeight / remWeight) * (horizontal ? rw : rh);
+          let offset = 0;
+          for (const item of row) {
+            const size = (item.weight / rowWeight) * side;
+            if (horizontal) out.push({ ...item, x: rx + offset, y: ry, w: size, h: rowSpan });
+            else out.push({ ...item, x: rx, y: ry + offset, w: rowSpan, h: size });
+            offset += size;
+          }
+
+          remaining = remaining.slice(row.length);
+          if (horizontal) {
+            ry += rowSpan;
+            rh -= rowSpan;
+          } else {
+            rx += rowSpan;
+            rw -= rowSpan;
+          }
+        }
+        return out;
+      }
+
+      function layout(items) {
+        const r = canvas.getBoundingClientRect();
+        const pad = 6;
+        const w = r.width - pad * 2;
+        const h = r.height - pad * 2;
+
+        if (!state.grouped) return squarify(items, pad, pad, w, h);
+
+        const groups = {};
+        for (const item of items) {
+          if (!groups[item.sector]) groups[item.sector] = [];
+          groups[item.sector].push(item);
+        }
+
+        const sectorItems = Object.entries(groups).map(([sector, list]) => ({
+          sector,
+          weight: list.reduce((s, i) => s + i.weight, 0),
+          list
+        }));
+
+        const sectorRects = squarify(sectorItems, pad, pad, w, h);
+        const out = [];
+        for (const sr of sectorRects) {
+          const inner = squarify(sr.list, sr.x + 2, sr.y + 18, Math.max(0, sr.w - 4), Math.max(0, sr.h - 20));
+          out.push({ sectorLabel: sr.sector, x: sr.x, y: sr.y, w: sr.w, h: sr.h, isSector: true });
+          out.push(...inner);
+        }
+        return out;
+      }
+
+      function drawText(r, coin) {
+        if (r.w < 30 || r.h < 24) return;
+        ctx.fillStyle = 'rgba(255,255,255,.95)';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        const centerX = r.x + r.w / 2;
+        const centerY = r.y + r.h / 2;
+
+        const fs = Math.max(9, Math.min(18, Math.min(r.w, r.h) * 0.18));
+        ctx.font = `700 ${fs}px Inter, sans-serif`;
+        ctx.fillText((coin.symbol || '').toUpperCase(), centerX, centerY - fs * 0.25);
+
+        if (r.h > 45) {
+          ctx.font = `${Math.max(8, fs * 0.7)}px Inter, sans-serif`;
+          ctx.fillText(`${coin.change >= 0 ? '+' : ''}${coin.change.toFixed(2)}%`, centerX, centerY + fs * 0.6);
+        }
+      }
+
+      function render() {
+        const r = canvas.getBoundingClientRect();
+        ctx.clearRect(0, 0, r.width, r.height);
+
+        if (!state.coins.length) return;
+        const items = normalize(state.coins);
+        const rects = layout(items);
+        state.rects = rects;
+
+        let green = 0;
+        let red = 0;
+        let totalCap = 0;
+
+        for (const rect of rects) {
+          if (rect.isSector) {
+            ctx.strokeStyle = 'rgba(120,130,160,.35)';
+            ctx.strokeRect(rect.x, rect.y, rect.w, rect.h);
+            ctx.fillStyle = 'rgba(180,190,220,.75)';
+            ctx.font = '600 10px Inter, sans-serif';
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'top';
+            ctx.fillText(rect.sectorLabel, rect.x + 4, rect.y + 4);
+            continue;
+          }
+
+          const col = colorForChange(rect.change);
+          ctx.fillStyle = col;
+          ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
+          ctx.strokeStyle = 'rgba(0,0,0,.25)';
+          ctx.strokeRect(rect.x, rect.y, rect.w, rect.h);
+          drawText(rect, rect);
+
+          if (rect.change >= 0) green++; else red++;
+          totalCap += Number(rect.market_cap || 0);
+        }
+
+        stats.coinCount.textContent = String(items.length);
+        stats.greenCount.textContent = String(green);
+        stats.redCount.textContent = String(red);
+        stats.capTotal.textContent = fmtUsd(totalCap);
+      }
+
+      function hit(x, y) {
+        return state.rects.find((r) => !r.isSector && x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h) || null;
+      }
+
+      function moveTooltip(e, coin) {
+        tooltip.style.left = `${e.clientX + 14}px`;
+        tooltip.style.top = `${e.clientY + 14}px`;
+        tooltip.innerHTML = `
+          <div class="h"><span>${coin.name}</span><span>${coin.symbol.toUpperCase()}</span></div>
+          <div class="g">
+            <div><span>Price</span>${fmtUsd(coin.current_price)}</div>
+            <div><span>${state.tf} Change</span>${coin.change.toFixed(2)}%</div>
+            <div><span>Market Cap</span>${fmtUsd(coin.market_cap)}</div>
+            <div><span>Volume 24h</span>${fmtUsd(coin.total_volume)}</div>
+            <div><span>Circulating</span>${Number(coin.circulating_supply || 0).toLocaleString()}</div>
+            <div><span>ATH Distance</span>${Number(coin.ath_change_percentage || 0).toFixed(2)}%</div>
+          </div>
+        `;
+      }
+
+      async function showDetail(coin) {
+        state.selected = coin;
+        document.getElementById('detailTitle').textContent = `${coin.name} (${coin.symbol.toUpperCase()})`;
+        document.getElementById('detailKv').innerHTML = `
+          <div class="kv"><span>Price</span><span>${fmtUsd(coin.current_price)}</span></div>
+          <div class="kv"><span>${state.tf} Change</span><span>${coin.change.toFixed(2)}%</span></div>
+          <div class="kv"><span>Market Cap</span><span>${fmtUsd(coin.market_cap)}</span></div>
+          <div class="kv"><span>Volume 24h</span><span>${fmtUsd(coin.total_volume)}</span></div>
+        `;
+
+        const spark = document.getElementById('spark');
+        drawSparkline(spark, coin.sparkline_in_7d?.price || []);
+
+        let contract = '';
+        try {
+          const detailRes = await fetchFn(`https://api.coingecko.com/api/v3/coins/${coin.id}?localization=false&tickers=false&market_data=false&community_data=false&developer_data=false&sparkline=false`);
+          if (detailRes.ok) {
+            const detailJson = await detailRes.json();
+            contract = Object.values(detailJson.platforms || {}).find((v) => !!v) || '';
+          }
+        } catch (_) {}
+
+        const etherscan = contract ? `https://etherscan.io/token/${contract}` : `https://etherscan.io/search?f=0&q=${encodeURIComponent(coin.symbol)}`;
+        document.getElementById('detailLinks').innerHTML = `
+          <a href="https://www.coingecko.com/en/coins/${coin.id}" target="_blank" rel="noopener">CoinGecko</a>
+          <a href="https://dexscreener.com/search?q=${encodeURIComponent(coin.symbol)}" target="_blank" rel="noopener">DexScreener</a>
+          <a href="${etherscan}" target="_blank" rel="noopener">Etherscan</a>
+        `;
+
+        detail.style.display = 'block';
+      }
+
+      function drawSparkline(canvasEl, arr) {
+        const c = canvasEl.getContext('2d');
+        const w = canvasEl.width;
+        const h = canvasEl.height;
+        c.clearRect(0, 0, w, h);
+        if (!arr.length) return;
+
+        const min = Math.min(...arr);
+        const max = Math.max(...arr);
+        const x = (i) => (i / (arr.length - 1)) * (w - 16) + 8;
+        const y = (v) => h - ((v - min) / (max - min || 1)) * (h - 16) - 8;
+
+        c.strokeStyle = 'rgba(150,160,190,.25)';
+        c.beginPath(); c.moveTo(8, h - 8); c.lineTo(w - 8, h - 8); c.stroke();
+
+        c.beginPath();
+        arr.forEach((v, i) => i ? c.lineTo(x(i), y(v)) : c.moveTo(x(i), y(v)));
+        c.lineWidth = 2;
+        c.strokeStyle = arr.at(-1) >= arr[0] ? '#2e7d32' : '#d32f2f';
+        c.stroke();
+      }
+
+      async function load() {
+        stateEl.style.display = 'flex';
+        stateEl.textContent = 'Loading market heatmap...';
+        try {
+          const url = `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=${state.limit}&page=1&sparkline=true&price_change_percentage=1h,24h,7d`;
+          const res = await fetchFn(url);
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          state.coins = await res.json();
+          stateEl.style.display = 'none';
+          render();
+        } catch (error) {
+          stateEl.textContent = `Data error: ${error.message}`;
+        }
+      }
+
+      tfButtons.forEach((btn) => {
+        btn.addEventListener('click', () => {
+          tfButtons.forEach((b) => b.classList.remove('active'));
+          btn.classList.add('active');
+          state.tf = btn.dataset.tf;
+          render();
+        });
+      });
+
+      countSelect.addEventListener('change', async () => {
+        state.limit = Number(countSelect.value);
+        await load();
+      });
+
+      sectorBtn.addEventListener('click', () => {
+        state.grouped = !state.grouped;
+        sectorBtn.classList.toggle('active', state.grouped);
+        render();
+      });
+
+      refreshBtn.addEventListener('click', load);
+
+      canvas.addEventListener('mousemove', (e) => {
+        const r = canvas.getBoundingClientRect();
+        const coin = hit(e.clientX - r.left, e.clientY - r.top);
+        state.hovered = coin;
+        if (!coin) {
+          tooltip.style.display = 'none';
+          return;
+        }
+        moveTooltip(e, coin);
+        tooltip.style.display = 'block';
+      });
+
+      canvas.addEventListener('mouseleave', () => {
+        tooltip.style.display = 'none';
+      });
+
+      canvas.addEventListener('click', async (e) => {
+        const r = canvas.getBoundingClientRect();
+        const coin = hit(e.clientX - r.left, e.clientY - r.top);
+        if (!coin) return;
+        await showDetail(coin);
+      });
+
+      window.addEventListener('resize', resize);
+
+      resize();
+      load();
+      setInterval(load, 60000);
+    })();
+  </script>
+</body>
+</html>

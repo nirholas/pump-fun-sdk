@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width">
+	<meta name="lair-include" content="lair.css">
+	<meta name="lair-icon"
+		content="<svg width='214' height='214' viewBox='0 0 214 214' fill='none' xmlns='http://www.w3.org/2000/svg'> <g clip-path='url(#clip0_6_2)'> <path d='M0 214V0H214V214H0Z' fill='white'/> <ellipse cx='124.5' cy='107' rx='35.5' ry='35' fill='#FFC853'/> <path d='M58.4553 81L142.75 133.171L108.631 214H-0.25V133.171L58.4553 81Z' fill='#9DACFF'/> <path d='M183.879 47L214 88.75V214H21L80.1272 138.85L109.691 156.835L183.879 47Z' fill='#6179FF'/> </g> <defs> <clipPath id='clip0_6_2'> <rect width='214' height='214' fill='white'/> </clipPath> </defs> </svg>">
+	<meta name="capabilities" content=".webm,.jpeg,.png,.jpg,.webp, gallery,.mp4,.mov">
+	<meta name="permissions" content="fileGet, unsandboxed">
+	<title>Gallery</title>
+	<style>
+		body {
+			color: var(--col-txt1);
+			font-weight: 400;
+			font-style: normal;
+			background-color: var(--col-bg1);
+			padding: 0 var(--sizing-huge);
+		}
+
+		div#cont {
+			height: calc(100vh - 6em);
+			overflow-y: scroll;
+			overflow-x: hidden;
+		}
+
+		h1 {
+			font-family: arial;
+			font-weight: normal;
+			padding-bottom: 5px;
+			margin: 3px;
+			margin-top: 6vh;
+			margin-bottom: 20px;
+			font-weight: normal;
+			font-style: normal;
+		}
+
+		#cont .media-container {
+			position: relative;
+			width: 100px;
+			border-radius: 5px;
+			margin: 5px;
+			height: 100px;
+			animation: pop .2s;
+			transition: .2s;
+			overflow: hidden;
+			display: inline-block;
+
+			&>img {
+				object-fit: cover;
+				height: 100%;
+				width: 100%;
+			}
+
+			&>.material-symbols-rounded {
+				position: absolute;
+				top: 5px;
+				z-index: 99;
+				right: 5px;
+				color: #626262;
+				background: white;
+				border-radius: 50%;
+			}
+		}
+
+		@keyframes pop {
+			from {
+				opacity: 0;
+				transform: scale(0.9);
+			}
+
+			to {
+				opacity: 1;
+				transform: none;
+			}
+		}
+
+		@keyframes pop2 {
+			from {
+				opacity: 0;
+				transform: scale(0.98) translateY(-5px);
+			}
+
+			to {
+				opacity: 1;
+				transform: none;
+			}
+		}
+
+		#cont img:hover {
+			transform: scale(0.9);
+		}
+
+		#cont img:active {
+			cursor: progress;
+		}
+
+		#fullfmd {
+			width: 100%;
+			height: 100%;
+			background: var(--col-bg1);
+			display: none;
+			outline: none;
+			color: white;
+			justify-content: center;
+			align-items: stretch;
+			backdrop-filter: blur(16px);
+			border: none;
+			justify-items: center;
+			flex-direction: column;
+			overflow: hidden;
+			gap: 1rem;
+			z-index: 99;
+			position: absolute;
+			top: 0;
+			left: 0;
+		}
+
+		#bigshowcase {
+			max-height: calc(100vh - 5em);
+			max-width: calc(100% - 10em);
+			margin: auto;
+
+			&>img,
+			&>video {
+				width: 100%;
+				height: 100%;
+				margin: auto;
+				object-fit: contain;
+				animation: pop .2s;
+				border-radius: 5px;
+			}
+		}
+
+		div .backfobtns {
+			position: fixed;
+
+		}
+
+		.nofiles {
+			padding: 10px 20px;
+			background: var(--col-bg3);
+			border-radius: 10px;
+		}
+
+		.nofiles h2 {
+			display: inline-block;
+			width: 60%;
+			margin-bottom: 0px;
+		}
+
+		.nofiles p {
+			display: inline-block;
+			width: 60%;
+			margin-bottom: 0px;
+			font-size: 12px;
+			opacity: 0.5;
+		}
+
+		.nofiles .btncont {
+			display: flex;
+			gap: 0.5rem;
+		}
+
+		.nofiles button {
+			margin: 20px 0;
+			padding: 8px 10px;
+			background: var(--col-bgh);
+			color: #c3c3c3;
+			border: none;
+			cursor: pointer;
+			border-radius: 5px;
+		}
+
+		.nofiles button:hover {
+			transform: scale(1.05);
+		}
+
+		.nofiles svg {
+			position: absolute;
+			right: 9%;
+			transform: translate(-21%, -32px);
+		}
+
+		#cont b {
+			font-weight: normal;
+		}
+
+		nav {
+			display: flex;
+			align-items: stretch;
+			justify-content: space-between;
+			width: calc(100% - 2rem);
+			margin: 0 auto;
+			margin-top: 1em;
+		}
+
+
+		.navtitles {
+			opacity: 0.8;
+			font-size: 0.7rem;
+			padding: 3px var(--spacing-gap);
+			background: var(--col-bg3);
+			border-radius: 0.5rem;
+			font-weight: normal;
+			display: flex;
+			align-items: center;
+			gap: 0.3rem;
+			cursor: pointer;
+			animation: slideIn .3s ease-out;
+		}
+
+		.navtitles b {
+			font-weight: normal;
+		}
+
+		#flamenu:hover {
+			background: transparent;
+			opacity: 1;
+		}
+
+		@keyframes slideIn {
+			0% {
+				transform: translateY(-5px);
+				opacity: 0;
+			}
+
+			100% {
+				transform: translateY(0px);
+				opacity: .5;
+			}
+		}
+
+		div#flamenu {
+			display: flex;
+			flex-direction: row;
+			align-items: center;
+			gap: 0.1em;
+			background: var(--col-bg3);
+			border-radius: var(--siz-radius1);
+			transition: .2s;
+			opacity: .5;
+			animation: slideIn .3s ease-out;
+		}
+
+		.tooltip {
+			position: relative;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			flex-wrap: wrap;
+			align-content: center;
+			transition: .2s;
+			border-radius: 0.3rem;
+			padding: var(--spacing-gap);
+			width: 1.3rem;
+		}
+
+		.tooltip .tooltiptext {
+			visibility: hidden;
+			width: 90px;
+			background-color: var(--col-bg2);
+			color: var(--col-txt1);
+			word-break: normal;
+			text-align: center;
+			border-radius: 0.3rem;
+			padding: 2px;
+			position: absolute;
+			z-index: 1;
+			top: 110%;
+			left: 50%;
+			margin-left: -50px;
+			font-size: var(--font-size-normal);
+			opacity: 0;
+			transition: opacity 0.3s ease-out;
+			box-shadow: 0 3px 1rem var(--col-bg1) 9e;
+		}
+
+		.tooltip:hover {
+			background: var(--col-bg3);
+		}
+
+		.tooltip:hover .tooltiptext {
+			visibility: visible;
+			opacity: 1;
+			animation: pop2 .2s;
+		}
+
+		span.material-symbols-rounded {
+			font-weight: lighter;
+			cursor: pointer;
+			font-size: 1.2em;
+		}
+
+		div#imgnavbtns {
+			position: absolute;
+			top: 50vh;
+			display: flex;
+			justify-content: space-between;
+			width: calc(100% - 2em);
+			margin: 0 1em;
+			left: 0;
+			z-index: -1;
+		}
+
+		.imgbtns {
+			display: flex;
+			padding: .5em;
+			border-radius: 50%;
+			background-color: var(--col-bg2);
+		}
+
+		.relbtn {
+			position: absolute;
+			top: 1em;
+			right: 1em;
+			padding: .5em;
+			background-color: var(--col-bg2);
+			border-radius: 50%;
+			display: flex;
+		}
+	</style>
+	<link rel="stylesheet"
+		href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+</head>
+
+<body>
+	<h1>Photos</h1>
+	<span class="material-symbols-rounded relbtn" onclick="renderlist()">refresh</span>
+	<div id="cont"></div>
+
+	<div id="fullfmd">
+		<nav>
+			<b class="navtitles" id="navtitls">
+				<span class="material-symbols-rounded">arrow_back</span>
+				<b id="flint">Unknown file</b>
+			</b>
+			<div id="flamenu"></div>
+		</nav>
+		<div id="bigshowcase"></div>
+		<div id="imgnavbtns">
+			<div id="prevbtn" class="imgbtns" onclick="showimg(crntimgIndex - 1)">
+				<span class="material-symbols-rounded">chevron_backward</span>
+			</div>
+			<div id="nextbtn" class="imgbtns" onclick="showimg(crntimgIndex + 1)">
+				<span class="material-symbols-rounded">chevron_forward</span>
+			</div>
+		</div>
+		</img>
+		<script>
+			var nofilesimg = `<div class="nofiles"><h2>You don't have any media files saved yet.</h2><p>Take a photo, import from the files app or download media files to view them here.</p><svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="105.57151" height="85.58506" viewBox="0,0,105.57151,85.58506"><g transform="translate(-181.85859,-138.20747)"><g data-paper-data="{&quot;isPaintingLayer&quot;:true}" fill-rule="nonzero" stroke-linejoin="miter" stroke-miterlimit="10" stroke-dasharray="" stroke-dashoffset="0" style="mix-blend-mode: normal"><path d="M207.70578,221.79254v-75.44366l57.53257,-8.1414v75.44365z" fill="#bba64b" stroke="none" stroke-width="0" stroke-linecap="butt"/><path d="M207.70578,221.79254v-75.44366l64.58845,2v75.44366z" fill="#ffe266" stroke="none" stroke-width="0" stroke-linecap="butt"/><path d="M231.51814,211.01958l9.39405,-68.69398l46.23634,6.32291l-9.39405,68.69398z" fill="#fffcf0" stroke="#000000" stroke-width="0.5" stroke-linecap="butt"/><text transform="translate(275.99794,203.36824) rotate(-82.04593) scale(0.19066,0.19066)" font-size="40" xml:space="preserve" fill="#393836" fill-rule="nonzero" stroke="none" stroke-width="1" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="10" stroke-dasharray="" stroke-dashoffset="0" font-family="Sans Serif" font-weight="normal" text-anchor="start" style="mix-blend-mode: normal"><tspan x="0" dy="0">NOT FOUND</tspan></text><path d="M207.70578,221.79254v-75.44366l64.58845,2v75.44366z" fill="#ffe266" stroke="none" stroke-width="0" stroke-linecap="butt"/><path d="M229.82001,181.6652c0,1.87069 -1.07904,3.38717 -2.4101,3.38717c-1.33106,0 -2.4101,-1.51648 -2.4101,-3.38717c0,-1.87069 1.07904,-3.38717 2.4101,-3.38717c1.33106,0 2.4101,1.51648 2.4101,3.38717z" fill="#2c2712" stroke="none" stroke-width="0" stroke-linecap="butt"/><path d="M253.0002,181.52602c0,1.87069 -1.07904,3.38717 -2.4101,3.38717c-1.33106,0 -2.4101,-1.51648 -2.4101,-3.38717c0,-1.87069 1.07904,-3.38717 2.4101,-3.38717c1.33106,0 2.4101,1.51648 2.4101,3.38717z" fill="#2c2712" stroke="none" stroke-width="0" stroke-linecap="butt"/><path d="M227.51351,195.88209c0,0 5.35206,-3.71319 12.05704,-3.25291c5.85891,0.4022 10.39361,5.232 10.39361,5.232c0,0 -5.37895,-2.43961 -10.58809,-3.02587c-5.36175,-0.60343 -11.86256,1.04677 -11.86256,1.04677z" fill="#2c2712" stroke="#000000" stroke-width="0" stroke-linecap="butt"/><path d="M186.33333,158.83404c0,-3.17564 2.57436,-5.75 5.75,-5.75c3.17564,0 5.75,2.57436 5.75,5.75c0,3.17564 -2.57436,5.75 -5.75,5.75c-3.17564,0 -5.75,-2.57436 -5.75,-5.75z" fill="none" stroke="#6a6a6a" stroke-width="1" stroke-linecap="butt"/><path d="M195.90427,180.30449l2.19145,5.22577" fill="none" stroke="#6a6a6a" stroke-width="1" stroke-linecap="round"/><path d="M194.45352,184.17146l5.22577,-2.19145" fill="none" stroke="#6a6a6a" stroke-width="1" stroke-linecap="round"/><path d="M182.68342,175.59025l1.64992,-3.16234l1.64992,3.16234z" fill="none" stroke="#6a6a6a" stroke-width="1" stroke-linecap="butt"/></g></g></svg><div class="btncont"><button onclick="window.parent.openapp('camera', 1)">Take a photo</button><button onclick="window.parent.openapp('files', 1)">Upload files</button></div></div>`
+
+			let imgid = 0;
+			let crntimg = null;
+			const imgmap = {};
+			let crntimgIndex = null;
+
+			async function showimg(id) {
+				if (!imgmap[id]) {
+					imgmap[id] = { name: await window.parent.getFileNameByID(id), id };
+				};
+				const item = imgmap[id];
+				crntimg = item.id;
+				crntimgIndex = id;
+				const container = document.getElementById("bigshowcase");
+				const modal = document.getElementById("fullfmd");
+				makeMenu(Object.values(window.parent.fileActions));
+				let x = await window.parent.getFileById(item.id);
+				let y = await window.parent.unshrinkbsf(x.content);
+				let t = window.parent.getbaseflty(window.parent.ptypext(item.name));
+
+				if (x.metadata) {
+					document.getElementById("flint").innerHTML = window.parent.timeAgo(x.metadata.datetime);
+				}
+
+				if (t === 'video') {
+					let arr = x.content.split(",");
+					let b64Data = arr[1];
+					let byteCharacters = atob(b64Data);
+					let byteArrays = [];
+					for (let offset = 0; offset < byteCharacters.length; offset += 1024) {
+						let slice = byteCharacters.slice(offset, offset + 1024);
+						let byteArray = new Uint8Array(slice.length);
+						for (let i = 0; i < slice.length; i++) {
+							byteArray[i] = slice.charCodeAt(i);
+						}
+						byteArrays.push(byteArray);
+					}
+					let blob = new Blob(byteArrays, { type: t });
+					let blobURL = URL.createObjectURL(blob);
+					container.innerHTML = `<video controls></video>`;
+					let videoElement = container.querySelector("video");
+					playBase64Chunks(videoElement, blobURL);
+
+				} else if (t === 'image') {
+					container.innerHTML = `<img src="${y}">`;
+				}
+				modal.style.display = "flex";
+				document.getElementById("prevbtn").style.visibility = imgmap[id - 1] ? "visible" : "hidden";
+				document.getElementById("nextbtn").style.visibility = imgmap[id + 1] ? "visible" : "hidden";
+			}
+
+			async function greenflag() {
+				renderlist();
+				try {
+					if (myWindow.params.data) {
+						showimg(myWindow.params.data)
+					}
+				} catch (error) {
+				}
+			}
+
+			async function renderlist() {
+				try {
+					document.getElementById("cont").innerHTML = `Loading..`
+					const lcldata = await window.parent.getFileNamesByFolder("Media/");
+					if (lcldata.length < 1) {
+						document.getElementById("cont").innerHTML = nofilesimg;
+						return;
+					}
+					const dyDivs = {};
+					document.getElementById("cont").innerHTML = ``;
+
+					const observer = new IntersectionObserver(entries => {
+						for (const e of entries) {
+							const el = e.target;
+							if (e.isIntersecting) {
+								if (el.dataset.src) {
+									el.src = el.dataset.src;
+									delete el.dataset.src;
+								}
+							} else {
+								if (!el.dataset.src && el.src) {
+									el.dataset.src = el.src;
+									el.src = "";
+								}
+							}
+						}
+					}, { rootMargin: "200px" });
+
+					for (const item of lcldata) {
+						try {
+							let x = await window.parent.getFileById(item.id);
+							let t = window.parent.getbaseflty(window.parent.ptypext(item.name));
+							if (t === "image" || t === "video") {
+								let md = x.metadata || {};
+								if (md.datetime) {
+									let d = new Date(md.datetime);
+									let id = `${d.getFullYear()}-${(d.getMonth() + 1 + "").padStart(2, "0")}-${(d.getDate() + "").padStart(2, "0")}`;
+									if (!dyDivs[id]) {
+										dyDivs[id] = document.createElement("div");
+										let h = document.createElement("div");
+										h.classList.add("dyheader");
+										h.innerHTML = "<b>" + id + "</b>";
+										dyDivs[id].appendChild(h);
+										document.getElementById("cont").appendChild(dyDivs[id]);
+									}
+									const c = document.createElement("div");
+									c.classList.add("media-container");
+									const img = new Image();
+									if (t === "video") {
+										Promise.resolve().then(() => {
+											const v = document.createElement("video");
+											v.src = x.content; v.preload = "metadata";
+											v.onloadedmetadata = () => v.currentTime = 0;
+											v.onseeked = () => {
+												const canvas = document.createElement("canvas");
+												canvas.width = v.videoWidth; canvas.height = v.videoHeight;
+												canvas.getContext("2d").drawImage(v, 0, 0);
+												img.dataset.src = canvas.toDataURL("image/png");
+												observer.observe(img);
+											};
+										});
+										const playIcon = document.createElement("div");
+										playIcon.innerText = "play_circle";
+										playIcon.classList.add("material-symbols-rounded");
+										c.appendChild(playIcon);
+									} else {
+										img.dataset.src = x.content;
+										observer.observe(img);
+									}
+									const thisid = imgid++;
+									imgmap[thisid] = item;
+									img.onclick = () => showimg(thisid);
+									c.appendChild(img);
+									dyDivs[id].appendChild(c);
+								}
+							}
+						} catch (e) { console.error(e) }
+					}
+
+				} catch (error) {
+					console.error(error);
+				}
+			}
+
+			const modal = document.getElementById("navtitls");
+			modal.addEventListener('click', function (event) {
+				document.getElementById("fullfmd").style.display = "none";
+			});
+
+			function playBase64Chunks(videoElement, videoURL) {
+				videoElement.src = videoURL;
+				videoElement.addEventListener('loadedmetadata', () => {
+					const duration = videoElement.duration;
+					const chunkSize = 10;
+					let currentTime = 0;
+
+					function playNextChunk() {
+						if (currentTime >= duration) {
+							console.log("Video finished");
+							return;
+						}
+
+						const nextTime = Math.min(currentTime + chunkSize, duration);
+						videoElement.currentTime = currentTime;
+						videoElement.play();
+
+						const playChunkInterval = setInterval(() => {
+							if (videoElement.currentTime >= nextTime) {
+								videoElement.pause();
+								currentTime = nextTime;
+								clearInterval(playChunkInterval);
+								playNextChunk();
+							}
+						}, 100);
+					}
+
+					playNextChunk();
+				});
+			}
+
+			function makeMenu(items) {
+				const dropdownMenu = document.getElementById("flamenu");
+				dropdownMenu.innerHTML = "";
+				let bannedActions = [
+					"Reinstall", "appSettings"
+				]
+				items.forEach(item => {
+					if (bannedActions.includes((item.label))) {
+						return;
+					}
+					const menuItem = document.createElement('div');
+					menuItem.innerHTML = `<span class="material-symbols-rounded">${item.icon || ""}</span>
+        <span class=" tooltiptext">${item.label}</span>`;
+					menuItem.classList.add('flamenuitem', 'tooltip', 'smoothtltp');
+					menuItem.addEventListener('click', () => {
+						item.action(crntimg);
+					});
+					dropdownMenu.appendChild(menuItem);
+				});
+			}
+
+
+		</script>
+</body>
+
+</html>

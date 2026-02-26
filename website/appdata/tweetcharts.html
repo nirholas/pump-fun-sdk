@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tweet Charts</title>
+    <meta name="lair-icon" content="<svg width='232' height='232' viewBox='0 0 232 232' fill='none' xmlns='http://www.w3.org/2000/svg'><rect width='232' height='232' rx='40' fill='%231da1f2'/><path d='M40 170l30-40 30 20 30-60 30 30 30-50' stroke='white' stroke-width='8' stroke-linecap='round' stroke-linejoin='round'/><path d='M150 50c10-8 22-12 34-10-4 10-12 18-22 22 8-1 16-3 22-7-5 8-12 15-20 20v4c0 50-38 108-108 108-20 0-36-4-36-4s20-4 36-16c-14 0-26-10-28-24 4 1 10 0 10 0' stroke='white' stroke-width='4' fill='white' opacity='0.3'/></svg>">
+    <meta name="lair-include" content="lair.css material-symbols-rounded">
+    <meta name="permissions" content="appStorage, network">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { height: 100%; width: 100%; }
+        body {
+            height: 100%; overflow: hidden;
+            background: var(--col-bg1, #101010);
+            color: var(--col-txt1, #fff);
+            font-family: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
+            display: flex; flex-direction: column;
+        }
+        a { color: var(--colors-accent, #6179ff); text-decoration: none; }
+
+        /* ── Tab bar ── */
+        .tab-bar {
+            display: flex; gap: 2px;
+            background: var(--col-bg2, #171717);
+            border-bottom: 1px solid var(--col-bg3, #262626);
+            padding: 0 8px; flex-shrink: 0;
+        }
+        .tab {
+            display: flex; align-items: center; gap: 6px;
+            padding: 10px 14px; cursor: pointer;
+            color: var(--col-txt1, #aaa); opacity: 0.5;
+            font-size: 12px; font-weight: 500;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s; user-select: none;
+        }
+        .tab:hover { opacity: 0.7; }
+        .tab.active { opacity: 1; color: var(--colors-accent, #6179ff); border-bottom-color: var(--colors-accent, #6179ff); }
+        .tab .material-symbols-rounded { font-size: 16px; }
+
+        /* ── Header bar ── */
+        .header-bar {
+            display: flex; align-items: center; gap: 10px;
+            padding: 8px 14px;
+            background: var(--col-bg2, #171717);
+            border-bottom: 1px solid var(--col-bg3, #262626);
+            flex-shrink: 0; font-size: 11px;
+        }
+        .header-bar .title { font-weight: 600; font-size: 13px; }
+        .header-bar .sub { color: #666; }
+        .header-bar .spacer { flex: 1; }
+        .header-bar .src-link { font-size: 10px; color: #555; }
+        .header-bar .src-link:hover { color: var(--colors-accent, #6179ff); }
+
+        /* ── Panels ── */
+        .panel { display: none; flex: 1; overflow-y: auto; flex-direction: column; }
+        .panel.active { display: flex; }
+        .panel::-webkit-scrollbar { width: 5px; }
+        .panel::-webkit-scrollbar-track { background: transparent; }
+        .panel::-webkit-scrollbar-thumb { background: var(--col-bg3, #333); border-radius: 3px; }
+
+        /* ── Asset selector ── */
+        .asset-bar {
+            display: flex; gap: 6px; padding: 8px 14px;
+            overflow-x: auto; flex-shrink: 0;
+            scrollbar-width: none;
+        }
+        .asset-bar::-webkit-scrollbar { display: none; }
+        .asset-pill {
+            display: flex; align-items: center; gap: 5px;
+            padding: 5px 12px; border-radius: 20px;
+            background: var(--col-bg2, #171717);
+            border: 1px solid var(--col-bg3, #262626);
+            cursor: pointer; font-size: 11px; font-weight: 600;
+            white-space: nowrap; transition: all 0.15s;
+            color: var(--col-txt1, #ccc);
+        }
+        .asset-pill:hover { border-color: var(--colors-accent, #6179ff); }
+        .asset-pill.active { background: var(--colors-accent, #6179ff); color: #fff; border-color: var(--colors-accent, #6179ff); }
+        .asset-pill img { width: 16px; height: 16px; border-radius: 50%; }
+
+        /* ── Scatter plot ── */
+        .scatter-wrap { position: relative; padding: 14px; flex: 1; min-height: 300px; }
+        .scatter-wrap canvas { width: 100%; height: 100%; }
+
+        /* ── Controls row ── */
+        .ctrl-row {
+            display: flex; gap: 8px; padding: 6px 14px; align-items: center; flex-shrink: 0;
+            flex-wrap: wrap;
+        }
+        .ctrl-label { font-size: 10px; color: #555; text-transform: uppercase; letter-spacing: 0.5px; }
+        .ctrl-btn {
+            padding: 4px 10px; border-radius: 6px;
+            background: var(--col-bg2, #171717);
+            border: 1px solid var(--col-bg3, #262626);
+            color: var(--col-txt1, #ccc); cursor: pointer;
+            font-size: 11px; font-weight: 500; font-family: inherit;
+            transition: all 0.15s;
+        }
+        .ctrl-btn:hover { border-color: var(--colors-accent, #6179ff); }
+        .ctrl-btn.active { background: var(--colors-accent, #6179ff); color: #fff; border-color: var(--colors-accent, #6179ff); }
+        .ctrl-toggle {
+            display: flex; align-items: center; gap: 5px;
+            font-size: 11px; color: #888; cursor: pointer; user-select: none;
+        }
+        .ctrl-toggle input { accent-color: var(--colors-accent, #6179ff); }
+
+        /* ── Stats summary ── */
+        .stats-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 8px; padding: 14px;
+        }
+        .stat-card {
+            background: var(--col-bg2, #171717);
+            border: 1px solid var(--col-bg3, #262626);
+            border-radius: 8px; padding: 10px 12px;
+        }
+        .stat-label { font-size: 10px; color: #555; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.3px; }
+        .stat-value { font-size: 16px; font-weight: 700; }
+        .stat-sub { font-size: 10px; color: #666; margin-top: 2px; }
+
+        /* ── Data table ── */
+        .dt-head {
+            display: grid;
+            grid-template-columns: 60px 2fr 100px 80px 80px 80px;
+            padding: 6px 14px; font-size: 10px;
+            color: #555; text-transform: uppercase; letter-spacing: 0.5px;
+            border-bottom: 1px solid var(--col-bg3, #222);
+            position: sticky; top: 0; background: var(--col-bg1, #101010); z-index: 5;
+            flex-shrink: 0;
+        }
+        .dt-row {
+            display: grid;
+            grid-template-columns: 60px 2fr 100px 80px 80px 80px;
+            padding: 8px 14px; align-items: center;
+            border-bottom: 1px solid rgba(255,255,255,0.03);
+            font-size: 12px; transition: background 0.12s;
+        }
+        .dt-row:hover { background: var(--col-bg2, #171717); }
+        .dt-body { flex: 1; overflow-y: auto; }
+        .dt-body::-webkit-scrollbar { width: 5px; }
+        .dt-body::-webkit-scrollbar-track { background: transparent; }
+        .dt-body::-webkit-scrollbar-thumb { background: var(--col-bg3, #333); border-radius: 3px; }
+        .text-r { text-align: right; }
+        .sortable { cursor: pointer; user-select: none; }
+        .sortable:hover { color: #aaa; }
+
+        /* ── Asset grid (home) ── */
+        .home-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 10px; padding: 14px;
+        }
+        .home-card {
+            background: var(--col-bg2, #171717);
+            border: 1px solid var(--col-bg3, #262626);
+            border-radius: 12px; padding: 16px 10px;
+            display: flex; flex-direction: column; align-items: center;
+            gap: 8px; cursor: pointer; transition: all 0.15s;
+            text-align: center;
+        }
+        .home-card:hover { border-color: var(--colors-accent, #6179ff); transform: translateY(-2px); }
+        .home-card img { width: 40px; height: 40px; border-radius: 50%; }
+        .home-card .initials {
+            width: 40px; height: 40px; border-radius: 50%;
+            background: var(--col-bg3, #262626); display: flex;
+            align-items: center; justify-content: center;
+            font-weight: 700; font-size: 14px; color: var(--colors-accent, #6179ff);
+        }
+        .home-card .asset-name { font-size: 12px; font-weight: 600; }
+        .home-card .founder { font-size: 10px; color: #666; }
+
+        /* ── Colors ── */
+        .up { color: #5be45b; }
+        .dn { color: #ef4444; }
+        .muted { color: #888; }
+        .accent { color: var(--colors-accent, #6179ff); }
+
+        /* ── Loading / Empty / Error ── */
+        .state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 48px 20px; text-align: center; flex: 1; }
+        .state .material-symbols-rounded { font-size: 40px; color: #333; margin-bottom: 10px; }
+        .state p { color: #666; font-size: 13px; }
+        .state .sub { font-size: 11px; color: #444; margin-top: 4px; }
+        .spinner { width: 30px; height: 30px; border: 3px solid var(--col-bg3, #262626); border-top-color: var(--colors-accent, #6179ff); border-radius: 50%; animation: spin 0.7s linear infinite; margin-bottom: 14px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .retry { margin-top: 10px; padding: 7px 18px; background: var(--colors-accent, #6179ff); color: #fff; border: none; border-radius: 7px; cursor: pointer; font-size: 12px; font-weight: 600; font-family: inherit; }
+
+        /* ── Tooltip ── */
+        .tooltip {
+            display: none; position: absolute; z-index: 50;
+            background: var(--col-bg2, #171717);
+            border: 1px solid var(--col-bg3, #262626);
+            border-radius: 8px; padding: 10px 12px;
+            font-size: 11px; max-width: 280px;
+            pointer-events: none; box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+        .tooltip.show { display: block; }
+        .tooltip .tt-text { color: #aaa; margin-bottom: 4px; line-height: 1.4; }
+        .tooltip .tt-stat { font-weight: 600; }
+
+        /* ── Responsive ── */
+        @media (max-width: 540px) {
+            .dt-head, .dt-row { grid-template-columns: 50px 2fr 80px 70px; }
+            .dt-head > :nth-child(5), .dt-head > :nth-child(6),
+            .dt-row > :nth-child(5), .dt-row > :nth-child(6) { display: none; }
+            .stats-grid { grid-template-columns: 1fr 1fr; }
+        }
+
+        /* ── Hero section ── */
+        .hero {
+            padding: 24px 14px 16px; text-align: center;
+            background: linear-gradient(135deg, rgba(97,121,255,0.06) 0%, rgba(239,68,68,0.04) 100%);
+            border-bottom: 1px solid var(--col-bg3, #262626);
+        }
+        .hero h2 { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+        .hero p { font-size: 12px; color: #888; }
+    </style>
+</head>
+<body>
+
+    <div class="header-bar">
+        <span class="material-symbols-rounded" style="color:var(--colors-accent, #6179ff);font-size:18px;">query_stats</span>
+        <span class="title">Tweet Charts</span>
+        <span class="sub">Founder tweets × token price</span>
+        <span class="spacer"></span>
+        <a class="src-link" href="https://tweet-price-charts.vercel.app" target="_blank" title="Open full site">tweetcharts.xyz ↗</a>
+    </div>
+
+    <div class="tab-bar">
+        <div class="tab active" data-t="home" onclick="go('home')"><span class="material-symbols-rounded">grid_view</span>Tokens</div>
+        <div class="tab" data-t="impact" onclick="go('impact')"><span class="material-symbols-rounded">scatter_plot</span>Impact</div>
+        <div class="tab" data-t="data" onclick="go('data')"><span class="material-symbols-rounded">table_chart</span>Data</div>
+        <div class="tab" data-t="stats" onclick="go('stats')"><span class="material-symbols-rounded">analytics</span>Stats</div>
+    </div>
+
+    <!-- HOME: Token picker -->
+    <div class="panel active" id="p-home">
+        <div class="hero">
+            <h2>Most founder tweets do nothing.</h2>
+            <p>Some coincide with big moves. Pick a token to explore.</p>
+        </div>
+        <div id="homeGrid" class="home-grid">
+            <div class="state"><div class="spinner"></div><p>Loading tokens…</p></div>
+        </div>
+    </div>
+
+    <!-- IMPACT: Scatter plot -->
+    <div class="panel" id="p-impact">
+        <div class="asset-bar" id="impactAssets"></div>
+        <div class="ctrl-row">
+            <span class="ctrl-label">Metric</span>
+            <button class="ctrl-btn active" data-metric="1h" onclick="setMetric('1h')">1h</button>
+            <button class="ctrl-btn" data-metric="24h" onclick="setMetric('24h')">24h</button>
+            <span style="flex:1;"></span>
+            <label class="ctrl-toggle"><input type="checkbox" id="bigMovesToggle" checked onchange="renderScatter()"> Biggest moves only</label>
+        </div>
+        <div class="scatter-wrap">
+            <canvas id="scatterCanvas"></canvas>
+            <div class="tooltip" id="scatterTooltip"></div>
+        </div>
+    </div>
+
+    <!-- DATA: Table view -->
+    <div class="panel" id="p-data">
+        <div class="asset-bar" id="dataAssets"></div>
+        <div class="dt-head">
+            <div class="sortable" onclick="sortData('date')">Date</div>
+            <div>Tweet</div>
+            <div class="sortable text-r" onclick="sortData('1h')">1h Δ</div>
+            <div class="sortable text-r" onclick="sortData('24h')">24h Δ</div>
+            <div class="sortable text-r" onclick="sortData('price')">Price</div>
+            <div class="text-r">Founder</div>
+        </div>
+        <div class="dt-body" id="dataBody">
+            <div class="state"><p class="muted">Select a token above</p></div>
+        </div>
+    </div>
+
+    <!-- STATS: Summary -->
+    <div class="panel" id="p-stats">
+        <div class="asset-bar" id="statsAssets"></div>
+        <div id="statsContent">
+            <div class="state"><p class="muted">Select a token above</p></div>
+        </div>
+    </div>
+
+<script>
+/* ================================================================
+   Tweet-Price Charts — LairOS App
+   Fetches static JSON from the live Vercel deployment
+   ================================================================ */
+
+const BASE = 'https://tweet-price-charts.vercel.app/static';
+let assets = [];
+let allEvents = {};   // assetId -> TweetEvent[]
+let currentAsset = null;
+let currentMetric = '1h';
+let dataSortKey = 'date';
+let dataSortAsc = false;
+
+/* ── CORS-safe fetch (uses injected cfetch from kernel, fallback to proxy) ── */
+const _fetch = (typeof cfetch === 'function') ? cfetch : async function(url, opts) {
+    const host = (window.LAIR_HOST || window.location.ancestorOrigins?.[0] || window.location.origin).replace(/\/$/, '');
+    return fetch(host + '/api/proxy?url=' + encodeURIComponent(url), opts);
+};
+
+/* ── Helpers ── */
+function pctSpan(n) {
+    if (n == null || isNaN(n)) return '<span class="muted">—</span>';
+    const cls = n >= 0 ? 'up' : 'dn';
+    return `<span class="${cls}">${n >= 0 ? '+' : ''}${n.toFixed(2)}%</span>`;
+}
+
+function fmtDate(ts) {
+    const d = new Date(ts * 1000);
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' });
+}
+
+function fmtDateFull(ts) {
+    const d = new Date(ts * 1000);
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+
+function truncate(s, max) {
+    if (!s) return '';
+    return s.length > max ? s.slice(0, max) + '…' : s;
+}
+
+/* ── Tab switching ── */
+function go(tab) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.t === tab));
+    document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id === 'p-' + tab));
+}
+
+/* ── Data loading ── */
+async function loadAssets() {
+    try {
+        const r = await _fetch(`${BASE}/assets.json`);
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        const d = await r.json();
+        assets = (d.assets || []).filter(a => a.enabled);
+        renderHome();
+        renderAssetBars();
+    } catch (e) {
+        document.getElementById('homeGrid').innerHTML =
+            `<div class="state"><span class="material-symbols-rounded">cloud_off</span><p>Failed to load assets</p><p class="sub">${e.message}</p><button class="retry" onclick="loadAssets()">Retry</button></div>`;
+    }
+}
+
+async function loadEvents(assetId) {
+    if (allEvents[assetId]) return allEvents[assetId];
+    try {
+        const r = await _fetch(`${BASE}/${assetId}/tweet_events.json`);
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        const d = await r.json();
+        allEvents[assetId] = d.events || d || [];
+        return allEvents[assetId];
+    } catch (e) {
+        console.error('Failed to load events for', assetId, e);
+        return [];
+    }
+}
+
+async function loadStats(assetId) {
+    try {
+        const r = await _fetch(`${BASE}/${assetId}/stats.json`);
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return await r.json();
+    } catch (e) {
+        return null;
+    }
+}
+
+/* ── Home grid ── */
+function renderHome() {
+    const el = document.getElementById('homeGrid');
+    if (!assets.length) {
+        el.innerHTML = '<div class="state"><span class="material-symbols-rounded">search_off</span><p>No tokens available</p></div>';
+        return;
+    }
+    el.innerHTML = assets.map(a => `
+        <div class="home-card" onclick="selectAsset('${a.id}')">
+            ${a.logo
+                ? `<img src="${BASE.replace('/static', '')}${a.logo}" alt="${a.id}" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'initials',textContent:'${(a.id || '?').slice(0, 2).toUpperCase()}'}))">`
+                : `<div class="initials">${(a.id || '?').slice(0, 2).toUpperCase()}</div>`
+            }
+            <div class="asset-name">${a.name || a.id}</div>
+            <div class="founder">@${a.founder || '?'}</div>
+        </div>
+    `).join('');
+}
+
+function renderAssetBars() {
+    ['impactAssets', 'dataAssets', 'statsAssets'].forEach(id => {
+        const el = document.getElementById(id);
+        el.innerHTML = `<div class="asset-pill ${!currentAsset ? 'active' : ''}" data-id="all" onclick="selectAssetForView('all','${id}')">All</div>` +
+            assets.map(a =>
+                `<div class="asset-pill ${currentAsset === a.id ? 'active' : ''}" data-id="${a.id}" onclick="selectAssetForView('${a.id}','${id}')">${(a.id || '').toUpperCase()}</div>`
+            ).join('');
+    });
+}
+
+/* ── Asset selection ── */
+function selectAsset(id) {
+    currentAsset = id;
+    renderAssetBars();
+    go('impact');
+    loadAndRenderImpact();
+    loadAndRenderData();
+    loadAndRenderStats();
+}
+
+async function selectAssetForView(id, barId) {
+    currentAsset = id === 'all' ? null : id;
+    renderAssetBars();
+    if (barId.includes('impact')) await loadAndRenderImpact();
+    if (barId.includes('data')) await loadAndRenderData();
+    if (barId.includes('stats')) await loadAndRenderStats();
+}
+
+/* ── Impact scatter ── */
+function setMetric(m) {
+    currentMetric = m;
+    document.querySelectorAll('[data-metric]').forEach(b =>
+        b.classList.toggle('active', b.dataset.metric === m)
+    );
+    renderScatter();
+}
+
+async function loadAndRenderImpact() {
+    const ids = currentAsset ? [currentAsset] : assets.map(a => a.id);
+    await Promise.all(ids.map(loadEvents));
+    renderScatter();
+}
+
+function renderScatter() {
+    const canvas = document.getElementById('scatterCanvas');
+    const wrap = canvas.parentElement;
+    const w = wrap.clientWidth - 28;
+    const h = wrap.clientHeight - 10;
+    canvas.width = w * (window.devicePixelRatio || 1);
+    canvas.height = h * (window.devicePixelRatio || 1);
+    canvas.style.width = w + 'px';
+    canvas.style.height = h + 'px';
+    const ctx = canvas.getContext('2d');
+    ctx.scale(window.devicePixelRatio || 1, window.devicePixelRatio || 1);
+    ctx.clearRect(0, 0, w, h);
+
+    const ids = currentAsset ? [currentAsset] : assets.map(a => a.id);
+    const bigOnly = document.getElementById('bigMovesToggle').checked;
+
+    // Gather all points
+    let points = [];
+    const colors = ['#6179ff', '#5be45b', '#ef4444', '#f59e0b', '#a855f7', '#ec4899', '#14b8a6', '#f97316', '#8b5cf6', '#06b6d4', '#10b981', '#e879f9', '#fb923c', '#4ade80', '#f43e5e'];
+
+    ids.forEach((id, ci) => {
+        const events = allEvents[id] || [];
+        events.forEach(ev => {
+            const val = currentMetric === '1h'
+                ? (ev.price_change_1h ?? ev.price_impact_1h)
+                : (ev.price_change_24h ?? ev.price_impact_24h);
+            if (val == null || isNaN(val)) return;
+            if (bigOnly && Math.abs(val) < 3) return; // filter small moves
+            points.push({ x: ev.timestamp, y: val, ev, color: colors[ci % colors.length], assetId: id });
+        });
+    });
+
+    if (!points.length) {
+        ctx.fillStyle = '#555';
+        ctx.font = '13px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(bigOnly ? 'No big moves found. Try unchecking "Biggest moves only".' : 'No data available.', w / 2, h / 2);
+        return;
+    }
+
+    // Axes
+    const pad = { top: 20, right: 20, bottom: 30, left: 50 };
+    const pw = w - pad.left - pad.right;
+    const ph = h - pad.top - pad.bottom;
+
+    const xMin = Math.min(...points.map(p => p.x));
+    const xMax = Math.max(...points.map(p => p.x));
+    const yMax = Math.max(...points.map(p => Math.abs(p.y)), 5);
+
+    const scaleX = v => pad.left + ((v - xMin) / (xMax - xMin || 1)) * pw;
+    const scaleY = v => pad.top + ph / 2 - (v / yMax) * (ph / 2);
+
+    // Zero line
+    ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(pad.left, scaleY(0));
+    ctx.lineTo(w - pad.right, scaleY(0));
+    ctx.stroke();
+
+    // Y-axis labels
+    ctx.fillStyle = '#444';
+    ctx.font = '10px sans-serif';
+    ctx.textAlign = 'right';
+    const ySteps = [-yMax, -yMax / 2, 0, yMax / 2, yMax];
+    ySteps.forEach(v => {
+        const y = scaleY(v);
+        ctx.fillText((v >= 0 ? '+' : '') + v.toFixed(1) + '%', pad.left - 6, y + 3);
+        if (v !== 0) {
+            ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+            ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(w - pad.right, y); ctx.stroke();
+        }
+    });
+
+    // X-axis labels
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#444';
+    const xSteps = 5;
+    for (let i = 0; i <= xSteps; i++) {
+        const ts = xMin + (xMax - xMin) * (i / xSteps);
+        const d = new Date(ts * 1000);
+        const label = d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+        ctx.fillText(label, scaleX(ts), h - 8);
+    }
+
+    // Y-axis title
+    ctx.save();
+    ctx.fillStyle = '#555';
+    ctx.font = '10px sans-serif';
+    ctx.translate(12, pad.top + ph / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.textAlign = 'center';
+    ctx.fillText(`Price Δ ${currentMetric}`, 0, 0);
+    ctx.restore();
+
+    // Points
+    scatterPoints = points; // store for tooltip
+    points.forEach(p => {
+        const x = scaleX(p.x);
+        const y = scaleY(p.y);
+        ctx.beginPath();
+        ctx.arc(x, y, 3.5, 0, Math.PI * 2);
+        ctx.fillStyle = p.color + 'aa';
+        ctx.fill();
+    });
+
+    // Store scale fns for tooltip
+    canvas._scaleX = scaleX;
+    canvas._scaleY = scaleY;
+}
+
+let scatterPoints = [];
+document.getElementById('scatterCanvas').addEventListener('mousemove', function (e) {
+    const rect = this.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+    const tt = document.getElementById('scatterTooltip');
+
+    let closest = null, minD = 20;
+    scatterPoints.forEach(p => {
+        const px = this._scaleX ? this._scaleX(p.x) : 0;
+        const py = this._scaleY ? this._scaleY(p.y) : 0;
+        const d = Math.sqrt((mx - px) ** 2 + (my - py) ** 2);
+        if (d < minD) { minD = d; closest = { ...p, px, py }; }
+    });
+
+    if (closest) {
+        const ev = closest.ev;
+        tt.innerHTML = `
+            <div class="tt-text">${truncate(ev.text || ev.tweet_text || '', 140)}</div>
+            <div class="tt-stat">${closest.assetId.toUpperCase()} · ${fmtDateFull(ev.timestamp)}</div>
+            <div style="margin-top:4px;">
+                <span style="font-size:10px;color:#888;">1h:</span> ${pctSpan(ev.price_change_1h ?? ev.price_impact_1h)}
+                <span style="font-size:10px;color:#888;margin-left:8px;">24h:</span> ${pctSpan(ev.price_change_24h ?? ev.price_impact_24h)}
+            </div>
+        `;
+        tt.classList.add('show');
+        const wrap = this.parentElement;
+        let tx = closest.px + 14;
+        let ty = closest.py - 10;
+        if (tx + 280 > wrap.clientWidth) tx = closest.px - 290;
+        if (ty < 0) ty = 10;
+        tt.style.left = tx + 'px';
+        tt.style.top = ty + 'px';
+    } else {
+        tt.classList.remove('show');
+    }
+});
+
+document.getElementById('scatterCanvas').addEventListener('mouseleave', function () {
+    document.getElementById('scatterTooltip').classList.remove('show');
+});
+
+/* ── Data table ── */
+async function loadAndRenderData() {
+    const el = document.getElementById('dataBody');
+    if (!currentAsset) {
+        // Load all
+        const ids = assets.map(a => a.id);
+        el.innerHTML = '<div class="state"><div class="spinner"></div></div>';
+        await Promise.all(ids.map(loadEvents));
+        renderDataTable();
+    } else {
+        el.innerHTML = '<div class="state"><div class="spinner"></div></div>';
+        await loadEvents(currentAsset);
+        renderDataTable();
+    }
+}
+
+function sortData(key) {
+    if (dataSortKey === key) dataSortAsc = !dataSortAsc;
+    else { dataSortKey = key; dataSortAsc = key === 'date' ? false : true; }
+    renderDataTable();
+}
+
+function renderDataTable() {
+    const el = document.getElementById('dataBody');
+    const ids = currentAsset ? [currentAsset] : assets.map(a => a.id);
+
+    let rows = [];
+    ids.forEach(id => {
+        (allEvents[id] || []).forEach(ev => {
+            rows.push({ ...ev, _asset: id });
+        });
+    });
+
+    // Sort
+    rows.sort((a, b) => {
+        let va, vb;
+        switch (dataSortKey) {
+            case 'date': va = a.timestamp || 0; vb = b.timestamp || 0; break;
+            case '1h': va = a.price_change_1h ?? a.price_impact_1h ?? 0; vb = b.price_change_1h ?? b.price_impact_1h ?? 0; break;
+            case '24h': va = a.price_change_24h ?? a.price_impact_24h ?? 0; vb = b.price_change_24h ?? b.price_impact_24h ?? 0; break;
+            case 'price': va = a.price_at_tweet ?? a.price ?? 0; vb = b.price_at_tweet ?? b.price ?? 0; break;
+            default: va = 0; vb = 0;
+        }
+        return dataSortAsc ? va - vb : vb - va;
+    });
+
+    if (!rows.length) {
+        el.innerHTML = '<div class="state"><p class="muted">No tweet data available</p></div>';
+        return;
+    }
+
+    el.innerHTML = rows.slice(0, 200).map(r => {
+        const change1h = r.price_change_1h ?? r.price_impact_1h;
+        const change24h = r.price_change_24h ?? r.price_impact_24h;
+        const price = r.price_at_tweet ?? r.price;
+        return `<div class="dt-row">
+            <div class="muted" style="font-size:10px;">${fmtDate(r.timestamp)}</div>
+            <div style="font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${(r.text || r.tweet_text || '').replace(/"/g, '&quot;')}">${truncate(r.text || r.tweet_text || '', 60)}</div>
+            <div class="text-r">${pctSpan(change1h)}</div>
+            <div class="text-r">${pctSpan(change24h)}</div>
+            <div class="text-r muted" style="font-size:11px;">${price != null ? '$' + (price >= 1 ? price.toFixed(2) : price.toFixed(6)) : '—'}</div>
+            <div class="text-r muted" style="font-size:10px;">${r._asset.toUpperCase()}</div>
+        </div>`;
+    }).join('');
+
+    if (rows.length > 200) {
+        el.innerHTML += `<div style="padding:10px 14px;font-size:11px;color:#444;text-align:center;">Showing 200 of ${rows.length} tweets</div>`;
+    }
+}
+
+/* ── Stats panel ── */
+async function loadAndRenderStats() {
+    const el = document.getElementById('statsContent');
+    if (!currentAsset) {
+        el.innerHTML = '<div class="state"><p class="muted">Select a token to view stats</p></div>';
+        return;
+    }
+    el.innerHTML = '<div class="state"><div class="spinner"></div></div>';
+
+    const stats = await loadStats(currentAsset);
+    const events = allEvents[currentAsset] || await loadEvents(currentAsset);
+    const asset = assets.find(a => a.id === currentAsset);
+
+    if (!events.length && !stats) {
+        el.innerHTML = '<div class="state"><span class="material-symbols-rounded">bar_chart</span><p>No stats available</p></div>';
+        return;
+    }
+
+    // Compute basic stats from events if no stats.json
+    const valid1h = events.filter(e => (e.price_change_1h ?? e.price_impact_1h) != null);
+    const valid24h = events.filter(e => (e.price_change_24h ?? e.price_impact_24h) != null);
+
+    const avg1h = valid1h.length ? valid1h.reduce((s, e) => s + (e.price_change_1h ?? e.price_impact_1h), 0) / valid1h.length : null;
+    const avg24h = valid24h.length ? valid24h.reduce((s, e) => s + (e.price_change_24h ?? e.price_impact_24h), 0) / valid24h.length : null;
+
+    const green1h = valid1h.filter(e => (e.price_change_1h ?? e.price_impact_1h) > 0).length;
+    const green24h = valid24h.filter(e => (e.price_change_24h ?? e.price_impact_24h) > 0).length;
+
+    const max1h = valid1h.length ? Math.max(...valid1h.map(e => e.price_change_1h ?? e.price_impact_1h)) : null;
+    const min1h = valid1h.length ? Math.min(...valid1h.map(e => e.price_change_1h ?? e.price_impact_1h)) : null;
+    const max24h = valid24h.length ? Math.max(...valid24h.map(e => e.price_change_24h ?? e.price_impact_24h)) : null;
+    const min24h = valid24h.length ? Math.min(...valid24h.map(e => e.price_change_24h ?? e.price_impact_24h)) : null;
+
+    const greenRate1h = valid1h.length ? (green1h / valid1h.length * 100) : null;
+    const greenRate24h = valid24h.length ? (green24h / valid24h.length * 100) : null;
+
+    // Date range
+    const timestamps = events.map(e => e.timestamp).filter(Boolean).sort();
+    const dateRange = timestamps.length >= 2
+        ? fmtDate(timestamps[0]) + ' – ' + fmtDate(timestamps[timestamps.length - 1])
+        : '—';
+
+    el.innerHTML = `
+        <div style="padding:16px 14px 8px;">
+            <div style="font-size:16px;font-weight:700;">${asset?.name || currentAsset.toUpperCase()}</div>
+            <div style="font-size:11px;color:#666;">@${asset?.founder || '?'} · ${events.length} tweets · ${dateRange}</div>
+        </div>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">Total Tweets</div>
+                <div class="stat-value accent">${events.length}</div>
+                <div class="stat-sub">${valid1h.length} with price data</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Avg 1h Change</div>
+                <div class="stat-value">${avg1h != null ? pctSpan(avg1h) : '<span class="muted">—</span>'}</div>
+                <div class="stat-sub">${greenRate1h != null ? greenRate1h.toFixed(0) + '% green' : ''}</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Avg 24h Change</div>
+                <div class="stat-value">${avg24h != null ? pctSpan(avg24h) : '<span class="muted">—</span>'}</div>
+                <div class="stat-sub">${greenRate24h != null ? greenRate24h.toFixed(0) + '% green' : ''}</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Best 1h Move</div>
+                <div class="stat-value">${max1h != null ? pctSpan(max1h) : '<span class="muted">—</span>'}</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Worst 1h Move</div>
+                <div class="stat-value">${min1h != null ? pctSpan(min1h) : '<span class="muted">—</span>'}</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Best 24h Move</div>
+                <div class="stat-value">${max24h != null ? pctSpan(max24h) : '<span class="muted">—</span>'}</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Worst 24h Move</div>
+                <div class="stat-value">${min24h != null ? pctSpan(min24h) : '<span class="muted">—</span>'}</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Green Rate (1h)</div>
+                <div class="stat-value">${greenRate1h != null ? `<span class="${greenRate1h >= 50 ? 'up' : 'dn'}">${greenRate1h.toFixed(1)}%</span>` : '<span class="muted">—</span>'}</div>
+                <div class="stat-sub">${green1h} of ${valid1h.length}</div>
+            </div>
+        </div>
+        ${stats ? `
+            <div style="padding:8px 14px 4px;font-size:12px;font-weight:600;">Advanced Stats</div>
+            <div class="stats-grid">
+                ${stats.tweet_frequency ? `<div class="stat-card"><div class="stat-label">Avg Tweets/Week</div><div class="stat-value">${(stats.tweet_frequency.avg_per_week || 0).toFixed(1)}</div></div>` : ''}
+                ${stats.price_correlation ? `<div class="stat-card"><div class="stat-label">Price Correlation</div><div class="stat-value">${(stats.price_correlation.coefficient || 0).toFixed(3)}</div><div class="stat-sub">Tweet volume vs price</div></div>` : ''}
+                ${stats.biggest_pump ? `<div class="stat-card"><div class="stat-label">Biggest Pump</div><div class="stat-value up">+${(stats.biggest_pump.change_pct || 0).toFixed(1)}%</div><div class="stat-sub">${stats.biggest_pump.date || ''}</div></div>` : ''}
+                ${stats.biggest_dump ? `<div class="stat-card"><div class="stat-label">Biggest Dump</div><div class="stat-value dn">${(stats.biggest_dump.change_pct || 0).toFixed(1)}%</div><div class="stat-sub">${stats.biggest_dump.date || ''}</div></div>` : ''}
+            </div>
+        ` : ''}
+    `;
+}
+
+/* ── Init ── */
+async function greenflag() {
+    await loadAssets();
+}
+if (!window.myWindow) document.addEventListener('DOMContentLoaded', greenflag);
+</script>
+</body>
+</html>

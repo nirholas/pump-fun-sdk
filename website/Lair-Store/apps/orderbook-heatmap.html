@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="lair-include" content="lair.css material-symbols-rounded" />
+  <meta name="capabilities" content="orderbook_heatmap" />
+  <meta name="lair-icon" content="heat_pump" />
+  <meta name="lair-perms" content="network" />
+  <title>Orderbook Heatmap</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0} html,body{height:100%;background:var(--col-bg1,#080A19);color:var(--col-txt1,#A7C2F3);font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
+    .app{height:100%;display:grid;grid-template-rows:auto auto 1fr;overflow:hidden}
+    .head{padding:10px 14px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;background:var(--col-bg2,#0C0F27);border-bottom:1px solid rgba(112,188,249,.12)}
+    .title{display:flex;gap:8px;align-items:center;font-size:14px;font-weight:700}.title .material-symbols-rounded{color:#f3bd5d}
+    .controls{display:flex;gap:8px;align-items:center} select,.btn{padding:6px 10px;border-radius:8px;border:1px solid rgba(112,188,249,.2);background:var(--col-bg3,#15183E);color:var(--col-txt1,#A7C2F3);font-size:12px}.btn{cursor:pointer}
+    .stats{display:grid;grid-template-columns:repeat(3,minmax(150px,1fr));gap:8px;padding:8px 14px;border-bottom:1px solid rgba(112,188,249,.08)}
+    .card{background:rgba(112,188,249,.04);border:1px solid rgba(112,188,249,.1);border-radius:10px;padding:8px 10px}.k{font-size:10px;color:#7282ad;text-transform:uppercase}.v{font-size:14px;font-weight:700;margin-top:2px}
+    .canvas-wrap{padding:10px 14px;min-height:0;overflow:hidden;display:grid;grid-template-rows:1fr auto;gap:8px}
+    canvas{width:100%;height:100%;background:rgba(8,10,25,.9);border:1px solid rgba(112,188,249,.14);border-radius:10px}
+    .legend{display:flex;justify-content:space-between;font-size:11px;color:#8ea0cc}
+    @media(max-width:900px){.stats{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<div class="app">
+  <div class="head">
+    <div class="title"><span class="material-symbols-rounded">heat_pump</span> Orderbook Heatmap</div>
+    <div class="controls"><select id="pair"><option>BTCUSDT</option><option>ETHUSDT</option><option>SOLUSDT</option><option>BNBUSDT</option></select><button class="btn" id="reset">Reset</button></div>
+  </div>
+  <div class="stats"><div class="card"><div class="k">Mid Price</div><div class="v" id="mid">—</div></div><div class="card"><div class="k">Spread</div><div class="v" id="spread">—</div></div><div class="card"><div class="k">Strongest Wall</div><div class="v" id="wall">—</div></div></div>
+  <div class="canvas-wrap"><canvas id="heat" width="1300" height="640"></canvas><div class="legend"><span>Inspired by open-source orderbook heatmap research (Elenchev/order-book-heatmap)</span><span>Green bids • Red asks • Bright = larger resting liquidity</span></div></div>
+</div>
+<script>
+(()=>{
+const fetchFn=window.cfetch||fetch; const canvas=document.getElementById('heat'); const ctx=canvas.getContext('2d');
+const pairSel=document.getElementById('pair');
+let ws, snapshots=[]; const maxFrames=180; const bins=120;
+let bestBid=0,bestAsk=0,strongest={price:0,val:0};
+
+const priceFmt=v=>Number(v).toLocaleString(undefined,{maximumFractionDigits:4});
+const money=v=>v>=1e6?`$${(v/1e6).toFixed(2)}M`:v>=1e3?`$${(v/1e3).toFixed(1)}K`:`$${v.toFixed(0)}`;
+function updateStats(){
+  const mid=(bestBid+bestAsk)/2; const spread=bestAsk-bestBid;
+  document.getElementById('mid').textContent=mid?priceFmt(mid):'—';
+  document.getElementById('spread').textContent=mid?`${spread.toFixed(2)} (${(spread/mid*100).toFixed(3)}%)`:'—';
+  document.getElementById('wall').textContent=strongest.val?`${priceFmt(strongest.price)} • ${money(strongest.val)}`:'—';
+}
+
+function draw(){
+  const w=canvas.width,h=canvas.height; ctx.clearRect(0,0,w,h);
+  if(!snapshots.length){ctx.fillStyle='#8ea0cc';ctx.fillText('Waiting for depth stream…',20,30);return;}
+  const latest=snapshots[snapshots.length-1];
+  const prices=latest.map(x=>x.price); const minP=Math.min(...prices), maxP=Math.max(...prices);
+  const xStep=w/maxFrames; const y=v=>h-((v-minP)/(maxP-minP||1))*h;
+
+  for(let i=0;i<snapshots.length;i++){
+    const frame=snapshots[i];
+    for(const lv of frame){
+      const yy=y(lv.price); const alpha=Math.min(1, lv.intensity);
+      ctx.fillStyle=lv.side==='bid'?`rgba(133,255,133,${alpha})`:`rgba(255,120,120,${alpha})`;
+      ctx.fillRect(i*xStep, yy, Math.ceil(xStep)+1, 3);
+    }
+  }
+
+  if(bestBid&&bestAsk){
+    const mid=(bestBid+bestAsk)/2;
+    ctx.strokeStyle='rgba(243,189,93,.9)'; ctx.beginPath(); ctx.moveTo(0,y(mid)); ctx.lineTo(w,y(mid)); ctx.stroke();
+  }
+}
+
+function buildFrame(bids,asks){
+  const all=[...bids.map(([p,q])=>({price:Number(p),qty:Number(q),side:'bid'})),...asks.map(([p,q])=>({price:Number(p),qty:Number(q),side:'ask'}))].filter(v=>v.qty>0);
+  const maxVal=Math.max(...all.map(v=>v.price*v.qty),1);
+  const out=all.slice(0,bins).map(v=>({price:v.price,side:v.side,intensity:Math.max(0.05,Math.min(1,(v.price*v.qty)/maxVal))}));
+  strongest=all.reduce((m,v)=>{const val=v.price*v.qty; return val>m.val?{price:v.price,val}:m;},{price:0,val:0});
+  return out;
+}
+
+async function snapshot(symbol){
+  const r=await fetchFn(`https://api.binance.com/api/v3/depth?symbol=${symbol}&limit=120`); if(!r.ok) throw new Error(`depth ${r.status}`);
+  return r.json();
+}
+
+async function start(){
+  ws?.close(); snapshots=[]; draw();
+  const symbol=pairSel.value;
+  const d=await snapshot(symbol);
+  bestBid=Number(d.bids?.[0]?.[0]||0); bestAsk=Number(d.asks?.[0]?.[0]||0);
+  snapshots.push(buildFrame(d.bids||[], d.asks||[])); updateStats(); draw();
+
+  ws=new WebSocket(`wss://stream.binance.com:9443/ws/${symbol.toLowerCase()}@depth20@100ms`);
+  ws.onmessage=(ev)=>{
+    try{
+      const msg=JSON.parse(ev.data); const bids=(msg.b||[]).map(([p,q])=>[Number(p),Number(q)]).sort((a,b)=>b[0]-a[0]); const asks=(msg.a||[]).map(([p,q])=>[Number(p),Number(q)]).sort((a,b)=>a[0]-b[0]);
+      if(!bids.length||!asks.length) return;
+      bestBid=bids[0][0]; bestAsk=asks[0][0];
+      snapshots.push(buildFrame(bids,asks)); if(snapshots.length>maxFrames) snapshots.shift();
+      updateStats(); draw();
+    }catch{}
+  };
+  ws.onclose=()=>setTimeout(()=>{if(pairSel.value===symbol)start();},1200);
+}
+
+document.getElementById('reset').onclick=()=>{snapshots=[];draw();};
+pairSel.onchange=start;
+start(); if(typeof window.greenflag==='function')window.greenflag(); window.addEventListener('beforeunload',()=>ws?.close());
+})();
+</script>
+</body>
+</html>

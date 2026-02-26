@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="lair-include" content="lair.css">
+    <meta name="lair-widget" content="true">
+    <meta name="lair-widget-size" content="2x2">
+    <meta name="lair-icon" content="account_balance">
+    <title>Portfolio</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: transparent;
+            color: var(--col-txt1, #fff);
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
+            user-select: none;
+        }
+        .portfolio {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            padding: 10px;
+            width: 100%;
+        }
+        .portfolio-label {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            opacity: 0.35;
+            font-weight: 600;
+        }
+        .portfolio-total {
+            font-size: 1.8rem;
+            font-weight: 200;
+            letter-spacing: 0.02em;
+            line-height: 1;
+            font-variant-numeric: tabular-nums;
+        }
+        .portfolio-change {
+            font-size: 0.8rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .up { color: var(--col-good, #5be45b); }
+        .down { color: var(--col-bad, #d44343); }
+        .portfolio-holdings {
+            display: flex;
+            gap: 10px;
+            margin-top: 4px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .holding {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1px;
+        }
+        .holding-sym {
+            font-size: 0.6rem;
+            opacity: 0.4;
+            font-weight: 600;
+        }
+        .holding-val {
+            font-size: 0.7rem;
+            opacity: 0.7;
+            font-variant-numeric: tabular-nums;
+        }
+        .portfolio-addr {
+            font-size: 0.55rem;
+            opacity: 0.2;
+            font-family: monospace;
+            margin-top: 2px;
+        }
+        .loading {
+            opacity: 0.3;
+            font-size: 0.8rem;
+        }
+        .demo-badge {
+            font-size: 0.5rem;
+            background: rgba(255,255,255,0.06);
+            padding: 1px 6px;
+            border-radius: 4px;
+            opacity: 0.3;
+            margin-top: 2px;
+        }
+    </style>
+</head>
+<body>
+    <div class="portfolio" id="portfolio">
+        <div class="loading">Loading portfolio...</div>
+    </div>
+    <script>
+        const settings = window.__widgetSettings || {};
+        let displayCurrency = settings.currency || 'usd';
+
+        // Declare settings
+        window.parent.postMessage({
+            type: 'widgetDeclareSettings',
+            widgetId: window.__widgetId,
+            settings: [
+                {
+                    key: 'currency', label: 'Display currency', type: 'select', value: displayCurrency,
+                    options: [
+                        { value: 'usd', label: 'USD ($)' },
+                        { value: 'eur', label: 'EUR (€)' },
+                        { value: 'gbp', label: 'GBP (£)' },
+                        { value: 'btc', label: 'BTC (₿)' },
+                    ]
+                },
+            ]
+        }, '*');
+
+        window.addEventListener('message', (e) => {
+            if (e.data && e.data.type === 'widgetSettingsUpdate') {
+                displayCurrency = e.data.settings.currency || 'usd';
+                render();
+            }
+        });
+
+        const CURRENCY_SYMBOLS = { usd: '$', eur: '€', gbp: '£', btc: '₿' };
+
+        // Demo portfolio data — in production, this would call the Lair API
+        const DEMO_HOLDINGS = [
+            { symbol: 'ETH',  amount: 2.45,  priceUsd: 3420 },
+            { symbol: 'BTC',  amount: 0.12,  priceUsd: 67500 },
+            { symbol: 'SOL',  amount: 35.0,  priceUsd: 178 },
+            { symbol: 'USDC', amount: 1500,  priceUsd: 1 },
+        ];
+
+        // Simulate 24h change
+        const DEMO_CHANGE_PCT = 3.42;
+
+        function fmt(n, sym) {
+            if (sym === '₿') return sym + n.toFixed(6);
+            if (n >= 1000) return sym + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            return sym + n.toFixed(2);
+        }
+
+        function render() {
+            const el = document.getElementById('portfolio');
+            const sym = CURRENCY_SYMBOLS[displayCurrency] || '$';
+
+            // Currency conversion rates (approximate, for demo)
+            const rates = { usd: 1, eur: 0.92, gbp: 0.79, btc: 1 / 67500 };
+            const rate = rates[displayCurrency] || 1;
+
+            let total = 0;
+            const holdings = DEMO_HOLDINGS.map(h => {
+                const val = h.amount * h.priceUsd * rate;
+                total += val;
+                return { ...h, displayVal: val };
+            });
+
+            const changePct = DEMO_CHANGE_PCT;
+            const changeClass = changePct >= 0 ? 'up' : 'down';
+            const changeSign = changePct >= 0 ? '+' : '';
+
+            el.innerHTML = `
+                <div class="portfolio-label">Portfolio Value</div>
+                <div class="portfolio-total">${fmt(total, sym)}</div>
+                <div class="portfolio-change ${changeClass}">
+                    ${changeSign}${changePct.toFixed(2)}% (24h)
+                </div>
+                <div class="portfolio-holdings">
+                    ${holdings.map(h => `
+                        <div class="holding">
+                            <span class="holding-sym">${h.symbol}</span>
+                            <span class="holding-val">${fmt(h.displayVal, sym)}</span>
+                        </div>
+                    `).join('')}
+                </div>
+                <div class="demo-badge">Demo data</div>
+            `;
+        }
+
+        render();
+    </script>
+</body>
+</html>

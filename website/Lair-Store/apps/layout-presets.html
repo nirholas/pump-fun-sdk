@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="lair-include" content="lair.css material-symbols-rounded">
+    <meta name="permissions" content="appStorage">
+    <meta name="capabilities" content="layout">
+    <meta name="lair-icon" content="<svg width='232' height='232' viewBox='0 0 232 232' fill='none' xmlns='http://www.w3.org/2000/svg'><rect width='232' height='232' rx='40' fill='#6366F1'/><text x='116' y='140' text-anchor='middle' fill='white' font-size='100' font-weight='bold'>🖥️</text></svg>">
+    <title>Layout Presets</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { height: 100%; }
+        body {
+            overflow: hidden;
+            background: var(--col-bg1, #101010);
+            color: var(--col-txt1, #fff);
+            font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            display: flex; flex-direction: column;
+        }
+
+        /* Header */
+        .header {
+            display: flex; align-items: center; gap: 10px;
+            padding: 12px 16px;
+            background: var(--col-bg2, #171717);
+            border-bottom: 1px solid var(--col-bg3, #262626);
+            flex-shrink: 0;
+        }
+        .header h2 {
+            font-size: 14px; font-weight: 700;
+            display: flex; align-items: center; gap: 6px; flex: 1;
+        }
+        .header h2 .material-symbols-rounded { font-size: 18px; color: #6366f1; }
+        .save-btn {
+            background: #6366f1; border: none; color: #fff;
+            border-radius: 6px; padding: 5px 12px; cursor: pointer;
+            font-size: 11px; font-family: inherit; font-weight: 600;
+            display: flex; align-items: center; gap: 4px; transition: opacity 0.15s;
+        }
+        .save-btn:hover { opacity: 0.85; }
+        .save-btn .material-symbols-rounded { font-size: 14px; }
+
+        /* Error banner */
+        .error-banner {
+            padding: 10px 16px; background: #7f1d1d; color: #fca5a5;
+            font-size: 12px; display: none; align-items: center; gap: 8px;
+            flex-shrink: 0;
+        }
+        .error-banner.show { display: flex; }
+        .error-banner .material-symbols-rounded { font-size: 16px; }
+
+        /* Tabs */
+        .tabs {
+            display: flex; gap: 0; flex-shrink: 0;
+            border-bottom: 1px solid var(--col-bg3, #262626);
+            background: var(--col-bg2, #171717);
+        }
+        .tab {
+            flex: 1; padding: 8px 12px; cursor: pointer;
+            font-size: 11px; font-weight: 600; text-align: center;
+            color: #666; border-bottom: 2px solid transparent;
+            transition: all 0.15s; font-family: inherit;
+            background: none; border-top: none; border-left: none; border-right: none;
+        }
+        .tab:hover { color: #aaa; }
+        .tab.active { color: #6366f1; border-bottom-color: #6366f1; }
+
+        /* Scrollable content */
+        .content {
+            flex: 1; overflow-y: auto; overflow-x: hidden;
+            padding: 12px;
+        }
+        .content::-webkit-scrollbar { width: 6px; }
+        .content::-webkit-scrollbar-track { background: transparent; }
+        .content::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+
+        /* Grid */
+        .preset-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        /* Preset card */
+        .preset-card {
+            background: var(--col-bg2, #171717);
+            border: 1px solid var(--col-bg3, #262626);
+            border-radius: 10px;
+            padding: 14px;
+            cursor: pointer;
+            transition: all 0.15s;
+            position: relative;
+            display: flex; flex-direction: column; gap: 8px;
+        }
+        .preset-card:hover {
+            border-color: #6366f1;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 16px rgba(99,102,241,0.1);
+        }
+        .preset-card .card-header {
+            display: flex; align-items: center; gap: 8px;
+        }
+        .preset-card .card-icon {
+            width: 36px; height: 36px;
+            border-radius: 8px;
+            background: rgba(99,102,241,0.12);
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+        .preset-card .card-icon .material-symbols-rounded {
+            font-size: 20px; color: #6366f1;
+        }
+        .preset-card .card-info { flex: 1; min-width: 0; }
+        .preset-card .card-name {
+            font-size: 12px; font-weight: 700;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .preset-card .card-desc {
+            font-size: 10px; color: #666;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+
+        /* Layout preview thumbnail */
+        .layout-preview {
+            background: var(--col-bg1, #101010);
+            border-radius: 6px;
+            height: 64px;
+            position: relative;
+            overflow: hidden;
+            border: 1px solid var(--col-bg3, #262626);
+        }
+        .layout-preview .lp-win {
+            position: absolute;
+            background: rgba(99,102,241,0.15);
+            border: 1px solid rgba(99,102,241,0.3);
+            border-radius: 3px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 7px; color: #888; overflow: hidden;
+            text-overflow: ellipsis; white-space: nowrap; padding: 1px 2px;
+        }
+
+        .card-footer {
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .card-badge {
+            font-size: 9px; color: #666;
+            background: var(--col-bg1, #101010);
+            padding: 2px 6px; border-radius: 4px;
+        }
+        .card-actions {
+            display: flex; gap: 2px;
+            opacity: 0; transition: opacity 0.15s;
+        }
+        .preset-card:hover .card-actions { opacity: 1; }
+        .card-actions button {
+            background: none; border: none; cursor: pointer;
+            color: #666; padding: 2px; border-radius: 4px;
+            transition: all 0.15s; display: flex;
+        }
+        .card-actions button:hover { color: #fff; background: rgba(255,255,255,0.06); }
+        .card-actions button.del:hover { color: #ef4444; }
+        .card-actions .material-symbols-rounded { font-size: 14px; }
+
+        .preset-type-badge {
+            font-size: 8px; color: #6366f1;
+            background: rgba(99,102,241,0.1);
+            padding: 1px 5px; border-radius: 3px;
+            font-weight: 600; text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center; padding: 40px 20px; color: #555;
+        }
+        .empty-state .material-symbols-rounded { font-size: 48px; color: #333; margin-bottom: 12px; display: block; }
+        .empty-state p { font-size: 12px; margin-bottom: 4px; }
+        .empty-state .hint { font-size: 10px; color: #444; }
+
+        /* Modal overlay */
+        .modal-overlay {
+            display: none; position: fixed; inset: 0; z-index: 100;
+            background: rgba(0,0,0,0.7);
+            align-items: center; justify-content: center;
+        }
+        .modal-overlay.show { display: flex; }
+        .modal {
+            background: var(--col-bg2, #171717);
+            border: 1px solid var(--col-bg3, #262626);
+            border-radius: 12px; width: 90%; max-width: 420px;
+            max-height: 80vh; display: flex; flex-direction: column;
+            overflow: hidden;
+        }
+        .modal-header {
+            display: flex; align-items: center; gap: 8px;
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--col-bg3, #262626);
+        }
+        .modal-header h3 { font-size: 13px; font-weight: 700; flex: 1; }
+        .modal-close {
+            background: none; border: none; color: #666; cursor: pointer;
+            display: flex; padding: 2px; border-radius: 4px;
+        }
+        .modal-close:hover { color: #fff; }
+        .modal-close .material-symbols-rounded { font-size: 18px; }
+        .modal-body {
+            padding: 16px; overflow-y: auto; display: flex;
+            flex-direction: column; gap: 12px;
+        }
+
+        /* Form fields */
+        .field label {
+            display: block; font-size: 10px; font-weight: 600;
+            color: #888; margin-bottom: 4px; text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .field input, .field textarea {
+            width: 100%; background: var(--col-bg1, #101010);
+            border: 1px solid var(--col-bg3, #262626);
+            color: var(--col-txt1, #fff); border-radius: 6px;
+            padding: 8px 12px; font-size: 12px; font-family: inherit;
+            outline: none; transition: border-color 0.15s;
+        }
+        .field input:focus, .field textarea:focus {
+            border-color: #6366f1;
+        }
+        .field textarea { resize: vertical; min-height: 40px; }
+
+        /* Icon picker */
+        .icon-picker-label {
+            font-size: 10px; font-weight: 600; color: #888;
+            text-transform: uppercase; letter-spacing: 0.5px;
+            margin-bottom: 4px; display: block;
+        }
+        .icon-picker {
+            display: flex; flex-wrap: wrap; gap: 4px;
+        }
+        .icon-opt {
+            width: 32px; height: 32px; display: flex;
+            align-items: center; justify-content: center;
+            border-radius: 6px; cursor: pointer;
+            background: var(--col-bg1, #101010);
+            border: 1px solid var(--col-bg3, #262626);
+            color: #888; transition: all 0.15s;
+        }
+        .icon-opt:hover { border-color: #6366f1; color: #fff; }
+        .icon-opt.selected {
+            background: rgba(99,102,241,0.15);
+            border-color: #6366f1; color: #6366f1;
+        }
+        .icon-opt .material-symbols-rounded { font-size: 18px; }
+
+        /* Window list in modal */
+        .window-list {
+            max-height: 140px; overflow-y: auto;
+            background: var(--col-bg1, #101010);
+            border: 1px solid var(--col-bg3, #262626);
+            border-radius: 6px; padding: 6px;
+        }
+        .window-list::-webkit-scrollbar { width: 4px; }
+        .window-list::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+        .win-item {
+            display: flex; align-items: center; gap: 6px;
+            padding: 4px 6px; font-size: 11px; color: #aaa;
+            border-radius: 4px;
+        }
+        .win-item .material-symbols-rounded { font-size: 14px; color: #6366f1; }
+        .win-item .win-app { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .win-item .win-size { font-size: 9px; color: #555; }
+
+        .no-windows {
+            text-align: center; padding: 12px; color: #555; font-size: 11px;
+        }
+
+        /* Modal action buttons */
+        .modal-actions {
+            display: flex; gap: 8px; padding: 12px 16px;
+            border-top: 1px solid var(--col-bg3, #262626);
+        }
+        .modal-actions button {
+            flex: 1; padding: 8px; border-radius: 6px; font-size: 11px;
+            font-weight: 600; font-family: inherit; cursor: pointer;
+            transition: opacity 0.15s;
+        }
+        .btn-cancel {
+            background: var(--col-bg1, #101010);
+            border: 1px solid var(--col-bg3, #262626);
+            color: #888;
+        }
+        .btn-cancel:hover { color: #fff; }
+        .btn-primary {
+            background: #6366f1; border: none; color: #fff;
+        }
+        .btn-primary:hover { opacity: 0.85; }
+        .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+        .btn-danger {
+            background: #7f1d1d; border: none; color: #fca5a5;
+        }
+        .btn-danger:hover { opacity: 0.85; }
+
+        /* Restore toast */
+        .toast {
+            position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
+            background: #22c55e; color: #fff; padding: 8px 18px;
+            border-radius: 8px; font-size: 11px; font-weight: 600;
+            opacity: 0; transition: opacity 0.3s; pointer-events: none;
+            z-index: 200; white-space: nowrap;
+        }
+        .toast.show { opacity: 1; }
+        .toast.error { background: #ef4444; }
+
+        /* Confirm dialog */
+        .confirm-overlay {
+            display: none; position: fixed; inset: 0; z-index: 150;
+            background: rgba(0,0,0,0.6);
+            align-items: center; justify-content: center;
+        }
+        .confirm-overlay.show { display: flex; }
+        .confirm-box {
+            background: var(--col-bg2, #171717);
+            border: 1px solid var(--col-bg3, #262626);
+            border-radius: 10px; padding: 20px; width: 280px;
+            text-align: center;
+        }
+        .confirm-box p { font-size: 12px; margin-bottom: 16px; }
+        .confirm-box .confirm-actions { display: flex; gap: 8px; }
+        .confirm-box .confirm-actions button { flex: 1; }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <div class="header">
+        <h2>
+            <span class="material-symbols-rounded">grid_view</span>
+            Layout Presets
+        </h2>
+        <button class="save-btn" onclick="showSaveModal()">
+            <span class="material-symbols-rounded">save</span>
+            Save Layout
+        </button>
+    </div>
+
+    <!-- Error banner for parent access issues -->
+    <div class="error-banner" id="errorBanner">
+        <span class="material-symbols-rounded">error</span>
+        <span>Cannot access window manager. Layout capture/restore may not work.</span>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+        <button class="tab active" data-tab="all" onclick="switchTab('all')">All</button>
+        <button class="tab" data-tab="builtin" onclick="switchTab('builtin')">Built-in</button>
+        <button class="tab" data-tab="custom" onclick="switchTab('custom')">Custom</button>
+    </div>
+
+    <!-- Content -->
+    <div class="content" id="content"></div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <!-- Save / Edit Modal -->
+    <div class="modal-overlay" id="saveModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="modalTitle">Save Current Layout</h3>
+                <button class="modal-close" onclick="closeModal()">
+                    <span class="material-symbols-rounded">close</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="field">
+                    <label>Preset Name</label>
+                    <input type="text" id="presetName" placeholder="e.g. Trading Mode" maxlength="40">
+                </div>
+                <div>
+                    <span class="icon-picker-label">Icon</span>
+                    <div class="icon-picker" id="iconPicker"></div>
+                </div>
+                <div class="field">
+                    <label>Description</label>
+                    <textarea id="presetDesc" placeholder="What's this layout for?" rows="2" maxlength="100"></textarea>
+                </div>
+                <div>
+                    <span class="icon-picker-label" id="windowListLabel">Windows Detected</span>
+                    <div class="window-list" id="windowList"></div>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+                <button class="btn-primary" id="modalSaveBtn" onclick="handleSave()">Save Preset</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirm delete dialog -->
+    <div class="confirm-overlay" id="confirmOverlay">
+        <div class="confirm-box">
+            <p id="confirmMsg">Delete this preset?</p>
+            <div class="confirm-actions">
+                <button class="btn-cancel" onclick="closeConfirm()">Cancel</button>
+                <button class="btn-danger" id="confirmBtn" onclick="confirmAction()">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    (function() {
+        'use strict';
+
+        /* ── Constants ── */
+        const STORAGE_KEY = 'lair-layout-presets';
+        const ICONS = [
+            'candlestick_chart', 'monitoring', 'biotech', 'dashboard',
+            'grid_view', 'view_quilt', 'space_dashboard', 'widgets',
+            'bar_chart', 'show_chart', 'timeline', 'analytics',
+            'rocket_launch', 'terminal', 'code', 'account_balance',
+            'savings', 'trending_up', 'bolt', 'palette'
+        ];
+
+        const BUILTIN_PRESETS = [
+            {
+                id: 'builtin-trading',
+                name: 'Trading Mode',
+                icon: 'candlestick_chart',
+                description: 'Charts + Orderbook + Portfolio + News',
+                builtin: true,
+                windows: [
+                    { appId: 'cryptocharts', label: 'Crypto Charts', x: '0%', y: '0%', width: '60%', height: '60%' },
+                    { appId: 'orderbook', label: 'Orderbook', x: '60%', y: '0%', width: '40%', height: '50%' },
+                    { appId: 'portfolio-tracker', label: 'Portfolio', x: '60%', y: '50%', width: '40%', height: '50%' },
+                    { appId: 'cryptonews', label: 'News Feed', x: '0%', y: '60%', width: '60%', height: '40%' }
+                ]
+            },
+            {
+                id: 'builtin-research',
+                name: 'Research Mode',
+                icon: 'biotech',
+                description: 'Token Scanner + Correlation + Whale Alerts',
+                builtin: true,
+                windows: [
+                    { appId: 'tokenscanner', label: 'Token Scanner', x: '0%', y: '0%', width: '50%', height: '100%' },
+                    { appId: 'correlation-matrix', label: 'Correlation', x: '50%', y: '0%', width: '50%', height: '50%' },
+                    { appId: 'whalealerts', label: 'Whale Alerts', x: '50%', y: '50%', width: '50%', height: '50%' }
+                ]
+            },
+            {
+                id: 'builtin-monitor',
+                name: 'Monitor Mode',
+                icon: 'monitoring',
+                description: 'Fear & Greed + Gas + Ticker',
+                builtin: true,
+                windows: [
+                    { appId: 'feargreed', label: 'Fear & Greed', x: '0%', y: '0%', width: '33%', height: '100%' },
+                    { appId: 'gastracker', label: 'Gas Tracker', x: '33%', y: '0%', width: '34%', height: '100%' },
+                    { appId: 'priceticker', label: 'Price Ticker', x: '67%', y: '0%', width: '33%', height: '100%' }
+                ]
+            }
+        ];
+
+        /* ── State ── */
+        let customPresets = [];
+        let currentTab = 'all';
+        let editingPresetId = null;
+        let capturedWindows = [];
+        let selectedIcon = 'grid_view';
+        let pendingConfirmCallback = null;
+        let hasParentAccess = false;
+
+        /* ── Init ── */
+        function init() {
+            checkParentAccess();
+            loadPresets();
+            buildIconPicker();
+            render();
+        }
+
+        function checkParentAccess() {
+            try {
+                const test = parent.document.querySelectorAll('.window');
+                hasParentAccess = true;
+            } catch (e) {
+                hasParentAccess = false;
+                document.getElementById('errorBanner').classList.add('show');
+            }
+        }
+
+        /* ── Storage ── */
+        function loadPresets() {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY);
+                customPresets = raw ? JSON.parse(raw) : [];
+            } catch (e) {
+                customPresets = [];
+            }
+        }
+
+        function savePresets() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(customPresets));
+        }
+
+        function getAllPresets() {
+            if (currentTab === 'builtin') return BUILTIN_PRESETS;
+            if (currentTab === 'custom') return customPresets;
+            return [...BUILTIN_PRESETS, ...customPresets];
+        }
+
+        /* ── Capture windows ── */
+        function captureCurrentWindows() {
+            if (!hasParentAccess) return [];
+            try {
+                const windowEls = parent.document.querySelectorAll('.window');
+                const wins = [];
+                const screenW = parent.innerWidth;
+                const screenH = parent.innerHeight;
+
+                windowEls.forEach(w => {
+                    if (w.style.display === 'none') return;
+
+                    const appId = w.getAttribute('data-appid') || '';
+                    const winuid = w.getAttribute('data-winuid') || '';
+                    if (!appId) return;
+
+                    const titleEl = w.querySelector('.title');
+                    const label = titleEl ? titleEl.textContent.trim() : appId;
+
+                    const left = parseFloat(w.style.left) || 0;
+                    const top = parseFloat(w.style.top) || 0;
+                    const width = parseFloat(w.style.width) || 400;
+                    const height = parseFloat(w.style.height) || 300;
+
+                    /* Convert to % of viewport for responsive presets */
+                    const leftPx = w.style.left.includes('calc') ? w.offsetLeft : (w.style.left.includes('vw') ? (left / 100) * screenW : left);
+                    const topPx = w.style.top.includes('calc') ? w.offsetTop : (w.style.top.includes('vh') ? (top / 100) * screenH : top);
+                    const widthPx = w.style.width.includes('vw') ? (width / 100) * screenW : (w.style.width.includes('%') ? (width / 100) * screenW : width);
+                    const heightPx = w.style.height.includes('vh') ? (height / 100) * screenH : (w.style.height.includes('%') ? (height / 100) * screenH : height);
+
+                    wins.push({
+                        appId: appId,
+                        label: label,
+                        x: Math.round((leftPx / screenW) * 10000) / 100 + '%',
+                        y: Math.round((topPx / screenH) * 10000) / 100 + '%',
+                        width: Math.round((widthPx / screenW) * 10000) / 100 + '%',
+                        height: Math.round((heightPx / screenH) * 10000) / 100 + '%',
+                        zIndex: parseInt(w.style.zIndex) || 0
+                    });
+                });
+
+                wins.sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
+                return wins;
+            } catch (e) {
+                console.error('Failed to capture windows:', e);
+                return [];
+            }
+        }
+
+        /* ── Restore preset ── */
+        function restorePreset(preset) {
+            if (!hasParentAccess) {
+                showToast('Cannot access window manager', true);
+                return;
+            }
+
+            const screenW = parent.innerWidth;
+            const screenH = parent.innerHeight;
+            let delay = 0;
+
+            preset.windows.forEach((win, i) => {
+                setTimeout(() => {
+                    try {
+                        /* Open may be appdata name (1) or file id */
+                        parent.openapp(win.appId, 1);
+
+                        /* Wait for window to appear then position it */
+                        let attempts = 0;
+                        const positionInterval = setInterval(() => {
+                            attempts++;
+                            const windowEl = parent.document.querySelector('.window[data-appid="' + win.appId + '"]');
+                            if (windowEl) {
+                                clearInterval(positionInterval);
+
+                                const x = parsePercent(win.x, screenW);
+                                const y = parsePercent(win.y, screenH);
+                                const w = parsePercent(win.width, screenW);
+                                const h = parsePercent(win.height, screenH);
+
+                                windowEl.style.left = x + 'px';
+                                windowEl.style.top = y + 'px';
+                                windowEl.style.width = w + 'px';
+                                windowEl.style.height = h + 'px';
+                            }
+                            if (attempts > 30) clearInterval(positionInterval);
+                        }, 200);
+                    } catch (e) {
+                        console.error('Failed to open app:', win.appId, e);
+                    }
+                }, delay);
+                delay += 400;
+            });
+
+            showToast('Restored: ' + preset.name);
+        }
+
+        function parsePercent(val, total) {
+            if (typeof val === 'string' && val.endsWith('%')) {
+                return Math.round((parseFloat(val) / 100) * total);
+            }
+            return parseFloat(val) || 0;
+        }
+
+        /* ── Render ── */
+        function render() {
+            const container = document.getElementById('content');
+            const presets = getAllPresets();
+
+            if (presets.length === 0) {
+                container.innerHTML =
+                    '<div class="empty-state">' +
+                        '<span class="material-symbols-rounded">grid_view</span>' +
+                        '<p>' + (currentTab === 'custom' ? 'No custom presets yet' : 'No presets available') + '</p>' +
+                        '<p class="hint">' + (currentTab === 'custom' ? 'Save your current window layout to create one' : '') + '</p>' +
+                    '</div>';
+                return;
+            }
+
+            let html = '<div class="preset-grid">';
+            presets.forEach(p => {
+                html += buildPresetCard(p);
+            });
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        function buildPresetCard(preset) {
+            const winCount = preset.windows ? preset.windows.length : 0;
+            const isBuiltin = preset.builtin;
+            const escapedName = escHtml(preset.name);
+            const escapedDesc = escHtml(preset.description || '');
+            const pid = escHtml(preset.id);
+
+            return '<div class="preset-card" onclick="handleCardClick(\'' + pid + '\')">' +
+                '<div class="card-header">' +
+                    '<div class="card-icon"><span class="material-symbols-rounded">' + escHtml(preset.icon || 'grid_view') + '</span></div>' +
+                    '<div class="card-info">' +
+                        '<div class="card-name">' + escapedName + '</div>' +
+                        '<div class="card-desc">' + escapedDesc + '</div>' +
+                    '</div>' +
+                '</div>' +
+                buildPreviewThumb(preset) +
+                '<div class="card-footer">' +
+                    '<span class="card-badge">' + winCount + ' window' + (winCount !== 1 ? 's' : '') + '</span>' +
+                    (isBuiltin
+                        ? '<span class="preset-type-badge">Built-in</span>'
+                        : '<div class="card-actions">' +
+                            '<button onclick="event.stopPropagation(); editPreset(\'' + pid + '\')" title="Edit">' +
+                                '<span class="material-symbols-rounded">edit</span>' +
+                            '</button>' +
+                            '<button class="del" onclick="event.stopPropagation(); deletePreset(\'' + pid + '\')" title="Delete">' +
+                                '<span class="material-symbols-rounded">delete</span>' +
+                            '</button>' +
+                        '</div>'
+                    ) +
+                '</div>' +
+            '</div>';
+        }
+
+        function buildPreviewThumb(preset) {
+            if (!preset.windows || preset.windows.length === 0) {
+                return '<div class="layout-preview"></div>';
+            }
+
+            let html = '<div class="layout-preview">';
+            preset.windows.forEach(win => {
+                const x = parsePercentStr(win.x);
+                const y = parsePercentStr(win.y);
+                const w = parsePercentStr(win.width);
+                const h = parsePercentStr(win.height);
+                const shortLabel = (win.label || win.appId || '').substring(0, 8);
+                html += '<div class="lp-win" style="' +
+                    'left:' + x + '%;top:' + y + '%;width:' + w + '%;height:' + h + '%;">' +
+                    escHtml(shortLabel) +
+                '</div>';
+            });
+            html += '</div>';
+            return html;
+        }
+
+        function parsePercentStr(val) {
+            if (typeof val === 'string' && val.endsWith('%')) return parseFloat(val);
+            return parseFloat(val) || 0;
+        }
+
+        /* ── Tab switching ── */
+        window.switchTab = function(tab) {
+            currentTab = tab;
+            document.querySelectorAll('.tab').forEach(t => {
+                t.classList.toggle('active', t.dataset.tab === tab);
+            });
+            render();
+        };
+
+        /* ── Card click → Restore ── */
+        window.handleCardClick = function(presetId) {
+            const all = [...BUILTIN_PRESETS, ...customPresets];
+            const preset = all.find(p => p.id === presetId);
+            if (preset) restorePreset(preset);
+        };
+
+        /* ── Save modal ── */
+        window.showSaveModal = function() {
+            editingPresetId = null;
+            capturedWindows = captureCurrentWindows();
+            document.getElementById('modalTitle').textContent = 'Save Current Layout';
+            document.getElementById('presetName').value = '';
+            document.getElementById('presetDesc').value = '';
+            document.getElementById('modalSaveBtn').textContent = 'Save Preset';
+            document.getElementById('windowListLabel').textContent =
+                'Windows Detected (' + capturedWindows.length + ')';
+            selectedIcon = 'grid_view';
+            refreshIconPicker();
+            renderWindowList(capturedWindows);
+            document.getElementById('saveModal').classList.add('show');
+            document.getElementById('presetName').focus();
+        };
+
+        window.closeModal = function() {
+            document.getElementById('saveModal').classList.remove('show');
+            editingPresetId = null;
+        };
+
+        /* ── Edit preset ── */
+        window.editPreset = function(presetId) {
+            const preset = customPresets.find(p => p.id === presetId);
+            if (!preset) return;
+
+            editingPresetId = presetId;
+            capturedWindows = captureCurrentWindows();
+
+            document.getElementById('modalTitle').textContent = 'Edit Preset';
+            document.getElementById('presetName').value = preset.name;
+            document.getElementById('presetDesc').value = preset.description || '';
+            document.getElementById('modalSaveBtn').textContent = 'Update Preset';
+            document.getElementById('windowListLabel').textContent =
+                'Current Windows (' + capturedWindows.length + ') — will replace saved layout';
+            selectedIcon = preset.icon || 'grid_view';
+            refreshIconPicker();
+            renderWindowList(capturedWindows.length > 0 ? capturedWindows : preset.windows);
+            document.getElementById('saveModal').classList.add('show');
+            document.getElementById('presetName').focus();
+        };
+
+        /* ── Delete preset ── */
+        window.deletePreset = function(presetId) {
+            const preset = customPresets.find(p => p.id === presetId);
+            if (!preset) return;
+
+            document.getElementById('confirmMsg').textContent =
+                'Delete "' + preset.name + '"?';
+            pendingConfirmCallback = function() {
+                customPresets = customPresets.filter(p => p.id !== presetId);
+                savePresets();
+                render();
+                showToast('Preset deleted');
+            };
+            document.getElementById('confirmOverlay').classList.add('show');
+        };
+
+        window.closeConfirm = function() {
+            document.getElementById('confirmOverlay').classList.remove('show');
+            pendingConfirmCallback = null;
+        };
+
+        window.confirmAction = function() {
+            if (pendingConfirmCallback) pendingConfirmCallback();
+            closeConfirm();
+        };
+
+        /* ── Handle save / update ── */
+        window.handleSave = function() {
+            const name = document.getElementById('presetName').value.trim();
+            if (!name) {
+                document.getElementById('presetName').style.borderColor = '#ef4444';
+                document.getElementById('presetName').focus();
+                return;
+            }
+            document.getElementById('presetName').style.borderColor = '';
+
+            const desc = document.getElementById('presetDesc').value.trim();
+            const windowsToSave = capturedWindows.length > 0 ? capturedWindows : [];
+
+            if (editingPresetId) {
+                /* Update existing */
+                const preset = customPresets.find(p => p.id === editingPresetId);
+                if (preset) {
+                    preset.name = name;
+                    preset.icon = selectedIcon;
+                    preset.description = desc;
+                    if (capturedWindows.length > 0) {
+                        preset.windows = windowsToSave;
+                    }
+                }
+                showToast('Preset updated');
+            } else {
+                /* Create new */
+                const newPreset = {
+                    id: 'custom-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
+                    name: name,
+                    icon: selectedIcon,
+                    description: desc,
+                    builtin: false,
+                    windows: windowsToSave
+                };
+                customPresets.push(newPreset);
+                showToast('Preset saved');
+            }
+
+            savePresets();
+            closeModal();
+            render();
+        };
+
+        /* ── Icon picker ── */
+        function buildIconPicker() {
+            const container = document.getElementById('iconPicker');
+            container.innerHTML = ICONS.map(icon =>
+                '<div class="icon-opt' + (icon === selectedIcon ? ' selected' : '') +
+                '" data-icon="' + icon + '" onclick="selectIcon(\'' + icon + '\')">' +
+                    '<span class="material-symbols-rounded">' + icon + '</span>' +
+                '</div>'
+            ).join('');
+        }
+
+        function refreshIconPicker() {
+            document.querySelectorAll('.icon-opt').forEach(el => {
+                el.classList.toggle('selected', el.dataset.icon === selectedIcon);
+            });
+        }
+
+        window.selectIcon = function(icon) {
+            selectedIcon = icon;
+            refreshIconPicker();
+        };
+
+        /* ── Window list inside modal ── */
+        function renderWindowList(wins) {
+            const container = document.getElementById('windowList');
+            if (!wins || wins.length === 0) {
+                container.innerHTML = '<div class="no-windows">No windows detected — open some apps first</div>';
+                return;
+            }
+            container.innerHTML = wins.map(w =>
+                '<div class="win-item">' +
+                    '<span class="material-symbols-rounded">web_asset</span>' +
+                    '<span class="win-app">' + escHtml(w.label || w.appId) + '</span>' +
+                    '<span class="win-size">' + w.width + ' × ' + w.height + '</span>' +
+                '</div>'
+            ).join('');
+        }
+
+        /* ── Toast ── */
+        function showToast(msg, isError) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.className = 'toast show' + (isError ? ' error' : '');
+            clearTimeout(showToast._timer);
+            showToast._timer = setTimeout(() => {
+                toast.className = 'toast';
+            }, 2200);
+        }
+
+        /* ── Utility ── */
+        function escHtml(str) {
+            const d = document.createElement('div');
+            d.textContent = str || '';
+            return d.innerHTML;
+        }
+
+        function genId() {
+            return 'custom-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6);
+        }
+
+        /* ── Keyboard shortcut ── */
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                if (document.getElementById('confirmOverlay').classList.contains('show')) {
+                    closeConfirm();
+                } else if (document.getElementById('saveModal').classList.contains('show')) {
+                    closeModal();
+                }
+            }
+        });
+
+        /* ── Boot ── */
+        init();
+    })();
+    </script>
+</body>
+</html>

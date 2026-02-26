@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="lair-include" content="lair.css">
+    <meta name="lair-widget" content="true">
+    <meta name="lair-widget-size" content="2x2">
+    <meta name="lair-icon" content="trending_up">
+    <meta name="capabilities" content="widget,pnl_tracker">
+    <title>PnL Widget</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{
+            background:transparent;
+            color:var(--col-txt1,#A7C2F3);
+            font-family:'Segoe UI',system-ui,sans-serif;
+            display:flex;align-items:center;justify-content:center;
+            height:100vh;overflow:hidden;user-select:none;
+        }
+
+        /* ── Main container ─────────────────── */
+        .pnl{
+            display:flex;flex-direction:column;align-items:center;
+            gap:2px;padding:8px 10px;width:100%;text-align:center;
+            position:relative;overflow:hidden;
+        }
+
+        /* Ambient glow behind the value — shifts green/red */
+        .pnl::before{
+            content:'';position:absolute;
+            width:120px;height:120px;top:-30px;
+            border-radius:50%;filter:blur(40px);
+            opacity:0;transition:opacity 1.2s ease;
+            pointer-events:none;z-index:0;
+        }
+        .pnl.glow-up::before{background:var(--col-good,#85FF85);opacity:.06}
+        .pnl.glow-down::before{background:var(--col-bad,#AC4949);opacity:.06}
+
+        .pnl > *{position:relative;z-index:1}
+
+        /* ── Label ──────────────────────────── */
+        .pnl-label{
+            font-size:.55rem;text-transform:uppercase;letter-spacing:.1em;
+            opacity:.3;font-weight:700;
+        }
+
+        /* ── Big value ──────────────────────── */
+        .pnl-value{
+            font-size:1.65rem;font-weight:300;line-height:1;
+            font-variant-numeric:tabular-nums;letter-spacing:-.01em;
+            transition:color .5s ease;
+        }
+
+        /* ── Percentage ─────────────────────── */
+        .pnl-pct{
+            font-size:.7rem;font-weight:700;display:flex;
+            align-items:center;gap:3px;
+            transition:color .5s ease;
+        }
+        .pnl-pct .arrow{
+            display:inline-block;
+            transition:transform .4s cubic-bezier(.34,1.56,.64,1);
+        }
+
+        /* ── Color classes ──────────────────── */
+        .up{color:var(--col-good,#85FF85)}
+        .down{color:var(--col-bad,#AC4949)}
+        .neutral{opacity:.4}
+
+        /* ── Balance row ────────────────────── */
+        .pnl-bal{
+            font-size:.55rem;opacity:.25;font-weight:500;
+            font-variant-numeric:tabular-nums;
+            margin-top:1px;
+        }
+
+        /* ── Weekly / Monthly row ───────────── */
+        .pnl-row{
+            display:flex;gap:14px;margin-top:3px;
+        }
+        .pnl-row-item{
+            display:flex;flex-direction:column;align-items:center;gap:1px;
+        }
+        .pnl-row-item .lbl{
+            font-size:.45rem;opacity:.3;font-weight:700;
+            text-transform:uppercase;letter-spacing:.06em;
+        }
+        .pnl-row-item .val{
+            font-size:.72rem;font-weight:600;
+            font-variant-numeric:tabular-nums;line-height:1;
+        }
+
+        /* ── Streak badge ───────────────────── */
+        .streak{
+            font-size:.5rem;font-weight:600;
+            padding:1px 5px;border-radius:3px;
+            background:rgba(255,255,255,.04);
+            opacity:.5;margin-top:1px;
+        }
+        .streak.hot{background:rgba(133,255,133,.08);color:var(--col-good,#85FF85);opacity:.8}
+        .streak.cold{background:rgba(172,73,73,.08);color:var(--col-bad,#AC4949);opacity:.8}
+
+        /* ── Sparkline with gradient fill ───── */
+        .sparkline-wrap{
+            width:100%;height:26px;margin-top:2px;
+        }
+        .sparkline-wrap canvas{
+            width:100%;height:100%;display:block;
+        }
+
+        /* ── Onboarding state ───────────────── */
+        .onboard{
+            display:flex;flex-direction:column;align-items:center;
+            gap:6px;padding:14px;text-align:center;
+        }
+        .onboard-icon{
+            width:32px;height:32px;opacity:.15;
+        }
+        .onboard-title{font-size:.7rem;opacity:.5;font-weight:700}
+        .onboard-hint{font-size:.52rem;opacity:.25;max-width:120px;line-height:1.4}
+
+        /* ── Pulse on change ────────────────── */
+        @keyframes pulsePnl{
+            0%{transform:scale(1)}
+            50%{transform:scale(1.06)}
+            100%{transform:scale(1)}
+        }
+        .pulse{animation:pulsePnl .45s ease-out}
+
+        /* ── Spin loader ────────────────────── */
+        .spin{
+            width:16px;height:16px;
+            border:2px solid rgba(255,255,255,.08);
+            border-top-color:var(--colors-accent,rgb(97,121,255));
+            border-radius:50%;
+            animation:sp .7s linear infinite;
+        }
+        @keyframes sp{to{transform:rotate(360deg)}}
+    </style>
+</head>
+<body>
+    <div class="pnl" id="root">
+        <div class="onboard">
+            <div class="spin"></div>
+            <div class="onboard-title">PnL Tracker</div>
+        </div>
+    </div>
+    <script>
+    (function(){
+        'use strict';
+
+        /* ═══════════════════════════════════════
+           Settings
+           ═══════════════════════════════════════ */
+        const S = window.__widgetSettings || {};
+        let startBalance  = parseFloat(S.startBalance) || 10000;
+        let currency       = S.currency || 'USD';
+        let showSparkline  = S.showSparkline !== undefined ? S.showSparkline : true;
+
+        const CSYM = { USD:'$', EUR:'€', GBP:'£', BTC:'₿' };
+
+        /* Declare settings to LairOS host */
+        window.parent.postMessage({
+            type: 'widgetDeclareSettings',
+            widgetId: window.__widgetId,
+            settings: [
+                { key:'startBalance', label:'Starting Balance', type:'number', value: startBalance },
+                { key:'currency', label:'Currency', type:'select', value: currency,
+                  options:[
+                      {value:'USD',label:'USD ($)'},{value:'EUR',label:'EUR (€)'},
+                      {value:'GBP',label:'GBP (£)'},{value:'BTC',label:'BTC (₿)'}
+                  ]},
+                { key:'showSparkline', label:'Show Sparkline', type:'toggle', value: showSparkline }
+            ]
+        }, '*');
+
+        /* Listen for settings updates from host */
+        window.addEventListener('message', e => {
+            if (!e.data || e.data.type !== 'widgetSettingsUpdate') return;
+            const ns = e.data.settings || {};
+            if (ns.startBalance !== undefined) startBalance = safeNum(ns.startBalance, 10000);
+            if (ns.currency) currency = ns.currency;
+            if (ns.showSparkline !== undefined) showSparkline = !!ns.showSparkline;
+            render();
+        });
+
+        /* ═══════════════════════════════════════
+           Data Layer — localStorage + journal
+           ═══════════════════════════════════════ */
+        const STORAGE_KEY = 'lair_pnl_tracker';
+        const JOURNAL_KEY = 'lair_trading_journal';
+        const MAX_HISTORY = 365;   /* Cap history at 1 year to prevent localStorage bloat */
+
+        let _prevPnl = null;       /* Track previous value for pulse animation */
+
+        /* Safe number parse — returns fallback on NaN/Infinity */
+        function safeNum(v, fallback) {
+            const n = parseFloat(v);
+            return Number.isFinite(n) ? n : (fallback === undefined ? 0 : fallback);
+        }
+
+        /* Local-timezone date string (fixes UTC midnight bug from toISOString) */
+        function todayStr() {
+            const d = new Date();
+            return d.getFullYear() + '-' +
+                   String(d.getMonth()+1).padStart(2,'0') + '-' +
+                   String(d.getDate()).padStart(2,'0');
+        }
+
+        function loadData() {
+            /* 1. Try trading journal first */
+            try {
+                const raw = localStorage.getItem(JOURNAL_KEY);
+                if (raw) {
+                    const j = JSON.parse(raw);
+                    if (j && Array.isArray(j.entries) && j.entries.length) return fromJournal(j);
+                }
+            } catch(_){}
+            /* 2. Fall back to own PnL tracker data */
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY);
+                if (raw) {
+                    const d = JSON.parse(raw);
+                    if (d && Array.isArray(d.history) && d.history.length) return d;
+                }
+            } catch(_){}
+            return null;
+        }
+
+        function fromJournal(j) {
+            const raw = (j.entries || []).slice();
+            /* Validate + sanitize each entry — skip malformed ones */
+            const entries = raw
+                .filter(e => e && typeof e.date === 'string' && e.date.length >= 10)
+                .sort((a,b) => a.date.localeCompare(b.date));
+
+            const history = [];
+            let running = safeNum(j.startBalance, startBalance);
+
+            for (const e of entries) {
+                const pnlVal = (e.pnl !== undefined && e.pnl !== null) ? safeNum(e.pnl, null) : null;
+                const balVal = (e.balance !== undefined && e.balance !== null) ? safeNum(e.balance, null) : null;
+
+                if (pnlVal !== null) {
+                    running += pnlVal;
+                    history.push({ date: e.date, balance: running, pnl: pnlVal });
+                } else if (balVal !== null) {
+                    const prev = history.length ? history[history.length-1].balance : running;
+                    history.push({ date: e.date, balance: balVal, pnl: balVal - prev });
+                }
+                /* Skip entries with neither pnl nor balance */
+            }
+            return { startBalance: safeNum(j.startBalance, startBalance), history: pruneHistory(history) };
+        }
+
+        function saveData(data) {
+            data.history = pruneHistory(data.history);
+            try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch(_){}
+        }
+
+        function pruneHistory(h) {
+            return h && h.length > MAX_HISTORY ? h.slice(-MAX_HISTORY) : (h || []);
+        }
+
+        function getData() {
+            return loadData(); /* Returns null if no data — triggers onboarding */
+        }
+
+        /* ═══════════════════════════════════════
+           Calculations
+           ═══════════════════════════════════════ */
+        function calcPnl(data) {
+            const h = data.history || [];
+            const now = todayStr();
+            const base = safeNum(data.startBalance, startBalance);
+
+            /* Today's PnL — sum all entries for today */
+            const todayEntries = h.filter(e => e.date === now);
+            const todayPnl = todayEntries.reduce((s,e) => s + safeNum(e.pnl, 0), 0);
+            const currentBal = h.length ? h[h.length-1].balance : base;
+            const todayPct = base > 0 ? (todayPnl / base) * 100 : 0;
+
+            /* All-time PnL */
+            const allTimePnl = currentBal - base;
+            const allTimePct = base > 0 ? (allTimePnl / base) * 100 : 0;
+
+            /* Weekly: sum last 7 days */
+            const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7);
+            const weekEntries = h.filter(e => new Date(e.date) >= weekAgo);
+            const weeklyPnl = weekEntries.reduce((s,e) => s + safeNum(e.pnl, 0), 0);
+
+            /* Monthly: sum last 30 days */
+            const monthAgo = new Date(); monthAgo.setDate(monthAgo.getDate() - 30);
+            const monthEntries = h.filter(e => new Date(e.date) >= monthAgo);
+            const monthlyPnl = monthEntries.reduce((s,e) => s + safeNum(e.pnl, 0), 0);
+
+            /* Sparkline: last 7 day-entries for equity curve */
+            const spark = h.slice(-7).map(e => safeNum(e.pnl, 0));
+
+            /* Win streak — consecutive days from most recent */
+            let streak = 0, streakDir = 0;
+            for (let i = h.length - 1; i >= 0; i--) {
+                const p = safeNum(h[i].pnl, 0);
+                if (i === h.length - 1) { streakDir = p >= 0 ? 1 : -1; }
+                if ((p >= 0 && streakDir === 1) || (p < 0 && streakDir === -1)) streak++;
+                else break;
+            }
+
+            /* Win rate (all entries with non-zero pnl) */
+            const totalDays = h.length;
+            const winDays = h.filter(e => safeNum(e.pnl, 0) > 0).length;
+            const winRate = totalDays > 0 ? (winDays / totalDays * 100) : 0;
+
+            return {
+                todayPnl, todayPct, weeklyPnl, monthlyPnl,
+                allTimePnl, allTimePct, currentBal,
+                spark, streak, streakDir, winRate, totalDays
+            };
+        }
+
+        /* ═══════════════════════════════════════
+           Formatting
+           ═══════════════════════════════════════ */
+        function fmtMoney(n, compact) {
+            const sym = CSYM[currency] || '$';
+            const abs = Math.abs(n);
+            const sign = n >= 0 ? '+' : '-';
+            if (currency === 'BTC') return sign + sym + abs.toFixed(compact ? 4 : 6);
+            if (abs >= 1e6) return sign + sym + (abs/1e6).toFixed(1) + 'M';
+            if (abs >= 1e4) return sign + sym + (abs/1e3).toFixed(1) + 'K';
+            if (abs >= 1e3) return sign + sym + abs.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});
+            return sign + sym + abs.toFixed(2);
+        }
+
+        function fmtBal(n) {
+            const sym = CSYM[currency] || '$';
+            if (currency === 'BTC') return sym + n.toFixed(4);
+            if (n >= 1e6) return sym + (n/1e6).toFixed(2) + 'M';
+            if (n >= 1e3) return sym + n.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});
+            return sym + n.toFixed(2);
+        }
+
+        function fmtPct(n) { return (n >= 0 ? '+' : '') + n.toFixed(2) + '%'; }
+
+        /* ═══════════════════════════════════════
+           Sparkline with gradient fill + glow dot
+           ═══════════════════════════════════════ */
+        function drawSparkline(canvas, data) {
+            if (!data || data.length < 2) { canvas.style.display = 'none'; return; }
+            canvas.style.display = 'block';
+            const ctx = canvas.getContext('2d');
+            const dpr = window.devicePixelRatio || 1;
+            const w = canvas.clientWidth, h = canvas.clientHeight;
+            canvas.width = w * dpr; canvas.height = h * dpr;
+            ctx.scale(dpr, dpr);
+            ctx.clearRect(0, 0, w, h);
+
+            /* Cumulative sum for equity curve */
+            const cum = []; let run = 0;
+            for (const v of data) { run += v; cum.push(run); }
+
+            const min = Math.min(...cum, 0);
+            const max = Math.max(...cum, 0);
+            const range = max - min || 1;
+            const padX = 1, padY = 3;
+
+            const isUp = cum[cum.length - 1] >= 0;
+            const lineColor = isUp
+                ? (getComputedStyle(document.documentElement).getPropertyValue('--col-good').trim() || '#85FF85')
+                : (getComputedStyle(document.documentElement).getPropertyValue('--col-bad').trim() || '#AC4949');
+
+            /* Build path points */
+            const pts = cum.map((v, i) => ({
+                x: padX + (i / (cum.length - 1)) * (w - padX * 2),
+                y: padY + (1 - (v - min) / range) * (h - padY * 2)
+            }));
+
+            /* Parse line color for RGBA gradient */
+            let r2 = 133, g2 = 255, b2 = 133;
+            const hm = lineColor.match(/#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})/i);
+            if (hm) { r2 = parseInt(hm[1],16); g2 = parseInt(hm[2],16); b2 = parseInt(hm[3],16); }
+            const rm = lineColor.match(/rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/);
+            if (rm) { r2 = +rm[1]; g2 = +rm[2]; b2 = +rm[3]; }
+
+            /* Gradient fill under curve */
+            ctx.beginPath();
+            pts.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
+            ctx.lineTo(pts[pts.length - 1].x, h);
+            ctx.lineTo(pts[0].x, h);
+            ctx.closePath();
+
+            const grad = ctx.createLinearGradient(0, 0, 0, h);
+            grad.addColorStop(0, 'rgba(' + r2 + ',' + g2 + ',' + b2 + ',0.18)');
+            grad.addColorStop(1, 'rgba(' + r2 + ',' + g2 + ',' + b2 + ',0.0)');
+            ctx.fillStyle = grad;
+            ctx.fill();
+
+            /* Stroke line on top */
+            ctx.beginPath();
+            pts.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
+            ctx.strokeStyle = lineColor;
+            ctx.lineWidth = 1.5;
+            ctx.lineJoin = 'round';
+            ctx.lineCap = 'round';
+            ctx.stroke();
+
+            /* Zero line */
+            if (min < 0 && max > 0) {
+                const zy = padY + (1 - (0 - min) / range) * (h - padY * 2);
+                ctx.beginPath();
+                ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+                ctx.lineWidth = 0.5;
+                ctx.setLineDash([2, 2]);
+                ctx.moveTo(0, zy); ctx.lineTo(w, zy);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+
+            /* End dot with glow */
+            const last = pts[pts.length - 1];
+            ctx.beginPath();
+            ctx.arc(last.x, last.y, 2.5, 0, Math.PI * 2);
+            ctx.fillStyle = lineColor;
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(last.x, last.y, 5, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(' + r2 + ',' + g2 + ',' + b2 + ',0.15)';
+            ctx.fill();
+        }
+
+        /* ═══════════════════════════════════════
+           Render — DOM diffing (no innerHTML thrash)
+           ═══════════════════════════════════════ */
+        const $root = document.getElementById('root');
+        let _rendered = false;
+
+        /* Cached DOM refs for diff updates */
+        const $els = {};
+
+        function buildDOM() {
+            $root.className = 'pnl';
+            $root.innerHTML =
+                '<div class="pnl-label" data-r="label">Today\'s PnL</div>' +
+                '<div class="pnl-value" data-r="value"></div>' +
+                '<div class="pnl-pct" data-r="pct">' +
+                    '<span class="arrow" data-r="arrow"></span>' +
+                    '<span data-r="pctText"></span>' +
+                '</div>' +
+                '<div class="pnl-bal" data-r="bal"></div>' +
+                '<div class="pnl-row">' +
+                    '<div class="pnl-row-item">' +
+                        '<span class="lbl">Week</span>' +
+                        '<span class="val" data-r="wVal"></span>' +
+                    '</div>' +
+                    '<div class="pnl-row-item">' +
+                        '<span class="lbl">Month</span>' +
+                        '<span class="val" data-r="mVal"></span>' +
+                    '</div>' +
+                '</div>' +
+                '<div class="streak" data-r="streak"></div>' +
+                '<div class="sparkline-wrap"><canvas data-r="spark"></canvas></div>';
+            $root.querySelectorAll('[data-r]').forEach(function(el) { $els[el.dataset.r] = el; });
+            _rendered = true;
+        }
+
+        function showOnboarding() {
+            $root.className = 'pnl';
+            $root.innerHTML =
+                '<div class="onboard">' +
+                    '<svg class="onboard-icon" viewBox="0 -960 960 960" fill="currentColor">' +
+                        '<path d="M120-120v-80l80-80 160 160 160-240 120 120 80-80 120 120v80H120Z"/>' +
+                    '</svg>' +
+                    '<div class="onboard-title">PnL Tracker</div>' +
+                    '<div class="onboard-hint">Set your starting balance in widget settings to begin tracking</div>' +
+                '</div>';
+            _rendered = false;
+        }
+
+        function render() {
+            var data = getData();
+
+            /* No data — show onboarding prompt */
+            if (!data) { showOnboarding(); return; }
+
+            var p = calcPnl(data);
+
+            /* Build DOM once, then just update text + classes */
+            if (!_rendered) buildDOM();
+
+            /* Determine color classes */
+            var tCls = p.todayPnl > 0 ? 'up' : p.todayPnl < 0 ? 'down' : 'neutral';
+            var arrowChar = p.todayPnl > 0 ? '▲' : p.todayPnl < 0 ? '▼' : '–';
+            var wCls = p.weeklyPnl >= 0 ? 'up' : 'down';
+            var mCls = p.monthlyPnl >= 0 ? 'up' : 'down';
+
+            /* Ambient glow */
+            $root.classList.remove('glow-up', 'glow-down');
+            if (p.todayPnl > 0) $root.classList.add('glow-up');
+            else if (p.todayPnl < 0) $root.classList.add('glow-down');
+
+            /* Update text nodes — only writes if content actually changed */
+            setText($els.value, fmtMoney(p.todayPnl));
+            $els.value.className = 'pnl-value ' + tCls;
+
+            setText($els.arrow, arrowChar);
+            setText($els.pctText, fmtPct(p.todayPct));
+            $els.pct.className = 'pnl-pct ' + tCls;
+
+            setText($els.bal, 'Bal ' + fmtBal(p.currentBal));
+
+            setText($els.wVal, fmtMoney(p.weeklyPnl, true));
+            $els.wVal.className = 'val ' + wCls;
+
+            setText($els.mVal, fmtMoney(p.monthlyPnl, true));
+            $els.mVal.className = 'val ' + mCls;
+
+            /* Streak badge */
+            if (p.streak >= 2) {
+                var isWin = p.streakDir === 1;
+                $els.streak.style.display = '';
+                $els.streak.className = 'streak ' + (isWin ? 'hot' : 'cold');
+                setText($els.streak, (isWin ? '🔥' : '❄️') + ' ' + p.streak + (isWin ? ' Win' : ' Loss') + ' Streak');
+            } else if (p.totalDays >= 3) {
+                $els.streak.style.display = '';
+                $els.streak.className = 'streak';
+                setText($els.streak, '📊 ' + p.winRate.toFixed(0) + '% Win Rate');
+            } else {
+                $els.streak.style.display = 'none';
+            }
+
+            /* Pulse animation if value changed */
+            if (_prevPnl !== null && _prevPnl !== p.todayPnl) {
+                $els.value.classList.remove('pulse');
+                void $els.value.offsetWidth; /* force reflow */
+                $els.value.classList.add('pulse');
+            }
+            _prevPnl = p.todayPnl;
+
+            /* Sparkline */
+            if (showSparkline && $els.spark) {
+                $els.spark.parentElement.style.display = '';
+                drawSparkline($els.spark, p.spark);
+            } else if ($els.spark) {
+                $els.spark.parentElement.style.display = 'none';
+            }
+        }
+
+        /* Helper: only update textContent if it actually changed */
+        function setText(el, text) {
+            if (el && el.textContent !== text) el.textContent = text;
+        }
+
+        /* ═══════════════════════════════════════
+           Cross-tab sync via storage event
+           ═══════════════════════════════════════ */
+        window.addEventListener('storage', function(e) {
+            if (e.key === JOURNAL_KEY || e.key === STORAGE_KEY) {
+                render();
+            }
+        });
+
+        /* ═══════════════════════════════════════
+           Init
+           ═══════════════════════════════════════ */
+        render();
+
+        /* Poll every 30s — catches manual edits + journal updates in same tab */
+        setInterval(render, 30000);
+    })();
+    </script>
+</body>
+</html>

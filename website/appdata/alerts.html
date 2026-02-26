@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="lair-include" content="lair.css">
+    <meta name="permissions" content="network">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="lair-icon" content="<svg width='232' height='232' viewBox='0 0 232 232' fill='none' xmlns='http://www.w3.org/2000/svg'><rect width='232' height='232' rx='40' fill='#fbbf24'/><path d='M116 40c-8 0-14 6-14 14v6c-24 8-40 30-40 56v30l-14 14v8h136v-8l-14-14v-30c0-26-16-48-40-56v-6c0-8-6-14-14-14z' fill='white'/><circle cx='116' cy='192' r='18' fill='white'/><circle cx='170' cy='60' r='20' fill='#ff4444'/><text x='170' y='67' text-anchor='middle' font-size='22' font-weight='bold' fill='white' font-family='sans-serif'>!</text></svg>">
+    <title>Price Alerts</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Symbols+Outlined" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 50%, #0f0f1a 100%);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 560px;
+            margin: 0 auto;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+        }
+
+        .header h1 {
+            font-size: 22px;
+            font-weight: 600;
+            background: linear-gradient(90deg, #fff, #fbbf24);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .live-prices {
+            display: flex;
+            gap: 16px;
+            font-size: 12px;
+        }
+
+        .price-tag {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+        }
+
+        .price-tag .symbol {
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .price-tag .value {
+            color: #fff;
+        }
+
+        /* Create Alert Card */
+        .create-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+            backdrop-filter: blur(20px);
+        }
+
+        .create-card h2 {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .create-card h2 .material-symbols-outlined {
+            font-size: 20px;
+            color: #fbbf24;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 120px 1fr;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .form-group label {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.5);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-group select,
+        .form-group input {
+            padding: 12px 14px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            color: #fff;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .form-group select:focus,
+        .form-group input:focus {
+            border-color: rgba(251, 191, 36, 0.5);
+        }
+
+        .form-group select option {
+            background: #1a1a2e;
+        }
+
+        .create-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            border: none;
+            border-radius: 10px;
+            color: #000;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .create-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(251, 191, 36, 0.3);
+        }
+
+        /* Active Alerts */
+        .alerts-section h2 {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .alert-count {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
+            font-weight: 400;
+        }
+
+        .alerts-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .alert-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 12px;
+            transition: all 0.2s;
+        }
+
+        .alert-item:hover {
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .alert-item.triggered {
+            border-color: rgba(34, 197, 94, 0.4);
+            background: rgba(34, 197, 94, 0.1);
+        }
+
+        .alert-info {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .alert-icon {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 14px;
+        }
+
+        .btc-icon { background: linear-gradient(135deg, #f7931a, #c77a14); }
+        .eth-icon { background: linear-gradient(135deg, #627eea, #3c4a9e); }
+        .sol-icon { background: linear-gradient(135deg, #9945ff, #14f195); }
+
+        .alert-details h4 {
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+
+        .alert-condition {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .alert-condition .above {
+            color: #22c55e;
+        }
+
+        .alert-condition .below {
+            color: #ef4444;
+        }
+
+        .alert-current {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.4);
+            margin-top: 4px;
+        }
+
+        .alert-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .alert-toggle {
+            position: relative;
+            width: 44px;
+            height: 24px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .alert-toggle.active {
+            background: rgba(34, 197, 94, 0.6);
+        }
+
+        .alert-toggle::after {
+            content: '';
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 18px;
+            height: 18px;
+            background: #fff;
+            border-radius: 50%;
+            transition: transform 0.2s;
+        }
+
+        .alert-toggle.active::after {
+            transform: translateX(20px);
+        }
+
+        .delete-btn {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(239, 68, 68, 0.1);
+            border: none;
+            border-radius: 8px;
+            color: #ef4444;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .delete-btn:hover {
+            background: rgba(239, 68, 68, 0.2);
+        }
+
+        .delete-btn .material-symbols-outlined {
+            font-size: 18px;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .empty-state .material-symbols-outlined {
+            font-size: 48px;
+            margin-bottom: 12px;
+            opacity: 0.3;
+        }
+
+        .empty-state p {
+            font-size: 14px;
+        }
+
+        /* Notification Toast */
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 14px 20px;
+            background: rgba(34, 197, 94, 0.95);
+            border-radius: 10px;
+            color: #fff;
+            font-size: 14px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transform: translateX(120%);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        .toast.warning {
+            background: rgba(251, 191, 36, 0.95);
+            color: #000;
+        }
+
+        /* Status indicator */
+        .status-bar {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+            margin-top: 20px;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: #22c55e;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Price Alerts</h1>
+            <div class="live-prices">
+                <div class="price-tag">
+                    <span class="symbol">BTC</span>
+                    <span class="value" id="btcPrice">$--</span>
+                </div>
+                <div class="price-tag">
+                    <span class="symbol">ETH</span>
+                    <span class="value" id="ethPrice">$--</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Create Alert -->
+        <div class="create-card">
+            <h2>
+                <span class="material-symbols-outlined">add_alert</span>
+                Create Alert
+            </h2>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Asset</label>
+                    <select id="alertAsset">
+                        <option value="bitcoin">Bitcoin (BTC)</option>
+                        <option value="ethereum">Ethereum (ETH)</option>
+                        <option value="solana">Solana (SOL)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Condition</label>
+                    <select id="alertCondition">
+                        <option value="above">Above</option>
+                        <option value="below">Below</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Price (USD)</label>
+                    <input type="number" id="alertPrice" placeholder="100000">
+                </div>
+            </div>
+            <button class="create-btn" onclick="createAlert()">
+                Create Alert
+            </button>
+        </div>
+
+        <!-- Active Alerts -->
+        <div class="alerts-section">
+            <h2>
+                Active Alerts
+                <span class="alert-count" id="alertCount">0 alerts</span>
+            </h2>
+            <div class="alerts-list" id="alertsList">
+                <div class="empty-state">
+                    <span class="material-symbols-outlined">notifications_off</span>
+                    <p>No alerts yet. Create one above!</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="status-bar">
+            <div class="status-dot"></div>
+            Checking prices every 60 seconds
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast">
+        <span class="material-symbols-outlined">notifications_active</span>
+        <span id="toastMessage">Alert triggered!</span>
+    </div>
+
+    <script>
+        // State
+        let alerts = [];
+        let currentPrices = {};
+        let checkInterval = null;
+
+        // Asset config
+        const assets = {
+            bitcoin: { symbol: 'BTC', name: 'Bitcoin', iconClass: 'btc-icon' },
+            ethereum: { symbol: 'ETH', name: 'Ethereum', iconClass: 'eth-icon' },
+            solana: { symbol: 'SOL', name: 'Solana', iconClass: 'sol-icon' }
+        };
+
+        // Load alerts from localStorage
+        function loadAlerts() {
+            const saved = localStorage.getItem('lair_price_alerts');
+            if (saved) {
+                alerts = JSON.parse(saved);
+            }
+            renderAlerts();
+        }
+
+        // Save alerts to localStorage
+        function saveAlerts() {
+            localStorage.setItem('lair_price_alerts', JSON.stringify(alerts));
+        }
+
+        // Fetch current prices
+        async function fetchPrices() {
+            try {
+                const fetchFn = window.cfetch || fetch;
+                const response = await fetchFn('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana&vs_currencies=usd');
+                if (!response.ok) {
+                    throw new Error(`CoinGecko returned ${response.status}`);
+                }
+                const data = await response.json();
+                if (!data.bitcoin && !data.ethereum && !data.solana) {
+                    throw new Error('CoinGecko rate-limited or empty response');
+                }
+                
+                currentPrices = {
+                    bitcoin: data.bitcoin?.usd || 0,
+                    ethereum: data.ethereum?.usd || 0,
+                    solana: data.solana?.usd || 0
+                };
+
+                // Update header prices
+                document.getElementById('btcPrice').textContent = `$${currentPrices.bitcoin.toLocaleString()}`;
+                document.getElementById('ethPrice').textContent = `$${currentPrices.ethereum.toLocaleString()}`;
+
+                // Check alerts
+                checkAlerts();
+                
+                // Update current prices in alerts
+                renderAlerts();
+
+                const status = document.querySelector('.status-bar');
+                if (status) {
+                    status.innerHTML = '<div class="status-dot"></div>Checking prices every 60 seconds';
+                }
+            } catch (error) {
+                console.error('Failed to fetch prices:', error);
+                document.getElementById('btcPrice').textContent = '$--';
+                document.getElementById('ethPrice').textContent = '$--';
+                const status = document.querySelector('.status-bar');
+                if (status) {
+                    status.innerHTML = '<div class="status-dot"></div>CoinGecko unavailable or rate-limited — retrying automatically';
+                }
+            }
+        }
+
+        // Check if any alerts are triggered
+        function checkAlerts() {
+            alerts.forEach(alert => {
+                if (!alert.enabled || alert.triggered) return;
+
+                const price = currentPrices[alert.asset];
+                if (!price) return;
+
+                let triggered = false;
+                if (alert.condition === 'above' && price >= alert.price) {
+                    triggered = true;
+                } else if (alert.condition === 'below' && price <= alert.price) {
+                    triggered = true;
+                }
+
+                if (triggered) {
+                    alert.triggered = true;
+                    saveAlerts();
+                    showToast(`🔔 ${assets[alert.asset].symbol} is ${alert.condition} $${alert.price.toLocaleString()}!`);
+                    
+                    // Try to notify parent window
+                    if (window.parent !== window && window.parent.showNotification) {
+                        window.parent.showNotification(
+                            'Price Alert',
+                            `${assets[alert.asset].symbol} is ${alert.condition} $${alert.price.toLocaleString()}`,
+                            'warning'
+                        );
+                    }
+                }
+            });
+        }
+
+        // Create new alert
+        function createAlert() {
+            const asset = document.getElementById('alertAsset').value;
+            const condition = document.getElementById('alertCondition').value;
+            const price = parseFloat(document.getElementById('alertPrice').value);
+
+            if (!price || price <= 0) {
+                showToast('Please enter a valid price', 'warning');
+                return;
+            }
+
+            const newAlert = {
+                id: Date.now(),
+                asset,
+                condition,
+                price,
+                enabled: true,
+                triggered: false,
+                createdAt: new Date().toISOString()
+            };
+
+            alerts.unshift(newAlert);
+            saveAlerts();
+            renderAlerts();
+
+            // Clear input
+            document.getElementById('alertPrice').value = '';
+            
+            showToast(`Alert created: ${assets[asset].symbol} ${condition} $${price.toLocaleString()}`);
+        }
+
+        // Toggle alert
+        function toggleAlert(id) {
+            const alert = alerts.find(a => a.id === id);
+            if (alert) {
+                alert.enabled = !alert.enabled;
+                alert.triggered = false; // Reset triggered state when re-enabling
+                saveAlerts();
+                renderAlerts();
+            }
+        }
+
+        // Delete alert
+        function deleteAlert(id) {
+            alerts = alerts.filter(a => a.id !== id);
+            saveAlerts();
+            renderAlerts();
+        }
+
+        // Render alerts list
+        function renderAlerts() {
+            const container = document.getElementById('alertsList');
+            const countEl = document.getElementById('alertCount');
+
+            const activeCount = alerts.filter(a => a.enabled).length;
+            countEl.textContent = `${alerts.length} alert${alerts.length !== 1 ? 's' : ''}`;
+
+            if (alerts.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <span class="material-symbols-outlined">notifications_off</span>
+                        <p>No alerts yet. Create one above!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = alerts.map(alert => {
+                const asset = assets[alert.asset];
+                const currentPrice = currentPrices[alert.asset];
+                
+                return `
+                    <div class="alert-item ${alert.triggered ? 'triggered' : ''}">
+                        <div class="alert-info">
+                            <div class="alert-icon ${asset.iconClass}">${asset.symbol.charAt(0)}</div>
+                            <div class="alert-details">
+                                <h4>${asset.name}</h4>
+                                <div class="alert-condition">
+                                    <span class="${alert.condition}">${alert.condition === 'above' ? '↑' : '↓'}</span>
+                                    ${alert.condition} $${alert.price.toLocaleString()}
+                                    ${alert.triggered ? ' ✓ Triggered' : ''}
+                                </div>
+                                ${currentPrice ? `<div class="alert-current">Current: $${currentPrice.toLocaleString()}</div>` : ''}
+                            </div>
+                        </div>
+                        <div class="alert-actions">
+                            <div class="alert-toggle ${alert.enabled ? 'active' : ''}" onclick="toggleAlert(${alert.id})"></div>
+                            <button class="delete-btn" onclick="deleteAlert(${alert.id})">
+                                <span class="material-symbols-outlined">delete</span>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Show toast notification
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toastMessage');
+            
+            toast.className = `toast ${type}`;
+            toastMessage.textContent = message;
+            toast.classList.add('show');
+
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 4000);
+        }
+
+        // Initialize
+        loadAlerts();
+        fetchPrices();
+
+        // Check prices every 60 seconds
+        checkInterval = setInterval(fetchPrices, 60000);
+
+        // Cleanup on unload
+        window.addEventListener('beforeunload', () => {
+            if (checkInterval) clearInterval(checkInterval);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<!--[if lt IE 7]>      <html class="no-js lt-ie9 lt-ie8 lt-ie7"> <![endif]-->
+<!--[if IE 7]>         <html class="no-js lt-ie9 lt-ie8"> <![endif]-->
+<!--[if IE 8]>         <html class="no-js lt-ie9"> <![endif]-->
+<!--[if gt IE 8]>      <html class="no-js"> <!--<![endif]-->
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Rotur Auth</title>
+    <meta name="capabilities" content="roturAuth">
+    <meta name="permissions" content="unsandboxed">
+    <meta name="lair-include" content="material-symbols-rounded lair.css">
+    <meta name="lair-icon"
+        content="<svg version='1.1' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' width='254' height='254' viewBox='0,0,254,254'><g transform='translate(-113,-53)'><g stroke-miterlimit='10'><path d='M113,307v-254h254v254z' fill='#050710' stroke='none' stroke-width='0'/><path d='M290.53806,187.44516c-7.91911,53.75528 -36.96548,93.99924 -64.87687,89.8874c-27.9114,-4.11185 -44.11835,-51.02242 -36.19924,-104.77771c7.91911,-53.75528 36.96548,-93.99924 64.87687,-89.8874c27.9114,4.11185 44.11835,51.02242 36.19924,104.77771z' fill='none' stroke='#b973ff' stroke-width='10'/><path d='M273.29188,141.25499c41.2115,35.41123 59.71473,81.46444 41.32813,102.86271c-18.3866,21.39828 -66.7004,10.03854 -107.9119,-25.37269c-41.2115,-35.41123 -59.71473,-81.46444 -41.32813,-102.86271c18.3866,-21.39828 66.7004,-10.03854 107.9119,25.37269z' fill='none' stroke='#d7a7ff' stroke-width='10'/><path d='M221.65917,132.32255c50.71258,-19.5084 100.03471,-13.97716 110.16407,12.35437c10.12936,26.33153 -22.76984,63.49213 -73.48241,83.00053c-50.71258,19.5084 -100.03471,13.97716 -110.16407,-12.35437c-10.12936,-26.33153 22.76984,-63.49213 73.48241,-83.00053z' fill='none' stroke='#ffffff' stroke-width='10'/></g></g></svg>">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        html {
+            width: 100%;
+            height: 100%;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: "poppins", sans-serif;
+            background-color: #101010;
+            user-select: none;
+            display: flex;
+            color: white;
+            justify-content: center;
+            flex-direction: column;
+            height: 100%;
+            font-size: 16px;
+        }
+
+        input,
+        button,
+        textarea {
+            outline: 0;
+            border: 0;
+            background-color: inherit;
+            color: inherit;
+        }
+
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: 0;
+            border-radius: .5em;
+        }
+
+        #loader {
+            width: 16em;
+            height: 5em;
+            border: 5px solid;
+            box-sizing: border-box;
+            border-radius: 50%;
+            display: none;
+            animation: l2 30s infinite linear;
+            position: absolute;
+            opacity: .2;
+        }
+
+        #loader:before {
+            content: "";
+            grid-area: 1/1;
+            border: inherit;
+            border-radius: 50%;
+            animation: inherit;
+            animation-duration: 15s;
+        }
+
+        #loader:after {
+            content: "";
+            grid-area: 1/1;
+            border: inherit;
+            border-radius: 50%;
+            animation: inherit;
+            animation-duration: 7s;
+        }
+
+        #loader:after {
+            --s: -1;
+        }
+
+        @keyframes l2 {
+            100% {
+                transform: rotate(calc(var(--s, 1)*1turn))
+            }
+        }
+
+        #centerstuff {
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+        }
+
+        #complete {
+            text-align: center;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+
+            &>.material-symbols-rounded {
+                font-size: 3em;
+                color: rgb(139, 255, 101);
+            }
+        }
+
+        .floatgotos {
+                position: absolute;
+                bottom: 3em;
+            &>button {
+                background-color: var(--col-bg2);
+                width: fit-content;
+                border-radius: 2em;
+                padding: .5em 1em;
+                color: inherit;
+                &.high {
+                    background: var(--col-bgh);
+    color: var(--col-txth);
+                }
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <iframe src="" id="authframe"></iframe>
+    <div id="centerstuff">
+        <div id="loader"></div>
+        <div id="complete">
+            <span class="material-symbols-rounded">
+                check
+            </span>
+            <h1>Signed in as <span id="signedinas">Admin</span>!</h1>
+            <div class="floatgotos">
+                <button id="signout" onclick="signoutrtrsets()">Sign Out</button>
+                <button class="high" onclick="window.parent.useHandler('content_store', {'opener':'search', 'data':'rotur'});">Search Rotur apps</button>
+            </div>
+        </div>
+    </div>
+    <script>
+
+        async function signoutrtrsets() {
+            await window.parent.logoutofrtr();
+            greenflag();
+        }
+        let e = document.getElementById("authframe");
+        async function greenflag() {
+            let STYLE_URL = "../../libs/roturstyle.css";
+            e.src = `https://rotur.dev/auth?styles=${encodeURIComponent(STYLE_URL)}&return_to=https://rotur.dev`;
+            if (window.parent.roturExtension && window.parent.roturExtension.loggedIn()) {
+                e.style.display = "none";
+                completestuff();
+                document.getElementById("centerstuff").style.display = "flex";
+            } else {
+                e.style.display = "block";
+                document.getElementById("centerstuff").style.display = "none";
+            }
+            const _roturAuthHandler = (a) => {
+                console.log("Rotur Auth Message Received", a);
+                if ("https://rotur.dev" === a.origin && "rotur-auth-token" === a.data?.type) {
+                    e.style.display = "none";
+                    window.removeEventListener("message", _roturAuthHandler);
+                    window.parent.attemptConnection();
+                    window.parent.roturExtension.loginToken({ TOKEN: a.data.token });
+                    window.parent.setSetting("roturLink", JSON.stringify({
+                        "type": "token",
+                        "token": a.data.token
+                    }));
+                    document.getElementById("loader").style.display = "grid";
+                    document.getElementById("centerstuff").style.display = "flex";
+                }
+            };
+
+            window.addEventListener("message", _roturAuthHandler);
+
+            eventBus.listen({
+                type: "rotur",
+                event: "authDone",
+                callback: () => {
+                    completestuff();
+                }
+            });
+        }
+
+
+        function completestuff() {
+            document.getElementById("loader").style.display = "none";
+            document.getElementById("complete").style.display = "flex";
+            document.getElementById("signedinas").innerText = window.parent.roturExtension.user.username;
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="lair-include" content="lair.css">
+    <meta name="capabilities" content="correlation_matrix">
+    <meta name="lair-icon" content="grid_on">
+    <meta name="lair-perms" content="network" />
+    <title>Correlation Matrix</title>
+    <style>
+        :root{--bg1:#101010;--bg2:#171717;--bg3:#222;--t1:#fff;--t2:#999;--t3:#666;--acc:rgb(97,121,255);--gn:#5be45b;--rd:#d44343;--r1:6px;--font:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
+        *{margin:0;padding:0;box-sizing:border-box}
+        body,html{width:100%;height:100%;overflow:hidden;font-family:var(--font);background:var(--bg1);color:var(--t1)}
+        .app{display:flex;flex-direction:column;height:100%}
+
+        /* ── Header ── */
+        .hdr{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--bg1);border-bottom:1px solid #1e1e1e;flex-shrink:0;flex-wrap:wrap}
+        .hdr-title{font-size:13px;font-weight:600;white-space:nowrap}
+        .pills{display:flex;gap:3px}
+        .pill{background:var(--bg2);color:var(--t2);border:1px solid #262626;border-radius:4px;padding:3px 8px;font-size:10px;font-weight:600;cursor:pointer;transition:all .12s;font-family:var(--font)}
+        .pill:hover{border-color:#444;color:var(--t1)}
+        .pill.on{background:rgba(97,121,255,.12);border-color:var(--acc);color:var(--acc)}
+        .sep{width:1px;height:20px;background:#262626;flex-shrink:0}
+        .spacer{flex:1;min-width:6px}
+        .info-tag{font-size:10px;color:var(--t3);white-space:nowrap}
+        .refresh-btn{background:none;border:1px solid #333;border-radius:4px;color:var(--t2);padding:3px 8px;font-size:10px;cursor:pointer;transition:all .12s;font-family:var(--font)}
+        .refresh-btn:hover{border-color:#555;color:var(--t1)}
+
+        /* ── Content ── */
+        .content{flex:1;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:12px}
+        .content::-webkit-scrollbar{width:4px;height:4px}
+        .content::-webkit-scrollbar-thumb{background:#333;border-radius:2px}
+
+        /* ── Matrix ── */
+        .matrix-wrap{overflow:auto;border:1px solid #1e1e1e;border-radius:var(--r1);background:var(--bg2)}
+        .matrix-wrap::-webkit-scrollbar{width:4px;height:4px}
+        .matrix-wrap::-webkit-scrollbar-thumb{background:#333;border-radius:2px}
+        table{border-collapse:collapse;font-variant-numeric:tabular-nums}
+        th,td{text-align:center;font-size:10px;min-width:50px;height:38px;position:relative}
+        th{background:var(--bg2);color:var(--t2);font-weight:600;position:sticky;z-index:1;padding:4px 6px;white-space:nowrap}
+        thead th{top:0;z-index:3;border-bottom:1px solid #1e1e1e}
+        th.corner{z-index:4;left:0;top:0}
+        th.row-head{left:0;z-index:2;background:var(--bg2);text-align:right;padding-right:8px}
+        td{cursor:default;font-weight:500;transition:transform .1s;border:1px solid rgba(255,255,255,.02)}
+        td:hover{transform:scale(1.15);z-index:5;box-shadow:0 0 8px rgba(0,0,0,.5)}
+        td .val{position:relative;z-index:1}
+
+        /* ── Color scale ── */
+        .legend{display:flex;align-items:center;gap:8px;padding:4px 0}
+        .legend-bar{width:200px;height:12px;border-radius:3px;background:linear-gradient(90deg,#d44343,#443,#222,#343,#5be45b)}
+        .legend-label{font-size:9px;color:var(--t3)}
+
+        /* ── Stats row ── */
+        .stats-row{display:flex;gap:8px;flex-wrap:wrap}
+        .stat-card{background:var(--bg2);border:1px solid #1e1e1e;border-radius:var(--r1);padding:8px 12px;min-width:140px;flex:1}
+        .stat-card .stat-label{font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+        .stat-card .stat-val{font-size:14px;font-weight:700}
+        .stat-card .stat-desc{font-size:10px;color:var(--t3);margin-top:2px}
+
+        /* ── Tooltip ── */
+        .tip{position:fixed;background:var(--bg3);border:1px solid #333;border-radius:var(--r1);padding:8px 10px;font-size:11px;z-index:100;pointer-events:none;display:none;box-shadow:0 4px 16px rgba(0,0,0,.4);max-width:200px}
+        .tip .tip-pair{font-weight:700;margin-bottom:4px}
+        .tip .tip-val{font-variant-numeric:tabular-nums}
+
+        /* ── Overlays ── */
+        .ov{position:absolute;inset:0;z-index:10;display:flex;align-items:center;justify-content:center;background:rgba(16,16,16,.9);backdrop-filter:blur(4px)}
+        .ov.h{display:none}
+        .spin{width:24px;height:24px;border:3px solid #333;border-top-color:var(--acc);border-radius:50%;animation:sp .7s linear infinite;margin:0 auto 8px}
+        @keyframes sp{to{transform:rotate(360deg)}}
+        .ov-c{text-align:center;color:var(--t2);font-size:12px}
+        .ov-sub{font-size:10px;color:var(--t3);margin-top:4px}
+        .err-btn{margin-top:8px;background:var(--acc);color:#fff;border:none;border-radius:var(--r1);padding:6px 14px;cursor:pointer;font-size:11px;font-family:var(--font)}
+
+        @media(max-width:640px){
+            .hdr{padding:6px 8px;gap:4px}
+            th,td{min-width:40px;height:32px;font-size:9px}
+            .stat-card{min-width:120px}
+        }
+    </style>
+</head>
+<body>
+<div class="app">
+    <div class="hdr">
+        <span class="hdr-title">Correlation Matrix</span>
+        <div class="sep"></div>
+        <div class="pills" id="tf-pills">
+            <button class="pill" data-d="7">7d</button>
+            <button class="pill on" data-d="30">30d</button>
+            <button class="pill" data-d="90">90d</button>
+            <button class="pill" data-d="180">180d</button>
+            <button class="pill" data-d="365">1y</button>
+        </div>
+        <div class="sep"></div>
+        <div class="pills" id="preset-pills">
+            <button class="pill on" data-p="majors">Majors</button>
+            <button class="pill" data-p="defi">DeFi</button>
+            <button class="pill" data-p="l1">Layer 1</button>
+            <button class="pill" data-p="meme">Meme</button>
+            <button class="pill" data-p="ai">AI</button>
+            <button class="pill" data-p="all">All 20</button>
+        </div>
+        <div class="spacer"></div>
+        <span class="info-tag" id="info">--</span>
+        <button class="refresh-btn" id="refr">Refresh</button>
+    </div>
+
+    <div class="content" style="position:relative">
+        <div class="ov h" id="ov-load"><div class="ov-c"><div class="spin"></div>Fetching price data…<div class="ov-sub" id="ov-progress">0 / 0</div></div></div>
+        <div class="ov h" id="ov-err"><div class="ov-c"><div id="err-msg">Failed to load</div><button class="err-btn" onclick="window._load()">Retry</button></div></div>
+
+        <div class="legend">
+            <span class="legend-label">-1.0</span>
+            <div class="legend-bar"></div>
+            <span class="legend-label">+1.0</span>
+            <span class="legend-label" style="margin-left:8px">Pearson correlation of daily returns</span>
+        </div>
+
+        <div class="matrix-wrap">
+            <table id="mtx"></table>
+        </div>
+
+        <div class="stats-row" id="stats"></div>
+    </div>
+</div>
+
+<div class="tip" id="tip"></div>
+
+<script>
+(function(){
+'use strict';
+const F=window.cfetch||fetch;
+const CG='https://api.coingecko.com/api/v3';
+
+/* ── Coin presets ── */
+const PRESETS={
+    majors:['bitcoin','ethereum','binancecoin','solana','ripple','cardano','dogecoin','tron'],
+    defi:['uniswap','aave','chainlink','maker','lido-dao','compound-governance-token','curve-dao-token','the-graph'],
+    l1:['ethereum','solana','cardano','avalanche-2','polkadot','near','sui','aptos'],
+    meme:['dogecoin','shiba-inu','pepe','bonk','floki','dogwifcoin','brett','mog-coin'],
+    ai:['render-token','fetch-ai','ocean-protocol','singularitynet','akash-network','bittensor','injective-protocol','worldcoin-wld'],
+    all:['bitcoin','ethereum','binancecoin','solana','ripple','cardano','dogecoin','avalanche-2','polkadot','chainlink','uniswap','aave','near','sui','pepe','shiba-inu','render-token','fetch-ai','tron','lido-dao']
+};
+
+const LABELS={bitcoin:'BTC',ethereum:'ETH',binancecoin:'BNB',solana:'SOL',ripple:'XRP',cardano:'ADA',dogecoin:'DOGE',tron:'TRX',avalanche:'AVAX','avalanche-2':'AVAX',polkadot:'DOT',chainlink:'LINK',uniswap:'UNI',aave:'AAVE',maker:'MKR','lido-dao':'LDO','compound-governance-token':'COMP','curve-dao-token':'CRV','the-graph':'GRT',near:'NEAR',sui:'SUI',aptos:'APT',pepe:'PEPE','shiba-inu':'SHIB',bonk:'BONK',floki:'FLOKI',dogwifcoin:'WIF',brett:'BRETT','mog-coin':'MOG','render-token':'RNDR','fetch-ai':'FET','ocean-protocol':'OCEAN',singularitynet:'AGIX','akash-network':'AKT',bittensor:'TAO','injective-protocol':'INJ','worldcoin-wld':'WLD'};
+
+let days=30;
+let preset='majors';
+let coins=PRESETS.majors;
+let priceCache={};
+
+/* ── DOM ── */
+const mtx=document.getElementById('mtx');
+const tip=document.getElementById('tip');
+const statsEl=document.getElementById('stats');
+const ovLoad=document.getElementById('ov-load');
+const ovErr=document.getElementById('ov-err');
+const ovProgress=document.getElementById('ov-progress');
+const errMsg=document.getElementById('err-msg');
+const infoEl=document.getElementById('info');
+
+/* ── Math ── */
+function dailyReturns(prices){
+    const r=[];
+    for(let i=1;i<prices.length;i++){
+        r.push((prices[i]-prices[i-1])/prices[i-1]);
+    }
+    return r;
+}
+
+function pearson(a,b){
+    const n=Math.min(a.length,b.length);
+    if(n<3)return 0;
+    let sumA=0,sumB=0,sumA2=0,sumB2=0,sumAB=0;
+    for(let i=0;i<n;i++){
+        sumA+=a[i]; sumB+=b[i];
+        sumA2+=a[i]*a[i]; sumB2+=b[i]*b[i];
+        sumAB+=a[i]*b[i];
+    }
+    const num=n*sumAB-sumA*sumB;
+    const den=Math.sqrt((n*sumA2-sumA*sumA)*(n*sumB2-sumB*sumB));
+    return den===0?0:num/den;
+}
+
+/* ── Color mapping ── */
+function corrColor(v){
+    // -1 = red, 0 = neutral dark, +1 = green
+    const a=Math.abs(v);
+    if(v>0){
+        const r=Math.round(34+a*57);
+        const g=Math.round(34+a*194);
+        const b=Math.round(34+a*57);
+        return`rgb(${r},${g},${b})`;
+    }else{
+        const r=Math.round(34+a*178);
+        const g=Math.round(34+a*33);
+        const b=Math.round(34+a*33);
+        return`rgb(${r},${g},${b})`;
+    }
+}
+
+function corrTextColor(v){
+    return Math.abs(v)>0.4?'#fff':'var(--t3)';
+}
+
+/* ── Fetch with rate-limit friendly batching ── */
+async function fetchPrices(coinId,d){
+    const key=coinId+'_'+d;
+    if(priceCache[key])return priceCache[key];
+    const r=await F(`${CG}/coins/${coinId}/market_chart?vs_currency=usd&days=${d}&interval=daily`);
+    if(r.status===429){
+        // Rate limited — wait and retry
+        await new Promise(ok=>setTimeout(ok,8000));
+        return fetchPrices(coinId,d);
+    }
+    if(!r.ok)throw new Error(`API ${r.status} for ${coinId}`);
+    const data=await r.json();
+    const prices=(data.prices||[]).map(p=>p[1]);
+    priceCache[key]=prices;
+    return prices;
+}
+
+async function fetchAllPrices(){
+    const results={};
+    let loaded=0;
+    ovProgress.textContent=`0 / ${coins.length}`;
+
+    // Batch in groups of 3 to avoid rate limits
+    for(let i=0;i<coins.length;i+=3){
+        const batch=coins.slice(i,i+3);
+        const promises=batch.map(c=>fetchPrices(c,days).then(p=>{results[c]=p;loaded++;ovProgress.textContent=`${loaded} / ${coins.length}`}).catch(e=>{console.warn('Failed:',c,e);results[c]=[];loaded++;ovProgress.textContent=`${loaded} / ${coins.length}`}));
+        await Promise.all(promises);
+        if(i+3<coins.length)await new Promise(ok=>setTimeout(ok,1500));
+    }
+    return results;
+}
+
+/* ── Compute correlation matrix ── */
+function computeMatrix(priceData){
+    const returns={};
+    for(const c of coins){
+        returns[c]=dailyReturns(priceData[c]||[]);
+    }
+
+    const matrix=[];
+    for(let i=0;i<coins.length;i++){
+        matrix[i]=[];
+        for(let j=0;j<coins.length;j++){
+            if(i===j){matrix[i][j]=1;continue;}
+            if(j<i){matrix[i][j]=matrix[j][i];continue;}
+            matrix[i][j]=pearson(returns[coins[i]],returns[coins[j]]);
+        }
+    }
+    return matrix;
+}
+
+/* ── Render ── */
+function renderMatrix(matrix){
+    const labels=coins.map(c=>LABELS[c]||c.slice(0,4).toUpperCase());
+    let html='<thead><tr><th class="corner"></th>';
+    labels.forEach(l=>{html+=`<th>${l}</th>`});
+    html+='</tr></thead><tbody>';
+
+    for(let i=0;i<coins.length;i++){
+        html+=`<tr><th class="row-head">${labels[i]}</th>`;
+        for(let j=0;j<coins.length;j++){
+            const v=matrix[i][j];
+            const bg=corrColor(v);
+            const tc=corrTextColor(v);
+            const diag=i===j?'opacity:.3;':'';
+            html+=`<td style="background:${bg};color:${tc};${diag}" data-i="${i}" data-j="${j}"><span class="val">${v.toFixed(2)}</span></td>`;
+        }
+        html+='</tr>';
+    }
+    html+='</tbody>';
+    mtx.innerHTML=html;
+}
+
+function renderStats(matrix){
+    const labels=coins.map(c=>LABELS[c]||c.slice(0,4).toUpperCase());
+
+    // Find highest and lowest correlations (excluding diagonal)
+    let maxCorr=-2,minCorr=2,maxPair='',minPair='';
+    let sumCorr=0,countCorr=0;
+    for(let i=0;i<coins.length;i++){
+        for(let j=i+1;j<coins.length;j++){
+            const v=matrix[i][j];
+            sumCorr+=v;countCorr++;
+            if(v>maxCorr){maxCorr=v;maxPair=labels[i]+'/'+labels[j];}
+            if(v<minCorr){minCorr=v;minPair=labels[i]+'/'+labels[j];}
+        }
+    }
+    const avgCorr=countCorr?sumCorr/countCorr:0;
+
+    // Find most independent coin (lowest avg absolute correlation)
+    let indCoin='',indVal=999;
+    for(let i=0;i<coins.length;i++){
+        let s=0,n=0;
+        for(let j=0;j<coins.length;j++){
+            if(i===j)continue;
+            s+=Math.abs(matrix[i][j]);n++;
+        }
+        const avg=n?s/n:0;
+        if(avg<indVal){indVal=avg;indCoin=labels[i];}
+    }
+
+    statsEl.innerHTML=`
+        <div class="stat-card"><div class="stat-label">Highest Correlation</div><div class="stat-val up">${maxCorr.toFixed(3)}</div><div class="stat-desc">${maxPair}</div></div>
+        <div class="stat-card"><div class="stat-label">Lowest Correlation</div><div class="stat-val dn">${minCorr.toFixed(3)}</div><div class="stat-desc">${minPair}</div></div>
+        <div class="stat-card"><div class="stat-label">Average Correlation</div><div class="stat-val" style="color:var(--acc)">${avgCorr.toFixed(3)}</div><div class="stat-desc">${countCorr} pairs</div></div>
+        <div class="stat-card"><div class="stat-label">Most Independent</div><div class="stat-val" style="color:#f0b90b">${indCoin}</div><div class="stat-desc">Avg |ρ| = ${indVal.toFixed(3)}</div></div>
+    `;
+}
+
+/* ── Tooltip ── */
+mtx.addEventListener('mousemove',e=>{
+    const td=e.target.closest('td');
+    if(!td||td.dataset.i==null)return;
+    const i=+td.dataset.i,j=+td.dataset.j;
+    const labels=coins.map(c=>LABELS[c]||c.slice(0,4).toUpperCase());
+    const v=parseFloat(td.querySelector('.val').textContent);
+    const interp=v>0.7?'Strong positive':v>0.3?'Moderate positive':v>0?'Weak positive':v>-0.3?'Weak negative':v>-0.7?'Moderate negative':'Strong negative';
+    tip.innerHTML=`<div class="tip-pair">${labels[i]} ↔ ${labels[j]}</div><div class="tip-val">ρ = ${v.toFixed(4)}</div><div style="color:var(--t3);font-size:10px;margin-top:2px">${interp}</div>`;
+    tip.style.display='block';
+    tip.style.left=Math.min(e.clientX+12,window.innerWidth-210)+'px';
+    tip.style.top=Math.min(e.clientY+12,window.innerHeight-80)+'px';
+});
+
+mtx.addEventListener('mouseleave',()=>{tip.style.display='none'});
+
+/* ── Load ── */
+async function load(){
+    ovLoad.classList.remove('h');ovErr.classList.add('h');
+    try{
+        const priceData=await fetchAllPrices();
+        const matrix=computeMatrix(priceData);
+        renderMatrix(matrix);
+        renderStats(matrix);
+        infoEl.textContent=`${coins.length} assets · ${days}d · ${new Date().toLocaleTimeString()}`;
+        ovLoad.classList.add('h');
+    }catch(e){
+        console.error(e);
+        ovLoad.classList.add('h');
+        errMsg.textContent=e.message||'Failed to load';
+        ovErr.classList.remove('h');
+    }
+}
+
+/* ── Events ── */
+document.getElementById('tf-pills').addEventListener('click',e=>{
+    const pill=e.target.closest('.pill');
+    if(!pill)return;
+    document.querySelectorAll('#tf-pills .pill').forEach(p=>p.classList.remove('on'));
+    pill.classList.add('on');
+    days=+pill.dataset.d;
+    load();
+});
+
+document.getElementById('preset-pills').addEventListener('click',e=>{
+    const pill=e.target.closest('.pill');
+    if(!pill)return;
+    document.querySelectorAll('#preset-pills .pill').forEach(p=>p.classList.remove('on'));
+    pill.classList.add('on');
+    preset=pill.dataset.p;
+    coins=PRESETS[preset]||PRESETS.majors;
+    load();
+});
+
+document.getElementById('refr').addEventListener('click',()=>{priceCache={};load()});
+
+window._load=load;
+load();
+})();
+</script>
+</body>
+</html>

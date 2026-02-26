@@ -1,0 +1,1037 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="lair-include" content="lair.css material-symbols-rounded">
+    <meta name="permissions" content="appStorage">
+    <meta name="capabilities" content="calculator">
+    <meta name="lair-icon" content="<svg width='232' height='232' viewBox='0 0 232 232' fill='none' xmlns='http://www.w3.org/2000/svg'><rect width='232' height='232' rx='40' fill='#F97316'/><text x='116' y='140' text-anchor='middle' fill='white' font-size='100' font-weight='bold'>🎯</text></svg>">
+    <meta name="lair-perms" content="network" />
+    <title>Position Calculator</title>
+    <style>
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            padding: 1rem;
+            min-height: 100%;
+            background: var(--col-bg1);
+            color: var(--col-txt1);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            overflow-y: auto;
+        }
+
+        .app {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 0.9rem;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .title {
+            display: flex;
+            align-items: center;
+            gap: 0.55rem;
+        }
+
+        .title h1 {
+            margin: 0;
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            color: var(--col-txt2);
+            font-size: 0.82rem;
+        }
+
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.8rem;
+            color: var(--col-txt2);
+        }
+
+        .status .material-symbols-rounded {
+            font-size: 1rem;
+            color: var(--col-good, #34d399);
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: 3fr 2fr;
+            gap: 0.9rem;
+            align-items: start;
+        }
+
+        .card {
+            background: var(--col-bg2);
+            border: 1px solid var(--box-crisp-col, #333);
+            border-radius: 0.8rem;
+            padding: 0.85rem;
+        }
+
+        .tabs {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.35rem;
+            margin-bottom: 0.8rem;
+        }
+
+        .tab {
+            border: 1px solid var(--box-crisp-col, #333);
+            background: var(--col-bg3);
+            color: var(--col-txt2);
+            border-radius: 0.55rem;
+            padding: 0.55rem 0.35rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .tab.active {
+            background: var(--colors-accent, #4f7cff);
+            color: #fff;
+            border-color: transparent;
+        }
+
+        .mode-panel { display: none; }
+        .mode-panel.active { display: block; }
+
+        .input-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.65rem;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+        }
+
+        .input-group.full { grid-column: 1 / -1; }
+
+        label {
+            font-size: 0.76rem;
+            color: var(--col-txt2);
+            font-weight: 600;
+        }
+
+        input, select {
+            width: 100%;
+            background: var(--col-bg3);
+            border: 1px solid var(--box-crisp-col, #333);
+            color: var(--col-txt1);
+            padding: 0.58rem 0.66rem;
+            border-radius: 0.5rem;
+            font-size: 0.88rem;
+            outline: none;
+        }
+
+        input:focus, select:focus {
+            border-color: var(--colors-accent, #4f7cff);
+        }
+
+        .range-row {
+            display: grid;
+            grid-template-columns: 1fr 100px;
+            gap: 0.55rem;
+            align-items: end;
+        }
+
+        .range-wrap {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        input[type="range"] {
+            padding: 0;
+            height: 6px;
+            appearance: none;
+            border: none;
+            background: var(--col-bg1);
+            border-radius: 999px;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--colors-accent, #4f7cff);
+            cursor: pointer;
+            border: none;
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--colors-accent, #4f7cff);
+            cursor: pointer;
+            border: none;
+        }
+
+        .chip-row {
+            display: flex;
+            gap: 0.35rem;
+            flex-wrap: wrap;
+        }
+
+        .chip {
+            border: 1px solid var(--box-crisp-col, #333);
+            background: var(--col-bg3);
+            color: var(--col-txt2);
+            padding: 0.42rem 0.55rem;
+            font-size: 0.75rem;
+            border-radius: 999px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .chip.active {
+            border-color: transparent;
+            background: var(--colors-accent, #4f7cff);
+            color: #fff;
+        }
+
+        .result-box {
+            margin-top: 0.8rem;
+            background: linear-gradient(180deg, rgba(79,124,255,0.13), rgba(79,124,255,0.04));
+            border: 1px solid rgba(79,124,255,0.45);
+            border-radius: 0.8rem;
+            padding: 0.75rem;
+            display: grid;
+            gap: 0.45rem;
+        }
+
+        .result-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: 0.6rem;
+            font-size: 0.84rem;
+        }
+
+        .result-row .k {
+            color: var(--col-txt2);
+        }
+
+        .result-row .v {
+            font-weight: 700;
+        }
+
+        .result-row.main .v {
+            font-size: 1.03rem;
+            color: var(--col-good, #34d399);
+        }
+
+        .error {
+            margin-top: 0.6rem;
+            color: var(--col-bad, #ef4444);
+            font-size: 0.78rem;
+            min-height: 1rem;
+        }
+
+        .viz-title {
+            margin: 0 0 0.7rem;
+            font-size: 0.92rem;
+            font-weight: 700;
+        }
+
+        .chart-wrap {
+            border: 1px solid var(--box-crisp-col, #333);
+            border-radius: 0.7rem;
+            padding: 0.5rem;
+            background: var(--col-bg3);
+            margin-bottom: 0.75rem;
+        }
+
+        canvas {
+            width: 100%;
+            height: 280px;
+            display: block;
+            border-radius: 0.45rem;
+            background: #0f1117;
+        }
+
+        .cheat {
+            font-size: 0.8rem;
+            color: var(--col-txt2);
+            line-height: 1.4;
+            padding: 0.6rem;
+            border-radius: 0.6rem;
+            border: 1px solid var(--box-crisp-col, #333);
+            background: var(--col-bg3);
+        }
+
+        .muted {
+            color: var(--col-txt2);
+            font-size: 0.74rem;
+        }
+
+        @media (max-width: 920px) {
+            .layout { grid-template-columns: 1fr; }
+            canvas { height: 240px; }
+        }
+
+        @media (max-width: 640px) {
+            body { padding: 0.7rem; }
+            .tabs { grid-template-columns: 1fr 1fr; }
+            .input-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <div class="header">
+            <div class="title">
+                <span class="material-symbols-rounded">tune</span>
+                <div>
+                    <h1>Position Size Calculator</h1>
+                    <div class="subtitle">Risk-first sizing for disciplined trading decisions.</div>
+                </div>
+            </div>
+            <div class="status">
+                <span class="material-symbols-rounded">sync</span>
+                <span id="price-status">Ready</span>
+            </div>
+        </div>
+
+        <div class="layout">
+            <section class="card">
+                <div class="tabs" id="mode-tabs">
+                    <button class="tab active" data-mode="fixed">Fixed Risk %</button>
+                    <button class="tab" data-mode="dollar">Dollar Risk</button>
+                    <button class="tab" data-mode="kelly">Kelly Criterion</button>
+                    <button class="tab" data-mode="leverage">Leverage</button>
+                </div>
+
+                <div id="mode-fixed" class="mode-panel active">
+                    <div class="input-grid">
+                        <div class="input-group">
+                            <label for="fixed-account">Account Size ($)</label>
+                            <input id="fixed-account" type="number" min="0" step="100" value="10000">
+                        </div>
+
+                        <div class="input-group">
+                            <label for="fixed-direction">Direction</label>
+                            <select id="fixed-direction">
+                                <option value="long" selected>Long</option>
+                                <option value="short">Short</option>
+                            </select>
+                        </div>
+
+                        <div class="input-group full">
+                            <label>Risk Per Trade</label>
+                            <div class="range-row">
+                                <div class="range-wrap">
+                                    <input id="fixed-risk-slider" type="range" min="0.1" max="10" step="0.1" value="1">
+                                    <div class="muted">Range: 0.1% – 10%</div>
+                                </div>
+                                <input id="fixed-risk-input" type="number" min="0.1" max="10" step="0.1" value="1">
+                            </div>
+                        </div>
+
+                        <div class="input-group full">
+                            <label>Asset</label>
+                            <div class="chip-row" id="asset-chips">
+                                <button class="chip active" data-asset="bitcoin">BTC</button>
+                                <button class="chip" data-asset="ethereum">ETH</button>
+                                <button class="chip" data-asset="solana">SOL</button>
+                                <button class="chip" data-asset="custom">Custom</button>
+                            </div>
+                        </div>
+
+                        <div class="input-group">
+                            <label for="fixed-entry">Entry Price ($)</label>
+                            <input id="fixed-entry" type="number" min="0" step="0.01" value="95000">
+                        </div>
+
+                        <div class="input-group">
+                            <label for="fixed-stop">Stop Loss Price ($)</label>
+                            <input id="fixed-stop" type="number" min="0" step="0.01" value="93100">
+                        </div>
+
+                        <div class="input-group">
+                            <label for="fixed-tp">Take Profit Price ($)</label>
+                            <input id="fixed-tp" type="number" min="0" step="0.01" value="100700">
+                        </div>
+
+                        <div class="input-group">
+                            <label for="fixed-fees">Round-trip Fees (%)</label>
+                            <input id="fixed-fees" type="number" min="0" max="5" step="0.01" value="0.10">
+                        </div>
+                    </div>
+
+                    <div class="result-box" id="fixed-results"></div>
+                    <div class="error" id="fixed-error"></div>
+                </div>
+
+                <div id="mode-dollar" class="mode-panel">
+                    <div class="input-grid">
+                        <div class="input-group">
+                            <label for="dollar-account">Account Size ($)</label>
+                            <input id="dollar-account" type="number" min="0" step="100" value="10000">
+                        </div>
+
+                        <div class="input-group">
+                            <label for="dollar-risk">Max Risk Amount ($)</label>
+                            <input id="dollar-risk" type="number" min="0" step="10" value="200">
+                        </div>
+
+                        <div class="input-group">
+                            <label for="dollar-direction">Direction</label>
+                            <select id="dollar-direction">
+                                <option value="long" selected>Long</option>
+                                <option value="short">Short</option>
+                            </select>
+                        </div>
+
+                        <div class="input-group">
+                            <label for="dollar-entry">Entry Price ($)</label>
+                            <input id="dollar-entry" type="number" min="0" step="0.01" value="95000">
+                        </div>
+
+                        <div class="input-group">
+                            <label for="dollar-stop">Stop Loss ($)</label>
+                            <input id="dollar-stop" type="number" min="0" step="0.01" value="94000">
+                        </div>
+
+                        <div class="input-group">
+                            <label for="dollar-tp">Take Profit ($)</label>
+                            <input id="dollar-tp" type="number" min="0" step="0.01" value="98000">
+                        </div>
+                    </div>
+
+                    <div class="result-box" id="dollar-results"></div>
+                    <div class="error" id="dollar-error"></div>
+                </div>
+
+                <div id="mode-kelly" class="mode-panel">
+                    <div class="input-grid">
+                        <div class="input-group">
+                            <label for="kelly-win">Win Rate (%)</label>
+                            <input id="kelly-win" type="number" min="0" max="100" step="0.1" value="55">
+                        </div>
+
+                        <div class="input-group">
+                            <label for="kelly-ratio">Avg Win/Loss Ratio</label>
+                            <input id="kelly-ratio" type="number" min="0.01" step="0.01" value="2.0">
+                        </div>
+
+                        <div class="input-group">
+                            <label for="kelly-account">Account Size ($)</label>
+                            <input id="kelly-account" type="number" min="0" step="100" value="10000">
+                        </div>
+
+                        <div class="input-group">
+                            <label for="kelly-riskcap">Hard Risk Cap (%)</label>
+                            <input id="kelly-riskcap" type="number" min="0" max="20" step="0.1" value="3">
+                        </div>
+                    </div>
+
+                    <div class="result-box" id="kelly-results"></div>
+                    <div class="error" id="kelly-error"></div>
+                </div>
+
+                <div id="mode-leverage" class="mode-panel">
+                    <div class="input-grid">
+                        <div class="input-group">
+                            <label for="lev-balance">Account Balance ($)</label>
+                            <input id="lev-balance" type="number" min="0" step="100" value="5000">
+                        </div>
+
+                        <div class="input-group">
+                            <label for="lev-entry">Entry Price ($)</label>
+                            <input id="lev-entry" type="number" min="0" step="0.01" value="95000">
+                        </div>
+
+                        <div class="input-group full">
+                            <label>Leverage</label>
+                            <div class="range-row">
+                                <div class="range-wrap">
+                                    <input id="lev-slider" type="range" min="1" max="100" step="1" value="10">
+                                    <div class="muted">Range: 1x – 100x</div>
+                                </div>
+                                <input id="lev-input" type="number" min="1" max="100" step="1" value="10">
+                            </div>
+                        </div>
+
+                        <div class="input-group">
+                            <label for="lev-direction">Direction</label>
+                            <select id="lev-direction">
+                                <option value="long" selected>Long</option>
+                                <option value="short">Short</option>
+                            </select>
+                        </div>
+
+                        <div class="input-group">
+                            <label for="lev-mm">Maintenance Margin (%)</label>
+                            <input id="lev-mm" type="number" min="0.1" max="20" step="0.1" value="0.5">
+                        </div>
+                    </div>
+
+                    <div class="result-box" id="lev-results"></div>
+                    <div class="error" id="lev-error"></div>
+                </div>
+            </section>
+
+            <section class="card">
+                <h2 class="viz-title">Risk / Reward Chart</h2>
+                <div class="chart-wrap">
+                    <canvas id="rr-canvas" width="540" height="320"></canvas>
+                </div>
+
+                <h2 class="viz-title">Position Sizing Cheat Sheet</h2>
+                <div class="cheat" id="cheat-sheet">Account: $10,000 | 1% Risk = $100 | 2% Risk = $200 | 5% Risk = $500</div>
+            </section>
+        </div>
+    </div>
+
+    <script>
+        const STORAGE_KEY = 'lair-position-calculator-v1';
+
+        const state = {
+            mode: 'fixed',
+            asset: 'bitcoin',
+            lastPriceFetch: 0
+        };
+
+        const els = {
+            tabs: document.querySelectorAll('.tab'),
+            panels: document.querySelectorAll('.mode-panel'),
+            chips: document.querySelectorAll('.chip'),
+            status: document.getElementById('price-status'),
+
+            fixedAccount: document.getElementById('fixed-account'),
+            fixedRiskSlider: document.getElementById('fixed-risk-slider'),
+            fixedRiskInput: document.getElementById('fixed-risk-input'),
+            fixedDirection: document.getElementById('fixed-direction'),
+            fixedEntry: document.getElementById('fixed-entry'),
+            fixedStop: document.getElementById('fixed-stop'),
+            fixedTp: document.getElementById('fixed-tp'),
+            fixedFees: document.getElementById('fixed-fees'),
+            fixedResults: document.getElementById('fixed-results'),
+            fixedError: document.getElementById('fixed-error'),
+
+            dollarAccount: document.getElementById('dollar-account'),
+            dollarRisk: document.getElementById('dollar-risk'),
+            dollarDirection: document.getElementById('dollar-direction'),
+            dollarEntry: document.getElementById('dollar-entry'),
+            dollarStop: document.getElementById('dollar-stop'),
+            dollarTp: document.getElementById('dollar-tp'),
+            dollarResults: document.getElementById('dollar-results'),
+            dollarError: document.getElementById('dollar-error'),
+
+            kellyWin: document.getElementById('kelly-win'),
+            kellyRatio: document.getElementById('kelly-ratio'),
+            kellyAccount: document.getElementById('kelly-account'),
+            kellyRiskCap: document.getElementById('kelly-riskcap'),
+            kellyResults: document.getElementById('kelly-results'),
+            kellyError: document.getElementById('kelly-error'),
+
+            levBalance: document.getElementById('lev-balance'),
+            levEntry: document.getElementById('lev-entry'),
+            levSlider: document.getElementById('lev-slider'),
+            levInput: document.getElementById('lev-input'),
+            levDirection: document.getElementById('lev-direction'),
+            levMm: document.getElementById('lev-mm'),
+            levResults: document.getElementById('lev-results'),
+            levError: document.getElementById('lev-error'),
+
+            canvas: document.getElementById('rr-canvas'),
+            cheatSheet: document.getElementById('cheat-sheet')
+        };
+
+        const fmtUsd = (value, maxDigits = 2) => {
+            if (!Number.isFinite(value)) return '$0.00';
+            return value.toLocaleString(undefined, {
+                style: 'currency',
+                currency: 'USD',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: maxDigits
+            });
+        };
+
+        const fmtNum = (value, maxDigits = 6) => {
+            if (!Number.isFinite(value)) return '0';
+            return value.toLocaleString(undefined, {
+                maximumFractionDigits: maxDigits
+            });
+        };
+
+        const num = (input) => Number.parseFloat(input?.value || '0') || 0;
+        const fetchFn = window.cfetch || fetch;
+
+        function calcFixedRisk(accountSize, riskPct, entry, stopLoss) {
+            const riskAmount = accountSize * (riskPct / 100);
+            const stopDistance = Math.abs(entry - stopLoss);
+            const stopDistancePct = entry > 0 ? (stopDistance / entry) * 100 : 0;
+            const positionSize = stopDistance > 0 ? riskAmount / stopDistance : 0;
+            const positionValue = positionSize * entry;
+            return { positionSize, riskAmount, positionValue, stopDistancePct, stopDistance };
+        }
+
+        function calcRiskReward(entry, stopLoss, takeProfit) {
+            const risk = Math.abs(entry - stopLoss);
+            const reward = Math.abs(takeProfit - entry);
+            if (risk <= 0) return 0;
+            return reward / risk;
+        }
+
+        function calcKelly(winRate, avgWinLossRatio) {
+            const kelly = winRate - ((1 - winRate) / avgWinLossRatio);
+            const halfKelly = kelly / 2;
+            return { kelly: Math.max(0, kelly), halfKelly: Math.max(0, halfKelly) };
+        }
+
+        function calcLiquidation(entry, leverage, isLong, maintenanceMargin) {
+            if (isLong) {
+                return entry * (1 - (1 / leverage) + maintenanceMargin);
+            }
+            return entry * (1 + (1 / leverage) - maintenanceMargin);
+        }
+
+        function directionIsValid(direction, entry, stop) {
+            if (direction === 'long') return stop < entry;
+            return stop > entry;
+        }
+
+        function setMode(mode) {
+            state.mode = mode;
+            els.tabs.forEach((tab) => tab.classList.toggle('active', tab.dataset.mode === mode));
+            els.panels.forEach((panel) => panel.classList.toggle('active', panel.id === `mode-${mode}`));
+            updateAll();
+            saveSettings();
+        }
+
+        function setAsset(asset) {
+            state.asset = asset;
+            els.chips.forEach((chip) => chip.classList.toggle('active', chip.dataset.asset === asset));
+            if (asset !== 'custom') fetchPrice(asset);
+            saveSettings();
+        }
+
+        async function fetchPrice(asset) {
+            els.status.textContent = 'Fetching live price...';
+            try {
+                const url = `https://api.coingecko.com/api/v3/simple/price?ids=${encodeURIComponent(asset)}&vs_currencies=usd`;
+                const res = await fetchFn(url);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const data = await res.json();
+                const price = data?.[asset]?.usd;
+                if (!Number.isFinite(price)) throw new Error('No price');
+
+                els.fixedEntry.value = String(price);
+                els.dollarEntry.value = String(price);
+                els.levEntry.value = String(price);
+
+                const now = new Date();
+                state.lastPriceFetch = now.getTime();
+                els.status.textContent = `Live ${asset.toUpperCase()} ${fmtUsd(price)} • ${now.toLocaleTimeString()}`;
+                updateAll();
+            } catch (error) {
+                els.status.textContent = 'Price fetch failed; using manual input';
+            }
+        }
+
+        function drawRRChart(entry, stop, tp) {
+            const canvas = els.canvas;
+            const ctx = canvas.getContext('2d');
+            const w = canvas.width;
+            const h = canvas.height;
+            const padding = 42;
+
+            ctx.clearRect(0, 0, w, h);
+            ctx.fillStyle = '#0f1117';
+            ctx.fillRect(0, 0, w, h);
+
+            if (!(entry > 0) || !(stop > 0)) {
+                ctx.fillStyle = '#98a2b3';
+                ctx.font = '14px system-ui';
+                ctx.fillText('Enter entry and stop values to render chart.', padding, h / 2);
+                return;
+            }
+
+            const prices = [entry, stop, Number.isFinite(tp) && tp > 0 ? tp : entry];
+            const min = Math.min(...prices) * 0.99;
+            const max = Math.max(...prices) * 1.01;
+            const range = Math.max(max - min, 1e-9);
+
+            function priceToY(price) {
+                return padding + (h - 2 * padding) * (1 - (price - min) / range);
+            }
+
+            const entryY = priceToY(entry);
+            const stopY = priceToY(stop);
+
+            ctx.fillStyle = 'rgba(239, 68, 68, 0.15)';
+            ctx.fillRect(padding, Math.min(entryY, stopY), w - 2 * padding, Math.abs(stopY - entryY));
+
+            if (Number.isFinite(tp) && tp > 0) {
+                const tpY = priceToY(tp);
+                ctx.fillStyle = 'rgba(16, 185, 129, 0.15)';
+                ctx.fillRect(padding, Math.min(entryY, tpY), w - 2 * padding, Math.abs(tpY - entryY));
+            }
+
+            const lines = [
+                { price: entry, label: 'Entry', color: '#3B82F6' },
+                { price: stop, label: 'Stop', color: '#EF4444' }
+            ];
+
+            if (Number.isFinite(tp) && tp > 0) lines.push({ price: tp, label: 'Target', color: '#10B981' });
+
+            ctx.lineWidth = 1;
+            ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+            for (let i = 0; i < 6; i++) {
+                const gy = padding + ((h - 2 * padding) / 5) * i;
+                ctx.beginPath();
+                ctx.moveTo(padding, gy);
+                ctx.lineTo(w - padding, gy);
+                ctx.stroke();
+            }
+
+            lines.forEach(({ price, label, color }) => {
+                const y = priceToY(price);
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 2;
+                ctx.setLineDash([]);
+                ctx.beginPath();
+                ctx.moveTo(padding, y);
+                ctx.lineTo(w - padding, y);
+                ctx.stroke();
+
+                ctx.fillStyle = color;
+                ctx.font = 'bold 12px system-ui';
+                ctx.fillText(`${label}: ${fmtUsd(price, 2)}`, padding + 6, y - 6);
+            });
+        }
+
+        function renderResults(el, rows) {
+            el.innerHTML = rows.map((row) => `
+                <div class="result-row ${row.main ? 'main' : ''}">
+                    <span class="k">${row.k}</span>
+                    <span class="v">${row.v}</span>
+                </div>
+            `).join('');
+        }
+
+        function updateCheatSheet(account) {
+            const safeAccount = Math.max(0, account);
+            const p1 = safeAccount * 0.01;
+            const p2 = safeAccount * 0.02;
+            const p5 = safeAccount * 0.05;
+            els.cheatSheet.textContent = `Account: ${fmtUsd(safeAccount, 0)} | 1% Risk = ${fmtUsd(p1)} | 2% Risk = ${fmtUsd(p2)} | 5% Risk = ${fmtUsd(p5)}`;
+        }
+
+        function updateFixed() {
+            const account = num(els.fixedAccount);
+            const riskPct = num(els.fixedRiskInput);
+            const entry = num(els.fixedEntry);
+            const stop = num(els.fixedStop);
+            const tp = num(els.fixedTp);
+            const direction = els.fixedDirection.value;
+            const feePct = num(els.fixedFees);
+
+            els.fixedError.textContent = '';
+
+            if (entry <= 0 || stop <= 0 || account <= 0 || riskPct <= 0) {
+                renderResults(els.fixedResults, [
+                    { k: 'Position Size', v: 'Enter valid inputs', main: true }
+                ]);
+                return { entry, stop, tp: 0 };
+            }
+
+            if (!directionIsValid(direction, entry, stop)) {
+                els.fixedError.textContent = direction === 'long'
+                    ? 'Validation: for long trades, stop must be below entry.'
+                    : 'Validation: for short trades, stop must be above entry.';
+            }
+
+            const fixed = calcFixedRisk(account, riskPct, entry, stop);
+            const rr = tp > 0 ? calcRiskReward(entry, stop, tp) : 0;
+            const potentialProfit = tp > 0 ? fixed.positionSize * Math.abs(tp - entry) : 0;
+            const feeDecimal = feePct / 100;
+            const breakeven = direction === 'long'
+                ? entry * (1 + feeDecimal)
+                : entry * (1 - feeDecimal);
+
+            renderResults(els.fixedResults, [
+                { k: 'Position Size', v: `${fmtNum(fixed.positionSize, 6)} ${state.asset === 'custom' ? 'units' : state.asset.slice(0, 3).toUpperCase()}`, main: true },
+                { k: 'Dollar Risk', v: `${fmtUsd(fixed.riskAmount)} (${fmtNum(riskPct, 2)}%)` },
+                { k: 'Position Value', v: fmtUsd(fixed.positionValue) },
+                { k: 'Stop Distance', v: `${fmtNum(fixed.stopDistancePct, 3)}%` },
+                { k: 'Risk/Reward Ratio', v: rr > 0 ? `1:${fmtNum(rr, 2)}` : 'N/A' },
+                { k: 'Potential Profit', v: tp > 0 ? fmtUsd(potentialProfit) : 'N/A' },
+                { k: 'Breakeven After Fees', v: fmtUsd(breakeven) }
+            ]);
+
+            updateCheatSheet(account);
+            return { entry, stop, tp };
+        }
+
+        function updateDollar() {
+            const account = num(els.dollarAccount);
+            const riskAmount = num(els.dollarRisk);
+            const entry = num(els.dollarEntry);
+            const stop = num(els.dollarStop);
+            const tp = num(els.dollarTp);
+            const direction = els.dollarDirection.value;
+
+            els.dollarError.textContent = '';
+
+            if (entry <= 0 || stop <= 0 || riskAmount <= 0 || account <= 0) {
+                renderResults(els.dollarResults, [
+                    { k: 'Position Size', v: 'Enter valid inputs', main: true }
+                ]);
+                return { entry, stop, tp: 0 };
+            }
+
+            if (!directionIsValid(direction, entry, stop)) {
+                els.dollarError.textContent = direction === 'long'
+                    ? 'Validation: for long trades, stop must be below entry.'
+                    : 'Validation: for short trades, stop must be above entry.';
+            }
+
+            const stopDistance = Math.abs(entry - stop);
+            const positionSize = stopDistance > 0 ? riskAmount / stopDistance : 0;
+            const positionValue = positionSize * entry;
+            const riskPct = account > 0 ? (riskAmount / account) * 100 : 0;
+            const rr = tp > 0 ? calcRiskReward(entry, stop, tp) : 0;
+            const potentialProfit = tp > 0 ? positionSize * Math.abs(tp - entry) : 0;
+
+            renderResults(els.dollarResults, [
+                { k: 'Position Size', v: `${fmtNum(positionSize, 6)} units`, main: true },
+                { k: 'Dollar Risk', v: `${fmtUsd(riskAmount)} (${fmtNum(riskPct, 2)}%)` },
+                { k: 'Position Value', v: fmtUsd(positionValue) },
+                { k: 'Stop Distance', v: `${fmtNum((stopDistance / entry) * 100, 3)}%` },
+                { k: 'Risk/Reward Ratio', v: rr > 0 ? `1:${fmtNum(rr, 2)}` : 'N/A' },
+                { k: 'Potential Profit', v: tp > 0 ? fmtUsd(potentialProfit) : 'N/A' }
+            ]);
+
+            return { entry, stop, tp };
+        }
+
+        function updateKelly() {
+            const winRatePct = num(els.kellyWin);
+            const ratio = num(els.kellyRatio);
+            const account = num(els.kellyAccount);
+            const riskCap = num(els.kellyRiskCap);
+
+            els.kellyError.textContent = '';
+
+            if (ratio <= 0) {
+                els.kellyError.textContent = 'Avg Win/Loss Ratio must be greater than 0.';
+                renderResults(els.kellyResults, [{ k: 'Kelly Fraction', v: 'N/A', main: true }]);
+                return;
+            }
+
+            const winRate = winRatePct / 100;
+            const { kelly, halfKelly } = calcKelly(winRate, ratio);
+            const cappedHalfKelly = Math.min(halfKelly, riskCap / 100);
+            const recommendedRisk = account * cappedHalfKelly;
+
+            renderResults(els.kellyResults, [
+                { k: 'Kelly Fraction', v: `${fmtNum(kelly * 100, 2)}%`, main: true },
+                { k: 'Half-Kelly', v: `${fmtNum(halfKelly * 100, 2)}%` },
+                { k: 'Capped Recommendation', v: `${fmtNum(cappedHalfKelly * 100, 2)}%` },
+                { k: 'Suggested Risk / Trade', v: fmtUsd(recommendedRisk) },
+                { k: 'Expected Growth Bias', v: kelly > 0 ? 'Positive edge' : 'No edge (size down)' }
+            ]);
+        }
+
+        function updateLeverage() {
+            const balance = num(els.levBalance);
+            const entry = num(els.levEntry);
+            const leverage = Math.max(1, num(els.levInput));
+            const mmPct = num(els.levMm);
+            const direction = els.levDirection.value;
+
+            els.levError.textContent = '';
+
+            if (balance <= 0 || entry <= 0 || leverage <= 0 || mmPct <= 0) {
+                renderResults(els.levResults, [{ k: 'Position Size', v: 'Enter valid inputs', main: true }]);
+                return;
+            }
+
+            const notional = balance * leverage;
+            const positionSize = notional / entry;
+            const maintenanceMargin = mmPct / 100;
+            const isLong = direction === 'long';
+            const liquidation = calcLiquidation(entry, leverage, isLong, maintenanceMargin);
+            const requiredMargin = notional / leverage;
+            const maxLoss = Math.abs(entry - liquidation) * positionSize;
+
+            renderResults(els.levResults, [
+                { k: 'Position Size', v: `${fmtNum(positionSize, 6)} units`, main: true },
+                { k: 'Position Value', v: fmtUsd(notional) },
+                { k: 'Liquidation Price', v: fmtUsd(liquidation) },
+                { k: 'Required Margin', v: fmtUsd(requiredMargin) },
+                { k: 'Max Loss to Liquidation', v: fmtUsd(maxLoss) },
+                { k: 'Leverage', v: `${fmtNum(leverage, 0)}x` }
+            ]);
+        }
+
+        function updateChartFromMode(fixedData, dollarData) {
+            if (state.mode === 'fixed') {
+                drawRRChart(fixedData.entry, fixedData.stop, fixedData.tp);
+            } else if (state.mode === 'dollar') {
+                drawRRChart(dollarData.entry, dollarData.stop, dollarData.tp);
+            } else if (state.mode === 'leverage') {
+                const entry = num(els.levEntry);
+                const leverage = Math.max(1, num(els.levInput));
+                const mm = num(els.levMm) / 100;
+                const isLong = els.levDirection.value === 'long';
+                const liq = calcLiquidation(entry, leverage, isLong, mm);
+                drawRRChart(entry, liq, 0);
+            } else {
+                drawRRChart(num(els.fixedEntry), num(els.fixedStop), num(els.fixedTp));
+            }
+        }
+
+        function updateAll() {
+            const fixedData = updateFixed();
+            const dollarData = updateDollar();
+            updateKelly();
+            updateLeverage();
+            updateChartFromMode(fixedData, dollarData);
+            saveSettings();
+        }
+
+        function saveSettings() {
+            const payload = {
+                mode: state.mode,
+                asset: state.asset,
+                values: {
+                    fixedAccount: els.fixedAccount.value,
+                    fixedRiskSlider: els.fixedRiskSlider.value,
+                    fixedRiskInput: els.fixedRiskInput.value,
+                    fixedDirection: els.fixedDirection.value,
+                    fixedEntry: els.fixedEntry.value,
+                    fixedStop: els.fixedStop.value,
+                    fixedTp: els.fixedTp.value,
+                    fixedFees: els.fixedFees.value,
+
+                    dollarAccount: els.dollarAccount.value,
+                    dollarRisk: els.dollarRisk.value,
+                    dollarDirection: els.dollarDirection.value,
+                    dollarEntry: els.dollarEntry.value,
+                    dollarStop: els.dollarStop.value,
+                    dollarTp: els.dollarTp.value,
+
+                    kellyWin: els.kellyWin.value,
+                    kellyRatio: els.kellyRatio.value,
+                    kellyAccount: els.kellyAccount.value,
+                    kellyRiskCap: els.kellyRiskCap.value,
+
+                    levBalance: els.levBalance.value,
+                    levEntry: els.levEntry.value,
+                    levSlider: els.levSlider.value,
+                    levInput: els.levInput.value,
+                    levDirection: els.levDirection.value,
+                    levMm: els.levMm.value
+                }
+            };
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+        }
+
+        function loadSettings() {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY);
+                if (!raw) return;
+                const data = JSON.parse(raw);
+                if (!data || typeof data !== 'object') return;
+
+                const values = data.values || {};
+                Object.entries(values).forEach(([k, v]) => {
+                    if (els[k] && typeof els[k].value !== 'undefined') {
+                        els[k].value = String(v);
+                    }
+                });
+
+                state.asset = data.asset || state.asset;
+                state.mode = data.mode || state.mode;
+            } catch (_) {
+            }
+        }
+
+        function wireEvents() {
+            els.tabs.forEach((tab) => {
+                tab.addEventListener('click', () => setMode(tab.dataset.mode));
+            });
+
+            els.chips.forEach((chip) => {
+                chip.addEventListener('click', () => setAsset(chip.dataset.asset));
+            });
+
+            els.fixedRiskSlider.addEventListener('input', () => {
+                els.fixedRiskInput.value = els.fixedRiskSlider.value;
+                updateAll();
+            });
+
+            els.fixedRiskInput.addEventListener('input', () => {
+                const v = Math.min(10, Math.max(0.1, num(els.fixedRiskInput)));
+                els.fixedRiskInput.value = String(v);
+                els.fixedRiskSlider.value = String(v);
+                updateAll();
+            });
+
+            els.levSlider.addEventListener('input', () => {
+                els.levInput.value = els.levSlider.value;
+                updateAll();
+            });
+
+            els.levInput.addEventListener('input', () => {
+                const v = Math.min(100, Math.max(1, Math.round(num(els.levInput))));
+                els.levInput.value = String(v);
+                els.levSlider.value = String(v);
+                updateAll();
+            });
+
+            [
+                els.fixedAccount, els.fixedDirection, els.fixedEntry, els.fixedStop, els.fixedTp, els.fixedFees,
+                els.dollarAccount, els.dollarRisk, els.dollarDirection, els.dollarEntry, els.dollarStop, els.dollarTp,
+                els.kellyWin, els.kellyRatio, els.kellyAccount, els.kellyRiskCap,
+                els.levBalance, els.levEntry, els.levDirection, els.levMm
+            ].forEach((el) => {
+                el.addEventListener('input', updateAll);
+                el.addEventListener('change', updateAll);
+            });
+
+            window.addEventListener('resize', () => {
+                updateAll();
+            });
+        }
+
+        function init() {
+            loadSettings();
+
+            els.chips.forEach((chip) => chip.classList.toggle('active', chip.dataset.asset === state.asset));
+            setMode(state.mode);
+            wireEvents();
+
+            if (state.asset !== 'custom') {
+                fetchPrice(state.asset);
+            } else {
+                updateAll();
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>

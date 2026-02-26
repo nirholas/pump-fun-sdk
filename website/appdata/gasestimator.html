@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="lair-include" content="lair.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="lair-icon" content="<svg width='232' height='232' viewBox='0 0 232 232' fill='none' xmlns='http://www.w3.org/2000/svg'><rect width='232' height='232' rx='40' fill='#8b5cf6'/><rect x='40' y='50' width='100' height='140' rx='12' fill='white' opacity='0.9'/><rect x='52' y='62' width='76' height='50' rx='6' fill='#8b5cf6'/><path d='M150 80l30-20v10l10 10v60c0 8-6 14-14 14s-14-6-14-14v-20h-12' stroke='white' stroke-width='8' stroke-linecap='round' fill='none'/><rect x='70' y='140' width='20' height='30' rx='4' fill='#8b5cf6' opacity='0.4'/><rect x='100' y='130' width='20' height='40' rx='4' fill='#8b5cf6' opacity='0.6'/></svg>">
+    <title>Gas Estimator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Symbols+Outlined" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 50%, #0f0f1a 100%);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 28px;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            background: linear-gradient(90deg, #fff, #a78bfa);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header p {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 14px;
+        }
+
+        /* Gas Prices Card */
+        .gas-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(20px);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .card-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .card-title .material-symbols-outlined {
+            font-size: 20px;
+            color: #a78bfa;
+        }
+
+        .refresh-time {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.4);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .refresh-time .dot {
+            width: 6px;
+            height: 6px;
+            background: #22c55e;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        /* Gas Speed Tiers */
+        .gas-tiers {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+
+        .gas-tier {
+            padding: 20px 16px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .gas-tier:hover {
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .gas-tier.active {
+            border-color: rgba(167, 139, 250, 0.5);
+            background: rgba(167, 139, 250, 0.1);
+        }
+
+        .gas-tier.slow .tier-icon { color: #22c55e; }
+        .gas-tier.standard .tier-icon { color: #fbbf24; }
+        .gas-tier.fast .tier-icon { color: #ef4444; }
+
+        .tier-icon {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+
+        .tier-label {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
+            margin-bottom: 4px;
+        }
+
+        .tier-gwei {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 2px;
+        }
+
+        .tier-unit {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .tier-time {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.5);
+            margin-top: 8px;
+        }
+
+        /* ETH Price */
+        .eth-price {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px;
+            background: rgba(98, 126, 234, 0.1);
+            border-radius: 10px;
+            margin-top: 16px;
+            font-size: 13px;
+        }
+
+        .eth-price img {
+            width: 20px;
+            height: 20px;
+        }
+
+        .eth-price .price {
+            font-weight: 600;
+        }
+
+        .eth-price .change {
+            color: #22c55e;
+            font-size: 12px;
+        }
+
+        .eth-price .change.negative {
+            color: #ef4444;
+        }
+
+        /* Cost Estimator */
+        .cost-section h3 {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .cost-section h3 .material-symbols-outlined {
+            font-size: 20px;
+            color: #a78bfa;
+        }
+
+        .operation-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .operation-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 12px;
+            transition: background 0.2s;
+        }
+
+        .operation-item:hover {
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .operation-info {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .operation-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .operation-icon.transfer { background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
+        .operation-icon.token { background: rgba(34, 197, 94, 0.15); color: #22c55e; }
+        .operation-icon.swap { background: rgba(139, 92, 246, 0.15); color: #8b5cf6; }
+        .operation-icon.nft { background: rgba(236, 72, 153, 0.15); color: #ec4899; }
+        .operation-icon.stake { background: rgba(251, 191, 36, 0.15); color: #fbbf24; }
+
+        .operation-name {
+            font-weight: 500;
+            font-size: 14px;
+            margin-bottom: 2px;
+        }
+
+        .operation-gas {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .operation-cost {
+            text-align: right;
+        }
+
+        .cost-eth {
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 2px;
+        }
+
+        .cost-usd {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        /* Custom Gas Input */
+        .custom-gas {
+            margin-top: 20px;
+            padding: 16px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+        }
+
+        .custom-gas label {
+            display: block;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
+            margin-bottom: 8px;
+        }
+
+        .custom-row {
+            display: flex;
+            gap: 12px;
+        }
+
+        .custom-row input {
+            flex: 1;
+            padding: 12px 14px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .custom-row input:focus {
+            border-color: rgba(167, 139, 250, 0.5);
+        }
+
+        .custom-row button {
+            padding: 12px 20px;
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .custom-row button:hover {
+            transform: translateY(-2px);
+        }
+
+        .custom-result {
+            margin-top: 12px;
+            padding: 12px;
+            background: rgba(139, 92, 246, 0.1);
+            border-radius: 8px;
+            font-size: 13px;
+            display: none;
+        }
+
+        .custom-result.show {
+            display: block;
+        }
+
+        /* Historical Chart Placeholder */
+        .chart-section {
+            margin-top: 20px;
+        }
+
+        .chart-section h3 {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .chart-placeholder {
+            height: 120px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 12px;
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-around;
+            padding: 16px;
+        }
+
+        .chart-bar {
+            width: 24px;
+            background: linear-gradient(180deg, #8b5cf6, rgba(139, 92, 246, 0.3));
+            border-radius: 4px 4px 0 0;
+            transition: height 0.3s ease;
+        }
+
+        .chart-labels {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 8px;
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.4);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Gas Estimator</h1>
+            <p>Estimate transaction costs on Ethereum</p>
+        </div>
+
+        <!-- Current Gas Prices -->
+        <div class="gas-card">
+            <div class="card-header">
+                <div class="card-title">
+                    <span class="material-symbols-outlined">local_gas_station</span>
+                    Current Gas Prices
+                </div>
+                <div class="refresh-time">
+                    <div class="dot"></div>
+                    <span id="lastUpdate">Updating...</span>
+                </div>
+            </div>
+
+            <div class="gas-tiers">
+                <div class="gas-tier slow active" onclick="selectTier('slow')">
+                    <div class="tier-icon">🐢</div>
+                    <div class="tier-label">Slow</div>
+                    <div class="tier-gwei" id="slowGwei">--</div>
+                    <div class="tier-unit">Gwei</div>
+                    <div class="tier-time">~5 min</div>
+                </div>
+                <div class="gas-tier standard" onclick="selectTier('standard')">
+                    <div class="tier-icon">🚗</div>
+                    <div class="tier-label">Standard</div>
+                    <div class="tier-gwei" id="standardGwei">--</div>
+                    <div class="tier-unit">Gwei</div>
+                    <div class="tier-time">~2 min</div>
+                </div>
+                <div class="gas-tier fast" onclick="selectTier('fast')">
+                    <div class="tier-icon">🚀</div>
+                    <div class="tier-label">Fast</div>
+                    <div class="tier-gwei" id="fastGwei">--</div>
+                    <div class="tier-unit">Gwei</div>
+                    <div class="tier-time">~30 sec</div>
+                </div>
+            </div>
+
+            <div class="eth-price">
+                <span>ETH:</span>
+                <span class="price" id="ethPrice">$--</span>
+                <span class="change" id="ethChange">--%</span>
+            </div>
+        </div>
+
+        <!-- Cost Estimates -->
+        <div class="gas-card cost-section">
+            <h3>
+                <span class="material-symbols-outlined">calculate</span>
+                Transaction Cost Estimates
+            </h3>
+            <div class="operation-list" id="operationList">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+
+        <!-- Custom Calculator -->
+        <div class="gas-card">
+            <div class="custom-gas">
+                <label>Custom Gas Calculation</label>
+                <div class="custom-row">
+                    <input type="number" id="customGas" placeholder="Gas units (e.g., 150000)">
+                    <button onclick="calculateCustom()">Calculate</button>
+                </div>
+                <div class="custom-result" id="customResult"></div>
+            </div>
+        </div>
+
+        <!-- Historical Chart -->
+        <div class="gas-card chart-section">
+            <h3>
+                <span class="material-symbols-outlined">trending_up</span>
+                24h Gas Price Trend
+            </h3>
+            <div class="chart-placeholder" id="chartBars">
+                <!-- Populated by JS -->
+            </div>
+            <div class="chart-labels">
+                <span>24h</span>
+                <span>18h</span>
+                <span>12h</span>
+                <span>6h</span>
+                <span>Now</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // State
+        let gasPrices = { slow: 15, standard: 25, fast: 40 };
+        let ethPrice = 3300;
+        let ethChange = 2.4;
+        let selectedTier = 'slow';
+        let gasDataSource = 'Initializing';
+
+        // Common operations with gas estimates
+        const operations = [
+            { name: 'ETH Transfer', gas: 21000, icon: 'transfer', iconEmoji: '💸' },
+            { name: 'ERC-20 Transfer', gas: 65000, icon: 'token', iconEmoji: '🪙' },
+            { name: 'Uniswap Swap', gas: 150000, icon: 'swap', iconEmoji: '🔄' },
+            { name: 'NFT Mint', gas: 100000, icon: 'nft', iconEmoji: '🎨' },
+            { name: 'Stake ETH (Lido)', gas: 80000, icon: 'stake', iconEmoji: '📈' },
+        ];
+
+        // Historical gas data (real samples collected over time)
+        let historicalGas = [];
+        let consecutiveFailures = 0;
+
+        // Exponential backoff helper
+        function getBackoffDelay() {
+            if (consecutiveFailures <= 0) return 15000; // normal 15s
+            return Math.min(15000 * Math.pow(2, consecutiveFailures), 300000); // max 5 min
+        }
+
+        // Fetch gas prices from Etherscan Gas Oracle and fallbacks
+        async function fetchGasPrices() {
+            try {
+                const fetchFn = typeof cfetch === 'function' ? cfetch : fetch;
+                gasDataSource = 'Etherscan';
+
+                // Try Etherscan Gas Oracle first (free, no key needed for basic)
+                let gasLoaded = false;
+                try {
+                    const gasRes = await fetchFn('https://api.etherscan.io/api?module=gastracker&action=gasoracle');
+                    const gasData = await gasRes.json();
+                    if (gasData.status === '1' && gasData.result) {
+                        gasPrices = {
+                            slow: parseInt(gasData.result.SafeGasPrice) || 15,
+                            standard: parseInt(gasData.result.ProposeGasPrice) || 25,
+                            fast: parseInt(gasData.result.FastGasPrice) || 40
+                        };
+                        gasLoaded = true;
+                        gasDataSource = 'Etherscan';
+                    }
+                } catch(_) {}
+
+                // Fallback: Blocknative Gas API (free tier)
+                if (!gasLoaded) {
+                    try {
+                        const bnRes = await fetchFn('https://api.blocknative.com/gasprices/blockprices');
+                        const bnData = await bnRes.json();
+                        if (bnData.blockPrices?.[0]?.estimatedPrices) {
+                            const prices = bnData.blockPrices[0].estimatedPrices;
+                            gasPrices = {
+                                slow: Math.round(prices[3]?.price || prices[2]?.price || 15),
+                                standard: Math.round(prices[1]?.price || 25),
+                                fast: Math.round(prices[0]?.price || 40)
+                            };
+                            gasLoaded = true;
+                            gasDataSource = 'Blocknative';
+                        }
+                    } catch(_) {}
+                }
+
+                // Fallback: Owlracle Gas API (free tier)
+                if (!gasLoaded) {
+                    try {
+                        const owlRes = await fetchFn('https://api.owlracle.info/v4/eth/gas');
+                        const owlData = await owlRes.json();
+                        if (owlData.speeds && owlData.speeds.length >= 3) {
+                            gasPrices = {
+                                slow: Math.round(owlData.speeds[0]?.gasPrice || 15),
+                                standard: Math.round(owlData.speeds[1]?.gasPrice || 25),
+                                fast: Math.round(owlData.speeds[2]?.gasPrice || 40)
+                            };
+                            gasLoaded = true;
+                            gasDataSource = 'Owlracle';
+                        }
+                    } catch(_) {}
+                }
+
+                // Fallback: BeaconCha.in Gas API
+                if (!gasLoaded) {
+                    try {
+                        const beaconRes = await fetchFn('https://beaconcha.in/api/v1/execution/gasnow');
+                        const beaconData = await beaconRes.json();
+                        if (beaconData.data) {
+                            gasPrices = {
+                                slow: Math.round((beaconData.data.slow || 15e9) / 1e9),
+                                standard: Math.round((beaconData.data.standard || 25e9) / 1e9),
+                                fast: Math.round((beaconData.data.fast || 40e9) / 1e9)
+                            };
+                            gasLoaded = true;
+                            gasDataSource = 'BeaconCha.in';
+                        }
+                    } catch(_) {}
+                }
+
+                if (!gasLoaded) {
+                    gasDataSource = 'Unavailable';
+                }
+
+                // Track historical gas for chart (real values only)
+                historicalGas.push(gasPrices.standard);
+                if (historicalGas.length > 24) historicalGas.shift();
+
+                // Fetch ETH price from CoinGecko
+                try {
+                    const priceRes = await fetchFn('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd&include_24hr_change=true');
+                    const priceData = await priceRes.json();
+                    if (priceData.ethereum) {
+                        ethPrice = priceData.ethereum.usd;
+                        ethChange = priceData.ethereum.usd_24h_change || 0;
+                    }
+                } catch(_) {}
+
+                // No synthetic backfill. Chart grows from live samples only.
+            } catch (error) {
+                gasDataSource = 'Unavailable';
+            }
+
+            // Track failures for exponential backoff
+            if (gasDataSource === 'Unavailable') {
+                consecutiveFailures++;
+            } else {
+                consecutiveFailures = 0;
+            }
+
+            updateUI();
+        }
+
+        // Update UI with current values
+        function updateUI() {
+            // Gas prices
+            document.getElementById('slowGwei').textContent = gasPrices.slow;
+            document.getElementById('standardGwei').textContent = gasPrices.standard;
+            document.getElementById('fastGwei').textContent = gasPrices.fast;
+
+            // ETH price
+            document.getElementById('ethPrice').textContent = `$${ethPrice.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+            const changeEl = document.getElementById('ethChange');
+            changeEl.textContent = `${ethChange >= 0 ? '+' : ''}${ethChange.toFixed(2)}%`;
+            changeEl.className = `change ${ethChange < 0 ? 'negative' : ''}`;
+
+            // Last update time
+            const now = new Date();
+            document.getElementById('lastUpdate').textContent = 
+                `Updated ${now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })} • ${gasDataSource}`;
+
+            // Render operations
+            renderOperations();
+
+            // Render chart
+            renderChart();
+        }
+
+        // Select gas tier
+        function selectTier(tier) {
+            selectedTier = tier;
+            document.querySelectorAll('.gas-tier').forEach(el => {
+                el.classList.toggle('active', el.classList.contains(tier));
+            });
+            renderOperations();
+        }
+
+        // Render operation costs
+        function renderOperations() {
+            const container = document.getElementById('operationList');
+            const gwei = gasPrices[selectedTier];
+
+            container.innerHTML = operations.map(op => {
+                const costEth = (op.gas * gwei * 1e-9);
+                const costUsd = costEth * ethPrice;
+
+                return `
+                    <div class="operation-item">
+                        <div class="operation-info">
+                            <div class="operation-icon ${op.icon}">${op.iconEmoji}</div>
+                            <div>
+                                <div class="operation-name">${op.name}</div>
+                                <div class="operation-gas">${op.gas.toLocaleString()} gas</div>
+                            </div>
+                        </div>
+                        <div class="operation-cost">
+                            <div class="cost-eth">${costEth.toFixed(6)} ETH</div>
+                            <div class="cost-usd">$${costUsd.toFixed(2)}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Calculate custom gas
+        function calculateCustom() {
+            const gasUnits = parseInt(document.getElementById('customGas').value);
+            if (!gasUnits || gasUnits <= 0) {
+                alert('Please enter a valid gas amount');
+                return;
+            }
+
+            const gwei = gasPrices[selectedTier];
+            const costEth = (gasUnits * gwei * 1e-9);
+            const costUsd = costEth * ethPrice;
+
+            const resultEl = document.getElementById('customResult');
+            resultEl.innerHTML = `
+                <strong>${gasUnits.toLocaleString()} gas</strong> at <strong>${gwei} Gwei</strong><br>
+                Cost: <strong>${costEth.toFixed(6)} ETH</strong> (~$${costUsd.toFixed(2)})
+            `;
+            resultEl.classList.add('show');
+        }
+
+        // Render historical chart
+        function renderChart() {
+            const container = document.getElementById('chartBars');
+            if (!historicalGas.length) {
+                container.innerHTML = '<div style="color:#888;font-size:12px;text-align:center;width:100%;padding-top:24px;">Collecting live gas history…</div>';
+                return;
+            }
+
+            const maxGas = Math.max(...historicalGas, 1);
+
+            container.innerHTML = historicalGas.map(gas => {
+                const height = (gas / maxGas) * 80;
+                return `<div class="chart-bar" style="height: ${height}px" title="${gas} Gwei"></div>`;
+            }).join('');
+        }
+
+        // Initialize
+        fetchGasPrices();
+
+        // Adaptive polling with exponential backoff on failures
+        let pollTimer = null;
+        function schedulePoll() {
+            clearTimeout(pollTimer);
+            pollTimer = setTimeout(async () => {
+                await fetchGasPrices();
+                schedulePoll();
+            }, getBackoffDelay());
+        }
+        schedulePoll();
+
+        // Allow Enter key for custom calculation
+        document.getElementById('customGas').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') calculateCustom();
+        });
+    </script>
+</body>
+</html>

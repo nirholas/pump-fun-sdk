@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="lair-include" content="lair.css">
+    <meta name="capabilities" content="trending_tokens">
+    <meta name="lair-icon" content="whatshot">
+    <meta name="lair-perms" content="network" />
+    <title>Trending</title>
+    <link rel="stylesheet" href="../../libs/lair-components.css">
+    <script src="../../libs/lair-components.js"></script>
+    <script src="../../libs/lair-bus.js"></script>
+    <style>
+        :root {
+            --col-bg1: #101010;
+            --col-bg2: #171717;
+            --col-bg3: #222222;
+            --col-txt1: white;
+            --col-txt2: #aaa;
+            --colors-accent: rgb(97, 121, 255);
+            --col-good: #5be45b;
+            --col-bad: #d44343;
+            --siz-radius1: 0.5em;
+            --siz-radius2: 0.35em;
+        }
+
+        html { height: 100%; }
+
+        body {
+            margin: 0;
+            height: 100%;
+            background: var(--col-bg1);
+            color: var(--col-txt1);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            overflow-y: auto;
+        }
+
+        * { box-sizing: border-box; }
+
+        .app-container {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 1em;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75em;
+            margin-bottom: 0.75em;
+            flex-wrap: wrap;
+        }
+
+        .header h1 {
+            font-size: 1.25em;
+            font-weight: 600;
+            margin: 0;
+            white-space: nowrap;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 0.5em;
+        }
+
+        .refresh-btn {
+            background: var(--col-bg2);
+            border: 1px solid var(--col-bg3);
+            border-radius: var(--siz-radius1);
+            color: var(--col-txt1);
+            padding: 0.45em 0.75em;
+            cursor: pointer;
+            font-size: 0.85em;
+            transition: background 0.2s;
+            white-space: nowrap;
+        }
+
+        .refresh-btn:hover { background: var(--col-bg3); }
+        .refresh-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* Status bar */
+        .status-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.75em;
+            color: var(--col-txt2);
+            margin-bottom: 0.75em;
+        }
+
+        .status-dot {
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--col-good);
+            margin-right: 0.4em;
+            vertical-align: middle;
+        }
+
+        .status-dot.error { background: var(--col-bad); }
+
+        /* Tabs */
+        .tab-bar {
+            display: flex;
+            gap: 0;
+            margin-bottom: 1em;
+            border-bottom: 1px solid var(--col-bg3);
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: none;
+            color: var(--col-txt2);
+            font-size: 0.9em;
+            padding: 0.6em 1.2em;
+            cursor: pointer;
+            position: relative;
+            transition: color 0.2s;
+            white-space: nowrap;
+        }
+
+        .tab-btn:hover { color: var(--col-txt1); }
+
+        .tab-btn.active {
+            color: var(--colors-accent);
+        }
+
+        .tab-btn.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--colors-accent);
+            border-radius: 2px 2px 0 0;
+        }
+
+        /* Token list */
+        .token-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .token-card {
+            display: flex;
+            align-items: center;
+            gap: 0.75em;
+            padding: 0.65em 0.85em;
+            background: var(--col-bg2);
+            border-radius: var(--siz-radius1);
+            transition: background 0.15s;
+            cursor: pointer;
+            border: 1px solid transparent;
+        }
+
+        .token-card:hover {
+            background: var(--col-bg3);
+            border-color: var(--col-bg3);
+        }
+
+        .token-card.expanded {
+            border-color: var(--colors-accent);
+            background: var(--col-bg2);
+        }
+
+        .token-rank {
+            font-size: 1.3em;
+            font-weight: 700;
+            opacity: 0.35;
+            min-width: 2em;
+            text-align: center;
+            flex-shrink: 0;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .token-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.7em;
+            text-transform: uppercase;
+            color: #fff;
+            overflow: hidden;
+        }
+
+        .token-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .token-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .token-name-row {
+            display: flex;
+            align-items: baseline;
+            gap: 0.4em;
+        }
+
+        .token-name {
+            font-weight: 600;
+            font-size: 0.92em;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .token-symbol {
+            color: var(--col-txt2);
+            font-size: 0.78em;
+            text-transform: uppercase;
+            flex-shrink: 0;
+        }
+
+        .token-meta {
+            font-size: 0.75em;
+            color: var(--col-txt2);
+            margin-top: 0.15em;
+        }
+
+        .token-price-col {
+            text-align: right;
+            flex-shrink: 0;
+        }
+
+        .token-price {
+            font-weight: 600;
+            font-size: 0.92em;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .token-change {
+            font-size: 0.78em;
+            font-weight: 600;
+            margin-top: 0.1em;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .token-change.up { color: var(--col-good); }
+        .token-change.down { color: var(--col-bad); }
+
+        .sparkline-col {
+            flex-shrink: 0;
+        }
+
+        .sparkline-canvas {
+            display: block;
+        }
+
+        /* Expanded detail card */
+        .token-detail {
+            display: none;
+            padding: 0.75em 0.85em 0.85em 3.5em;
+            gap: 1em;
+            flex-wrap: wrap;
+        }
+
+        .token-card.expanded + .token-detail,
+        .token-detail.show {
+            display: flex;
+        }
+
+        .detail-stat {
+            display: flex;
+            flex-direction: column;
+            gap: 0.15em;
+        }
+
+        .detail-label {
+            font-size: 0.7em;
+            color: var(--col-txt2);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .detail-value {
+            font-size: 0.88em;
+            font-weight: 600;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .detail-value.up { color: var(--col-good); }
+        .detail-value.down { color: var(--col-bad); }
+
+        .detail-sparkline {
+            flex: 1;
+            min-width: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+        }
+
+        /* Loading */
+        .loading-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 4em 1em;
+            gap: 1em;
+        }
+
+        .spinner {
+            width: 36px;
+            height: 36px;
+            border: 3px solid var(--col-bg3);
+            border-top-color: var(--colors-accent);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .loading-text {
+            color: var(--col-txt2);
+            font-size: 0.85em;
+        }
+
+        /* Error */
+        .error-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 4em 1em;
+            gap: 0.75em;
+            text-align: center;
+        }
+
+        .error-icon { font-size: 2em; opacity: 0.6; }
+
+        .error-msg {
+            color: var(--col-txt2);
+            font-size: 0.9em;
+        }
+
+        .retry-btn {
+            background: var(--colors-accent);
+            color: #fff;
+            border: none;
+            border-radius: var(--siz-radius1);
+            padding: 0.5em 1.5em;
+            cursor: pointer;
+            font-size: 0.85em;
+            font-weight: 500;
+            transition: opacity 0.2s;
+        }
+
+        .retry-btn:hover { opacity: 0.85; }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 3em 1em;
+            color: var(--col-txt2);
+            font-size: 0.9em;
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .app-container { padding: 0.75em; }
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .token-card { padding: 0.5em 0.6em; gap: 0.5em; }
+            .token-rank { font-size: 1.1em; min-width: 1.6em; }
+            .token-icon { width: 26px; height: 26px; font-size: 0.6em; }
+            .sparkline-col { display: none; }
+            .token-detail { padding-left: 2em; }
+            .tab-btn { padding: 0.5em 0.8em; font-size: 0.82em; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="header">
+            <h1>🔥 Trending Tokens</h1>
+            <div class="header-right">
+                <button class="refresh-btn" id="refreshBtn" title="Refresh data">↻ Refresh</button>
+            </div>
+        </div>
+
+        <div class="status-bar">
+            <span><span class="status-dot" id="statusDot"></span><span id="statusText">Loading...</span></span>
+            <span id="countdown"></span>
+        </div>
+
+        <div class="tab-bar" id="tabBar">
+            <button class="tab-btn active" data-tab="trending">🔥 Trending</button>
+            <button class="tab-btn" data-tab="gainers">📈 Top Gainers</button>
+            <button class="tab-btn" data-tab="losers">📉 Top Losers</button>
+        </div>
+
+        <div id="content">
+            <div class="loading-container" id="loadingState">
+                <div class="spinner"></div>
+                <div class="loading-text">Fetching trending data...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    (function() {
+        'use strict';
+        const fetchFn = window.cfetch || fetch;
+        const lairFetch = window.LairFetch;
+        const lairUI = window.LairUI;
+        const lairTheme = window.LairTheme;
+        const lairBus = window.LairBus;
+        if (lairTheme) lairTheme.apply(document.body);
+        if (lairBus) lairBus.register('trending');
+
+        const TRENDING_URL = 'https://api.coingecko.com/api/v3/search/trending';
+        const MARKETS_URL = 'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=volume_desc&per_page=20&sparkline=true&price_change_percentage=1h,24h,7d';
+        const CACHE_KEY_TRENDING = 'lair_trending_cache';
+        const CACHE_KEY_MARKETS = 'lair_markets_cache';
+        const CACHE_TTL = 120000; // 2 minutes
+        const REFRESH_INTERVAL = 120; // seconds
+
+        let trendingData = null;
+        let marketsData = null;
+        let activeTab = 'trending';
+        let expandedId = null;
+        let countdownTimer = null;
+        let secondsLeft = REFRESH_INTERVAL;
+
+        const contentEl = document.getElementById('content');
+        const refreshBtn = document.getElementById('refreshBtn');
+        const statusText = document.getElementById('statusText');
+        const statusDot = document.getElementById('statusDot');
+        const countdownEl = document.getElementById('countdown');
+        const tabBar = document.getElementById('tabBar');
+
+        // Color palette for token icons
+        const iconColors = [
+            '#6179ff', '#e45b5b', '#5be4a0', '#e4c85b', '#c75be4',
+            '#5bb8e4', '#e47a5b', '#7ae45b', '#e45bad', '#5be4d0'
+        ];
+
+        function hashStr(s) {
+            let h = 0;
+            for (let i = 0; i < s.length; i++) h = ((h << 5) - h + s.charCodeAt(i)) | 0;
+            return Math.abs(h);
+        }
+
+        function getIconColor(symbol) {
+            return iconColors[hashStr(symbol) % iconColors.length];
+        }
+
+        // Cache helpers
+        function getCached(key) {
+            try {
+                const raw = sessionStorage.getItem(key);
+                if (!raw) return null;
+                const obj = JSON.parse(raw);
+                if (Date.now() - obj.ts > CACHE_TTL) {
+                    sessionStorage.removeItem(key);
+                    return null;
+                }
+                return obj.data;
+            } catch { return null; }
+        }
+
+        function setCache(key, data) {
+            try {
+                sessionStorage.setItem(key, JSON.stringify({ data, ts: Date.now() }));
+            } catch {}
+        }
+
+        // Fetch with cache
+        async function fetchTrending(force) {
+            if (!force) {
+                const cached = getCached(CACHE_KEY_TRENDING);
+                if (cached) return cached;
+            }
+            const data = lairFetch
+                ? await lairFetch.getJSON(TRENDING_URL, { cache: true, ttl: CACHE_TTL, retries: 2, fallback: true })
+                : await (await fetchFn(TRENDING_URL)).json();
+            setCache(CACHE_KEY_TRENDING, data);
+            return data;
+        }
+
+        async function fetchMarkets(force) {
+            if (!force) {
+                const cached = getCached(CACHE_KEY_MARKETS);
+                if (cached) return cached;
+            }
+            const data = lairFetch
+                ? await lairFetch.getJSON(MARKETS_URL, { cache: true, ttl: CACHE_TTL, retries: 2, fallback: true })
+                : await (await fetchFn(MARKETS_URL)).json();
+            if (!Array.isArray(data)) throw new Error('Invalid markets response');
+            setCache(CACHE_KEY_MARKETS, data);
+            return data;
+        }
+
+        async function loadData(force) {
+            refreshBtn.disabled = true;
+            try {
+                const [trending, markets] = await Promise.all([
+                    fetchTrending(force),
+                    fetchMarkets(force)
+                ]);
+                trendingData = trending;
+                marketsData = markets;
+                expandedId = null;
+                renderTab();
+                statusDot.classList.remove('error');
+                statusText.textContent = `Updated ${new Date().toLocaleTimeString()}`;
+                resetCountdown();
+            } catch (err) {
+                if (!trendingData && !marketsData) {
+                    renderError(err.message);
+                }
+                statusDot.classList.add('error');
+                statusText.textContent = `Error: ${err.message}`;
+                resetCountdown();
+            } finally {
+                refreshBtn.disabled = false;
+            }
+        }
+
+        // Countdown timer
+        function resetCountdown() {
+            secondsLeft = REFRESH_INTERVAL;
+            if (countdownTimer) clearInterval(countdownTimer);
+            updateCountdown();
+            countdownTimer = setInterval(() => {
+                secondsLeft--;
+                if (secondsLeft <= 0) {
+                    loadData(true);
+                } else {
+                    updateCountdown();
+                }
+            }, 1000);
+        }
+
+        function updateCountdown() {
+            const m = Math.floor(secondsLeft / 60);
+            const s = secondsLeft % 60;
+            countdownEl.textContent = `Refresh in ${m}:${s.toString().padStart(2, '0')}`;
+        }
+
+        // Tab switching
+        tabBar.addEventListener('click', (e) => {
+            const btn = e.target.closest('.tab-btn');
+            if (!btn || btn.classList.contains('active')) return;
+            tabBar.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            activeTab = btn.dataset.tab;
+            expandedId = null;
+            renderTab();
+        });
+
+        // Render the current tab
+        function renderTab() {
+            if (activeTab === 'trending') {
+                renderTrending();
+            } else if (activeTab === 'gainers') {
+                renderGainersLosers('gainers');
+            } else {
+                renderGainersLosers('losers');
+            }
+        }
+
+        // Render trending tab
+        function renderTrending() {
+            if (!trendingData || !trendingData.coins || trendingData.coins.length === 0) {
+                if (lairUI) {
+                    lairUI.empty(contentEl, 'No trending data available.');
+                } else {
+                    contentEl.innerHTML = '<div class="empty-state">No trending data available.</div>';
+                }
+                return;
+            }
+            const coins = trendingData.coins.slice(0, 15);
+            let html = '<div class="token-list">';
+            coins.forEach((item, idx) => {
+                const coin = item.item;
+                const id = 'trending-' + coin.id;
+                const isExpanded = expandedId === id;
+                const price = coin.data?.price || null;
+                const priceStr = price ? formatPriceFromStr(price) : '—';
+                const change24h = coin.data?.price_change_percentage_24h?.usd ?? null;
+                const changeClass = change24h !== null ? (change24h >= 0 ? 'up' : 'down') : '';
+                const changeStr = change24h !== null ? ((change24h >= 0 ? '▲ +' : '▼ ') + change24h.toFixed(2) + '%') : '';
+                const sparkline = coin.data?.sparkline || null;
+                const mcap = coin.data?.market_cap || null;
+                const totalVol = coin.data?.total_volume || null;
+                const score = coin.score != null ? coin.score + 1 : idx + 1;
+
+                html += `<div class="token-card${isExpanded ? ' expanded' : ''}" data-id="${id}">`;
+                html += `<div class="token-rank">${score}</div>`;
+                html += renderTokenIcon(coin.symbol, coin.large || coin.thumb);
+                html += `<div class="token-info">`;
+                const badge = lairUI ? lairUI.tokenBadge(coin.symbol, coin.thumb, 'cg') : `<span class="token-symbol">${esc(coin.symbol)}</span>`;
+                html += `<div class="token-name-row"><span class="token-name">${esc(coin.name)}</span>${badge}</div>`;
+                html += `<div class="token-meta">Rank #${coin.market_cap_rank || '—'} · Trending Score ${score}</div>`;
+                html += `</div>`;
+                if (sparkline) {
+                    html += `<div class="sparkline-col"><canvas class="sparkline-canvas" width="60" height="24" data-sparkline="${encodeSparkline(sparkline)}"></canvas></div>`;
+                }
+                html += `<div class="token-price-col">`;
+                html += `<div class="token-price">${priceStr}</div>`;
+                if (changeStr) html += `<div class="token-change ${changeClass}">${changeStr}</div>`;
+                html += `</div>`;
+                html += `</div>`;
+
+                // Detail card
+                html += `<div class="token-detail${isExpanded ? ' show' : ''}" data-detail="${id}">`;
+                html += renderDetailStat('Market Cap', mcap ? formatLargeNumber(parseMcap(mcap)) : '—');
+                html += renderDetailStat('24h Volume', totalVol ? formatLargeNumber(parseFloat(String(totalVol).replace(/[^0-9.]/g, ''))) : '—');
+                html += renderDetailStat('1h Change', '—');
+                html += renderDetailStat('7d Change', '—');
+                html += `</div>`;
+            });
+            html += '</div>';
+            contentEl.innerHTML = html;
+            drawAllSparklines();
+            attachCardClicks();
+        }
+
+        // Render gainers/losers tab
+        function renderGainersLosers(mode) {
+            if (!marketsData || marketsData.length === 0) {
+                if (lairUI) {
+                    lairUI.empty(contentEl, 'No market data available.');
+                } else {
+                    contentEl.innerHTML = '<div class="empty-state">No market data available.</div>';
+                }
+                return;
+            }
+            const sorted = [...marketsData]
+                .filter(c => c.price_change_percentage_24h_in_currency != null)
+                .sort((a, b) => {
+                    const aV = a.price_change_percentage_24h_in_currency || 0;
+                    const bV = b.price_change_percentage_24h_in_currency || 0;
+                    return mode === 'gainers' ? bV - aV : aV - bV;
+                });
+
+            let html = '<div class="token-list">';
+            sorted.forEach((coin, idx) => {
+                const id = mode + '-' + coin.id;
+                const isExpanded = expandedId === id;
+                const change1h = coin.price_change_percentage_1h_in_currency;
+                const change24h = coin.price_change_percentage_24h_in_currency;
+                const change7d = coin.price_change_percentage_7d_in_currency;
+                const changeClass = change24h != null ? (change24h >= 0 ? 'up' : 'down') : '';
+                const changeStr = change24h != null ? ((change24h >= 0 ? '▲ +' : '▼ ') + change24h.toFixed(2) + '%') : '—';
+                const sparklineData = coin.sparkline_in_7d?.price || null;
+
+                html += `<div class="token-card${isExpanded ? ' expanded' : ''}" data-id="${id}">`;
+                html += `<div class="token-rank">${idx + 1}</div>`;
+                html += renderTokenIcon(coin.symbol, coin.image);
+                html += `<div class="token-info">`;
+                html += `<div class="token-name-row"><span class="token-name">${esc(coin.name)}</span><span class="token-symbol">${esc(coin.symbol)}</span></div>`;
+                html += `<div class="token-meta">MCap: ${formatLargeNumber(coin.market_cap)} · Vol: ${formatLargeNumber(coin.total_volume)}</div>`;
+                html += `</div>`;
+                if (sparklineData && sparklineData.length > 1) {
+                    html += `<div class="sparkline-col"><canvas class="sparkline-canvas" width="60" height="24" data-sparkline="${encodeSparkline(sparklineData)}"></canvas></div>`;
+                }
+                html += `<div class="token-price-col">`;
+                html += `<div class="token-price">${formatPrice(coin.current_price)}</div>`;
+                html += `<div class="token-change ${changeClass}">${changeStr}</div>`;
+                html += `</div>`;
+                html += `</div>`;
+
+                // Detail card
+                html += `<div class="token-detail${isExpanded ? ' show' : ''}" data-detail="${id}">`;
+                html += renderDetailStat('Price', formatPrice(coin.current_price));
+                html += renderDetailStat('Market Cap', formatLargeNumber(coin.market_cap));
+                html += renderDetailStat('24h Volume', formatLargeNumber(coin.total_volume));
+                html += renderDetailStat('1h', formatChange(change1h));
+                html += renderDetailStat('24h', formatChange(change24h));
+                html += renderDetailStat('7d', formatChange(change7d));
+                if (sparklineData && sparklineData.length > 1) {
+                    html += `<div class="detail-sparkline"><canvas class="sparkline-canvas" width="160" height="40" data-sparkline="${encodeSparkline(sparklineData)}"></canvas></div>`;
+                }
+                html += `</div>`;
+            });
+            html += '</div>';
+            contentEl.innerHTML = html;
+            drawAllSparklines();
+            attachCardClicks();
+        }
+
+        // Helpers
+        function renderTokenIcon(symbol, imgUrl) {
+            const sym = (symbol || '??').substring(0, 2).toUpperCase();
+            const bg = getIconColor(symbol || 'zz');
+            if (imgUrl) {
+                return `<div class="token-icon" style="background:${bg}"><img src="${esc(imgUrl)}" alt="${esc(sym)}" onerror="this.remove();this.parentNode.textContent='${sym}'"></div>`;
+            }
+            return `<div class="token-icon" style="background:${bg}">${sym}</div>`;
+        }
+
+        function renderDetailStat(label, value) {
+            let cls = '';
+            if (typeof value === 'string') {
+                if (value.startsWith('▲') || value.startsWith('+')) cls = 'up';
+                else if (value.startsWith('▼') || value.startsWith('-')) cls = 'down';
+            }
+            return `<div class="detail-stat"><span class="detail-label">${esc(label)}</span><span class="detail-value ${cls}">${value}</span></div>`;
+        }
+
+        function formatChange(val) {
+            if (val == null) return '—';
+            const arrow = val >= 0 ? '▲ +' : '▼ ';
+            return arrow + val.toFixed(2) + '%';
+        }
+
+        function formatPrice(price) {
+            if (price == null) return '—';
+            if (price >= 1) return '$' + price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            if (price >= 0.01) return '$' + price.toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 4 });
+            if (price >= 0.0001) return '$' + price.toLocaleString(undefined, { minimumFractionDigits: 6, maximumFractionDigits: 6 });
+            return '$' + price.toLocaleString(undefined, { minimumFractionDigits: 8, maximumFractionDigits: 8 });
+        }
+
+        function formatPriceFromStr(priceStr) {
+            if (!priceStr) return '—';
+            // CoinGecko trending returns price as a formatted string like "$0.00123" or "<span>...</span>"
+            const cleaned = priceStr.replace(/<[^>]*>/g, '').trim();
+            if (cleaned.startsWith('$')) return cleaned;
+            const num = parseFloat(cleaned);
+            if (isNaN(num)) return cleaned;
+            return formatPrice(num);
+        }
+
+        function getTokenPayloadByCardId(cardId) {
+            if (!cardId || typeof cardId !== 'string') return null;
+
+            const tokenId = cardId.split('-').slice(1).join('-');
+            if (!tokenId) return null;
+
+            if (cardId.startsWith('trending-')) {
+                const match = (trendingData?.coins || []).find((entry) => entry?.item?.id === tokenId)?.item;
+                if (!match) return null;
+                return {
+                    symbol: String(match.symbol || '').toUpperCase(),
+                    address: null,
+                    chainId: null,
+                    coinId: match.id || null
+                };
+            }
+
+            const marketCoin = (marketsData || []).find((entry) => entry?.id === tokenId);
+            if (!marketCoin) return null;
+
+            return {
+                symbol: String(marketCoin.symbol || '').toUpperCase(),
+                address: null,
+                chainId: null,
+                coinId: marketCoin.id || null
+            };
+        }
+
+        function publishTokenSelection(cardId) {
+            if (!lairBus) return;
+            const payload = getTokenPayloadByCardId(cardId);
+            if (!payload) return;
+
+            lairBus.broadcast('token:select', payload);
+            lairBus.request('cryptocharts', 'token:chart', payload, 1500)
+                .catch(() => {
+                    lairBus.send('cryptocharts', 'token:chart', payload);
+                });
+
+            if (payload.address) {
+                lairBus.send('tokenscanner', 'token:scan', {
+                    address: payload.address,
+                    chainId: payload.chainId,
+                    symbol: payload.symbol
+                });
+            }
+        }
+
+        function parseMcap(val) {
+            if (typeof val === 'number') return val;
+            if (typeof val === 'string') {
+                const cleaned = val.replace(/[^0-9.]/g, '');
+                return parseFloat(cleaned) || 0;
+            }
+            return 0;
+        }
+
+        function formatLargeNumber(n) {
+            if (n == null) return '—';
+            if (n >= 1e12) return '$' + (n / 1e12).toFixed(2) + 'T';
+            if (n >= 1e9) return '$' + (n / 1e9).toFixed(2) + 'B';
+            if (n >= 1e6) return '$' + (n / 1e6).toFixed(2) + 'M';
+            if (n >= 1e3) return '$' + (n / 1e3).toFixed(1) + 'K';
+            return '$' + Number(n).toLocaleString();
+        }
+
+        function esc(str) {
+            if (!str) return '';
+            const d = document.createElement('div');
+            d.textContent = str;
+            return d.innerHTML;
+        }
+
+        // Sparkline encoding / drawing
+        function encodeSparkline(data) {
+            if (!data || !Array.isArray(data)) return '';
+            // Downsample to max 30 points
+            const max = 30;
+            let pts = data;
+            if (pts.length > max) {
+                const step = pts.length / max;
+                const sampled = [];
+                for (let i = 0; i < max; i++) {
+                    sampled.push(pts[Math.floor(i * step)]);
+                }
+                pts = sampled;
+            }
+            return pts.map(p => typeof p === 'number' ? p.toPrecision(6) : p).join(',');
+        }
+
+        function drawAllSparklines() {
+            contentEl.querySelectorAll('.sparkline-canvas').forEach(canvas => {
+                const raw = canvas.dataset.sparkline;
+                if (!raw) return;
+                const data = raw.split(',').map(Number).filter(n => !isNaN(n));
+                if (data.length < 2) return;
+                drawSparkline(canvas, data);
+            });
+        }
+
+        function drawSparkline(canvas, data) {
+            if (lairUI && typeof lairUI.sparkline === 'function') {
+                lairUI.sparkline(canvas, data, { width: canvas.width, height: canvas.height });
+                return;
+            }
+
+            const ctx = canvas.getContext('2d');
+            const w = canvas.width;
+            const h = canvas.height;
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = w * dpr;
+            canvas.height = h * dpr;
+            canvas.style.width = w + 'px';
+            canvas.style.height = h + 'px';
+            ctx.scale(dpr, dpr);
+
+            const min = Math.min(...data);
+            const max = Math.max(...data);
+            const range = max - min || 1;
+            const pad = 2;
+
+            const isUp = data[data.length - 1] >= data[0];
+            const color = isUp ? getComputedStyle(document.documentElement).getPropertyValue('--col-good').trim() || '#5be45b'
+                               : getComputedStyle(document.documentElement).getPropertyValue('--col-bad').trim() || '#d44343';
+
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 1.5;
+            ctx.lineJoin = 'round';
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+
+            for (let i = 0; i < data.length; i++) {
+                const x = pad + (i / (data.length - 1)) * (w - pad * 2);
+                const y = pad + (1 - (data[i] - min) / range) * (h - pad * 2);
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+
+            // Fill gradient
+            const lastX = pad + (w - pad * 2);
+            const lastY = pad + (1 - (data[data.length - 1] - min) / range) * (h - pad * 2);
+            ctx.lineTo(lastX, h);
+            ctx.lineTo(pad, h);
+            ctx.closePath();
+            const grad = ctx.createLinearGradient(0, 0, 0, h);
+            grad.addColorStop(0, color + '30');
+            grad.addColorStop(1, color + '05');
+            ctx.fillStyle = grad;
+            ctx.fill();
+        }
+
+        // Card click to expand/collapse
+        function attachCardClicks() {
+            contentEl.querySelectorAll('.token-card').forEach(card => {
+                card.addEventListener('click', () => {
+                    const id = card.dataset.id;
+                    if (expandedId === id) {
+                        expandedId = null;
+                        card.classList.remove('expanded');
+                        const detail = contentEl.querySelector(`.token-detail[data-detail="${id}"]`);
+                        if (detail) detail.classList.remove('show');
+                    } else {
+                        // Collapse previous
+                        if (expandedId) {
+                            const prev = contentEl.querySelector(`.token-card[data-id="${expandedId}"]`);
+                            if (prev) prev.classList.remove('expanded');
+                            const prevDetail = contentEl.querySelector(`.token-detail[data-detail="${expandedId}"]`);
+                            if (prevDetail) prevDetail.classList.remove('show');
+                        }
+                        expandedId = id;
+                        card.classList.add('expanded');
+                        const detail = contentEl.querySelector(`.token-detail[data-detail="${id}"]`);
+                        if (detail) detail.classList.add('show');
+                    }
+
+                    publishTokenSelection(id);
+                });
+            });
+        }
+
+        // Error/loading
+        function renderError(msg) {
+            if (lairUI) {
+                lairUI.error(contentEl, msg, () => loadData(true));
+                return;
+            }
+
+            contentEl.innerHTML = `
+                <div class="error-container">
+                    <div class="error-icon">⚠️</div>
+                    <div class="error-msg">${esc(msg)}</div>
+                    <button class="retry-btn" id="retryBtn">Retry</button>
+                </div>`;
+            document.getElementById('retryBtn').addEventListener('click', () => loadData(true));
+        }
+
+        // Events
+        refreshBtn.addEventListener('click', () => loadData(true));
+
+        // Init
+        loadData(false);
+    })();
+    </script>
+</body>
+</html>

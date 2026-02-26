@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="lair-include" content="lair.css">
+    <meta name="lair-widget" content="true">
+    <meta name="lair-widget-size" content="3x2">
+    <meta name="lair-icon" content='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="24" height="24" fill="white"><path d="M120-120v-80l80-80 160 160 160-240 120 120 80-80 120 120v80H120Zm80-160 80-80 160 160 160-240 120 120 80-80v-200H200v320Z"/></svg>'>
+    <meta name="capabilities" content="widget,mini_chart">
+    <meta name="lair-perms" content="network" />
+    <title>Mini Chart</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: transparent;
+            color: var(--col-txt1, #fff);
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            height: 100vh;
+            overflow: hidden;
+            user-select: none;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            display: flex;
+            align-items: baseline;
+            gap: 6px;
+            padding: 6px 10px 0;
+            flex-shrink: 0;
+        }
+        .pair-name {
+            font-size: 0.75rem;
+            font-weight: 600;
+            opacity: 0.6;
+        }
+        .price {
+            font-size: 0.85rem;
+            font-weight: 600;
+            font-variant-numeric: tabular-nums;
+        }
+        .change {
+            font-size: 0.65rem;
+            font-weight: 600;
+            margin-left: auto;
+        }
+        .up { color: var(--col-good, #85FF85); }
+        .down { color: var(--col-bad, #AC4949); }
+
+        .chart-wrap {
+            flex: 1;
+            padding: 4px 6px 2px;
+            position: relative;
+            min-height: 0;
+        }
+        canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .tooltip {
+            position: absolute;
+            pointer-events: none;
+            background: rgba(0,0,0,0.85);
+            color: #fff;
+            font-size: 0.6rem;
+            padding: 2px 5px;
+            border-radius: 3px;
+            white-space: nowrap;
+            display: none;
+            z-index: 10;
+        }
+
+        .timeframes {
+            display: flex;
+            justify-content: center;
+            gap: 2px;
+            padding: 2px 8px 5px;
+            flex-shrink: 0;
+        }
+        .tf-btn {
+            background: none;
+            border: none;
+            color: var(--col-txt1, #fff);
+            opacity: 0.35;
+            font-size: 0.55rem;
+            font-weight: 600;
+            cursor: pointer;
+            padding: 1px 5px;
+            border-radius: 3px;
+            transition: opacity 0.15s, background 0.15s;
+            text-transform: uppercase;
+        }
+        .tf-btn:hover { opacity: 0.7; }
+        .tf-btn.active {
+            opacity: 1;
+            background: rgba(255,255,255,0.08);
+        }
+
+        .loading-msg {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0.3;
+            font-size: 0.7rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <span class="pair-name" id="pairName">BTC/USDT</span>
+        <span class="price" id="price">—</span>
+        <span class="change" id="change">—</span>
+    </div>
+    <div class="chart-wrap" id="chartWrap">
+        <canvas id="chart"></canvas>
+        <div class="tooltip" id="tooltip"></div>
+    </div>
+    <div class="timeframes" id="tfBar"></div>
+
+    <script>
+    (() => {
+        /* ── Config ─────────────────────────── */
+        const TIMEFRAMES = ['1m', '5m', '15m', '1h', '4h', '1d'];
+        const TF_LIMITS  = { '1m': 60, '5m': 60, '15m': 48, '1h': 48, '4h': 48, '1d': 60 };
+        const TF_REFRESH = { '1m': 30000, '5m': 60000, '15m': 120000, '1h': 300000, '4h': 900000, '1d': 3600000 };
+
+        const PAIRS = {
+            BTCUSDT:  'BTC/USDT',
+            ETHUSDT:  'ETH/USDT',
+            SOLUSDT:  'SOL/USDT',
+            BNBUSDT:  'BNB/USDT',
+            ARBUSDT:  'ARB/USDT',
+            AVAXUSDT: 'AVAX/USDT',
+            DOGEUSDT: 'DOGE/USDT',
+            XRPUSDT:  'XRP/USDT',
+        };
+
+        /* ── State ──────────────────────────── */
+        const settings = window.__widgetSettings || {};
+        let pair      = settings.pair     || 'BTCUSDT';
+        let interval  = settings.interval || '1h';
+        let chartType = settings.chartType || 'Line';
+        let klines    = [];
+        let refreshTimer = null;
+
+        /* ── Settings registration ──────────── */
+        window.parent.postMessage({
+            type: 'widgetDeclareSettings',
+            widgetId: window.__widgetId,
+            settings: [
+                { key: 'pair', label: 'Trading Pair', type: 'select',
+                  options: Object.keys(PAIRS), value: pair },
+                { key: 'interval', label: 'Default Timeframe', type: 'select',
+                  options: TIMEFRAMES, value: interval },
+                { key: 'chartType', label: 'Chart Type', type: 'select',
+                  options: ['Line', 'Candlestick'], value: chartType },
+            ]
+        }, '*');
+
+        window.addEventListener('message', (e) => {
+            if (e.data && e.data.type === 'widgetSettingsUpdate') {
+                const s = e.data.settings;
+                if (s.pair && s.pair !== pair)         { pair = s.pair; }
+                if (s.interval && s.interval !== interval) { interval = s.interval; setActiveTimeframe(); }
+                if (s.chartType) chartType = s.chartType;
+                load();
+            }
+        });
+
+        /* ── DOM refs ───────────────────────── */
+        const $pair   = document.getElementById('pairName');
+        const $price  = document.getElementById('price');
+        const $change = document.getElementById('change');
+        const $wrap   = document.getElementById('chartWrap');
+        const $canvas = document.getElementById('chart');
+        const $tip    = document.getElementById('tooltip');
+        const $tfBar  = document.getElementById('tfBar');
+        const ctx     = $canvas.getContext('2d');
+
+        /* ── Timeframe bar ──────────────────── */
+        TIMEFRAMES.forEach(tf => {
+            const btn = document.createElement('button');
+            btn.className = 'tf-btn' + (tf === interval ? ' active' : '');
+            btn.textContent = tf;
+            btn.dataset.tf = tf;
+            btn.addEventListener('click', () => {
+                interval = tf;
+                setActiveTimeframe();
+                load();
+            });
+            $tfBar.appendChild(btn);
+        });
+
+        function setActiveTimeframe() {
+            $tfBar.querySelectorAll('.tf-btn').forEach(b => {
+                b.classList.toggle('active', b.dataset.tf === interval);
+            });
+        }
+
+        /* ── Proxy fetch (mirror pattern from ticker widget) ── */
+        async function proxyFetch(url) {
+            if (window.cfetch) return window.cfetch(url);
+            const base = (window.location.ancestorOrigins?.[0] || window.location.origin).replace(/\/$/, '');
+            return fetch(`${base}/api/proxy?url=${encodeURIComponent(url)}`);
+        }
+
+        /* ── Data loading ───────────────────── */
+        async function load() {
+            try {
+                const limit = TF_LIMITS[interval] || 48;
+                const url = `https://api.binance.com/api/v3/klines?symbol=${pair}&interval=${interval}&limit=${limit}`;
+                const r = await proxyFetch(url);
+                klines = await r.json();
+                if (!Array.isArray(klines) || klines.length === 0) throw new Error('No data');
+                updateHeader();
+                draw();
+            } catch (e) {
+                $price.textContent = 'Offline';
+                $change.textContent = '';
+                $change.className = 'change';
+            }
+            scheduleRefresh();
+        }
+
+        function scheduleRefresh() {
+            if (refreshTimer) clearInterval(refreshTimer);
+            refreshTimer = setInterval(load, TF_REFRESH[interval] || 60000);
+        }
+
+        /* ── Header ─────────────────────────── */
+        function updateHeader() {
+            const close = parseFloat(klines[klines.length - 1][4]);
+            const open  = parseFloat(klines[0][1]);
+            const pct   = ((close - open) / open) * 100;
+
+            $pair.textContent = PAIRS[pair] || pair;
+            $price.textContent = formatPrice(close);
+            $change.textContent = (pct >= 0 ? '▲' : '▼') + Math.abs(pct).toFixed(2) + '%';
+            $change.className = 'change ' + (pct >= 0 ? 'up' : 'down');
+        }
+
+        function formatPrice(n) {
+            if (n >= 1000)  return '$' + n.toLocaleString('en-US', { maximumFractionDigits: 0 });
+            if (n >= 1)     return '$' + n.toFixed(2);
+            if (n >= 0.001) return '$' + n.toFixed(4);
+            return '$' + n.toFixed(6);
+        }
+
+        /* ── Canvas sizing ──────────────────── */
+        function sizeCanvas() {
+            const dpr = window.devicePixelRatio || 1;
+            const rect = $wrap.getBoundingClientRect();
+            $canvas.width  = rect.width * dpr;
+            $canvas.height = rect.height * dpr;
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            return { w: rect.width, h: rect.height };
+        }
+
+        /* ── Drawing ────────────────────────── */
+        function draw() {
+            if (!klines.length) return;
+            const { w, h } = sizeCanvas();
+            ctx.clearRect(0, 0, w, h);
+
+            if (chartType === 'Candlestick') drawCandles(w, h);
+            else drawLine(w, h);
+        }
+
+        function drawLine(w, h) {
+            const prices = klines.map(k => parseFloat(k[4]));
+            const min = Math.min(...prices);
+            const max = Math.max(...prices);
+            const range = max - min || 1;
+            const isUp = prices[prices.length - 1] >= prices[0];
+            const color = isUp ? '#85FF85' : '#AC4949';
+            const pad = h * 0.08;
+
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 1.5;
+            ctx.lineJoin = 'round';
+            ctx.beginPath();
+
+            const pts = [];
+            prices.forEach((p, i) => {
+                const x = (i / (prices.length - 1)) * w;
+                const y = h - pad - ((p - min) / range) * (h - pad * 2);
+                pts.push({ x, y, price: p });
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            });
+            ctx.stroke();
+
+            // Gradient fill
+            ctx.lineTo(w, h);
+            ctx.lineTo(0, h);
+            ctx.closePath();
+            const grad = ctx.createLinearGradient(0, 0, 0, h);
+            grad.addColorStop(0, isUp ? 'rgba(133,255,133,0.15)' : 'rgba(172,73,73,0.15)');
+            grad.addColorStop(1, 'transparent');
+            ctx.fillStyle = grad;
+            ctx.fill();
+
+            // Store points for tooltip
+            window._chartPts = pts;
+        }
+
+        function drawCandles(w, h) {
+            const opens  = klines.map(k => parseFloat(k[1]));
+            const highs  = klines.map(k => parseFloat(k[2]));
+            const lows   = klines.map(k => parseFloat(k[3]));
+            const closes = klines.map(k => parseFloat(k[4]));
+
+            const allPrices = [...highs, ...lows];
+            const min = Math.min(...allPrices);
+            const max = Math.max(...allPrices);
+            const range = max - min || 1;
+            const pad = h * 0.08;
+            const n = klines.length;
+            const candleW = Math.max(1, (w / n) * 0.6);
+            const gap = w / n;
+
+            const pts = [];
+            for (let i = 0; i < n; i++) {
+                const x = gap * i + gap / 2;
+                const isUp = closes[i] >= opens[i];
+                const color = isUp ? '#85FF85' : '#AC4949';
+
+                const yHigh  = h - pad - ((highs[i]  - min) / range) * (h - pad * 2);
+                const yLow   = h - pad - ((lows[i]   - min) / range) * (h - pad * 2);
+                const yOpen  = h - pad - ((opens[i]  - min) / range) * (h - pad * 2);
+                const yClose = h - pad - ((closes[i] - min) / range) * (h - pad * 2);
+
+                // Wick
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(x, yHigh);
+                ctx.lineTo(x, yLow);
+                ctx.stroke();
+
+                // Body
+                const bodyTop = Math.min(yOpen, yClose);
+                const bodyH   = Math.max(1, Math.abs(yOpen - yClose));
+                ctx.fillStyle = color;
+                ctx.fillRect(x - candleW / 2, bodyTop, candleW, bodyH);
+
+                pts.push({ x, y: yClose, price: closes[i] });
+            }
+            window._chartPts = pts;
+        }
+
+        /* ── Tooltip ────────────────────────── */
+        $wrap.addEventListener('mousemove', (e) => {
+            const pts = window._chartPts;
+            if (!pts || !pts.length) return;
+            const rect = $wrap.getBoundingClientRect();
+            const mx = e.clientX - rect.left;
+            // Find nearest point
+            let closest = pts[0], minDist = Infinity;
+            for (const p of pts) {
+                const d = Math.abs(p.x - mx);
+                if (d < minDist) { minDist = d; closest = p; }
+            }
+            $tip.style.display = 'block';
+            $tip.textContent = formatPrice(closest.price);
+            // Position tooltip
+            let tx = closest.x + 6;
+            let ty = closest.y - 16;
+            if (tx + 60 > rect.width) tx = closest.x - 60;
+            if (ty < 0) ty = closest.y + 8;
+            $tip.style.left = tx + 'px';
+            $tip.style.top  = ty + 'px';
+        });
+        $wrap.addEventListener('mouseleave', () => {
+            $tip.style.display = 'none';
+        });
+
+        /* ── Resize handling ────────────────── */
+        const ro = new ResizeObserver(() => { if (klines.length) draw(); });
+        ro.observe($wrap);
+
+        /* ── Init ───────────────────────────── */
+        load();
+    })();
+    </script>
+</body>
+</html>

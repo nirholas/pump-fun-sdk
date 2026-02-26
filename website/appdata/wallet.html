@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="lair-include" content="lair.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="lair-icon" content="account_balance_wallet">
+    <title>Wallet Connect</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Symbols+Outlined" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 50%, #0f0f1a 100%);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 480px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            background: linear-gradient(90deg, #fff, #a5b4fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header p {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 14px;
+        }
+
+        /* Connection State */
+        .wallet-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(20px);
+        }
+
+        .connect-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .connect-btn {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: #fff;
+            font-size: 15px;
+            font-weight: 500;
+        }
+
+        .connect-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(99, 102, 241, 0.5);
+            transform: translateY(-2px);
+        }
+
+        .connect-btn img {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+        }
+
+        .connect-btn .wallet-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .metamask-icon { background: linear-gradient(135deg, #f6851b, #e2761b); }
+        .walletconnect-icon { background: linear-gradient(135deg, #3b99fc, #2d7dd2); }
+        .coinbase-icon { background: linear-gradient(135deg, #0052ff, #0038b8); }
+
+        /* Connected State */
+        .connected-view {
+            display: none;
+        }
+
+        .connected-view.active {
+            display: block;
+        }
+
+        .disconnected-view.hidden {
+            display: none;
+        }
+
+        .wallet-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+        }
+
+        .wallet-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .wallet-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .wallet-avatar .material-symbols-outlined {
+            font-size: 24px;
+        }
+
+        .wallet-address {
+            font-family: 'SF Mono', monospace;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .wallet-label {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: rgba(34, 197, 94, 0.15);
+            border-radius: 20px;
+            font-size: 12px;
+            color: #22c55e;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: #22c55e;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Network Selector */
+        .network-selector {
+            margin-bottom: 24px;
+        }
+
+        .network-selector label {
+            display: block;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .network-dropdown {
+            position: relative;
+        }
+
+        .network-btn {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            cursor: pointer;
+            color: #fff;
+            font-size: 14px;
+        }
+
+        .network-btn:hover {
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .network-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .network-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+        }
+
+        .network-menu {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            margin-top: 8px;
+            background: rgba(20, 20, 35, 0.98);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 8px;
+            z-index: 100;
+            display: none;
+        }
+
+        .network-menu.open {
+            display: block;
+        }
+
+        .network-option {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .network-option:hover {
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .network-option.active {
+            background: rgba(99, 102, 241, 0.2);
+        }
+
+        /* Balances */
+        .balances-section h3 {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 16px;
+        }
+
+        .total-balance {
+            text-align: center;
+            padding: 24px;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(139, 92, 246, 0.1));
+            border-radius: 16px;
+            margin-bottom: 20px;
+        }
+
+        .total-label {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
+            margin-bottom: 8px;
+        }
+
+        .total-value {
+            font-size: 36px;
+            font-weight: 700;
+            background: linear-gradient(90deg, #fff, #a5b4fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .total-change {
+            font-size: 14px;
+            color: #22c55e;
+            margin-top: 8px;
+        }
+
+        .total-change.negative {
+            color: #ef4444;
+        }
+
+        .token-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .token-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 16px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 12px;
+            transition: all 0.2s;
+        }
+
+        .token-item:hover {
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .token-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .token-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .eth-icon { background: linear-gradient(135deg, #627eea, #3c4a9e); }
+        .usdc-icon { background: linear-gradient(135deg, #2775ca, #1a5099); }
+        .usdt-icon { background: linear-gradient(135deg, #26a17b, #1a7a5a); }
+        .arb-icon { background: linear-gradient(135deg, #28a0f0, #1a6aa3); }
+
+        .token-name {
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .token-symbol {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .token-balance {
+            text-align: right;
+        }
+
+        .token-amount {
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .token-usd {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        /* Actions */
+        .actions {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-top: 24px;
+        }
+
+        .action-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            padding: 16px 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: #fff;
+        }
+
+        .action-btn:hover {
+            background: rgba(99, 102, 241, 0.2);
+            border-color: rgba(99, 102, 241, 0.4);
+        }
+
+        .action-btn .material-symbols-outlined {
+            font-size: 24px;
+            color: #6366f1;
+        }
+
+        .action-btn span:last-child {
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        /* Disconnect */
+        .disconnect-btn {
+            width: 100%;
+            padding: 14px;
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 10px;
+            color: #ef4444;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: all 0.2s;
+        }
+
+        .disconnect-btn:hover {
+            background: rgba(239, 68, 68, 0.2);
+        }
+
+        /* Loading */
+        .connecting-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .connecting-overlay.active {
+            display: flex;
+        }
+
+        .connecting-content {
+            text-align: center;
+        }
+
+        .spinner {
+            width: 48px;
+            height: 48px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top-color: #6366f1;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .connecting-text {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Wallet Connect</h1>
+            <p>Connect your wallet to access DeFi features</p>
+        </div>
+
+        <!-- Disconnected View -->
+        <div class="disconnected-view" id="disconnectedView">
+            <div class="wallet-card">
+                <div class="connect-buttons">
+                    <button class="connect-btn" onclick="connectWallet('metamask')">
+                        <div class="wallet-icon metamask-icon">🦊</div>
+                        <div>
+                            <div>MetaMask</div>
+                            <div style="font-size: 12px; color: rgba(255,255,255,0.5);">Popular browser wallet</div>
+                        </div>
+                    </button>
+                    <button class="connect-btn" onclick="connectWallet('walletconnect')">
+                        <div class="wallet-icon walletconnect-icon">
+                            <span class="material-symbols-outlined" style="font-size: 20px;">qr_code_2</span>
+                        </div>
+                        <div>
+                            <div>WalletConnect</div>
+                            <div style="font-size: 12px; color: rgba(255,255,255,0.5);">Scan with mobile wallet</div>
+                        </div>
+                    </button>
+                    <button class="connect-btn" onclick="connectWallet('coinbase')">
+                        <div class="wallet-icon coinbase-icon">
+                            <span style="font-weight: 700;">C</span>
+                        </div>
+                        <div>
+                            <div>Coinbase Wallet</div>
+                            <div style="font-size: 12px; color: rgba(255,255,255,0.5);">Self-custody wallet</div>
+                        </div>
+                    </button>
+                </div>
+            </div>
+
+            <div style="text-align: center; color: rgba(255,255,255,0.4); font-size: 12px;">
+                <p>By connecting, you agree to the Terms of Service</p>
+            </div>
+        </div>
+
+        <!-- Connected View -->
+        <div class="connected-view" id="connectedView">
+            <div class="wallet-card">
+                <div class="wallet-header">
+                    <div class="wallet-info">
+                        <div class="wallet-avatar">
+                            <span class="material-symbols-outlined">account_balance_wallet</span>
+                        </div>
+                        <div>
+                            <div class="wallet-label">Connected Wallet</div>
+                            <div class="wallet-address" id="walletAddress">0x742d...3a9b</div>
+                        </div>
+                    </div>
+                    <div class="status-badge">
+                        <div class="status-dot"></div>
+                        Connected
+                    </div>
+                </div>
+
+                <!-- Network Selector -->
+                <div class="network-selector">
+                    <label>Network</label>
+                    <div class="network-dropdown">
+                        <button class="network-btn" onclick="toggleNetworkMenu()">
+                            <div class="network-info">
+                                <div class="network-icon eth-icon" id="networkIcon"></div>
+                                <span id="networkName">Ethereum</span>
+                            </div>
+                            <span class="material-symbols-outlined">expand_more</span>
+                        </button>
+                        <div class="network-menu" id="networkMenu">
+                            <div class="network-option active" onclick="selectNetwork('ethereum', 'Ethereum', '#627eea')">
+                                <div class="network-icon eth-icon"></div>
+                                <span>Ethereum</span>
+                            </div>
+                            <div class="network-option" onclick="selectNetwork('arbitrum', 'Arbitrum', '#28a0f0')">
+                                <div class="network-icon arb-icon"></div>
+                                <span>Arbitrum</span>
+                            </div>
+                            <div class="network-option" onclick="selectNetwork('base', 'Base', '#0052ff')">
+                                <div class="network-icon" style="background: linear-gradient(135deg, #0052ff, #003acc);"></div>
+                                <span>Base</span>
+                            </div>
+                            <div class="network-option" onclick="selectNetwork('polygon', 'Polygon', '#8247e5')">
+                                <div class="network-icon" style="background: linear-gradient(135deg, #8247e5, #5e35a1);"></div>
+                                <span>Polygon</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Total Balance -->
+                <div class="total-balance">
+                    <div class="total-label">Total Balance</div>
+                    <div class="total-value" id="totalBalance">$12,847.32</div>
+                    <div class="total-change" id="totalChange">+$423.18 (3.4%) today</div>
+                </div>
+
+                <!-- Token List -->
+                <div class="balances-section">
+                    <h3>Assets</h3>
+                    <div class="token-list" id="tokenList">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="actions">
+                    <button class="action-btn" onclick="showAction('send')">
+                        <span class="material-symbols-outlined">arrow_upward</span>
+                        <span>Send</span>
+                    </button>
+                    <button class="action-btn" onclick="showAction('receive')">
+                        <span class="material-symbols-outlined">arrow_downward</span>
+                        <span>Receive</span>
+                    </button>
+                    <button class="action-btn" onclick="showAction('swap')">
+                        <span class="material-symbols-outlined">swap_horiz</span>
+                        <span>Swap</span>
+                    </button>
+                </div>
+
+                <button class="disconnect-btn" onclick="disconnectWallet()">
+                    Disconnect Wallet
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Connecting Overlay -->
+    <div class="connecting-overlay" id="connectingOverlay">
+        <div class="connecting-content">
+            <div class="spinner"></div>
+            <div class="connecting-text">Connecting to wallet...</div>
+        </div>
+    </div>
+
+    <script>
+        /* ── Network config ── */
+        const NETWORKS = {
+            ethereum: { name:'Ethereum', chainId:'0x1', rpc:'https://eth.llamarpc.com', symbol:'ETH', coingeckoId:'ethereum', explorer:'https://etherscan.io', color:'#627eea',
+                tokens:[
+                    {addr:'0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',symbol:'USDC',name:'USD Coin',decimals:6,coingeckoId:'usd-coin'},
+                    {addr:'0xdAC17F958D2ee523a2206206994597C13D831ec7',symbol:'USDT',name:'Tether',decimals:6,coingeckoId:'tether'},
+                    {addr:'0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599',symbol:'WBTC',name:'Wrapped Bitcoin',decimals:8,coingeckoId:'wrapped-bitcoin'},
+                    {addr:'0x6B175474E89094C44Da98b954EedeAC495271d0F',symbol:'DAI',name:'Dai Stablecoin',decimals:18,coingeckoId:'dai'}
+                ]},
+            arbitrum: { name:'Arbitrum', chainId:'0xa4b1', rpc:'https://arb1.arbitrum.io/rpc', symbol:'ETH', coingeckoId:'ethereum', explorer:'https://arbiscan.io', color:'#28a0f0',
+                tokens:[
+                    {addr:'0xaf88d065e77c8cC2239327C5EDb3A432268e5831',symbol:'USDC',name:'USD Coin',decimals:6,coingeckoId:'usd-coin'},
+                    {addr:'0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9',symbol:'USDT',name:'Tether',decimals:6,coingeckoId:'tether'},
+                    {addr:'0x912CE59144191C1204E64559FE8253a0e49E6548',symbol:'ARB',name:'Arbitrum',decimals:18,coingeckoId:'arbitrum'}
+                ]},
+            base: { name:'Base', chainId:'0x2105', rpc:'https://mainnet.base.org', symbol:'ETH', coingeckoId:'ethereum', explorer:'https://basescan.org', color:'#0052ff',
+                tokens:[
+                    {addr:'0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',symbol:'USDC',name:'USD Coin',decimals:6,coingeckoId:'usd-coin'}
+                ]},
+            polygon: { name:'Polygon', chainId:'0x89', rpc:'https://polygon-rpc.com', symbol:'MATIC', coingeckoId:'matic-network', explorer:'https://polygonscan.com', color:'#8247e5',
+                tokens:[
+                    {addr:'0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359',symbol:'USDC',name:'USD Coin',decimals:6,coingeckoId:'usd-coin'},
+                    {addr:'0xc2132D05D31c914a87C6611C10748AEb04B58e8F',symbol:'USDT',name:'Tether',decimals:6,coingeckoId:'tether'}
+                ]},
+            optimism: { name:'Optimism', chainId:'0xa', rpc:'https://mainnet.optimism.io', symbol:'ETH', coingeckoId:'ethereum', explorer:'https://optimistic.etherscan.io', color:'#ff0420',
+                tokens:[
+                    {addr:'0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85',symbol:'USDC',name:'USD Coin',decimals:6,coingeckoId:'usd-coin'},
+                    {addr:'0x4200000000000000000000000000000000000042',symbol:'OP',name:'Optimism',decimals:18,coingeckoId:'optimism'}
+                ]},
+            bsc: { name:'BNB Chain', chainId:'0x38', rpc:'https://bsc-dataseed1.binance.org', symbol:'BNB', coingeckoId:'binancecoin', explorer:'https://bscscan.com', color:'#f0b90b',
+                tokens:[
+                    {addr:'0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d',symbol:'USDC',name:'USD Coin',decimals:18,coingeckoId:'usd-coin'},
+                    {addr:'0x55d398326f99059fF775485246999027B3197955',symbol:'USDT',name:'Tether',decimals:18,coingeckoId:'tether'}
+                ]},
+            avalanche: { name:'Avalanche', chainId:'0xa86a', rpc:'https://api.avax.network/ext/bc/C/rpc', symbol:'AVAX', coingeckoId:'avalanche-2', explorer:'https://snowtrace.io', color:'#e84142',
+                tokens:[
+                    {addr:'0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E',symbol:'USDC',name:'USD Coin',decimals:6,coingeckoId:'usd-coin'}
+                ]}
+        };
+
+        const ERC20_ABI_BALANCE = ['function balanceOf(address) view returns (uint256)'];
+
+        let walletAddress = null;
+        let currentNetwork = 'ethereum';
+        let tokenData = [];   // {name, symbol, balance, usd, icon, change}
+
+        /* ── Initialization ── */
+        function init() {
+            const saved = localStorage.getItem('lair_wallet_connect');
+            if (saved) {
+                try {
+                    const data = JSON.parse(saved);
+                    walletAddress = data.address;
+                    currentNetwork = data.network || 'ethereum';
+                    showConnectedView();
+                    loadBalances();
+                } catch(e) { localStorage.removeItem('lair_wallet_connect'); }
+            }
+            // Listen for account/chain changes
+            if (window.ethereum) {
+                window.ethereum.on('accountsChanged', accts => {
+                    if (accts.length === 0) { disconnectWallet(); }
+                    else { walletAddress = accts[0]; save(); showConnectedView(); loadBalances(); }
+                });
+                window.ethereum.on('chainChanged', () => { loadBalances(); });
+            }
+        }
+
+        function save() {
+            localStorage.setItem('lair_wallet_connect', JSON.stringify({ address: walletAddress, network: currentNetwork }));
+        }
+
+        function shortAddr(a) { return a ? a.slice(0,6) + '...' + a.slice(-4) : ''; }
+
+        /* ── Connect wallet via injected provider ── */
+        async function connectWallet(type) {
+            const overlay = document.getElementById('connectingOverlay');
+            overlay.classList.add('active');
+
+            try {
+                let provider = null;
+                if (type === 'metamask' && window.ethereum?.isMetaMask) {
+                    provider = window.ethereum;
+                } else if (type === 'coinbase' && (window.ethereum?.isCoinbaseWallet || window.coinbaseWalletExtension)) {
+                    provider = window.coinbaseWalletExtension || window.ethereum;
+                } else if (window.ethereum) {
+                    provider = window.ethereum;
+                }
+
+                if (!provider) {
+                    overlay.classList.remove('active');
+                    // Fallback: manual address entry
+                    const addr = prompt(`${type === 'metamask' ? 'MetaMask' : type === 'coinbase' ? 'Coinbase Wallet' : 'Wallet'} not detected.\n\nEnter your wallet address to view balances (read-only):`);
+                    if (addr && /^0x[a-fA-F0-9]{40}$/.test(addr)) {
+                        walletAddress = addr;
+                        save();
+                        showConnectedView();
+                        loadBalances();
+                        notify('Wallet Connected', `Viewing ${shortAddr(addr)} (read-only)`, 'success');
+                    }
+                    return;
+                }
+
+                const accounts = await provider.request({ method: 'eth_requestAccounts' });
+                overlay.classList.remove('active');
+
+                if (accounts && accounts.length > 0) {
+                    walletAddress = accounts[0];
+                    save();
+                    showConnectedView();
+                    loadBalances();
+                    notify('Wallet Connected', `Connected ${shortAddr(walletAddress)}`, 'success');
+                }
+            } catch (err) {
+                overlay.classList.remove('active');
+                console.error('Wallet connection failed:', err);
+                if (err.code === 4001) { /* user rejected */ }
+                else { alert('Connection failed: ' + (err.message || 'Unknown error')); }
+            }
+        }
+
+        function notify(title, msg, type) {
+            if (window.parent !== window && window.parent.showNotification) {
+                window.parent.showNotification(title, msg, type);
+            }
+        }
+
+        /* ── Views ── */
+        function showConnectedView() {
+            document.getElementById('disconnectedView').classList.add('hidden');
+            document.getElementById('connectedView').classList.add('active');
+            document.getElementById('walletAddress').textContent = shortAddr(walletAddress);
+        }
+
+        function disconnectWallet() {
+            walletAddress = null;
+            tokenData = [];
+            localStorage.removeItem('lair_wallet_connect');
+            document.getElementById('disconnectedView').classList.remove('hidden');
+            document.getElementById('connectedView').classList.remove('active');
+            document.getElementById('tokenList').innerHTML = '';
+            document.getElementById('totalBalance').textContent = '$0.00';
+            document.getElementById('totalChange').textContent = '';
+        }
+
+        /* ── Network ── */
+        function toggleNetworkMenu() {
+            document.getElementById('networkMenu').classList.toggle('open');
+        }
+
+        function selectNetwork(network, name, color) {
+            currentNetwork = network;
+            document.getElementById('networkName').textContent = name;
+            const iconEl = document.getElementById('networkIcon');
+            iconEl.style.background = `linear-gradient(135deg, ${color}, ${adjustColor(color, -30)})`;
+            document.querySelectorAll('.network-option').forEach(opt => opt.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+            document.getElementById('networkMenu').classList.remove('open');
+            save();
+            loadBalances();
+        }
+
+        function adjustColor(hex, amount) {
+            const num = parseInt(hex.replace('#', ''), 16);
+            const r = Math.min(255, Math.max(0, (num >> 16) + amount));
+            const g = Math.min(255, Math.max(0, ((num >> 8) & 0x00FF) + amount));
+            const b = Math.min(255, Math.max(0, (num & 0x0000FF) + amount));
+            return '#' + (1 << 24 | r << 16 | g << 8 | b).toString(16).slice(1);
+        }
+
+        /* ── Load real balances via public RPC + CoinGecko ── */
+        async function loadBalances() {
+            if (!walletAddress) return;
+            const net = NETWORKS[currentNetwork];
+            if (!net) return;
+
+            // Show loading state
+            const container = document.getElementById('tokenList');
+            container.innerHTML = '<div style="text-align:center;padding:32px;color:rgba(255,255,255,0.5)"><div class="spinner"></div>Loading balances…</div>';
+
+            try {
+                // 1. Fetch native balance via JSON-RPC
+                const nativeBalHex = await rpcCall(net.rpc, 'eth_getBalance', [walletAddress, 'latest']);
+                const nativeBal = parseInt(nativeBalHex, 16) / 1e18;
+
+                // 2. Fetch ERC-20 balances via multicall-style sequential
+                const tokenBalances = await Promise.allSettled(
+                    net.tokens.map(async t => {
+                        const data = '0x70a08231' + walletAddress.slice(2).padStart(64, '0');
+                        const result = await rpcCall(net.rpc, 'eth_call', [{ to: t.addr, data }, 'latest']);
+                        const raw = BigInt(result || '0x0');
+                        return { ...t, balance: Number(raw) / (10 ** t.decimals) };
+                    })
+                );
+
+                // 3. Fetch prices from CoinGecko (free, no key)
+                const allIds = [net.coingeckoId, ...net.tokens.map(t => t.coingeckoId)];
+                const uniqueIds = [...new Set(allIds)];
+                const priceData = await fetchPrices(uniqueIds);
+
+                // 4. Build token list
+                tokenData = [];
+
+                // Native token
+                const nativePrice = priceData[net.coingeckoId] || {};
+                tokenData.push({
+                    name: net.symbol === 'ETH' ? 'Ethereum' : net.symbol === 'BNB' ? 'BNB' : net.symbol === 'MATIC' ? 'Polygon' : net.symbol === 'AVAX' ? 'Avalanche' : net.symbol,
+                    symbol: net.symbol,
+                    balance: nativeBal,
+                    usd: nativeBal * (nativePrice.usd || 0),
+                    change: nativePrice.usd_24h_change || 0,
+                    icon: 'eth-icon'
+                });
+
+                // ERC-20 tokens
+                for (const result of tokenBalances) {
+                    if (result.status === 'fulfilled') {
+                        const t = result.value;
+                        if (t.balance > 0) {
+                            const price = priceData[t.coingeckoId] || {};
+                            tokenData.push({
+                                name: t.name,
+                                symbol: t.symbol,
+                                balance: t.balance,
+                                usd: t.balance * (price.usd || (t.symbol === 'USDC' || t.symbol === 'USDT' || t.symbol === 'DAI' ? 1 : 0)),
+                                change: price.usd_24h_change || 0,
+                                icon: ''
+                            });
+                        }
+                    }
+                }
+
+                // Sort by USD value descending
+                tokenData.sort((a, b) => b.usd - a.usd);
+
+                // Update UI
+                const totalUsd = tokenData.reduce((s, t) => s + t.usd, 0);
+                document.getElementById('totalBalance').textContent = '$' + totalUsd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+                // Weighted average change
+                if (totalUsd > 0) {
+                    const wChange = tokenData.reduce((s, t) => s + (t.change * t.usd), 0) / totalUsd;
+                    const changeEl = document.getElementById('totalChange');
+                    changeEl.textContent = `${wChange >= 0 ? '+' : ''}${wChange.toFixed(2)}% today`;
+                    changeEl.className = 'total-change' + (wChange < 0 ? ' negative' : '');
+                }
+
+                renderTokens();
+
+            } catch (err) {
+                console.error('Balance fetch error:', err);
+                container.innerHTML = `<div style="text-align:center;padding:32px;color:#ef4444">
+                    <span class="material-symbols-outlined" style="font-size:32px">error</span>
+                    <p style="margin-top:8px;font-size:13px">Failed to load balances</p>
+                    <button onclick="loadBalances()" style="margin-top:12px;padding:8px 20px;background:rgba(99,102,241,0.2);border:1px solid rgba(99,102,241,0.4);border-radius:8px;color:#a5b4fc;cursor:pointer;font-size:12px">Retry</button>
+                </div>`;
+            }
+        }
+
+        /* ── JSON-RPC helper (uses cfetch for CORS proxy fallback) ── */
+        async function rpcCall(url, method, params) {
+            const _rpcFetch = window.cfetch || window.fetch.bind(window);
+            const res = await _rpcFetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params })
+            });
+            const data = await res.json();
+            if (data.error) throw new Error(data.error.message);
+            return data.result;
+        }
+
+        /* ── CoinGecko price fetch — uses cfetch proxy to avoid CORS ── */
+        const _fetch = window.cfetch || window.fetch.bind(window);
+        async function fetchPrices(ids) {
+            try {
+                const res = await _fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${ids.join(',')}&vs_currencies=usd&include_24hr_change=true`);
+                if (!res.ok) throw new Error('CoinGecko rate limit');
+                const data = await res.json();
+                const out = {};
+                for (const id of ids) {
+                    if (data[id]) out[id] = { usd: data[id].usd, usd_24h_change: data[id].usd_24h_change };
+                }
+                return out;
+            } catch (err) {
+                console.warn('Price fetch failed, using fallback:', err);
+                return {};
+            }
+        }
+
+        /* ── Render token list ── */
+        function renderTokens() {
+            const container = document.getElementById('tokenList');
+            if (tokenData.length === 0) {
+                container.innerHTML = '<div style="text-align:center;padding:32px;color:rgba(255,255,255,0.4);font-size:13px">No tokens found on this network</div>';
+                return;
+            }
+            container.innerHTML = tokenData.map(token => {
+                const initial = token.symbol.charAt(0);
+                const changeClass = token.change >= 0 ? '' : ' negative';
+                const changeStr = token.change >= 0 ? '+' : '';
+                return `
+                <div class="token-item">
+                    <div class="token-info">
+                        <div class="token-icon" style="background:linear-gradient(135deg,${NETWORKS[currentNetwork].color},${adjustColor(NETWORKS[currentNetwork].color,-40)})">${initial}</div>
+                        <div>
+                            <div class="token-name">${token.name}</div>
+                            <div class="token-symbol">${token.symbol}</div>
+                        </div>
+                    </div>
+                    <div class="token-balance">
+                        <div class="token-amount">${token.balance.toLocaleString(undefined, { maximumFractionDigits: 6 })}</div>
+                        <div class="token-usd">$${token.usd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        /* ── Actions ── */
+        function showAction(action) {
+            if (!walletAddress || !window.ethereum) {
+                alert(`${action} requires an injected wallet provider (MetaMask, Coinbase, etc.)`);
+                return;
+            }
+            const net = NETWORKS[currentNetwork];
+            if (action === 'send') {
+                const to = prompt('Recipient address (0x...):');
+                if (!to || !/^0x[a-fA-F0-9]{40}$/.test(to)) return;
+                const amount = prompt(`Amount of ${net.symbol} to send:`);
+                if (!amount || isNaN(parseFloat(amount))) return;
+                const weiHex = '0x' + BigInt(Math.floor(parseFloat(amount) * 1e18)).toString(16);
+                window.ethereum.request({
+                    method: 'eth_sendTransaction',
+                    params: [{ from: walletAddress, to, value: weiHex }]
+                }).then(txHash => {
+                    notify('Transaction Sent', `TX: ${shortAddr(txHash)}`, 'success');
+                    setTimeout(loadBalances, 5000);
+                }).catch(err => {
+                    if (err.code !== 4001) alert('Transaction failed: ' + err.message);
+                });
+            } else if (action === 'receive') {
+                navigator.clipboard.writeText(walletAddress).then(() => {
+                    notify('Address Copied', walletAddress, 'success');
+                    alert(`Your address:\n${walletAddress}\n\nCopied to clipboard!`);
+                });
+            } else if (action === 'swap') {
+                window.open(`https://app.uniswap.org/swap?chain=${currentNetwork}`, '_blank');
+            }
+        }
+
+        // Close network menu on outside click
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.network-dropdown')) {
+                document.getElementById('networkMenu').classList.remove('open');
+            }
+        });
+
+        // Initialize
+        init();
+    </script>
+</body>
+</html>

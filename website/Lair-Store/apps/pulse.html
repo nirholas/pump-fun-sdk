@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="lair-include" content="lair.css material-symbols-rounded">
+    <meta name="lair-icon" content='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"><path d="M2 12h3l2-6 3 12 2.5-8 2 4 1.5-2h6" stroke="#85ff85" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="10.5" stroke="#85ff85" stroke-width=".4" opacity=".2"/><circle cx="12" cy="12" r="7" stroke="#85ff85" stroke-width=".3" opacity=".15"/></svg>'>
+    <meta name="permissions" content="network">
+    <meta name="capabilities" content="crypto_vital_signs_monitor">
+    <meta name="lair-category" content="analytics">
+    <meta name="lair-perms" content="network" />
+    <title>Lair Pulse</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body {
+            width: 100%; height: 100%;
+            overflow: hidden;
+            background: #010a04;
+            color: #85ff85;
+            font-family: 'SF Mono', 'Fira Code', 'JetBrains Mono', 'Cascadia Code', monospace;
+            user-select: none;
+        }
+
+        /* ─── ICU Grid Layout ─── */
+        .icu-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: auto 1fr 1fr 1fr auto;
+            height: 100vh;
+            gap: 1px;
+            background: rgba(0,40,0,0.15);
+        }
+
+        /* ─── Header bar ─── */
+        .icu-header {
+            grid-column: 1 / -1;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 16px;
+            background: rgba(0,20,0,0.6);
+            border-bottom: 1px solid rgba(133,255,133,0.08);
+        }
+        .icu-title {
+            font-size: 11px;
+            letter-spacing: 0.4em;
+            text-transform: uppercase;
+            opacity: 0.5;
+            font-weight: 600;
+        }
+        .icu-clock {
+            font-size: 13px;
+            letter-spacing: 0.08em;
+            opacity: 0.6;
+            font-variant-numeric: tabular-nums;
+        }
+        .icu-status {
+            display: flex; gap: 12px; align-items: center;
+        }
+        .icu-status-dot {
+            width: 6px; height: 6px; border-radius: 50%;
+            background: #85ff85;
+            animation: blink 2s ease-in-out infinite;
+        }
+        @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+        .icu-status-text {
+            font-size: 10px; opacity: 0.4;
+            letter-spacing: 0.1em; text-transform: uppercase;
+        }
+
+        /* ─── Vital Signs Panel ─── */
+        .vital-panel {
+            position: relative;
+            background: rgba(0,10,0,0.5);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        .vital-panel::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background:
+                repeating-linear-gradient(0deg, transparent, transparent 19px, rgba(0,60,0,0.08) 19px, rgba(0,60,0,0.08) 20px),
+                repeating-linear-gradient(90deg, transparent, transparent 19px, rgba(0,60,0,0.08) 19px, rgba(0,60,0,0.08) 20px);
+            pointer-events: none;
+            z-index: 1;
+        }
+        .vital-panel.alarm::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border: 2px solid rgba(255,100,100,0.5);
+            pointer-events: none;
+            z-index: 3;
+            animation: alarmPulse 0.8s ease-in-out infinite;
+        }
+        @keyframes alarmPulse { 0%,100% { border-color: rgba(255,100,100,0.5); } 50% { border-color: rgba(255,100,100,0.1); } }
+
+        .vital-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding: 8px 12px 4px;
+            position: relative;
+            z-index: 2;
+        }
+        .vital-label {
+            font-size: 9px;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            opacity: 0.45;
+        }
+        .vital-value-area {
+            text-align: right;
+        }
+        .vital-value {
+            font-size: 26px;
+            font-weight: 700;
+            line-height: 1;
+            letter-spacing: -0.5px;
+            text-shadow: 0 0 20px currentColor;
+        }
+        .vital-unit {
+            font-size: 9px;
+            opacity: 0.3;
+            letter-spacing: 0.1em;
+        }
+        .vital-change {
+            font-size: 10px;
+            font-weight: 600;
+            margin-top: 2px;
+        }
+        .vital-change.pos { color: #85ff85; }
+        .vital-change.neg { color: #ff6b6b; }
+
+        .vital-canvas-wrap {
+            flex: 1;
+            position: relative;
+            z-index: 2;
+        }
+        .vital-canvas-wrap canvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        .vital-range {
+            display: flex;
+            justify-content: space-between;
+            padding: 2px 12px 6px;
+            font-size: 8px;
+            opacity: 0.2;
+            position: relative;
+            z-index: 2;
+        }
+
+        /* ─── Health Score (center bottom) ─── */
+        .health-bar {
+            grid-column: 1 / -1;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 8px 16px;
+            background: rgba(0,20,0,0.6);
+            border-top: 1px solid rgba(133,255,133,0.08);
+        }
+        .health-label {
+            font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; opacity: 0.4;
+            white-space: nowrap;
+        }
+        .health-track {
+            flex: 1; height: 6px; background: rgba(133,255,133,0.06);
+            border-radius: 3px; overflow: hidden; position: relative;
+        }
+        .health-fill {
+            height: 100%; border-radius: 3px;
+            transition: width 1.5s ease, background 1.5s ease;
+        }
+        .health-score {
+            font-size: 22px; font-weight: 700;
+            letter-spacing: -0.5px;
+            text-shadow: 0 0 15px currentColor;
+            min-width: 50px; text-align: right;
+        }
+        .health-grade {
+            font-size: 10px; opacity: 0.5;
+            letter-spacing: 0.1em; text-transform: uppercase;
+        }
+        .health-vitals {
+            display: flex; gap: 14px;
+            font-size: 9px; opacity: 0.35;
+            letter-spacing: 0.05em;
+        }
+
+        /* ─── Alarm indicator ─── */
+        .alarm-badge {
+            display: none;
+            padding: 3px 8px;
+            background: rgba(255,80,80,0.15);
+            border: 1px solid rgba(255,80,80,0.3);
+            border-radius: 6px;
+            font-size: 9px;
+            color: #ff6b6b;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            animation: alarmPulse 1s ease-in-out infinite;
+        }
+        .alarm-badge.active { display: inline-flex; align-items: center; gap: 4px; }
+
+        /* ─── Loading ─── */
+        #loader {
+            position: fixed; inset: 0; z-index: 50;
+            background: #010a04;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            gap: 20px;
+            transition: opacity 0.8s ease;
+        }
+        #loader.fade { opacity: 0; pointer-events: none; }
+        .loader-ecg {
+            width: 120px; height: 40px;
+            position: relative;
+        }
+        .loader-ecg-line {
+            stroke: #85ff85;
+            stroke-width: 2;
+            fill: none;
+            stroke-linecap: round;
+            stroke-dasharray: 200;
+            stroke-dashoffset: 200;
+            animation: ecgDraw 1.5s ease-in-out infinite;
+        }
+        @keyframes ecgDraw {
+            0% { stroke-dashoffset: 200; }
+            50% { stroke-dashoffset: 0; }
+            100% { stroke-dashoffset: -200; }
+        }
+        .loader-text {
+            font-size: 10px; letter-spacing: 0.4em;
+            text-transform: uppercase; opacity: 0.3;
+        }
+
+        /* ─── Responsive ─── */
+        @media (max-width: 600px) {
+            .icu-grid {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto repeat(6, 1fr) auto;
+            }
+            .vital-value { font-size: 20px; }
+            .health-vitals { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="icu-grid">
+    <!-- Header -->
+    <div class="icu-header">
+        <div class="icu-status">
+            <div class="icu-status-dot"></div>
+            <span class="icu-status-text">Live</span>
+            <span class="alarm-badge" id="alarm-badge">
+                <span class="material-symbols-rounded" style="font-size:10px">warning</span>
+                <span id="alarm-count">0</span> alerts
+            </span>
+        </div>
+        <div class="icu-title">Lair Pulse</div>
+        <div class="icu-clock" id="clock">--:--:--</div>
+    </div>
+
+    <!-- 6 Vital Sign Panels (2 columns × 3 rows) -->
+    <div class="vital-panel" id="panel-btc" data-color="#f7931a">
+        <div class="vital-header">
+            <div>
+                <div class="vital-label">Bitcoin</div>
+            </div>
+            <div class="vital-value-area">
+                <div class="vital-value" id="val-btc">—</div>
+                <div class="vital-unit">USD</div>
+                <div class="vital-change" id="ch-btc"></div>
+            </div>
+        </div>
+        <div class="vital-canvas-wrap"><canvas id="cv-btc"></canvas></div>
+        <div class="vital-range"><span id="lo-btc">—</span><span id="hi-btc">—</span></div>
+    </div>
+
+    <div class="vital-panel" id="panel-eth" data-color="#627eea">
+        <div class="vital-header">
+            <div>
+                <div class="vital-label">Ethereum</div>
+            </div>
+            <div class="vital-value-area">
+                <div class="vital-value" id="val-eth">—</div>
+                <div class="vital-unit">USD</div>
+                <div class="vital-change" id="ch-eth"></div>
+            </div>
+        </div>
+        <div class="vital-canvas-wrap"><canvas id="cv-eth"></canvas></div>
+        <div class="vital-range"><span id="lo-eth">—</span><span id="hi-eth">—</span></div>
+    </div>
+
+    <div class="vital-panel" id="panel-mcap" data-color="#85ff85">
+        <div class="vital-header">
+            <div>
+                <div class="vital-label">Total Market Cap</div>
+            </div>
+            <div class="vital-value-area">
+                <div class="vital-value" id="val-mcap">—</div>
+                <div class="vital-unit">USD</div>
+                <div class="vital-change" id="ch-mcap"></div>
+            </div>
+        </div>
+        <div class="vital-canvas-wrap"><canvas id="cv-mcap"></canvas></div>
+        <div class="vital-range"><span id="lo-mcap">—</span><span id="hi-mcap">—</span></div>
+    </div>
+
+    <div class="vital-panel" id="panel-vol" data-color="#34d4f1">
+        <div class="vital-header">
+            <div>
+                <div class="vital-label">24h Volume</div>
+            </div>
+            <div class="vital-value-area">
+                <div class="vital-value" id="val-vol">—</div>
+                <div class="vital-unit">USD</div>
+                <div class="vital-change" id="ch-vol"></div>
+            </div>
+        </div>
+        <div class="vital-canvas-wrap"><canvas id="cv-vol"></canvas></div>
+        <div class="vital-range"><span id="lo-vol">—</span><span id="hi-vol">—</span></div>
+    </div>
+
+    <div class="vital-panel" id="panel-dom" data-color="#fbbf24">
+        <div class="vital-header">
+            <div>
+                <div class="vital-label">BTC Dominance</div>
+            </div>
+            <div class="vital-value-area">
+                <div class="vital-value" id="val-dom">—</div>
+                <div class="vital-unit">%</div>
+                <div class="vital-change" id="ch-dom"></div>
+            </div>
+        </div>
+        <div class="vital-canvas-wrap"><canvas id="cv-dom"></canvas></div>
+        <div class="vital-range"><span id="lo-dom">—</span><span id="hi-dom">—</span></div>
+    </div>
+
+    <div class="vital-panel" id="panel-fg" data-color="#c084fc">
+        <div class="vital-header">
+            <div>
+                <div class="vital-label">Fear & Greed</div>
+            </div>
+            <div class="vital-value-area">
+                <div class="vital-value" id="val-fg">—</div>
+                <div class="vital-unit" id="fg-label">INDEX</div>
+                <div class="vital-change" id="ch-fg"></div>
+            </div>
+        </div>
+        <div class="vital-canvas-wrap"><canvas id="cv-fg"></canvas></div>
+        <div class="vital-range"><span id="lo-fg">0</span><span id="hi-fg">100</span></div>
+    </div>
+
+    <!-- Health bar -->
+    <div class="health-bar">
+        <span class="health-label">Market Health</span>
+        <div class="health-track">
+            <div class="health-fill" id="health-fill" style="width:50%;background:#85ff85"></div>
+        </div>
+        <div>
+            <div class="health-score" id="health-score">—</div>
+            <div class="health-grade" id="health-grade"></div>
+        </div>
+        <div class="health-vitals">
+            <span id="hv-updated">—</span>
+            <span id="hv-alarms">0 alarms</span>
+            <span id="hv-btcdom">—</span>
+        </div>
+    </div>
+</div>
+
+<!-- Loader -->
+<div id="loader">
+    <svg class="loader-ecg" viewBox="0 0 120 40">
+        <path class="loader-ecg-line" d="M0,20 L20,20 L25,20 L30,5 L35,35 L40,10 L45,25 L50,20 L70,20 L75,20 L80,8 L85,32 L90,15 L95,22 L100,20 L120,20"/>
+    </svg>
+    <div class="loader-text">Reading vitals</div>
+</div>
+
+<script>
+'use strict';
+
+// ─── Vital sign definitions ─────────────────────────────────────────────────
+const VITALS = [
+    { key: 'btc', label: 'Bitcoin',         color: '#f7931a', maxPoints: 200 },
+    { key: 'eth', label: 'Ethereum',         color: '#627eea', maxPoints: 200 },
+    { key: 'mcap', label: 'Total MCap',     color: '#85ff85', maxPoints: 200 },
+    { key: 'vol', label: '24h Volume',       color: '#34d4f1', maxPoints: 200 },
+    { key: 'dom', label: 'BTC Dominance',   color: '#fbbf24', maxPoints: 200 },
+    { key: 'fg',  label: 'Fear & Greed',    color: '#c084fc', maxPoints: 200 },
+];
+
+// Data buffers — each stores { value, time } history
+const buffers = {};
+VITALS.forEach(v => { buffers[v.key] = []; });
+
+// Alarm thresholds
+const ALARMS = {
+    btc:  { lo: null, hi: null, changeThresh: 5 },   // 5% drop/rise
+    eth:  { lo: null, hi: null, changeThresh: 7 },
+    mcap: { lo: null, hi: null, changeThresh: 4 },
+    vol:  { lo: null, hi: null, changeThresh: 20 },
+    dom:  { lo: 35, hi: 70, changeThresh: 3 },
+    fg:   { lo: 15, hi: 85, changeThresh: 15 },
+};
+
+let alarmStates = {};
+VITALS.forEach(v => { alarmStates[v.key] = false; });
+
+let latestData = {};
+let healthScore = 50;
+let lastFetch = 0;
+const FETCH_INTERVAL = 60_000; // 1 minute
+
+// Canvas refs
+const canvases = {};
+const ctxMap = {};
+
+// ─── Init canvases ───────────────────────────────────────────────────────────
+function initCanvases() {
+    VITALS.forEach(v => {
+        const canvas = document.getElementById(`cv-${v.key}`);
+        canvases[v.key] = canvas;
+        ctxMap[v.key] = canvas.getContext('2d');
+        resizeCanvas(v.key);
+    });
+}
+
+function resizeCanvas(key) {
+    const canvas = canvases[key];
+    if (!canvas) return;
+    const rect = canvas.parentElement.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    ctxMap[key].setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+
+window.addEventListener('resize', () => {
+    VITALS.forEach(v => resizeCanvas(v.key));
+});
+
+// ─── Data fetching ───────────────────────────────────────────────────────────
+async function fetchVitals() {
+    try {
+        // Parallel fetch: BTC/ETH prices + global data + fear/greed
+        const _f = window.cfetch || fetch;
+        const [pricesRes, globalRes, fgRes] = await Promise.allSettled([
+            _f('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd&include_24hr_change=true&include_24hr_vol=true')
+                .then(r => r.ok ? r.json() : null),
+            _f('https://api.coingecko.com/api/v3/global')
+                .then(r => r.ok ? r.json() : null),
+            _f('https://api.alternative.me/fng/?limit=2')
+                .then(r => r.ok ? r.json() : null),
+        ]);
+
+        const now = Date.now();
+
+        // BTC
+        if (pricesRes.status === 'fulfilled' && pricesRes.value?.bitcoin) {
+            const btc = pricesRes.value.bitcoin;
+            pushData('btc', btc.usd, now);
+            latestData.btc = {
+                value: btc.usd,
+                change: btc.usd_24h_change,
+                vol: btc.usd_24h_vol,
+            };
+        }
+
+        // ETH
+        if (pricesRes.status === 'fulfilled' && pricesRes.value?.ethereum) {
+            const eth = pricesRes.value.ethereum;
+            pushData('eth', eth.usd, now);
+            latestData.eth = {
+                value: eth.usd,
+                change: eth.usd_24h_change,
+                vol: eth.usd_24h_vol,
+            };
+        }
+
+        // Global market data
+        if (globalRes.status === 'fulfilled' && globalRes.value?.data) {
+            const g = globalRes.value.data;
+            const mcap = g.total_market_cap?.usd || 0;
+            const vol = g.total_volume?.usd || 0;
+            const dom = g.market_cap_percentage?.btc || 0;
+            const mcapChange = g.market_cap_change_percentage_24h_usd || 0;
+
+            pushData('mcap', mcap, now);
+            pushData('vol', vol, now);
+            pushData('dom', dom, now);
+
+            latestData.mcap = { value: mcap, change: mcapChange };
+            latestData.vol = { value: vol, change: 0 };
+            latestData.dom = { value: dom, change: 0 };
+        }
+
+        // Fear & Greed
+        if (fgRes.status === 'fulfilled' && fgRes.value?.data?.[0]) {
+            const fg = fgRes.value.data[0];
+            const fgVal = parseInt(fg.value) || 50;
+            const fgPrev = fgRes.value.data[1] ? parseInt(fgRes.value.data[1].value) : fgVal;
+            pushData('fg', fgVal, now);
+
+            latestData.fg = {
+                value: fgVal,
+                change: fgVal - fgPrev,
+                label: fg.value_classification || '',
+            };
+        }
+
+        lastFetch = now;
+        updateDisplays();
+        computeHealth();
+        checkAlarms();
+
+        // Hide loader
+        const loader = document.getElementById('loader');
+        if (loader && !loader.classList.contains('fade')) {
+            loader.classList.add('fade');
+            setTimeout(() => loader.remove(), 800);
+        }
+
+    } catch (e) {
+        console.error('Fetch error:', e);
+        setTimeout(fetchVitals, 8000);
+    }
+}
+
+function pushData(key, value, time) {
+    const buf = buffers[key];
+    buf.push({ value, time });
+    const vital = VITALS.find(v => v.key === key);
+    if (buf.length > vital.maxPoints) buf.shift();
+}
+
+// ─── Synthetic heartbeat interpolation ───────────────────────────────────────
+// Between API fetches, we generate smooth EKG-like waveforms
+// that oscillate around the latest value, creating the ICU aesthetic
+
+let synthPhase = {};
+VITALS.forEach(v => { synthPhase[v.key] = Math.random() * Math.PI * 2; });
+
+function generateSynthPoint(key, baseValue, t) {
+    if (baseValue == null || baseValue === 0) return baseValue;
+
+    const phase = synthPhase[key];
+    // Different waveforms per vital for visual variety
+    let wave;
+    switch(key) {
+        case 'btc':
+            // Sharp EKG pulse
+            wave = ecgWave(t * 0.8 + phase);
+            return baseValue * (1 + wave * 0.003);
+        case 'eth':
+            // Slightly faster EKG
+            wave = ecgWave(t * 1.0 + phase);
+            return baseValue * (1 + wave * 0.004);
+        case 'mcap':
+            // Slow breathing wave
+            wave = Math.sin(t * 0.3 + phase) * 0.5 + Math.sin(t * 0.7 + phase * 1.3) * 0.3;
+            return baseValue * (1 + wave * 0.001);
+        case 'vol':
+            // Erratic spikes
+            wave = ecgWave(t * 1.2 + phase) + Math.sin(t * 2.1) * 0.3;
+            return baseValue * (1 + wave * 0.005);
+        case 'dom':
+            // Gentle sway
+            wave = Math.sin(t * 0.4 + phase) + Math.sin(t * 0.9 + phase * 0.7) * 0.5;
+            return baseValue + wave * 0.08;
+        case 'fg':
+            // Step-like with drift
+            wave = Math.sin(t * 0.2 + phase);
+            return Math.max(0, Math.min(100, baseValue + wave * 1.5));
+        default:
+            return baseValue;
+    }
+}
+
+// Classic ECG/EKG waveform approximation
+function ecgWave(t) {
+    const cycle = t % (Math.PI * 2);
+    const norm = cycle / (Math.PI * 2);
+
+    // P wave (small bump)
+    if (norm < 0.1) return Math.sin(norm / 0.1 * Math.PI) * 0.2;
+    // Flat
+    if (norm < 0.2) return 0;
+    // Q dip
+    if (norm < 0.25) return -((norm - 0.2) / 0.05) * 0.3;
+    // R spike (sharp up)
+    if (norm < 0.3) return -0.3 + ((norm - 0.25) / 0.05) * 1.3;
+    // S dip
+    if (norm < 0.35) return 1.0 - ((norm - 0.3) / 0.05) * 1.4;
+    // Return to baseline
+    if (norm < 0.45) return -0.4 + ((norm - 0.35) / 0.1) * 0.4;
+    // T wave
+    if (norm < 0.6) return Math.sin((norm - 0.45) / 0.15 * Math.PI) * 0.25;
+    // Flat until next beat
+    return 0;
+}
+
+// ─── Display Updates ─────────────────────────────────────────────────────────
+function updateDisplays() {
+    // BTC
+    if (latestData.btc) {
+        const d = latestData.btc;
+        document.getElementById('val-btc').textContent = '$' + fmtCompact(d.value);
+        setChange('ch-btc', d.change);
+        setRange('btc');
+        colorPanel('btc', d.change);
+    }
+
+    // ETH
+    if (latestData.eth) {
+        const d = latestData.eth;
+        document.getElementById('val-eth').textContent = '$' + fmtCompact(d.value);
+        setChange('ch-eth', d.change);
+        setRange('eth');
+        colorPanel('eth', d.change);
+    }
+
+    // MCap
+    if (latestData.mcap) {
+        const d = latestData.mcap;
+        document.getElementById('val-mcap').textContent = '$' + fmtB(d.value);
+        setChange('ch-mcap', d.change);
+        setRange('mcap');
+        colorPanel('mcap', d.change);
+    }
+
+    // Volume
+    if (latestData.vol) {
+        const d = latestData.vol;
+        document.getElementById('val-vol').textContent = '$' + fmtB(d.value);
+        setChange('ch-vol', d.change);
+        setRange('vol');
+    }
+
+    // BTC Dominance
+    if (latestData.dom) {
+        const d = latestData.dom;
+        document.getElementById('val-dom').textContent = d.value.toFixed(1);
+        setChange('ch-dom', d.change);
+        setRange('dom');
+    }
+
+    // Fear & Greed
+    if (latestData.fg) {
+        const d = latestData.fg;
+        document.getElementById('val-fg').textContent = d.value;
+        document.getElementById('fg-label').textContent = d.label || 'INDEX';
+        setChange('ch-fg', d.change);
+
+        // Color the FG panel based on value
+        const panel = document.getElementById('panel-fg');
+        if (d.value <= 25) panel.style.setProperty('--vital-color', '#ff6b6b');
+        else if (d.value <= 40) panel.style.setProperty('--vital-color', '#fbbf24');
+        else if (d.value <= 60) panel.style.setProperty('--vital-color', '#85ff85');
+        else if (d.value <= 75) panel.style.setProperty('--vital-color', '#34d4f1');
+        else panel.style.setProperty('--vital-color', '#c084fc');
+    }
+}
+
+function setChange(elId, change) {
+    const el = document.getElementById(elId);
+    if (change == null || isNaN(change)) { el.textContent = ''; return; }
+    const sign = change >= 0 ? '+' : '';
+    el.textContent = sign + change.toFixed(2) + '%';
+    el.className = 'vital-change ' + (change >= 0 ? 'pos' : 'neg');
+}
+
+function setRange(key) {
+    const buf = buffers[key];
+    if (buf.length < 2) return;
+    const values = buf.map(b => b.value);
+    const lo = Math.min(...values);
+    const hi = Math.max(...values);
+
+    const fmt = key === 'dom' ? (v => v.toFixed(1) + '%')
+        : key === 'fg' ? (v => Math.round(v))
+        : (v => '$' + fmtCompact(v));
+
+    document.getElementById(`lo-${key}`).textContent = fmt(lo);
+    document.getElementById(`hi-${key}`).textContent = fmt(hi);
+}
+
+function colorPanel(key, change) {
+    const panel = document.getElementById(`panel-${key}`);
+    const vital = VITALS.find(v => v.key === key);
+    // Subtle color tint based on change direction
+    if (change > 0) {
+        panel.querySelector('.vital-value').style.color = vital.color;
+    } else if (change < 0) {
+        panel.querySelector('.vital-value').style.color = '#ff6b6b';
+    }
+}
+
+// ─── Health Score ────────────────────────────────────────────────────────────
+function computeHealth() {
+    let score = 50; // Baseline
+
+    // BTC change contribution (-15 to +15)
+    if (latestData.btc?.change != null) {
+        score += Math.max(-15, Math.min(15, latestData.btc.change * 2));
+    }
+
+    // ETH change contribution (-10 to +10)
+    if (latestData.eth?.change != null) {
+        score += Math.max(-10, Math.min(10, latestData.eth.change * 1.5));
+    }
+
+    // Market cap change (-10 to +10)
+    if (latestData.mcap?.change != null) {
+        score += Math.max(-10, Math.min(10, latestData.mcap.change * 2));
+    }
+
+    // Fear & Greed (-15 to +15)
+    if (latestData.fg?.value != null) {
+        score += (latestData.fg.value - 50) * 0.3;
+    }
+
+    // BTC dominance: extreme values are concerning
+    if (latestData.dom?.value != null) {
+        const domDev = Math.abs(latestData.dom.value - 50);
+        score -= domDev * 0.15;
+    }
+
+    healthScore = Math.max(0, Math.min(100, Math.round(score)));
+
+    // Update display
+    const scoreEl = document.getElementById('health-score');
+    scoreEl.textContent = healthScore;
+
+    const fill = document.getElementById('health-fill');
+    fill.style.width = healthScore + '%';
+
+    // Color based on score
+    let color, grade;
+    if (healthScore >= 80) { color = '#85ff85'; grade = 'Bullish'; }
+    else if (healthScore >= 60) { color = '#34d4f1'; grade = 'Healthy'; }
+    else if (healthScore >= 40) { color = '#fbbf24'; grade = 'Neutral'; }
+    else if (healthScore >= 20) { color = '#ff9f43'; grade = 'Stressed'; }
+    else { color = '#ff6b6b'; grade = 'Critical'; }
+
+    fill.style.background = color;
+    scoreEl.style.color = color;
+    document.getElementById('health-grade').textContent = grade;
+    document.getElementById('health-grade').style.color = color;
+
+    // Health vitals
+    document.getElementById('hv-updated').textContent = 'Updated ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    document.getElementById('hv-btcdom').textContent = latestData.dom ? 'BTC.D ' + latestData.dom.value.toFixed(1) + '%' : '';
+}
+
+// ─── Alarms ──────────────────────────────────────────────────────────────────
+function checkAlarms() {
+    let alarmCount = 0;
+
+    VITALS.forEach(v => {
+        const d = latestData[v.key];
+        if (!d) return;
+
+        const alarm = ALARMS[v.key];
+        let isAlarming = false;
+
+        // Threshold breach
+        if (alarm.lo != null && d.value < alarm.lo) isAlarming = true;
+        if (alarm.hi != null && d.value > alarm.hi) isAlarming = true;
+
+        // Large change
+        if (d.change != null && Math.abs(d.change) > alarm.changeThresh) isAlarming = true;
+
+        alarmStates[v.key] = isAlarming;
+        if (isAlarming) alarmCount++;
+
+        const panel = document.getElementById(`panel-${v.key}`);
+        panel.classList.toggle('alarm', isAlarming);
+    });
+
+    const badge = document.getElementById('alarm-badge');
+    badge.classList.toggle('active', alarmCount > 0);
+    document.getElementById('alarm-count').textContent = alarmCount;
+    document.getElementById('hv-alarms').textContent = alarmCount + ' alarm' + (alarmCount !== 1 ? 's' : '');
+}
+
+// ─── EKG trace rendering ────────────────────────────────────────────────────
+let renderTime = 0;
+
+function renderTraces() {
+    renderTime += 0.05;
+
+    // Clock
+    document.getElementById('clock').textContent = new Date().toLocaleTimeString([], {
+        hour: '2-digit', minute: '2-digit', second: '2-digit',
+    });
+
+    VITALS.forEach(v => {
+        const canvas = canvases[v.key];
+        const c = ctxMap[v.key];
+        if (!canvas || !c) return;
+
+        const w = canvas.clientWidth;
+        const h = canvas.clientHeight;
+        const buf = buffers[v.key];
+
+        c.clearRect(0, 0, w, h);
+
+        // Get base value for synthetic generation
+        const baseValue = buf.length > 0 ? buf[buf.length - 1].value : 0;
+        if (baseValue === 0) return;
+
+        // Build display buffer: real data + synthetic fill
+        const displayPoints = [];
+        const totalPoints = 200;
+
+        // Add real data points
+        for (let i = 0; i < buf.length && i < totalPoints; i++) {
+            displayPoints.push(buf[i].value);
+        }
+
+        // Fill remaining with synthetic heartbeat
+        const synthNeeded = totalPoints - displayPoints.length;
+        for (let i = 0; i < synthNeeded; i++) {
+            const synthT = renderTime + (i * 0.08);
+            displayPoints.push(generateSynthPoint(v.key, baseValue, synthT));
+        }
+
+        // Now also generate a "live" trailing section
+        const livePoints = 60;
+        for (let i = 0; i < livePoints; i++) {
+            const synthT = renderTime + (i * 0.06);
+            displayPoints.push(generateSynthPoint(v.key, baseValue, synthT));
+        }
+
+        const allPoints = displayPoints.slice(-totalPoints);
+        if (allPoints.length < 2) return;
+
+        // Compute range
+        const min = Math.min(...allPoints);
+        const max = Math.max(...allPoints);
+        const range = max - min || 1;
+        const padding = 0.15;
+
+        // Draw trace
+        c.beginPath();
+        allPoints.forEach((val, i) => {
+            const x = (i / (allPoints.length - 1)) * w;
+            const y = h - ((val - min) / range) * h * (1 - padding * 2) - h * padding;
+            if (i === 0) c.moveTo(x, y);
+            else c.lineTo(x, y);
+        });
+
+        // Glow
+        c.strokeStyle = v.color;
+        c.lineWidth = 2.5;
+        c.shadowColor = v.color;
+        c.shadowBlur = 12;
+        c.stroke();
+
+        // Sharp line
+        c.shadowBlur = 0;
+        c.lineWidth = 1.2;
+        c.stroke();
+
+        // Fade-in gradient on left edge
+        const fadeGrad = c.createLinearGradient(0, 0, 40, 0);
+        fadeGrad.addColorStop(0, 'rgba(1,10,4,1)');
+        fadeGrad.addColorStop(1, 'rgba(1,10,4,0)');
+        c.fillStyle = fadeGrad;
+        c.fillRect(0, 0, 40, h);
+
+        // Live dot (pulsing)
+        const lastX = w;
+        const lastY = h - ((allPoints[allPoints.length - 1] - min) / range) * h * (1 - padding * 2) - h * padding;
+        const dotPulse = 2 + Math.sin(renderTime * 4) * 1.5;
+
+        // Dot glow
+        c.beginPath();
+        c.arc(lastX - 2, lastY, dotPulse * 3, 0, Math.PI * 2);
+        const dotGlow = c.createRadialGradient(lastX - 2, lastY, 0, lastX - 2, lastY, dotPulse * 3);
+        dotGlow.addColorStop(0, v.color.replace(')', ',0.3)').replace('rgb', 'rgba'));
+        dotGlow.addColorStop(1, 'rgba(0,0,0,0)');
+        c.fillStyle = dotGlow;
+        c.fill();
+
+        // Dot core
+        c.beginPath();
+        c.arc(lastX - 2, lastY, dotPulse, 0, Math.PI * 2);
+        c.fillStyle = v.color;
+        c.fill();
+
+        // Scanline effect
+        const scanX = (renderTime * 40) % w;
+        const scanGrad = c.createLinearGradient(scanX - 30, 0, scanX + 5, 0);
+        scanGrad.addColorStop(0, 'rgba(1,10,4,0)');
+        scanGrad.addColorStop(0.7, 'rgba(1,10,4,0.6)');
+        scanGrad.addColorStop(1, 'rgba(1,10,4,0.9)');
+        c.fillStyle = scanGrad;
+        c.fillRect(scanX - 30, 0, 35, h);
+
+        // Alarm flash
+        if (alarmStates[v.key]) {
+            const flash = Math.sin(renderTime * 6) * 0.5 + 0.5;
+            c.fillStyle = `rgba(255,60,60,${flash * 0.06})`;
+            c.fillRect(0, 0, w, h);
+        }
+    });
+
+    requestAnimationFrame(renderTraces);
+}
+
+// ─── Utilities ───────────────────────────────────────────────────────────────
+function fmtB(n) {
+    if (n >= 1e12) return (n / 1e12).toFixed(2) + 'T';
+    if (n >= 1e9) return (n / 1e9).toFixed(1) + 'B';
+    if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+    if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+    return n.toFixed(0);
+}
+
+function fmtCompact(n) {
+    if (n == null) return '—';
+    if (n >= 1000) return n.toLocaleString(undefined, { maximumFractionDigits: 0 });
+    if (n >= 1) return n.toLocaleString(undefined, { maximumFractionDigits: 2 });
+    return n.toFixed(4);
+}
+
+// ─── Bootstrap ───────────────────────────────────────────────────────────────
+initCanvases();
+fetchVitals();
+renderTraces();
+
+// Auto-refresh
+setInterval(() => {
+    if (Date.now() - lastFetch >= FETCH_INTERVAL) fetchVitals();
+}, FETCH_INTERVAL);
+
+</script>
+</body>
+</html>

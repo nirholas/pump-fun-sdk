@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="lair-include" content="lair.css material-symbols-rounded" />
+  <meta name="capabilities" content="open_interest" />
+  <meta name="lair-icon" content="insights" />
+  <meta name="lair-perms" content="network" />
+  <title>Open Interest</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; background: var(--col-bg1, #080A19); color: var(--col-txt1, #A7C2F3); font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+    .app { height: 100%; display: flex; flex-direction: column; overflow: hidden; }
+    .header { padding: 10px 14px; display: flex; gap: 10px; align-items: center; justify-content: space-between; background: var(--col-bg2, #0C0F27); border-bottom: 1px solid rgba(112,188,249,0.12); flex-wrap: wrap; }
+    .title { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 700; }
+    .title .material-symbols-rounded { color: var(--colors-accent, rgb(97,121,255)); }
+    .controls { display: flex; align-items: center; gap: 8px; }
+    .btn, select { background: var(--col-bg3, #15183E); color: var(--col-txt1, #A7C2F3); border: 1px solid rgba(112,188,249,0.2); border-radius: 8px; padding: 6px 10px; font-size: 12px; }
+    .btn { cursor: pointer; }
+    .btn:disabled { opacity: 0.6; cursor: default; }
+    .stats { display: grid; grid-template-columns: repeat(4, minmax(150px, 1fr)); gap: 8px; padding: 10px 14px; border-bottom: 1px solid rgba(112,188,249,0.08); }
+    .stat { background: rgba(112,188,249,0.05); border: 1px solid rgba(112,188,249,0.08); border-radius: 10px; padding: 8px 10px; }
+    .stat .k { font-size: 10px; color: #6f7ea8; text-transform: uppercase; letter-spacing: 0.04em; }
+    .stat .v { font-size: 14px; font-weight: 700; margin-top: 2px; }
+    .good { color: var(--col-good, #85FF85); }
+    .bad { color: var(--col-bad, #AC4949); }
+    .neutral { color: #f3bd5d; }
+    .content { flex: 1; display: grid; grid-template-rows: minmax(180px, 52%) minmax(120px, 48%); overflow: hidden; }
+    .table-wrap { overflow: auto; border-bottom: 1px solid rgba(112,188,249,0.08); }
+    table { width: 100%; border-collapse: collapse; min-width: 940px; }
+    thead th { position: sticky; top: 0; background: var(--col-bg2, #0C0F27); text-align: right; padding: 8px 10px; font-size: 11px; color: #7181ac; border-bottom: 1px solid rgba(112,188,249,0.08); }
+    thead th:first-child, tbody td:first-child { text-align: left; }
+    tbody tr { border-bottom: 1px solid rgba(112,188,249,0.06); cursor: pointer; }
+    tbody tr:hover, tbody tr.active { background: rgba(112,188,249,0.06); }
+    tbody td { padding: 8px 10px; font-size: 12px; text-align: right; white-space: nowrap; }
+    .signal { font-weight: 700; }
+    .chart { padding: 10px 14px; display: grid; grid-template-rows: auto 1fr; gap: 8px; min-height: 0; }
+    .chart-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: #7f8cb4; font-size: 12px; }
+    canvas { width: 100%; height: 100%; background: rgba(10,12,29,0.7); border: 1px solid rgba(112,188,249,0.12); border-radius: 10px; }
+    .state { display: flex; align-items: center; justify-content: center; color: #8794be; height: 100%; font-size: 13px; }
+    @media (max-width: 960px) {
+      .stats { grid-template-columns: repeat(2, minmax(140px, 1fr)); }
+      .content { grid-template-rows: 58% 42%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="header">
+      <div class="title"><span class="material-symbols-rounded">insights</span> Open Interest Tracker</div>
+      <div class="controls">
+        <select id="period">
+          <option value="1h">1H</option>
+          <option value="4h">4H</option>
+        </select>
+        <button class="btn" id="refresh">Refresh</button>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><div class="k">Total Market OI</div><div class="v" id="totalOi">—</div></div>
+      <div class="stat"><div class="k">Avg L/S Ratio</div><div class="v" id="avgLs">—</div></div>
+      <div class="stat"><div class="k">Top Trader L/S</div><div class="v" id="avgTopLs">—</div></div>
+      <div class="stat"><div class="k">Last Update</div><div class="v" id="lastUpdate">—</div></div>
+    </div>
+
+    <div class="content">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Coin</th>
+              <th>OI (USD)</th>
+              <th>1h Δ</th>
+              <th>4h Δ</th>
+              <th>24h Δ</th>
+              <th>L/S Ratio</th>
+              <th>Top L/S</th>
+              <th>Signal</th>
+            </tr>
+          </thead>
+          <tbody id="rows"><tr><td colspan="8" class="state">Loading open interest…</td></tr></tbody>
+        </table>
+      </div>
+      <div class="chart">
+        <div class="chart-head">
+          <div id="chartLabel">Select a pair</div>
+          <div>Blue: OI (left axis) • White: Price (right axis)</div>
+        </div>
+        <canvas id="chart" width="1200" height="480"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (() => {
+      const fetchFn = window.cfetch || fetch;
+      const symbols = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'XRPUSDT', 'DOGEUSDT'];
+      const rowsEl = document.getElementById('rows');
+      const totalOiEl = document.getElementById('totalOi');
+      const avgLsEl = document.getElementById('avgLs');
+      const avgTopLsEl = document.getElementById('avgTopLs');
+      const lastUpdateEl = document.getElementById('lastUpdate');
+      const refreshBtn = document.getElementById('refresh');
+      const periodEl = document.getElementById('period');
+      const chartLabel = document.getElementById('chartLabel');
+      const canvas = document.getElementById('chart');
+      const ctx = canvas.getContext('2d');
+
+      let marketRows = [];
+      let selected = null;
+
+      function money(value) {
+        if (!Number.isFinite(value)) return '—';
+        if (value >= 1e9) return `$${(value / 1e9).toFixed(2)}B`;
+        if (value >= 1e6) return `$${(value / 1e6).toFixed(2)}M`;
+        if (value >= 1e3) return `$${(value / 1e3).toFixed(1)}K`;
+        return `$${value.toFixed(0)}`;
+      }
+
+      function pct(v) {
+        if (!Number.isFinite(v)) return '—';
+        return `${v >= 0 ? '+' : ''}${v.toFixed(2)}%`;
+      }
+
+      function klass(v) {
+        if (!Number.isFinite(v)) return 'neutral';
+        return v > 0 ? 'good' : v < 0 ? 'bad' : 'neutral';
+      }
+
+      function signal(oi24, price24) {
+        if (!Number.isFinite(oi24) || !Number.isFinite(price24)) return { text: '⚪ Neutral', cls: 'neutral' };
+        if (oi24 > 0.2 && price24 > 0.2) return { text: '🟢 Bullish', cls: 'good' };
+        if (oi24 > 0.2 && price24 < -0.2) return { text: '🔴 Bearish', cls: 'bad' };
+        if (oi24 < -0.2 && price24 > 0.2) return { text: '🟡 Divergence', cls: 'neutral' };
+        return { text: '⚪ Neutral', cls: 'neutral' };
+      }
+
+      async function json(url) {
+        const res = await fetchFn(url);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      }
+
+      async function loadSymbol(symbol) {
+        const [currentOi, oiHist, longShort, topLs, klines] = await Promise.all([
+          json(`https://fapi.binance.com/fapi/v1/openInterest?symbol=${symbol}`),
+          json(`https://fapi.binance.com/futures/data/openInterestHist?symbol=${symbol}&period=${periodEl.value}&limit=30`),
+          json(`https://fapi.binance.com/futures/data/globalLongShortAccountRatio?symbol=${symbol}&period=1h&limit=30`),
+          json(`https://fapi.binance.com/futures/data/topLongShortPositionRatio?symbol=${symbol}&period=1h&limit=30`),
+          json(`https://fapi.binance.com/fapi/v1/klines?symbol=${symbol}&interval=1h&limit=30`)
+        ]);
+
+        const oiSeries = oiHist.map(d => Number(d.sumOpenInterestValue || 0));
+        const priceSeries = klines.map(k => Number(k[4]));
+
+        const nowOi = Number(currentOi.openInterest || 0) * Number(priceSeries.at(-1) || 0);
+        const oi1h = percentChange(oiSeries, 1);
+        const oi4h = percentChange(oiSeries, 4);
+        const oi24h = percentChange(oiSeries, 24);
+        const p24h = percentChange(priceSeries, 24);
+        const ls = Number(longShort.at(-1)?.longShortRatio || 0);
+        const tls = Number(topLs.at(-1)?.longShortRatio || 0);
+
+        return {
+          symbol,
+          oiUsd: nowOi,
+          oi1h,
+          oi4h,
+          oi24h,
+          price24h: p24h,
+          ls,
+          tls,
+          oiSeries,
+          priceSeries
+        };
+      }
+
+      function percentChange(series, steps) {
+        if (!Array.isArray(series) || series.length <= steps) return NaN;
+        const a = Number(series[series.length - 1]);
+        const b = Number(series[series.length - 1 - steps]);
+        if (!Number.isFinite(a) || !Number.isFinite(b) || b === 0) return NaN;
+        return ((a - b) / b) * 100;
+      }
+
+      function renderRows() {
+        if (!marketRows.length) {
+          rowsEl.innerHTML = '<tr><td colspan="8" class="state">No open-interest data available</td></tr>';
+          return;
+        }
+
+        const sorted = [...marketRows].sort((a, b) => b.oiUsd - a.oiUsd);
+        rowsEl.innerHTML = sorted.map(row => {
+          const s = signal(row.oi24h, row.price24h);
+          return `<tr data-symbol="${row.symbol}" class="${selected === row.symbol ? 'active' : ''}">
+            <td><strong>${row.symbol.replace('USDT', '')}</strong></td>
+            <td>${money(row.oiUsd)}</td>
+            <td class="${klass(row.oi1h)}">${pct(row.oi1h)}</td>
+            <td class="${klass(row.oi4h)}">${pct(row.oi4h)}</td>
+            <td class="${klass(row.oi24h)}">${pct(row.oi24h)}</td>
+            <td>${Number.isFinite(row.ls) ? row.ls.toFixed(2) : '—'}</td>
+            <td>${Number.isFinite(row.tls) ? row.tls.toFixed(2) : '—'}</td>
+            <td class="signal ${s.cls}">${s.text}</td>
+          </tr>`;
+        }).join('');
+
+        rowsEl.querySelectorAll('tr[data-symbol]').forEach(tr => {
+          tr.addEventListener('click', () => {
+            selected = tr.dataset.symbol;
+            renderRows();
+            drawSelected();
+          });
+        });
+      }
+
+      function drawSelected() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        const row = marketRows.find(r => r.symbol === selected) || marketRows[0];
+        if (!row) return;
+        selected = row.symbol;
+
+        chartLabel.textContent = `${row.symbol} OI vs Price (${row.oiSeries.length} pts)`;
+        drawDual(row.oiSeries, row.priceSeries);
+      }
+
+      function drawDual(oiSeries, priceSeries) {
+        const w = canvas.width;
+        const h = canvas.height;
+        const pad = { t: 24, r: 60, b: 34, l: 70 };
+
+        const n = Math.min(oiSeries.length, priceSeries.length);
+        if (n < 3) return;
+
+        const oi = oiSeries.slice(-n);
+        const pr = priceSeries.slice(-n);
+
+        const minOi = Math.min(...oi);
+        const maxOi = Math.max(...oi);
+        const minPr = Math.min(...pr);
+        const maxPr = Math.max(...pr);
+
+        const x = i => pad.l + (i / (n - 1)) * (w - pad.l - pad.r);
+        const yOi = v => pad.t + (1 - (v - minOi) / (maxOi - minOi || 1)) * (h - pad.t - pad.b);
+        const yPr = v => pad.t + (1 - (v - minPr) / (maxPr - minPr || 1)) * (h - pad.t - pad.b);
+
+        ctx.strokeStyle = 'rgba(112,188,249,0.18)';
+        ctx.lineWidth = 1;
+        for (let i = 0; i <= 4; i++) {
+          const y = pad.t + (i / 4) * (h - pad.t - pad.b);
+          ctx.beginPath();
+          ctx.moveTo(pad.l, y);
+          ctx.lineTo(w - pad.r, y);
+          ctx.stroke();
+        }
+
+        // Divergence background highlights
+        for (let i = 1; i < n; i++) {
+          const oiDelta = oi[i] - oi[i - 1];
+          const pDelta = pr[i] - pr[i - 1];
+          if (oiDelta * pDelta < 0) {
+            const x1 = x(i - 1);
+            const x2 = x(i);
+            ctx.fillStyle = 'rgba(243,189,93,0.12)';
+            ctx.fillRect(x1, pad.t, x2 - x1, h - pad.t - pad.b);
+          }
+        }
+
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = 'rgb(97,121,255)';
+        ctx.beginPath();
+        oi.forEach((v, i) => {
+          const px = x(i), py = yOi(v);
+          i ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
+        });
+        ctx.stroke();
+
+        ctx.strokeStyle = '#ffffff';
+        ctx.beginPath();
+        pr.forEach((v, i) => {
+          const px = x(i), py = yPr(v);
+          i ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
+        });
+        ctx.stroke();
+
+        ctx.fillStyle = '#89a4d8';
+        ctx.font = '11px Inter, sans-serif';
+        ctx.fillText(`OI ${money(minOi)} - ${money(maxOi)}`, 10, 16);
+        ctx.fillText(`Price $${minPr.toFixed(2)} - $${maxPr.toFixed(2)}`, w - 220, 16);
+      }
+
+      function renderTopStats() {
+        const valid = marketRows.filter(r => Number.isFinite(r.oiUsd));
+        const totalOi = valid.reduce((sum, r) => sum + r.oiUsd, 0);
+        const avgLs = average(valid.map(v => v.ls));
+        const avgTopLs = average(valid.map(v => v.tls));
+
+        totalOiEl.textContent = money(totalOi);
+        avgLsEl.textContent = Number.isFinite(avgLs) ? avgLs.toFixed(2) : '—';
+        avgTopLsEl.textContent = Number.isFinite(avgTopLs) ? avgTopLs.toFixed(2) : '—';
+        lastUpdateEl.textContent = new Date().toLocaleTimeString();
+      }
+
+      function average(values) {
+        const nums = values.filter(Number.isFinite);
+        if (!nums.length) return NaN;
+        return nums.reduce((a, b) => a + b, 0) / nums.length;
+      }
+
+      async function loadAll() {
+        refreshBtn.disabled = true;
+        refreshBtn.textContent = 'Refreshing…';
+        rowsEl.innerHTML = '<tr><td colspan="8" class="state">Loading open-interest data…</td></tr>';
+        try {
+          const results = await Promise.allSettled(symbols.map(loadSymbol));
+          marketRows = results.filter(r => r.status === 'fulfilled').map(r => r.value);
+          if (!selected && marketRows.length) selected = marketRows[0].symbol;
+          renderTopStats();
+          renderRows();
+          drawSelected();
+        } catch (error) {
+          rowsEl.innerHTML = `<tr><td colspan="8" class="state">Failed to load data: ${error.message}</td></tr>`;
+        } finally {
+          refreshBtn.disabled = false;
+          refreshBtn.textContent = 'Refresh';
+        }
+      }
+
+      periodEl.addEventListener('change', loadAll);
+      refreshBtn.addEventListener('click', loadAll);
+      loadAll();
+      setInterval(loadAll, 120000);
+      if (typeof window.greenflag === 'function') window.greenflag();
+    })();
+  </script>
+</body>
+</html>

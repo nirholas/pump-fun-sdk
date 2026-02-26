@@ -1,0 +1,1261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="lair-include" content="lair.css">
+    <meta name="capabilities" content="crypto_calc">
+    <meta name="lair-icon" content="calculate">
+    <meta name="lair-perms" content="network" />
+    <title>Crypto Calculator</title>
+    <style>
+        :root {
+            --col-bg1: #101010;
+            --col-bg2: #171717;
+            --col-bg3: #222222;
+            --col-txt1: white;
+            --col-txt2: #aaa;
+            --colors-accent: rgb(97, 121, 255);
+            --col-good: #5be45b;
+            --col-bad: #d44343;
+            --col-warn: #f0a030;
+            --siz-radius1: 0.5em;
+            --siz-radius2: 0.375em;
+            --font-size-small: 0.75em;
+            --box-crisp-col: #333;
+        }
+
+        html { height: 100%; }
+
+        body {
+            margin: 0;
+            height: 100%;
+            background: var(--col-bg1);
+            color: var(--col-txt1);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            overflow-y: auto;
+        }
+
+        * { box-sizing: border-box; }
+
+        .app {
+            max-width: 560px;
+            margin: 0 auto;
+            padding: 0.75em;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 0.5em;
+            margin-bottom: 0.6em;
+        }
+        .header h1 {
+            font-size: 1.15em;
+            font-weight: 700;
+            margin: 0;
+        }
+        .header .icon { font-size: 1.3em; }
+
+        /* Tab Bar */
+        .tab-bar {
+            display: flex;
+            gap: 0;
+            background: var(--col-bg2);
+            border-radius: var(--siz-radius1);
+            border: 1px solid var(--box-crisp-col);
+            padding: 3px;
+            margin-bottom: 0.75em;
+            overflow-x: auto;
+        }
+        .tab-bar button {
+            flex: 1;
+            min-width: 0;
+            background: transparent;
+            border: none;
+            color: var(--col-txt2);
+            font-size: 0.72em;
+            font-weight: 500;
+            padding: 0.55em 0.3em;
+            border-radius: calc(var(--siz-radius1) - 2px);
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.15em;
+            white-space: nowrap;
+        }
+        .tab-bar button .tab-icon { font-size: 1.2em; }
+        .tab-bar button:hover { color: var(--col-txt1); }
+        .tab-bar button.active {
+            background: var(--colors-accent);
+            color: #fff;
+            font-weight: 600;
+        }
+
+        /* Tab Content */
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* Form Elements */
+        .input-group {
+            margin-bottom: 0.6em;
+        }
+        .input-group label {
+            display: block;
+            font-size: var(--font-size-small);
+            color: var(--col-txt2);
+            margin-bottom: 0.25em;
+            font-weight: 500;
+        }
+        .input-group input,
+        .input-group select {
+            width: 100%;
+            padding: 0.55em 0.7em;
+            background: var(--col-bg2);
+            border: 1px solid var(--box-crisp-col);
+            border-radius: var(--siz-radius2);
+            color: var(--col-txt1);
+            font-size: 0.9em;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .input-group input:focus,
+        .input-group select:focus {
+            border-color: var(--colors-accent);
+        }
+        .input-group input::placeholder {
+            color: #555;
+        }
+        .input-group select option {
+            background: var(--col-bg2);
+            color: var(--col-txt1);
+        }
+
+        .input-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5em;
+        }
+
+        .input-row-3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 0.5em;
+        }
+
+        .checkbox-row {
+            display: flex;
+            align-items: center;
+            gap: 0.5em;
+            margin-bottom: 0.6em;
+        }
+        .checkbox-row input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            accent-color: var(--colors-accent);
+            cursor: pointer;
+        }
+        .checkbox-row label {
+            font-size: var(--font-size-small);
+            color: var(--col-txt2);
+            cursor: pointer;
+        }
+
+        /* Slider */
+        .slider-group {
+            margin-bottom: 0.6em;
+        }
+        .slider-group .slider-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.25em;
+        }
+        .slider-group label {
+            font-size: var(--font-size-small);
+            color: var(--col-txt2);
+            font-weight: 500;
+        }
+        .slider-group .slider-val {
+            font-size: var(--font-size-small);
+            color: var(--col-txt1);
+            font-weight: 600;
+            min-width: 4em;
+            text-align: right;
+        }
+        .slider-group input[type="range"] {
+            width: 100%;
+            height: 6px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: var(--col-bg3);
+            border-radius: 3px;
+            outline: none;
+        }
+        .slider-group input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--colors-accent);
+            cursor: pointer;
+        }
+        .slider-group input[type="range"]::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--colors-accent);
+            cursor: pointer;
+            border: none;
+        }
+
+        /* Results Card */
+        .results-card {
+            background: var(--col-bg2);
+            border: 1px solid var(--box-crisp-col);
+            border-radius: var(--siz-radius1);
+            padding: 0.85em;
+            margin-top: 0.5em;
+        }
+        .results-card .results-title {
+            font-size: var(--font-size-small);
+            color: var(--col-txt2);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.6em;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .result-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.35em 0;
+        }
+        .result-row + .result-row {
+            border-top: 1px solid rgba(255,255,255,0.05);
+        }
+        .result-label {
+            font-size: 0.82em;
+            color: var(--col-txt2);
+        }
+        .result-value {
+            font-size: 0.9em;
+            font-weight: 600;
+        }
+        .result-value.big {
+            font-size: 1.3em;
+            font-weight: 800;
+        }
+        .result-value.profit { color: var(--col-good); }
+        .result-value.loss { color: var(--col-bad); }
+        .result-value.neutral { color: var(--col-txt1); }
+        .result-value.warn { color: var(--col-warn); }
+
+        .clear-btn {
+            background: none;
+            border: 1px solid var(--box-crisp-col);
+            color: var(--col-txt2);
+            font-size: 0.65em;
+            padding: 0.3em 0.6em;
+            border-radius: var(--siz-radius2);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .clear-btn:hover {
+            border-color: var(--col-bad);
+            color: var(--col-bad);
+        }
+
+        /* IL Graph */
+        .il-graph-wrap {
+            background: var(--col-bg2);
+            border: 1px solid var(--box-crisp-col);
+            border-radius: var(--siz-radius1);
+            padding: 0.5em;
+            margin-top: 0.5em;
+            position: relative;
+        }
+        .il-graph-wrap canvas {
+            width: 100%;
+            height: 200px;
+            display: block;
+        }
+
+        /* DCA loading */
+        .dca-loading {
+            text-align: center;
+            padding: 1.5em;
+            color: var(--col-txt2);
+            font-size: 0.85em;
+        }
+        .dca-loading .spin {
+            display: inline-block;
+            animation: spin 0.8s linear infinite;
+            margin-right: 0.3em;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Staking table */
+        .rewards-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.4em;
+            margin-top: 0.5em;
+        }
+        .reward-cell {
+            background: var(--col-bg3);
+            border-radius: var(--siz-radius2);
+            padding: 0.55em 0.65em;
+            text-align: center;
+        }
+        .reward-cell .rc-label {
+            font-size: 0.65em;
+            color: var(--col-txt2);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.2em;
+        }
+        .reward-cell .rc-val {
+            font-size: 0.95em;
+            font-weight: 700;
+            color: var(--col-good);
+        }
+
+        /* Toggle between compound/simple */
+        .toggle-bar {
+            display: flex;
+            gap: 0;
+            background: var(--col-bg3);
+            border-radius: var(--siz-radius2);
+            padding: 2px;
+            margin-bottom: 0.6em;
+        }
+        .toggle-bar button {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--col-txt2);
+            font-size: 0.75em;
+            font-weight: 500;
+            padding: 0.4em 0.5em;
+            border-radius: calc(var(--siz-radius2) - 1px);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .toggle-bar button.active {
+            background: var(--colors-accent);
+            color: #fff;
+            font-weight: 600;
+        }
+
+        /* Section label */
+        .section-label {
+            font-size: 0.7em;
+            color: var(--col-txt2);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin: 0.8em 0 0.4em;
+        }
+
+        /* Helper text */
+        .helper {
+            font-size: 0.7em;
+            color: #555;
+            margin-top: 0.15em;
+        }
+
+        /* Fetch current btn */
+        .fetch-btn {
+            background: var(--col-bg3);
+            border: 1px solid var(--box-crisp-col);
+            color: var(--colors-accent);
+            font-size: 0.7em;
+            padding: 0.3em 0.6em;
+            border-radius: var(--siz-radius2);
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-left: 0.3em;
+        }
+        .fetch-btn:hover {
+            background: var(--colors-accent);
+            color: #fff;
+        }
+        .fetch-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .sell-row {
+            display: flex;
+            align-items: flex-end;
+            gap: 0.4em;
+        }
+        .sell-row .input-group { flex: 1; margin-bottom: 0; }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <div class="header">
+            <span class="icon">🧮</span>
+            <h1>Crypto Calculator</h1>
+        </div>
+
+        <div class="tab-bar">
+            <button class="active" data-tab="invest" title="Investment Calculator">
+                <span class="tab-icon">💰</span> Invest
+            </button>
+            <button data-tab="dca" title="DCA Calculator">
+                <span class="tab-icon">📊</span> DCA
+            </button>
+            <button data-tab="il" title="Impermanent Loss">
+                <span class="tab-icon">💧</span> IL
+            </button>
+            <button data-tab="staking" title="Staking Rewards">
+                <span class="tab-icon">🥩</span> Staking
+            </button>
+        </div>
+
+        <!-- Investment Calculator -->
+        <div id="tab-invest" class="tab-content active">
+            <div class="input-group">
+                <label>Investment Amount ($)</label>
+                <input type="number" id="inv-amount" placeholder="1000" min="0" step="any">
+            </div>
+            <div class="input-row">
+                <div class="input-group">
+                    <label>Buy Price ($)</label>
+                    <input type="number" id="inv-buy" placeholder="50000" min="0" step="any">
+                </div>
+                <div class="input-group">
+                    <label>Sell Price ($)</label>
+                    <div class="sell-row">
+                        <div class="input-group">
+                            <input type="number" id="inv-sell" placeholder="65000" min="0" step="any">
+                        </div>
+                        <button class="fetch-btn" id="inv-fetch-btn" title="Fetch BTC current price">📡 Live</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="checkbox-row">
+                <input type="checkbox" id="inv-fees-toggle">
+                <label for="inv-fees-toggle">Include trading fees</label>
+            </div>
+            <div id="inv-fees-section" style="display:none;">
+                <div class="input-row">
+                    <div class="input-group">
+                        <label>Entry Fee (%)</label>
+                        <input type="number" id="inv-entry-fee" placeholder="0.1" min="0" step="any" value="0.1">
+                    </div>
+                    <div class="input-group">
+                        <label>Exit Fee (%)</label>
+                        <input type="number" id="inv-exit-fee" placeholder="0.1" min="0" step="any" value="0.1">
+                    </div>
+                </div>
+            </div>
+
+            <div class="results-card" id="inv-results">
+                <div class="results-title">
+                    <span>📈 Results</span>
+                    <button class="clear-btn" data-clear="invest">Clear</button>
+                </div>
+                <div class="result-row">
+                    <span class="result-label">Tokens Acquired</span>
+                    <span class="result-value neutral" id="inv-tokens">—</span>
+                </div>
+                <div class="result-row">
+                    <span class="result-label">Total Value at Sell</span>
+                    <span class="result-value neutral" id="inv-total">—</span>
+                </div>
+                <div class="result-row">
+                    <span class="result-label">Profit / Loss</span>
+                    <span class="result-value big neutral" id="inv-pnl">—</span>
+                </div>
+                <div class="result-row">
+                    <span class="result-label">Return %</span>
+                    <span class="result-value neutral" id="inv-pct">—</span>
+                </div>
+                <div class="result-row" id="inv-fees-row" style="display:none;">
+                    <span class="result-label">Total Fees Paid</span>
+                    <span class="result-value warn" id="inv-fees-total">—</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- DCA Calculator -->
+        <div id="tab-dca" class="tab-content">
+            <div class="input-row-3">
+                <div class="input-group">
+                    <label>Monthly ($)</label>
+                    <input type="number" id="dca-amount" placeholder="100" min="1" step="any">
+                </div>
+                <div class="input-group">
+                    <label>Token</label>
+                    <select id="dca-token">
+                        <option value="bitcoin">Bitcoin</option>
+                        <option value="ethereum">Ethereum</option>
+                        <option value="solana">Solana</option>
+                        <option value="binancecoin">BNB</option>
+                        <option value="cardano">Cardano</option>
+                        <option value="ripple">XRP</option>
+                        <option value="dogecoin">Dogecoin</option>
+                        <option value="polkadot">Polkadot</option>
+                        <option value="avalanche-2">Avalanche</option>
+                        <option value="chainlink">Chainlink</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>Months</label>
+                    <input type="number" id="dca-months" placeholder="12" min="1" max="60" step="1" value="12">
+                </div>
+            </div>
+            <button class="fetch-btn" id="dca-calc-btn" style="width:100%;padding:0.5em;font-size:0.85em;margin-top:0.3em;">📊 Calculate DCA</button>
+
+            <div id="dca-loading" class="dca-loading" style="display:none;">
+                <span class="spin">⏳</span> Fetching historical prices…
+            </div>
+
+            <div class="results-card" id="dca-results" style="display:none;">
+                <div class="results-title">
+                    <span>📊 DCA Results</span>
+                    <button class="clear-btn" data-clear="dca">Clear</button>
+                </div>
+                <div class="result-row">
+                    <span class="result-label">Total Invested</span>
+                    <span class="result-value neutral" id="dca-invested">—</span>
+                </div>
+                <div class="result-row">
+                    <span class="result-label">Tokens Accumulated</span>
+                    <span class="result-value neutral" id="dca-tokens">—</span>
+                </div>
+                <div class="result-row">
+                    <span class="result-label">Current Value</span>
+                    <span class="result-value neutral" id="dca-value">—</span>
+                </div>
+                <div class="result-row">
+                    <span class="result-label">Profit / Loss</span>
+                    <span class="result-value big neutral" id="dca-pnl">—</span>
+                </div>
+                <div class="result-row">
+                    <span class="result-label">ROI %</span>
+                    <span class="result-value neutral" id="dca-roi">—</span>
+                </div>
+                <div class="result-row">
+                    <span class="result-label">Avg Buy Price</span>
+                    <span class="result-value neutral" id="dca-avg">—</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Impermanent Loss Calculator -->
+        <div id="tab-il" class="tab-content">
+            <div class="slider-group">
+                <div class="slider-header">
+                    <label>Token A Price Change</label>
+                    <span class="slider-val" id="il-a-val">0%</span>
+                </div>
+                <input type="range" id="il-a" min="-90" max="500" value="0" step="1">
+            </div>
+            <div class="slider-group">
+                <div class="slider-header">
+                    <label>Token B Price Change</label>
+                    <span class="slider-val" id="il-b-val">0%</span>
+                </div>
+                <input type="range" id="il-b" min="-90" max="500" value="0" step="1">
+            </div>
+            <div class="input-group">
+                <label>Initial LP Position ($) <span style="color:#555">— optional</span></label>
+                <input type="number" id="il-deposit" placeholder="10000" min="0" step="any" value="10000">
+            </div>
+
+            <div class="results-card">
+                <div class="results-title">
+                    <span>💧 Impermanent Loss</span>
+                    <button class="clear-btn" data-clear="il">Clear</button>
+                </div>
+                <div class="result-row">
+                    <span class="result-label">Impermanent Loss</span>
+                    <span class="result-value big loss" id="il-pct">0.00%</span>
+                </div>
+                <div class="result-row">
+                    <span class="result-label">HODL Value</span>
+                    <span class="result-value neutral" id="il-hodl">—</span>
+                </div>
+                <div class="result-row">
+                    <span class="result-label">LP Value</span>
+                    <span class="result-value neutral" id="il-lp">—</span>
+                </div>
+                <div class="result-row">
+                    <span class="result-label">Loss Amount</span>
+                    <span class="result-value loss" id="il-loss-amt">—</span>
+                </div>
+            </div>
+
+            <div class="il-graph-wrap">
+                <div style="font-size:0.7em;color:var(--col-txt2);margin-bottom:0.3em;">IL Curve — Token A price change vs IL %</div>
+                <canvas id="il-canvas" width="520" height="200"></canvas>
+            </div>
+        </div>
+
+        <!-- Staking Rewards Calculator -->
+        <div id="tab-staking" class="tab-content">
+            <div class="input-row-3">
+                <div class="input-group">
+                    <label>Amount Staked ($)</label>
+                    <input type="number" id="stk-amount" placeholder="10000" min="0" step="any">
+                </div>
+                <div class="input-group">
+                    <label>APY (%)</label>
+                    <input type="number" id="stk-apy" placeholder="5.5" min="0" step="any">
+                </div>
+                <div class="input-group">
+                    <label>Period (months)</label>
+                    <input type="number" id="stk-months" placeholder="12" min="1" max="120" step="1" value="12">
+                </div>
+            </div>
+
+            <div class="toggle-bar">
+                <button class="active" data-mode="compound">Compound</button>
+                <button data-mode="simple">Simple</button>
+            </div>
+
+            <div class="results-card">
+                <div class="results-title">
+                    <span>🥩 Staking Rewards</span>
+                    <button class="clear-btn" data-clear="staking">Clear</button>
+                </div>
+                <div class="result-row">
+                    <span class="result-label">Total Value</span>
+                    <span class="result-value big profit" id="stk-total">—</span>
+                </div>
+                <div class="result-row">
+                    <span class="result-label">Total Rewards</span>
+                    <span class="result-value profit" id="stk-rewards">—</span>
+                </div>
+                <div class="result-row">
+                    <span class="result-label">Effective APY</span>
+                    <span class="result-value neutral" id="stk-effective">—</span>
+                </div>
+            </div>
+
+            <div class="rewards-grid" id="stk-grid">
+                <div class="reward-cell">
+                    <div class="rc-label">Daily</div>
+                    <div class="rc-val" id="stk-daily">—</div>
+                </div>
+                <div class="reward-cell">
+                    <div class="rc-label">Weekly</div>
+                    <div class="rc-val" id="stk-weekly">—</div>
+                </div>
+                <div class="reward-cell">
+                    <div class="rc-label">Monthly</div>
+                    <div class="rc-val" id="stk-monthly">—</div>
+                </div>
+                <div class="reward-cell">
+                    <div class="rc-label">Yearly</div>
+                    <div class="rc-val" id="stk-yearly">—</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    (function() {
+        'use strict';
+        const fetchFn = window.cfetch || fetch;
+
+        // ─── Helpers ───
+        function $(sel) { return document.querySelector(sel); }
+        function $$(sel) { return document.querySelectorAll(sel); }
+        function fmt(n, dec) {
+            if (n == null || isNaN(n)) return '—';
+            dec = dec != null ? dec : 2;
+            return '$' + Number(n).toLocaleString('en-US', { minimumFractionDigits: dec, maximumFractionDigits: dec });
+        }
+        function fmtPct(n) {
+            if (n == null || isNaN(n)) return '—';
+            return (n >= 0 ? '+' : '') + n.toFixed(2) + '%';
+        }
+        function fmtNum(n, dec) {
+            if (n == null || isNaN(n)) return '—';
+            dec = dec != null ? dec : 6;
+            return Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: dec });
+        }
+        function pnlClass(v) {
+            if (v > 0) return 'profit';
+            if (v < 0) return 'loss';
+            return 'neutral';
+        }
+        function saveState(key, obj) {
+            try { localStorage.setItem('cc_' + key, JSON.stringify(obj)); } catch(e) {}
+        }
+        function loadState(key) {
+            try { return JSON.parse(localStorage.getItem('cc_' + key)) || {}; } catch(e) { return {}; }
+        }
+
+        // ─── Tab Switching ───
+        $$('.tab-bar button').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                $$('.tab-bar button').forEach(function(b) { b.classList.remove('active'); });
+                btn.classList.add('active');
+                $$('.tab-content').forEach(function(t) { t.classList.remove('active'); });
+                $('#tab-' + btn.dataset.tab).classList.add('active');
+                if (btn.dataset.tab === 'il') drawILGraph();
+            });
+        });
+
+        // ─── Clear Buttons ───
+        $$('.clear-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var tab = btn.dataset.clear;
+                if (tab === 'invest') clearInvest();
+                if (tab === 'dca') clearDCA();
+                if (tab === 'il') clearIL();
+                if (tab === 'staking') clearStaking();
+            });
+        });
+
+        // ═══════════════════════════════════════
+        // 1. INVESTMENT CALCULATOR
+        // ═══════════════════════════════════════
+        var invInputs = ['inv-amount', 'inv-buy', 'inv-sell', 'inv-entry-fee', 'inv-exit-fee'];
+        invInputs.forEach(function(id) {
+            $('#' + id).addEventListener('input', calcInvest);
+        });
+
+        $('#inv-fees-toggle').addEventListener('change', function() {
+            var show = this.checked;
+            $('#inv-fees-section').style.display = show ? 'block' : 'none';
+            $('#inv-fees-row').style.display = show ? 'flex' : 'none';
+            calcInvest();
+        });
+
+        $('#inv-fetch-btn').addEventListener('click', function() {
+            var btn = this;
+            btn.disabled = true;
+            btn.textContent = '⏳';
+            fetchFn('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd')
+                .then(function(r) { return r.json(); })
+                .then(function(d) {
+                    if (d.bitcoin && d.bitcoin.usd) {
+                        $('#inv-sell').value = d.bitcoin.usd;
+                        calcInvest();
+                    }
+                })
+                .catch(function() {})
+                .finally(function() {
+                    btn.disabled = false;
+                    btn.textContent = '📡 Live';
+                });
+        });
+
+        function calcInvest() {
+            var amount = parseFloat($('#inv-amount').value);
+            var buy = parseFloat($('#inv-buy').value);
+            var sell = parseFloat($('#inv-sell').value);
+            var hasFees = $('#inv-fees-toggle').checked;
+            var entryFee = hasFees ? (parseFloat($('#inv-entry-fee').value) || 0) / 100 : 0;
+            var exitFee = hasFees ? (parseFloat($('#inv-exit-fee').value) || 0) / 100 : 0;
+
+            saveState('invest', {
+                amount: $('#inv-amount').value,
+                buy: $('#inv-buy').value,
+                sell: $('#inv-sell').value,
+                fees: hasFees,
+                entryFee: $('#inv-entry-fee').value,
+                exitFee: $('#inv-exit-fee').value
+            });
+
+            if (!amount || !buy || !sell || buy <= 0) {
+                setInvResults();
+                return;
+            }
+
+            var investAfterFee = amount * (1 - entryFee);
+            var tokens = investAfterFee / buy;
+            var grossValue = tokens * sell;
+            var totalExitFees = grossValue * exitFee;
+            var netValue = grossValue - totalExitFees;
+            var pnl = netValue - amount;
+            var pct = (pnl / amount) * 100;
+            var totalFees = (amount * entryFee) + totalExitFees;
+
+            $('#inv-tokens').textContent = fmtNum(tokens);
+            $('#inv-tokens').className = 'result-value neutral';
+            $('#inv-total').textContent = fmt(netValue);
+            $('#inv-total').className = 'result-value ' + pnlClass(pnl);
+            $('#inv-pnl').textContent = fmt(pnl);
+            $('#inv-pnl').className = 'result-value big ' + pnlClass(pnl);
+            $('#inv-pct').textContent = fmtPct(pct);
+            $('#inv-pct').className = 'result-value ' + pnlClass(pnl);
+
+            if (hasFees) {
+                $('#inv-fees-total').textContent = fmt(totalFees);
+            }
+        }
+
+        function setInvResults() {
+            ['inv-tokens', 'inv-total', 'inv-pnl', 'inv-pct', 'inv-fees-total'].forEach(function(id) {
+                $('#' + id).textContent = '—';
+                $('#' + id).className = 'result-value neutral';
+            });
+            $('#inv-pnl').className = 'result-value big neutral';
+        }
+
+        function clearInvest() {
+            $('#inv-amount').value = '';
+            $('#inv-buy').value = '';
+            $('#inv-sell').value = '';
+            $('#inv-fees-toggle').checked = false;
+            $('#inv-fees-section').style.display = 'none';
+            $('#inv-fees-row').style.display = 'none';
+            setInvResults();
+            saveState('invest', {});
+        }
+
+        // Restore invest state
+        (function() {
+            var s = loadState('invest');
+            if (s.amount) $('#inv-amount').value = s.amount;
+            if (s.buy) $('#inv-buy').value = s.buy;
+            if (s.sell) $('#inv-sell').value = s.sell;
+            if (s.fees) {
+                $('#inv-fees-toggle').checked = true;
+                $('#inv-fees-section').style.display = 'block';
+                $('#inv-fees-row').style.display = 'flex';
+            }
+            if (s.entryFee) $('#inv-entry-fee').value = s.entryFee;
+            if (s.exitFee) $('#inv-exit-fee').value = s.exitFee;
+            calcInvest();
+        })();
+
+
+        // ═══════════════════════════════════════
+        // 2. DCA CALCULATOR
+        // ═══════════════════════════════════════
+        $('#dca-calc-btn').addEventListener('click', calcDCA);
+
+        function calcDCA() {
+            var monthly = parseFloat($('#dca-amount').value);
+            var token = $('#dca-token').value;
+            var months = parseInt($('#dca-months').value);
+
+            if (!monthly || !months || months < 1) return;
+
+            saveState('dca', {
+                amount: $('#dca-amount').value,
+                token: token,
+                months: $('#dca-months').value
+            });
+
+            var days = months * 30;
+            var url = 'https://api.coingecko.com/api/v3/coins/' + token + '/market_chart?vs_currency=usd&days=' + days;
+
+            $('#dca-loading').style.display = 'block';
+            $('#dca-results').style.display = 'none';
+
+            fetchFn(url)
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (!data.prices || data.prices.length === 0) {
+                        $('#dca-loading').innerHTML = '❌ No data available';
+                        return;
+                    }
+
+                    var prices = data.prices;
+                    var currentPrice = prices[prices.length - 1][1];
+
+                    // Sample monthly prices (roughly every 30 days)
+                    var monthlyPrices = [];
+                    var interval = Math.floor(prices.length / months);
+                    if (interval < 1) interval = 1;
+                    for (var i = 0; i < months; i++) {
+                        var idx = Math.min(i * interval, prices.length - 1);
+                        monthlyPrices.push(prices[idx][1]);
+                    }
+
+                    var totalInvested = monthly * months;
+                    var totalTokens = 0;
+                    for (var j = 0; j < monthlyPrices.length; j++) {
+                        totalTokens += monthly / monthlyPrices[j];
+                    }
+
+                    var currentValue = totalTokens * currentPrice;
+                    var pnl = currentValue - totalInvested;
+                    var roi = (pnl / totalInvested) * 100;
+                    var avgPrice = totalInvested / totalTokens;
+
+                    $('#dca-invested').textContent = fmt(totalInvested);
+                    $('#dca-tokens').textContent = fmtNum(totalTokens, 8);
+                    $('#dca-tokens').className = 'result-value neutral';
+                    $('#dca-value').textContent = fmt(currentValue);
+                    $('#dca-value').className = 'result-value ' + pnlClass(pnl);
+                    $('#dca-pnl').textContent = fmt(pnl);
+                    $('#dca-pnl').className = 'result-value big ' + pnlClass(pnl);
+                    $('#dca-roi').textContent = fmtPct(roi);
+                    $('#dca-roi').className = 'result-value ' + pnlClass(pnl);
+                    $('#dca-avg').textContent = fmt(avgPrice);
+
+                    $('#dca-loading').style.display = 'none';
+                    $('#dca-results').style.display = 'block';
+                })
+                .catch(function(err) {
+                    $('#dca-loading').innerHTML = '❌ Failed to fetch prices. Try again.';
+                    console.error(err);
+                });
+        }
+
+        function clearDCA() {
+            $('#dca-amount').value = '';
+            $('#dca-months').value = '12';
+            $('#dca-token').value = 'bitcoin';
+            $('#dca-results').style.display = 'none';
+            $('#dca-loading').style.display = 'none';
+            saveState('dca', {});
+        }
+
+        // Restore DCA state
+        (function() {
+            var s = loadState('dca');
+            if (s.amount) $('#dca-amount').value = s.amount;
+            if (s.token) $('#dca-token').value = s.token;
+            if (s.months) $('#dca-months').value = s.months;
+        })();
+
+
+        // ═══════════════════════════════════════
+        // 3. IMPERMANENT LOSS CALCULATOR
+        // ═══════════════════════════════════════
+        $('#il-a').addEventListener('input', function() {
+            $('#il-a-val').textContent = this.value + '%';
+            calcIL();
+        });
+        $('#il-b').addEventListener('input', function() {
+            $('#il-b-val').textContent = this.value + '%';
+            calcIL();
+        });
+        $('#il-deposit').addEventListener('input', calcIL);
+
+        function calcIL() {
+            var changeA = parseFloat($('#il-a').value) / 100;
+            var changeB = parseFloat($('#il-b').value) / 100;
+            var deposit = parseFloat($('#il-deposit').value) || 10000;
+
+            var priceRatioA = 1 + changeA;
+            var priceRatioB = 1 + changeB;
+
+            // IL formula: IL = 2 * sqrt(priceRatio) / (1 + priceRatio) - 1
+            // For two tokens with independent price changes:
+            // relative ratio = priceRatioA / priceRatioB
+            var relativeRatio = priceRatioA / priceRatioB;
+            var sqrtR = Math.sqrt(relativeRatio);
+            var il = (2 * sqrtR / (1 + relativeRatio)) - 1;
+
+            // HODL value: initial deposit split 50/50, each half changes by its respective %
+            var hodlValue = deposit * ((priceRatioA + priceRatioB) / 2);
+
+            // LP value = hodl value * (1 + IL)  — IL is negative
+            var lpValue = hodlValue * (1 + il);
+
+            // Alternatively: LP = deposit * sqrt(priceRatioA * priceRatioB)
+            if (priceRatioA > 0 && priceRatioB > 0) {
+                lpValue = deposit * Math.sqrt(priceRatioA * priceRatioB);
+            }
+
+            var lossAmt = lpValue - hodlValue;
+            var ilPct = (hodlValue !== 0) ? ((lpValue - hodlValue) / hodlValue) * 100 : 0;
+
+            saveState('il', {
+                a: $('#il-a').value,
+                b: $('#il-b').value,
+                deposit: $('#il-deposit').value
+            });
+
+            $('#il-pct').textContent = ilPct.toFixed(2) + '%';
+            $('#il-pct').className = 'result-value big ' + (ilPct < 0 ? 'loss' : ilPct > 0 ? 'profit' : 'neutral');
+            $('#il-hodl').textContent = fmt(hodlValue);
+            $('#il-lp').textContent = fmt(lpValue);
+            $('#il-loss-amt').textContent = fmt(lossAmt);
+            $('#il-loss-amt').className = 'result-value ' + (lossAmt < 0 ? 'loss' : 'neutral');
+
+            drawILGraph();
+        }
+
+        function drawILGraph() {
+            var canvas = $('#il-canvas');
+            if (!canvas) return;
+            var ctx = canvas.getContext('2d');
+            var W = canvas.width;
+            var H = canvas.height;
+            ctx.clearRect(0, 0, W, H);
+
+            var bgCol = getComputedStyle(document.documentElement).getPropertyValue('--col-bg3').trim() || '#222';
+            var lineCol = getComputedStyle(document.documentElement).getPropertyValue('--colors-accent').trim() || '#6179ff';
+            var badCol = getComputedStyle(document.documentElement).getPropertyValue('--col-bad').trim() || '#d44343';
+            var txtCol = getComputedStyle(document.documentElement).getPropertyValue('--col-txt2').trim() || '#aaa';
+
+            var changeB = parseFloat($('#il-b').value) / 100;
+            var priceRatioB = 1 + changeB;
+
+            // X axis: Token A price change from -90% to +500%
+            var steps = 200;
+            var minX = -0.9, maxX = 5.0;
+            var points = [];
+            var minIL = 0, maxIL = 0;
+
+            for (var i = 0; i <= steps; i++) {
+                var changeA = minX + (maxX - minX) * (i / steps);
+                var priceRatioA = 1 + changeA;
+                if (priceRatioA <= 0) continue;
+
+                var relR = priceRatioA / priceRatioB;
+                var sqR = Math.sqrt(relR);
+                var ilVal = ((2 * sqR / (1 + relR)) - 1) * 100;
+
+                points.push({ x: changeA * 100, y: ilVal });
+                if (ilVal < minIL) minIL = ilVal;
+                if (ilVal > maxIL) maxIL = ilVal;
+            }
+
+            if (points.length < 2) return;
+
+            var padL = 45, padR = 15, padT = 15, padB = 30;
+            var gW = W - padL - padR;
+            var gH = H - padT - padB;
+            var rangeY = (maxIL - minIL) || 1;
+            // Add 10% padding to Y range
+            var yPad = rangeY * 0.1;
+            minIL -= yPad;
+            maxIL += yPad;
+            rangeY = maxIL - minIL;
+
+            function toCanvasX(pctX) {
+                return padL + ((pctX - (-90)) / (500 - (-90))) * gW;
+            }
+            function toCanvasY(ilY) {
+                return padT + ((maxIL - ilY) / rangeY) * gH;
+            }
+
+            // Grid lines
+            ctx.strokeStyle = bgCol;
+            ctx.lineWidth = 0.5;
+            for (var g = -50; g <= 0; g += 10) {
+                if (g < minIL || g > maxIL) continue;
+                var gy = toCanvasY(g);
+                ctx.beginPath();
+                ctx.moveTo(padL, gy);
+                ctx.lineTo(W - padR, gy);
+                ctx.stroke();
+            }
+
+            // Zero line
+            var zeroY = toCanvasY(0);
+            if (zeroY >= padT && zeroY <= H - padB) {
+                ctx.strokeStyle = '#444';
+                ctx.lineWidth = 1;
+                ctx.setLineDash([4, 4]);
+                ctx.beginPath();
+                ctx.moveTo(padL, zeroY);
+                ctx.lineTo(W - padR, zeroY);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+
+            // IL curve
+            ctx.beginPath();
+            ctx.strokeStyle = badCol;
+            ctx.lineWidth = 2;
+            for (var p = 0; p < points.length; p++) {
+                var cx = toCanvasX(points[p].x);
+                var cy = toCanvasY(points[p].y);
+                if (p === 0) ctx.moveTo(cx, cy);
+                else ctx.lineTo(cx, cy);
+            }
+            ctx.stroke();
+
+            // Fill under curve
+            ctx.lineTo(toCanvasX(points[points.length - 1].x), toCanvasY(0));
+            ctx.lineTo(toCanvasX(points[0].x), toCanvasY(0));
+            ctx.closePath();
+            ctx.fillStyle = 'rgba(212, 67, 67, 0.1)';
+            ctx.fill();
+
+            // Current position marker
+            var curA = parseFloat($('#il-a').value);
+            var curPrA = 1 + curA / 100;
+            if (curPrA > 0) {
+                var curRelR = curPrA / priceRatioB;
+                var curIL = ((2 * Math.sqrt(curRelR) / (1 + curRelR)) - 1) * 100;
+                var mx = toCanvasX(curA);
+                var my = toCanvasY(curIL);
+                ctx.beginPath();
+                ctx.arc(mx, my, 5, 0, Math.PI * 2);
+                ctx.fillStyle = lineCol;
+                ctx.fill();
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+            }
+
+            // Axis labels
+            ctx.fillStyle = txtCol;
+            ctx.font = '10px sans-serif';
+            ctx.textAlign = 'center';
+            [-50, 0, 100, 200, 300, 400, 500].forEach(function(v) {
+                var lx = toCanvasX(v);
+                ctx.fillText(v + '%', lx, H - 8);
+            });
+            ctx.textAlign = 'right';
+            for (var l = Math.ceil(minIL / 10) * 10; l <= maxIL; l += 10) {
+                var ly = toCanvasY(l);
+                if (ly > padT && ly < H - padB) {
+                    ctx.fillText(l.toFixed(0) + '%', padL - 6, ly + 3);
+                }
+            }
+        }
+
+        function clearIL() {
+            $('#il-a').value = 0;
+            $('#il-b').value = 0;
+            $('#il-a-val').textContent = '0%';
+            $('#il-b-val').textContent = '0%';
+            $('#il-deposit').value = 10000;
+            calcIL();
+            saveState('il', {});
+        }
+
+        // Restore IL state
+        (function() {
+            var s = loadState('il');
+            if (s.a != null) { $('#il-a').value = s.a; $('#il-a-val').textContent = s.a + '%'; }
+            if (s.b != null) { $('#il-b').value = s.b; $('#il-b-val').textContent = s.b + '%'; }
+            if (s.deposit) $('#il-deposit').value = s.deposit;
+            calcIL();
+        })();
+
+
+        // ═══════════════════════════════════════
+        // 4. STAKING REWARDS CALCULATOR
+        // ═══════════════════════════════════════
+        var stakingMode = 'compound';
+
+        $$('.toggle-bar button').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                $$('.toggle-bar button').forEach(function(b) { b.classList.remove('active'); });
+                btn.classList.add('active');
+                stakingMode = btn.dataset.mode;
+                calcStaking();
+            });
+        });
+
+        ['stk-amount', 'stk-apy', 'stk-months'].forEach(function(id) {
+            $('#' + id).addEventListener('input', calcStaking);
+        });
+
+        function calcStaking() {
+            var amount = parseFloat($('#stk-amount').value);
+            var apy = parseFloat($('#stk-apy').value);
+            var months = parseInt($('#stk-months').value);
+
+            saveState('staking', {
+                amount: $('#stk-amount').value,
+                apy: $('#stk-apy').value,
+                months: $('#stk-months').value,
+                mode: stakingMode
+            });
+
+            if (!amount || !apy || !months || amount <= 0) {
+                setStakingResults();
+                return;
+            }
+
+            var days = months * 30.44; // average days in month
+            var apr = apy / 100;
+
+            var totalValue, totalRewards;
+
+            if (stakingMode === 'compound') {
+                // Daily compounding: A = P * (1 + r/365)^days
+                var dailyRate = apr / 365;
+                totalValue = amount * Math.pow(1 + dailyRate, days);
+            } else {
+                // Simple interest: A = P * (1 + r * t)
+                var t = days / 365;
+                totalValue = amount * (1 + apr * t);
+            }
+
+            totalRewards = totalValue - amount;
+            var effectiveAPY = (totalRewards / amount) / (days / 365) * 100;
+
+            // Per-period rewards (based on current mode)
+            var dailyReward, weeklyReward, monthlyReward, yearlyReward;
+
+            if (stakingMode === 'compound') {
+                var dailyR = Math.pow(1 + apr / 365, 1) - 1;
+                dailyReward = amount * dailyR;
+                weeklyReward = amount * (Math.pow(1 + apr / 365, 7) - 1);
+                monthlyReward = amount * (Math.pow(1 + apr / 365, 30.44) - 1);
+                yearlyReward = amount * (Math.pow(1 + apr / 365, 365) - 1);
+            } else {
+                dailyReward = amount * apr / 365;
+                weeklyReward = amount * apr / 52;
+                monthlyReward = amount * apr / 12;
+                yearlyReward = amount * apr;
+            }
+
+            $('#stk-total').textContent = fmt(totalValue);
+            $('#stk-rewards').textContent = fmt(totalRewards);
+            $('#stk-effective').textContent = effectiveAPY.toFixed(2) + '%';
+            $('#stk-daily').textContent = fmt(dailyReward);
+            $('#stk-weekly').textContent = fmt(weeklyReward);
+            $('#stk-monthly').textContent = fmt(monthlyReward);
+            $('#stk-yearly').textContent = fmt(yearlyReward);
+        }
+
+        function setStakingResults() {
+            ['stk-total', 'stk-rewards', 'stk-effective'].forEach(function(id) {
+                $('#' + id).textContent = '—';
+            });
+            ['stk-daily', 'stk-weekly', 'stk-monthly', 'stk-yearly'].forEach(function(id) {
+                $('#' + id).textContent = '—';
+            });
+        }
+
+        function clearStaking() {
+            $('#stk-amount').value = '';
+            $('#stk-apy').value = '';
+            $('#stk-months').value = '12';
+            stakingMode = 'compound';
+            $$('.toggle-bar button').forEach(function(b) { b.classList.remove('active'); });
+            $$('.toggle-bar button')[0].classList.add('active');
+            setStakingResults();
+            saveState('staking', {});
+        }
+
+        // Restore staking state
+        (function() {
+            var s = loadState('staking');
+            if (s.amount) $('#stk-amount').value = s.amount;
+            if (s.apy) $('#stk-apy').value = s.apy;
+            if (s.months) $('#stk-months').value = s.months;
+            if (s.mode) {
+                stakingMode = s.mode;
+                $$('.toggle-bar button').forEach(function(b) {
+                    b.classList.toggle('active', b.dataset.mode === s.mode);
+                });
+            }
+            calcStaking();
+        })();
+
+    })();
+    </script>
+</body>
+</html>

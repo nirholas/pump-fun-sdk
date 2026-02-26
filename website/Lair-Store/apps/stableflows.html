@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="lair-include" content="lair.css">
+    <meta name="lair-icon" content='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="24" height="24" fill="white"><path d="M280-120 80-320l200-200 57 56-104 104h327v80H233l104 104-57 56Zm400-320-57-56 104-104H400v-80h327L623-784l57-56 200 200-200 200Z"/></svg>'>
+    <meta name="capabilities" content="bridge_flows">
+    <meta name="lair-perms" content="network" />
+    <title>Bridge Flows</title>
+    <style>
+        :root { --col-bg1:#080A19; --col-bg2:#0C0F27; --col-bg3:#15183E; --col-txt1:#A7C2F3; --colors-accent:rgb(97,121,255); --col-good:#85FF85; --col-bad:#AC4949; }
+        * { box-sizing: border-box; }
+        html, body { margin:0; height:100%; background:var(--col-bg1); color:var(--col-txt1); font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+        .app { height:100%; display:grid; grid-template-rows:auto auto 1fr; }
+        .top { padding:10px 14px; border-bottom:1px solid rgba(167,194,243,.1); display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap; }
+        .title { font-size:14px; font-weight:700; }
+        button, select { background:var(--col-bg3); color:var(--col-txt1); border:1px solid rgba(167,194,243,.16); border-radius:6px; padding:6px 9px; font-size:12px; }
+        button { cursor:pointer; }
+        .tabs { display:flex; gap:6px; padding:8px 14px; border-bottom:1px solid rgba(167,194,243,.08); }
+        .tab { cursor:pointer; }
+        .tab.active { background:var(--colors-accent); color:#fff; border-color:transparent; }
+        .content { overflow:auto; padding:10px 14px; }
+        .grid { display:grid; gap:8px; grid-template-columns: repeat(4, minmax(140px, 1fr)); margin-bottom:10px; }
+        .card { background:var(--col-bg2); border:1px solid rgba(167,194,243,.12); border-radius:8px; padding:10px; }
+        .k { font-size:10px; text-transform:uppercase; opacity:.75; }
+        .v { font-size:16px; font-weight:700; margin-top:4px; }
+        .table { margin-top:8px; border:1px solid rgba(167,194,243,.12); border-radius:8px; overflow:hidden; }
+        .row { display:grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; gap:8px; padding:8px 10px; border-bottom:1px solid rgba(167,194,243,.08); align-items:center; font-size:12px; }
+        .row.h { font-size:10px; text-transform:uppercase; opacity:.75; background:var(--col-bg2); }
+        .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+        .small { font-size:11px; opacity:.8; }
+        .tag { font-size:10px; border-radius:999px; padding:2px 6px; background:rgba(97,121,255,.18); }
+        .empty { font-size:12px; opacity:.7; padding:14px 0; }
+        @media (max-width:1000px) { .grid { grid-template-columns: repeat(2, minmax(140px, 1fr)); } .row { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+<div class="app">
+    <div class="top">
+        <div class="title">Bridge Flow Tracker</div>
+        <div style="display:flex; gap:6px; flex-wrap:wrap;">
+            <button id="refreshBtn">Refresh</button>
+            <select id="focusChain"></select>
+        </div>
+    </div>
+    <div class="tabs" id="tabs"></div>
+    <div class="content">
+        <div class="grid" id="summary"></div>
+        <div id="view"></div>
+    </div>
+</div>
+<script>
+(function () {
+    const fetchFn = window.cfetch || fetch;
+    const tabs = ['bridges', 'routes', 'chain-matrix'];
+    let active = 'bridges';
+    let state = { chains: [], bridges: [], tokens: {} };
+
+    function fmt(n) {
+        if (!Number.isFinite(n)) return '—';
+        if (n >= 1e6) return (n / 1e6).toFixed(2) + 'M';
+        if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+        return String(Math.round(n));
+    }
+
+    async function getJson(url) {
+        const res = await fetchFn(url);
+        if (!res.ok) throw new Error('HTTP ' + res.status + ' for ' + url);
+        return res.json();
+    }
+
+    async function load() {
+        try {
+            const [chainsRes, toolsRes, tokensRes] = await Promise.all([
+                getJson('https://li.quest/v1/chains'),
+                getJson('https://li.quest/v1/tools'),
+                getJson('https://li.quest/v1/tokens?chains=1,10,56,137,42161,43114,8453')
+            ]);
+
+            state.chains = chainsRes.chains || [];
+            state.bridges = toolsRes.bridges || [];
+            state.tokens = tokensRes.tokens || {};
+
+            const focus = document.getElementById('focusChain');
+            const options = state.chains
+                .filter(c => [1, 10, 56, 137, 42161, 43114, 8453].includes(c.id))
+                .map(c => '<option value="' + c.id + '">' + c.name + '</option>')
+                .join('');
+            focus.innerHTML = options;
+            if (!focus.value && state.chains.length) focus.value = '1';
+        } catch (_) {
+            state = { chains: [], bridges: [], tokens: {} };
+        }
+        render();
+    }
+
+    function renderTabs() {
+        const el = document.getElementById('tabs');
+        el.innerHTML = tabs.map(t => '<button class="tab' + (t === active ? ' active' : '') + '" data-tab="' + t + '">' + t + '</button>').join('');
+        el.querySelectorAll('.tab').forEach(btn => btn.addEventListener('click', () => { active = btn.dataset.tab; render(); }));
+    }
+
+    function renderSummary() {
+        const chainIds = Object.keys(state.tokens);
+        const tokenCount = chainIds.reduce((s, id) => s + ((state.tokens[id] || []).length), 0);
+        const routeCount = state.bridges.reduce((sum, b) => sum + (b.supportedChains?.length || 0), 0);
+        const avgRoutes = state.bridges.length ? routeCount / state.bridges.length : 0;
+        document.getElementById('summary').innerHTML =
+            '<div class="card"><div class="k">Bridge Integrations</div><div class="v">' + state.bridges.length + '</div></div>' +
+            '<div class="card"><div class="k">Supported Chains</div><div class="v">' + chainIds.length + '</div></div>' +
+            '<div class="card"><div class="k">Token Coverage</div><div class="v">' + fmt(tokenCount) + '</div></div>' +
+            '<div class="card"><div class="k">Avg Routes / Bridge</div><div class="v">' + avgRoutes.toFixed(1) + '</div></div>';
+    }
+
+    function renderBridges() {
+        if (!state.bridges.length) return '<div class="empty">Bridge APIs unavailable right now.</div>';
+        const rows = state.bridges
+            .map(b => ({
+                name: b.name,
+                routes: b.supportedChains?.length || 0,
+                uniqueChains: new Set((b.supportedChains || []).flatMap(x => [x.fromChainId, x.toChainId])).size,
+                slug: b.key
+            }))
+            .sort((a, b) => b.routes - a.routes)
+            .slice(0, 80);
+        return '<div class="table">' +
+            '<div class="row h"><div>Bridge</div><div>Route Pairs</div><div>Unique Chains</div><div>Key</div></div>' +
+            rows.map(r => '<div class="row"><div><strong>' + r.name + '</strong></div><div>' + fmt(r.routes) + '</div><div>' + r.uniqueChains + '</div><div class="mono">' + r.slug + '</div></div>').join('') +
+        '</div>';
+    }
+
+    function renderRoutes() {
+        const chainId = Number(document.getElementById('focusChain').value || 1);
+        const byTarget = {};
+        state.bridges.forEach(b => {
+            (b.supportedChains || []).forEach(route => {
+                if (route.fromChainId === chainId) {
+                    const item = (byTarget[route.toChainId] ||= { to: route.toChainId, count: 0, bridges: [] });
+                    item.count += 1;
+                    item.bridges.push(b.name);
+                }
+            });
+        });
+        const chainMap = Object.fromEntries(state.chains.map(c => [c.id, c.name]));
+        const rows = Object.values(byTarget).sort((a, b) => b.count - a.count);
+        if (!rows.length) return '<div class="empty">No route data for selected chain.</div>';
+        return '<div class="table">' +
+            '<div class="row h"><div>Destination</div><div>Bridge Count</div><div>Top Integrations</div><div>Flow Depth</div></div>' +
+            rows.map(r => '<div class="row"><div><strong>' + (chainMap[r.to] || ('Chain ' + r.to)) + '</strong></div><div>' + r.count + '</div><div>' + r.bridges.slice(0, 3).map(x => '<span class="tag">' + x + '</span>').join(' ') + '</div><div>' + (r.count >= 8 ? 'High' : r.count >= 4 ? 'Medium' : 'Low') + '</div></div>').join('') +
+        '</div>';
+    }
+
+    function renderChainMatrix() {
+        const ids = [1, 10, 56, 137, 42161, 43114, 8453].filter(id => state.chains.find(c => c.id === id));
+        const names = Object.fromEntries(state.chains.map(c => [c.id, c.name]));
+        if (!ids.length) return '<div class="empty">Chain matrix unavailable.</div>';
+        const matrix = {};
+        ids.forEach(i => { matrix[i] = {}; ids.forEach(j => { matrix[i][j] = 0; }); });
+        state.bridges.forEach(b => {
+            (b.supportedChains || []).forEach(r => {
+                if (matrix[r.fromChainId] && Number.isFinite(matrix[r.fromChainId][r.toChainId])) {
+                    matrix[r.fromChainId][r.toChainId] += 1;
+                }
+            });
+        });
+        let html = '<div class="table"><div class="row h" style="grid-template-columns:120px repeat(' + ids.length + ', minmax(70px, 1fr));"><div>From \\ To</div>' + ids.map(i => '<div>' + names[i] + '</div>').join('') + '</div>';
+        ids.forEach(from => {
+            html += '<div class="row" style="grid-template-columns:120px repeat(' + ids.length + ', minmax(70px, 1fr));"><div><strong>' + names[from] + '</strong></div>' +
+                ids.map(to => '<div>' + (from === to ? '—' : matrix[from][to]) + '</div>').join('') +
+            '</div>';
+        });
+        html += '</div><div class="small" style="margin-top:8px;">Matrix values represent bridge route-path count (live LI.FI integration graph), used as a cross-chain flow-depth proxy.</div>';
+        return html;
+    }
+
+    function render() {
+        renderTabs();
+        renderSummary();
+        const view = document.getElementById('view');
+        view.innerHTML = active === 'bridges' ? renderBridges() : active === 'routes' ? renderRoutes() : renderChainMatrix();
+    }
+
+    document.getElementById('refreshBtn').addEventListener('click', load);
+    document.getElementById('focusChain').addEventListener('change', () => { if (active === 'routes') render(); });
+    load();
+})();
+</script>
+</body>
+</html>

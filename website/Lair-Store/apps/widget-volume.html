@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="lair-include" content="lair.css">
+    <meta name="lair-widget" content="true">
+    <meta name="lair-widget-size" content="3x2">
+    <meta name="lair-icon" content='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="24" height="24" fill="white"><path d="M160-160v-320h120v320H160Zm200 0v-560h120v560H360Zm200 0v-400h120v400H560Zm200 0v-240h120v240H760Z"/></svg>'>
+    <meta name="capabilities" content="widget,volume_leaders">
+    <meta name="lair-perms" content="network" />
+    <title>Volume Leaders</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: transparent;
+            color: var(--col-txt1, #fff);
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            height: 100vh;
+            overflow: hidden;
+            user-select: none;
+            display: flex;
+            flex-direction: column;
+        }
+        .header {
+            display: flex;
+            align-items: center;
+            padding: 5px 10px;
+            flex-shrink: 0;
+        }
+        .title {
+            font-size: 0.65rem;
+            font-weight: 700;
+            opacity: 0.5;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .updated {
+            margin-left: auto;
+            font-size: 0.45rem;
+            opacity: 0.25;
+        }
+        .list {
+            flex: 1;
+            padding: 2px 8px 4px;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            overflow: hidden;
+        }
+        .row {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 2px 4px;
+            border-radius: 4px;
+            transition: background 0.15s;
+        }
+        .row:hover { background: rgba(255,255,255,0.04); }
+        .rank {
+            font-size: 0.5rem;
+            font-weight: 700;
+            opacity: 0.25;
+            min-width: 12px;
+        }
+        .symbol {
+            font-size: 0.6rem;
+            font-weight: 700;
+            min-width: 40px;
+        }
+        .price {
+            font-size: 0.55rem;
+            opacity: 0.5;
+            min-width: 50px;
+            font-variant-numeric: tabular-nums;
+        }
+        .bar-wrap {
+            flex: 1;
+            height: 6px;
+            background: rgba(255,255,255,0.04);
+            border-radius: 3px;
+            overflow: hidden;
+            position: relative;
+        }
+        .bar-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.5s ease;
+        }
+        .vol-text {
+            font-size: 0.55rem;
+            font-weight: 600;
+            min-width: 42px;
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+            opacity: 0.7;
+        }
+        .change-sm {
+            font-size: 0.5rem;
+            font-weight: 700;
+            min-width: 36px;
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+        .up { color: var(--col-good, #85FF85); }
+        .down { color: var(--col-bad, #AC4949); }
+        .loading-msg {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.6rem;
+            opacity: 0.3;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <span class="title">Volume Leaders</span>
+        <span class="updated" id="updated">—</span>
+    </div>
+    <div class="list" id="list">
+        <div class="loading-msg">Loading...</div>
+    </div>
+
+    <script>
+    (() => {
+        let tickers = [];
+        let refreshTimer = null;
+        const SHOW_COUNT = 7;
+
+        const $list = document.getElementById('list');
+        const $updated = document.getElementById('updated');
+
+        // Pairs we care about (USDT pairs, major coins)
+        const WANTED = new Set([
+            'BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'XRPUSDT',
+            'DOGEUSDT', 'ADAUSDT', 'AVAXUSDT', 'DOTUSDT', 'LINKUSDT',
+            'MATICUSDT', 'ARBUSDT', 'OPUSDT', 'APTUSDT', 'SUIUSDT',
+            'NEARUSDT', 'ATOMUSDT', 'UNIUSDT', 'AAVEUSDT', 'INJUSDT',
+            'TONUSDT', 'SHIBUSDT', 'LTCUSDT', 'BCHUSDT', 'FILUSDT',
+            'TRXUSDT', 'WIFUSDT', 'PEPEUSDT', 'ORDIUSDT', 'TIAUSDT',
+        ]);
+
+        /* ── Proxy fetch ────────────────────── */
+        async function proxyFetch(url) {
+            if (window.cfetch) return window.cfetch(url);
+            const base = (window.location.ancestorOrigins?.[0] || window.location.origin).replace(/\/$/, '');
+            return fetch(`${base}/api/proxy?url=${encodeURIComponent(url)}`);
+        }
+
+        /* ── Data ───────────────────────────── */
+        async function load() {
+            try {
+                const r = await proxyFetch('https://api.binance.com/api/v3/ticker/24hr');
+                const data = await r.json();
+                if (!Array.isArray(data)) throw new Error('Invalid');
+
+                tickers = data
+                    .filter(t => WANTED.has(t.symbol))
+                    .map(t => ({
+                        symbol: t.symbol.replace('USDT', ''),
+                        pair: t.symbol,
+                        price: parseFloat(t.lastPrice),
+                        volume: parseFloat(t.quoteVolume), // USDT volume
+                        change: parseFloat(t.priceChangePercent),
+                    }))
+                    .sort((a, b) => b.volume - a.volume);
+
+                render();
+                $updated.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            } catch (e) {
+                if (!tickers.length) $list.innerHTML = '<div class="loading-msg">Offline</div>';
+            }
+            clearTimeout(refreshTimer);
+            refreshTimer = setTimeout(load, 30000);
+        }
+
+        /* ── Render ─────────────────────────── */
+        function render() {
+            if (!tickers.length) return;
+
+            const slice = tickers.slice(0, SHOW_COUNT);
+            const maxVol = slice[0]?.volume || 1;
+
+            // Color gradient based on rank
+            const colors = ['#6366f1', '#8b5cf6', '#a78bfa', '#c4b5fd', '#ddd6fe', '#e9e5f5', '#f0eef8'];
+
+            $list.innerHTML = slice.map((t, i) => {
+                const isUp = t.change >= 0;
+                const barPct = Math.max(3, (t.volume / maxVol) * 100);
+                const color = colors[i] || colors[colors.length - 1];
+
+                return `<div class="row">
+                    <span class="rank">${i + 1}</span>
+                    <span class="symbol">${t.symbol}</span>
+                    <span class="price">${formatPrice(t.price)}</span>
+                    <div class="bar-wrap"><div class="bar-fill" style="width:${barPct}%;background:${color}"></div></div>
+                    <span class="vol-text">${formatVol(t.volume)}</span>
+                    <span class="change-sm ${isUp ? 'up' : 'down'}">${isUp ? '+' : ''}${t.change.toFixed(1)}%</span>
+                </div>`;
+            }).join('');
+        }
+
+        /* ── Formatting ─────────────────────── */
+        function formatPrice(n) {
+            if (n >= 1000) return '$' + n.toLocaleString('en-US', { maximumFractionDigits: 0 });
+            if (n >= 1)    return '$' + n.toFixed(2);
+            if (n >= 0.01) return '$' + n.toFixed(4);
+            return '$' + n.toFixed(6);
+        }
+
+        function formatVol(n) {
+            if (n >= 1e9) return (n / 1e9).toFixed(1) + 'B';
+            if (n >= 1e6) return (n / 1e6).toFixed(0) + 'M';
+            if (n >= 1e3) return (n / 1e3).toFixed(0) + 'K';
+            return n.toFixed(0);
+        }
+
+        /* ── Init ───────────────────────────── */
+        load();
+    })();
+    </script>
+</body>
+</html>

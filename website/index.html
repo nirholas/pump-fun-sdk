@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="en" xml:lang="en" xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+	<meta name="mobile-web-app-capable" content="yes">
+	<meta name="apple-mobile-web-app-capable" content="yes">
+	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+	<title>LairOS</title>
+	<script src="scripts/readwrite.js" defer></script>
+	<script src="system32.js" defer></script>
+	<link rel="stylesheet" href="lair.css">
+	<link rel="stylesheet" href="style.css">
+	<link rel="icon" type="image/webp" href="n.png">
+	<!--LairOS scripts-->
+	<script src="scripts/featureflags.js"></script>
+	<script src="scripts/utility.js"></script>
+	<script src="scripts/notifications.js" defer></script>
+	<script src="script.js" defer></script>
+	<!--UV Proxy scripts-->
+	<script src="/uv/baremux.js"></script>
+	<script src="/uv/uv.bundle.js"></script>
+	<script src="/uv/uv.config.js"></script>
+	<script>
+		// Initialize UV proxy on main page load
+		(async function initUV() {
+			if (typeof BareMux === 'undefined') return;
+			try {
+				const bareServers = ['https://openbare.xyz/bare/'];
+				const workerPath = '/uv/baremux.worker.js';
+				const transportUrl = new URL('/uv/bare.transport.mjs', window.location.origin).href;
+				localStorage.setItem('bare-mux-path', workerPath);
+				console.log('UV: Initializing with worker:', workerPath);
+				const connection = new BareMux.BareMuxConnection(workerPath);
+				await connection.setTransport(transportUrl, bareServers);
+				console.log('UV: Transport set with servers:', bareServers);
+				if ('serviceWorker' in navigator) {
+					const reg = await navigator.serviceWorker.register('/uv/sw.js', { scope: '/uv/service/' });
+					console.log('UV: Service worker registered', reg.scope);
+				}
+				window.__uvReady = true;
+				console.log('UV Proxy initialized successfully');
+			} catch(e) { console.error('UV init failed:', e); }
+		})();
+	</script>
+	<!--PWA Manifest-->
+	<link href="webmanifest.json" rel="manifest">
+	<!--Google Icons-->
+	<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+	<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-BDCY366HWB"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-BDCY366HWB');
+</script>
+<!-- Clerk Authentication (disabled — no publishable key yet)
+<script 
+	async 
+	crossorigin="anonymous"
+	data-clerk-publishable-key=""
+	src="https://cdn.jsdelivr.net/npm/@clerk/clerk-js@latest/dist/clerk.browser.js"
+	type="text/javascript"
+></script>
+-->
+<!-- html2canvas for screenshots -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
+<!-- System Features -->
+<script src="scripts/systemFeatures.js" defer></script>
+<!-- System Tray -->
+<script src="scripts/systemtray.js" defer></script>
+<!-- Wallet Connection -->
+<script src="scripts/wallet-connect.js" defer></script>
+<!-- Command Palette -->
+<script src="scripts/commandpalette.js" defer></script>
+<!-- Onboarding -->
+<script src="scripts/onboarding.js" defer></script>
+
+</head>
+
+<body>
+	<div id="main">
+		<div class="container2">
+			<div id="bgimage">
+				<img id="bgimage1" class="bgimage"/>
+				<img id="bgimage2" class="bgimage"/>
+			</div>
+
+			<div id="snappingIndicator">
+				<div class="topsnappingind"></div>
+				<div class="leftsnappingind"></div>
+				<div class="rightsnappingind"></div>
+				<div class="topleftsnappingind"></div>
+				<div class="toprightsnappingind"></div>
+				<div class="bottomleftsnappingind"></div>
+				<div class="bottomrightsnappingind"></div>
+			</div>
+
+			<dialog id="loginmod" class="scalableui">
+				<img id="wallbgpreview">
+				<div class="loginscontain">
+					<div class="userselect">
+						<div class="login-header">
+							<h1 id="loginusselctime">00:00</h1>
+							<span class="login-date" id="login-date"></span>
+						</div>
+						<div class="usersselector">
+							<div id="userschooser">
+							</div>
+							<div class="divider"></div>
+							<div class="user" tabindex="0" onclick="setandinitnewuser()"><span class="icon"><span
+										class="user_pfp material-symbols-rounded">
+										add
+									</span></span>
+								<div class="name">New</div>
+							</div>
+						</div>
+					</div>
+				<!-- Clerk Wallet Login (hidden for now) -->
+				<div class="login-divider" id="clerk-login-section" style="display:none;">
+					<span class="login-divider-line"></span>
+					<span class="login-divider-text">or</span>
+					<span class="login-divider-line"></span>
+				</div>
+				<button class="clerk-wallet-btn" id="clerk-wallet-btn" onclick="clerkSignIn()" style="display:none;">
+					<span class="clerk-wallet-icon">🦊</span>
+					<span>Sign in with Wallet</span>
+				</button>
+				<div class="login-footer">
+					<div class="login-branding">
+						<span class="login-logo">◆</span>
+						<span class="login-brand-text">Lair</span>
+					</div>
+				</div>
+				<div class="logincard">
+					<div class="logincard-inner">
+					<span class="logincardwelt">Welcome Back</span>
+					<span class="logincard-subtitle">Enter your password to continue</span>
+					<form id="loginform" onsubmit="event.preventDefault(); checkifpassright();">
+						<input placeholder="Enter your password" id="loginform1" type="password" autocomplete="current-password">
+						<button type="submit">
+							<span class="material-symbols-rounded">
+								chevron_right
+							</span>
+						</button>
+					</form>
+					<div class="backbtnscont">
+							<button class="backbtnuserspg" onclick="loginscreenbackbtn()">
+								<span class="material-symbols-rounded">
+									arrow_circle_left
+								</span> Login to a different account</button>
+							<button class="backbtnuserspg" onclick="removeUser()">
+								<span class="material-symbols-rounded">
+									delete
+								</span>
+								Remove</button>
+						</div>
+
+					</div>
+					</div>
+				</div>
+			</dialog>
+			<dialog id="edison">
+				<div class="edisonrl">
+					<img src="n.png" alt="LairOS Logo">
+					<div class="progress-container">
+						<div class="progress-bar" id="progress-bar"></div>
+					</div>
+					<div id="startupterms" role="status" aria-live="polite">Loading LairOS scripts</div>
+
+					<small class="built-by-nich">built by nich</small>
+				</div>
+
+			</dialog>
+
+			<script>
+				gid("edison").showModal();
+				document.querySelector('.progress-container').style.width = "50%";
+				function gid(x) {
+					return document.getElementById(x);
+				}
+			</script>
+
+			<noscript>
+				<h1>I can't even know what time is it now.<br>Blame your browser for it.</h1>
+				<p>Well your browser seems to be messing around saying you turned off JS. Javascript is required for the functioning of the modern web. </p>
+				<b>If you have set JS to be disabled:</b>
+				<p>LairOS requires JS to run.
+				<li>You can always <b><a href="https://www.larimer.gov/it/enable-javascript" style="color:white;"> turn JS back on</a>.</b>
+				</li>
+				<li>Or try a different browser.
+				</li>
+				</ul>
+			</p>
+			</noscript>
+
+			<div class="layer44 ctxAvail" id="desktop">
+				<!-- Sidebar Dock -->
+				<nav class="lair-sidebar" id="lair-sidebar">
+					<button class="sidebar-item" type="button" title="Files" data-app="files">
+						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960"><path d="M160-160q-33 0-56.5-23.5T80-240v-480q0-33 23.5-56.5T160-800h240l80 80h320q33 0 56.5 23.5T880-640v400q0 33-23.5 56.5T800-160H160Z"/></svg>
+						<span class="sidebar-tip">Files</span>
+					</button>
+					<button class="sidebar-item" type="button" title="Browser" data-app="browser">
+						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960"><path d="M480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm-40-82v-78q-33 0-56.5-23.5T360-320v-40L168-552q-3 18-5.5 36t-2.5 36q0 121 79.5 212T440-162Zm276-102q26-36 43-77.5t23-87.5H660q-8 36-25.5 67T596-276l-36 36q32 12 66 12t90-36Z"/></svg>
+						<span class="sidebar-tip">Browser</span>
+					</button>
+					<button class="sidebar-item" type="button" title="AI" data-app="lairai">
+						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960"><path d="M160-400q0-29 16-52.5t42-34.5q-2-10-3-20t-1-21q0-80 56-136t136-56q53 0 97.5 27.5T571-618q29-8 55.5 6t39.5 42q28 7 46 30t18 52q0 33-23.5 56.5T650-408H320q-33 0-56.5-23.5T240-488q-36-11-58-41t-22-67v-4ZM80-160v-80h800v80H80Z"/></svg>
+						<span class="sidebar-tip">AI</span>
+					</button>
+					<button class="sidebar-item" type="button" title="DeFi" data-app="lairdefi">
+						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960"><path d="M120-120v-80l80-80v160h-80Zm160 0v-240l80-80v320h-80Zm160 0v-320l80 81v239h-80Zm160 0v-239l80-80v319h-80Zm160 0v-400l80-80v480h-80ZM120-327v-113l280-280 160 160 280-280v113L560-447 400-607 120-327Z"/></svg>
+						<span class="sidebar-tip">DeFi</span>
+					</button>
+					<button class="sidebar-item" type="button" title="Store" data-app="store">
+						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960"><path d="M160-720v-80h640v80H160Zm0 560v-240h-40v-80l40-200h640l40 200v80h-40v240h-80v-240H560v240H160Zm80-80h240v-160H240v160Z"/></svg>
+						<span class="sidebar-tip">Store</span>
+					</button>
+					<button class="sidebar-item" type="button" title="Settings" data-app="settings">
+						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960"><path d="m370-80-16-128q-13-5-24.5-12T307-235l-119 50L88-352l104-78q-1-7-1.5-14.5T190-460q0-8 .5-15t1.5-15L88-568l100-167 119 50q11-8 23-15t24-12l16-128h200l16 128q13 5 24.5 12t22.5 15l119-50 100 167-104 78q1 7 1.5 14.5t.5 15.5q0 8-.5 15t-1.5 15l104 78-100 167-119-50q-11 8-22.5 15T546-208L530-80H370Zm90-260q58 0 99-41t41-99q0-58-41-99t-99-41q-58 0-99 41t-41 99q0 58 41 99t99 41Z"/></svg>
+						<span class="sidebar-tip">Settings</span>
+					</button>
+				</nav>
+				<div id="widget-layer"></div>
+				<span class="deskloadspan">Welcome back!</span>
+			</div>
+			<div id="selection-box"></div>
+		</div>
+
+		<!-- Quick Actions Panel -->
+		<div id="quick-actions-panel">
+			<div class="qa-header">
+				<span class="qa-title">Quick Actions</span>
+				<button class="qa-close" onclick="toggleQuickActions()">
+					<span class="material-symbols-rounded">close</span>
+				</button>
+			</div>
+			<div class="qa-grid">
+				<div class="qa-tile" id="qa-network">
+					<span class="material-symbols-rounded qa-tile-icon">wifi</span>
+					<span class="qa-tile-label">Network</span>
+					<span class="qa-tile-value" id="qa-network-status">Online</span>
+				</div>
+				<div class="qa-tile" id="qa-volume-tile">
+					<span class="material-symbols-rounded qa-tile-icon">volume_up</span>
+					<span class="qa-tile-label">Volume</span>
+					<span class="qa-tile-value" id="qa-volume-value">60%</span>
+				</div>
+				<div class="qa-tile" id="qa-theme">
+					<span class="material-symbols-rounded qa-tile-icon">dark_mode</span>
+					<span class="qa-tile-label">Theme</span>
+					<span class="qa-tile-value">Ultramarine</span>
+				</div>
+				<div class="qa-tile" id="qa-widgets" onclick="typeof toggleWidgetLock==='function'&&toggleWidgetLock()">
+					<span class="material-symbols-rounded qa-tile-icon">widgets</span>
+					<span class="qa-tile-label">Widgets</span>
+					<span class="qa-tile-value">Locked 🔒</span>
+				</div>
+				<div class="qa-tile" id="qa-performance">
+					<span class="material-symbols-rounded qa-tile-icon">speed</span>
+					<span class="qa-tile-label">Performance</span>
+					<span class="qa-tile-value">Normal</span>
+				</div>
+				<div class="qa-tile" id="qa-clipboard" onclick="toggleClipboardPanel()">
+					<span class="material-symbols-rounded qa-tile-icon">content_paste</span>
+					<span class="qa-tile-label">Clipboard</span>
+					<span class="qa-tile-value">History</span>
+				</div>
+			</div>
+			<div class="qa-footer">
+				<button class="qa-footer-btn" onclick="typeof launchbios==='function'&&launchbios();toggleQuickActions();">
+					<span class="material-symbols-rounded">settings</span> Settings
+				</button>
+				<button class="qa-footer-btn" onclick="typeof lockScreen==='function'&&lockScreen();toggleQuickActions();">
+					<span class="material-symbols-rounded">lock</span> Lock
+				</button>
+			</div>
+		</div>
+
+		<!-- Notification Center -->
+		<div id="notification-center"></div>
+
+		<!-- Notification History Panel (injected by notifications.js) -->
+
+		<!-- Lock Screen -->
+		<div id="lock-screen" onclick="unlockScreen()">
+			<div class="lock-screen-content" onclick="event.stopPropagation()">
+				<div id="lock-screen-time">12:00</div>
+				<div id="lock-screen-date">Saturday, January 18</div>
+				<div class="lock-screen-unlock" onclick="unlockScreen()">
+					<span class="material-symbols-rounded">lock_open</span>
+					<span>Click anywhere to unlock</span>
+				</div>
+				<form id="lock-password-form" onsubmit="event.preventDefault(); unlockScreen();">
+					<input type="password" id="lock-password-input" placeholder="Password" autocomplete="current-password" />
+				</form>
+			</div>
+		</div>
+
+		<!-- Clipboard History Panel -->
+		<div id="clipboard-history-panel">
+			<div class="clipboard-history-header">
+				<h4>Clipboard History</h4>
+				<div class="clipboard-history-actions">
+					<button onclick="clearClipboardHistory()" title="Clear">
+						<span class="material-symbols-rounded">delete</span>
+					</button>
+					<button onclick="toggleClipboardPanel()" title="Close">
+						<span class="material-symbols-rounded">close</span>
+					</button>
+				</div>
+			</div>
+			<div id="clipboard-history-list"></div>
+		</div>
+
+		<div id="notification">
+			<div class="notifnav">
+				<span id="notifappName">App Name</span>
+				<span class="material-symbols-rounded wincl"
+					onclick="document.getElementById('notification').style.display = 'none';">close</span>
+			</div>
+			<h2 id="notifTitle">...</h2>
+			<p id="notifappDesc">...</p>
+		</div>
+
+		<div id="toastdiv">
+			<div class="toastInner">
+				
+			<div id="toasticon"></div>
+			<div id="toastdivtext">
+
+			</div>
+			</div>
+		</div>
+
+		<div id="workspace">
+			<div id="maxappscontainer">
+
+			</div>
+			<nav id="lairnav" class="scalableui">
+				<div class="flodiv">
+					<quicks navobj id="dock">
+
+					</quicks>
+					<your navobj onclick="openn()">
+
+						<biv draggable="true" class="app-shortcut tooltip adock sizableuielement" title="Open App Menu">
+							<span ic class="material-symbols-rounded" id="mm">N
+							</span>
+						</biv>
+					</your>
+					<your navobj onclick="opensearchpanel()">
+						<biv draggable="true" class="app-shortcut tooltip adock sizableuielement">
+							<span ic class="material-symbols-rounded searchbtnac directxicons">
+								search
+							</span>
+						</biv>
+					</your>
+					<info navobj>
+						<div id="system-tray">
+							<div class="tray-item" id="tray-btc" title="Bitcoin Price">
+								<span class="tray-icon">₿</span>
+								<span class="tray-value" id="btc-price">--</span>
+							</div>
+							<div class="tray-item" id="tray-gas" title="Gas Price">
+								<span class="tray-icon">⛽</span>
+								<span class="tray-value" id="gas-price">--</span>
+							</div>
+							<div class="tray-item" id="tray-fng" title="Fear &amp; Greed">
+								<span class="tray-icon" id="fng-emoji">📊</span>
+								<span class="tray-value" id="fng-value">--</span>
+							</div>
+							<div class="tray-item" id="tray-network" title="Network Status">
+								<span class="tray-dot online" id="network-dot"></span>
+							</div>
+							<div class="tray-item" id="tray-volume" title="Volume">
+								<span class="material-symbols-rounded tray-icon-mat">volume_up</span>
+								<div id="volume-slider-popup" class="volume-popup" style="display:none;">
+									<input type="range" min="0" max="100" value="60" id="volume-slider" orient="vertical">
+									<span id="volume-level">60%</span>
+								</div>
+							</div>
+							<div class="tray-item notification-bell-btn" id="tray-notifications" onclick="toggleNotificationHistory()" title="Notifications">
+								<span class="material-symbols-rounded tray-icon-mat">notifications</span>
+								<span class="tray-badge" id="notification-badge" style="display:none">0</span>
+							</div>
+						</div>
+						<div id="wallet-connect-btn" class="navmalobj wallet-btn wallet-state-disconnected" title="Connect Wallet">
+							<div class="wallet-btn-inner wallet-disconnected-inner">
+								<span class="material-symbols-rounded wallet-icon-glyph">account_balance_wallet</span>
+								<span class="wallet-btn-label">Connect</span>
+							</div>
+						</div>
+						<div id="batterydisdiv" class="navmalobj">
+							<span id="battery-p-display">
+							</span>
+							<span id="battery-display" class="material-symbols-rounded">
+								p ic
+							</span>
+						</div>
+						<div class="navmalobj">
+							<hitbx class="hitbox" title="time" id="draggable-time" draggable="true">
+								<span id="time-display">...</span>
+								<span id="date-display"></span>
+							</hitbx>
+						</div>
+					</info>
+					<info navobj id="nowrunninapps">
+					</info>
+					<your navobj id="showdesktop-btn" onclick="toggleShowDesktop()" title="Show Desktop">
+						<biv class="app-shortcut tooltip adock sizableuielement show-desktop-btn">
+							<span ic class="material-symbols-rounded directxicons">
+								desktop_windows
+							</span>
+							<span class="tooltiptext">Show Desktop</span>
+						</biv>
+					</your>
+				</div>
+			</nav>
+		</div>
+
+		<dialog id="appdmod" class="scalableui onramcloseable navWindows">
+			<div class="appdmodestuff">
+				<h1>Apps</h1>
+				<div id="appsindeck">
+				</div>
+				<div class="strtsearcont">
+					<div class="neweles" id="bobthedropdown">
+						<div class="lairmenusearchinpbtn"
+							onclick="document.getElementById('appdmod').close(); opensearchpanel();">
+							<input id="lairmenusearchinp" placeholder="Search"></span>
+							<span class="material-symbols-rounded">
+								search
+							</span>
+						</div>
+						<div class="toolspart">
+
+						<button class="tooltip " onclick="location.reload()">
+							<span class="tooltiptext">Restart</span>
+							<span class="material-symbols-rounded">
+								restart_alt
+							</span>
+						</button>
+
+						<button class="tooltip " onclick="lockScreen(); document.getElementById('appdmod').close();">
+							<span class="tooltiptext">Lock</span>
+							<span class="material-symbols-rounded">
+								lock
+							</span>
+						</button>
+
+						<button class="tooltip " onclick="document.getElementById('sleepwindow').showModal()">
+							<span class="tooltiptext">Sleep</span>
+							<span class="material-symbols-rounded">
+								bedtime
+							</span>
+						</button>
+						<button class="tooltip " onclick="launchbios()">
+							<span class="tooltiptext">Lair Setup</span>
+							<span class="material-symbols-rounded">
+								power
+							</span>
+						</button>
+						<button class="tooltip " onclick="closeallwindows()">
+							<span class="tooltiptext">Close all windows</span>
+							<div class="checkbox-wrapper-44">
+								<label class="toggleButton">
+									<input type="checkbox" id="closeallwinsbtn">
+									<div>
+										<svg viewBox="0 0 44 44">
+											<path
+												d="M14,24 L21,31 L39.7428882,11.5937758 C35.2809627,6.53125861 30.0333333,4 24,4 C12.95,4 4,12.95 4,24 C4,35.05 12.95,44 24,44 C35.05,44 44,35.05 44,24 C44,19.3 42.5809627,15.1645919 39.7428882,11.5937758"
+												transform="translate(-2.000000, -2.000000)"></path>
+										</svg>
+									</div>
+								</label>
+							</div>
+						</button>
+						<button class="tooltip " style="margin-left: auto;" onclick="logoutoflair()">
+							<span class="tooltiptext">Sign Out</span>
+							<span class="material-symbols-rounded">
+								logout
+							</span>
+						</button>
+						</div>
+					</div>
+				</div>
+			</div>
+		</dialog>
+		<dialog id="miscapplistmod" class="scalableui onramcloseable navWindows">
+			<h1 id="miscapptitle"></h1>
+
+			<div id="miscappslist">
+			</div>
+		</dialog>
+			<dialog id="bios" class="scalableui onramcloseable">
+				<span class="material-symbols-rounded closebtn" onclick="gid('bios').close()">
+					close
+				</span>
+				<small>Welcome to LairOS Setup,</small>
+				<h1 id="lairsetupusernamedisplay"></h1>
+			<div class="buttongroup-grid">
+				<button onclick="gid('terminal').showModal();gid('bios').close();">
+					<span class="material-symbols-rounded">
+						developer_mode
+					</span>
+					Terminal
+				</button>
+				<button onclick="location.reload();gid('bios').close();">
+					<span class="material-symbols-rounded">
+						power_settings_new
+					</span>
+					Restart
+				</button>
+				<button onclick="installdefaultapps();gid('bios').close();">
+					<span class="material-symbols-rounded">
+						auto_fix_high
+					</span>
+					Fix default apps
+				</button>
+				<button onclick="logoutoflair()">
+					<span class="material-symbols-rounded">
+						logout
+					</span>
+					Sign out
+				</button>
+				<button onclick="backupsdia()">
+					<span class="material-symbols-rounded">
+						fast_rewind
+					</span>
+					Backups
+				</button>
+				<button onclick="removeUser()">
+					<span class="material-symbols-rounded">
+						person_off
+					</span>
+					Remove user
+				</button>
+				<button onclick="erdbsfull()">
+					<span class="material-symbols-rounded">
+						restart_alt
+					</span>
+					Reset LairOS
+				</button>
+			</div>
+		</dialog>
+
+		<dialog id="sleepwindow" class="scalableui onramcloseable">
+			<div class="sleepwincon">
+				<h1 id="sleeptimer">00:00</h1>
+				<p id="sleepmessage"></p>
+				<div id="sleepbtns">
+					<div>
+						<button onclick="startTimer(1)">60s</button>
+						<button onclick="startTimer(5)">5m</button>
+						<button onclick="startTimer(10)">10m</button>
+						<button onclick="startTimer(60)">1h</button>
+					</div>
+
+					<br>
+					<button onclick="setMessage()">Display a message</button>
+					<br>
+				</div>
+				<span class="material-symbols-rounded"
+					onclick="document.getElementById('sleepwindow').close(); clearInterval(countdown);clearInterval(countdown2);document.getElementById('sleeptimer').textContent = '00:00';document.getElementById('sleepbtns').style.display = 'block';">close</span>
+			</div>
+		</dialog>
+		<dialog id="terminal" class="scalableui onramcloseable">
+			<div class="containerterm">
+				<textarea id="termoutput"></textarea>
+				<script>
+					async function termrun() {
+						const inputValue = gid("terminput").value;
+						let result;
+
+
+						try {
+							result = await eval(inputValue);
+						} catch (error) {
+							result = error.message;
+						}
+
+						const outputElement = gid("termoutput");
+						if (typeof result === "object") {
+							outputElement.value += ">>> " + inputValue + "\n";
+							outputElement.value += JSON.stringify(result) + "\n";
+						} else {
+							outputElement.value += result + "\n";
+						}
+					}
+				</script>
+				<div class="btnc">
+					<input placeholder=">>>" id="terminput"> <button onclick="termrun()">run</button>
+				</div>
+			</div>
+		</dialog>
+		<dialog id="searchwindow" class="scalableui onramcloseable navWindows">
+			<div class="searchwincont">
+				<div class="searchside">
+					<div class="searchinputcont">
+						<span class="material-symbols-rounded" id="searchiconthingy">search</span>
+						<input placeholder="Search files..." id="strtsear" onkeyup="strtappse(event)">
+					</div>
+					<div class="strtappsugs" id="strtappsugs">
+					</div>
+
+					<div class="notiflist">
+						<div class="notiflistnav">
+							<span>Notifications</span>
+							<span class="material-symbols-rounded" onclick="displayNotifications('clear');">close</span>
+						</div>
+						<div id="notiflist">
+							No new notifications
+						</div>
+					</div>
+				</div>
+				<div class="previewsside">
+					<div id="seapppreview">
+						<div id="seprw-icon"></div>
+						<a id="seprw-appname"></a>
+						<button id="seprw-openb">Open</button>
+					</div>
+					<div id="partrecentapps">
+						<span class="smalltitl">Recently opened</span>
+						<div id="serrecentapps">
+
+						</div>
+					</div>
+				</div>
+			</div>
+		</dialog>
+
+		<dialog id="appgrpmodal" class="onramcloseable realmodal">
+			<div class="modal-items">
+				<h1 id="appgrp_name"></h1>
+				<div id="appgrp_list"></div>
+				<span class="material-symbols-rounded modal_close_btn" onclick="gid('appgrpmodal').close()">
+					close
+				</span>
+			</div>
+		</dialog>
+
+		<dialog id="AppInstDia" class="naviconf-dial realmodal onramcloseable">
+			<div class="modal-items">
+				<div class="app_inst_dia_nav">
+					<div id="app_inst_dia_icon"></div>
+					<p><span id="app_inst_mod_app_name"></span></p>
+				</div>
+
+				<ul id="app_inst_mod_li">
+				</ul>
+				<div class="button-container" style="display: flex;">
+					<button id="app_inst_mod_agbtn">Agree</button>
+					<button id="app_inst_mod_nobtn">Later</button>
+				</div>
+			</div>
+		</dialog>
+	</div>
+
+	<dialog id="nich">
+		<h1 id="nich-title">Nich</h1>
+		<span>LairOS is being installed...</span>
+	</dialog>
+
+	<dialog id="widgetPickerDialog" class="onramcloseable">
+		<div class="widget-picker-header">
+			<h2>Add Widget</h2>
+			<button class="widget-picker-close" onclick="gid('widgetPickerDialog').close()">&times;</button>
+		</div>
+		<div class="widget-picker-grid"></div>
+	</dialog>
+
+	<dialog id="widgetSettingsDialog" class="onramcloseable">
+		<div class="widget-settings-header">
+			<h3 class="widget-settings-title">Widget Settings</h3>
+			<button class="widget-settings-close" onclick="gid('widgetSettingsDialog').close()">&times;</button>
+		</div>
+		<div class="widget-settings-body"></div>
+	</dialog>
+
+	<!-- Wallet: Dropdown (when connected) -->
+	<div id="wallet-dropdown" class="wallet-dropdown">
+		<div class="wallet-dd-header">
+			<img id="wallet-dd-identicon" class="wallet-dd-identicon" src="" width="40" height="40" />
+			<div class="wallet-dd-info">
+				<span id="wallet-dd-address" class="wallet-dd-address"></span>
+				<span id="wallet-dd-balance" class="wallet-dd-balance">—</span>
+			</div>
+		</div>
+		<div class="wallet-dd-chain-row">
+			<span class="wallet-dd-chain-label">Network:</span>
+			<button id="wallet-chain-selector" class="wallet-dd-chain-btn">
+				<span id="wallet-dd-chain">Ethereum</span>
+				<span class="material-symbols-rounded wallet-dd-chevron">expand_more</span>
+			</button>
+		</div>
+		<div class="wallet-dd-actions">
+			<button id="wallet-copy-addr" class="wallet-dd-action">
+				<span class="material-symbols-rounded">content_copy</span> Copy Address
+			</button>
+			<button id="wallet-view-explorer" class="wallet-dd-action">
+				<span class="material-symbols-rounded">open_in_new</span> View on Explorer
+			</button>
+			<button id="wallet-disconnect-btn" class="wallet-dd-action wallet-dd-disconnect">
+				<span class="material-symbols-rounded">link_off</span> Disconnect
+			</button>
+		</div>
+	</div>
+
+	<!-- Wallet: Chain Selector Dropdown -->
+	<div id="wallet-chain-dropdown" class="wallet-chain-dropdown">
+		<div class="wallet-chain-dropdown-title">Switch Network</div>
+		<div class="wallet-chain-item" data-chain-id="1">
+			<span class="wallet-chain-dot" style="background:#627EEA"></span> Ethereum
+		</div>
+		<div class="wallet-chain-item" data-chain-id="8453">
+			<span class="wallet-chain-dot" style="background:#0052FF"></span> Base
+		</div>
+		<div class="wallet-chain-item" data-chain-id="42161">
+			<span class="wallet-chain-dot" style="background:#28A0F0"></span> Arbitrum One
+		</div>
+		<div class="wallet-chain-item" data-chain-id="137">
+			<span class="wallet-chain-dot" style="background:#8247E5"></span> Polygon
+		</div>
+		<div class="wallet-chain-item" data-chain-id="10">
+			<span class="wallet-chain-dot" style="background:#FF0420"></span> Optimism
+		</div>
+		<div class="wallet-chain-item" data-chain-id="56">
+			<span class="wallet-chain-dot" style="background:#F0B90B"></span> BSC
+		</div>
+	</div>
+
+	<!-- Wallet: Connect Modal -->
+	<dialog id="wallet-connect-modal" class="wallet-modal onramcloseable">
+		<div class="wallet-modal-inner">
+			<div class="wallet-modal-header">
+				<h2>Connect Wallet</h2>
+				<button id="wallet-modal-close" class="wallet-modal-close-btn">
+					<span class="material-symbols-rounded">close</span>
+				</button>
+			</div>
+			<div class="wallet-modal-options">
+				<button id="wallet-opt-metamask" class="wallet-opt">
+					<div class="wallet-opt-icon">
+						<svg width="28" height="28" viewBox="0 0 35 33" fill="none" xmlns="http://www.w3.org/2000/svg">
+							<path d="M32.96 1L19.7 10.82l2.45-5.73L32.96 1z" fill="#E17726" stroke="#E17726" stroke-width=".25"/>
+							<path d="M2.66 1l13.11 9.92-2.33-5.83L2.66 1zM28.23 23.53l-3.5 5.36 7.49 2.06 2.15-7.3-6.14-.12zM1.27 23.65l2.13 7.3 7.47-2.06-3.48-5.36-6.12.12z" fill="#E27625" stroke="#E27625" stroke-width=".25"/>
+							<path d="M10.47 14.51l-2.09 3.17 7.44.34-.26-8L10.47 14.51zM25.15 14.51l-5.18-4.58-.17 8.09 7.43-.34-2.08-3.17zM10.87 28.89l4.49-2.16-3.88-3.04-.61 5.2zM20.27 26.73l4.46 2.16-.6-5.2-3.86 3.04z" fill="#E27625" stroke="#E27625" stroke-width=".25"/>
+							<path d="M24.73 28.89l-4.46-2.16.36 2.9-.04 1.23 4.14-1.97zM10.87 28.89l4.16 1.97-.03-1.23.34-2.9-4.47 2.16z" fill="#D5BFB2" stroke="#D5BFB2" stroke-width=".25"/>
+							<path d="M15.11 21.78l-3.73-1.1 2.63-1.21 1.1 2.31zM20.51 21.78l1.1-2.31 2.64 1.21-3.74 1.1z" fill="#233447" stroke="#233447" stroke-width=".25"/>
+							<path d="M10.87 28.89l.63-5.36-4.11.12 3.48 5.24zM24.12 23.53l.61 5.36 3.48-5.24-4.09-.12zM27.23 17.68l-7.43.34.69 3.76 1.1-2.31 2.64 1.21 3-3zM11.38 20.68l2.63-1.21 1.1 2.31.7-3.76-7.44-.34 2.99 3z" fill="#CC6228" stroke="#CC6228" stroke-width=".25"/>
+							<path d="M8.37 17.68l3.1 6.05-.1-3.05-3-3zM24.23 20.68l-.12 3.05 3.12-6.05-3 3zM15.81 18.02l-.7 3.76.87 4.52.2-5.96-.37-2.32zM19.8 18.02l-.36 2.31.18 5.97.87-4.52-.69-3.76z" fill="#E27525" stroke="#E27525" stroke-width=".25"/>
+						</svg>
+					</div>
+					<div class="wallet-opt-text">
+						<span class="wallet-opt-name">MetaMask</span>
+						<span class="wallet-opt-status">Detected</span>
+					</div>
+					<span class="material-symbols-rounded wallet-opt-arrow">chevron_right</span>
+				</button>
+				<button id="wallet-opt-walletconnect" class="wallet-opt">
+					<div class="wallet-opt-icon">
+						<svg width="28" height="28" viewBox="0 0 300 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+							<circle cx="150" cy="150" r="150" fill="#3B99FC"/>
+							<path d="M98.6 127.4c28.4-27.8 74.4-27.8 102.8 0l3.4 3.3c1.4 1.4 1.4 3.6 0 5l-11.7 11.4c-.7.7-1.8.7-2.6 0l-4.7-4.6c-19.8-19.4-51.9-19.4-71.7 0l-5 4.9c-.7.7-1.9.7-2.6 0L95.1 136c-1.4-1.4-1.4-3.6 0-5l3.5-3.6zm127 23.5l10.4 10.2c1.4 1.4 1.4 3.6 0 5L192.3 208c-1.4 1.4-3.7 1.4-5.1 0l-30.8-30.1c-.4-.3-.9-.3-1.3 0L124.4 208c-1.4 1.4-3.7 1.4-5.2 0L75.6 166.1c-1.4-1.4-1.4-3.6 0-5l10.4-10.2c1.4-1.4 3.7-1.4 5.1 0l30.8 30.1c.4.3.9.3 1.3 0l30.8-30.1c1.4-1.4 3.7-1.4 5.1 0l30.8 30.1c.4.3.9.3 1.3 0l30.8-30.1c1.5-1.4 3.7-1.4 5.2 0z" fill="#fff"/>
+						</svg>
+					</div>
+					<div class="wallet-opt-text">
+						<span class="wallet-opt-name">WalletConnect</span>
+						<span class="wallet-opt-status">Scan QR code</span>
+					</div>
+					<span class="material-symbols-rounded wallet-opt-arrow">chevron_right</span>
+				</button>
+				<button id="wallet-opt-coinbase" class="wallet-opt">
+					<div class="wallet-opt-icon">
+						<svg width="28" height="28" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+							<rect width="1024" height="1024" rx="200" fill="#0052FF"/>
+							<circle cx="512" cy="512" r="320" fill="#fff"/>
+							<rect x="400" y="400" width="224" height="224" rx="24" fill="#0052FF"/>
+						</svg>
+					</div>
+					<div class="wallet-opt-text">
+						<span class="wallet-opt-name">Coinbase Wallet</span>
+						<span class="wallet-opt-status">Connect</span>
+					</div>
+					<span class="material-symbols-rounded wallet-opt-arrow">chevron_right</span>
+				</button>
+			</div>
+			<p class="wallet-modal-footer">By connecting, you agree to the Terms of Service</p>
+		</div>
+	</dialog>
+
+	<!-- Wallet: Transaction Confirmation Modal -->
+	<dialog id="wallet-tx-modal" class="wallet-modal wallet-tx-dialog">
+		<div class="wallet-modal-inner">
+			<div class="wallet-modal-header">
+				<h2>Confirm Transaction</h2>
+			</div>
+			<div class="wallet-tx-details">
+				<div class="wallet-tx-row"><span class="wallet-tx-label">From</span><span id="wallet-tx-from" class="wallet-tx-val">—</span></div>
+				<div class="wallet-tx-row"><span class="wallet-tx-label">To</span><span id="wallet-tx-to" class="wallet-tx-val">—</span></div>
+				<div class="wallet-tx-row"><span class="wallet-tx-label">Value</span><span id="wallet-tx-value" class="wallet-tx-val">—</span></div>
+				<div class="wallet-tx-row"><span class="wallet-tx-label">Data</span><span id="wallet-tx-data" class="wallet-tx-val">None</span></div>
+				<div class="wallet-tx-row"><span class="wallet-tx-label">Network</span><span id="wallet-tx-chain" class="wallet-tx-val">—</span></div>
+			</div>
+			<div class="wallet-tx-buttons">
+				<button id="wallet-tx-reject" class="wallet-tx-btn wallet-tx-btn-reject">Reject</button>
+				<button id="wallet-tx-confirm" class="wallet-tx-btn wallet-tx-btn-confirm">Confirm</button>
+			</div>
+		</div>
+	</dialog>
+	<!-- Command Palette (Ctrl+K / Ctrl+Shift+P) -->
+	<div id="command-palette" style="display:none">
+		<div class="palette-backdrop"></div>
+		<div class="palette-container">
+			<div class="palette-input-wrap">
+				<span class="material-symbols-rounded palette-search-icon">search</span>
+				<input type="text" id="palette-input" placeholder="Type a command…" autocomplete="off" spellcheck="false">
+				<kbd class="palette-hint">esc</kbd>
+			</div>
+			<div id="palette-results"></div>
+		</div>
+	</div>
+	<!-- Sidebar Dock click handlers -->
+	<script>
+	document.addEventListener('DOMContentLoaded', function() {
+		var sidebar = document.getElementById('lair-sidebar');
+		if (!sidebar) return;
+		sidebar.addEventListener('click', function(e) {
+			var btn = e.target.closest('.sidebar-item');
+			if (!btn) return;
+			var app = btn.getAttribute('data-app');
+			if (app && typeof openapp === 'function') {
+				openapp(app, 1);
+			}
+		});
+	});
+	</script>
+</body>
+
+</html>

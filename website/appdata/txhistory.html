@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="lair-include" content="lair.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="lair-icon" content="receipt_long">
+    <title>Transaction History</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Symbols+Outlined" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 50%, #0f0f1a 100%);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .header {
+            margin-bottom: 24px;
+        }
+
+        .header h1 {
+            font-size: 22px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            background: linear-gradient(90deg, #fff, #60a5fa);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header p {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 14px;
+        }
+
+        /* Search Bar */
+        .search-section {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 24px;
+            backdrop-filter: blur(20px);
+        }
+
+        .search-row {
+            display: flex;
+            gap: 12px;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 14px 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            color: #fff;
+            font-size: 14px;
+            font-family: 'SF Mono', 'Consolas', monospace;
+            outline: none;
+        }
+
+        .search-input::placeholder {
+            color: rgba(255, 255, 255, 0.3);
+        }
+
+        .search-input:focus {
+            border-color: rgba(96, 165, 250, 0.5);
+        }
+
+        .search-btn {
+            padding: 14px 24px;
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            border: none;
+            border-radius: 10px;
+            color: #fff;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .search-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(59, 130, 246, 0.3);
+        }
+
+        .search-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Filters */
+        .filters {
+            display: flex;
+            gap: 12px;
+            margin-top: 16px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .filter-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .filter-btn.active {
+            background: rgba(59, 130, 246, 0.2);
+            border-color: rgba(59, 130, 246, 0.5);
+            color: #60a5fa;
+        }
+
+        /* Transactions Table */
+        .tx-section {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            overflow: hidden;
+            backdrop-filter: blur(20px);
+        }
+
+        .tx-header {
+            display: grid;
+            grid-template-columns: 100px 1fr 120px 140px 80px;
+            padding: 14px 20px;
+            background: rgba(255, 255, 255, 0.03);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            font-size: 11px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.5);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .tx-list {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .tx-item {
+            display: grid;
+            grid-template-columns: 100px 1fr 120px 140px 80px;
+            padding: 16px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            align-items: center;
+            transition: background 0.2s;
+        }
+
+        .tx-item:hover {
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .tx-item:last-child {
+            border-bottom: none;
+        }
+
+        .tx-type {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .tx-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .tx-icon.send {
+            background: rgba(239, 68, 68, 0.15);
+            color: #ef4444;
+        }
+
+        .tx-icon.receive {
+            background: rgba(34, 197, 94, 0.15);
+            color: #22c55e;
+        }
+
+        .tx-icon.swap {
+            background: rgba(139, 92, 246, 0.15);
+            color: #8b5cf6;
+        }
+
+        .tx-icon.approve {
+            background: rgba(251, 191, 36, 0.15);
+            color: #fbbf24;
+        }
+
+        .tx-icon .material-symbols-outlined {
+            font-size: 18px;
+        }
+
+        .tx-type-label {
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .tx-hash {
+            font-family: 'SF Mono', 'Consolas', monospace;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .tx-hash a {
+            color: #60a5fa;
+            text-decoration: none;
+        }
+
+        .tx-hash a:hover {
+            text-decoration: underline;
+        }
+
+        .tx-amount {
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .tx-amount.negative {
+            color: #ef4444;
+        }
+
+        .tx-amount.positive {
+            color: #22c55e;
+        }
+
+        .tx-date {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .tx-status {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .status-dot.success {
+            background: #22c55e;
+        }
+
+        .status-dot.pending {
+            background: #fbbf24;
+            animation: pulse 1.5s infinite;
+        }
+
+        .status-dot.failed {
+            background: #ef4444;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        /* Pagination */
+        .pagination {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .page-info {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .page-btns {
+            display: flex;
+            gap: 8px;
+        }
+
+        .page-btn {
+            padding: 8px 14px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .page-btn:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .page-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        /* Loading & Empty States */
+        .loading-state,
+        .empty-state {
+            padding: 60px 20px;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .loading-state .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top-color: #3b82f6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .empty-state .material-symbols-outlined {
+            font-size: 48px;
+            margin-bottom: 12px;
+            opacity: 0.3;
+        }
+
+        .empty-state p {
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        .empty-state small {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.3);
+        }
+
+        /* Connected wallet indicator */
+        .connected-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 14px;
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            border-radius: 20px;
+            font-size: 12px;
+            color: #22c55e;
+            margin-bottom: 12px;
+        }
+
+        .connected-badge .dot {
+            width: 6px;
+            height: 6px;
+            background: #22c55e;
+            border-radius: 50%;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Transaction History</h1>
+            <p>View and filter your blockchain transactions</p>
+        </div>
+
+        <!-- Search Section -->
+        <div class="search-section">
+            <div id="connectedWallet"></div>
+            <div class="search-row">
+                <input 
+                    type="text" 
+                    class="search-input" 
+                    id="addressInput"
+                    placeholder="Enter wallet address (0x...)"
+                >
+                <button class="search-btn" id="searchBtn" onclick="fetchTransactions()">
+                    <span class="material-symbols-outlined">search</span>
+                    Search
+                </button>
+            </div>
+            <div class="filters" style="margin-bottom:8px">
+                <button class="filter-btn active" data-chain="ethereum" onclick="setChain('ethereum')">Ethereum</button>
+                <button class="filter-btn" data-chain="base" onclick="setChain('base')">Base</button>
+                <button class="filter-btn" data-chain="arbitrum" onclick="setChain('arbitrum')">Arbitrum</button>
+                <button class="filter-btn" data-chain="polygon" onclick="setChain('polygon')">Polygon</button>
+            </div>
+            <div class="filters">
+                <button class="filter-btn active" data-filter="all" onclick="setFilter('all')">All</button>
+                <button class="filter-btn" data-filter="send" onclick="setFilter('send')">Sent</button>
+                <button class="filter-btn" data-filter="receive" onclick="setFilter('receive')">Received</button>
+                <button class="filter-btn" data-filter="swap" onclick="setFilter('swap')">Swaps</button>
+                <button class="filter-btn" data-filter="approve" onclick="setFilter('approve')">Approvals</button>
+            </div>
+        </div>
+
+        <!-- Transactions -->
+        <div class="tx-section">
+            <div class="tx-header">
+                <div>Type</div>
+                <div>Transaction</div>
+                <div>Amount</div>
+                <div>Date</div>
+                <div>Status</div>
+            </div>
+            <div class="tx-list" id="txList">
+                <div class="empty-state">
+                    <span class="material-symbols-outlined">receipt_long</span>
+                    <p>Enter a wallet address to view transactions</p>
+                    <small>Supports Ethereum addresses</small>
+                </div>
+            </div>
+            <div class="pagination" id="pagination" style="display: none;">
+                <div class="page-info" id="pageInfo">Showing 1-10 of 50</div>
+                <div class="page-btns">
+                    <button class="page-btn" id="prevBtn" onclick="prevPage()">← Previous</button>
+                    <button class="page-btn" id="nextBtn" onclick="nextPage()">Next →</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // State
+        let transactions = [];
+        let filteredTx = [];
+        let currentFilter = 'all';
+        let currentChain = 'ethereum';
+        let currentPage = 1;
+        const perPage = 10;
+
+        // Chain configuration
+        const CHAINS = {
+            ethereum: { api: 'https://api.etherscan.io/api', explorer: 'https://etherscan.io', label: 'Ethereum', nativeSymbol: 'ETH' },
+            base: { api: 'https://api.basescan.org/api', explorer: 'https://basescan.org', label: 'Base', nativeSymbol: 'ETH' },
+            arbitrum: { api: 'https://api.arbiscan.io/api', explorer: 'https://arbiscan.io', label: 'Arbitrum', nativeSymbol: 'ETH' },
+            polygon: { api: 'https://api.polygonscan.com/api', explorer: 'https://polygonscan.com', label: 'Polygon', nativeSymbol: 'MATIC' }
+        };
+
+        let ethPrice = 0; // cached ETH price for USD display
+        let maticPrice = 0;
+
+        // Fetch native token price for USD display
+        async function fetchNativePrice() {
+            const fetchFn = typeof cfetch === 'function' ? cfetch : fetch;
+            try {
+                const res = await fetchFn('https://api.coingecko.com/api/v3/simple/price?ids=ethereum,matic-network&vs_currencies=usd');
+                const data = await res.json();
+                if (data.ethereum) ethPrice = data.ethereum.usd;
+                if (data['matic-network']) maticPrice = data['matic-network'].usd;
+            } catch(_) {}
+        }
+        fetchNativePrice();
+
+        function setChain(chain) {
+            currentChain = chain;
+            document.querySelectorAll('.filters:first-of-type .filter-btn, [data-chain]').forEach(btn => {
+                if (btn.dataset.chain) btn.classList.toggle('active', btn.dataset.chain === chain);
+            });
+            // Auto-fetch if address is present
+            const address = document.getElementById('addressInput').value.trim();
+            if (address && address.startsWith('0x') && address.length === 42) {
+                fetchTransactions();
+            }
+        }
+
+        // Check for connected wallet from parent
+        function checkConnectedWallet() {
+            const saved = localStorage.getItem('lair_wallet');
+            if (saved) {
+                try {
+                    const data = JSON.parse(saved);
+                    if (data.address) {
+                        const shortAddr = data.address.slice(0, 6) + '...' + data.address.slice(-4);
+                        document.getElementById('connectedWallet').innerHTML = `
+                            <div class="connected-badge">
+                                <div class="dot"></div>
+                                Connected: ${shortAddr}
+                            </div>
+                        `;
+                        document.getElementById('addressInput').value = data.address;
+                    }
+                } catch(_) {}
+            }
+        }
+
+        // Fetch transactions from Etherscan API (real data)
+        async function fetchTransactions() {
+            const address = document.getElementById('addressInput').value.trim();
+            if (!address || !address.startsWith('0x') || address.length !== 42) {
+                alert('Please enter a valid Ethereum address (42 characters starting with 0x)');
+                return;
+            }
+
+            const btn = document.getElementById('searchBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner" style="width:16px;height:16px;border-width:2px;margin:0;"></span> Loading...';
+
+            document.getElementById('txList').innerHTML = `
+                <div class="loading-state">
+                    <div class="spinner"></div>
+                    <p>Fetching transactions from ${CHAINS[currentChain].label}...</p>
+                </div>
+            `;
+
+            const fetchFn = typeof cfetch === 'function' ? cfetch : fetch;
+            const chainConf = CHAINS[currentChain];
+
+            try {
+                // Fetch normal transactions from chain explorer API
+                const url = `${chainConf.api}?module=account&action=txlist&address=${address}&startblock=0&endblock=99999999&page=1&offset=100&sort=desc`;
+                const res = await fetchFn(url);
+                const data = await res.json();
+
+                if (data.status === '1' && Array.isArray(data.result)) {
+                    const addrLower = address.toLowerCase();
+                    transactions = data.result.map(tx => {
+                        const isReceive = tx.to?.toLowerCase() === addrLower;
+                        const isSend = tx.from?.toLowerCase() === addrLower;
+                        const isContract = tx.input && tx.input !== '0x' && tx.input.length > 10;
+                        const valueEth = parseFloat(tx.value) / 1e18;
+
+                        let type = 'send';
+                        if (isContract && tx.functionName?.toLowerCase().includes('swap')) type = 'swap';
+                        else if (isContract && tx.functionName?.toLowerCase().includes('approve')) type = 'approve';
+                        else if (isReceive && !isSend) type = 'receive';
+                        else if (isSend) type = 'send';
+
+                        const shortHash = tx.hash.slice(0, 10) + '...' + tx.hash.slice(-6);
+                        const shortFrom = tx.from ? tx.from.slice(0, 6) + '...' + tx.from.slice(-4) : '';
+                        const shortTo = tx.to ? tx.to.slice(0, 6) + '...' + tx.to.slice(-4) : 'Contract Creation';
+
+                        const nativeSymbol = chainConf.nativeSymbol || 'ETH';
+                        const nativePrice = nativeSymbol === 'MATIC' ? maticPrice : ethPrice;
+
+                        let amountStr = valueEth > 0 ? `${type === 'receive' ? '' : '-'}${valueEth.toFixed(4)} ${nativeSymbol}` : (tx.functionName?.split('(')[0] || 'Contract Call');
+                        if (type === 'approve') amountStr = `Approve ${tx.functionName?.split('(')[0] || 'Token'}`;
+
+                        const usdValue = valueEth > 0 && nativePrice > 0 ? valueEth * nativePrice : 0;
+
+                        return {
+                            hash: shortHash,
+                            fullHash: tx.hash,
+                            type,
+                            amount: amountStr,
+                            usd: usdValue,
+                            from: shortFrom,
+                            to: shortTo,
+                            date: new Date(parseInt(tx.timeStamp) * 1000).toISOString(),
+                            status: tx.isError === '0' ? 'success' : 'failed',
+                            gasUsed: tx.gasUsed,
+                            gasPrice: tx.gasPrice
+                        };
+                    });
+
+                    filteredTx = [...transactions];
+                    currentPage = 1;
+                    renderTransactions();
+                } else if (data.status === '0' && data.message === 'No transactions found') {
+                    transactions = [];
+                    filteredTx = [];
+                    document.getElementById('txList').innerHTML = `
+                        <div class="empty-state">
+                            <span class="material-symbols-outlined">search_off</span>
+                            <p>No transactions found for this address</p>
+                            <small>This address may have no activity on ${CHAINS[currentChain].label}</small>
+                        </div>
+                    `;
+                    document.getElementById('pagination').style.display = 'none';
+                } else {
+                    const resultText = typeof data.result === 'string' ? data.result : '';
+                    if (resultText.toLowerCase().includes('rate limit')) {
+                        throw new Error('Etherscan rate limit reached. Please retry in 60 seconds.');
+                    }
+                    throw new Error(resultText || data.message || 'API error');
+                }
+            } catch (error) {
+                document.getElementById('txList').innerHTML = `
+                    <div class="empty-state">
+                        <span class="material-symbols-outlined">error</span>
+                        <p>Failed to fetch transactions</p>
+                        <small>${error.message || 'Network error — try again'}</small>
+                        <button class="search-btn" style="margin-top:12px" onclick="fetchTransactions()">Retry</button>
+                    </div>
+                `;
+            }
+
+            btn.disabled = false;
+            btn.innerHTML = '<span class="material-symbols-outlined">search</span> Search';
+        }
+
+        // Set filter
+        function setFilter(filter) {
+            currentFilter = filter;
+            currentPage = 1;
+
+            // Update button states
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.filter === filter);
+            });
+
+            // Filter transactions
+            if (filter === 'all') {
+                filteredTx = [...transactions];
+            } else {
+                filteredTx = transactions.filter(tx => tx.type === filter);
+            }
+
+            renderTransactions();
+        }
+
+        // Render transactions
+        function renderTransactions() {
+            const container = document.getElementById('txList');
+            const pagination = document.getElementById('pagination');
+
+            if (filteredTx.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <span class="material-symbols-outlined">filter_list_off</span>
+                        <p>No transactions found</p>
+                        <small>Try a different filter or address</small>
+                    </div>
+                `;
+                pagination.style.display = 'none';
+                return;
+            }
+
+            // Paginate
+            const start = (currentPage - 1) * perPage;
+            const end = start + perPage;
+            const pageTx = filteredTx.slice(start, end);
+            const totalPages = Math.ceil(filteredTx.length / perPage);
+
+            container.innerHTML = pageTx.map(tx => {
+                const icons = {
+                    send: 'arrow_upward',
+                    receive: 'arrow_downward',
+                    swap: 'swap_horiz',
+                    approve: 'check_circle'
+                };
+
+                const labels = {
+                    send: 'Sent',
+                    receive: 'Received',
+                    swap: 'Swap',
+                    approve: 'Approval'
+                };
+
+                const date = new Date(tx.date);
+                const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                const timeStr = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+
+                const amountClass = tx.type === 'receive' ? 'positive' : (tx.type === 'send' ? 'negative' : '');
+
+                return `
+                    <div class="tx-item">
+                        <div class="tx-type">
+                            <div class="tx-icon ${tx.type}">
+                                <span class="material-symbols-outlined">${icons[tx.type]}</span>
+                            </div>
+                            <span class="tx-type-label">${labels[tx.type]}</span>
+                        </div>
+                        <div class="tx-hash">
+                            <a href="${CHAINS[currentChain].explorer}/tx/${tx.fullHash || tx.hash}" target="_blank" rel="noopener">
+                                ${tx.hash}
+                            </a>
+                        </div>
+                        <div class="tx-amount ${amountClass}">
+                            ${tx.amount}${tx.usd > 0 ? `<br><small style="opacity:0.5;font-size:11px">$${tx.usd.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2})}</small>` : ''}
+                        </div>
+                        <div class="tx-date">
+                            ${dateStr}<br>
+                            <small style="opacity: 0.6">${timeStr}</small>
+                        </div>
+                        <div class="tx-status">
+                            <div class="status-dot ${tx.status}"></div>
+                            ${tx.status.charAt(0).toUpperCase() + tx.status.slice(1)}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // Update pagination
+            pagination.style.display = 'flex';
+            document.getElementById('pageInfo').textContent = 
+                `Showing ${start + 1}-${Math.min(end, filteredTx.length)} of ${filteredTx.length}`;
+            document.getElementById('prevBtn').disabled = currentPage === 1;
+            document.getElementById('nextBtn').disabled = currentPage === totalPages;
+        }
+
+        function prevPage() {
+            if (currentPage > 1) {
+                currentPage--;
+                renderTransactions();
+            }
+        }
+
+        function nextPage() {
+            const totalPages = Math.ceil(filteredTx.length / perPage);
+            if (currentPage < totalPages) {
+                currentPage++;
+                renderTransactions();
+            }
+        }
+
+        // Allow Enter key to search
+        document.getElementById('addressInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                fetchTransactions();
+            }
+        });
+
+        // Initialize
+        checkConnectedWallet();
+    </script>
+</body>
+</html>

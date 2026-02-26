@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="lair-include" content="lair.css">
+    <meta name="lair-icon" content="radar">
+    <meta name="capabilities" content="yield_radar,defi">
+    <meta name="lair-perms" content="network" />
+    <title>DeFi Yield Radar</title>
+    <style>
+        :root {
+            --bg-primary: #080a12;
+            --bg-secondary: #0d1020;
+            --bg-card: #111528;
+            --bg-hover: #161a32;
+            --text-primary: #e4e8f7;
+            --text-secondary: #7a82a6;
+            --text-muted: #4a5070;
+            --accent: #6c5ce7;
+            --green: #00d4aa;
+            --green-bg: rgba(0,212,170,0.1);
+            --red: #ff4466;
+            --red-bg: rgba(255,68,102,0.08);
+            --yellow: #fbbf24;
+            --yellow-bg: rgba(251,191,36,0.1);
+            --blue: #4ea8ff;
+            --border: rgba(255,255,255,0.06);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { height: 100%; overflow: hidden; }
+        body {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            font-size: 13px;
+        }
+        .app {
+            display: grid;
+            grid-template-rows: auto auto auto 1fr;
+            height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg-secondary);
+        }
+        .header h1 {
+            font-size: 15px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent), #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .hdr-badge {
+            font-size: 10px;
+            padding: 2px 8px;
+            border-radius: 9999px;
+            background: var(--green-bg);
+            color: var(--green);
+            font-weight: 600;
+        }
+        .hdr-right { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+        .search-box {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            width: 160px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .search-box:focus { border-color: var(--accent); }
+        select.filter-sel {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 6px 8px;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        select.filter-sel option { background: var(--bg-secondary); }
+
+        /* Stats Row */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            padding: 10px 16px;
+            border-bottom: 1px solid var(--border);
+        }
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px 12px;
+        }
+        .stat-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+        .stat-value { font-size: 18px; font-weight: 700; margin-top: 2px; }
+        .stat-sub { font-size: 10px; color: var(--text-secondary); margin-top: 2px; }
+
+        /* Filter tabs */
+        .filter-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            border-bottom: 1px solid var(--border);
+            overflow-x: auto;
+            flex-shrink: 0;
+        }
+        .chain-btn {
+            padding: 4px 10px;
+            border: 1px solid var(--border);
+            background: none;
+            color: var(--text-secondary);
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s;
+            white-space: nowrap;
+        }
+        .chain-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+        .chain-btn:hover:not(.active) { background: var(--bg-hover); color: var(--text-primary); }
+        .filter-sep {
+            width: 1px;
+            height: 20px;
+            background: var(--border);
+            flex-shrink: 0;
+        }
+        .risk-badge {
+            display: inline-block;
+            padding: 1px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 700;
+        }
+        .risk-low { background: var(--green-bg); color: var(--green); }
+        .risk-med { background: var(--yellow-bg); color: var(--yellow); }
+        .risk-high { background: var(--red-bg); color: var(--red); }
+
+        /* Table */
+        .table-wrap {
+            overflow: auto;
+            min-height: 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 900px;
+        }
+        thead th {
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            background: var(--bg-secondary);
+            padding: 8px 12px;
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+            cursor: pointer;
+            user-select: none;
+        }
+        thead th:hover { color: var(--text-secondary); }
+        thead th.sorted { color: var(--accent); }
+        thead th .arrow { font-size: 10px; margin-left: 2px; }
+        tbody tr {
+            border-bottom: 1px solid rgba(255,255,255,0.03);
+            transition: background 0.1s;
+        }
+        tbody tr:hover { background: var(--bg-hover); }
+        td {
+            padding: 8px 12px;
+            font-size: 12px;
+            font-variant-numeric: tabular-nums;
+        }
+        .pool-name {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        .protocol-name {
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+        .chain-tag {
+            font-size: 10px;
+            padding: 1px 6px;
+            border-radius: 4px;
+            background: rgba(255,255,255,0.06);
+            color: var(--text-secondary);
+        }
+        .apy-cell {
+            font-weight: 700;
+            font-size: 13px;
+        }
+        .apy-positive { color: var(--green); }
+        .apy-negative { color: var(--red); }
+        .tvl-cell { color: var(--text-secondary); }
+        .change-up { color: var(--green); }
+        .change-down { color: var(--red); }
+        .il-warn { color: var(--yellow); font-size: 10px; }
+
+        .loading { padding: 40px; text-align: center; color: var(--text-muted); }
+        .error { padding: 20px; text-align: center; color: var(--red); font-size: 12px; }
+        .empty { padding: 40px; text-align: center; color: var(--text-muted); font-size: 12px; }
+
+        @media (max-width: 800px) {
+            .stats-row { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <div class="header">
+            <h1>DeFi Yield Radar</h1>
+            <span class="hdr-badge" id="poolCount">—</span>
+            <div class="hdr-right">
+                <input type="text" class="search-box" id="search" placeholder="Search pool or protocol...">
+                <select class="filter-sel" id="sortSelect">
+                    <option value="apy-desc">Highest APY</option>
+                    <option value="apy-asc">Lowest APY</option>
+                    <option value="tvl-desc">Highest TVL</option>
+                    <option value="tvl-asc">Lowest TVL</option>
+                    <option value="change-desc">Biggest APY Gain</option>
+                    <option value="change-asc">Biggest APY Drop</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="stats-row">
+            <div class="stat-card">
+                <div class="stat-label">Top APY (Stablecoins)</div>
+                <div class="stat-value apy-positive" id="topStable">—</div>
+                <div class="stat-sub" id="topStableInfo">—</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Top APY (Blue Chips)</div>
+                <div class="stat-value apy-positive" id="topBlue">—</div>
+                <div class="stat-sub" id="topBlueInfo">—</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Median APY</div>
+                <div class="stat-value" id="medianApy">—</div>
+                <div class="stat-sub" id="medianApyInfo">Across all pools</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Total Pools Tracked</div>
+                <div class="stat-value" style="color:var(--blue)" id="totalPools">—</div>
+                <div class="stat-sub" id="totalPoolsInfo">—</div>
+            </div>
+        </div>
+
+        <div class="filter-row" id="chainFilters">
+            <button class="chain-btn active" data-chain="all">All Chains</button>
+            <div class="filter-sep"></div>
+        </div>
+
+        <div class="table-wrap" id="tableWrap">
+            <div class="loading" id="loading">Loading yield data from DeFi Llama...</div>
+            <table class="hidden" id="yieldTable">
+                <thead>
+                    <tr>
+                        <th data-sort="pool">Pool</th>
+                        <th data-sort="protocol">Protocol</th>
+                        <th data-sort="chain">Chain</th>
+                        <th data-sort="apy">APY</th>
+                        <th data-sort="apyBase">Base APY</th>
+                        <th data-sort="apyReward">Reward APY</th>
+                        <th data-sort="tvl">TVL</th>
+                        <th data-sort="change1d">1d Δ</th>
+                        <th data-sort="change7d">7d Δ</th>
+                        <th>Risk</th>
+                    </tr>
+                </thead>
+                <tbody id="tbody"></tbody>
+            </table>
+            <div class="empty hidden" id="empty">No pools match your filters</div>
+        </div>
+    </div>
+
+    <script>
+    (() => {
+        /* ── State ──────────────────────────── */
+        let allPools = [];
+        let filteredPools = [];
+        let selectedChain = 'all';
+        let searchQuery = '';
+        let sortKey = 'apy';
+        let sortDir = 'desc';
+
+        const STABLECOINS = ['USDT', 'USDC', 'DAI', 'FRAX', 'LUSD', 'BUSD', 'TUSD', 'USDD', 'GHO', 'crvUSD', 'PYUSD'];
+        const BLUE_CHIPS = ['ETH', 'WETH', 'stETH', 'wstETH', 'BTC', 'WBTC', 'cbETH', 'rETH'];
+        const TOP_CHAINS = ['Ethereum', 'Arbitrum', 'Polygon', 'Optimism', 'BSC', 'Avalanche', 'Base', 'Solana', 'Sui', 'Fantom'];
+
+        /* ── DOM ────────────────────────────── */
+        const $loading = document.getElementById('loading');
+        const $table = document.getElementById('yieldTable');
+        const $tbody = document.getElementById('tbody');
+        const $empty = document.getElementById('empty');
+        const $search = document.getElementById('search');
+        const $sortSelect = document.getElementById('sortSelect');
+        const $chainFilters = document.getElementById('chainFilters');
+
+        /* ── Fetch from DeFi Llama ──────────── */
+        async function fetchYields() {
+            try {
+                const fetchFn = window.cfetch || fetch;
+                const res = await fetchFn('https://yields.llama.fi/pools');
+                const data = await res.json();
+
+                if (!data.data || !Array.isArray(data.data)) throw new Error('Invalid response');
+
+                // Filter: only pools with >$100K TVL and valid APY
+                allPools = data.data
+                    .filter(p => p.tvlUsd > 100000 && p.apy != null && p.apy > 0 && p.apy < 10000)
+                    .map(p => ({
+                        pool: p.pool,
+                        symbol: p.symbol || '?',
+                        project: p.project || '?',
+                        chain: p.chain || '?',
+                        apy: p.apy || 0,
+                        apyBase: p.apyBase || 0,
+                        apyReward: p.apyReward || 0,
+                        tvl: p.tvlUsd || 0,
+                        change1d: p.apyPct1D || 0,
+                        change7d: p.apyPct7D || 0,
+                        stablecoin: p.stablecoin || false,
+                        ilRisk: p.ilRisk === 'yes' ? 'IL' : (p.exposure === 'single' ? 'Single' : ''),
+                        predictions: p.predictions || {},
+                    }));
+
+                $loading.classList.add('hidden');
+                $table.classList.remove('hidden');
+                buildChainFilters();
+                updateStats();
+                applyFilters();
+            } catch (e) {
+                $loading.innerHTML = `<div class="error">Failed to load yield data: ${e.message}<br><button onclick="location.reload()" style="margin-top:8px;padding:6px 16px;border-radius:6px;border:1px solid var(--border);background:var(--bg-card);color:var(--text-primary);cursor:pointer">Retry</button></div>`;
+            }
+        }
+
+        /* ── Chain filter buttons ───────────── */
+        function buildChainFilters() {
+            const chains = {};
+            allPools.forEach(p => { chains[p.chain] = (chains[p.chain] || 0) + 1; });
+            const sorted = Object.entries(chains).sort((a, b) => b[1] - a[1]).slice(0, 12);
+            sorted.forEach(([chain]) => {
+                const btn = document.createElement('button');
+                btn.className = 'chain-btn';
+                btn.dataset.chain = chain;
+                btn.textContent = chain;
+                btn.addEventListener('click', () => {
+                    selectedChain = chain;
+                    document.querySelectorAll('.chain-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    applyFilters();
+                });
+                $chainFilters.appendChild(btn);
+            });
+        }
+
+        /* ── Stats ──────────────────────────── */
+        function updateStats() {
+            // Top stablecoin APY
+            const stables = allPools.filter(p => p.stablecoin).sort((a, b) => b.apy - a.apy);
+            if (stables.length) {
+                document.getElementById('topStable').textContent = stables[0].apy.toFixed(2) + '%';
+                document.getElementById('topStableInfo').textContent = `${stables[0].symbol} on ${stables[0].project}`;
+            }
+
+            // Top blue chip APY
+            const blues = allPools.filter(p => BLUE_CHIPS.some(bc => p.symbol.toUpperCase().includes(bc)));
+            blues.sort((a, b) => b.apy - a.apy);
+            if (blues.length) {
+                document.getElementById('topBlue').textContent = blues[0].apy.toFixed(2) + '%';
+                document.getElementById('topBlueInfo').textContent = `${blues[0].symbol} on ${blues[0].project}`;
+            }
+
+            // Median APY
+            const apys = allPools.map(p => p.apy).sort((a, b) => a - b);
+            const median = apys[Math.floor(apys.length / 2)] || 0;
+            document.getElementById('medianApy').textContent = median.toFixed(2) + '%';
+
+            // Total pools
+            const uniqueChains = new Set(allPools.map(p => p.chain));
+            document.getElementById('totalPools').textContent = allPools.length.toLocaleString();
+            document.getElementById('totalPoolsInfo').textContent = `Across ${uniqueChains.size} chains`;
+            document.getElementById('poolCount').textContent = allPools.length + ' pools';
+        }
+
+        /* ── Filter & Sort ──────────────────── */
+        function applyFilters() {
+            filteredPools = allPools.filter(p => {
+                if (selectedChain !== 'all' && p.chain !== selectedChain) return false;
+                if (searchQuery) {
+                    const q = searchQuery.toLowerCase();
+                    return p.symbol.toLowerCase().includes(q) ||
+                           p.project.toLowerCase().includes(q) ||
+                           p.chain.toLowerCase().includes(q);
+                }
+                return true;
+            });
+
+            // Sort
+            filteredPools.sort((a, b) => {
+                let va = a[sortKey], vb = b[sortKey];
+                if (typeof va === 'string') va = va.toLowerCase();
+                if (typeof vb === 'string') vb = vb.toLowerCase();
+                return sortDir === 'desc' ? (vb > va ? 1 : -1) : (va > vb ? 1 : -1);
+            });
+
+            renderTable();
+        }
+
+        /* ── Render ─────────────────────────── */
+        function renderTable() {
+            if (!filteredPools.length) {
+                $tbody.innerHTML = '';
+                $empty.classList.remove('hidden');
+                return;
+            }
+            $empty.classList.add('hidden');
+
+            // Show top 200 for perf
+            const slice = filteredPools.slice(0, 200);
+            $tbody.innerHTML = slice.map(p => {
+                const riskClass = p.stablecoin ? 'risk-low' : (p.ilRisk === 'IL' ? 'risk-high' : 'risk-med');
+                const riskText = p.stablecoin ? 'Low' : (p.ilRisk === 'IL' ? 'IL Risk' : (p.ilRisk === 'Single' ? 'Single' : 'Med'));
+
+                return `<tr>
+                    <td><span class="pool-name">${escHtml(p.symbol)}</span></td>
+                    <td><span class="protocol-name">${escHtml(p.project)}</span></td>
+                    <td><span class="chain-tag">${escHtml(p.chain)}</span></td>
+                    <td class="apy-cell apy-positive">${p.apy.toFixed(2)}%</td>
+                    <td class="tvl-cell">${p.apyBase ? p.apyBase.toFixed(2) + '%' : '—'}</td>
+                    <td class="tvl-cell">${p.apyReward ? p.apyReward.toFixed(2) + '%' : '—'}</td>
+                    <td class="tvl-cell">${formatTVL(p.tvl)}</td>
+                    <td class="${p.change1d >= 0 ? 'change-up' : 'change-down'}">${p.change1d != null ? (p.change1d >= 0 ? '+' : '') + p.change1d.toFixed(1) + '%' : '—'}</td>
+                    <td class="${p.change7d >= 0 ? 'change-up' : 'change-down'}">${p.change7d != null ? (p.change7d >= 0 ? '+' : '') + p.change7d.toFixed(1) + '%' : '—'}</td>
+                    <td><span class="risk-badge ${riskClass}">${riskText}</span></td>
+                </tr>`;
+            }).join('');
+        }
+
+        /* ── Events ─────────────────────────── */
+        $search.addEventListener('input', () => {
+            searchQuery = $search.value.trim();
+            applyFilters();
+        });
+
+        $sortSelect.addEventListener('change', () => {
+            const val = $sortSelect.value;
+            const [key, dir] = val.split('-');
+            sortKey = key;
+            sortDir = dir;
+            applyFilters();
+        });
+
+        document.querySelector('[data-chain="all"]').addEventListener('click', () => {
+            selectedChain = 'all';
+            document.querySelectorAll('.chain-btn').forEach(b => b.classList.remove('active'));
+            document.querySelector('[data-chain="all"]').classList.add('active');
+            applyFilters();
+        });
+
+        // Column sort
+        document.querySelectorAll('thead th[data-sort]').forEach(th => {
+            th.addEventListener('click', () => {
+                const key = th.dataset.sort;
+                if (sortKey === key) sortDir = sortDir === 'desc' ? 'asc' : 'desc';
+                else { sortKey = key; sortDir = 'desc'; }
+                document.querySelectorAll('thead th').forEach(t => t.classList.remove('sorted'));
+                th.classList.add('sorted');
+                applyFilters();
+            });
+        });
+
+        /* ── Utils ──────────────────────────── */
+        function formatTVL(n) {
+            if (n >= 1e9) return '$' + (n / 1e9).toFixed(2) + 'B';
+            if (n >= 1e6) return '$' + (n / 1e6).toFixed(2) + 'M';
+            if (n >= 1e3) return '$' + (n / 1e3).toFixed(0) + 'K';
+            return '$' + n.toFixed(0);
+        }
+
+        function escHtml(s) {
+            const d = document.createElement('div');
+            d.textContent = s;
+            return d.innerHTML;
+        }
+
+        /* ── Init ───────────────────────────── */
+        fetchYields();
+        // Refresh every 5 minutes
+        setInterval(fetchYields, 300000);
+
+        // Add hidden class utility
+        const style = document.createElement('style');
+        style.textContent = '.hidden { display: none !important; }';
+        document.head.appendChild(style);
+    })();
+    </script>
+</body>
+</html>

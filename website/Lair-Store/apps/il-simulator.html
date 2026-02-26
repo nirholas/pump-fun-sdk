@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="lair-include" content="lair.css">
+    <meta name="lair-icon" content='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="24" height="24" fill="white"><path d="M160-200v-80h80v-280q0-83 50-147.5T420-792v-28q0-25 17.5-42.5T480-880q25 0 42.5 17.5T540-820v28q80 20 130 84.5T720-560v280h80v80H160ZM480-80q-33 0-56.5-23.5T400-160h160q0 33-23.5 56.5T480-80Z"/></svg>'>
+    <meta name="capabilities" content="il_simulator,defi_tools">
+    <meta name="lair-perms" content="network" />
+    <title>IL Simulator</title>
+    <style>
+        :root {
+            --bg1: #080A19; --bg2: #0C0F27; --bg3: #15183E; --bg4: #1C2050;
+            --txt1: #E2E8F0; --txt2: #94A3B8; --accent: #6179FF;
+            --good: #34D399; --bad: #F87171; --warn: #FBBF24;
+            --radius: 10px;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body { height: 100%; background: var(--bg1); color: var(--txt1); font-family: 'Inter', -apple-system, system-ui, sans-serif; font-size: 13px; }
+        .app { height: 100%; display: grid; grid-template-rows: auto 1fr; overflow: hidden; }
+
+        /* Header */
+        .header { padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,.06); display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+        .header h1 { font-size: 15px; font-weight: 700; white-space: nowrap; }
+        .badge { font-size: 10px; background: rgba(97,121,255,.2); color: var(--accent); padding: 2px 8px; border-radius: 999px; font-weight: 600; }
+
+        /* Main layout */
+        .main { display: grid; grid-template-columns: 340px 1fr; gap: 0; overflow: hidden; }
+        @media (max-width: 820px) { .main { grid-template-columns: 1fr; } }
+
+        /* Sidebar controls */
+        .controls { padding: 16px; overflow-y: auto; border-right: 1px solid rgba(255,255,255,.06); display: flex; flex-direction: column; gap: 14px; }
+        .section { background: var(--bg2); border: 1px solid rgba(255,255,255,.08); border-radius: var(--radius); padding: 14px; }
+        .section-title { font-size: 11px; text-transform: uppercase; letter-spacing: .5px; color: var(--txt2); margin-bottom: 10px; font-weight: 600; }
+
+        .field { margin-bottom: 10px; }
+        .field label { display: block; font-size: 11px; color: var(--txt2); margin-bottom: 4px; }
+        .field input, .field select { width: 100%; background: var(--bg3); border: 1px solid rgba(255,255,255,.12); border-radius: 6px; padding: 8px 10px; color: var(--txt1); font-size: 13px; outline: none; }
+        .field input:focus, .field select:focus { border-color: var(--accent); }
+        .field .range-row { display: flex; align-items: center; gap: 8px; }
+        .field input[type="range"] { flex: 1; accent-color: var(--accent); height: 4px; padding: 0; border: none; background: transparent; }
+        .range-val { font-size: 12px; font-weight: 600; min-width: 55px; text-align: right; font-variant-numeric: tabular-nums; }
+
+        .pair-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+        .btn { background: var(--accent); color: #fff; border: none; border-radius: 6px; padding: 10px; font-size: 13px; font-weight: 600; cursor: pointer; width: 100%; transition: opacity .15s; }
+        .btn:hover { opacity: .85; }
+        .btn-outline { background: transparent; border: 1px solid rgba(255,255,255,.15); color: var(--txt1); }
+
+        /* Results area */
+        .results { padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; }
+
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+        .stat-card { background: var(--bg2); border: 1px solid rgba(255,255,255,.08); border-radius: var(--radius); padding: 12px; }
+        .stat-card .label { font-size: 10px; text-transform: uppercase; color: var(--txt2); letter-spacing: .3px; }
+        .stat-card .value { font-size: 20px; font-weight: 700; margin-top: 4px; font-variant-numeric: tabular-nums; }
+        .stat-card .sub { font-size: 11px; color: var(--txt2); margin-top: 2px; }
+        .positive { color: var(--good); }
+        .negative { color: var(--bad); }
+
+        /* Chart */
+        .chart-container { background: var(--bg2); border: 1px solid rgba(255,255,255,.08); border-radius: var(--radius); padding: 14px; flex: 1; min-height: 300px; position: relative; }
+        .chart-title { font-size: 12px; font-weight: 600; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+        .chart-legend { display: flex; gap: 14px; font-size: 11px; }
+        .legend-item { display: flex; align-items: center; gap: 4px; }
+        .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+        canvas { width: 100%; height: 100%; display: block; }
+        .chart-wrap { position: relative; flex: 1; min-height: 250px; }
+
+        /* Table */
+        .breakdown-table { background: var(--bg2); border: 1px solid rgba(255,255,255,.08); border-radius: var(--radius); overflow: hidden; }
+        .breakdown-table .title-row { padding: 10px 14px; font-size: 12px; font-weight: 600; border-bottom: 1px solid rgba(255,255,255,.06); }
+        .tbl { width: 100%; border-collapse: collapse; }
+        .tbl th { font-size: 10px; text-transform: uppercase; color: var(--txt2); text-align: left; padding: 8px 14px; font-weight: 600; border-bottom: 1px solid rgba(255,255,255,.06); }
+        .tbl td { padding: 8px 14px; font-size: 12px; border-bottom: 1px solid rgba(255,255,255,.04); font-variant-numeric: tabular-nums; }
+        .tbl tr:hover td { background: rgba(255,255,255,.02); }
+
+        /* Tooltip */
+        .tooltip { position: absolute; pointer-events: none; background: rgba(0,0,0,.9); color: #fff; font-size: 11px; padding: 6px 10px; border-radius: 6px; white-space: nowrap; display: none; z-index: 10; border: 1px solid rgba(255,255,255,.15); }
+
+        /* V3 specific */
+        .v3-info { background: rgba(97,121,255,.08); border: 1px solid rgba(97,121,255,.2); border-radius: var(--radius); padding: 10px 14px; font-size: 12px; line-height: 1.5; }
+        .v3-info strong { color: var(--accent); }
+    </style>
+</head>
+<body>
+<div class="app">
+    <div class="header">
+        <h1>Impermanent Loss Simulator</h1>
+        <span class="badge">LIVE PRICES</span>
+        <span class="badge" style="background:rgba(52,211,153,.15);color:var(--good);">V2 + V3</span>
+    </div>
+    <div class="main">
+        <div class="controls">
+            <!-- Pool Type -->
+            <div class="section">
+                <div class="section-title">Pool Configuration</div>
+                <div class="field">
+                    <label>AMM Type</label>
+                    <select id="ammType">
+                        <option value="v2">Uniswap V2 (Constant Product)</option>
+                        <option value="v3">Uniswap V3 (Concentrated Liquidity)</option>
+                    </select>
+                </div>
+                <div class="pair-row">
+                    <div class="field">
+                        <label>Token A</label>
+                        <select id="tokenA">
+                            <option value="ethereum">ETH</option>
+                            <option value="bitcoin">BTC</option>
+                            <option value="solana">SOL</option>
+                            <option value="arbitrum">ARB</option>
+                            <option value="avalanche-2">AVAX</option>
+                            <option value="chainlink">LINK</option>
+                            <option value="uniswap">UNI</option>
+                            <option value="aave">AAVE</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label>Token B</label>
+                        <select id="tokenB">
+                            <option value="usd-coin">USDC</option>
+                            <option value="tether">USDT</option>
+                            <option value="dai">DAI</option>
+                            <option value="ethereum">ETH</option>
+                            <option value="bitcoin">BTC</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Investment -->
+            <div class="section">
+                <div class="section-title">Investment</div>
+                <div class="field">
+                    <label>Initial Investment (USD)</label>
+                    <input type="number" id="investment" value="10000" min="100" step="100">
+                </div>
+                <div class="field">
+                    <label>Entry Price of Token A (USD)</label>
+                    <input type="number" id="entryPrice" value="" placeholder="Loading live price...">
+                </div>
+                <div class="field">
+                    <label>Entry Price of Token B (USD)</label>
+                    <input type="number" id="entryPriceB" value="" placeholder="Loading live price...">
+                </div>
+            </div>
+
+            <!-- V3 Range -->
+            <div class="section" id="v3Section" style="display:none;">
+                <div class="section-title">V3 Concentrated Range</div>
+                <div class="v3-info">
+                    Concentrated liquidity means your capital is only active within a <strong>price range</strong>. Narrower ranges = more fees but higher IL risk.
+                </div>
+                <div class="pair-row" style="margin-top:8px;">
+                    <div class="field">
+                        <label>Lower Bound (USD)</label>
+                        <input type="number" id="v3Lower" value="2000" step="10">
+                    </div>
+                    <div class="field">
+                        <label>Upper Bound (USD)</label>
+                        <input type="number" id="v3Upper" value="5000" step="10">
+                    </div>
+                </div>
+                <div class="field">
+                    <label>Fee Tier</label>
+                    <select id="feeTier">
+                        <option value="0.01">0.01% (Stables)</option>
+                        <option value="0.05">0.05% (Low Vol)</option>
+                        <option value="0.3" selected>0.30% (Standard)</option>
+                        <option value="1">1.00% (Exotic)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Price Simulation -->
+            <div class="section">
+                <div class="section-title">Price Simulation</div>
+                <div class="field">
+                    <label>Token A Price Change</label>
+                    <div class="range-row">
+                        <input type="range" id="priceChangeA" min="-90" max="500" value="50">
+                        <span class="range-val" id="priceChangeAVal">+50%</span>
+                    </div>
+                </div>
+                <div class="field">
+                    <label>Token B Price Change</label>
+                    <div class="range-row">
+                        <input type="range" id="priceChangeB" min="-90" max="500" value="0">
+                        <span class="range-val" id="priceChangeBVal">0%</span>
+                    </div>
+                </div>
+                <div class="field">
+                    <label>Holding Period (days)</label>
+                    <input type="number" id="holdDays" value="30" min="1" max="365">
+                </div>
+                <div class="field">
+                    <label>Est. Daily Volume (USD, for fee estimation)</label>
+                    <input type="number" id="dailyVolume" value="10000000" step="100000">
+                </div>
+            </div>
+
+            <button class="btn" id="simulateBtn">Simulate</button>
+            <button class="btn btn-outline" id="resetBtn">Reset to Live Prices</button>
+        </div>
+
+        <div class="results" id="results">
+            <div class="stats-grid" id="statsGrid"></div>
+            <div class="chart-container">
+                <div class="chart-title">
+                    <span>IL vs Price Change</span>
+                    <div class="chart-legend">
+                        <div class="legend-item"><div class="legend-dot" style="background:#F87171;"></div>Impermanent Loss</div>
+                        <div class="legend-item"><div class="legend-dot" style="background:#6179FF;"></div>HODL Value</div>
+                        <div class="legend-item"><div class="legend-dot" style="background:#34D399;"></div>LP Value</div>
+                    </div>
+                </div>
+                <div class="chart-wrap">
+                    <canvas id="chart"></canvas>
+                    <div class="tooltip" id="tooltip"></div>
+                </div>
+            </div>
+            <div class="breakdown-table" id="breakdownTable"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+(() => {
+    const fetchFn = window.cfetch || fetch;
+
+    /* ── DOM refs ────────────────────── */
+    const $ammType = document.getElementById('ammType');
+    const $tokenA = document.getElementById('tokenA');
+    const $tokenB = document.getElementById('tokenB');
+    const $investment = document.getElementById('investment');
+    const $entryPrice = document.getElementById('entryPrice');
+    const $entryPriceB = document.getElementById('entryPriceB');
+    const $v3Section = document.getElementById('v3Section');
+    const $v3Lower = document.getElementById('v3Lower');
+    const $v3Upper = document.getElementById('v3Upper');
+    const $feeTier = document.getElementById('feeTier');
+    const $priceChangeA = document.getElementById('priceChangeA');
+    const $priceChangeB = document.getElementById('priceChangeB');
+    const $priceChangeAVal = document.getElementById('priceChangeAVal');
+    const $priceChangeBVal = document.getElementById('priceChangeBVal');
+    const $holdDays = document.getElementById('holdDays');
+    const $dailyVol = document.getElementById('dailyVolume');
+    const $statsGrid = document.getElementById('statsGrid');
+    const $canvas = document.getElementById('chart');
+    const $tooltip = document.getElementById('tooltip');
+    const $breakdown = document.getElementById('breakdownTable');
+    const ctx = $canvas.getContext('2d');
+
+    /* ── State ───────────────────────── */
+    let livePrices = {};
+
+    /* ── Live Prices from CoinGecko ─── */
+    async function fetchPrices() {
+        const ids = new Set();
+        document.querySelectorAll('#tokenA option, #tokenB option').forEach(o => ids.add(o.value));
+        const idStr = [...ids].join(',');
+        try {
+            const r = await fetchFn(`https://api.coingecko.com/api/v3/simple/price?ids=${idStr}&vs_currencies=usd`);
+            livePrices = await r.json();
+            updateEntryPrices();
+        } catch (e) {
+            console.warn('CoinGecko price fetch failed:', e);
+        }
+    }
+
+    function updateEntryPrices() {
+        const a = $tokenA.value;
+        const b = $tokenB.value;
+        if (livePrices[a]) $entryPrice.value = livePrices[a].usd;
+        if (livePrices[b]) $entryPriceB.value = livePrices[b].usd;
+
+        // Auto-set V3 range to ±50% of token A price
+        if (livePrices[a]) {
+            const p = livePrices[a].usd;
+            $v3Lower.value = Math.round(p * 0.5);
+            $v3Upper.value = Math.round(p * 2);
+        }
+    }
+
+    /* ── V2 Impermanent Loss Math ──── */
+    function calcILv2(priceRatioA, priceRatioB) {
+        // For a 50/50 pool with two volatile assets:
+        // IL = 2*sqrt(r) / (1+r) - 1 where r = (newA/oldA) / (newB/oldB)
+        const r = priceRatioA / priceRatioB;
+        const il = 2 * Math.sqrt(r) / (1 + r) - 1;
+        return il; // negative = loss
+    }
+
+    function calcLPValueV2(investment, priceRatioA, priceRatioB) {
+        // LP value = investment * (1 + IL)
+        // HODL value = investment * (priceRatioA + priceRatioB) / 2 (50/50 split)
+        const il = calcILv2(priceRatioA, priceRatioB);
+        const hodl = investment * (priceRatioA + priceRatioB) / 2;
+        const lpVal = hodl * (1 + il);
+        return { il, hodl, lpVal };
+    }
+
+    /* ── V3 Concentrated Liquidity Math ── */
+    function calcILv3(priceEntry, priceNew, pLower, pUpper) {
+        // V3 IL when price stays in range:
+        // L = investment / (2 * (sqrt(priceEntry) - sqrt(pLower)))  [simplified]
+        // If price exits range, IL is maximized
+
+        if (priceNew <= pLower) {
+            // All converted to token A — maximum downside
+            const holdVal = priceNew / priceEntry;
+            const sqrtEntry = Math.sqrt(priceEntry);
+            const sqrtLower = Math.sqrt(pLower);
+            const sqrtUpper = Math.sqrt(pUpper);
+            const lpRatio = (priceNew * (1/sqrtLower - 1/sqrtUpper)) /
+                            (priceEntry * (1/sqrtEntry - 1/sqrtUpper) + (sqrtEntry - sqrtLower));
+            return { il: lpRatio / holdVal - 1, outOfRange: true, side: 'below' };
+        }
+        if (priceNew >= pUpper) {
+            // All converted to token B — capped upside
+            const holdVal = priceNew / priceEntry;
+            const sqrtEntry = Math.sqrt(priceEntry);
+            const sqrtLower = Math.sqrt(pLower);
+            const sqrtUpper = Math.sqrt(pUpper);
+            const lpRatio = (sqrtUpper - sqrtLower) /
+                            (priceEntry * (1/sqrtEntry - 1/sqrtUpper) + (sqrtEntry - sqrtLower));
+            return { il: lpRatio / holdVal - 1, outOfRange: true, side: 'above' };
+        }
+
+        // In range
+        const sqrtP0 = Math.sqrt(priceEntry);
+        const sqrtP1 = Math.sqrt(priceNew);
+        const sqrtPa = Math.sqrt(pLower);
+        const sqrtPb = Math.sqrt(pUpper);
+
+        // Value of LP position relative to initial
+        const lpVal = (sqrtP1 - sqrtPa) + priceNew * (1/sqrtP1 - 1/sqrtPb);
+        const initVal = (sqrtP0 - sqrtPa) + priceEntry * (1/sqrtP0 - 1/sqrtPb);
+        const hodlRatio = priceNew / priceEntry;
+        const lpRatio = lpVal / initVal;
+
+        return { il: lpRatio / hodlRatio - 1, outOfRange: false, side: 'in' };
+    }
+
+    /* ── Fee Estimation ──────────────── */
+    function estimateFees(investment, totalPoolLiq, dailyVolume, feePct, days, isV3, concentration) {
+        const poolShare = investment / (totalPoolLiq || investment * 100);
+        const effectiveShare = isV3 ? poolShare * (concentration || 1) : poolShare;
+        return dailyVolume * (feePct / 100) * effectiveShare * days;
+    }
+
+    /* ── Simulation ──────────────────── */
+    function simulate() {
+        const ammType = $ammType.value;
+        const investment = parseFloat($investment.value) || 10000;
+        const entryA = parseFloat($entryPrice.value) || 1;
+        const entryB = parseFloat($entryPriceB.value) || 1;
+        const pctA = parseFloat($priceChangeA.value) / 100;
+        const pctB = parseFloat($priceChangeB.value) / 100;
+        const days = parseInt($holdDays.value) || 30;
+        const dailyVol = parseFloat($dailyVol.value) || 1e7;
+
+        const newPriceA = entryA * (1 + pctA);
+        const newPriceB = entryB * (1 + pctB);
+        const ratioA = 1 + pctA;
+        const ratioB = 1 + pctB;
+
+        let il, hodl, lpVal, feesEarned, outOfRange = false, rangeSide = 'in';
+
+        if (ammType === 'v2') {
+            const result = calcLPValueV2(investment, ratioA, ratioB);
+            il = result.il;
+            hodl = result.hodl;
+            lpVal = result.lpVal;
+            feesEarned = estimateFees(investment, investment * 100, dailyVol, 0.3, days, false);
+        } else {
+            const pLower = parseFloat($v3Lower.value) || entryA * 0.5;
+            const pUpper = parseFloat($v3Upper.value) || entryA * 2;
+            const feeTier = parseFloat($feeTier.value) || 0.3;
+
+            const v3Result = calcILv3(entryA, newPriceA, pLower, pUpper);
+            il = v3Result.il;
+            outOfRange = v3Result.outOfRange;
+            rangeSide = v3Result.side;
+
+            hodl = investment * (ratioA + ratioB) / 2;
+            lpVal = hodl * (1 + il);
+
+            // Concentration factor: full range / user range
+            const concentration = Math.sqrt(entryA * 1000) / (Math.sqrt(pUpper) - Math.sqrt(pLower)) || 1;
+            feesEarned = outOfRange ? 0 : estimateFees(investment, investment * 50, dailyVol, feeTier, days, true, Math.min(concentration, 100));
+        }
+
+        const ilDollars = hodl * Math.abs(il);
+        const netPnL = (lpVal + feesEarned) - investment;
+        const hodlPnL = hodl - investment;
+
+        renderStats(il, ilDollars, hodl, lpVal, feesEarned, netPnL, hodlPnL, investment, outOfRange, rangeSide, ammType);
+        renderChart(ammType, investment, entryA, entryB);
+        renderBreakdown(ammType, investment, entryA, entryB, newPriceA, newPriceB, il, hodl, lpVal, feesEarned, days);
+    }
+
+    /* ── Stats Cards ─────────────────── */
+    function renderStats(il, ilDollars, hodl, lpVal, fees, netPnL, hodlPnL, investment, outOfRange, rangeSide, ammType) {
+        const fmtUsd = n => '$' + Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        const fmtPct = n => (n >= 0 ? '+' : '') + (n * 100).toFixed(2) + '%';
+        const cls = n => n >= 0 ? 'positive' : 'negative';
+
+        let rangeNote = '';
+        if (ammType === 'v3' && outOfRange) {
+            rangeNote = `<div class="stat-card" style="border-color:rgba(251,191,36,.3);"><div class="label">Range Status</div><div class="value" style="color:var(--warn);">OUT OF RANGE</div><div class="sub">Price went ${rangeSide} your range — no fees earned</div></div>`;
+        }
+
+        $statsGrid.innerHTML = `
+            <div class="stat-card"><div class="label">Impermanent Loss</div><div class="value ${il < 0 ? 'negative' : ''}">${fmtPct(il)}</div><div class="sub">${fmtUsd(ilDollars)} lost vs HODL</div></div>
+            <div class="stat-card"><div class="label">HODL Value</div><div class="value">${fmtUsd(hodl)}</div><div class="sub ${cls(hodlPnL)}">${fmtPct(hodlPnL / (investment || 1))} return</div></div>
+            <div class="stat-card"><div class="label">LP Value (excl. fees)</div><div class="value">${fmtUsd(lpVal)}</div><div class="sub">Before fee income</div></div>
+            <div class="stat-card"><div class="label">Est. Fees Earned</div><div class="value positive">+${fmtUsd(fees)}</div><div class="sub">Based on daily volume</div></div>
+            <div class="stat-card"><div class="label">Net LP P&L</div><div class="value ${cls(netPnL)}">${netPnL >= 0 ? '+' : '-'}${fmtUsd(netPnL)}</div><div class="sub">${fmtPct(netPnL / (investment || 1))} total return</div></div>
+            <div class="stat-card"><div class="label">LP vs HODL</div><div class="value ${cls((lpVal + fees) - hodl)}">${(lpVal + fees) >= hodl ? 'LP Wins' : 'HODL Wins'}</div><div class="sub">Δ ${fmtUsd((lpVal + fees) - hodl)}</div></div>
+            ${rangeNote}
+        `;
+    }
+
+    /* ── Chart: IL curve across price changes ── */
+    function renderChart(ammType, investment, entryA, entryB) {
+        const wrap = $canvas.parentElement;
+        const dpr = window.devicePixelRatio || 1;
+        const rect = wrap.getBoundingClientRect();
+        const W = rect.width;
+        const H = rect.height;
+        $canvas.width = W * dpr;
+        $canvas.height = H * dpr;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.clearRect(0, 0, W, H);
+
+        const pad = { top: 15, right: 15, bottom: 30, left: 55 };
+        const cw = W - pad.left - pad.right;
+        const ch = H - pad.top - pad.bottom;
+
+        // Generate data points: -80% to +400% price change
+        const points = [];
+        for (let pct = -80; pct <= 400; pct += 2) {
+            const ratioA = 1 + pct / 100;
+            const ratioB = 1; // Token B stable for chart
+
+            let il, hodl, lpVal;
+            if (ammType === 'v2') {
+                const r = calcLPValueV2(investment, ratioA, ratioB);
+                il = r.il;
+                hodl = r.hodl;
+                lpVal = r.lpVal;
+            } else {
+                const pLower = parseFloat($v3Lower.value) || entryA * 0.5;
+                const pUpper = parseFloat($v3Upper.value) || entryA * 2;
+                const v3r = calcILv3(entryA, entryA * ratioA, pLower, pUpper);
+                il = v3r.il;
+                hodl = investment * (ratioA + ratioB) / 2;
+                lpVal = hodl * (1 + il);
+            }
+            points.push({ pct, il: il * 100, hodl, lpVal });
+        }
+
+        // Find ranges
+        const ilMin = Math.min(...points.map(p => p.il));
+        const ilMax = Math.max(...points.map(p => p.il));
+        const valMin = Math.min(...points.map(p => Math.min(p.hodl, p.lpVal)));
+        const valMax = Math.max(...points.map(p => Math.max(p.hodl, p.lpVal)));
+
+        // Draw grid
+        ctx.strokeStyle = 'rgba(255,255,255,.06)';
+        ctx.lineWidth = 1;
+        for (let i = 0; i <= 5; i++) {
+            const y = pad.top + (i / 5) * ch;
+            ctx.beginPath();
+            ctx.moveTo(pad.left, y);
+            ctx.lineTo(pad.left + cw, y);
+            ctx.stroke();
+        }
+
+        // X axis labels
+        ctx.fillStyle = 'rgba(255,255,255,.35)';
+        ctx.font = '10px Inter, system-ui';
+        ctx.textAlign = 'center';
+        [-50, 0, 50, 100, 200, 300, 400].forEach(pct => {
+            const x = pad.left + ((pct + 80) / 480) * cw;
+            ctx.fillText((pct >= 0 ? '+' : '') + pct + '%', x, H - 8);
+        });
+
+        // Y axis labels (IL %)
+        ctx.textAlign = 'right';
+        for (let i = 0; i <= 5; i++) {
+            const val = ilMax - (i / 5) * (ilMax - ilMin);
+            ctx.fillText(val.toFixed(1) + '%', pad.left - 5, pad.top + (i / 5) * ch + 3);
+        }
+
+        // Zero line
+        if (ilMin < 0 && ilMax > 0) {
+            const zeroY = pad.top + (ilMax / (ilMax - ilMin)) * ch;
+            ctx.strokeStyle = 'rgba(255,255,255,.15)';
+            ctx.setLineDash([4, 4]);
+            ctx.beginPath();
+            ctx.moveTo(pad.left, zeroY);
+            ctx.lineTo(pad.left + cw, zeroY);
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+
+        function drawLine(data, key, color, range) {
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            ctx.lineJoin = 'round';
+            ctx.beginPath();
+            data.forEach((p, i) => {
+                const x = pad.left + ((p.pct + 80) / 480) * cw;
+                const y = pad.top + ((range[1] - p[key]) / (range[1] - range[0])) * ch;
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            });
+            ctx.stroke();
+        }
+
+        // Draw IL line (red)
+        drawLine(points, 'il', '#F87171', [ilMin, ilMax]);
+
+        // Draw current position marker
+        const curPct = parseFloat($priceChangeA.value);
+        const curX = pad.left + ((curPct + 80) / 480) * cw;
+        const curPoint = points.find(p => Math.abs(p.pct - curPct) < 3);
+        if (curPoint) {
+            const curY = pad.top + ((ilMax - curPoint.il) / (ilMax - ilMin)) * ch;
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.arc(curX, curY, 5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#F87171';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        }
+
+        // Store points for hover
+        window._ilChartPts = points.map(p => ({
+            x: pad.left + ((p.pct + 80) / 480) * cw,
+            y: pad.top + ((ilMax - p.il) / (ilMax - ilMin)) * ch,
+            pct: p.pct,
+            il: p.il,
+            hodl: p.hodl,
+            lp: p.lpVal
+        }));
+    }
+
+    /* ── Tooltip ─────────────────────── */
+    const chartWrap = $canvas.parentElement;
+    chartWrap.addEventListener('mousemove', e => {
+        const pts = window._ilChartPts;
+        if (!pts) return;
+        const rect = chartWrap.getBoundingClientRect();
+        const mx = e.clientX - rect.left;
+        let closest = pts[0], minD = Infinity;
+        for (const p of pts) {
+            const d = Math.abs(p.x - mx);
+            if (d < minD) { minD = d; closest = p; }
+        }
+        const fmtUsd = n => '$' + n.toLocaleString('en-US', { maximumFractionDigits: 0 });
+        $tooltip.style.display = 'block';
+        $tooltip.innerHTML = `Price Δ: ${closest.pct >= 0 ? '+' : ''}${closest.pct}%<br>IL: ${closest.il.toFixed(2)}%<br>HODL: ${fmtUsd(closest.hodl)}<br>LP: ${fmtUsd(closest.lp)}`;
+        let tx = closest.x + 10;
+        let ty = closest.y - 50;
+        if (tx + 140 > rect.width) tx = closest.x - 150;
+        if (ty < 0) ty = closest.y + 10;
+        $tooltip.style.left = tx + 'px';
+        $tooltip.style.top = ty + 'px';
+    });
+    chartWrap.addEventListener('mouseleave', () => { $tooltip.style.display = 'none'; });
+
+    /* ── Breakdown Table ─────────────── */
+    function renderBreakdown(ammType, investment, entryA, entryB, newA, newB, il, hodl, lpVal, fees, days) {
+        const fmtUsd = n => '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        const scenarios = [];
+
+        // Generate scenarios at different price levels
+        [-50, -25, -10, 0, 10, 25, 50, 100, 200].forEach(pct => {
+            const rA = 1 + pct / 100;
+            let sIl, sHodl, sLp;
+            if (ammType === 'v2') {
+                const r = calcLPValueV2(investment, rA, 1);
+                sIl = r.il; sHodl = r.hodl; sLp = r.lpVal;
+            } else {
+                const pL = parseFloat($v3Lower.value) || entryA * 0.5;
+                const pU = parseFloat($v3Upper.value) || entryA * 2;
+                const v3r = calcILv3(entryA, entryA * rA, pL, pU);
+                sIl = v3r.il;
+                sHodl = investment * (rA + 1) / 2;
+                sLp = sHodl * (1 + sIl);
+            }
+            scenarios.push({ pct, il: sIl, hodl: sHodl, lp: sLp, diff: sLp - sHodl });
+        });
+
+        $breakdown.innerHTML = `
+            <div class="title-row">Scenario Breakdown (Token B = stable)</div>
+            <table class="tbl">
+                <thead><tr><th>Price Δ</th><th>IL %</th><th>HODL Value</th><th>LP Value</th><th>LP vs HODL</th></tr></thead>
+                <tbody>${scenarios.map(s => `
+                    <tr>
+                        <td>${s.pct >= 0 ? '+' : ''}${s.pct}%</td>
+                        <td class="negative">${(s.il * 100).toFixed(2)}%</td>
+                        <td>${fmtUsd(s.hodl)}</td>
+                        <td>${fmtUsd(s.lp)}</td>
+                        <td class="${s.diff >= 0 ? 'positive' : 'negative'}">${s.diff >= 0 ? '+' : '-'}${fmtUsd(Math.abs(s.diff))}</td>
+                    </tr>
+                `).join('')}</tbody>
+            </table>
+        `;
+    }
+
+    /* ── Event Listeners ─────────────── */
+    $ammType.addEventListener('change', () => {
+        $v3Section.style.display = $ammType.value === 'v3' ? 'block' : 'none';
+        simulate();
+    });
+
+    $priceChangeA.addEventListener('input', () => {
+        const v = $priceChangeA.value;
+        $priceChangeAVal.textContent = (v >= 0 ? '+' : '') + v + '%';
+        simulate();
+    });
+
+    $priceChangeB.addEventListener('input', () => {
+        const v = $priceChangeB.value;
+        $priceChangeBVal.textContent = (v >= 0 ? '+' : '') + v + '%';
+        simulate();
+    });
+
+    [$tokenA, $tokenB].forEach(el => el.addEventListener('change', () => {
+        updateEntryPrices();
+        simulate();
+    }));
+
+    [$investment, $entryPrice, $entryPriceB, $v3Lower, $v3Upper, $feeTier, $holdDays, $dailyVol].forEach(el => {
+        el.addEventListener('change', simulate);
+    });
+
+    document.getElementById('simulateBtn').addEventListener('click', simulate);
+    document.getElementById('resetBtn').addEventListener('click', () => {
+        fetchPrices().then(simulate);
+    });
+
+    // Resize observer
+    const ro = new ResizeObserver(() => simulate());
+    ro.observe($canvas.parentElement);
+
+    /* ── Init ────────────────────────── */
+    fetchPrices().then(() => {
+        simulate();
+    });
+
+    // Refresh prices every 60s
+    setInterval(() => fetchPrices(), 60000);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+
+    <meta charset="utf-8" />
+    <meta name="lair-include" content="lair.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="lair-icon" content="cognition_2">
+    <title>Ducks Quack</title>
+    <style>
+      body {
+        background-color: #323c41;
+    color: #f8ff5a;
+    font-family: monospace;
+    text-align: center;
+      }
+      h1 {
+        font-size:2rem;
+      }
+      
+      #duckpic {
+        margin-top: 10px;
+      }
+      
+      #duckpic a {
+        animation: pop 1s infinite;
+        
+        margin-top: 20vh;
+      }
+      
+      @keyframes pop {
+        50% {
+          opacity: .5;
+        }
+      }
+      
+      b {
+        font-weight: 800;
+      }
+      
+      img {
+        display: block;
+          width: 80vw;
+        height: calc(75vh - 50px);
+        margin: auto;
+        overflow: hidden;
+        object-fit:cover;
+        animation: zoom 10s infinite ease-in-out;
+      }
+      
+      @keyframes zoom {
+        25% {
+          object-position: top;
+        }
+        
+        75% {
+          object-position: bottom;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    
+    <h1>
+      Ducks Quack
+    </h1>
+    <small>
+      Pictures of ducks <b>for all</b>. To ensure <b>global peace.</b>
+      </small><br><br>
+    <small style="opacity: 0.5;">
+    From adthoughtsglobal
+    </small>
+    
+    <div id="duckpic">
+      
+    </div>
+    <script>
+       function greenflag() {
+        document.getElementById("duckpic").innerHTML = "<a>We're Loading your Duck...</a>";
+        const randomNumber = Math.floor(Math.random() * 260) + 1;
+         
+        document.getElementById("duckpic").innerHTML = `
+        <image src="`+"https://random-d.uk/api/" +randomNumber+`.jpg"></image>
+        
+        `
+      }
+    </script>
+  </body>
+</html>

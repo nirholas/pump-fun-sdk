@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="lair-include" content="lair.css">
+    <meta name="capabilities" content="protocol_revenue">
+    <meta name="lair-icon" content="<svg width='232' height='232' viewBox='0 0 232 232' fill='none' xmlns='http://www.w3.org/2000/svg'><rect width='232' height='232' rx='40' fill='#0A1628'/><rect x='35' y='150' width='24' height='45' rx='3' fill='#22C55E'/><rect x='67' y='120' width='24' height='75' rx='3' fill='#22C55E' opacity='.8'/><rect x='99' y='90' width='24' height='105' rx='3' fill='#22C55E' opacity='.9'/><rect x='131' y='60' width='24' height='135' rx='3' fill='#16A34A'/><rect x='163' y='40' width='24' height='155' rx='3' fill='#15803D'/><line x1='30' y1='195' x2='200' y2='195' stroke='#22C55E' stroke-width='2' opacity='.3'/><text x='116' y='220' text-anchor='middle' fill='#22C55E' font-size='14' font-weight='bold'>REVENUE</text></svg>">
+    <meta name="lair-perms" content="network" />
+    <title>Protocol Revenue</title>
+    <style>
+        :root {
+            --bg1: #0a0f1a; --bg2: #0f1525; --bg3: #172135; --bg4: #1f2d45;
+            --txt1: #e2e8f0; --txt2: #94a3b8; --txt3: #64748b;
+            --accent: #22c55e; --accent2: #16a34a; --green: #22c55e; --red: #ef4444;
+            --yellow: #f59e0b; --blue: #3b82f6; --purple: #a855f7;
+            --radius: 8px;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body { height: 100%; background: var(--bg1); color: var(--txt1); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        .app { height: 100%; display: grid; grid-template-rows: auto auto 1fr; overflow: hidden; }
+        .header { padding: 10px 16px; background: var(--bg2); border-bottom: 1px solid rgba(34,197,94,.12); display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .header h1 { font-size: 15px; font-weight: 700; }
+        .header h1 span { color: var(--accent); }
+        .controls { display: flex; gap: 6px; margin-left: auto; align-items: center; flex-wrap: wrap; }
+        select, button { background: var(--bg3); color: var(--txt1); border: 1px solid rgba(34,197,94,.15); border-radius: 6px; padding: 5px 10px; font-size: 12px; cursor: pointer; font-family: inherit; }
+        button:hover { background: var(--accent); color: #000; }
+        .tabs { display: flex; gap: 4px; padding: 8px 16px; background: var(--bg1); border-bottom: 1px solid rgba(255,255,255,.05); overflow-x: auto; }
+        .tab { padding: 5px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; background: transparent; color: var(--txt2); border: 1px solid transparent; transition: all .15s; white-space: nowrap; }
+        .tab:hover { color: var(--txt1); background: var(--bg3); }
+        .tab.active { background: var(--accent); color: #000; font-weight: 600; }
+        .content { overflow: auto; padding: 12px 16px; }
+        .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        .grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+        .grid5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+        .card { background: var(--bg2); border: 1px solid rgba(255,255,255,.06); border-radius: var(--radius); padding: 12px; }
+        .card-title { font-size: 10px; text-transform: uppercase; letter-spacing: .5px; color: var(--txt3); margin-bottom: 6px; }
+        .card-value { font-size: 22px; font-weight: 700; font-family: 'SF Mono', 'Fira Code', monospace; }
+        .card-sub { font-size: 11px; color: var(--txt2); margin-top: 4px; }
+        .up { color: var(--green); } .down { color: var(--red); }
+        table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        th { position: sticky; top: 0; background: var(--bg2); text-align: left; padding: 8px; font-size: 10px; text-transform: uppercase; letter-spacing: .5px; color: var(--txt3); border-bottom: 1px solid rgba(255,255,255,.08); cursor: pointer; user-select: none; }
+        th:hover { color: var(--accent); }
+        td { padding: 7px 8px; border-bottom: 1px solid rgba(255,255,255,.04); }
+        tr:hover td { background: rgba(34,197,94,.04); }
+        .mono { font-family: 'SF Mono', 'Fira Code', monospace; }
+        .badge { font-size: 10px; padding: 2px 7px; border-radius: 999px; font-weight: 600; }
+        .cat-badge { background: rgba(59,130,246,.12); color: var(--blue); }
+        .chain-badge { background: rgba(168,85,247,.12); color: var(--purple); }
+        .bar-h { height: 6px; border-radius: 3px; background: var(--bg3); overflow: hidden; margin-top: 4px; }
+        .bar-fill { height: 100%; border-radius: 3px; transition: width .4s; }
+        .loading { display: flex; align-items: center; justify-content: center; height: 200px; color: var(--txt3); font-size: 13px; }
+        .loading::after { content: ''; width: 16px; height: 16px; border: 2px solid var(--accent); border-top-color: transparent; border-radius: 50%; animation: spin .6s linear infinite; margin-left: 8px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .search { background: var(--bg3); border: 1px solid rgba(34,197,94,.1); color: var(--txt1); border-radius: 6px; padding: 6px 10px; font-size: 12px; width: 180px; }
+        .search:focus { outline: none; border-color: var(--accent); }
+        .logo-cell { display: flex; align-items: center; gap: 6px; }
+        .logo-img { width: 20px; height: 20px; border-radius: 50%; background: var(--bg3); }
+        .proto-name { font-weight: 600; font-size: 12px; }
+        .pe-chip { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 700; font-family: monospace; }
+        @media (max-width: 900px) { .grid3, .grid4, .grid5 { grid-template-columns: 1fr 1fr; } }
+        @media (max-width: 600px) { .grid3, .grid4, .grid5 { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+<div class="app">
+    <div class="header">
+        <h1><span>$</span> Protocol Revenue</h1>
+        <div class="controls">
+            <input class="search" id="search" placeholder="Search protocols..." type="text">
+            <select id="catFilter"><option value="">All Categories</option></select>
+            <button id="refreshBtn">↻ Refresh</button>
+        </div>
+    </div>
+    <div class="tabs" id="tabs"></div>
+    <div class="content" id="content"></div>
+</div>
+
+<script>
+(function() {
+    const F = window.cfetch || fetch;
+    const $ = s => document.querySelector(s);
+    const TABS = ['rankings','pe-ratio','categories','chains','revenue-vs-tvl'];
+    const LABELS = {'rankings':'Revenue Rankings','pe-ratio':'P/E Ratios','categories':'By Category','chains':'By Chain','revenue-vs-tvl':'Revenue vs TVL'};
+    let tab = 'rankings', data = null, sortField = 'dailyRevenue', sortDir = -1, searchQuery = '', catFilter = '';
+
+    function init() {
+        renderTabs();
+        $('#search').oninput = e => { searchQuery = e.target.value.toLowerCase(); render(); };
+        $('#catFilter').onchange = e => { catFilter = e.target.value; render(); };
+        $('#refreshBtn').onclick = load;
+        load();
+    }
+
+    function renderTabs() {
+        $('#tabs').innerHTML = TABS.map(t =>
+            `<div class="tab ${t===tab?'active':''}" data-t="${t}">${LABELS[t]}</div>`
+        ).join('');
+        $('#tabs').querySelectorAll('.tab').forEach(el => {
+            el.onclick = () => { tab = el.dataset.t; renderTabs(); render(); };
+        });
+    }
+
+    async function load() {
+        $('#content').innerHTML = '<div class="loading">Loading protocol revenue data from DeFi Llama</div>';
+        try {
+            const [feesData, protocolsData] = await Promise.all([
+                F('https://api.llama.fi/overview/fees?excludeTotalDataChart=true&excludeTotalDataChartBreakdown=true').then(r => r.json()),
+                F('https://api.llama.fi/protocols').then(r => r.json())
+            ]);
+            data = processData(feesData, protocolsData);
+            populateFilters();
+            render();
+        } catch(e) {
+            $('#content').innerHTML = `<div class="card" style="color:var(--red)">Error: ${e.message}</div>`;
+        }
+    }
+
+    function processData(feesData, protocols) {
+        const protocolMap = {};
+        protocols.forEach(p => { protocolMap[p.name?.toLowerCase()] = p; protocolMap[p.slug?.toLowerCase()] = p; });
+
+        const items = (feesData.protocols || []).map(p => {
+            const match = protocolMap[p.name?.toLowerCase()] || protocolMap[p.slug?.toLowerCase()] || {};
+            const dailyFees = p.total24h || 0;
+            const dailyRevenue = p.dailyRevenue || p.revenue24h || p.total24h * 0.3 || 0;
+            const monthlyRevenue = p.total30d ? (p.revenue30d || p.total30d * 0.3) : dailyRevenue * 30;
+            const tvl = match.tvl || 0;
+            const mcap = match.mcap || 0;
+            const annualRevenue = dailyRevenue * 365;
+            const peRatio = mcap > 0 && annualRevenue > 0 ? mcap / annualRevenue : null;
+            const revToTVL = tvl > 0 && annualRevenue > 0 ? annualRevenue / tvl : null;
+            const change1d = p.change_1d || 0;
+            const change7d = p.change_7d || 0;
+            const change1m = p.change_1m || 0;
+
+            return {
+                name: p.name || p.displayName || 'Unknown',
+                slug: p.slug || '',
+                category: p.category || match.category || 'Other',
+                chains: p.chains || match.chains || [],
+                logo: p.logo || match.logo || '',
+                dailyFees, dailyRevenue, monthlyRevenue, annualRevenue,
+                tvl, mcap, peRatio, revToTVL,
+                change1d, change7d, change1m
+            };
+        }).filter(p => p.dailyFees > 0 || p.dailyRevenue > 0);
+
+        const categories = [...new Set(items.map(p => p.category))].sort();
+        const allChains = {};
+        items.forEach(p => p.chains.forEach(c => {
+            if (!allChains[c]) allChains[c] = { name: c, totalFees: 0, totalRevenue: 0, protocols: 0, tvl: 0 };
+            allChains[c].totalFees += p.dailyFees;
+            allChains[c].totalRevenue += p.dailyRevenue;
+            allChains[c].protocols++;
+            allChains[c].tvl += p.tvl / Math.max(p.chains.length, 1);
+        }));
+
+        const totalDailyFees = items.reduce((s, p) => s + p.dailyFees, 0);
+        const totalDailyRevenue = items.reduce((s, p) => s + p.dailyRevenue, 0);
+        const totalTVL = items.reduce((s, p) => s + p.tvl, 0);
+
+        return { items, categories, chains: allChains, totalDailyFees, totalDailyRevenue, totalTVL };
+    }
+
+    function populateFilters() {
+        const sel = $('#catFilter');
+        sel.innerHTML = '<option value="">All Categories</option>' +
+            data.categories.map(c => `<option value="${c}">${c}</option>`).join('');
+    }
+
+    function fmtUSD(n) {
+        if (n >= 1e9) return '$' + (n/1e9).toFixed(2) + 'B';
+        if (n >= 1e6) return '$' + (n/1e6).toFixed(2) + 'M';
+        if (n >= 1e3) return '$' + (n/1e3).toFixed(1) + 'K';
+        return '$' + n.toFixed(0);
+    }
+    function fmt(n, d=1) { return n >= 1e9 ? (n/1e9).toFixed(d)+'B' : n >= 1e6 ? (n/1e6).toFixed(d)+'M' : n >= 1e3 ? (n/1e3).toFixed(d)+'K' : n.toFixed(d); }
+    function pct(n) { return (n > 0 ? '+' : '') + n.toFixed(1) + '%'; }
+
+    function filtered() {
+        let list = data.items;
+        if (searchQuery) list = list.filter(p => p.name.toLowerCase().includes(searchQuery));
+        if (catFilter) list = list.filter(p => p.category === catFilter);
+        return list;
+    }
+
+    function render() {
+        if (!data) return;
+        const fn = { 'rankings': renderRankings, 'pe-ratio': renderPE, 'categories': renderCategories, 'chains': renderChains, 'revenue-vs-tvl': renderRevTVL };
+        (fn[tab] || renderRankings)();
+    }
+
+    function sortBy(field) {
+        if (sortField === field) sortDir *= -1;
+        else { sortField = field; sortDir = -1; }
+        render();
+    }
+
+    function renderRankings() {
+        const items = filtered().sort((a,b) => (a[sortField] - b[sortField]) * sortDir);
+        const maxRev = Math.max(...items.slice(0,5).map(p => p.dailyRevenue), 1);
+
+        $('#content').innerHTML = `
+            <div class="grid4" style="margin-bottom:12px">
+                <div class="card">
+                    <div class="card-title">Total Daily Fees</div>
+                    <div class="card-value" style="color:var(--accent)">${fmtUSD(data.totalDailyFees)}</div>
+                    <div class="card-sub">Across ${data.items.length} protocols</div>
+                </div>
+                <div class="card">
+                    <div class="card-title">Total Daily Revenue</div>
+                    <div class="card-value">${fmtUSD(data.totalDailyRevenue)}</div>
+                    <div class="card-sub">Protocol-captured value</div>
+                </div>
+                <div class="card">
+                    <div class="card-title">Annualized Revenue</div>
+                    <div class="card-value">${fmtUSD(data.totalDailyRevenue * 365)}</div>
+                    <div class="card-sub">Projected at current rate</div>
+                </div>
+                <div class="card">
+                    <div class="card-title">Revenue / TVL</div>
+                    <div class="card-value">${data.totalTVL > 0 ? ((data.totalDailyRevenue * 365 / data.totalTVL) * 100).toFixed(2) + '%' : '—'}</div>
+                    <div class="card-sub">Capital efficiency metric</div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-title">Protocol Revenue Rankings (${items.length} protocols)</div>
+                <div style="overflow-x:auto">
+                <table id="mainTable">
+                    <thead><tr>
+                        <th>#</th>
+                        <th>Protocol</th>
+                        <th>Category</th>
+                        <th onclick="window.__sort('dailyFees')">Daily Fees ▾</th>
+                        <th onclick="window.__sort('dailyRevenue')">Daily Revenue ▾</th>
+                        <th onclick="window.__sort('annualRevenue')">Annual Rev ▾</th>
+                        <th onclick="window.__sort('tvl')">TVL ▾</th>
+                        <th onclick="window.__sort('change1d')">24h Δ ▾</th>
+                        <th onclick="window.__sort('change7d')">7d Δ ▾</th>
+                        <th>Rev Bar</th>
+                    </tr></thead>
+                    <tbody>${items.slice(0, 100).map((p, i) => `
+                        <tr>
+                            <td style="color:var(--txt3)">${i+1}</td>
+                            <td>
+                                <div class="logo-cell">
+                                    ${p.logo ? `<img class="logo-img" src="${p.logo}" onerror="this.style.display='none'">` : ''}
+                                    <span class="proto-name">${p.name}</span>
+                                </div>
+                            </td>
+                            <td><span class="badge cat-badge">${p.category}</span></td>
+                            <td class="mono">${fmtUSD(p.dailyFees)}</td>
+                            <td class="mono" style="font-weight:600;color:var(--accent)">${fmtUSD(p.dailyRevenue)}</td>
+                            <td class="mono">${fmtUSD(p.annualRevenue)}</td>
+                            <td class="mono">${p.tvl > 0 ? fmtUSD(p.tvl) : '—'}</td>
+                            <td class="mono ${p.change1d >= 0 ? 'up' : 'down'}">${pct(p.change1d)}</td>
+                            <td class="mono ${p.change7d >= 0 ? 'up' : 'down'}">${pct(p.change7d)}</td>
+                            <td style="min-width:80px">
+                                <div class="bar-h"><div class="bar-fill" style="width:${Math.min(p.dailyRevenue/maxRev*100,100)}%;background:var(--accent)"></div></div>
+                            </td>
+                        </tr>`).join('')}
+                    </tbody>
+                </table>
+                </div>
+            </div>`;
+        window.__sort = sortBy;
+    }
+
+    function renderPE() {
+        const items = filtered().filter(p => p.peRatio !== null && p.peRatio > 0 && p.peRatio < 1000).sort((a,b) => a.peRatio - b.peRatio);
+
+        function peColor(pe) {
+            if (pe < 10) return 'var(--green)';
+            if (pe < 30) return 'var(--yellow)';
+            if (pe < 100) return '#f97316';
+            return 'var(--red)';
+        }
+
+        $('#content').innerHTML = `
+            <div class="card" style="margin-bottom:12px">
+                <div class="card-title">Protocol P/E Ratios — "Is This Protocol Profitable?"</div>
+                <div style="font-size:11px;color:var(--txt2);margin-bottom:8px;line-height:1.5">
+                    <strong>P/E Ratio</strong> = Market Cap ÷ Annual Revenue. Low P/E = cheaper relative to earnings.
+                    This is the DeFi equivalent of stock valuation. Protocols below are sorted cheapest-first.
+                </div>
+                <div class="grid4" style="margin-top:10px">
+                    <div class="card" style="background:var(--bg3)">
+                        <div class="card-title">Undervalued (P/E &lt; 10)</div>
+                        <div class="card-value up">${items.filter(p => p.peRatio < 10).length}</div>
+                    </div>
+                    <div class="card" style="background:var(--bg3)">
+                        <div class="card-title">Fair Value (10-30)</div>
+                        <div class="card-value" style="color:var(--yellow)">${items.filter(p => p.peRatio >= 10 && p.peRatio < 30).length}</div>
+                    </div>
+                    <div class="card" style="background:var(--bg3)">
+                        <div class="card-title">Growth (30-100)</div>
+                        <div class="card-value" style="color:#f97316">${items.filter(p => p.peRatio >= 30 && p.peRatio < 100).length}</div>
+                    </div>
+                    <div class="card" style="background:var(--bg3)">
+                        <div class="card-title">Expensive (&gt;100)</div>
+                        <div class="card-value down">${items.filter(p => p.peRatio >= 100).length}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="card">
+                <table>
+                    <thead><tr><th>#</th><th>Protocol</th><th>Category</th><th>Market Cap</th><th>Annual Revenue</th><th>P/E Ratio</th><th>Valuation</th></tr></thead>
+                    <tbody>${items.slice(0, 60).map((p, i) => {
+                        const label = p.peRatio < 10 ? 'UNDERVALUED' : p.peRatio < 30 ? 'FAIR' : p.peRatio < 100 ? 'GROWTH' : 'EXPENSIVE';
+                        return `<tr>
+                            <td style="color:var(--txt3)">${i+1}</td>
+                            <td><div class="logo-cell">${p.logo ? `<img class="logo-img" src="${p.logo}" onerror="this.style.display='none'">` : ''}<span class="proto-name">${p.name}</span></div></td>
+                            <td><span class="badge cat-badge">${p.category}</span></td>
+                            <td class="mono">${fmtUSD(p.mcap)}</td>
+                            <td class="mono">${fmtUSD(p.annualRevenue)}</td>
+                            <td><span class="pe-chip" style="background:${peColor(p.peRatio)}22;color:${peColor(p.peRatio)}">${p.peRatio.toFixed(1)}x</span></td>
+                            <td style="font-size:10px;color:${peColor(p.peRatio)};font-weight:600">${label}</td>
+                        </tr>`;
+                    }).join('')}</tbody>
+                </table>
+            </div>`;
+    }
+
+    function renderCategories() {
+        const byCat = {};
+        filtered().forEach(p => {
+            if (!byCat[p.category]) byCat[p.category] = { name: p.category, fees: 0, revenue: 0, protocols: 0, tvl: 0 };
+            byCat[p.category].fees += p.dailyFees;
+            byCat[p.category].revenue += p.dailyRevenue;
+            byCat[p.category].protocols++;
+            byCat[p.category].tvl += p.tvl;
+        });
+        const cats = Object.values(byCat).sort((a,b) => b.revenue - a.revenue);
+        const maxRev = cats[0]?.revenue || 1;
+        const totalRev = cats.reduce((s, c) => s + c.revenue, 0);
+
+        const colors = ['#22c55e','#3b82f6','#a855f7','#f59e0b','#ef4444','#06b6d4','#ec4899','#84cc16','#f97316','#8b5cf6'];
+
+        $('#content').innerHTML = `
+            <div class="card" style="margin-bottom:12px">
+                <div class="card-title">Revenue by Category</div>
+                <div style="display:flex;gap:4px;height:40px;border-radius:6px;overflow:hidden;margin-top:8px">
+                    ${cats.slice(0, 10).map((c, i) => {
+                        const w = totalRev > 0 ? (c.revenue / totalRev * 100) : 0;
+                        return w > 0.5 ? `<div style="width:${w}%;background:${colors[i % colors.length]};display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:600;color:#000;overflow:hidden;white-space:nowrap;padding:0 4px" title="${c.name}: ${fmtUSD(c.revenue)}/day">${w > 5 ? c.name : ''}</div>` : '';
+                    }).join('')}
+                </div>
+                <div class="legend" style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
+                    ${cats.slice(0, 10).map((c, i) => `<div class="legend-item" style="display:flex;align-items:center;gap:4px"><div style="width:8px;height:8px;border-radius:50%;background:${colors[i % colors.length]}"></div><span style="font-size:10px;color:var(--txt2)">${c.name}</span></div>`).join('')}
+                </div>
+            </div>
+            <div class="card">
+                <table>
+                    <thead><tr><th>#</th><th>Category</th><th>Protocols</th><th>Daily Fees</th><th>Daily Revenue</th><th>Annual Revenue</th><th>TVL</th><th>Rev/TVL</th><th>Share</th></tr></thead>
+                    <tbody>${cats.map((c, i) => `<tr>
+                        <td style="color:var(--txt3)">${i+1}</td>
+                        <td style="font-weight:600"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${colors[i % colors.length]};margin-right:6px"></span>${c.name}</td>
+                        <td class="mono">${c.protocols}</td>
+                        <td class="mono">${fmtUSD(c.fees)}</td>
+                        <td class="mono" style="color:var(--accent);font-weight:600">${fmtUSD(c.revenue)}</td>
+                        <td class="mono">${fmtUSD(c.revenue * 365)}</td>
+                        <td class="mono">${c.tvl > 0 ? fmtUSD(c.tvl) : '—'}</td>
+                        <td class="mono">${c.tvl > 0 ? ((c.revenue * 365 / c.tvl) * 100).toFixed(2) + '%' : '—'}</td>
+                        <td class="mono">${totalRev > 0 ? (c.revenue / totalRev * 100).toFixed(1) + '%' : '—'}</td>
+                    </tr>`).join('')}</tbody>
+                </table>
+            </div>`;
+    }
+
+    function renderChains() {
+        const chains = Object.values(data.chains).sort((a,b) => b.totalRevenue - a.totalRevenue);
+        const maxRev = chains[0]?.totalRevenue || 1;
+        const totalRev = chains.reduce((s, c) => s + c.totalRevenue, 0);
+
+        $('#content').innerHTML = `
+            <div class="card" style="margin-bottom:12px">
+                <div class="card-title">Revenue by Chain — Where is Value Being Captured?</div>
+                <div style="margin-top:10px">
+                    ${chains.slice(0, 15).map((c, i) => {
+                        const w = maxRev > 0 ? (c.totalRevenue / maxRev * 100) : 0;
+                        return `<div style="display:grid;grid-template-columns:100px 1fr 80px;gap:8px;align-items:center;margin-bottom:4px">
+                            <div style="font-size:12px;font-weight:600;text-align:right">${c.name}</div>
+                            <div class="bar-h" style="height:18px"><div class="bar-fill" style="width:${w}%;background:linear-gradient(90deg, var(--accent), var(--blue))"></div></div>
+                            <div class="mono" style="font-size:11px">${fmtUSD(c.totalRevenue)}/d</div>
+                        </div>`;
+                    }).join('')}
+                </div>
+            </div>
+            <div class="card">
+                <table>
+                    <thead><tr><th>#</th><th>Chain</th><th>Protocols</th><th>Daily Fees</th><th>Daily Revenue</th><th>Annual Revenue</th><th>TVL</th><th>Capital Efficiency</th></tr></thead>
+                    <tbody>${chains.slice(0, 30).map((c, i) => `<tr>
+                        <td style="color:var(--txt3)">${i+1}</td>
+                        <td style="font-weight:600">${c.name}</td>
+                        <td class="mono">${c.protocols}</td>
+                        <td class="mono">${fmtUSD(c.totalFees)}</td>
+                        <td class="mono" style="color:var(--accent)">${fmtUSD(c.totalRevenue)}</td>
+                        <td class="mono">${fmtUSD(c.totalRevenue * 365)}</td>
+                        <td class="mono">${c.tvl > 0 ? fmtUSD(c.tvl) : '—'}</td>
+                        <td class="mono">${c.tvl > 0 ? ((c.totalRevenue * 365 / c.tvl) * 100).toFixed(2) + '%' : '—'}</td>
+                    </tr>`).join('')}</tbody>
+                </table>
+            </div>`;
+    }
+
+    function renderRevTVL() {
+        const items = filtered().filter(p => p.tvl > 1e5 && p.annualRevenue > 1000).sort((a,b) => (b.revToTVL || 0) - (a.revToTVL || 0));
+
+        $('#content').innerHTML = `
+            <div class="card" style="margin-bottom:12px">
+                <div class="card-title">Revenue-to-TVL Ratio — Capital Efficiency Analysis</div>
+                <div style="font-size:11px;color:var(--txt2);margin-bottom:10px;line-height:1.5">
+                    <strong>Rev/TVL</strong> measures how much revenue a protocol generates per dollar of locked capital.
+                    High ratio = capital-efficient (doing more with less). Think of it as ROA for DeFi.
+                </div>
+            </div>
+            <div class="card" style="margin-bottom:12px">
+                <div class="card-title">Scatter View — Bubble size = Daily Revenue</div>
+                <div style="position:relative;height:300px;background:var(--bg3);border-radius:6px;overflow:hidden;padding:30px 40px 30px 50px">
+                    <div style="position:absolute;left:4px;top:50%;transform:rotate(-90deg) translateX(50%);font-size:9px;color:var(--txt3);white-space:nowrap">Annual Revenue →</div>
+                    <div style="position:absolute;bottom:4px;left:50%;transform:translateX(-50%);font-size:9px;color:var(--txt3)">TVL →</div>
+                    ${(() => {
+                        const top20 = items.slice(0, 20);
+                        const maxTVL = Math.max(...top20.map(p => p.tvl));
+                        const maxAR = Math.max(...top20.map(p => p.annualRevenue));
+                        const maxDR = Math.max(...top20.map(p => p.dailyRevenue));
+                        return top20.map(p => {
+                            const x = maxTVL > 0 ? (Math.log10(p.tvl) / Math.log10(maxTVL)) * 80 + 5 : 50;
+                            const y = maxAR > 0 ? (1 - Math.log10(p.annualRevenue) / Math.log10(maxAR)) * 80 + 5 : 50;
+                            const r = Math.max(8, Math.min(30, maxDR > 0 ? (p.dailyRevenue / maxDR) * 30 : 10));
+                            return `<div style="position:absolute;left:${x}%;top:${y}%;width:${r}px;height:${r}px;border-radius:50%;background:var(--accent);opacity:.5;transform:translate(-50%,-50%);cursor:pointer" title="${p.name}\nTVL: ${fmtUSD(p.tvl)}\nRev: ${fmtUSD(p.annualRevenue)}/yr\nRev/TVL: ${((p.revToTVL || 0) * 100).toFixed(1)}%"></div>
+                            <div style="position:absolute;left:${x}%;top:calc(${y}% + ${r/2 + 4}px);font-size:8px;color:var(--txt2);transform:translateX(-50%);white-space:nowrap;pointer-events:none">${p.name}</div>`;
+                        }).join('');
+                    })()}
+                </div>
+            </div>
+            <div class="card">
+                <table>
+                    <thead><tr><th>#</th><th>Protocol</th><th>Category</th><th>TVL</th><th>Annual Revenue</th><th>Rev/TVL</th><th>Daily Revenue</th><th>Efficiency</th></tr></thead>
+                    <tbody>${items.slice(0, 50).map((p, i) => {
+                        const eff = (p.revToTVL || 0) * 100;
+                        const effColor = eff > 20 ? 'var(--green)' : eff > 5 ? 'var(--yellow)' : 'var(--red)';
+                        const effLabel = eff > 20 ? 'HIGH' : eff > 5 ? 'MEDIUM' : 'LOW';
+                        return `<tr>
+                            <td style="color:var(--txt3)">${i+1}</td>
+                            <td><div class="logo-cell">${p.logo ? `<img class="logo-img" src="${p.logo}" onerror="this.style.display='none'">` : ''}<span class="proto-name">${p.name}</span></div></td>
+                            <td><span class="badge cat-badge">${p.category}</span></td>
+                            <td class="mono">${fmtUSD(p.tvl)}</td>
+                            <td class="mono">${fmtUSD(p.annualRevenue)}</td>
+                            <td class="mono" style="font-weight:700;color:${effColor}">${eff.toFixed(2)}%</td>
+                            <td class="mono">${fmtUSD(p.dailyRevenue)}</td>
+                            <td style="color:${effColor};font-size:10px;font-weight:600">${effLabel}</td>
+                        </tr>`;
+                    }).join('')}</tbody>
+                </table>
+            </div>`;
+    }
+
+    init();
+})();
+</script>
+</body>
+</html>

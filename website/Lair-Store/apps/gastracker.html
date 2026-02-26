@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="lair-include" content="lair.css">
+    <meta name="capabilities" content="gas_tracker">
+    <meta name="lair-icon" content="local_gas_station">
+    <meta name="lair-perms" content="network" />
+    <title>Gas Tracker</title>
+    <link rel="stylesheet" href="../../libs/lair-components.css">
+    <script src="../../libs/lair-components.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            padding: 1rem;
+            height: 100%;
+            background: var(--col-bg1);
+            color: var(--col-txt1);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            overflow-y: auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .header h1 {
+            font-size: 1.3rem;
+            font-weight: 700;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-size: 0.85rem;
+            opacity: 0.7;
+        }
+
+        .countdown {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .countdown-bar {
+            width: 60px;
+            height: 4px;
+            background: var(--col-bg3);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .countdown-bar-fill {
+            height: 100%;
+            background: var(--col-good, #4caf50);
+            border-radius: 2px;
+            transition: width 1s linear;
+        }
+
+        .refresh-btn {
+            background: none;
+            border: 1px solid var(--box-crisp-col, #444);
+            color: var(--col-txt1);
+            padding: 0.3rem 0.6rem;
+            border-radius: 0.4rem;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+
+        .refresh-btn:hover {
+            background: var(--col-bg2);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .card {
+            background: var(--col-bg2);
+            border: 1px solid var(--box-crisp-col, #333);
+            border-radius: 0.75rem;
+            padding: 1rem;
+            cursor: pointer;
+            transition: transform 0.15s, box-shadow 0.15s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .chain-icon {
+            font-size: 1.4rem;
+            line-height: 1;
+        }
+
+        .chain-name {
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .gas-status {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-left: auto;
+        }
+
+        .gas-status.cheap { background: var(--col-good, #4caf50); }
+        .gas-status.moderate { background: #f0c040; }
+        .gas-status.expensive { background: var(--col-bad, #f44336); }
+
+        .gas-prices {
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+            font-size: 0.82rem;
+        }
+
+        .gas-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .gas-label {
+            opacity: 0.6;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .gas-value {
+            font-weight: 600;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .gas-value.cheap { color: var(--col-good, #4caf50); }
+        .gas-value.moderate { color: #f0c040; }
+        .gas-value.expensive { color: var(--col-bad, #f44336); }
+
+        .usd-cost {
+            margin-top: 0.6rem;
+            padding-top: 0.5rem;
+            border-top: 1px solid var(--box-crisp-col, #333);
+            font-size: 0.75rem;
+            opacity: 0.6;
+        }
+
+        .sparkline-container {
+            margin-top: 0.5rem;
+            height: 24px;
+        }
+
+        .sparkline-canvas {
+            width: 100%;
+            height: 24px;
+            display: block;
+        }
+
+        /* Expanded card detail */
+        .card-detail {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+
+        .card.expanded .card-detail {
+            max-height: 200px;
+        }
+
+        .detail-content {
+            margin-top: 0.75rem;
+            padding-top: 0.5rem;
+            border-top: 1px solid var(--box-crisp-col, #333);
+            font-size: 0.78rem;
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.25rem;
+        }
+
+        .detail-label { opacity: 0.5; }
+
+        /* Skeleton loading */
+        .skeleton .card-header,
+        .skeleton .gas-prices,
+        .skeleton .usd-cost {
+            visibility: hidden;
+        }
+
+        .skeleton::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(90deg,
+                var(--col-bg2) 25%,
+                var(--col-bg3, #3a3a3a) 50%,
+                var(--col-bg2) 75%
+            );
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            border-radius: 0.75rem;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        .error-badge {
+            font-size: 0.7rem;
+            background: var(--col-bad, #f44336);
+            color: #fff;
+            padding: 0.15rem 0.4rem;
+            border-radius: 0.3rem;
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+        }
+
+        .last-updated {
+            font-size: 0.75rem;
+            opacity: 0.5;
+            margin-top: 1rem;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>⛽ Multi-Chain Gas Tracker</h1>
+        <div class="header-right">
+            <div class="countdown">
+                <span id="countdown-text">30s</span>
+                <div class="countdown-bar">
+                    <div class="countdown-bar-fill" id="countdown-fill" style="width:100%"></div>
+                </div>
+            </div>
+            <button class="refresh-btn" id="refresh-btn" onclick="fetchAll()">↻ Refresh</button>
+        </div>
+    </div>
+
+    <div class="grid" id="grid"></div>
+    <div class="last-updated" id="last-updated"></div>
+
+    <script>
+    (function() {
+        'use strict';
+        const fetchFn = window.cfetch || fetch;
+        const lairFetch = window.LairFetch;
+        const lairUI = window.LairUI;
+        const lairTheme = window.LairTheme;
+        const lairPoll = window.LairPoll;
+        if (lairTheme) lairTheme.apply(document.body);
+
+        const CHAINS = [
+            { id: 'eth',  name: 'Ethereum',  icon: '⟠',  owlId: 'eth',  transferGas: 21000 },
+            { id: 'base', name: 'Base',       icon: '🔵', owlId: 'base', transferGas: 21000 },
+            { id: 'arb',  name: 'Arbitrum',   icon: '🔷', owlId: 'arb',  transferGas: 21000 },
+            { id: 'poly', name: 'Polygon',    icon: '🟣', owlId: 'poly', transferGas: 21000 },
+            { id: 'op',   name: 'Optimism',   icon: '🔴', owlId: 'opt',  transferGas: 21000 },
+            { id: 'bsc',  name: 'BSC',        icon: '🟡', owlId: 'bsc',  transferGas: 21000 },
+            { id: 'avax', name: 'Avalanche',  icon: '🔺', owlId: 'avax', transferGas: 21000 },
+        ];
+
+        // Fallback gas prices (Gwei) if APIs fail
+        const FALLBACKS = {
+            eth:  { slow: 12, standard: 18, fast: 28 },
+            base: { slow: 0.005, standard: 0.01, fast: 0.02 },
+            arb:  { slow: 0.08, standard: 0.1, fast: 0.15 },
+            poly: { slow: 30, standard: 50, fast: 80 },
+            op:   { slow: 0.005, standard: 0.01, fast: 0.02 },
+            bsc:  { slow: 1, standard: 3, fast: 5 },
+            avax: { slow: 25, standard: 30, fast: 40 },
+        };
+
+        // Approximate native token USD prices for cost estimation
+        const TOKEN_PRICES = {
+            eth: 3500, base: 3500, arb: 3500, poly: 0.4, op: 3500, bsc: 600, avax: 35
+        };
+
+        const REFRESH_INTERVAL = 30;
+        const HISTORY_MAX = 120; // ~1 hour at 30s intervals
+
+        let gasHistory = {};
+        let countdown = REFRESH_INTERVAL;
+        let countdownTimer = null;
+
+        CHAINS.forEach(c => { gasHistory[c.id] = []; });
+
+        const grid = document.getElementById('grid');
+        const countdownText = document.getElementById('countdown-text');
+        const countdownFill = document.getElementById('countdown-fill');
+        const lastUpdatedEl = document.getElementById('last-updated');
+
+        function gweiClass(gwei) {
+            if (gwei < 20) return 'cheap';
+            if (gwei <= 50) return 'moderate';
+            return 'expensive';
+        }
+
+        function formatGwei(val) {
+            if (val === null || val === undefined) return '—';
+            if (val < 0.01) return val.toFixed(4);
+            if (val < 1) return val.toFixed(3);
+            if (val < 10) return val.toFixed(2);
+            return val.toFixed(1);
+        }
+
+        function estimateUSD(gweiVal, chain) {
+            const gasUsed = chain.transferGas;
+            const priceWei = gweiVal * 1e9;
+            const costETH = (priceWei * gasUsed) / 1e18;
+            const price = TOKEN_PRICES[chain.id] || 3000;
+            return (costETH * price).toFixed(4);
+        }
+
+        function renderSkeletons() {
+            grid.innerHTML = CHAINS.map(c => `
+                <div class="card skeleton" data-chain="${c.id}">
+                    <div class="card-header">
+                        <span class="chain-icon">${c.icon}</span>
+                        <span class="chain-name">${c.name}</span>
+                    </div>
+                    <div class="gas-prices">
+                        <div class="gas-row"><span class="gas-label">Slow</span><span class="gas-value">—</span></div>
+                        <div class="gas-row"><span class="gas-label">Standard</span><span class="gas-value">—</span></div>
+                        <div class="gas-row"><span class="gas-label">Fast</span><span class="gas-value">—</span></div>
+                    </div>
+                    <div class="usd-cost">Transfer: ~$—</div>
+                </div>
+            `).join('');
+        }
+
+        function renderCard(chain, data, error) {
+            const existing = grid.querySelector(`[data-chain="${chain.id}"]`);
+            const wasExpanded = existing && existing.classList.contains('expanded');
+
+            const stdClass = gweiClass(data.standard);
+            const usd = estimateUSD(data.standard, chain);
+            const history = gasHistory[chain.id];
+
+            const html = `
+                <div class="card-header">
+                    <span class="chain-icon">${chain.icon}</span>
+                    <span class="chain-name">${chain.name}</span>
+                    <span class="gas-status ${stdClass}"></span>
+                </div>
+                <div class="gas-prices">
+                    <div class="gas-row">
+                        <span class="gas-label">🐢 Slow</span>
+                        <span class="gas-value ${gweiClass(data.slow)}">${formatGwei(data.slow)} Gwei</span>
+                    </div>
+                    <div class="gas-row">
+                        <span class="gas-label">🚶 Standard</span>
+                        <span class="gas-value ${gweiClass(data.standard)}">${formatGwei(data.standard)} Gwei</span>
+                    </div>
+                    <div class="gas-row">
+                        <span class="gas-label">🚀 Fast</span>
+                        <span class="gas-value ${gweiClass(data.fast)}">${formatGwei(data.fast)} Gwei</span>
+                    </div>
+                </div>
+                <div class="usd-cost">Transfer: ~$${usd}</div>
+                ${history.length > 1 ? `
+                    <div class="sparkline-container">
+                        <canvas class="sparkline-canvas" data-sparkline="${chain.id}"></canvas>
+                    </div>
+                ` : ''}
+                ${error ? `<span class="error-badge">Fallback</span>` : ''}
+                <div class="card-detail">
+                    <div class="detail-content">
+                        <div class="detail-row"><span class="detail-label">Slow cost</span><span>$${estimateUSD(data.slow, chain)}</span></div>
+                        <div class="detail-row"><span class="detail-label">Standard cost</span><span>$${usd}</span></div>
+                        <div class="detail-row"><span class="detail-label">Fast cost</span><span>$${estimateUSD(data.fast, chain)}</span></div>
+                        <div class="detail-row"><span class="detail-label">Gas limit</span><span>${chain.transferGas.toLocaleString()}</span></div>
+                        <div class="detail-row"><span class="detail-label">History pts</span><span>${history.length}</span></div>
+                    </div>
+                </div>
+            `;
+
+            if (existing) {
+                existing.className = 'card' + (wasExpanded ? ' expanded' : '');
+                existing.innerHTML = html;
+            } else {
+                const el = document.createElement('div');
+                el.className = 'card';
+                el.setAttribute('data-chain', chain.id);
+                el.innerHTML = html;
+                grid.appendChild(el);
+            }
+
+            // Bind click toggle
+            const card = grid.querySelector(`[data-chain="${chain.id}"]`);
+            card.onclick = () => card.classList.toggle('expanded');
+
+            // Draw sparkline
+            if (history.length > 1) {
+                requestAnimationFrame(() => drawSparkline(chain.id));
+            }
+        }
+
+        function drawSparkline(chainId) {
+            const canvas = document.querySelector(`canvas[data-sparkline="${chainId}"]`);
+            if (!canvas) return;
+
+            if (lairUI && typeof lairUI.sparkline === 'function') {
+                const data = gasHistory[chainId];
+                const rect = canvas.getBoundingClientRect();
+                lairUI.sparkline(canvas, data, {
+                    width: Math.max(20, Math.floor(rect.width || 120)),
+                    height: Math.max(20, Math.floor(rect.height || 24))
+                });
+                return;
+            }
+
+            const ctx = canvas.getContext('2d');
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width * (window.devicePixelRatio || 1);
+            canvas.height = rect.height * (window.devicePixelRatio || 1);
+            ctx.scale(window.devicePixelRatio || 1, window.devicePixelRatio || 1);
+
+            const w = rect.width;
+            const h = rect.height;
+            const data = gasHistory[chainId];
+            if (data.length < 2) return;
+
+            const min = Math.min(...data) * 0.9;
+            const max = Math.max(...data) * 1.1 || 1;
+            const range = max - min || 1;
+
+            ctx.clearRect(0, 0, w, h);
+            ctx.beginPath();
+            ctx.strokeStyle = getComputedStyle(document.body).getPropertyValue('--col-good').trim() || '#4caf50';
+            ctx.lineWidth = 1.5;
+            ctx.lineJoin = 'round';
+
+            for (let i = 0; i < data.length; i++) {
+                const x = (i / (data.length - 1)) * w;
+                const y = h - ((data[i] - min) / range) * (h - 4) - 2;
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+
+            // Fill under the line
+            ctx.lineTo(w, h);
+            ctx.lineTo(0, h);
+            ctx.closePath();
+            ctx.fillStyle = (getComputedStyle(document.body).getPropertyValue('--col-good').trim() || '#4caf50') + '20';
+            ctx.fill();
+        }
+
+        // --- API Fetchers ---
+
+        async function fetchEthGas() {
+            try {
+                const json = lairFetch
+                    ? await lairFetch.getJSON('https://api.etherscan.io/api?module=gastracker&action=gasoracle', { cache: false, retries: 1, fallback: true })
+                    : await (async () => {
+                        const res = await fetchFn('https://api.etherscan.io/api?module=gastracker&action=gasoracle');
+                        if (!res.ok) throw new Error(`ETH gas endpoint ${res.status}`);
+                        return res.json();
+                    })();
+                if (json.status === '1' && json.result) {
+                    return {
+                        slow: parseFloat(json.result.SafeGasPrice),
+                        standard: parseFloat(json.result.ProposeGasPrice),
+                        fast: parseFloat(json.result.FastGasPrice),
+                    };
+                }
+            } catch (_) {}
+
+            // Fallback: beaconcha.in
+            try {
+                const json = lairFetch
+                    ? await lairFetch.getJSON('https://beaconcha.in/api/v1/execution/gasnow', { cache: false, retries: 1, fallback: true })
+                    : await (async () => {
+                        const res = await fetchFn('https://beaconcha.in/api/v1/execution/gasnow');
+                        if (!res.ok) throw new Error(`Beacon gas endpoint ${res.status}`);
+                        return res.json();
+                    })();
+                if (json.data) {
+                    return {
+                        slow: json.data.slow / 1e9,
+                        standard: json.data.standard / 1e9,
+                        fast: json.data.fast / 1e9,
+                    };
+                }
+            } catch (_) {}
+
+            return null;
+        }
+
+        async function fetchOwlracleGas(chain) {
+            try {
+                const json = lairFetch
+                    ? await lairFetch.getJSON(`https://api.owlracle.info/v4/${chain.owlId}/gas?accept=100,50,35`, { cache: false, retries: 1, fallback: true })
+                    : await (async () => {
+                        const res = await fetchFn(`https://api.owlracle.info/v4/${chain.owlId}/gas?accept=100,50,35`);
+                        if (!res.ok) throw new Error(`Owlracle endpoint ${res.status}`);
+                        return res.json();
+                    })();
+                if (json.speeds && json.speeds.length >= 3) {
+                    return {
+                        slow: parseFloat(json.speeds[2].gasPrice),
+                        standard: parseFloat(json.speeds[1].gasPrice),
+                        fast: parseFloat(json.speeds[0].gasPrice),
+                    };
+                }
+            } catch (_) {}
+            return null;
+        }
+
+        async function fetchChainGas(chain) {
+            let data = null;
+            let error = false;
+
+            if (chain.id === 'eth') {
+                data = await fetchEthGas();
+            } else {
+                data = await fetchOwlracleGas(chain);
+            }
+
+            if (!data) {
+                data = FALLBACKS[chain.id];
+                error = true;
+            }
+
+            // Record history (standard price)
+            gasHistory[chain.id].push(data.standard);
+            if (gasHistory[chain.id].length > HISTORY_MAX) {
+                gasHistory[chain.id].shift();
+            }
+
+            return { chain, data, error };
+        }
+
+        async function fetchAll() {
+            // Reset countdown
+            countdown = REFRESH_INTERVAL;
+            updateCountdown();
+
+            const results = await Promise.allSettled(
+                CHAINS.map(c => fetchChainGas(c))
+            );
+
+            results.forEach(result => {
+                if (result.status === 'fulfilled') {
+                    const { chain, data, error } = result.value;
+                    renderCard(chain, data, error);
+                } else {
+                    // If promise itself rejected, use fallback
+                    // This shouldn't happen since fetchChainGas catches errors, but just in case
+                }
+            });
+
+            const now = new Date();
+            lastUpdatedEl.textContent = `Last updated: ${now.toLocaleTimeString()}`;
+        }
+
+        function updateCountdown() {
+            countdownText.textContent = `${countdown}s`;
+            countdownFill.style.width = `${(countdown / REFRESH_INTERVAL) * 100}%`;
+        }
+
+        function startCountdown() {
+            if (countdownTimer) clearInterval(countdownTimer);
+            countdownTimer = setInterval(() => {
+                countdown--;
+                if (countdown <= 0) {
+                    fetchAll();
+                } else {
+                    updateCountdown();
+                }
+            }, 1000);
+        }
+
+        // --- Init ---
+        renderSkeletons();
+        if (lairPoll) {
+            lairPoll.start(async () => {
+                await fetchAll();
+                return true;
+            }, REFRESH_INTERVAL * 1000, () => {});
+        } else {
+            fetchAll();
+        }
+        startCountdown();
+
+        window.addEventListener('beforeunload', () => {
+            if (lairPoll) lairPoll.stop();
+        });
+    })();
+    </script>
+</body>
+</html>

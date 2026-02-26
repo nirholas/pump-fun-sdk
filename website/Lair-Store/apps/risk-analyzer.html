@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="lair-include" content="lair.css">
+    <meta name="capabilities" content="risk_analyzer">
+    <meta name="lair-icon" content="shield">
+    <meta name="lair-perms" content="network" />
+    <title>Risk Analyzer</title>
+    <style>
+        :root{--bg1:#101010;--bg2:#171717;--bg3:#222;--t1:#fff;--t2:#999;--t3:#666;--acc:rgb(97,121,255);--gn:#5be45b;--rd:#d44343;--yl:#f0b90b;--r1:6px;--font:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
+        *{margin:0;padding:0;box-sizing:border-box}
+        body,html{width:100%;height:100%;overflow:hidden;font-family:var(--font);background:var(--bg1);color:var(--t1)}
+        .app{display:flex;flex-direction:column;height:100%}
+
+        .hdr{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--bg1);border-bottom:1px solid #1e1e1e;flex-shrink:0}
+        .hdr-title{font-size:13px;font-weight:600}
+        .pills{display:flex;gap:3px}
+        .pill{background:var(--bg2);color:var(--t2);border:1px solid #262626;border-radius:4px;padding:3px 8px;font-size:10px;font-weight:600;cursor:pointer;transition:all .12s;font-family:var(--font)}
+        .pill:hover{border-color:#444;color:var(--t1)}
+        .pill.on{background:rgba(97,121,255,.12);border-color:var(--acc);color:var(--acc)}
+        .sep{width:1px;height:20px;background:#262626;flex-shrink:0}
+        .spacer{flex:1}
+        .info-tag{font-size:10px;color:var(--t3)}
+        .btn{background:var(--acc);color:#fff;border:none;border-radius:4px;padding:4px 12px;font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font)}
+        .btn:hover{opacity:.9}
+        .btn-ghost{background:none;border:1px solid #333;color:var(--t2);border-radius:4px;padding:3px 8px;font-size:10px;cursor:pointer;font-family:var(--font)}
+        .btn-ghost:hover{border-color:#555;color:var(--t1)}
+
+        .content{flex:1;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:12px}
+        .content::-webkit-scrollbar{width:4px}
+        .content::-webkit-scrollbar-thumb{background:#333;border-radius:2px}
+
+        /* Portfolio builder */
+        .builder{background:var(--bg2);border:1px solid #1e1e1e;border-radius:var(--r1);padding:12px}
+        .builder-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+        .builder-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--t2)}
+        .holdings{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+        .holding{display:flex;align-items:center;gap:4px;background:var(--bg3);border:1px solid #333;border-radius:4px;padding:3px 8px;font-size:11px}
+        .holding .h-sym{font-weight:700}
+        .holding .h-pct{color:var(--acc);font-variant-numeric:tabular-nums}
+        .holding .h-rm{background:none;border:none;color:var(--t3);cursor:pointer;font-size:14px;padding:0 2px;line-height:1}
+        .holding .h-rm:hover{color:var(--rd)}
+        .add-row{display:flex;gap:6px;margin-top:8px;align-items:center}
+        .add-row select,.add-row input{background:var(--bg3);color:var(--t1);border:1px solid #333;border-radius:4px;padding:4px 8px;font-size:11px;font-family:var(--font)}
+        .add-row input{width:70px}
+        .alloc-bar{height:4px;border-radius:2px;background:var(--bg3);overflow:hidden;margin-top:4px}
+        .alloc-fill{height:100%;border-radius:2px;background:var(--acc);transition:width .3s}
+
+        /* Metrics grid */
+        .metrics{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px}
+        .metric{background:var(--bg2);border:1px solid #1e1e1e;border-radius:var(--r1);padding:10px 12px}
+        .m-label{font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px}
+        .m-val{font-size:18px;font-weight:700;margin-top:4px;font-variant-numeric:tabular-nums}
+        .m-sub{font-size:10px;color:var(--t3);margin-top:2px}
+        .m-bar{height:4px;border-radius:2px;background:var(--bg3);margin-top:6px;overflow:hidden}
+        .m-bar-fill{height:100%;border-radius:2px}
+
+        /* Distribution chart */
+        .chart-section{background:var(--bg2);border:1px solid #1e1e1e;border-radius:var(--r1);padding:12px}
+        .chart-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--t2);margin-bottom:8px}
+        canvas{width:100%;border-radius:4px}
+
+        /* Stress test */
+        .stress{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px}
+        .stress-card{background:var(--bg2);border:1px solid #1e1e1e;border-radius:var(--r1);padding:10px}
+        .stress-name{font-size:11px;font-weight:600;margin-bottom:4px}
+        .stress-desc{font-size:10px;color:var(--t3);margin-bottom:6px}
+        .stress-impact{font-size:16px;font-weight:700}
+
+        .ov{position:absolute;inset:0;z-index:10;display:flex;align-items:center;justify-content:center;background:rgba(16,16,16,.92)}
+        .ov.h{display:none}
+        .spin{width:24px;height:24px;border:3px solid #333;border-top-color:var(--acc);border-radius:50%;animation:sp .7s linear infinite;margin:0 auto 8px}
+        @keyframes sp{to{transform:rotate(360deg)}}
+        .ov-c{text-align:center;color:var(--t2);font-size:12px}
+
+        @media(max-width:640px){
+            .metrics{grid-template-columns:repeat(2,1fr)}
+            .stress{grid-template-columns:1fr}
+        }
+    </style>
+</head>
+<body>
+<div class="app">
+    <div class="hdr">
+        <span class="hdr-title">🛡️ Portfolio Risk Analyzer</span>
+        <div class="sep"></div>
+        <div class="pills" id="period">
+            <button class="pill" data-d="30">30d</button>
+            <button class="pill on" data-d="90">90d</button>
+            <button class="pill" data-d="180">180d</button>
+            <button class="pill" data-d="365">1Y</button>
+        </div>
+        <div class="sep"></div>
+        <div class="pills" id="presets">
+            <button class="pill" data-p="conservative">Conservative</button>
+            <button class="pill" data-p="balanced">Balanced</button>
+            <button class="pill" data-p="degen">Degen</button>
+        </div>
+        <div class="spacer"></div>
+        <span class="info-tag" id="info">--</span>
+        <button class="btn" id="analyze">Analyze</button>
+    </div>
+
+    <div class="content" style="position:relative">
+        <div class="ov h" id="ov-load"><div class="ov-c"><div class="spin"></div>Computing risk metrics…</div></div>
+
+        <!-- Portfolio builder -->
+        <div class="builder">
+            <div class="builder-hdr">
+                <span class="builder-title">Portfolio Holdings</span>
+                <span class="info-tag" id="alloc-info">0% allocated</span>
+            </div>
+            <div class="holdings" id="holdings"></div>
+            <div class="alloc-bar"><div class="alloc-fill" id="alloc-bar"></div></div>
+            <div class="add-row">
+                <select id="add-coin"></select>
+                <input type="number" id="add-pct" placeholder="%" min="1" max="100" value="10">
+                <button class="btn" id="add-btn">Add</button>
+                <button class="btn-ghost" id="equal-btn">Equal Weight</button>
+                <button class="btn-ghost" id="clear-btn">Clear</button>
+            </div>
+        </div>
+
+        <!-- Metrics -->
+        <div class="metrics" id="metrics"></div>
+
+        <!-- Return distribution -->
+        <div class="chart-section">
+            <div class="chart-title">Return Distribution (Monte Carlo)</div>
+            <canvas id="dist-chart" height="180"></canvas>
+        </div>
+
+        <!-- Stress tests -->
+        <div class="chart-title" style="margin-top:4px">Stress Test Scenarios</div>
+        <div class="stress" id="stress"></div>
+    </div>
+</div>
+
+<script>
+(function(){
+'use strict';
+const F=window.cfetch||fetch;
+const CG='https://api.coingecko.com/api/v3';
+
+const COINS=[
+    {id:'bitcoin',sym:'BTC'},{id:'ethereum',sym:'ETH'},{id:'binancecoin',sym:'BNB'},
+    {id:'solana',sym:'SOL'},{id:'ripple',sym:'XRP'},{id:'cardano',sym:'ADA'},
+    {id:'dogecoin',sym:'DOGE'},{id:'avalanche-2',sym:'AVAX'},{id:'polkadot',sym:'DOT'},
+    {id:'chainlink',sym:'LINK'},{id:'uniswap',sym:'UNI'},{id:'aave',sym:'AAVE'},
+    {id:'near',sym:'NEAR'},{id:'sui',sym:'SUI'},{id:'aptos',sym:'APT'},
+    {id:'arbitrum',sym:'ARB'},{id:'optimism',sym:'OP'},{id:'maker',sym:'MKR'},
+    {id:'lido-dao',sym:'LDO'},{id:'pepe',sym:'PEPE'},{id:'shiba-inu',sym:'SHIB'},
+    {id:'render-token',sym:'RNDR'},{id:'fetch-ai',sym:'FET'},{id:'injective-protocol',sym:'INJ'}
+];
+
+const PRESETS={
+    conservative:[{id:'bitcoin',pct:50},{id:'ethereum',pct:30},{id:'binancecoin',pct:10},{id:'solana',pct:10}],
+    balanced:[{id:'bitcoin',pct:30},{id:'ethereum',pct:20},{id:'solana',pct:15},{id:'chainlink',pct:10},{id:'aave',pct:10},{id:'render-token',pct:10},{id:'arbitrum',pct:5}],
+    degen:[{id:'pepe',pct:25},{id:'dogecoin',pct:20},{id:'solana',pct:15},{id:'shiba-inu',pct:15},{id:'dogwifcoin',pct:10},{id:'bonk',pct:10},{id:'fetch-ai',pct:5}]
+};
+
+let portfolio=[];
+let days=90;
+let priceCache={};
+
+/* ── DOM ── */
+const holdingsEl=document.getElementById('holdings');
+const metricsEl=document.getElementById('metrics');
+const stressEl=document.getElementById('stress');
+
+/* ── Populate select ── */
+const sel=document.getElementById('add-coin');
+COINS.forEach(c=>{const o=document.createElement('option');o.value=c.id;o.textContent=c.sym;sel.appendChild(o)});
+
+/* ── Portfolio management ── */
+function renderHoldings(){
+    const total=portfolio.reduce((s,h)=>s+h.pct,0);
+    holdingsEl.innerHTML=portfolio.map((h,i)=>{
+        const coin=COINS.find(c=>c.id===h.id);
+        return`<div class="holding"><span class="h-sym">${coin?.sym||h.id}</span><span class="h-pct">${h.pct}%</span><button class="h-rm" data-i="${i}">&times;</button></div>`;
+    }).join('');
+    document.getElementById('alloc-info').textContent=total+'% allocated';
+    document.getElementById('alloc-bar').style.width=Math.min(total,100)+'%';
+    document.getElementById('alloc-bar').style.background=total===100?'var(--gn)':total>100?'var(--rd)':'var(--acc)';
+}
+
+holdingsEl.addEventListener('click',e=>{
+    const btn=e.target.closest('.h-rm');
+    if(!btn)return;
+    portfolio.splice(+btn.dataset.i,1);
+    renderHoldings();
+});
+
+document.getElementById('add-btn').addEventListener('click',()=>{
+    const id=sel.value;
+    const pct=parseInt(document.getElementById('add-pct').value)||10;
+    if(portfolio.find(h=>h.id===id)){
+        portfolio=portfolio.map(h=>h.id===id?{...h,pct:h.pct+pct}:h);
+    }else{
+        portfolio.push({id,pct});
+    }
+    renderHoldings();
+});
+
+document.getElementById('equal-btn').addEventListener('click',()=>{
+    if(!portfolio.length)return;
+    const pct=Math.floor(100/portfolio.length);
+    portfolio=portfolio.map((h,i)=>({...h,pct:i===0?100-(pct*(portfolio.length-1)):pct}));
+    renderHoldings();
+});
+
+document.getElementById('clear-btn').addEventListener('click',()=>{
+    portfolio=[];renderHoldings();
+    metricsEl.innerHTML='';stressEl.innerHTML='';
+});
+
+/* ── Presets ── */
+document.getElementById('presets').addEventListener('click',e=>{
+    const p=e.target.closest('.pill');if(!p)return;
+    document.querySelectorAll('#presets .pill').forEach(x=>x.classList.remove('on'));
+    p.classList.add('on');
+    portfolio=(PRESETS[p.dataset.p]||[]).map(h=>({...h}));
+    renderHoldings();
+    analyze();
+});
+
+document.getElementById('period').addEventListener('click',e=>{
+    const p=e.target.closest('.pill');if(!p)return;
+    document.querySelectorAll('#period .pill').forEach(x=>x.classList.remove('on'));
+    p.classList.add('on');
+    days=+p.dataset.d;
+    if(portfolio.length)analyze();
+});
+
+/* ── Fetch ── */
+async function fetchPrices(coinId){
+    const key=coinId+'_'+days;
+    if(priceCache[key])return priceCache[key];
+    const r=await F(`${CG}/coins/${coinId}/market_chart?vs_currency=usd&days=${days}&interval=daily`);
+    if(r.status===429){await new Promise(ok=>setTimeout(ok,6000));return fetchPrices(coinId);}
+    if(!r.ok)throw new Error('API '+r.status+' for '+coinId);
+    const d=await r.json();
+    const prices=(d.prices||[]).map(p=>p[1]);
+    priceCache[key]=prices;
+    return prices;
+}
+
+/* ── Math ── */
+function dailyReturns(p){const r=[];for(let i=1;i<p.length;i++)r.push((p[i]-p[i-1])/p[i-1]);return r}
+function mean(a){return a.reduce((s,v)=>s+v,0)/a.length}
+function stddev(a){const m=mean(a);return Math.sqrt(a.reduce((s,v)=>s+(v-m)**2,0)/a.length)}
+function sortedCopy(a){return[...a].sort((x,y)=>x-y)}
+function percentile(sorted,p){const i=(sorted.length-1)*p;const lo=Math.floor(i),hi=Math.ceil(i);return sorted[lo]+(sorted[hi]-sorted[lo])*(i-lo)}
+
+function portfolioReturns(allReturns,weights){
+    // Combine individual asset returns weighted
+    const n=Math.min(...Object.values(allReturns).map(r=>r.length));
+    const combined=[];
+    for(let i=0;i<n;i++){
+        let dayReturn=0;
+        for(const{id,pct}of weights){
+            const r=allReturns[id];
+            if(r&&r[i]!=null)dayReturn+=r[i]*(pct/100);
+        }
+        combined.push(dayReturn);
+    }
+    return combined;
+}
+
+function sharpeRatio(returns,riskFreeDaily=0.00013){
+    // Rf ≈ 5% annual → ~0.013%/day
+    const excess=returns.map(r=>r-riskFreeDaily);
+    const m=mean(excess);
+    const s=stddev(excess);
+    return s===0?0:(m/s)*Math.sqrt(365);
+}
+
+function sortinoRatio(returns,riskFreeDaily=0.00013){
+    const excess=returns.map(r=>r-riskFreeDaily);
+    const m=mean(excess);
+    const downside=returns.filter(r=>r<riskFreeDaily);
+    const downDev=downside.length?Math.sqrt(downside.reduce((s,r)=>s+(r-riskFreeDaily)**2,0)/downside.length):0.0001;
+    return(m/downDev)*Math.sqrt(365);
+}
+
+function maxDrawdown(returns){
+    let peak=1,maxDD=0;
+    let cum=1;
+    for(const r of returns){
+        cum*=(1+r);
+        if(cum>peak)peak=cum;
+        const dd=(peak-cum)/peak;
+        if(dd>maxDD)maxDD=dd;
+    }
+    return maxDD;
+}
+
+function valueAtRisk(returns,confidence=0.95){
+    const sorted=sortedCopy(returns);
+    return-percentile(sorted,1-confidence);
+}
+
+function cvar(returns,confidence=0.95){
+    const sorted=sortedCopy(returns);
+    const cutoff=percentile(sorted,1-confidence);
+    const tail=sorted.filter(r=>r<=cutoff);
+    return tail.length?-mean(tail):0;
+}
+
+function beta(portfolioReturns,benchmarkReturns){
+    const n=Math.min(portfolioReturns.length,benchmarkReturns.length);
+    const pm=mean(portfolioReturns.slice(0,n));
+    const bm=mean(benchmarkReturns.slice(0,n));
+    let cov=0,varB=0;
+    for(let i=0;i<n;i++){
+        cov+=(portfolioReturns[i]-pm)*(benchmarkReturns[i]-bm);
+        varB+=(benchmarkReturns[i]-bm)**2;
+    }
+    return varB===0?1:cov/varB;
+}
+
+/* ── Monte Carlo simulation ── */
+function monteCarlo(returns,numSims=5000,horizonDays=30){
+    const m=mean(returns);
+    const s=stddev(returns);
+    const results=[];
+    for(let i=0;i<numSims;i++){
+        let cum=1;
+        for(let d=0;d<horizonDays;d++){
+            // Box-Muller for normal distribution
+            const u1=Math.random(),u2=Math.random();
+            const z=Math.sqrt(-2*Math.log(u1))*Math.cos(2*Math.PI*u2);
+            cum*=(1+m+s*z);
+        }
+        results.push(cum-1); // total return
+    }
+    return results.sort((a,b)=>a-b);
+}
+
+/* ── Rendering ── */
+function riskColor(val,thresholds){
+    // thresholds: [good, warn] — lower is better for most risk metrics
+    if(val<=thresholds[0])return'var(--gn)';
+    if(val<=thresholds[1])return'var(--yl)';
+    return'var(--rd)';
+}
+
+function renderMetrics(portReturns,btcReturns){
+    const annReturn=mean(portReturns)*365*100;
+    const annVol=stddev(portReturns)*Math.sqrt(365)*100;
+    const sharpe=sharpeRatio(portReturns);
+    const sortino=sortinoRatio(portReturns);
+    const mdd=maxDrawdown(portReturns)*100;
+    const var95=valueAtRisk(portReturns)*100;
+    const cvar95=cvar(portReturns)*100;
+    const b=beta(portReturns,btcReturns);
+    const calmar=mdd>0?annReturn/mdd:0;
+    const winRate=portReturns.filter(r=>r>0).length/portReturns.length*100;
+
+    const data=[
+        {label:'Annualized Return',val:(annReturn>=0?'+':'')+annReturn.toFixed(2)+'%',color:annReturn>=0?'var(--gn)':'var(--rd)',sub:`${days}d period`,bar:null},
+        {label:'Annualized Volatility',val:annVol.toFixed(2)+'%',color:riskColor(annVol,[30,60]),sub:'Std dev of returns',bar:{pct:Math.min(annVol/100,1)*100,color:riskColor(annVol,[30,60])}},
+        {label:'Sharpe Ratio',val:sharpe.toFixed(3),color:sharpe>=1?'var(--gn)':sharpe>=0?'var(--yl)':'var(--rd)',sub:sharpe>=2?'Excellent':sharpe>=1?'Good':sharpe>=0?'Below avg':'Poor'},
+        {label:'Sortino Ratio',val:sortino.toFixed(3),color:sortino>=1.5?'var(--gn)':sortino>=0?'var(--yl)':'var(--rd)',sub:'Downside risk adjusted'},
+        {label:'Max Drawdown',val:'-'+mdd.toFixed(2)+'%',color:riskColor(mdd,[20,50]),sub:'Worst peak-to-trough',bar:{pct:Math.min(mdd,100),color:riskColor(mdd,[20,50])}},
+        {label:'Value at Risk (95%)',val:'-'+var95.toFixed(2)+'%',color:riskColor(var95,[3,8]),sub:'Daily worst loss at 95% CI'},
+        {label:'CVaR (95%)',val:'-'+cvar95.toFixed(2)+'%',color:riskColor(cvar95,[5,12]),sub:'Expected loss beyond VaR'},
+        {label:'Beta vs BTC',val:b.toFixed(3),color:Math.abs(b)>1.2?'var(--rd)':'var(--acc)',sub:b>1?'More volatile than BTC':'Less volatile than BTC'},
+        {label:'Calmar Ratio',val:calmar.toFixed(3),color:calmar>=1?'var(--gn)':calmar>=0.5?'var(--yl)':'var(--rd)',sub:'Return / Max DD'},
+        {label:'Win Rate',val:winRate.toFixed(1)+'%',color:winRate>50?'var(--gn)':'var(--rd)',sub:`${portReturns.filter(r=>r>0).length}/${portReturns.length} profitable days`}
+    ];
+
+    metricsEl.innerHTML=data.map(d=>`
+        <div class="metric">
+            <div class="m-label">${d.label}</div>
+            <div class="m-val" style="color:${d.color}">${d.val}</div>
+            <div class="m-sub">${d.sub}</div>
+            ${d.bar?`<div class="m-bar"><div class="m-bar-fill" style="width:${d.bar.pct}%;background:${d.bar.color}"></div></div>`:''}
+        </div>
+    `).join('');
+}
+
+function renderDistribution(mcResults){
+    const canvas=document.getElementById('dist-chart');
+    const ctx=canvas.getContext('2d');
+    const rect=canvas.parentElement.getBoundingClientRect();
+    canvas.width=rect.width*devicePixelRatio;
+    canvas.height=180*devicePixelRatio;
+    canvas.style.width=rect.width+'px';
+    canvas.style.height='180px';
+    ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
+
+    const W=rect.width,H=180;
+    const pad={left:50,right:20,top:10,bottom:25};
+    const cw=W-pad.left-pad.right,ch=H-pad.top-pad.bottom;
+
+    ctx.clearRect(0,0,W,H);
+
+    // Histogram
+    const numBins=50;
+    const min=mcResults[0],max=mcResults[mcResults.length-1];
+    const binW=(max-min)/numBins;
+    const bins=new Array(numBins).fill(0);
+    mcResults.forEach(v=>{const i=Math.min(Math.floor((v-min)/binW),numBins-1);bins[i]++});
+    const maxBin=Math.max(...bins);
+
+    // VaR line position
+    const var5=mcResults[Math.floor(mcResults.length*0.05)];
+
+    bins.forEach((count,i)=>{
+        const x=pad.left+(i/numBins)*cw;
+        const w=cw/numBins-1;
+        const h=(count/maxBin)*ch;
+        const retVal=min+binW*(i+0.5);
+
+        if(retVal<var5){
+            ctx.fillStyle='rgba(212,67,67,0.6)';
+        }else if(retVal<0){
+            ctx.fillStyle='rgba(212,67,67,0.3)';
+        }else{
+            ctx.fillStyle='rgba(91,228,91,0.4)';
+        }
+        ctx.fillRect(x,pad.top+ch-h,w,h);
+    });
+
+    // VaR line
+    const varX=pad.left+((var5-min)/(max-min))*cw;
+    ctx.strokeStyle='var(--rd)';
+    ctx.setLineDash([4,3]);
+    ctx.lineWidth=1;
+    ctx.beginPath();
+    ctx.moveTo(varX,pad.top);ctx.lineTo(varX,pad.top+ch);ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.fillStyle='var(--rd)';
+    ctx.font='9px '+getComputedStyle(document.body).fontFamily;
+    ctx.textAlign='center';
+    ctx.fillText('VaR 5%: '+(var5*100).toFixed(1)+'%',varX,pad.top-2);
+
+    // Zero line
+    const zeroX=pad.left+((-min)/(max-min))*cw;
+    ctx.strokeStyle='#444';
+    ctx.lineWidth=0.5;
+    ctx.beginPath();
+    ctx.moveTo(zeroX,pad.top);ctx.lineTo(zeroX,pad.top+ch);ctx.stroke();
+
+    // X axis labels
+    ctx.fillStyle='#666';
+    ctx.font='9px '+getComputedStyle(document.body).fontFamily;
+    ctx.textAlign='center';
+    for(let i=0;i<=5;i++){
+        const v=min+(max-min)*(i/5);
+        const x=pad.left+(i/5)*cw;
+        ctx.fillText((v*100).toFixed(0)+'%',x,H-5);
+    }
+
+    // Y axis
+    ctx.textAlign='right';
+    for(let i=0;i<=3;i++){
+        const v=Math.round(maxBin*(i/3));
+        const y=pad.top+ch-ch*(i/3);
+        ctx.fillText(v.toString(),pad.left-5,y+3);
+    }
+
+    // Median
+    const median=mcResults[Math.floor(mcResults.length/2)];
+    const medX=pad.left+((median-min)/(max-min))*cw;
+    ctx.strokeStyle='var(--acc)';
+    ctx.setLineDash([2,2]);
+    ctx.beginPath();
+    ctx.moveTo(medX,pad.top);ctx.lineTo(medX,pad.top+ch);ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle='var(--acc)';
+    ctx.fillText('Median: '+(median*100).toFixed(1)+'%',medX,pad.top+ch+12);
+}
+
+function renderStressTests(portReturns,allReturns,weights){
+    const scenarios=[
+        {name:'🦢 Black Swan (-30% BTC)',desc:'Crypto market crash similar to March 2020',factor:{bitcoin:-0.30,ethereum:-0.35,default:-0.40}},
+        {name:'📉 Bear Market (-50% broad)',desc:'Extended decline like 2022 drawdown',factor:{bitcoin:-0.50,ethereum:-0.55,default:-0.60}},
+        {name:'🏦 Stablecoin Depeg',desc:'Major stablecoin loses peg, contagion',factor:{bitcoin:-0.15,ethereum:-0.20,default:-0.25}},
+        {name:'🔥 DeFi Exploit',desc:'Large protocol hack, sector contagion',factor:{bitcoin:-0.05,ethereum:-0.12,default:-0.30}},
+        {name:'📈 Bull Run (+100% BTC)',desc:'Bitcoin doubles from current level',factor:{bitcoin:1.0,ethereum:1.2,default:1.5}},
+        {name:'⚡ Flash Crash (-15%)',desc:'Rapid liquidation cascade, quick recovery',factor:{bitcoin:-0.15,ethereum:-0.18,default:-0.22}}
+    ];
+
+    stressEl.innerHTML=scenarios.map(s=>{
+        let impact=0;
+        for(const{id,pct}of weights){
+            const factor=s.factor[id]||s.factor.default;
+            impact+=factor*(pct/100);
+        }
+        const cls=impact<0?'dn':'up';
+        return`<div class="stress-card">
+            <div class="stress-name">${s.name}</div>
+            <div class="stress-desc">${s.desc}</div>
+            <div class="stress-impact ${cls}">${impact>=0?'+':''}${(impact*100).toFixed(2)}%</div>
+        </div>`;
+    }).join('');
+}
+
+/* ── Analyze ── */
+async function analyze(){
+    if(!portfolio.length)return;
+    document.getElementById('ov-load').classList.remove('h');
+
+    try{
+        // Fetch price data for all holdings + BTC benchmark
+        const ids=[...new Set([...portfolio.map(h=>h.id),'bitcoin'])];
+        const allReturns={};
+
+        for(let i=0;i<ids.length;i+=3){
+            const batch=ids.slice(i,i+3);
+            await Promise.all(batch.map(async id=>{
+                const prices=await fetchPrices(id);
+                allReturns[id]=dailyReturns(prices);
+            }));
+            if(i+3<ids.length)await new Promise(ok=>setTimeout(ok,1200));
+        }
+
+        const portRet=portfolioReturns(allReturns,portfolio);
+        const btcRet=allReturns.bitcoin||[];
+
+        renderMetrics(portRet,btcRet);
+
+        const mcResults=monteCarlo(portRet,5000,30);
+        renderDistribution(mcResults);
+
+        renderStressTests(portRet,allReturns,portfolio);
+
+        document.getElementById('info').textContent=`${portfolio.length} assets · ${days}d · ${new Date().toLocaleTimeString()}`;
+        document.getElementById('ov-load').classList.add('h');
+    }catch(e){
+        console.error(e);
+        document.getElementById('ov-load').classList.add('h');
+        alert('Error: '+e.message);
+    }
+}
+
+document.getElementById('analyze').addEventListener('click',analyze);
+
+// Default to balanced preset
+portfolio=PRESETS.balanced.map(h=>({...h}));
+renderHoldings();
+analyze();
+})();
+</script>
+</body>
+</html>

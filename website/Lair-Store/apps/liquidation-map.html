@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="lair-include" content="lair.css material-symbols-rounded">
+    <meta name="capabilities" content="liquidation_heatmap">
+    <meta name="lair-icon" content="<svg width='232' height='232' viewBox='0 0 232 232' fill='none' xmlns='http://www.w3.org/2000/svg'><rect width='232' height='232' rx='40' fill='#1A0A0A'/><rect x='40' y='60' width='20' height='112' rx='4' fill='#7F1D1D'/><rect x='68' y='90' width='20' height='82' rx='4' fill='#991B1B'/><rect x='96' y='45' width='20' height='127' rx='4' fill='#DC2626'/><rect x='124' y='100' width='20' height='72' rx='4' fill='#EF4444'/><rect x='152' y='70' width='20' height='102' rx='4' fill='#F87171'/><rect x='40' y='180' width='132' height='2' fill='#3F1515'/></svg>">
+    <meta name="lair-perms" content="network" />
+    <title>Liquidations</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { height: 100%; background: var(--col-bg1, #080A19); color: var(--col-txt1, #A7C2F3); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+
+        .app { height: 100%; display: flex; flex-direction: column; overflow: hidden; }
+
+        .header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 10px 16px; gap: 10px;
+            background: var(--col-bg2, #0C0F27);
+            border-bottom: 1px solid rgba(112, 188, 249, 0.08);
+            flex-shrink: 0; flex-wrap: wrap;
+        }
+        .header-left { display: flex; align-items: center; gap: 8px; }
+        .header-left h1 { font-size: 14px; font-weight: 700; }
+        .header-left .material-symbols-rounded { font-size: 20px; color: #EF4444; }
+
+        .tf-group { display: flex; gap: 3px; }
+        .tf-btn {
+            background: transparent; border: 1px solid rgba(112, 188, 249, 0.08);
+            color: #5A6080; border-radius: 4px; padding: 3px 8px;
+            font-size: 11px; cursor: pointer; transition: all 0.15s;
+            font-family: inherit; font-weight: 600;
+        }
+        .tf-btn:hover { color: var(--col-txt1, #A7C2F3); }
+        .tf-btn.active { color: #EF4444; border-color: rgba(239, 68, 68, 0.3); background: rgba(239, 68, 68, 0.08); }
+
+        .symbol-select {
+            background: var(--col-bg3, #15183E); color: var(--col-txt1, #A7C2F3);
+            border: 1px solid rgba(112, 188, 249, 0.1); border-radius: 4px;
+            padding: 3px 8px; font-size: 12px; cursor: pointer; outline: none;
+            font-family: inherit; font-weight: 600;
+        }
+
+        .stats-row {
+            display: flex; gap: 12px; padding: 8px 16px;
+            background: var(--col-bg1, #080A19);
+            border-bottom: 1px solid rgba(112, 188, 249, 0.05);
+            flex-shrink: 0; flex-wrap: wrap; align-items: center;
+        }
+        .stat-card {
+            display: flex; flex-direction: column; gap: 1px;
+            padding: 4px 12px; border-radius: 6px;
+            background: rgba(112, 188, 249, 0.03);
+        }
+        .stat-card .label { font-size: 10px; color: #5A6080; text-transform: uppercase; letter-spacing: 0.5px; }
+        .stat-card .value { font-size: 14px; font-weight: 700; font-family: 'SF Mono', 'Fira Code', monospace; }
+        .stat-card .long { color: #22C55E; }
+        .stat-card .short { color: #EF4444; }
+        .stat-card .total { color: #F59E0B; }
+
+        .ratio-bar-wrap {
+            flex: 1; min-width: 120px; display: flex; flex-direction: column; gap: 2px;
+        }
+        .ratio-label { display: flex; justify-content: space-between; font-size: 10px; }
+        .ratio-label .l { color: #22C55E; }
+        .ratio-label .s { color: #EF4444; }
+        .ratio-bar {
+            height: 6px; border-radius: 3px; background: #EF4444; overflow: hidden; position: relative;
+        }
+        .ratio-bar-fill {
+            height: 100%; background: #22C55E; border-radius: 3px; transition: width 0.5s;
+        }
+
+        .content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+        .feed-header {
+            display: grid; grid-template-columns: 50px 1fr 80px 90px 60px;
+            padding: 6px 16px; gap: 8px;
+            background: var(--col-bg2, #0C0F27);
+            font-size: 10px; color: #5A6080; text-transform: uppercase;
+            letter-spacing: 0.5px; font-weight: 600; flex-shrink: 0;
+        }
+        .feed-header span:nth-child(n+3) { text-align: right; }
+
+        .feed { flex: 1; overflow-y: auto; }
+        .feed::-webkit-scrollbar { width: 4px; }
+        .feed::-webkit-scrollbar-thumb { background: rgba(112, 188, 249, 0.1); border-radius: 2px; }
+
+        .liq-row {
+            display: grid; grid-template-columns: 50px 1fr 80px 90px 60px;
+            padding: 7px 16px; gap: 8px; align-items: center;
+            border-bottom: 1px solid rgba(112, 188, 249, 0.02);
+            animation: fadeIn 0.3s;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+
+        .liq-row .side {
+            font-size: 11px; font-weight: 700; border-radius: 3px;
+            padding: 2px 8px; text-align: center; width: fit-content;
+        }
+        .liq-row .side.long { background: rgba(34, 197, 94, 0.12); color: #22C55E; }
+        .liq-row .side.short { background: rgba(239, 68, 68, 0.12); color: #EF4444; }
+
+        .liq-row .symbol { font-size: 13px; font-weight: 700; }
+        .liq-row .price {
+            text-align: right; font-family: 'SF Mono', 'Fira Code', monospace;
+            font-size: 12px; color: var(--col-txt1, #A7C2F3);
+        }
+        .liq-row .amount {
+            text-align: right; font-family: 'SF Mono', 'Fira Code', monospace;
+            font-size: 12px; font-weight: 600;
+        }
+        .liq-row .amount.big { color: #F59E0B; }
+        .liq-row .amount.huge { color: #EF4444; font-weight: 800; }
+        .liq-row .amount.normal { color: #5A6080; }
+        .liq-row .time-ago { text-align: right; font-size: 10px; color: #5A6080; }
+
+        .pulse { animation: pulse 1s; }
+        @keyframes pulse { 0% { background: rgba(239, 68, 68, 0.1); } 100% { background: transparent; } }
+
+        .empty-state {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            height: 200px; gap: 10px; color: #5A6080;
+        }
+        .empty-state .material-symbols-rounded { font-size: 36px; opacity: 0.3; }
+
+        @media (max-width: 500px) {
+            .feed-header, .liq-row { grid-template-columns: 44px 1fr 70px 80px; }
+            .feed-header span:nth-child(5), .liq-row .time-ago { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <div class="header">
+            <div class="header-left">
+                <span class="material-symbols-rounded">local_fire_department</span>
+                <h1>Liquidation Feed</h1>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;">
+                <select class="symbol-select" id="symbolFilter">
+                    <option value="all">All Pairs</option>
+                    <option value="BTCUSDT">BTC/USDT</option>
+                    <option value="ETHUSDT">ETH/USDT</option>
+                    <option value="SOLUSDT">SOL/USDT</option>
+                    <option value="BNBUSDT">BNB/USDT</option>
+                </select>
+                <div class="tf-group" id="sizeFilter">
+                    <button class="tf-btn active" data-min="0">All</button>
+                    <button class="tf-btn" data-min="10000">$10K+</button>
+                    <button class="tf-btn" data-min="100000">$100K+</button>
+                    <button class="tf-btn" data-min="1000000">$1M+</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="stats-row">
+            <div class="stat-card">
+                <span class="label">Long Liqs (24h)</span>
+                <span class="value long" id="longTotal">$0</span>
+            </div>
+            <div class="stat-card">
+                <span class="label">Short Liqs (24h)</span>
+                <span class="value short" id="shortTotal">$0</span>
+            </div>
+            <div class="stat-card">
+                <span class="label">Total (24h)</span>
+                <span class="value total" id="totalLiq">$0</span>
+            </div>
+            <div class="ratio-bar-wrap">
+                <div class="ratio-label">
+                    <span class="l" id="longPct">50%</span>
+                    <span class="s" id="shortPct">50%</span>
+                </div>
+                <div class="ratio-bar">
+                    <div class="ratio-bar-fill" id="ratioFill" style="width:50%"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="content">
+            <div class="feed-header">
+                <span>Side</span>
+                <span>Symbol</span>
+                <span>Price</span>
+                <span>Amount</span>
+                <span>Time</span>
+            </div>
+            <div class="feed" id="feed">
+                <div class="empty-state">
+                    <span class="material-symbols-rounded">hourglass_empty</span>
+                    <span>Connecting to liquidation stream...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    (function() {
+        function getFetch() { return window.cfetch || fetch; }
+        const feed = document.getElementById('feed');
+        const symbolFilter = document.getElementById('symbolFilter');
+        const sizeFilter = document.getElementById('sizeFilter');
+        let allLiqs = [];
+        let minSize = 0;
+        let filterSymbol = 'all';
+        let ws = null;
+        let longTotal24h = 0;
+        let shortTotal24h = 0;
+        const MAX_ROWS = 200;
+
+        // Size filter
+        sizeFilter.querySelectorAll('.tf-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                sizeFilter.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                minSize = parseInt(btn.dataset.min);
+                renderFeed();
+            });
+        });
+
+        // Symbol filter
+        symbolFilter.addEventListener('change', () => {
+            filterSymbol = symbolFilter.value;
+            renderFeed();
+        });
+
+        function formatUSD(val) {
+            if (val >= 1e6) return '$' + (val/1e6).toFixed(2) + 'M';
+            if (val >= 1e3) return '$' + (val/1e3).toFixed(1) + 'K';
+            return '$' + val.toFixed(0);
+        }
+
+        function formatPrice(price) {
+            const p = parseFloat(price);
+            if (p >= 1000) return '$' + p.toLocaleString('en', { maximumFractionDigits: 2 });
+            if (p >= 1) return '$' + p.toFixed(2);
+            return '$' + p.toFixed(4);
+        }
+
+        function timeAgo(ts) {
+            const diff = Date.now() - ts;
+            if (diff < 1000) return 'now';
+            if (diff < 60000) return Math.floor(diff/1000) + 's';
+            if (diff < 3600000) return Math.floor(diff/60000) + 'm';
+            return Math.floor(diff/3600000) + 'h';
+        }
+
+        function amountClass(val) {
+            if (val >= 1000000) return 'huge';
+            if (val >= 100000) return 'big';
+            return 'normal';
+        }
+
+        function updateStats() {
+            document.getElementById('longTotal').textContent = formatUSD(longTotal24h);
+            document.getElementById('shortTotal').textContent = formatUSD(shortTotal24h);
+            document.getElementById('totalLiq').textContent = formatUSD(longTotal24h + shortTotal24h);
+
+            const total = longTotal24h + shortTotal24h;
+            const longPct = total > 0 ? (longTotal24h / total * 100) : 50;
+            document.getElementById('longPct').textContent = longPct.toFixed(0) + '%';
+            document.getElementById('shortPct').textContent = (100 - longPct).toFixed(0) + '%';
+            document.getElementById('ratioFill').style.width = longPct + '%';
+        }
+
+        function renderFeed() {
+            const filtered = allLiqs.filter(l => {
+                if (filterSymbol !== 'all' && l.symbol !== filterSymbol) return false;
+                if (l.usdValue < minSize) return false;
+                return true;
+            });
+
+            if (filtered.length === 0) {
+                feed.innerHTML = `<div class="empty-state">
+                    <span class="material-symbols-rounded">filter_alt</span>
+                    <span>No liquidations matching filters</span>
+                </div>`;
+                return;
+            }
+
+            feed.innerHTML = filtered.slice(0, 100).map(l => `
+                <div class="liq-row${l.isNew ? ' pulse' : ''}">
+                    <span class="side ${l.side}">${l.side.toUpperCase()}</span>
+                    <span class="symbol">${l.symbol.replace('USDT','')}<span style="color:#5A6080;font-weight:400;font-size:10px">/USDT</span></span>
+                    <span class="price">${formatPrice(l.price)}</span>
+                    <span class="amount ${amountClass(l.usdValue)}">${formatUSD(l.usdValue)}</span>
+                    <span class="time-ago">${timeAgo(l.timestamp)}</span>
+                </div>
+            `).join('');
+        }
+
+        function addLiquidation(data) {
+            const liq = {
+                symbol: data.s,
+                side: data.S === 'SELL' ? 'long' : 'short', // SELL = long liquidated, BUY = short liquidated
+                price: parseFloat(data.p),
+                qty: parseFloat(data.q),
+                usdValue: parseFloat(data.p) * parseFloat(data.q),
+                timestamp: data.T || Date.now(),
+                isNew: true
+            };
+
+            allLiqs.unshift(liq);
+            if (allLiqs.length > MAX_ROWS) allLiqs.pop();
+
+            // Track totals
+            if (liq.side === 'long') longTotal24h += liq.usdValue;
+            else shortTotal24h += liq.usdValue;
+
+            // Clear "new" flag after animation
+            setTimeout(() => { liq.isNew = false; }, 1200);
+
+            updateStats();
+            renderFeed();
+        }
+
+        let wsRetries = 0;
+
+        function connectWebSocket() {
+            // Binance futures liquidation stream
+            const streams = [
+                'btcusdt@forceOrder',
+                'ethusdt@forceOrder',
+                'solusdt@forceOrder',
+                'bnbusdt@forceOrder',
+                'dogeusdt@forceOrder',
+                'xrpusdt@forceOrder',
+                'avaxusdt@forceOrder',
+                'arbusdt@forceOrder',
+                'suiusdt@forceOrder',
+                'linkusdt@forceOrder',
+                'maticusdt@forceOrder',
+                'adausdt@forceOrder',
+                'dotusdt@forceOrder',
+                'aaveusdt@forceOrder',
+                'wifusdt@forceOrder',
+                'pepeusdt@forceOrder',
+                'ondousdt@forceOrder',
+                'nearusdt@forceOrder',
+                'ftmusdt@forceOrder',
+                'opusdt@forceOrder'
+            ];
+
+            const url = 'wss://fstream.binance.com/stream?streams=' + streams.join('/');
+
+            try {
+                ws = new WebSocket(url);
+            } catch(_) {
+                scheduleWsReconnect();
+                return;
+            }
+
+            ws.onopen = () => {
+                wsRetries = 0;
+                feed.innerHTML = `<div class="empty-state">
+                    <span class="material-symbols-rounded">cell_tower</span>
+                    <span>Connected — waiting for liquidations...</span>
+                </div>`;
+            };
+
+            ws.onmessage = (event) => {
+                try {
+                    const msg = JSON.parse(event.data);
+                    if (msg.data && msg.data.o) {
+                        addLiquidation(msg.data.o);
+                    }
+                } catch(e) {}
+            };
+
+            ws.onerror = () => {
+                // onclose will fire
+            };
+
+            ws.onclose = () => {
+                if (wsRetries > 8 && allLiqs.length === 0) {
+                    feed.innerHTML = `<div class="empty-state">
+                        <span class="material-symbols-rounded">cloud_off</span>
+                        <span>Binance Futures stream unavailable — may be restricted in your region</span>
+                        <button onclick="wsRetries=0;connectWebSocket();" style="margin-top:10px;padding:5px 14px;border-radius:6px;border:1px solid #333;background:#1a1a2e;color:#fff;cursor:pointer;font-size:12px;">Retry</button>
+                    </div>`;
+                    return;
+                }
+                scheduleWsReconnect();
+            };
+        }
+
+        function scheduleWsReconnect() {
+            const delay = Math.min(2000 * Math.pow(2, wsRetries), 30000);
+            wsRetries++;
+            setTimeout(connectWebSocket, delay);
+        }
+
+        // Fallback: poll recent trades as proxy when WebSocket unavailable
+        async function fallbackPolling() {
+            async function poll() {
+                try {
+                    // Use allForceOrders endpoint (limited availability)
+                    const symbols = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT'];
+                    for (const sym of symbols) {
+                        const res = await getFetch()(`https://fapi.binance.com/fapi/v1/allForceOrders?symbol=${sym}&limit=10`);
+                        if (res.status === 451 || res.status === 403) continue;
+                        const orders = await res.json();
+                        if (Array.isArray(orders)) {
+                            orders.forEach(o => {
+                                // Avoid duplicates
+                                const exists = allLiqs.find(l =>
+                                    l.symbol === o.symbol && l.timestamp === o.time && l.price === parseFloat(o.price)
+                                );
+                                if (!exists) {
+                                    addLiquidation({
+                                        s: o.symbol,
+                                        S: o.side,
+                                        p: o.price,
+                                        q: o.origQty,
+                                        T: o.time
+                                    });
+                                }
+                            });
+                        }
+                    }
+                } catch(e) {
+                    console.error('Polling error:', e);
+                }
+            }
+
+            poll();
+            setInterval(poll, 15000);
+        }
+
+        // Start
+        try {
+            connectWebSocket();
+        } catch(e) {
+            fallbackPolling();
+        }
+
+        // Update time-ago labels periodically
+        setInterval(renderFeed, 10000);
+    })();
+    </script>
+</body>
+</html>

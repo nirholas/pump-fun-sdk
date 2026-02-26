@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="lair-include" content="lair.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LairOS Proxy Browser</title>
+    <meta name="lair-icon" content="<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='#4285f4'><path d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z'/></svg>">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        html, body {
+            height: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #1a1a2e;
+            color: #fff;
+        }
+        
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+        
+        .toolbar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: #16213e;
+            border-bottom: 1px solid #0f3460;
+        }
+        
+        .toolbar button {
+            background: #0f3460;
+            border: none;
+            color: #fff;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+        
+        .toolbar button:hover {
+            background: #1a4a7a;
+        }
+        
+        .toolbar button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .url-bar {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            background: #0f3460;
+            border-radius: 20px;
+            padding: 0 16px;
+            gap: 8px;
+        }
+        
+        .url-bar input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #fff;
+            font-size: 14px;
+            padding: 10px 0;
+            outline: none;
+        }
+        
+        .url-bar input::placeholder {
+            color: #666;
+        }
+        
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #4caf50;
+        }
+        
+        .status-indicator.disconnected {
+            background: #f44336;
+        }
+        
+        .status-indicator.loading {
+            background: #ff9800;
+            animation: pulse 1s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .browser-frame {
+            flex: 1;
+            border: none;
+            background: #fff;
+        }
+        
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(26, 26, 46, 0.9);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+        
+        .loading-overlay.hidden {
+            display: none;
+        }
+        
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #0f3460;
+            border-top-color: #4285f4;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 16px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .error-message {
+            background: #ff5252;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            margin: 8px;
+            display: none;
+        }
+        
+        .error-message.show {
+            display: block;
+        }
+
+        .home-screen {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            padding: 20px;
+        }
+        
+        .home-screen.hidden {
+            display: none;
+        }
+        
+        .home-logo {
+            font-size: 48px;
+            margin-bottom: 24px;
+        }
+        
+        .home-title {
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        .home-subtitle {
+            color: #888;
+            margin-bottom: 32px;
+        }
+        
+        .quick-links {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            justify-content: center;
+            max-width: 600px;
+        }
+        
+        .quick-link {
+            background: #0f3460;
+            padding: 16px 24px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: transform 0.2s, background 0.2s;
+            text-align: center;
+            min-width: 120px;
+        }
+        
+        .quick-link:hover {
+            background: #1a4a7a;
+            transform: translateY(-2px);
+        }
+        
+        .quick-link-icon {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+        
+        .quick-link-name {
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="toolbar">
+            <button id="backBtn" title="Back">←</button>
+            <button id="forwardBtn" title="Forward">→</button>
+            <button id="refreshBtn" title="Refresh">↻</button>
+            <button id="homeBtn" title="Home">🏠</button>
+            
+            <div class="url-bar">
+                <span class="status-indicator" id="statusIndicator"></span>
+                <input type="text" id="urlInput" placeholder="Enter URL or search..." autocomplete="off">
+            </div>
+            
+            <button id="goBtn" title="Go">Go</button>
+        </div>
+        
+        <div class="error-message" id="errorMessage"></div>
+        
+        <div class="home-screen" id="homeScreen">
+            <div class="home-logo">🌐</div>
+            <div class="home-title">LairOS Proxy Browser</div>
+            <div class="home-subtitle">Browse any website without restrictions</div>
+            
+            <div class="quick-links">
+                <div class="quick-link" data-url="https://www.google.com">
+                    <div class="quick-link-icon">🔍</div>
+                    <div class="quick-link-name">Google</div>
+                </div>
+                <div class="quick-link" data-url="https://www.youtube.com">
+                    <div class="quick-link-icon">▶️</div>
+                    <div class="quick-link-name">YouTube</div>
+                </div>
+                <div class="quick-link" data-url="https://www.wikipedia.org">
+                    <div class="quick-link-icon">📚</div>
+                    <div class="quick-link-name">Wikipedia</div>
+                </div>
+                <div class="quick-link" data-url="https://www.reddit.com">
+                    <div class="quick-link-icon">💬</div>
+                    <div class="quick-link-name">Reddit</div>
+                </div>
+                <div class="quick-link" data-url="https://github.com">
+                    <div class="quick-link-icon">💻</div>
+                    <div class="quick-link-name">GitHub</div>
+                </div>
+                <div class="quick-link" data-url="https://twitter.com">
+                    <div class="quick-link-icon">🐦</div>
+                    <div class="quick-link-name">Twitter</div>
+                </div>
+            </div>
+        </div>
+        
+        <iframe id="browserFrame" class="browser-frame" style="display: none;"></iframe>
+        
+        <div class="loading-overlay hidden" id="loadingOverlay">
+            <div class="spinner"></div>
+            <div>Loading...</div>
+        </div>
+    </div>
+    
+    <!-- Bare-mux and Ultraviolet Scripts -->
+    <script src="/uv/baremux.js"></script>
+    <script src="/uv/uv.bundle.js"></script>
+    <script src="/uv/uv.config.js"></script>
+    
+    <script>
+        // Elements
+        const urlInput = document.getElementById('urlInput');
+        const browserFrame = document.getElementById('browserFrame');
+        const homeScreen = document.getElementById('homeScreen');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        const errorMessage = document.getElementById('errorMessage');
+        const statusIndicator = document.getElementById('statusIndicator');
+        const backBtn = document.getElementById('backBtn');
+        const forwardBtn = document.getElementById('forwardBtn');
+        const refreshBtn = document.getElementById('refreshBtn');
+        const homeBtn = document.getElementById('homeBtn');
+        const goBtn = document.getElementById('goBtn');
+        
+        // Configuration - Public bare servers
+        const BARE_SERVERS = [
+            'https://uv.holyubofficial.net/',
+            'https://bare.palladiumnetwork.net/'
+        ];
+        
+        let uvReady = false;
+        let history = [];
+        let historyIndex = -1;
+        let bareMuxConnection = null;
+        
+        // Initialize bare-mux connection and set transport
+        async function initBareMux() {
+            try {
+                // Create BareMux connection with SharedWorker path
+                bareMuxConnection = new BareMux.BareMuxConnection('/uv/baremux.worker.js');
+                console.log('BareMux: Connection created');
+                
+                // Set the transport to use our bare server transport
+                await bareMuxConnection.setTransport('/uv/bare.transport.mjs', [BARE_SERVERS[0]]);
+                console.log('BareMux: Transport set to', BARE_SERVERS[0]);
+                
+                return true;
+            } catch (e) {
+                console.error('BareMux initialization failed:', e);
+                return false;
+            }
+        }
+        
+        // Check bare server connectivity
+        async function checkBareServer() {
+            for (const server of BARE_SERVERS) {
+                try {
+                    const response = await fetch(server, { method: 'GET' });
+                    if (response.ok) {
+                        statusIndicator.classList.remove('disconnected');
+                        statusIndicator.title = 'Connected to: ' + server;
+                        uvReady = true;
+                        return true;
+                    }
+                } catch (e) {
+                    console.warn('Bare server not reachable:', server, e);
+                }
+            }
+            statusIndicator.classList.add('disconnected');
+            statusIndicator.title = 'Proxy servers offline';
+            uvReady = false;
+            return false;
+        }
+        
+        // Register UV service worker
+        async function registerServiceWorker() {
+            if ('serviceWorker' in navigator) {
+                try {
+                    const registration = await navigator.serviceWorker.register('/uv/sw.js', {
+                        scope: self.__uv$config.prefix
+                    });
+                    console.log('UV Service Worker registered:', registration.scope);
+                    return true;
+                } catch (error) {
+                    console.error('UV Service Worker registration failed:', error);
+                    return false;
+                }
+            }
+            return false;
+        }
+        
+        // Encode URL for proxy
+        function encodeUrl(url) {
+            return self.__uv$config.prefix + self.__uv$config.encodeUrl(url);
+        }
+        
+        // Navigate to URL
+        async function navigate(url) {
+            // Validate URL
+            if (!url) return;
+            
+            // Add protocol if missing
+            if (!url.match(/^https?:\/\//)) {
+                // Check if it looks like a URL
+                if (url.includes('.') && !url.includes(' ')) {
+                    url = 'https://' + url;
+                } else {
+                    // Treat as search query
+                    url = 'https://www.google.com/search?q=' + encodeURIComponent(url);
+                }
+            }
+            
+            // Check if bare server is available
+            if (!uvReady) {
+                const available = await checkBareServer();
+                if (!available) {
+                    showError('Proxy server is offline. Please ensure the bare server is running.');
+                    return;
+                }
+            }
+            
+            // Show loading
+            loadingOverlay.classList.remove('hidden');
+            statusIndicator.classList.add('loading');
+            hideError();
+            
+            try {
+                // Encode and navigate
+                const encodedUrl = encodeUrl(url);
+                
+                // Hide home, show frame
+                homeScreen.classList.add('hidden');
+                browserFrame.style.display = 'block';
+                
+                // Set iframe src
+                browserFrame.src = encodedUrl;
+                
+                // Update URL bar
+                urlInput.value = url;
+                
+                // Add to history
+                if (history[historyIndex] !== url) {
+                    history = history.slice(0, historyIndex + 1);
+                    history.push(url);
+                    historyIndex = history.length - 1;
+                }
+                
+                updateNavButtons();
+                
+            } catch (error) {
+                console.error('Navigation error:', error);
+                showError('Failed to load page: ' + error.message);
+            }
+        }
+        
+        // Show error message
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.classList.add('show');
+            loadingOverlay.classList.add('hidden');
+            statusIndicator.classList.remove('loading');
+        }
+        
+        // Hide error message
+        function hideError() {
+            errorMessage.classList.remove('show');
+        }
+        
+        // Update navigation buttons
+        function updateNavButtons() {
+            backBtn.disabled = historyIndex <= 0;
+            forwardBtn.disabled = historyIndex >= history.length - 1;
+        }
+        
+        // Go back
+        function goBack() {
+            if (historyIndex > 0) {
+                historyIndex--;
+                navigate(history[historyIndex]);
+            }
+        }
+        
+        // Go forward
+        function goForward() {
+            if (historyIndex < history.length - 1) {
+                historyIndex++;
+                navigate(history[historyIndex]);
+            }
+        }
+        
+        // Go home
+        function goHome() {
+            homeScreen.classList.remove('hidden');
+            browserFrame.style.display = 'none';
+            browserFrame.src = 'about:blank';
+            urlInput.value = '';
+            loadingOverlay.classList.add('hidden');
+            statusIndicator.classList.remove('loading');
+        }
+        
+        // Refresh page
+        function refresh() {
+            if (browserFrame.src && browserFrame.src !== 'about:blank') {
+                browserFrame.contentWindow.location.reload();
+            }
+        }
+        
+        // Event listeners
+        urlInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                navigate(urlInput.value.trim());
+            }
+        });
+        
+        goBtn.addEventListener('click', () => navigate(urlInput.value.trim()));
+        backBtn.addEventListener('click', goBack);
+        forwardBtn.addEventListener('click', goForward);
+        homeBtn.addEventListener('click', goHome);
+        refreshBtn.addEventListener('click', refresh);
+        
+        // Quick links
+        document.querySelectorAll('.quick-link').forEach(link => {
+            link.addEventListener('click', () => {
+                navigate(link.dataset.url);
+            });
+        });
+        
+        // Frame load handler
+        browserFrame.addEventListener('load', () => {
+            loadingOverlay.classList.add('hidden');
+            statusIndicator.classList.remove('loading');
+        });
+        
+        // Initialize - IMPORTANT: bare-mux must be initialized BEFORE service worker
+        (async function init() {
+            console.log('UV Browser: Starting initialization...');
+            
+            // Step 1: Check if bare servers are accessible
+            const serverAvailable = await checkBareServer();
+            if (!serverAvailable) {
+                showError('No proxy servers available. Check your internet connection.');
+            }
+            
+            // Step 2: Initialize bare-mux transport (MUST happen before SW registration)
+            const muxReady = await initBareMux();
+            if (!muxReady) {
+                showError('Failed to initialize proxy transport.');
+            }
+            
+            // Step 3: Register the service worker AFTER transport is set
+            const swRegistered = await registerServiceWorker();
+            if (!swRegistered) {
+                showError('Failed to register service worker.');
+            }
+            
+            updateNavButtons();
+            console.log('UV Browser: Initialization complete. Ready:', uvReady && muxReady && swRegistered);
+            
+            // Re-check bare server periodically
+            setInterval(checkBareServer, 30000);
+        })();
+    </script>
+</body>
+</html>

@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="lair-include" content="lair.css">
+    <meta name="lair-widget" content="true">
+    <meta name="lair-widget-size" content="3x2">
+    <meta name="lair-icon" content='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="24" height="24" fill="white"><path d="M480-80 200-360l56-56 184 183V-800h80v567l184-183 56 56L480-80Z"/></svg>'>
+    <meta name="capabilities" content="widget,top_movers">
+    <meta name="lair-perms" content="network" />
+    <title>Top Movers</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: transparent;
+            color: var(--col-txt1, #fff);
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            height: 100vh;
+            overflow: hidden;
+            user-select: none;
+            display: flex;
+            flex-direction: column;
+        }
+        .header {
+            display: flex;
+            align-items: center;
+            padding: 5px 10px;
+            flex-shrink: 0;
+        }
+        .title {
+            font-size: 0.65rem;
+            font-weight: 700;
+            opacity: 0.5;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .toggle {
+            margin-left: auto;
+            display: flex;
+            gap: 1px;
+            background: rgba(255,255,255,0.06);
+            border-radius: 4px;
+            padding: 1px;
+        }
+        .toggle-btn {
+            padding: 2px 8px;
+            border: none;
+            background: none;
+            color: var(--col-txt1, #fff);
+            opacity: 0.3;
+            font-size: 0.5rem;
+            font-weight: 700;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .toggle-btn.active {
+            opacity: 1;
+            background: rgba(255,255,255,0.1);
+        }
+        .list {
+            flex: 1;
+            padding: 2px 8px 4px;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            overflow: hidden;
+        }
+        .row {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 2px 4px;
+            border-radius: 4px;
+            transition: background 0.15s;
+            min-height: 0;
+        }
+        .row:hover { background: rgba(255,255,255,0.04); }
+        .rank {
+            font-size: 0.5rem;
+            font-weight: 700;
+            opacity: 0.25;
+            min-width: 12px;
+        }
+        .icon {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        .symbol {
+            font-size: 0.6rem;
+            font-weight: 700;
+            min-width: 34px;
+        }
+        .name-text {
+            font-size: 0.5rem;
+            opacity: 0.35;
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .change {
+            font-size: 0.6rem;
+            font-weight: 700;
+            min-width: 46px;
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+        .up { color: var(--col-good, #85FF85); }
+        .down { color: var(--col-bad, #AC4949); }
+        .bar {
+            width: 30px;
+            height: 4px;
+            background: rgba(255,255,255,0.06);
+            border-radius: 2px;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+        .bar-fill { height: 100%; border-radius: 2px; }
+        .loading-msg {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.6rem;
+            opacity: 0.3;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <span class="title" id="viewTitle">Top Gainers</span>
+        <div class="toggle">
+            <button class="toggle-btn active" id="btnGainers" data-mode="gainers">▲</button>
+            <button class="toggle-btn" id="btnLosers" data-mode="losers">▼</button>
+        </div>
+    </div>
+    <div class="list" id="list">
+        <div class="loading-msg">Loading...</div>
+    </div>
+
+    <script>
+    (() => {
+        let mode = 'gainers';
+        let coins = [];
+        let refreshTimer = null;
+
+        const $list = document.getElementById('list');
+        const $title = document.getElementById('viewTitle');
+
+        /* ── Settings ───────────────────────── */
+        const settings = window.__widgetSettings || {};
+        if (settings.mode) mode = settings.mode;
+
+        window.parent.postMessage({
+            type: 'widgetDeclareSettings',
+            widgetId: window.__widgetId,
+            settings: [
+                { key: 'mode', label: 'Default View', type: 'select',
+                  options: ['gainers', 'losers'], value: mode },
+            ]
+        }, '*');
+
+        window.addEventListener('message', (e) => {
+            if (e.data && e.data.type === 'widgetSettingsUpdate') {
+                if (e.data.settings.mode) {
+                    mode = e.data.settings.mode;
+                    updateToggle();
+                    render();
+                }
+            }
+        });
+
+        /* ── Toggle ─────────────────────────── */
+        document.querySelectorAll('.toggle-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                mode = btn.dataset.mode;
+                updateToggle();
+                render();
+            });
+        });
+
+        function updateToggle() {
+            document.querySelectorAll('.toggle-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+            $title.textContent = mode === 'gainers' ? 'Top Gainers' : 'Top Losers';
+        }
+
+        /* ── Proxy fetch ────────────────────── */
+        async function proxyFetch(url) {
+            if (window.cfetch) return window.cfetch(url);
+            const base = (window.location.ancestorOrigins?.[0] || window.location.origin).replace(/\/$/, '');
+            return fetch(`${base}/api/proxy?url=${encodeURIComponent(url)}`);
+        }
+
+        /* ── Data ───────────────────────────── */
+        async function load() {
+            try {
+                const r = await proxyFetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&sparkline=false&price_change_percentage=24h');
+                const data = await r.json();
+                if (!Array.isArray(data)) throw new Error('Invalid');
+
+                coins = data.map(c => ({
+                    symbol: (c.symbol || '').toUpperCase(),
+                    name: c.name || '',
+                    image: c.image || '',
+                    change: c.price_change_percentage_24h || 0,
+                }));
+
+                render();
+            } catch (e) {
+                if (!coins.length) $list.innerHTML = '<div class="loading-msg">Offline</div>';
+            }
+            clearTimeout(refreshTimer);
+            refreshTimer = setTimeout(load, 60000);
+        }
+
+        /* ── Render ─────────────────────────── */
+        function render() {
+            if (!coins.length) return;
+
+            const sorted = [...coins].sort((a, b) =>
+                mode === 'gainers' ? b.change - a.change : a.change - b.change
+            );
+
+            const maxAbs = Math.max(...sorted.slice(0, 6).map(c => Math.abs(c.change)), 1);
+            const slice = sorted.slice(0, 6);
+
+            $list.innerHTML = slice.map((c, i) => {
+                const isUp = c.change >= 0;
+                const pct = Math.abs(c.change);
+                const barPct = Math.min(100, (pct / maxAbs) * 100);
+                const color = isUp ? 'var(--col-good, #85FF85)' : 'var(--col-bad, #AC4949)';
+
+                return `<div class="row">
+                    <span class="rank">${i + 1}</span>
+                    <img class="icon" src="${c.image}" alt="" loading="lazy" onerror="this.style.display='none'">
+                    <span class="symbol">${c.symbol}</span>
+                    <span class="name-text">${c.name}</span>
+                    <div class="bar"><div class="bar-fill" style="width:${barPct}%;background:${color}"></div></div>
+                    <span class="change ${isUp ? 'up' : 'down'}">${isUp ? '+' : ''}${c.change.toFixed(1)}%</span>
+                </div>`;
+            }).join('');
+        }
+
+        /* ── Init ───────────────────────────── */
+        updateToggle();
+        load();
+    })();
+    </script>
+</body>
+</html>

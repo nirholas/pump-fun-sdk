@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="lair-include" content="lair.css material-symbols-rounded">
+    <meta name="capabilities" content="liquidation_heatmap">
+    <meta name="permissions" content="network">
+    <meta name="lair-icon" content="<svg width='232' height='232' viewBox='0 0 232 232' fill='none' xmlns='http://www.w3.org/2000/svg'><rect width='232' height='232' rx='40' fill='#100A0A'/><rect x='30' y='38' width='172' height='156' rx='14' fill='#181111'/><rect x='44' y='58' width='58' height='14' rx='4' fill='#3a2828'/><rect x='114' y='58' width='74' height='14' rx='4' fill='#3a2828'/><rect x='44' y='84' width='144' height='24' rx='6' fill='#1f1515'/><rect x='44' y='114' width='144' height='24' rx='6' fill='#1f1515'/><rect x='44' y='144' width='144' height='24' rx='6' fill='#1f1515'/><rect x='44' y='84' width='92' height='24' rx='6' fill='#5be45b'/><rect x='44' y='114' width='58' height='24' rx='6' fill='#d44343'/><rect x='44' y='144' width='116' height='24' rx='6' fill='#5be45b'/></svg>">
+    <title>Liquidation Heatmap</title>
+    <style>
+        * { box-sizing: border-box; }
+        html, body { height: 100%; }
+        body {
+            margin: 0;
+            background: var(--col-bg1, #101010);
+            color: var(--col-txt1, #fff);
+            font-family: inherit;
+            overflow: hidden;
+        }
+
+        .app {
+            height: 100%;
+            display: grid;
+            grid-template-rows: auto auto auto 1fr;
+            gap: 10px;
+            padding: 12px;
+        }
+
+        .toolbar {
+            display: grid;
+            grid-template-columns: auto auto 1fr auto;
+            gap: 8px;
+            align-items: center;
+            background: var(--col-bg2, #171717);
+            border: 1px solid var(--col-bg3, #262626);
+            border-radius: var(--siz-radius1, 0.5em);
+            padding: 8px;
+        }
+
+        .title {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .title .material-symbols-rounded { color: var(--col-bad, #d44343); font-size: 18px; }
+
+        .seg {
+            display: inline-flex;
+            gap: 3px;
+            background: var(--col-bg1, #101010);
+            border: 1px solid var(--col-bg3, #262626);
+            border-radius: var(--siz-radius1, 0.5em);
+            padding: 3px;
+            flex-wrap: wrap;
+        }
+
+        .seg button {
+            border: none;
+            background: transparent;
+            color: var(--col-txt1, #fff);
+            opacity: 0.6;
+            font-size: 11px;
+            font-family: inherit;
+            border-radius: calc(var(--siz-radius1, 0.5em) - 2px);
+            padding: 5px 8px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .seg button.active {
+            opacity: 1;
+            background: color-mix(in srgb, var(--colors-accent, rgb(97,121,255)) 20%, transparent);
+            color: var(--colors-accent, rgb(97, 121, 255));
+        }
+
+        .symbol-wrap {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            min-width: 180px;
+        }
+
+        .symbol-wrap input {
+            width: 100%;
+            border: 1px solid var(--col-bg3, #262626);
+            background: var(--col-bg1, #101010);
+            color: var(--col-txt1, #fff);
+            border-radius: var(--siz-radius1, 0.5em);
+            padding: 7px 9px;
+            font-size: 12px;
+            outline: none;
+        }
+
+        .symbol-wrap input:focus { border-color: var(--colors-accent, rgb(97, 121, 255)); }
+
+        .status {
+            font-size: 11px;
+            color: color-mix(in srgb, var(--col-txt1, #fff) 68%, transparent);
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--col-good, #5be45b);
+        }
+
+        .dot.warn { background: #f59e0b; }
+        .dot.err { background: var(--col-bad, #d44343); }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 8px;
+        }
+
+        .card {
+            background: var(--col-bg2, #171717);
+            border: 1px solid var(--col-bg3, #262626);
+            border-radius: var(--siz-radius1, 0.5em);
+            padding: 10px;
+            min-height: 64px;
+        }
+
+        .label {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: color-mix(in srgb, var(--col-txt1, #fff) 60%, transparent);
+            margin-bottom: 4px;
+        }
+
+        .value {
+            font-size: 18px;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .value.long { color: var(--col-good, #5be45b); }
+        .value.short { color: var(--col-bad, #d44343); }
+
+        .legend {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            background: var(--col-bg2, #171717);
+            border: 1px solid var(--col-bg3, #262626);
+            border-radius: var(--siz-radius1, 0.5em);
+            padding: 8px 10px;
+            font-size: 11px;
+        }
+
+        .legend-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            color: color-mix(in srgb, var(--col-txt1, #fff) 75%, transparent);
+        }
+
+        .swatch {
+            width: 12px;
+            height: 12px;
+            border-radius: 3px;
+        }
+
+        .swatch.long { background: color-mix(in srgb, var(--col-good, #5be45b) 80%, #0f1a0f); }
+        .swatch.short { background: color-mix(in srgb, var(--col-bad, #d44343) 80%, #1a1010); }
+
+        .heatmap-wrap {
+            background: var(--col-bg2, #171717);
+            border: 1px solid var(--col-bg3, #262626);
+            border-radius: var(--siz-radius1, 0.5em);
+            padding: 10px;
+            overflow: auto;
+        }
+
+        .rows {
+            min-width: 800px;
+            display: grid;
+            grid-template-columns: 96px 1fr;
+            gap: 8px 10px;
+            align-items: center;
+        }
+
+        .row-name {
+            font-size: 12px;
+            color: color-mix(in srgb, var(--col-txt1, #fff) 78%, transparent);
+            font-weight: 600;
+        }
+
+        .grid {
+            display: grid;
+            gap: 4px;
+            height: 46px;
+        }
+
+        .cell {
+            border-radius: 4px;
+            border: 1px solid color-mix(in srgb, var(--col-bg3, #262626) 70%, transparent);
+            cursor: default;
+            position: relative;
+            min-width: 8px;
+        }
+
+        .cell.long { background: color-mix(in srgb, var(--col-good, #5be45b) var(--alpha, 0%), #0f170f); }
+        .cell.short { background: color-mix(in srgb, var(--col-bad, #d44343) var(--alpha, 0%), #170f0f); }
+
+        .x-axis {
+            grid-column: 2 / 3;
+            display: grid;
+            gap: 4px;
+            margin-top: 2px;
+            color: color-mix(in srgb, var(--col-txt1, #fff) 60%, transparent);
+            font-size: 10px;
+        }
+
+        .tick { text-align: center; }
+
+        .events {
+            margin-top: 10px;
+            border-top: 1px solid var(--col-bg3, #262626);
+            padding-top: 10px;
+        }
+
+        .events h3 {
+            margin: 0 0 8px;
+            font-size: 12px;
+            color: color-mix(in srgb, var(--col-txt1, #fff) 80%, transparent);
+        }
+
+        .event-list {
+            display: grid;
+            gap: 6px;
+            max-height: 180px;
+            overflow: auto;
+        }
+
+        .event {
+            display: grid;
+            grid-template-columns: 58px 1fr auto auto;
+            gap: 8px;
+            align-items: center;
+            font-size: 11px;
+            padding: 7px 8px;
+            border-radius: 6px;
+            background: var(--col-bg1, #101010);
+            border: 1px solid var(--col-bg3, #262626);
+        }
+
+        .side {
+            text-align: center;
+            font-weight: 700;
+            border-radius: 999px;
+            padding: 2px 6px;
+            font-size: 10px;
+        }
+
+        .side.long { background: color-mix(in srgb, var(--col-good, #5be45b) 24%, transparent); color: var(--col-good, #5be45b); }
+        .side.short { background: color-mix(in srgb, var(--col-bad, #d44343) 24%, transparent); color: var(--col-bad, #d44343); }
+
+        .event .amt { font-weight: 700; font-variant-numeric: tabular-nums; }
+        .event .time { color: color-mix(in srgb, var(--col-txt1, #fff) 62%, transparent); }
+
+        .state {
+            min-height: 180px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 8px;
+            color: color-mix(in srgb, var(--col-txt1, #fff) 72%, transparent);
+            font-size: 12px;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .state button {
+            border: none;
+            border-radius: var(--siz-radius1, 0.5em);
+            padding: 7px 12px;
+            font-size: 12px;
+            color: #fff;
+            background: var(--colors-accent, rgb(97, 121, 255));
+            cursor: pointer;
+        }
+
+        @media (max-width: 900px) {
+            .toolbar { grid-template-columns: 1fr; }
+            .cards { grid-template-columns: 1fr 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <div class="toolbar">
+            <div class="title"><span class="material-symbols-rounded">local_fire_department</span> Liquidation Heatmap</div>
+            <div class="seg" id="timeframeSeg">
+                <button data-tf="1h" class="active">1H</button>
+                <button data-tf="4h">4H</button>
+                <button data-tf="24h">24H</button>
+                <button data-tf="7d">7D</button>
+            </div>
+            <div class="symbol-wrap">
+                <input id="symbolInput" list="symbolList" placeholder="Symbol (BTCUSDT, ETHUSDT, SOLUSDT or ALL)" value="ALL" />
+                <datalist id="symbolList"></datalist>
+            </div>
+            <div class="status"><span id="statusDot" class="dot warn"></span><span id="statusText">Connecting to stream...</span></div>
+        </div>
+
+        <div class="cards">
+            <div class="card">
+                <div class="label">Total Liquidations</div>
+                <div id="totalValue" class="value">$0</div>
+            </div>
+            <div class="card">
+                <div class="label">Long Liquidations</div>
+                <div id="longValue" class="value long">$0</div>
+            </div>
+            <div class="card">
+                <div class="label">Short Liquidations</div>
+                <div id="shortValue" class="value short">$0</div>
+            </div>
+            <div class="card">
+                <div class="label">Long vs Short Ratio</div>
+                <div id="ratioValue" class="value">0% / 0%</div>
+            </div>
+        </div>
+
+        <div class="legend">
+            <div class="legend-left">
+                <span class="chip"><span class="swatch long"></span> Long liquidation intensity</span>
+                <span class="chip"><span class="swatch short"></span> Short liquidation intensity</span>
+                <span class="chip">Window: <strong id="windowText">1h</strong></span>
+                <span class="chip">Buckets: <strong id="bucketText">60</strong></span>
+            </div>
+            <div id="lastUpdate">Last update: --</div>
+        </div>
+
+        <div class="heatmap-wrap" id="heatmapWrap">
+            <div class="state" id="stateBox">
+                <span class="material-symbols-rounded">progress_activity</span>
+                <span>Waiting for first liquidation events...</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function () {
+            const WS_URL = 'wss://fstream.binance.com/ws/!forceOrder@arr';
+            const MAX_EVENTS = 25000;
+            const DEFAULT_SYMBOLS = ['ALL', 'BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'XRPUSDT', 'DOGEUSDT', 'ADAUSDT'];
+            const TIMEFRAMES = {
+                '1h': { ms: 3600000, buckets: 60 },
+                '4h': { ms: 4 * 3600000, buckets: 48 },
+                '24h': { ms: 24 * 3600000, buckets: 48 },
+                '7d': { ms: 7 * 24 * 3600000, buckets: 56 },
+            };
+
+            const state = {
+                timeframe: '1h',
+                symbol: 'ALL',
+                events: [],
+                knownSymbols: new Set(DEFAULT_SYMBOLS),
+                ws: null,
+                reconnectTimer: null,
+                hasConnected: false,
+                lastMessageTs: 0,
+            };
+
+            const heatmapWrap = document.getElementById('heatmapWrap');
+            const stateBox = document.getElementById('stateBox');
+            const timeframeSeg = document.getElementById('timeframeSeg');
+            const symbolInput = document.getElementById('symbolInput');
+            const symbolList = document.getElementById('symbolList');
+            const statusDot = document.getElementById('statusDot');
+            const statusText = document.getElementById('statusText');
+            const totalValue = document.getElementById('totalValue');
+            const longValue = document.getElementById('longValue');
+            const shortValue = document.getElementById('shortValue');
+            const ratioValue = document.getElementById('ratioValue');
+            const lastUpdate = document.getElementById('lastUpdate');
+            const windowText = document.getElementById('windowText');
+            const bucketText = document.getElementById('bucketText');
+
+            function setStatus(kind, text) {
+                statusDot.className = 'dot' + (kind === 'ok' ? '' : kind === 'warn' ? ' warn' : ' err');
+                statusText.textContent = text;
+            }
+
+            function formatUsd(value) {
+                const safe = Number.isFinite(value) ? value : 0;
+                if (safe >= 1e9) return '$' + (safe / 1e9).toLocaleString(undefined, { maximumFractionDigits: 2 }) + 'B';
+                if (safe >= 1e6) return '$' + (safe / 1e6).toLocaleString(undefined, { maximumFractionDigits: 2 }) + 'M';
+                if (safe >= 1e3) return '$' + (safe / 1e3).toLocaleString(undefined, { maximumFractionDigits: 2 }) + 'K';
+                return '$' + safe.toLocaleString(undefined, { maximumFractionDigits: 2 });
+            }
+
+            function formatAgo(ts) {
+                const diff = Math.max(0, Date.now() - ts);
+                const sec = Math.floor(diff / 1000);
+                if (sec < 60) return sec + 's ago';
+                const min = Math.floor(sec / 60);
+                if (min < 60) return min + 'm ago';
+                const hr = Math.floor(min / 60);
+                if (hr < 24) return hr + 'h ago';
+                return Math.floor(hr / 24) + 'd ago';
+            }
+
+            function updateSymbolList() {
+                const sorted = [...state.knownSymbols].sort();
+                symbolList.innerHTML = sorted.map((symbol) => `<option value="${symbol}"></option>`).join('');
+            }
+
+            function normalizeSymbol(raw) {
+                if (!raw) return 'ALL';
+                const value = String(raw).trim().toUpperCase();
+                if (!value || value === '*') return 'ALL';
+                return value;
+            }
+
+            function classifySide(side) {
+                return side === 'SELL' ? 'long' : 'short';
+            }
+
+            function trimEvents() {
+                const maxWindow = TIMEFRAMES['7d'].ms;
+                const oldest = Date.now() - maxWindow;
+                state.events = state.events.filter((event) => event.ts >= oldest);
+                if (state.events.length > MAX_EVENTS) {
+                    state.events = state.events.slice(state.events.length - MAX_EVENTS);
+                }
+            }
+
+            function aggregate() {
+                const cfg = TIMEFRAMES[state.timeframe];
+                const now = Date.now();
+                const since = now - cfg.ms;
+                const bucketWidth = cfg.ms / cfg.buckets;
+
+                const bucketsLong = Array(cfg.buckets).fill(0);
+                const bucketsShort = Array(cfg.buckets).fill(0);
+                let longTotal = 0;
+                let shortTotal = 0;
+
+                const symbolFilter = state.symbol;
+                const filtered = state.events.filter((event) => event.ts >= since && (symbolFilter === 'ALL' || event.symbol === symbolFilter));
+
+                for (const event of filtered) {
+                    const idx = Math.min(cfg.buckets - 1, Math.max(0, Math.floor((event.ts - since) / bucketWidth)));
+                    if (event.side === 'long') {
+                        bucketsLong[idx] += event.usd;
+                        longTotal += event.usd;
+                    } else {
+                        bucketsShort[idx] += event.usd;
+                        shortTotal += event.usd;
+                    }
+                }
+
+                const total = longTotal + shortTotal;
+                const longPct = total > 0 ? (longTotal / total) * 100 : 0;
+                const shortPct = total > 0 ? (shortTotal / total) * 100 : 0;
+
+                const recent = filtered
+                    .slice()
+                    .sort((a, b) => b.ts - a.ts)
+                    .slice(0, 40);
+
+                return {
+                    cfg,
+                    bucketsLong,
+                    bucketsShort,
+                    longTotal,
+                    shortTotal,
+                    total,
+                    longPct,
+                    shortPct,
+                    recent,
+                    since,
+                    now,
+                };
+            }
+
+            function renderHeatCells(values, type) {
+                const max = Math.max(...values, 1);
+                return values.map((value, index) => {
+                    const alpha = Math.min(95, Math.max(0, (value / max) * 95));
+                    return `<div class="cell ${type}" style="--alpha:${alpha}%" title="${type.toUpperCase()} | bucket ${index + 1}: ${formatUsd(value)}"></div>`;
+                }).join('');
+            }
+
+            function renderAxis(cfg) {
+                const ticks = [];
+                const marks = 8;
+                for (let i = 0; i < marks; i++) {
+                    const ratio = i / (marks - 1);
+                    const bucketPos = Math.floor((cfg.buckets - 1) * ratio) + 1;
+                    ticks.push(`<span class="tick">${bucketPos}</span>`);
+                }
+                return ticks.join('');
+            }
+
+            function render() {
+                const data = aggregate();
+
+                totalValue.textContent = formatUsd(data.total);
+                longValue.textContent = formatUsd(data.longTotal);
+                shortValue.textContent = formatUsd(data.shortTotal);
+                ratioValue.textContent = `${data.longPct.toLocaleString(undefined, { maximumFractionDigits: 1 })}% / ${data.shortPct.toLocaleString(undefined, { maximumFractionDigits: 1 })}%`;
+                windowText.textContent = state.timeframe;
+                bucketText.textContent = String(data.cfg.buckets);
+                lastUpdate.textContent = state.lastMessageTs ? `Last update: ${formatAgo(state.lastMessageTs)}` : 'Last update: --';
+
+                if (!data.recent.length) {
+                    stateBox.innerHTML = '<span class="material-symbols-rounded">hourglass_empty</span><span>No liquidations found for selected timeframe/symbol.</span>';
+                    heatmapWrap.innerHTML = '';
+                    heatmapWrap.appendChild(stateBox);
+                    return;
+                }
+
+                heatmapWrap.innerHTML = `
+                    <div class="rows">
+                        <div class="row-name">Long Liqs</div>
+                        <div class="grid" style="grid-template-columns: repeat(${data.cfg.buckets}, minmax(8px, 1fr));">${renderHeatCells(data.bucketsLong, 'long')}</div>
+                        <div class="row-name">Short Liqs</div>
+                        <div class="grid" style="grid-template-columns: repeat(${data.cfg.buckets}, minmax(8px, 1fr));">${renderHeatCells(data.bucketsShort, 'short')}</div>
+                        <div></div>
+                        <div class="x-axis" style="grid-template-columns: repeat(8, 1fr);">${renderAxis(data.cfg)}</div>
+                    </div>
+                    <div class="events">
+                        <h3>Recent Liquidations (${state.symbol})</h3>
+                        <div class="event-list">
+                            ${data.recent.map((event) => `
+                                <div class="event">
+                                    <span class="side ${event.side}">${event.side === 'long' ? 'LONG' : 'SHORT'}</span>
+                                    <span>${event.symbol}</span>
+                                    <span class="amt">${formatUsd(event.usd)}</span>
+                                    <span class="time">${formatAgo(event.ts)}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            function onMessage(payload) {
+                const entries = Array.isArray(payload?.data) ? payload.data : Array.isArray(payload) ? payload : [];
+                if (!entries.length) return;
+
+                const now = Date.now();
+                for (const item of entries) {
+                    const order = item?.o;
+                    if (!order) continue;
+
+                    const symbol = String(order.s || '').toUpperCase();
+                    const qty = Number(order.q || order.z || 0);
+                    const price = Number(order.p || order.ap || 0);
+                    const sideRaw = String(order.S || '').toUpperCase();
+                    const eventTs = Number(order.T || item.E || now);
+                    if (!symbol || !Number.isFinite(qty) || !Number.isFinite(price) || qty <= 0 || price <= 0) continue;
+                    if (sideRaw !== 'BUY' && sideRaw !== 'SELL') continue;
+
+                    const usd = qty * price;
+                    const side = classifySide(sideRaw);
+
+                    state.knownSymbols.add(symbol);
+                    state.events.push({ symbol, side, usd, ts: eventTs });
+                    state.lastMessageTs = now;
+                }
+
+                trimEvents();
+                updateSymbolList();
+                render();
+                if (!state.hasConnected) {
+                    state.hasConnected = true;
+                    setStatus('ok', 'Live stream connected');
+                }
+            }
+
+            let wsRetries = 0;
+
+            function connect() {
+                if (state.ws) {
+                    try { state.ws.close(); } catch (_) {}
+                }
+
+                setStatus('warn', 'Connecting to stream...');
+                let ws;
+                try {
+                    ws = new WebSocket(WS_URL);
+                } catch (_) {
+                    scheduleReconnect();
+                    return;
+                }
+                state.ws = ws;
+
+                ws.onopen = () => {
+                    setStatus('ok', 'Live stream connected');
+                    wsRetries = 0;
+                    clearTimeout(state.reconnectTimer);
+                };
+
+                ws.onmessage = (event) => {
+                    try {
+                        const data = JSON.parse(event.data);
+                        onMessage(data);
+                    } catch (error) {
+                        // ignore malformed packet
+                    }
+                };
+
+                ws.onerror = () => {
+                    setStatus('err', 'Stream error, retrying...');
+                };
+
+                ws.onclose = () => {
+                    clearTimeout(state.reconnectTimer);
+                    if (wsRetries > 8) {
+                        setStatus('err', 'Stream unavailable — may be restricted in your region');
+                        stateBox.innerHTML = '<span class="material-symbols-rounded">cloud_off</span><span>Binance Futures stream unavailable in your region (HTTP 451). <a href="#" onclick="wsRetries=0;connect();return false;" style="color:var(--colors-accent,#6179ff);">Retry</a></span>';
+                        stateBox.style.display = '';
+                        return;
+                    }
+                    scheduleReconnect();
+                };
+            }
+
+            function scheduleReconnect() {
+                const delay = Math.min(2000 * Math.pow(2, wsRetries), 30000);
+                wsRetries++;
+                setStatus('warn', 'Reconnecting in ' + Math.round(delay / 1000) + 's...');
+                clearTimeout(state.reconnectTimer);
+                state.reconnectTimer = setTimeout(connect, delay);
+            }
+
+            timeframeSeg.addEventListener('click', (event) => {
+                const btn = event.target.closest('button[data-tf]');
+                if (!btn) return;
+                state.timeframe = btn.dataset.tf;
+                timeframeSeg.querySelectorAll('button').forEach((button) => button.classList.toggle('active', button === btn));
+                render();
+            });
+
+            symbolInput.addEventListener('change', () => {
+                state.symbol = normalizeSymbol(symbolInput.value);
+                symbolInput.value = state.symbol;
+                render();
+            });
+
+            symbolInput.addEventListener('keydown', (event) => {
+                if (event.key !== 'Enter') return;
+                state.symbol = normalizeSymbol(symbolInput.value);
+                symbolInput.value = state.symbol;
+                render();
+            });
+
+            window.addEventListener('beforeunload', () => {
+                if (state.ws) {
+                    try { state.ws.close(); } catch (_) {}
+                }
+                clearTimeout(state.reconnectTimer);
+            });
+
+            updateSymbolList();
+            render();
+            connect();
+
+            setInterval(() => {
+                trimEvents();
+                render();
+            }, 15000);
+        })();
+    </script>
+</body>
+</html>

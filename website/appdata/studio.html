@@ -1,0 +1,456 @@
+<!--License addition: you should never open this site outside of LairOS or not as a lair application.-->
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width">
+	<meta name="lair-include" content="lair.css">
+	<meta name="capabilities" content=".app,.html,.css,.js,.xml,.svg,code_editor">
+	<meta name="permissions" content="unsandboxed, utility, fileGet, olp, fileSet">
+	<title>Studio</title>
+	<meta name="lair-icon"
+		content="<svg width='232' height='232' viewBox='0 0 232 232' fill='none' xmlns='http://www.w3.org/2000/svg'> <g clip-path='url(#clip0_3_127)'> <path d='M-1 104.278C-1 38.2746 20.3206 0 84.6618 0C149.003 0 232 66.3944 232 132.398C232 198.401 177.635 216.381 124.637 228.474C31.259 249.78 -1 170.281 -1 104.278Z' fill='#6179FF'/> <path d='M68.8696 94.7143L48.0001 116.143' stroke='white' stroke-width='17' stroke-linecap='round'/> <path d='M68.8696 138.286L48.0001 116.143' stroke='white' stroke-width='17' stroke-linecap='round'/> <path d='M160 95L180.87 116.429' stroke='white' stroke-width='17' stroke-linecap='round'/> <path d='M160 138.571L180.87 116.429' stroke='white' stroke-width='17' stroke-linecap='round'/> <path d='M126 77L101 155' stroke='white' stroke-opacity='0.5' stroke-width='17' stroke-linecap='round'/> </g> <defs> <clipPath id='clip0_3_127'> <rect width='232' height='232' fill='white'/> </clipPath> </defs> </svg>">
+	<style>
+		html {
+			height: 100%;
+			width: 100%;
+		}
+
+		html>body {
+			margin: 0;
+			height: 100%;
+			display: flex;
+			flex-direction: column;
+			transition: .3s;
+			color: var(--col-txt1);
+			background-color: black;
+		}
+
+		.ui.dropdown .menu {
+			background-color: var(--col-bg2) !important;
+			color: var(--col-txt1) !important;
+		}
+
+		.ui.dropdown .menu>.item {
+			color: var(--col-txt1) !important;
+
+		}
+
+		.nav {
+			padding: 0.5rem;
+			background-color: var(--col-bg1);
+			display: flex;
+			flex-direction: row;
+			justify-content: flex-start;
+			z-index: 1;
+			display: flex;
+			gap: .2rem;
+		}
+
+		.navitem {
+			background-color: var(--col-bg2);
+			padding: 0.2rem 0.5rem;
+			border-radius: 0.3rem;
+			cursor: pointer;
+			border: 1px solid #ffffff0c;
+		}
+
+		.navitem:hover {
+			background-color: var(--col-bg3);
+		}
+
+		.editorsection {
+			display: flex;
+			flex-direction: row;
+			gap: 1px;
+			padding: 1px;
+			flex: 1;
+		}
+
+		.codepart {
+			width: 50vw;
+		}
+
+		.editorpart {
+			width: 100%;
+			overflow: hidden;
+			resize: horizontal;
+		}
+
+		#editor {
+			width: 100%;
+			height: 100%;
+			font-size: 1rem;
+		}
+
+		.ui.dropdown .menu .menu {
+			max-height: 200px !important;
+			overflow-y: scroll;
+		}
+
+		#runbtn {
+			background-color: rgb(0 255 0 / 13%);
+			color: rgb(114 255 124);
+		}
+
+
+		.ui.dropdown.navitem .text {
+			color: var(--col-txt1) !important;
+		}
+
+		.ui.dropdown.navitem .description {
+			color: var(--col-txt1) !important;
+			opacity: .7;
+		}
+
+		.ui.dropdown.navitem .menu {
+			background-color: var(--col-bg2);
+			border: 1px solid var(--col-bg3);
+		}
+
+		.ui.dropdown.navitem .menu .item {
+			color: var(--col-txt1) !important;
+		}
+
+		.ui.dropdown.navitem .menu .item:hover {
+			background-color: var(--col-bg3);
+			color: var(--col-txt1) !important;
+		}
+
+		.ui.dropdown.navitem .dropdown.icon {
+			color: var(--col-txt1) !important;
+		}
+	</style>
+
+	<link rel="stylesheet"
+		href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link
+		href="https://fonts.googleapis.com/css2?family=Inconsolata:wght@200..900&family=Poppins:wght@400;700&display=swap"
+		rel="stylesheet">
+	<link rel="stylesheet" type="text/css"
+		href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.4.1/semantic.min.css">
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ace-builds@1.31.1/css/ace.min.css">
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.14.9/beautify-html.min.js"></script>
+
+	<script src="https://code.jquery.com/jquery-3.1.1.min.js"
+		integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8=" crossorigin="anonymous"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.4.1/semantic.min.js"></script>
+</head>
+
+<body>
+	<script src="https://cdn.jsdelivr.net/npm/ace-builds@1.31.1/src-min-noconflict/ace.min.js"></script>
+
+	<nav class="nav" id="nav">
+		<div class="ui dropdown navitem">
+			<div class="text">File</div>
+			<div class="menu">
+				<div class="item">New
+				</div>
+				<div class="item" onclick="openfromfiles()">
+					Open
+				</div>
+				<div class="item" onclick="savetx()">
+					Save
+				</div>
+				<!-- <div class="item">
+					Save As
+				</div> -->
+				<div class="divider"></div>
+				<div class="item">
+					<i class="dropdown icon"></i>
+					Export
+					<div class="menu">
+						<div class="item" onclick="exportToDevice()">To device (HTML)</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="ui dropdown navitem">
+			<div class="text">View</div>
+			<div class="menu">
+				<div class="item">Code
+					<i class="dropdown icon"></i>
+					<div class="menu">
+						<div class="item" onclick="togglewordwrap()">Word wrap
+							<span class="description" id="wordwrapdisp">Off</span>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="ui dropdown navitem">
+			<div class="text">Edit</div>
+			<div class="menu">
+				<div class="item" onclick="showFindBox(editor)">Find and replace
+					<span class="description" id="wordwrapdisp">ctrl+f</span>
+				</div>
+				<div class="item" onclick="editor.setValue(html_beautify(editor.getValue()), -1);">Beautify
+					<span class="description" id="wordwrapdisp">HTML</span>
+				</div>
+
+				<div class="item" onclick="editor.execCommand('showSettingsMenu');
+">Settings
+					<span class="description">Ace</span>
+				</div>
+			</div>
+		</div>
+		</div>
+		<div title="Run in new window" class="navitem" id="runbtn" onclick="runnewwin()">
+			Run
+		</div>
+	</nav>
+	<div class="editorsection">
+		<div class="codepart editorpart">
+			<div id="editor">
+				<textarea id="editortextarea"></textarea>
+			</div>
+		</div>
+	</div>
+
+	<script defer>
+		var mode = "new";
+		var currentfile = {};
+		var currentMime = 'text/html';
+		var currentreqID = null;
+
+		async function openfromfiles() {
+			let fileID = await ntxSession.send("olp.useHandler", "file_manager", { "opener": 'any', "dir": "Downloads/" });
+			const file = await ntxSession.send("fileGet.byId", fileID);
+			readthefile(file);
+		}
+
+		function exportToDevice() {
+			var editorContent = ace.edit("editor").getValue();
+			var docTitle = /<title>(.*?)<\/title>/i.exec(editorContent);
+			var editorId = docTitle ? docTitle[1] : window.parent.genUID();
+			var blob = new Blob([editorContent], { type: 'text/html' });
+			var link = document.createElement('a');
+			link.href = URL.createObjectURL(blob);
+			link.download = editorId + '-content.html';
+			link.click();
+		}
+
+		async function readthefile(file) {
+			currentfile = file;
+			mode = "edit";
+			const mimePrefix = file.content.match(/^data:([^;]+);base64,/i);
+
+			if (mimePrefix) {
+				file.type = mimePrefix[1];
+				currentMime = mimePrefix[1];
+				file.content = file.content.replace(/^data:([^;]+);base64,/i, '');
+				await processFileContent(file);
+			} else {
+				const extension = window.parent.mtpetxt(file.fileName);
+				await window.parent.getMimeType(extension).then(mimeType => {
+					file.type = mimeType || 'application/octet-stream';
+					processFileContent(file);
+				});
+			}
+		}
+
+		async function processFileContent(file) {
+			file.content = await window.parent.decodeBase64Content(file.content);
+
+			if (file.content == undefined) {
+				await window.parent.say("Currupted file", "Your file is having no reader data.")
+				editor.setValue(file.content);
+				return;
+			}
+
+			if (file.type === "application/json") {
+				try {
+					file.content = formatJS(JSON.stringify(JSON.parse(file.content)));
+				} catch (e) {
+					console.error("Error parsing JSON content", e);
+				}
+			}
+
+			if (file) {
+				editor.setValue(file.content);
+				console.log("Content displayed successfully");
+			} else {
+				console.error("Error displaying content");
+			}
+
+			run();
+		}
+
+
+		async function savetx() {
+
+			const content = editor.getValue();
+			const encodedContent = btoa(content);
+
+			if (mode === "edit") {
+				const dataUri = `data:${currentMime};base64,${encodedContent}`;
+				await ntxSession.send("fileSet.updateFile", currentfile.path, currentfile.id, {
+					metadata: currentfile.metadata,
+					content: dataUri,
+					fileName: currentfile.fileName
+				});
+			} else {
+				const dataUri = `data:text/plain;base64,${encodedContent}`;
+				let y = await window.parent.ask("Enter a file name:", "untitled.txt");
+				ntxSession.send("fileSet.createFile", "Documents", y, false, dataUri);
+			}
+
+			mode = "edit";
+		}
+
+		var wordwrap = false, currentmode = 'html';
+
+		document.getElementsByClassName("editorpart")[0].addEventListener('resize', function (event) {
+			editor.resize()
+		});
+
+		function gid(x) {
+			return document.getElementById(x)
+		}
+
+		var editor;
+		try {
+
+			$('.ui.dropdown').dropdown({
+				action: 'hide'
+			})
+
+			editor = ace.edit("editor");
+			editor.setTheme("ace/theme/monokai");
+		} catch (e) {
+			editor = {
+				getValue: () => {
+					return document.getElementById("editortextarea").value;
+				},
+				setValue: (newValue) => {
+					document.getElementById("editortextarea").value = newValue;
+				}
+			}
+			document.getElementById("editortextarea").style.display = "block";
+		}
+
+		function showFindBox() {
+			editor.execCommand("find");
+		}
+
+		editor.session.setUseWrapMode(true);
+		wordwrap = true;
+		wordwrapdisp.innerHTML = "On";
+
+
+		function togglewordwrap() {
+			let wordwrapdisp = gid("wordwrapdisp");
+			if (wordwrap) {
+				editor.session.setUseWrapMode(false);
+				wordwrap = false;
+				wordwrapdisp.innerHTML = "Off"
+			} else {
+				editor.session.setUseWrapMode(true);
+				wordwrap = true;
+				wordwrapdisp.innerHTML = "On"
+			}
+		}
+
+		function runnewwin() {
+			var prog = editor.getValue();
+			window.top.openwindow('App Preview', prog)
+		}
+
+		setUpForHTML()
+		run()
+
+		function setUpForHTML() {
+			editor.session.setMode("ace/mode/html");
+			editor.setValue(`<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<meta name="lair-include" content="lair.css">
+
+<head>
+    <style>
+        html {
+            height:100%;
+        }
+        body {
+        display:flex;
+        font-size: 1em;
+        flex-direction:column;
+        padding:2rem;
+        margin:0;
+        gap: .5em;
+        }
+        
+        a {
+            color:lightblue;
+        }
+        
+        p {
+            margin: 0;
+        }
+        
+        #p {
+            margin-bottom: 1em;
+        }
+        note {
+            background-color:var(--col-bg2);
+            padding: 1em;
+            border-radius: var(--siz-radius1);
+            border:var(--box-crisp);
+            &>b {
+                display: block;
+                margin-bottom: .5em;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <p id="p">
+        Check out <a href="https://lairos.gitbook.io/main">LairOS Docs</a> to learn how to make LairOS apps.
+    </p>
+    <note>
+<b>App previews are sandboxed by default</b>
+    <p>Previews cannot register any permission on NTX as they are not installed. You won't be able to access NTXSession without required permissions. Saving the file with a .app extension can install it in your user.</p></note>
+</body>
+
+</html>`, 1);
+		}
+
+		function saveas(x) {
+			var now = new Date();
+			var hours = String(now.getHours()).padStart(2, '0');
+			var minutes = String(now.getMinutes()).padStart(2, '0');
+			var timeString = hours + '-' + minutes;
+
+			function createCanvasFile(extension) {
+				ntxSession.send("fileSet.createFile", "Downloads/", "Canvas-" + timeString, extension, editor.getValue());
+			}
+
+			createCanvasFile("app");
+
+			gid("console").style.display = "block"
+			consolelog("WCANVAS: File saved as Canvas-" + timeString + " in Downloads/")
+		}
+
+		async function greenflag() {
+
+			var defile;
+			try {
+				if (myWindow.params.appid == myWindow.appID) {
+					editor.setValue("Loading...");
+					defile = myWindow.params.data;
+					const file = await ntxSession.send("fileGet.byId", defile);
+					readthefile(file);
+				}
+			} catch (error) {
+				console.error("Error parsing todo JSON:", error);
+			}
+
+		}
+	</script>
+</body>
+
+</html>

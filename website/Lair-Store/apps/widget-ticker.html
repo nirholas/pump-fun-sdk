@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="lair-include" content="lair.css">
+    <meta name="lair-widget" content="true">
+    <meta name="lair-widget-size" content="4x1">
+    <meta name="lair-icon" content='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="24" height="24" fill="white"><path d="M160-200v-80h80v80h-80Zm0-160v-80h80v80h-80Zm0-160v-80h80v80h-80Zm160 320v-80h80v80h-80Zm0-160v-80h80v80h-80Zm0-160v-80h80v80h-80Zm160 320v-80h80v80h-80Zm0-160v-80h80v80h-80Zm0-160v-80h80v80h-80Zm160 320v-80h80v80h-80Zm0-160v-80h80v80h-80Zm0-160v-80h80v80h-80Z"/></svg>'>
+    <meta name="lair-perms" content="network" />
+    <title>Crypto Ticker</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: transparent;
+            color: var(--col-txt1, #fff);
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            height: 100vh;
+            overflow: hidden;
+            user-select: none;
+            display: flex;
+            align-items: center;
+        }
+        .ticker {
+            display: flex;
+            gap: 16px;
+            padding: 0 12px;
+            overflow-x: auto;
+            width: 100%;
+            scrollbar-width: none;
+        }
+        .ticker::-webkit-scrollbar { display: none; }
+        .coin {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+        .coin-icon {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        .coin-info {
+            display: flex;
+            flex-direction: column;
+            line-height: 1.2;
+        }
+        .coin-sym {
+            font-size: 0.72rem;
+            font-weight: 600;
+            opacity: 0.6;
+            text-transform: uppercase;
+        }
+        .coin-price {
+            font-size: 0.85rem;
+            font-weight: 500;
+            font-variant-numeric: tabular-nums;
+        }
+        .coin-change {
+            font-size: 0.65rem;
+            font-weight: 500;
+        }
+        .up { color: var(--col-good, #5be45b); }
+        .down { color: var(--col-bad, #d44343); }
+        .loading {
+            width: 100%;
+            text-align: center;
+            opacity: 0.3;
+            font-size: 0.8rem;
+        }
+        .sep {
+            width: 1px;
+            height: 28px;
+            background: var(--col-txt1, #fff);
+            opacity: 0.1;
+            flex-shrink: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="ticker" id="ticker">
+        <div class="loading">Loading prices...</div>
+    </div>
+    <script>
+        const ALL_COINS = {
+            bitcoin:  { sym: 'BTC',  img: 'https://assets.coingecko.com/coins/images/1/small/bitcoin.png' },
+            ethereum: { sym: 'ETH',  img: 'https://assets.coingecko.com/coins/images/279/small/ethereum.png' },
+            solana:   { sym: 'SOL',  img: 'https://assets.coingecko.com/coins/images/4128/small/solana.png' },
+            dogecoin: { sym: 'DOGE', img: 'https://assets.coingecko.com/coins/images/5/small/dogecoin.png' },
+            tron:     { sym: 'TRX',  img: 'https://assets.coingecko.com/coins/images/1094/small/tron-logo.png' },
+            cardano:  { sym: 'ADA',  img: 'https://assets.coingecko.com/coins/images/975/small/cardano.png' },
+            polkadot: { sym: 'DOT',  img: 'https://assets.coingecko.com/coins/images/12171/small/polkadot.png' },
+        };
+
+        // Settings support
+        const settings = window.__widgetSettings || {};
+        let coinList = settings.coins || 'bitcoin,ethereum,solana,dogecoin,tron';
+
+        window.parent.postMessage({
+            type: 'widgetDeclareSettings',
+            widgetId: window.__widgetId,
+            settings: [
+                { key: 'coins', label: 'Coins (comma-sep)', type: 'text', value: coinList },
+            ]
+        }, '*');
+
+        window.addEventListener('message', (e) => {
+            if (e.data && e.data.type === 'widgetSettingsUpdate') {
+                coinList = e.data.settings.coins || coinList;
+                load();
+            }
+        });
+
+        function getCoins() {
+            return coinList.split(',').map(c => c.trim().toLowerCase()).filter(Boolean);
+        }
+
+        function fmt(n) {
+            if (n >= 1000) return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+            if (n >= 1) return '$' + n.toFixed(2);
+            return '$' + n.toFixed(4);
+        }
+
+        async function proxyFetch(url) {
+            if (window.cfetch) return window.cfetch(url);
+            const base = (window.location.ancestorOrigins?.[0] || window.location.origin).replace(/\/$/, '');
+            return fetch(`${base}/api/proxy?url=${encodeURIComponent(url)}`);
+        }
+
+        async function load() {
+            try {
+                const coins = getCoins();
+                const r = await proxyFetch(`https://api.coingecko.com/api/v3/simple/price?ids=${coins.join(',')}&vs_currencies=usd&include_24hr_change=true`);
+                const d = await r.json();
+                const el = document.getElementById('ticker');
+                el.innerHTML = '';
+                coins.forEach((id, i) => {
+                    if (i > 0) {
+                        const sep = document.createElement('div');
+                        sep.className = 'sep';
+                        el.appendChild(sep);
+                    }
+                    const c = d[id];
+                    if (!c) return;
+                    const meta = ALL_COINS[id] || { sym: id.toUpperCase().slice(0, 5), img: '' };
+                    const pct = c.usd_24h_change || 0;
+                    const div = document.createElement('div');
+                    div.className = 'coin';
+                    div.innerHTML = `
+                        ${meta.img ? `<img class="coin-icon" src="${meta.img}" alt="${meta.sym}">` : ''}
+                        <div class="coin-info">
+                            <span class="coin-sym">${meta.sym}</span>
+                            <span class="coin-price">${fmt(c.usd)}</span>
+                        </div>
+                        <span class="coin-change ${pct >= 0 ? 'up' : 'down'}">${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%</span>
+                    `;
+                    el.appendChild(div);
+                });
+            } catch (e) {
+                document.getElementById('ticker').innerHTML = '<div class="loading">Offline</div>';
+            }
+        }
+        load();
+        setInterval(load, 60000);
+    </script>
+</body>
+</html>

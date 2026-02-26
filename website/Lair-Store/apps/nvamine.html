@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Launcher</title>
+    <meta name="lair-include" content="lair.css, material-symbols-rounded">
+	<meta name="permissions" content="unsandboxed">
+    <meta name="lair-icon" content="<svg version='1.1' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' width='139.52012' height='138.64335' viewBox='0,0,139.52012,138.64335'><g transform='translate(-170.36017,-109.85916)'><g stroke='none' stroke-width='0' stroke-miterlimit='10'><path d='M170.36017,155.70121v-45.84205h45.84205v45.84205z' fill='#41bb42'/><path d='M264.03824,155.70121v-45.84205h45.84205v45.84205z' fill='#41bb42'/><path d='M215.96176,225.4663v-68.38732h48.07648v68.38732z' fill='#41bb42'/><path d='M194.15795,248.50251v-68.38732h22.04427v68.38732z' fill='#41bb42'/><path d='M263.78773,248.50251v-68.38732h22.04427v68.38732z' fill='#41bb42'/></g></g></svg>">
+    <style>
+        body {
+            margin: 0;
+        }
+
+        dialog#startupDia {
+            background: var(--col-bg1);
+            color: var(--col-txt1);
+            border: var(--box-crisp);
+            padding: 2em 1em;
+            width: calc(100% - 5em);
+            height: calc(100% - 7em);
+            overflow: hidden;
+            border-radius: var(--siz-radius1);
+            box-shadow: 0 0 5px #0000009c;
+            text-align: center;
+
+            &::backdrop {
+                background-color: black;
+            }
+        }
+
+        div#gameslist {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: nowrap;
+            justify-content: center;
+            gap: .5em;
+
+            &>.singular_game {
+                display: flex;
+                flex-direction: column;
+                gap: .5em;
+                padding: .5em;
+                width: 150px;
+                background-color: var(--col-bg2);
+                border: var(--box-crisp);
+                border-radius: var(--siz-radius2);
+
+                &>img {
+                    width: 100%;
+                    height: auto;
+                    aspect-ratio: 1/1;
+                    object-fit: cover;
+                    border-radius: var(--siz-radius3);
+                }
+
+                &>.verdets {
+                    display: flex;
+                    flex-direction: row;
+                    gap: .5em;
+                    align-items: flex-start;
+                    justify-content: space-between;
+                    margin-bottom: .3em;
+
+                    &>.playbtn {
+                        background-color: #21a221;
+                        color: rgb(255, 255, 255);
+                        border: 0;
+                        border-radius: var(--siz-radius3);
+                        display: flex;
+                        padding: 5px;
+                    }
+
+                    &>div {
+                        flex: 1;
+                        text-align: left;
+
+                        &>h1 {
+                            font-size: 1em;
+                            font-weight: normal;
+                            margin: 0;
+                            margin-top: .5em;
+                        }
+
+                        &>small {
+                            opacity: .5;
+                        }
+                    }
+                }
+            }
+        }
+
+        .gamesellabel {
+            opacity: .5;
+            margin: 0;
+            margin-bottom: 1em;
+            font-size: 1em;
+            font-weight: normal;
+        }
+
+        .mainUI {
+            display: flex;
+            align-items: stretch;
+            flex-direction: column;
+            height: 100vh;
+            justify-content: flex-start;
+
+            &>iframe {
+                flex: 1;
+                border: 0;
+                outline: 0;
+            }
+
+            nav {
+    display: flex
+;
+    align-items: center;
+    gap: .5em;
+    background: var(--col-bg2);
+    padding: .5em;
+}
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/mime-db@1.52.0/db.json"></script>
+
+</head>
+
+<body>
+    <dialog id="startupDia">
+        <h1 class="gamesellabel">Select game version:</h1>
+        <div id="gameslist">
+            <div class="singular_game">
+                <img
+                    src="https://platform.theverge.com/wp-content/uploads/sites/2/chorus/uploads/chorus_asset/file/16219300/image.jpg?quality=90&strip=all&crop=28.625,0,42.75,100">
+                <div class="verdets">
+                    <div>
+                        <h1>Classic</h1>
+                        <small>Mojang</small>
+                    </div>
+                    <button class="playbtn material-symbols-rounded"
+                        data-embed-url="https://classic.minecraft.net/">play_circle</button>
+                </div>
+            </div>
+            <div class="singular_game">
+                <img
+                    src="https://store-images.s-microsoft.com/image/apps.608.13510798885735219.cf55aeca-e690-41e0-a88b-41b0e517a3be.c94e1bfa-1b68-4cf5-9954-f967168480b4?q=90&w=480&h=270">
+                <div class="verdets">
+                    <div>
+                        <h1>Eagler 1.12.2</h1>
+                        <small>EaglerCraft</small>
+                    </div>
+                    <button class="playbtn material-symbols-rounded"
+                        data-embed-url="https://eaglercraft.com/mc/1.12.2-wasm/">play_circle</button>
+                </div>
+            </div>
+            <div class="singular_game">
+                <img
+                    src="https://imgs.crazygames.com/mine-clone_16x9/20240103084228/mine-clone_16x9-cover?metadata=none&quality=60&width=1200&height=630&fit=crop">
+                <div class="verdets">
+                    <div>
+                        <h1>MineClone</h1>
+                        <small>Girts Kesteris</small>
+                    </div>
+                    <button class="playbtn material-symbols-rounded"
+                        data-embed-url="https://games.crazygames.com/en_US/mine-clone/index.html?">play_circle</button>
+                </div>
+            </div>
+        </div>
+    </dialog>
+    <div class="mainUI">
+        <nav>
+            <div class="material-symbols-rounded" onclick="startupDia.showModal();">home</div>
+            <div id="ver_name">classic</div>
+        </nav>
+        <iframe src="../../screens/loading.html" id="mainFrame"></iframe>
+    </div>
+    <script>
+        var startupDia = document.getElementById("startupDia");
+        startupDia.showModal();
+        document.querySelectorAll('.playbtn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const url = btn.getAttribute('data-embed-url');
+                const gameTitle = btn.closest('.singular_game').querySelector('h1').textContent;
+                document.getElementById('mainFrame').src = url;
+                document.getElementById('ver_name').textContent = gameTitle;
+                document.getElementById('startupDia').close();
+            });
+        });
+    </script>
+</body>
+
+</html>

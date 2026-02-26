@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="lair-include" content="lair.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lair Portfolio</title>
+    <meta name="lair-icon" content="../assets/logo.svg">
+    <meta name="permissions" content="unsandboxed">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #000;
+        }
+        
+        #app-frame {
+            border: none;
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        
+        #loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #fff;
+            font-family: system-ui;
+            text-align: center;
+        }
+        
+        .spinner {
+            width: 40px;
+            height: 40px;
+            margin: 0 auto 20px;
+            border: 4px solid rgba(255,255,255,0.1);
+            border-top: 4px solid #fff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        #app-frame.loaded ~ #loading {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <iframe 
+        id="app-frame"
+        src="/appdata/lairportfolio.html"
+        allow="camera; microphone; clipboard-read; clipboard-write; geolocation"
+    ></iframe>
+    
+    <div id="loading">
+        <div class="spinner"></div>
+        <div>Loading Lair Portfolio...</div>
+    </div>
+    
+    <script>
+        const frame = document.getElementById('app-frame');
+        
+        // Hide loading when iframe loads
+        frame.addEventListener('load', () => {
+            frame.classList.add('loaded');
+        });
+        
+        function sendToPortfolio(message) {
+            frame.contentWindow.postMessage(message, '*');
+        }
+
+        window.sendToPortfolio = sendToPortfolio;
+    </script>
+</body>
+</html>

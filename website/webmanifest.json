@@ -1,0 +1,45 @@
+{
+    "manifest_version": 3,
+    "name": "LairOS",
+    "short_name": "LairOS",
+    "description": "LairOS is a powerful web operating system built for everything. From daily tasks to endless fun, it has got you covered.",
+    "theme_color": "#fff",
+    "background_color": "#fff",
+    "display": "standalone",
+    "protocol_handlers": [
+    {
+      "protocol": "web+lair",
+      "url": "/?path=%s"
+    }
+  ],
+    "display_override": ["fullscreen", "standalone", "minimal-ui", "browser"],
+    "scope": "/",
+    "start_url": "/",
+    "icons": [
+        {
+            "src": "n.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ],
+    "screenshots": [
+        {
+            "src": "multitasking wide.png",
+            "form_factor": "wide",
+            "sizes": "1046x653",
+            "type": "image/png"
+        },
+        {
+            "src": "menu narrow.png",
+            "form_factor": "narrow",
+            "sizes": "427x659",
+            "type": "image/png"
+        },
+        {
+            "src": "research narrow.png",
+            "form_factor": "narrow",
+            "sizes": "445x660",
+            "type": "image/png"
+        }
+    ]
+}

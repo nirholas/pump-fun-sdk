@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="lair-include" content="lair.css">
+    <meta name="capabilities" content="nft_gallery">
+    <meta name="lair-icon" content="collections">
+    <meta name="lair-perms" content="network" />
+    <title>NFT Gallery</title>
+    <style>
+        :root {
+            --col-bg1: #101010;
+            --col-bg2: #171717;
+            --col-bg3: #222222;
+            --col-txt1: white;
+            --col-txt2: #aaa;
+            --colors-accent: rgb(97, 121, 255);
+            --col-good: #5be45b;
+            --col-bad: #d44343;
+            --siz-radius1: 0.5em;
+            --siz-radius2: 0.375em;
+        }
+
+        html { height: 100%; }
+
+        body {
+            margin: 0;
+            height: 100%;
+            background: var(--col-bg1);
+            color: var(--col-txt1);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            overflow-y: auto;
+        }
+
+        * { box-sizing: border-box; }
+
+        .app {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0.75em;
+        }
+
+        /* Header */
+        .app-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5em;
+            margin-bottom: 0.75em;
+            flex-wrap: wrap;
+        }
+        .app-header h1 {
+            font-size: 1.2em;
+            margin: 0;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+        .app-header .subtitle {
+            font-size: 0.75em;
+            color: var(--col-txt2);
+        }
+        .header-right {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 0.5em;
+        }
+
+        .search-bar {
+            padding: 0.45em 0.75em;
+            background: var(--col-bg2);
+            border: 1px solid var(--col-bg3);
+            border-radius: var(--siz-radius1);
+            color: var(--col-txt1);
+            font-size: 0.85em;
+            outline: none;
+            width: 220px;
+            transition: border-color 0.15s;
+        }
+        .search-bar::placeholder { color: #666; }
+        .search-bar:focus { border-color: var(--colors-accent); }
+
+        .btn {
+            background: var(--col-bg3);
+            border: 1px solid #333;
+            color: var(--col-txt1);
+            border-radius: var(--siz-radius2);
+            padding: 0.4em 0.7em;
+            font-size: 0.8em;
+            cursor: pointer;
+            transition: background 0.15s;
+            white-space: nowrap;
+        }
+        .btn:hover { background: var(--colors-accent); }
+
+        .back-btn {
+            background: none;
+            border: none;
+            color: var(--colors-accent);
+            cursor: pointer;
+            font-size: 0.9em;
+            padding: 0.3em 0;
+            display: none;
+            align-items: center;
+            gap: 0.3em;
+        }
+        .back-btn:hover { text-decoration: underline; }
+        .back-btn.visible { display: inline-flex; }
+
+        /* Views */
+        .view { display: none; }
+        .view.active { display: block; animation: fadeIn 0.2s ease; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Collection Grid */
+        .collection-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.75em;
+        }
+
+        .collection-card {
+            position: relative;
+            border-radius: var(--siz-radius1);
+            overflow: hidden;
+            cursor: pointer;
+            aspect-ratio: 1;
+            background: linear-gradient(135deg, var(--col-bg2), var(--col-bg3));
+            transition: transform 0.15s, box-shadow 0.15s;
+        }
+        .collection-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+        }
+        .collection-card img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            transition: opacity 0.3s;
+        }
+        .collection-card img.loading { opacity: 0; }
+        .collection-card img.loaded { opacity: 1; }
+        .collection-card img.error { display: none; }
+
+        .card-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 2.5em 0.75em 0.75em;
+            background: linear-gradient(transparent, rgba(0,0,0,0.85));
+            display: flex;
+            flex-direction: column;
+            gap: 0.2em;
+        }
+        .card-name {
+            font-weight: 700;
+            font-size: 0.9em;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .card-stats {
+            display: flex;
+            align-items: center;
+            gap: 0.6em;
+            font-size: 0.72em;
+            color: var(--col-txt2);
+        }
+        .card-floor {
+            font-weight: 700;
+            font-size: 1.1em;
+            color: var(--col-txt1);
+        }
+        .card-change {
+            font-weight: 600;
+            font-size: 0.85em;
+        }
+        .card-change.up { color: var(--col-good); }
+        .card-change.down { color: var(--col-bad); }
+
+        .card-rank {
+            position: absolute;
+            top: 0.5em;
+            left: 0.5em;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(4px);
+            padding: 0.15em 0.45em;
+            border-radius: var(--siz-radius2);
+            font-size: 0.7em;
+            font-weight: 600;
+            color: var(--col-txt2);
+        }
+
+        /* NFT Grid */
+        .nft-grid-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75em;
+            margin-bottom: 0.75em;
+            flex-wrap: wrap;
+        }
+        .nft-grid-header img {
+            width: 48px;
+            height: 48px;
+            border-radius: var(--siz-radius2);
+            object-fit: cover;
+            background: var(--col-bg3);
+        }
+        .nft-grid-header .coll-info h2 {
+            margin: 0;
+            font-size: 1.1em;
+            font-weight: 700;
+        }
+        .nft-grid-header .coll-info .coll-meta {
+            font-size: 0.75em;
+            color: var(--col-txt2);
+            display: flex;
+            gap: 0.75em;
+        }
+        .coll-meta span strong {
+            color: var(--col-txt1);
+        }
+
+        .nft-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.6em;
+        }
+
+        .nft-card {
+            position: relative;
+            border-radius: var(--siz-radius2);
+            overflow: hidden;
+            cursor: pointer;
+            aspect-ratio: 1;
+            background: linear-gradient(135deg, var(--col-bg2), var(--col-bg3));
+            transition: transform 0.15s;
+        }
+        .nft-card:hover {
+            transform: translateY(-2px);
+        }
+        .nft-card img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            transition: opacity 0.3s;
+        }
+        .nft-card img.loading { opacity: 0; }
+        .nft-card img.loaded { opacity: 1; }
+        .nft-card img.error { display: none; }
+
+        .nft-card-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 1.5em 0.5em 0.4em;
+            background: linear-gradient(transparent, rgba(0,0,0,0.8));
+        }
+        .nft-token-id {
+            font-size: 0.7em;
+            font-weight: 600;
+            color: var(--col-txt2);
+        }
+        .nft-price {
+            font-size: 0.75em;
+            font-weight: 700;
+        }
+
+        /* Detail Modal */
+        .modal-backdrop {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(4px);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+            padding: 1em;
+        }
+        .modal-backdrop.active {
+            display: flex;
+            animation: fadeIn 0.15s ease;
+        }
+        .modal {
+            background: var(--col-bg2);
+            border-radius: var(--siz-radius1);
+            max-width: 800px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: row;
+            border: 1px solid var(--col-bg3);
+        }
+        .modal-image {
+            flex: 1;
+            min-width: 0;
+            background: linear-gradient(135deg, var(--col-bg2), var(--col-bg3));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+            max-height: 80vh;
+        }
+        .modal-sidebar {
+            width: 300px;
+            flex-shrink: 0;
+            padding: 1em;
+            overflow-y: auto;
+            border-left: 1px solid var(--col-bg3);
+        }
+        .modal-close {
+            position: absolute;
+            top: 0.5em;
+            right: 0.75em;
+            background: rgba(0,0,0,0.5);
+            border: none;
+            color: #fff;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.1em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+        }
+        .modal-close:hover { background: rgba(255,255,255,0.15); }
+
+        .modal-title {
+            font-size: 1em;
+            font-weight: 700;
+            margin: 0 0 0.15em;
+        }
+        .modal-collection-name {
+            font-size: 0.75em;
+            color: var(--colors-accent);
+            margin-bottom: 0.75em;
+        }
+        .modal-detail-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8em;
+            padding: 0.35em 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .modal-detail-row .label { color: var(--col-txt2); }
+        .modal-detail-row .value { font-weight: 600; }
+
+        .traits-title {
+            font-size: 0.8em;
+            font-weight: 600;
+            margin: 0.75em 0 0.4em;
+            color: var(--col-txt2);
+        }
+        .traits-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.35em;
+        }
+        .trait-pill {
+            background: var(--col-bg3);
+            border-radius: var(--siz-radius2);
+            padding: 0.3em 0.55em;
+            font-size: 0.7em;
+        }
+        .trait-pill .trait-type {
+            color: var(--col-txt2);
+            display: block;
+            font-size: 0.85em;
+            margin-bottom: 0.1em;
+        }
+        .trait-pill .trait-value {
+            font-weight: 600;
+            color: var(--col-txt1);
+        }
+        .trait-pill .trait-rarity {
+            color: var(--colors-accent);
+            font-size: 0.85em;
+            margin-left: 0.3em;
+        }
+
+        /* Loading */
+        .spinner {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 3em;
+            color: var(--col-txt2);
+            font-size: 0.85em;
+            gap: 0.5em;
+        }
+        .spinner::before {
+            content: '';
+            width: 18px;
+            height: 18px;
+            border: 2px solid var(--col-bg3);
+            border-top-color: var(--colors-accent);
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3em 1em;
+            color: var(--col-txt2);
+            font-size: 0.9em;
+        }
+
+        /* Responsive */
+        @media (max-width: 700px) {
+            .collection-grid { grid-template-columns: repeat(2, 1fr); }
+            .nft-grid { grid-template-columns: repeat(3, 1fr); }
+            .modal { flex-direction: column; }
+            .modal-sidebar { width: 100%; border-left: none; border-top: 1px solid var(--col-bg3); }
+            .search-bar { width: 160px; }
+        }
+        @media (max-width: 450px) {
+            .collection-grid { grid-template-columns: repeat(2, 1fr); }
+            .nft-grid { grid-template-columns: repeat(2, 1fr); }
+            .search-bar { width: 130px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <div class="app-header">
+            <button class="back-btn" id="backBtn" onclick="goBack()">&#8592; Back</button>
+            <h1>&#128444; NFT Gallery</h1>
+            <span class="subtitle" id="viewLabel">Top Collections</span>
+            <div class="header-right">
+                <input type="text" class="search-bar" id="searchBar" placeholder="Search collections..." oninput="handleSearch(this.value)">
+                <button class="btn" onclick="refreshData()">&#8635; Refresh</button>
+            </div>
+        </div>
+
+        <!-- Collections View -->
+        <div class="view active" id="collectionsView">
+            <div class="collection-grid" id="collectionGrid"></div>
+        </div>
+
+        <!-- NFTs View -->
+        <div class="view" id="nftsView">
+            <div class="nft-grid-header" id="nftGridHeader"></div>
+            <div class="nft-grid" id="nftGrid"></div>
+        </div>
+    </div>
+
+    <!-- NFT Detail Modal -->
+    <div class="modal-backdrop" id="modalBackdrop" onclick="closeModal(event)">
+        <div class="modal" onclick="event.stopPropagation()">
+            <div class="modal-image" id="modalImage"></div>
+            <div class="modal-sidebar" id="modalSidebar"></div>
+        </div>
+        <button class="modal-close" onclick="closeModal()">&#10005;</button>
+    </div>
+
+    <script>
+        const fetchFn = window.cfetch || fetch;
+        // State
+        let currentView = 'collections';
+        let collections = [];
+        let filteredCollections = [];
+        let currentCollection = null;
+        let currentNfts = [];
+
+        // Static fallback data — top NFT collections
+        const STATIC_COLLECTIONS = [
+            {
+                id: '0xbc4ca0eda7647a8ab7c2061c2e118a18a936f13d',
+                name: 'Bored Ape Yacht Club',
+                slug: 'boredapeyachtclub',
+                image: 'https://i.seadn.io/gae/Ju9CkWtV-1Okvf45wo8UctR0qKQ0XB8hSFE7MJNjYhxHHi-XpnOp9_X34muN6YGXQhLSFA4V?w=500',
+                floorPrice: 12.8,
+                floorChange24h: -2.4,
+                volume24h: 342.5,
+                totalSupply: 10000,
+                owners: 5632,
+                sampleNfts: generateSampleNfts('BAYC', 20, 'https://i.seadn.io/gae/Ju9CkWtV-1Okvf45wo8UctR0qKQ0XB8hSFE7MJNjYhxHHi-XpnOp9_X34muN6YGXQhLSFA4V?w=500')
+            },
+            {
+                id: '0xb47e3cd837ddf8e4c57f05d70ab865de6e193bbb',
+                name: 'CryptoPunks',
+                slug: 'cryptopunks',
+                image: 'https://i.seadn.io/gae/BdxvLseXcfl57BiuQcQYdJ64v-aI8din7WPk0Pgo3qQFhAUH-B6i-dCqqc_mCkRIzULmwzwecnohLhrcH8A9mpWIZqA7ygc52Sr81hE?w=500',
+                floorPrice: 42.5,
+                floorChange24h: 1.8,
+                volume24h: 1250.3,
+                totalSupply: 10000,
+                owners: 3421,
+                sampleNfts: generateSampleNfts('Punk', 20, 'https://i.seadn.io/gae/BdxvLseXcfl57BiuQcQYdJ64v-aI8din7WPk0Pgo3qQFhAUH-B6i-dCqqc_mCkRIzULmwzwecnohLhrcH8A9mpWIZqA7ygc52Sr81hE?w=500')
+            },
+            {
+                id: '0x60e4d786628fea6478f785a6d7e704777c86a7c6',
+                name: 'Mutant Ape Yacht Club',
+                slug: 'mutant-ape-yacht-club',
+                image: 'https://i.seadn.io/gae/lHexKRMpw-aoSyB1WdFBff5yfANLReFxHzt1DOj_sg7mS14yARpuvYcUtsyY-Qwqwm31f-BFXPhMdp9NStKt2A?w=500',
+                floorPrice: 2.35,
+                floorChange24h: -4.1,
+                volume24h: 89.7,
+                totalSupply: 19423,
+                owners: 12234,
+                sampleNfts: generateSampleNfts('MAYC', 20, 'https://i.seadn.io/gae/lHexKRMpw-aoSyB1WdFBff5yfANLReFxHzt1DOj_sg7mS14yARpuvYcUtsyY-Qwqwm31f-BFXPhMdp9NStKt2A?w=500')
+            },
+            {
+                id: '0xed5af388653567af2f388e6224dc7c4b3241c544',
+                name: 'Azuki',
+                slug: 'azuki',
+                image: 'https://i.seadn.io/gae/H8jOCJuQokNqGBpkBN5wk1OZiVKXGNnhzXZuatttzpmGSDfGq6LN0CR0uxzPMIiHDB_nvMSLBMLUetvhjz_fHD0OSfxMwEdspNliSg?w=500',
+                floorPrice: 5.1,
+                floorChange24h: 3.2,
+                volume24h: 210.9,
+                totalSupply: 10000,
+                owners: 5104,
+                sampleNfts: generateSampleNfts('Azuki', 20, 'https://i.seadn.io/gae/H8jOCJuQokNqGBpkBN5wk1OZiVKXGNnhzXZuatttzpmGSDfGq6LN0CR0uxzPMIiHDB_nvMSLBMLUetvhjz_fHD0OSfxMwEdspNliSg?w=500')
+            },
+            {
+                id: '0xbd3531da5cf5857e7cfaa92426877b022e612cf8',
+                name: 'Pudgy Penguins',
+                slug: 'pudgypenguins',
+                image: 'https://i.seadn.io/gae/yNi-XdGxsgQCPpqSio4o31ygAV6wURdIdInWRcFIl46UjUQ1eV7BEndGe8L661OoG-clRi7EgInLX4LPu9Jfw4fq0Lp0vO0KFQr6dOA?w=500',
+                floorPrice: 9.7,
+                floorChange24h: 5.6,
+                volume24h: 423.1,
+                totalSupply: 8888,
+                owners: 4798,
+                sampleNfts: generateSampleNfts('Pudgy', 20, 'https://i.seadn.io/gae/yNi-XdGxsgQCPpqSio4o31ygAV6wURdIdInWRcFIl46UjUQ1eV7BEndGe8L661OoG-clRi7EgInLX4LPu9Jfw4fq0Lp0vO0KFQr6dOA?w=500')
+            },
+            {
+                id: '0x5af0d9827e0c53e4799bb226655a1de152a425a5',
+                name: 'Milady Maker',
+                slug: 'milady',
+                image: 'https://i.seadn.io/gcs/files/e93e2aabdc453a1d9b7e1bca8e2ed16f.jpg?w=500',
+                floorPrice: 3.2,
+                floorChange24h: -1.5,
+                volume24h: 67.4,
+                totalSupply: 10000,
+                owners: 5302,
+                sampleNfts: generateSampleNfts('Milady', 20, 'https://i.seadn.io/gcs/files/e93e2aabdc453a1d9b7e1bca8e2ed16f.jpg?w=500')
+            },
+            {
+                id: '0x23581767a106ae21c074b2276d25e5c3e136a68b',
+                name: 'Moonbirds',
+                slug: 'proof-moonbirds',
+                image: 'https://i.seadn.io/gae/H-eyNE1MwL5ohL-tCfn_Xa1Sl9M9B4612tLYeUlQubzt4ewhr4huJIR5OLuyO3Z5PpJFSwdm7rq-TikAh7f5eUw338A2cy6HRH75?w=500',
+                floorPrice: 0.82,
+                floorChange24h: -6.3,
+                volume24h: 12.1,
+                totalSupply: 10000,
+                owners: 6415,
+                sampleNfts: generateSampleNfts('Moonbird', 20, 'https://i.seadn.io/gae/H-eyNE1MwL5ohL-tCfn_Xa1Sl9M9B4612tLYeUlQubzt4ewhr4huJIR5OLuyO3Z5PpJFSwdm7rq-TikAh7f5eUw338A2cy6HRH75?w=500')
+            },
+            {
+                id: '0x49cf6f5d44e70224e2e23fdcdd2c053f30ada28b',
+                name: 'CloneX',
+                slug: 'clonex',
+                image: 'https://i.seadn.io/gae/XN0XuD8Uh3jyRWNtPTFeXJg_ht8m5ofDx6aHklOiy4amhFuWUa0JaR6It49AH8tlnYS386Q0TW_-Lmedn0UET_ko1a3CbJGeu5iHMg?w=500',
+                floorPrice: 1.45,
+                floorChange24h: 0.7,
+                volume24h: 34.2,
+                totalSupply: 19322,
+                owners: 9312,
+                sampleNfts: generateSampleNfts('CloneX', 20, 'https://i.seadn.io/gae/XN0XuD8Uh3jyRWNtPTFeXJg_ht8m5ofDx6aHklOiy4amhFuWUa0JaR6It49AH8tlnYS386Q0TW_-Lmedn0UET_ko1a3CbJGeu5iHMg?w=500')
+            },
+            {
+                id: '0x8a90cab2b38dba80c64b7734e58ee1db38b8992e',
+                name: 'Doodles',
+                slug: 'doodles-official',
+                image: 'https://i.seadn.io/gae/7B0qai02OdHA8P_EOVK672qUliyjQdQDGNrACxs7WnTgZAkJa_wWURnIFKeOh5VTf8cfTqW3wQpozGedaC9mteKphEo-rJCE-fGo?w=500',
+                floorPrice: 1.12,
+                floorChange24h: 2.1,
+                volume24h: 18.6,
+                totalSupply: 10000,
+                owners: 5194,
+                sampleNfts: generateSampleNfts('Doodle', 20, 'https://i.seadn.io/gae/7B0qai02OdHA8P_EOVK672qUliyjQdQDGNrACxs7WnTgZAkJa_wWURnIFKeOh5VTf8cfTqW3wQpozGedaC9mteKphEo-rJCE-fGo?w=500')
+            },
+            {
+                id: '0x34d85c9cdeb23fa97cb08333b511ac86e1c4e258',
+                name: 'Otherdeed for Otherside',
+                slug: 'otherdeed',
+                image: 'https://i.seadn.io/gae/yIm-M5-BpSDdTEIJRt5D6xphizhIdozXjqSITgK4phWq7MmAU3qE7Nw7POGCiPGyhtJ3jO6L7aBmapPZyVRG-Ig?w=500',
+                floorPrice: 0.41,
+                floorChange24h: -3.8,
+                volume24h: 28.4,
+                totalSupply: 100000,
+                owners: 34221,
+                sampleNfts: generateSampleNfts('Otherdeed', 20, 'https://i.seadn.io/gae/yIm-M5-BpSDdTEIJRt5D6xphizhIdozXjqSITgK4phWq7MmAU3qE7Nw7POGCiPGyhtJ3jO6L7aBmapPZyVRG-Ig?w=500')
+            },
+            {
+                id: '0x39ee2c7b3cb80254225884ca001f57118c8f21b6',
+                name: 'Potatoz',
+                slug: 'thepotatoz',
+                image: 'https://i.seadn.io/gcs/files/b1c0a3ef677a0ef5e5ce209ef2a70e28.png?w=500',
+                floorPrice: 0.38,
+                floorChange24h: 1.2,
+                volume24h: 5.8,
+                totalSupply: 9999,
+                owners: 4831,
+                sampleNfts: generateSampleNfts('Potatoz', 20, 'https://i.seadn.io/gcs/files/b1c0a3ef677a0ef5e5ce209ef2a70e28.png?w=500')
+            },
+            {
+                id: '0x306b1ea3ecdf94ab739f1910bbda052ed4a9f949',
+                name: 'Beanz',
+                slug: 'beanzofficial',
+                image: 'https://i.seadn.io/gcs/files/3c80e8f0eee0269847ec1f4d23a46397.gif?w=500',
+                floorPrice: 0.29,
+                floorChange24h: -0.8,
+                volume24h: 7.2,
+                totalSupply: 19950,
+                owners: 9034,
+                sampleNfts: generateSampleNfts('Beanz', 20, 'https://i.seadn.io/gcs/files/3c80e8f0eee0269847ec1f4d23a46397.gif?w=500')
+            }
+        ];
+
+        function generateSampleNfts(prefix, count, collectionImage) {
+            const nfts = [];
+            const traitTypes = ['Background', 'Skin', 'Eyes', 'Mouth', 'Hat', 'Clothes'];
+            const traitValues = {
+                Background: ['Blue', 'Red', 'Green', 'Purple', 'Orange', 'Yellow', 'Black', 'White'],
+                Skin: ['Light', 'Dark', 'Gold', 'Zombie', 'Alien', 'Robot'],
+                Eyes: ['Bored', 'Laser', 'Closed', 'Wide', 'Angry', 'Heart'],
+                Mouth: ['Smile', 'Grin', 'Bored', 'Tongue', 'Cigarette', 'Pipe'],
+                Hat: ['Cap', 'Crown', 'Helmet', 'Beanie', 'None', 'Horns'],
+                Clothes: ['Hoodie', 'Suit', 'Tank', 'Leather', 'None', 'Robe']
+            };
+
+            for (let i = 0; i < count; i++) {
+                const tokenId = Math.floor(Math.random() * 9999) + 1;
+                const traits = traitTypes.map(type => ({
+                    type,
+                    value: traitValues[type][Math.floor(Math.random() * traitValues[type].length)],
+                    rarity: (Math.random() * 30 + 2).toFixed(1)
+                }));
+                nfts.push({
+                    tokenId: '#' + tokenId,
+                    name: prefix + ' #' + tokenId,
+                    image: collectionImage,
+                    lastSalePrice: (Math.random() * 20 + 0.1).toFixed(2),
+                    owner: '0x' + Array.from({length: 8}, () => Math.floor(Math.random() * 16).toString(16)).join('') + '...',
+                    traits
+                });
+            }
+            return nfts;
+        }
+
+        // API
+        const RESERVOIR_BASE = 'https://api.reservoir.tools';
+        const CACHE_KEY = 'nftgallery_collections';
+        const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+        async function fetchCollections() {
+            // Check cache
+            const cached = getCached(CACHE_KEY);
+            if (cached) {
+                return cached;
+            }
+
+            try {
+                const resp = await fetchFn(RESERVOIR_BASE + '/collections/v7?sortBy=allTimeVolume&limit=20', {
+                    headers: { 'Accept': 'application/json' },
+                    signal: AbortSignal.timeout(8000)
+                });
+                if (!resp.ok) throw new Error('API ' + resp.status);
+                const data = await resp.json();
+                if (data.collections && data.collections.length > 0) {
+                    const mapped = data.collections.map((c, i) => ({
+                        id: c.id || c.primaryContract,
+                        name: c.name || 'Unknown',
+                        slug: c.slug || '',
+                        image: c.image || '',
+                        floorPrice: c.floorAsk?.price?.amount?.decimal || 0,
+                        floorChange24h: c.floorSaleChange?.['1day'] ? ((c.floorSaleChange['1day'] - 1) * 100) : 0,
+                        volume24h: c.volume?.['1day'] || 0,
+                        totalSupply: c.tokenCount ? parseInt(c.tokenCount) : 0,
+                        owners: c.ownerCount ? parseInt(c.ownerCount) : 0,
+                        sampleNfts: null // loaded on demand
+                    }));
+                    setCache(CACHE_KEY, mapped);
+                    return mapped;
+                }
+            } catch (e) {
+                console.warn('Reservoir API failed, using static data:', e.message);
+            }
+
+            // Fallback to static
+            return STATIC_COLLECTIONS;
+        }
+
+        async function fetchCollectionNfts(collection) {
+            if (collection.sampleNfts) return collection.sampleNfts;
+
+            const cacheKey = 'nftgallery_nfts_' + collection.id;
+            const cached = getCached(cacheKey);
+            if (cached) return cached;
+
+            try {
+                const resp = await fetchFn(
+                    RESERVOIR_BASE + '/tokens/v7?collection=' + encodeURIComponent(collection.id) + '&limit=20&sortBy=floorAskPrice',
+                    { headers: { 'Accept': 'application/json' }, signal: AbortSignal.timeout(8000) }
+                );
+                if (!resp.ok) throw new Error('API ' + resp.status);
+                const data = await resp.json();
+                if (data.tokens && data.tokens.length > 0) {
+                    const nfts = data.tokens.map(t => ({
+                        tokenId: '#' + (t.token?.tokenId || '?'),
+                        name: t.token?.name || collection.name + ' #' + (t.token?.tokenId || '?'),
+                        image: t.token?.imageSmall || t.token?.image || collection.image || '',
+                        lastSalePrice: t.token?.lastSale?.price?.amount?.decimal || null,
+                        owner: t.token?.owner ? (t.token.owner.substring(0, 10) + '...') : 'Unknown',
+                        traits: (t.token?.attributes || []).map(a => ({
+                            type: a.key || 'Trait',
+                            value: a.value || '?',
+                            rarity: a.tokenCount && collection.totalSupply
+                                ? ((a.tokenCount / collection.totalSupply) * 100).toFixed(1)
+                                : null
+                        }))
+                    }));
+                    setCache(cacheKey, nfts);
+                    return nfts;
+                }
+            } catch (e) {
+                console.warn('Failed to fetch NFTs from API:', e.message);
+            }
+
+            // Generate fallback sample NFTs
+            return generateSampleNfts(collection.name.split(' ')[0], 20, collection.image);
+        }
+
+        // Cache helpers
+        function getCached(key) {
+            try {
+                const raw = sessionStorage.getItem(key);
+                if (!raw) return null;
+                const { data, ts } = JSON.parse(raw);
+                if (Date.now() - ts > CACHE_TTL) {
+                    sessionStorage.removeItem(key);
+                    return null;
+                }
+                return data;
+            } catch { return null; }
+        }
+
+        function setCache(key, data) {
+            try {
+                sessionStorage.setItem(key, JSON.stringify({ data, ts: Date.now() }));
+            } catch { /* storage full, ignore */ }
+        }
+
+        // Image helpers
+        function handleImageLoad(img) {
+            img.classList.remove('loading');
+            img.classList.add('loaded');
+        }
+        function handleImageError(img) {
+            img.classList.add('error');
+        }
+
+        // Render collections
+        function renderCollections(list) {
+            const grid = document.getElementById('collectionGrid');
+            if (!list || list.length === 0) {
+                grid.innerHTML = '<div class="empty-state">No collections found</div>';
+                return;
+            }
+            grid.innerHTML = list.map((c, i) => {
+                const changeClass = c.floorChange24h >= 0 ? 'up' : 'down';
+                const changeStr = (c.floorChange24h >= 0 ? '+' : '') + c.floorChange24h.toFixed(1) + '%';
+                const volStr = c.volume24h >= 1000 ? (c.volume24h / 1000).toFixed(1) + 'K' : c.volume24h.toFixed(1);
+                return '<div class="collection-card" onclick="openCollection(' + i + ')">' +
+                    '<div class="card-rank">#' + (i + 1) + '</div>' +
+                    '<img src="' + escHtml(c.image) + '" loading="lazy" class="loading" onload="handleImageLoad(this)" onerror="handleImageError(this)" alt="' + escHtml(c.name) + '">' +
+                    '<div class="card-overlay">' +
+                        '<div class="card-name">' + escHtml(c.name) + '</div>' +
+                        '<div class="card-stats">' +
+                            '<span class="card-floor">' + formatEth(c.floorPrice) + ' ETH</span>' +
+                            '<span class="card-change ' + changeClass + '">' + changeStr + '</span>' +
+                            '<span>Vol: ' + volStr + ' ETH</span>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>';
+            }).join('');
+        }
+
+        // Open collection
+        async function openCollection(index) {
+            const list = filteredCollections.length > 0 ? filteredCollections : collections;
+            currentCollection = list[index];
+            if (!currentCollection) return;
+
+            switchView('nfts');
+
+            // Render header
+            const header = document.getElementById('nftGridHeader');
+            header.innerHTML =
+                '<img src="' + escHtml(currentCollection.image) + '" loading="lazy" onerror="handleImageError(this)" alt="">' +
+                '<div class="coll-info">' +
+                    '<h2>' + escHtml(currentCollection.name) + '</h2>' +
+                    '<div class="coll-meta">' +
+                        '<span>Floor: <strong>' + formatEth(currentCollection.floorPrice) + ' ETH</strong></span>' +
+                        '<span>Supply: <strong>' + formatNum(currentCollection.totalSupply) + '</strong></span>' +
+                        '<span>Owners: <strong>' + formatNum(currentCollection.owners) + '</strong></span>' +
+                        '<span>24h Vol: <strong>' + formatEth(currentCollection.volume24h) + ' ETH</strong></span>' +
+                    '</div>' +
+                '</div>';
+
+            // Show loading
+            const grid = document.getElementById('nftGrid');
+            grid.innerHTML = '<div class="spinner">Loading NFTs...</div>';
+
+            const nfts = await fetchCollectionNfts(currentCollection);
+            currentNfts = nfts;
+            renderNfts(nfts);
+        }
+
+        function renderNfts(nfts) {
+            const grid = document.getElementById('nftGrid');
+            if (!nfts || nfts.length === 0) {
+                grid.innerHTML = '<div class="empty-state">No NFTs found</div>';
+                return;
+            }
+            grid.innerHTML = nfts.map((n, i) => {
+                const priceStr = n.lastSalePrice ? formatEth(parseFloat(n.lastSalePrice)) + ' ETH' : '—';
+                return '<div class="nft-card" onclick="openNftDetail(' + i + ')">' +
+                    '<img src="' + escHtml(n.image) + '" loading="lazy" class="loading" onload="handleImageLoad(this)" onerror="handleImageError(this)" alt="' + escHtml(n.name) + '">' +
+                    '<div class="nft-card-overlay">' +
+                        '<div class="nft-token-id">' + escHtml(n.tokenId) + '</div>' +
+                        '<div class="nft-price">' + priceStr + '</div>' +
+                    '</div>' +
+                '</div>';
+            }).join('');
+        }
+
+        // NFT Detail modal
+        function openNftDetail(index) {
+            const nft = currentNfts[index];
+            if (!nft) return;
+
+            const imgDiv = document.getElementById('modalImage');
+            imgDiv.innerHTML = '<img src="' + escHtml(nft.image) + '" loading="lazy" onerror="handleImageError(this)" alt="' + escHtml(nft.name) + '">';
+
+            const sidebar = document.getElementById('modalSidebar');
+            let html = '<div class="modal-title">' + escHtml(nft.name) + '</div>';
+            if (currentCollection) {
+                html += '<div class="modal-collection-name">' + escHtml(currentCollection.name) + '</div>';
+            }
+            html += '<div class="modal-detail-row"><span class="label">Token ID</span><span class="value">' + escHtml(nft.tokenId) + '</span></div>';
+            html += '<div class="modal-detail-row"><span class="label">Owner</span><span class="value">' + escHtml(nft.owner) + '</span></div>';
+            html += '<div class="modal-detail-row"><span class="label">Last Sale</span><span class="value">' + (nft.lastSalePrice ? formatEth(parseFloat(nft.lastSalePrice)) + ' ETH' : '—') + '</span></div>';
+
+            if (nft.traits && nft.traits.length > 0) {
+                html += '<div class="traits-title">Traits</div><div class="traits-grid">';
+                nft.traits.forEach(t => {
+                    html += '<div class="trait-pill">' +
+                        '<span class="trait-type">' + escHtml(t.type) + '</span>' +
+                        '<span class="trait-value">' + escHtml(t.value) + '</span>' +
+                        (t.rarity ? '<span class="trait-rarity">' + t.rarity + '%</span>' : '') +
+                    '</div>';
+                });
+                html += '</div>';
+            }
+
+            sidebar.innerHTML = html;
+            document.getElementById('modalBackdrop').classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal(e) {
+            if (e && e.target !== document.getElementById('modalBackdrop') && e.target.className !== 'modal-close') return;
+            document.getElementById('modalBackdrop').classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        // Navigation
+        function switchView(view) {
+            currentView = view;
+            document.getElementById('collectionsView').classList.toggle('active', view === 'collections');
+            document.getElementById('nftsView').classList.toggle('active', view === 'nfts');
+            document.getElementById('backBtn').classList.toggle('visible', view !== 'collections');
+            document.getElementById('viewLabel').textContent = view === 'collections' ? 'Top Collections' : (currentCollection ? currentCollection.name : 'NFTs');
+            document.getElementById('searchBar').style.display = view === 'collections' ? '' : 'none';
+        }
+
+        function goBack() {
+            if (currentView === 'nfts') {
+                switchView('collections');
+                currentCollection = null;
+                currentNfts = [];
+            }
+        }
+
+        // Search
+        function handleSearch(query) {
+            query = query.trim().toLowerCase();
+            if (!query) {
+                filteredCollections = [];
+                renderCollections(collections);
+                return;
+            }
+            filteredCollections = collections.filter(c => c.name.toLowerCase().includes(query));
+            renderCollections(filteredCollections);
+        }
+
+        // Refresh
+        async function refreshData() {
+            sessionStorage.removeItem(CACHE_KEY);
+            await loadCollections();
+        }
+
+        // Helpers
+        function escHtml(str) {
+            if (!str) return '';
+            return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+        function formatEth(val) {
+            if (val === null || val === undefined) return '—';
+            if (val >= 1000) return (val / 1000).toFixed(1) + 'K';
+            if (val >= 100) return val.toFixed(1);
+            if (val >= 1) return val.toFixed(2);
+            return val.toFixed(3);
+        }
+        function formatNum(n) {
+            if (!n) return '0';
+            if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+            if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+            return n.toLocaleString();
+        }
+
+        // Keyboard
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                if (document.getElementById('modalBackdrop').classList.contains('active')) {
+                    closeModal();
+                } else if (currentView === 'nfts') {
+                    goBack();
+                }
+            }
+        });
+
+        // Init
+        async function loadCollections() {
+            const grid = document.getElementById('collectionGrid');
+            grid.innerHTML = '<div class="spinner">Loading collections...</div>';
+
+            collections = await fetchCollections();
+            filteredCollections = [];
+            renderCollections(collections);
+        }
+
+        loadCollections();
+    </script>
+</body>
+</html>

@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="lair-include" content="lair.css">
+    <meta name="lair-icon" content='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="24" height="24" fill="white"><path d="M120-120v-80l80-80v160h-80Zm160 0v-240l80-80v320h-80Zm160 0v-320l80 81v239h-80Zm160 0v-239l80-80v319h-80Zm160 0v-400l80-80v480h-80ZM120-327v-113l280-280 160 160 280-280v113L560-447 400-607 120-327Z"/></svg>'>
+    <meta name="capabilities" content="yield_optimizer,defi_tools">
+    <meta name="lair-perms" content="network" />
+    <title>Yield Optimizer</title>
+    <style>
+        :root {
+            --bg1: #080A19; --bg2: #0C0F27; --bg3: #15183E; --bg4: #1C2050;
+            --txt1: #E2E8F0; --txt2: #94A3B8; --accent: #6179FF;
+            --good: #34D399; --bad: #F87171; --warn: #FBBF24;
+            --radius: 10px;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body { height: 100%; background: var(--bg1); color: var(--txt1); font-family: 'Inter', -apple-system, system-ui, sans-serif; font-size: 13px; }
+        .app { height: 100%; display: grid; grid-template-rows: auto auto 1fr; overflow: hidden; }
+
+        /* Header */
+        .header { padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,.06); display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+        .header h1 { font-size: 15px; font-weight: 700; }
+        .badge { font-size: 10px; padding: 2px 8px; border-radius: 999px; font-weight: 600; }
+        .badge-live { background: rgba(52,211,153,.15); color: var(--good); }
+        .badge-count { background: rgba(97,121,255,.2); color: var(--accent); }
+        .header-right { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+        .header-right input, .header-right select { background: var(--bg3); border: 1px solid rgba(255,255,255,.12); border-radius: 6px; padding: 6px 10px; color: var(--txt1); font-size: 12px; outline: none; }
+        .header-right input:focus, .header-right select:focus { border-color: var(--accent); }
+        .header-right input { width: 200px; }
+
+        /* Filters */
+        .filters { padding: 8px 16px; border-bottom: 1px solid rgba(255,255,255,.06); display: flex; gap: 8px; flex-wrap: wrap; align-items: center; overflow-x: auto; }
+        .filter-group { display: flex; align-items: center; gap: 4px; }
+        .filter-group label { font-size: 10px; text-transform: uppercase; color: var(--txt2); font-weight: 600; white-space: nowrap; }
+        .filter-group select, .filter-group input { background: var(--bg3); border: 1px solid rgba(255,255,255,.12); border-radius: 5px; padding: 5px 8px; color: var(--txt1); font-size: 12px; outline: none; }
+        .filter-chip { background: var(--bg3); border: 1px solid rgba(255,255,255,.12); border-radius: 999px; padding: 4px 10px; font-size: 11px; cursor: pointer; white-space: nowrap; transition: all .15s; }
+        .filter-chip:hover { border-color: var(--accent); }
+        .filter-chip.active { background: rgba(97,121,255,.2); border-color: var(--accent); color: #fff; }
+        .sep { width: 1px; height: 20px; background: rgba(255,255,255,.08); }
+
+        /* Summary cards */
+        .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; padding: 12px 16px; }
+        .sum-card { background: var(--bg2); border: 1px solid rgba(255,255,255,.08); border-radius: var(--radius); padding: 10px 14px; }
+        .sum-card .k { font-size: 10px; text-transform: uppercase; color: var(--txt2); }
+        .sum-card .v { font-size: 18px; font-weight: 700; margin-top: 3px; font-variant-numeric: tabular-nums; }
+
+        /* Table */
+        .table-wrap { overflow: auto; padding: 0 16px 16px; }
+        table { width: 100%; border-collapse: collapse; min-width: 900px; }
+        th { position: sticky; top: 0; background: var(--bg1); font-size: 10px; text-transform: uppercase; color: var(--txt2); text-align: left; padding: 10px 12px; font-weight: 600; border-bottom: 1px solid rgba(255,255,255,.08); cursor: pointer; user-select: none; white-space: nowrap; z-index: 2; }
+        th:hover { color: var(--accent); }
+        th .sort-arrow { font-size: 10px; margin-left: 3px; }
+        td { padding: 10px 12px; font-size: 12px; border-bottom: 1px solid rgba(255,255,255,.04); font-variant-numeric: tabular-nums; white-space: nowrap; }
+        tr:hover td { background: rgba(255,255,255,.02); }
+        .protocol-cell { display: flex; align-items: center; gap: 8px; }
+        .protocol-icon { width: 20px; height: 20px; border-radius: 50%; background: var(--bg3); object-fit: cover; }
+        .chain-tag { font-size: 10px; padding: 1px 6px; border-radius: 999px; background: var(--bg3); border: 1px solid rgba(255,255,255,.08); }
+        .risk-bar { width: 60px; height: 6px; border-radius: 3px; background: var(--bg3); overflow: hidden; }
+        .risk-fill { height: 100%; border-radius: 3px; }
+        .apy-cell { font-weight: 600; }
+        .positive { color: var(--good); }
+        .negative { color: var(--bad); }
+        .highlight { color: var(--warn); }
+
+        .loading-overlay { display: flex; align-items: center; justify-content: center; padding: 60px; font-size: 14px; color: var(--txt2); }
+        .spinner { width: 24px; height: 24px; border: 3px solid var(--bg3); border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; margin-right: 10px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .empty-state { text-align: center; padding: 40px; color: var(--txt2); }
+    </style>
+</head>
+<body>
+<div class="app">
+    <div class="header">
+        <h1>Yield Strategy Optimizer</h1>
+        <span class="badge badge-live">LIVE DATA</span>
+        <span class="badge badge-count" id="poolCount">0 pools</span>
+        <div class="header-right">
+            <input type="text" id="search" placeholder="Search protocol, pool, chain...">
+            <select id="sortField">
+                <option value="apy" selected>Sort: APY</option>
+                <option value="tvlUsd">Sort: TVL</option>
+                <option value="apyBase">Sort: Base APY</option>
+                <option value="apyReward">Sort: Reward APY</option>
+                <option value="risk">Sort: Risk Score</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="filters" id="filters">
+        <div class="filter-group">
+            <label>Chain</label>
+            <select id="chainFilter"><option value="">All Chains</option></select>
+        </div>
+        <div class="sep"></div>
+        <div class="filter-group">
+            <label>Min TVL</label>
+            <select id="tvlFilter">
+                <option value="0">Any</option>
+                <option value="100000">$100K+</option>
+                <option value="1000000" selected>$1M+</option>
+                <option value="10000000">$10M+</option>
+                <option value="100000000">$100M+</option>
+            </select>
+        </div>
+        <div class="sep"></div>
+        <div class="filter-group">
+            <label>Min APY</label>
+            <select id="apyFilter">
+                <option value="0">Any</option>
+                <option value="1">1%+</option>
+                <option value="5" selected>5%+</option>
+                <option value="10">10%+</option>
+                <option value="20">20%+</option>
+                <option value="50">50%+</option>
+            </select>
+        </div>
+        <div class="sep"></div>
+        <div class="filter-group">
+            <label>Category</label>
+            <select id="catFilter">
+                <option value="">All</option>
+                <option value="Stablecoins">Stablecoins</option>
+                <option value="Dexes">DEXes</option>
+                <option value="Lending">Lending</option>
+                <option value="Yield">Yield</option>
+                <option value="CDP">CDP</option>
+                <option value="Liquid Staking">Liquid Staking</option>
+                <option value="Bridge">Bridge</option>
+                <option value="Farm">Farm</option>
+            </select>
+        </div>
+        <div class="sep"></div>
+        <div class="filter-group">
+            <label>Stable Only</label>
+            <input type="checkbox" id="stableOnly">
+        </div>
+        <div class="sep"></div>
+        <div class="filter-group">
+            <label>No IL Risk</label>
+            <input type="checkbox" id="noIL">
+        </div>
+    </div>
+
+    <div id="content">
+        <div class="loading-overlay" id="loading"><div class="spinner"></div>Loading yields from DeFi Llama...</div>
+    </div>
+</div>
+
+<script>
+(() => {
+    const fetchFn = window.cfetch || fetch;
+
+    /* ── State ────────────────────────── */
+    let allPools = [];
+    let filteredPools = [];
+    let sortField = 'apy';
+    let sortDir = -1; // descending
+    let chains = new Set();
+
+    /* ── Load from DeFi Llama ─────────── */
+    async function loadYields() {
+        try {
+            const r = await fetchFn('https://yields.llama.fi/pools');
+            const data = await r.json();
+            allPools = (data.data || []).filter(p =>
+                p.apy != null && p.tvlUsd != null && !p.exposure && p.tvlUsd > 0
+            );
+
+            // Collect chains
+            chains = new Set(allPools.map(p => p.chain).filter(Boolean));
+            populateChainFilter();
+
+            applyFilters();
+            document.getElementById('loading').style.display = 'none';
+        } catch (e) {
+            document.getElementById('loading').innerHTML = `<div class="empty-state">Failed to load yield data. <button onclick="location.reload()" style="color:var(--accent);background:none;border:none;cursor:pointer;font-size:14px;">Retry</button></div>`;
+        }
+    }
+
+    function populateChainFilter() {
+        const $chain = document.getElementById('chainFilter');
+        const sorted = [...chains].sort();
+        $chain.innerHTML = '<option value="">All Chains (' + sorted.length + ')</option>' +
+            sorted.map(c => `<option value="${c}">${c}</option>`).join('');
+    }
+
+    /* ── Filters ──────────────────────── */
+    function applyFilters() {
+        const search = document.getElementById('search').value.toLowerCase();
+        const chain = document.getElementById('chainFilter').value;
+        const minTvl = parseFloat(document.getElementById('tvlFilter').value) || 0;
+        const minApy = parseFloat(document.getElementById('apyFilter').value) || 0;
+        const cat = document.getElementById('catFilter').value;
+        const stableOnly = document.getElementById('stableOnly').checked;
+        const noIL = document.getElementById('noIL').checked;
+
+        filteredPools = allPools.filter(p => {
+            if (chain && p.chain !== chain) return false;
+            if (p.tvlUsd < minTvl) return false;
+            if ((p.apy || 0) < minApy) return false;
+            if (cat && !(p.project || '').toLowerCase().includes(cat.toLowerCase()) && 
+                !(p.category || '').includes(cat)) return false;
+            if (stableOnly && !p.stablecoin) return false;
+            if (noIL && p.ilRisk && p.ilRisk !== 'no') return false;
+            if (search) {
+                const hay = `${p.project} ${p.symbol} ${p.chain} ${p.pool}`.toLowerCase();
+                if (!hay.includes(search)) return false;
+            }
+            return true;
+        });
+
+        // Sort
+        filteredPools.sort((a, b) => {
+            let va = a[sortField] || 0;
+            let vb = b[sortField] || 0;
+            if (sortField === 'risk') {
+                va = calcRiskScore(a);
+                vb = calcRiskScore(b);
+            }
+            return (vb - va) * sortDir;
+        });
+
+        // Limit to top 500 for performance
+        filteredPools = filteredPools.slice(0, 500);
+
+        document.getElementById('poolCount').textContent = filteredPools.length + ' pools';
+        render();
+    }
+
+    /* ── Risk Score (0-100, higher = riskier) ── */
+    function calcRiskScore(pool) {
+        let score = 0;
+
+        // APY risk: very high APY = likely unsustainable
+        if (pool.apy > 100) score += 30;
+        else if (pool.apy > 50) score += 20;
+        else if (pool.apy > 20) score += 10;
+
+        // TVL risk: lower TVL = higher risk
+        if (pool.tvlUsd < 100000) score += 25;
+        else if (pool.tvlUsd < 1000000) score += 15;
+        else if (pool.tvlUsd < 10000000) score += 5;
+
+        // IL risk
+        if (pool.ilRisk === 'yes') score += 15;
+
+        // Reward-heavy APY = less sustainable
+        const rewardPct = pool.apyReward ? (pool.apyReward / (pool.apy || 1)) : 0;
+        if (rewardPct > 0.8) score += 15;
+        else if (rewardPct > 0.5) score += 8;
+
+        // APY volatility (if available)
+        if (pool.apyPct1D != null && Math.abs(pool.apyPct1D) > 50) score += 10;
+        if (pool.apyPct7D != null && Math.abs(pool.apyPct7D) > 30) score += 5;
+
+        // Stablecoin pools are safer
+        if (pool.stablecoin) score -= 10;
+
+        return Math.max(0, Math.min(100, score));
+    }
+
+    function riskColor(score) {
+        if (score <= 25) return 'var(--good)';
+        if (score <= 50) return 'var(--warn)';
+        if (score <= 75) return '#FF8C42';
+        return 'var(--bad)';
+    }
+
+    function riskLabel(score) {
+        if (score <= 25) return 'Low';
+        if (score <= 50) return 'Medium';
+        if (score <= 75) return 'High';
+        return 'Very High';
+    }
+
+    /* ── Render ───────────────────────── */
+    function render() {
+        const $content = document.getElementById('content');
+
+        // Summary
+        const totalTvl = filteredPools.reduce((s, p) => s + (p.tvlUsd || 0), 0);
+        const avgApy = filteredPools.length ? filteredPools.reduce((s, p) => s + (p.apy || 0), 0) / filteredPools.length : 0;
+        const medianApy = filteredPools.length ? [...filteredPools].sort((a, b) => (a.apy || 0) - (b.apy || 0))[Math.floor(filteredPools.length / 2)]?.apy || 0 : 0;
+        const topProtocols = new Set(filteredPools.map(p => p.project));
+        const topChains = new Set(filteredPools.map(p => p.chain));
+        const stablePools = filteredPools.filter(p => p.stablecoin).length;
+
+        const fmtB = n => n >= 1e9 ? '$' + (n / 1e9).toFixed(2) + 'B' : n >= 1e6 ? '$' + (n / 1e6).toFixed(1) + 'M' : '$' + (n / 1e3).toFixed(0) + 'K';
+
+        let html = `
+            <div class="summary">
+                <div class="sum-card"><div class="k">Total TVL</div><div class="v">${fmtB(totalTvl)}</div></div>
+                <div class="sum-card"><div class="k">Avg APY</div><div class="v positive">${avgApy.toFixed(2)}%</div></div>
+                <div class="sum-card"><div class="k">Median APY</div><div class="v">${medianApy.toFixed(2)}%</div></div>
+                <div class="sum-card"><div class="k">Protocols</div><div class="v">${topProtocols.size}</div></div>
+                <div class="sum-card"><div class="k">Chains</div><div class="v">${topChains.size}</div></div>
+                <div class="sum-card"><div class="k">Stablecoin Pools</div><div class="v">${stablePools}</div></div>
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr>
+                        <th data-sort="project">Protocol <span class="sort-arrow"></span></th>
+                        <th data-sort="symbol">Pool <span class="sort-arrow"></span></th>
+                        <th data-sort="chain">Chain <span class="sort-arrow"></span></th>
+                        <th data-sort="apy">APY <span class="sort-arrow"></span></th>
+                        <th data-sort="apyBase">Base <span class="sort-arrow"></span></th>
+                        <th data-sort="apyReward">Reward <span class="sort-arrow"></span></th>
+                        <th data-sort="tvlUsd">TVL <span class="sort-arrow"></span></th>
+                        <th>APY 7d Δ</th>
+                        <th data-sort="risk">Risk <span class="sort-arrow"></span></th>
+                        <th>IL</th>
+                    </tr></thead>
+                    <tbody>
+        `;
+
+        for (const p of filteredPools) {
+            const risk = calcRiskScore(p);
+            const rc = riskColor(risk);
+            const apyDelta = p.apyPct7D;
+
+            html += `<tr>
+                <td><div class="protocol-cell"><strong>${esc(p.project || '?')}</strong></div></td>
+                <td>${esc(p.symbol || '?')}</td>
+                <td><span class="chain-tag">${esc(p.chain || '?')}</span></td>
+                <td class="apy-cell positive">${(p.apy || 0).toFixed(2)}%</td>
+                <td>${(p.apyBase || 0).toFixed(2)}%</td>
+                <td>${p.apyReward ? p.apyReward.toFixed(2) + '%' : '—'}</td>
+                <td>${fmtB(p.tvlUsd || 0)}</td>
+                <td class="${apyDelta > 0 ? 'positive' : apyDelta < 0 ? 'negative' : ''}">${apyDelta != null ? (apyDelta > 0 ? '+' : '') + apyDelta.toFixed(1) + '%' : '—'}</td>
+                <td><div style="display:flex;align-items:center;gap:6px;"><div class="risk-bar"><div class="risk-fill" style="width:${risk}%;background:${rc};"></div></div><span style="font-size:10px;color:${rc};">${riskLabel(risk)}</span></div></td>
+                <td>${p.ilRisk === 'yes' ? '<span style="color:var(--bad);">⚠</span>' : p.stablecoin ? '<span style="color:var(--good);">✓</span>' : '—'}</td>
+            </tr>`;
+        }
+
+        html += '</tbody></table></div>';
+
+        if (filteredPools.length === 0) {
+            html = '<div class="empty-state">No pools match your filters. Try adjusting the criteria.</div>';
+        }
+
+        $content.innerHTML = html;
+
+        // Attach sort handlers
+        $content.querySelectorAll('th[data-sort]').forEach(th => {
+            th.addEventListener('click', () => {
+                const field = th.dataset.sort;
+                if (field === sortField) sortDir *= -1;
+                else { sortField = field; sortDir = -1; }
+                document.getElementById('sortField').value = sortField;
+                applyFilters();
+            });
+        });
+    }
+
+    function esc(s) {
+        const d = document.createElement('div');
+        d.textContent = s;
+        return d.innerHTML;
+    }
+
+    /* ── Event listeners ──────────────── */
+    ['search', 'chainFilter', 'tvlFilter', 'apyFilter', 'catFilter'].forEach(id => {
+        document.getElementById(id).addEventListener(id === 'search' ? 'input' : 'change', applyFilters);
+    });
+    ['stableOnly', 'noIL'].forEach(id => {
+        document.getElementById(id).addEventListener('change', applyFilters);
+    });
+    document.getElementById('sortField').addEventListener('change', e => {
+        sortField = e.target.value;
+        sortDir = -1;
+        applyFilters();
+    });
+
+    /* ── Init ─────────────────────────── */
+    loadYields();
+
+    // Refresh every 5 minutes
+    setInterval(loadYields, 5 * 60 * 1000);
+})();
+</script>
+</body>
+</html>

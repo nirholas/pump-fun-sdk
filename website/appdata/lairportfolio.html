@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portfolio</title>
+    <meta name="lair-icon" content="<svg width='232' height='232' viewBox='0 0 232 232' fill='none' xmlns='http://www.w3.org/2000/svg'><rect width='232' height='232' rx='40' fill='#6366f1'/><rect x='36' y='60' width='160' height='120' rx='16' fill='white' opacity='0.9'/><rect x='36' y='60' width='160' height='35' rx='16' fill='#6366f1' opacity='0.3'/><circle cx='80' cy='140' r='30' fill='none' stroke='#6366f1' stroke-width='10'/><path d='M80 110v30l20 10' stroke='#6366f1' stroke-width='8' stroke-linecap='round'/><rect x='130' y='118' width='50' height='8' rx='4' fill='#6366f1' opacity='0.4'/><rect x='130' y='136' width='40' height='8' rx='4' fill='#6366f1' opacity='0.3'/><rect x='130' y='154' width='45' height='8' rx='4' fill='#00d4aa'/></svg>">
+    <meta name="lair-include" content="lair.css material-symbols-rounded">
+    <meta name="permissions" content="appStorage, network">
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body {
+            height:100vh; overflow-y:auto;
+            background:var(--col-bg1,#101010);
+            color:var(--col-txt1,#fff);
+            font-family:'Poppins',-apple-system,BlinkMacSystemFont,sans-serif;
+        }
+        body::-webkit-scrollbar { width:5px; }
+        body::-webkit-scrollbar-thumb { background:var(--col-bg3,#333); border-radius:3px; }
+
+        /* ── Hero ── */
+        .hero {
+            text-align:center; padding:32px 20px 24px;
+            background:linear-gradient(135deg, rgba(124,58,237,0.1) 0%, transparent 60%);
+            border-bottom:1px solid var(--col-bg3,#262626);
+        }
+        .hero-icon {
+            width:64px; height:64px; border-radius:16px;
+            background:linear-gradient(135deg,#7C3AED,#3B82F6);
+            display:inline-flex; align-items:center; justify-content:center;
+            margin-bottom:12px;
+        }
+        .hero-icon .material-symbols-rounded { font-size:32px; color:#fff; }
+        .hero h1 { font-size:20px; font-weight:700; margin-bottom:4px; }
+        .hero p { font-size:13px; color:#888; max-width:400px; margin:0 auto 16px; line-height:1.5; }
+
+        .connect-btn {
+            display:inline-flex; align-items:center; gap:8px;
+            padding:10px 24px; border-radius:10px;
+            background:linear-gradient(135deg,#7C3AED,#3B82F6);
+            color:#fff; font-weight:600; font-size:13px; cursor:pointer;
+            border:none; font-family:inherit; transition:opacity 0.15s;
+        }
+        .connect-btn:hover { opacity:0.85; }
+        .connect-btn:disabled { opacity:0.4; cursor:not-allowed; }
+
+        .browse-btn {
+            display:inline-flex; align-items:center; gap:6px;
+            padding:10px 24px; border-radius:10px;
+            background:var(--col-bg2,#171717);
+            border:1px solid var(--col-bg3,#262626);
+            color:#fff; font-weight:500; font-size:13px; cursor:pointer;
+            font-family:inherit; transition:border-color 0.15s;
+        }
+        .browse-btn:hover { border-color:rgba(124,58,237,0.4); }
+
+        .btn-row {
+            display:flex; gap:10px; justify-content:center; flex-wrap:wrap;
+        }
+
+        /* ── Feature cards ── */
+        .features {
+            display:grid; grid-template-columns:repeat(3,1fr);
+            gap:10px; padding:16px;
+        }
+        .feature-card {
+            background:var(--col-bg2,#171717);
+            border:1px solid var(--col-bg3,#262626);
+            border-radius:10px; padding:16px; text-align:center;
+            transition:border-color 0.2s;
+        }
+        .feature-card:hover { border-color:rgba(124,58,237,0.3); }
+        .feature-icon { font-size:28px; margin-bottom:6px; }
+        .feature-title { font-size:12px; font-weight:600; margin-bottom:4px; }
+        .feature-desc { font-size:10px; color:#888; line-height:1.4; }
+
+        /* ── Holdings (connected state) ── */
+        .holdings-header {
+            display:flex; align-items:center; justify-content:space-between;
+            padding:16px 16px 8px;
+        }
+        .holdings-header h2 { font-size:14px; font-weight:600; color:var(--colors-accent,#6179ff); }
+        .total-value { font-size:12px; color:#888; }
+
+        .holdings-list {
+            display:flex; flex-direction:column; gap:6px;
+            padding:0 16px 20px;
+        }
+        .token-row {
+            display:grid; grid-template-columns:36px 1fr auto auto;
+            align-items:center; gap:10px;
+            padding:10px 12px; border-radius:8px;
+            background:var(--col-bg2,#171717);
+            border:1px solid var(--col-bg3,#262626);
+        }
+        .token-icon {
+            width:32px; height:32px; border-radius:50%;
+            background:linear-gradient(135deg,#7C3AED,#3B82F6);
+            display:flex; align-items:center; justify-content:center;
+            font-size:12px; font-weight:700; color:#fff;
+        }
+        .token-info .token-name { font-size:12px; font-weight:600; }
+        .token-info .token-symbol { font-size:10px; color:#888; }
+        .token-balance { text-align:right; }
+        .token-amount { font-size:12px; font-weight:600; }
+        .token-usd { font-size:10px; color:#888; }
+        .token-change { font-size:11px; font-weight:600; text-align:right; }
+        .token-change.pos { color:#22c55e; }
+        .token-change.neg { color:#ef4444; }
+
+        .state-msg { text-align:center; padding:40px 20px; }
+        .spinner {
+            width:32px; height:32px; border:3px solid var(--col-bg3,#333);
+            border-top-color:#7C3AED; border-radius:50%;
+            animation:spin 0.8s linear infinite; margin:0 auto 12px;
+        }
+        @keyframes spin { to { transform:rotate(360deg); } }
+
+        @media (max-width:480px) {
+            .features { grid-template-columns:1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Not connected state -->
+    <div id="disconnected">
+        <div class="hero">
+            <div class="hero-icon">
+                <span class="material-symbols-rounded">account_balance_wallet</span>
+            </div>
+            <h1>Portfolio</h1>
+            <p>Track your token holdings, PnL, and transaction history across all chains.</p>
+            <div class="btn-row">
+                <button class="connect-btn" id="connect-btn" onclick="connectWallet()">
+                    <span class="material-symbols-rounded" style="font-size:18px">link</span>
+                    Connect Wallet
+                </button>
+                <button class="browse-btn" onclick="openLaunch()">
+                    <span class="material-symbols-rounded" style="font-size:18px">rocket_launch</span>
+                    Browse Coins
+                </button>
+            </div>
+        </div>
+
+        <div class="features">
+            <div class="feature-card">
+                <div class="feature-icon">📊</div>
+                <div class="feature-title">Token Balances</div>
+                <div class="feature-desc">View all your multi-chain token holdings in one place</div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📈</div>
+                <div class="feature-title">PnL Tracking</div>
+                <div class="feature-desc">Real-time profit & loss across your portfolio</div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🔔</div>
+                <div class="feature-title">Price Alerts</div>
+                <div class="feature-desc">Get notified when tokens hit your target prices</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Connected state -->
+    <div id="connected" style="display:none">
+        <div class="hero" style="padding-bottom:16px">
+            <div class="hero-icon">
+                <span class="material-symbols-rounded">account_balance_wallet</span>
+            </div>
+            <h1 id="wallet-address-short"></h1>
+            <p id="total-balance" style="font-size:22px;font-weight:700;color:#fff;margin-bottom:8px">$0.00</p>
+            <button class="browse-btn" onclick="disconnectWallet()" style="font-size:11px;padding:6px 16px">
+                <span class="material-symbols-rounded" style="font-size:14px">logout</span>
+                Disconnect
+            </button>
+        </div>
+
+        <div class="holdings-header">
+            <h2>Holdings</h2>
+            <span class="total-value" id="token-count">0 tokens</span>
+        </div>
+
+        <div id="holdings-loading" class="state-msg" style="display:none">
+            <div class="spinner"></div>
+            <p style="font-size:12px;color:#888">Loading holdings...</p>
+        </div>
+
+        <div id="holdings-list" class="holdings-list"></div>
+    </div>
+
+    <script>
+        /* ── Network config for multi-chain portfolio ── */
+        const CHAINS = {
+            ethereum: { rpc:'https://eth.llamarpc.com', symbol:'ETH', coingeckoId:'ethereum', decimals:18,
+                tokens:[
+                    {addr:'0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',symbol:'USDC',name:'USD Coin',decimals:6,cgId:'usd-coin'},
+                    {addr:'0xdAC17F958D2ee523a2206206994597C13D831ec7',symbol:'USDT',name:'Tether',decimals:6,cgId:'tether'},
+                    {addr:'0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599',symbol:'WBTC',name:'Wrapped BTC',decimals:8,cgId:'wrapped-bitcoin'},
+                    {addr:'0x6B175474E89094C44Da98b954EedeAC495271d0F',symbol:'DAI',name:'Dai',decimals:18,cgId:'dai'}
+                ]},
+            arbitrum: { rpc:'https://arb1.arbitrum.io/rpc', symbol:'ETH', coingeckoId:'ethereum', decimals:18,
+                tokens:[
+                    {addr:'0xaf88d065e77c8cC2239327C5EDb3A432268e5831',symbol:'USDC',name:'USD Coin',decimals:6,cgId:'usd-coin'},
+                    {addr:'0x912CE59144191C1204E64559FE8253a0e49E6548',symbol:'ARB',name:'Arbitrum',decimals:18,cgId:'arbitrum'}
+                ]},
+            base: { rpc:'https://mainnet.base.org', symbol:'ETH', coingeckoId:'ethereum', decimals:18,
+                tokens:[
+                    {addr:'0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',symbol:'USDC',name:'USD Coin',decimals:6,cgId:'usd-coin'}
+                ]}
+        };
+
+        const LAIR_HOST = (window.location.ancestorOrigins?.[0] || '').replace(/\/$/, '') || location.origin;
+        const API_URL = localStorage.getItem('lair_api_url') || LAIR_HOST;
+        let walletAddress = localStorage.getItem('lair_portfolio_addr') || null;
+
+        function shortAddr(a) { return a ? a.slice(0,6)+'...'+a.slice(-4) : ''; }
+
+        function init() {
+            if (walletAddress) {
+                showConnected();
+                loadHoldings();
+            }
+            if (window.ethereum) {
+                window.ethereum.on('accountsChanged', accts => {
+                    if (accts.length === 0) disconnectWallet();
+                    else { walletAddress = accts[0]; localStorage.setItem('lair_portfolio_addr', walletAddress); showConnected(); loadHoldings(); }
+                });
+            }
+        }
+
+        async function connectWallet() {
+            // Try injected provider first
+            if (typeof window.ethereum !== 'undefined') {
+                try {
+                    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                    if (accounts.length > 0) {
+                        walletAddress = accounts[0];
+                        localStorage.setItem('lair_portfolio_addr', walletAddress);
+                        showConnected();
+                        loadHoldings();
+                        return;
+                    }
+                } catch (err) {
+                    if (err.code === 4001) return; // user rejected
+                }
+            }
+
+            // Fallback: manual address entry (read-only mode)
+            const addr = prompt('No wallet detected.\n\nEnter your wallet address (0x...) to view portfolio in read-only mode:');
+            if (addr && /^0x[a-fA-F0-9]{40}$/.test(addr)) {
+                walletAddress = addr;
+                localStorage.setItem('lair_portfolio_addr', walletAddress);
+                showConnected();
+                loadHoldings();
+            }
+        }
+
+        function disconnectWallet() {
+            walletAddress = null;
+            localStorage.removeItem('lair_portfolio_addr');
+            document.getElementById('disconnected').style.display = '';
+            document.getElementById('connected').style.display = 'none';
+        }
+
+        function showConnected() {
+            document.getElementById('disconnected').style.display = 'none';
+            document.getElementById('connected').style.display = '';
+            document.getElementById('wallet-address-short').textContent = shortAddr(walletAddress);
+        }
+
+        /* ── JSON-RPC helper (uses cfetch for CORS proxy fallback) ── */
+        async function rpcCall(url, method, params) {
+            const _rpcFetch = window.cfetch || window.fetch.bind(window);
+            const res = await _rpcFetch(url, {
+                method:'POST', headers:{'Content-Type':'application/json'},
+                body: JSON.stringify({jsonrpc:'2.0',id:1,method,params})
+            });
+            const data = await res.json();
+            if (data.error) throw new Error(data.error.message);
+            return data.result;
+        }
+
+        /* ── Load holdings from real APIs ── */
+        async function loadHoldings() {
+            const loading = document.getElementById('holdings-loading');
+            const list = document.getElementById('holdings-list');
+            loading.style.display = 'block';
+            list.innerHTML = '';
+
+            try {
+                // 1. Try Lair API first (may have enriched data)
+                try {
+                    const res = await fetch(`${API_URL}/api/portfolio/${walletAddress}`, { signal: AbortSignal.timeout(5000) });
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (data.success && data.data && data.data.tokens && data.data.tokens.length > 0) {
+                            loading.style.display = 'none';
+                            renderHoldings(data.data);
+                            return;
+                        }
+                    }
+                } catch(e) { /* API not available, fall through to direct RPC */ }
+
+                // 2. Direct multi-chain balance fetch via public RPCs (parallelized)
+                const allTokens = [];
+                const priceIds = new Set();
+
+                await Promise.all(Object.entries(CHAINS).map(async ([chainKey, chain]) => {
+                    try {
+                        // Fetch native + all ERC-20 balances in parallel per chain
+                        const balanceData = '0x70a08231' + walletAddress.slice(2).padStart(64, '0');
+                        const [balHex, ...tokenResults] = await Promise.all([
+                            rpcCall(chain.rpc, 'eth_getBalance', [walletAddress, 'latest']),
+                            ...chain.tokens.map(t =>
+                                rpcCall(chain.rpc, 'eth_call', [{ to: t.addr, data: balanceData }, 'latest']).catch(() => '0x0')
+                            )
+                        ]);
+
+                        const nativeBal = parseInt(balHex, 16) / (10 ** chain.decimals);
+                        priceIds.add(chain.coingeckoId);
+
+                        if (nativeBal > 0.0001) {
+                            allTokens.push({ chain: chainKey, symbol: chain.symbol, name: chain.symbol === 'ETH' ? 'Ethereum' : chain.symbol, balance: nativeBal, cgId: chain.coingeckoId });
+                        }
+
+                        chain.tokens.forEach((t, i) => {
+                            try {
+                                const raw = BigInt(tokenResults[i] || '0x0');
+                                const bal = Number(raw) / (10 ** t.decimals);
+                                if (bal > 0.001) {
+                                    priceIds.add(t.cgId);
+                                    allTokens.push({ chain: chainKey, symbol: t.symbol, name: t.name, balance: bal, cgId: t.cgId });
+                                }
+                            } catch(e) { /* skip failed token */ }
+                        });
+                    } catch(e) { /* chain RPC failed — skip silently */ }
+                }));
+
+                // 3. Fetch prices from CoinGecko (via cfetch proxy for CORS)
+                const _fetch = window.cfetch || window.fetch.bind(window);
+                let prices = {};
+                try {
+                    const ids = [...priceIds].join(',');
+                    const res = await _fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd&include_24hr_change=true`);
+                    if (res.ok) prices = await res.json();
+                } catch(e) { /* price fetch failed — proceed with available data */ }
+
+                // 4. Build enriched token list
+                const enriched = allTokens.map(t => {
+                    const p = prices[t.cgId] || {};
+                    const usdPrice = p.usd || (t.symbol === 'USDC' || t.symbol === 'USDT' || t.symbol === 'DAI' ? 1 : 0);
+                    return {
+                        symbol: t.symbol,
+                        name: t.name,
+                        balance: t.balance,
+                        usd_value: t.balance * usdPrice,
+                        change_24h: p.usd_24h_change || 0,
+                        chain: t.chain
+                    };
+                }).sort((a, b) => b.usd_value - a.usd_value);
+
+                loading.style.display = 'none';
+                renderHoldings({
+                    total_usd: enriched.reduce((s, t) => s + t.usd_value, 0),
+                    tokens: enriched
+                });
+
+            } catch (err) {
+                // Portfolio load error — show UI error state
+                loading.style.display = 'none';
+                list.innerHTML = `<div class="state-msg">
+                    <p style="font-size:12px;color:#ef4444">Failed to load portfolio</p>
+                    <button onclick="loadHoldings()" style="margin-top:8px;padding:6px 16px;background:rgba(124,58,237,0.2);border:1px solid rgba(124,58,237,0.4);border-radius:8px;color:#a78bfa;cursor:pointer;font-size:11px;border:none;font-family:inherit">Retry</button>
+                </div>`;
+            }
+        }
+
+        function renderHoldings(data) {
+            const list = document.getElementById('holdings-list');
+            const balance = document.getElementById('total-balance');
+            const count = document.getElementById('token-count');
+
+            balance.textContent = '$' + (data.total_usd || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            count.textContent = `${(data.tokens || []).length} token${(data.tokens || []).length !== 1 ? 's' : ''}`;
+
+            if (!data.tokens || data.tokens.length === 0) {
+                list.innerHTML = '<div class="state-msg"><p style="font-size:12px;color:#666">No tokens found for this wallet</p></div>';
+                return;
+            }
+
+            list.innerHTML = data.tokens.map(t => {
+                const changeClass = (t.change_24h || 0) >= 0 ? 'pos' : 'neg';
+                const changeStr = (t.change_24h || 0) >= 0 ? '+' : '';
+                const chainBadge = t.chain ? `<span style="font-size:9px;background:rgba(255,255,255,0.08);padding:1px 5px;border-radius:4px;margin-left:4px">${t.chain}</span>` : '';
+                return `
+                <div class="token-row">
+                    <div class="token-icon">${(t.symbol || '?').charAt(0)}</div>
+                    <div class="token-info">
+                        <div class="token-name">${t.name || t.symbol}${chainBadge}</div>
+                        <div class="token-symbol">${t.symbol}</div>
+                    </div>
+                    <div class="token-balance">
+                        <div class="token-amount">${parseFloat(t.balance || 0).toLocaleString(undefined, {maximumFractionDigits:6})}</div>
+                        <div class="token-usd">$${(t.usd_value || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                    </div>
+                    <div class="token-change ${changeClass}">${changeStr}${(t.change_24h || 0).toFixed(1)}%</div>
+                </div>`;
+            }).join('');
+        }
+
+        function openLaunch() {
+            if (window.parent && window.parent.openApp) {
+                window.parent.openApp('lairlaunch');
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>

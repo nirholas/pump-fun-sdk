@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="lair-include" content="lair.css">
+    <meta name="lair-widget" content="true">
+    <meta name="lair-widget-size" content="3x2">
+    <meta name="lair-icon" content='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="24" height="24" fill="white"><path d="M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h560q33 0 56.5 23.5T840-760v560q0 33-23.5 56.5T760-120H200Zm0-80h560v-560H200v560Zm40-80h200v-400H240v400Zm240 0h80v-240h-80v240Zm120 0h80v-320h-80v320Z"/></svg>'>
+    <meta name="capabilities" content="widget,market_dominance">
+    <title>Market Dominance</title>
+    <!--
+        Data source: CoinGecko /global API (free, no key)
+        Shows BTC, ETH, and stablecoin market dominance with bar chart
+    -->
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: transparent;
+            color: var(--col-txt1, #fff);
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            height: 100vh;
+            overflow: hidden;
+            user-select: none;
+            display: flex;
+            flex-direction: column;
+        }
+        .header {
+            display: flex;
+            align-items: center;
+            padding: 5px 10px;
+            flex-shrink: 0;
+        }
+        .title {
+            font-size: 0.65rem;
+            font-weight: 700;
+            opacity: 0.5;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .mcap {
+            margin-left: auto;
+            font-size: 0.5rem;
+            opacity: 0.3;
+            font-variant-numeric: tabular-nums;
+        }
+        .bar-chart { padding: 2px 10px 0; flex-shrink: 0; }
+        .bar-track {
+            height: 8px; border-radius: 4px;
+            display: flex; overflow: hidden;
+            background: rgba(255,255,255,0.04);
+        }
+        .bar-seg { height: 100%; transition: width 0.6s ease; min-width: 1px; }
+        .legend {
+            flex: 1;
+            padding: 6px 10px 4px;
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            overflow: hidden;
+        }
+        .leg-row {
+            display: flex; align-items: center; gap: 6px;
+            padding: 2px 4px; border-radius: 4px;
+            transition: background 0.15s;
+        }
+        .leg-row:hover { background: rgba(255,255,255,0.04); }
+        .leg-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+        .leg-name { font-size: 0.6rem; font-weight: 600; min-width: 40px; }
+        .leg-pct { font-size: 0.7rem; font-weight: 700; font-variant-numeric: tabular-nums; min-width: 42px; }
+        .leg-bar-wrap {
+            flex: 1; height: 5px; background: rgba(255,255,255,0.04);
+            border-radius: 3px; overflow: hidden;
+        }
+        .leg-bar-fill { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
+        .leg-val { font-size: 0.5rem; opacity: 0.35; font-variant-numeric: tabular-nums; min-width: 36px; text-align: right; }
+        .loading-msg {
+            flex: 1; display: flex; align-items: center; justify-content: center;
+            font-size: 0.6rem; opacity: 0.3;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <span class="title">Market Dominance</span>
+        <span class="mcap" id="mcap">—</span>
+    </div>
+    <div class="bar-chart" id="barChart"></div>
+    <div class="legend" id="legend">
+        <div class="loading-msg">Loading...</div>
+    </div>
+    <script>
+    (() => {
+        const SEGMENTS = [
+            { key: 'btc',  label: 'Bitcoin',  color: '#f7931a' },
+            { key: 'eth',  label: 'Ethereum', color: '#627eea' },
+            { key: 'usdt', label: 'USDT',     color: '#26a17b' },
+            { key: 'usdc', label: 'USDC',     color: '#2775ca' },
+            { key: 'bnb',  label: 'BNB',      color: '#f3ba2f' },
+            { key: 'sol',  label: 'Solana',   color: '#14f195' },
+            { key: 'xrp',  label: 'XRP',      color: '#00aae4' },
+        ];
+
+        const $bar = document.getElementById('barChart');
+        const $legend = document.getElementById('legend');
+        const $mcap = document.getElementById('mcap');
+        let refreshTimer = null;
+
+        async function proxyFetch(url) {
+            if (window.cfetch) return window.cfetch(url);
+            const base = (window.location.ancestorOrigins?.[0] || window.location.origin).replace(/\/$/, '');
+            return fetch(`${base}/api/proxy?url=${encodeURIComponent(url)}`);
+        }
+
+        function fmtMcap(n) {
+            if (n >= 1e12) return '$' + (n / 1e12).toFixed(2) + 'T';
+            if (n >= 1e9) return '$' + (n / 1e9).toFixed(1) + 'B';
+            return '$' + (n / 1e6).toFixed(0) + 'M';
+        }
+
+        async function load() {
+            try {
+                const r = await proxyFetch('https://api.coingecko.com/api/v3/global');
+                const json = await r.json();
+                const gd = json?.data;
+                if (!gd || !gd.market_cap_percentage) throw new Error('Invalid');
+
+                const pcts = gd.market_cap_percentage;
+                const totalMcap = gd.total_market_cap?.usd || 0;
+                $mcap.textContent = totalMcap ? 'MCap ' + fmtMcap(totalMcap) : '';
+
+                const segments = SEGMENTS.map(s => ({ ...s, pct: pcts[s.key] || 0 })).filter(s => s.pct > 0);
+                const knownPct = segments.reduce((sum, s) => sum + s.pct, 0);
+                const othersPct = Math.max(0, 100 - knownPct);
+                if (othersPct > 0.5) segments.push({ key: 'other', label: 'Others', color: '#555', pct: othersPct });
+
+                $bar.innerHTML = `<div class="bar-track">${segments.map(s =>
+                    `<div class="bar-seg" style="width:${s.pct}%;background:${s.color}"></div>`
+                ).join('')}</div>`;
+
+                const maxPct = Math.max(...segments.map(s => s.pct));
+                $legend.innerHTML = segments.map(s => {
+                    const barW = Math.max(3, (s.pct / maxPct) * 100);
+                    const mcapVal = totalMcap ? fmtMcap(totalMcap * s.pct / 100) : '';
+                    return `<div class="leg-row">
+                        <div class="leg-dot" style="background:${s.color}"></div>
+                        <span class="leg-name">${s.label}</span>
+                        <span class="leg-pct">${s.pct.toFixed(1)}%</span>
+                        <div class="leg-bar-wrap"><div class="leg-bar-fill" style="width:${barW}%;background:${s.color}"></div></div>
+                        <span class="leg-val">${mcapVal}</span>
+                    </div>`;
+                }).join('');
+            } catch (e) {
+                if (!$legend.querySelector('.leg-row')) $legend.innerHTML = '<div class="loading-msg">Offline</div>';
+            }
+            clearTimeout(refreshTimer);
+            refreshTimer = setTimeout(load, 120000);
+        }
+
+        load();
+    })();
+    </script>
+</body>
+</html>

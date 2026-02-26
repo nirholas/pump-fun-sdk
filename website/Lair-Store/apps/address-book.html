@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="lair-include" content="lair.css material-symbols-rounded">
+    <meta name="permissions" content="appStorage, clipboard">
+    <meta name="capabilities" content="addressBook">
+    <meta name="lair-icon" content="<svg width='232' height='232' viewBox='0 0 232 232' fill='none' xmlns='http://www.w3.org/2000/svg'><rect width='232' height='232' rx='40' fill='#14B8A6'/><text x='116' y='140' text-anchor='middle' fill='white' font-size='100' font-weight='bold'>📒</text></svg>">
+    <title>Address Book</title>
+    <style>
+        :root { color-scheme: dark; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            color: var(--col-txt1, #f6f8ff);
+            background: var(--col-bg1, #0f1115);
+            min-height: 100vh;
+            display: flex;
+        }
+        button, select, input, textarea { font: inherit; color: inherit; }
+        input, textarea, select {
+            background: var(--col-bg1, #0f1115);
+            border: 1px solid var(--box-crisp-col, rgba(255,255,255,0.12));
+            border-radius: 8px;
+            padding: 8px 10px;
+            color: inherit;
+            outline: none;
+            transition: border-color .2s;
+        }
+        input:focus, textarea:focus, select:focus {
+            border-color: var(--colors-accent, #14b8a6);
+        }
+        .mono { font-family: 'SF Mono','Fira Code','Cascadia Code',Consolas,monospace; font-size: .85rem; }
+        .muted { color: var(--col-txt2, #acb2c2); }
+
+        /* Layout */
+        .sidebar {
+            width: 220px;
+            min-width: 220px;
+            background: var(--col-bg2, #171b22);
+            border-right: 1px solid var(--box-crisp-col, rgba(255,255,255,0.09));
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow-y: auto;
+        }
+        .sidebar-header {
+            padding: 14px 14px 10px;
+            font-weight: 700;
+            font-size: 1.05rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .sidebar-search {
+            padding: 0 10px 10px;
+        }
+        .sidebar-search input {
+            width: 100%;
+            font-size: .84rem;
+            padding: 7px 10px;
+        }
+        .cat-list { list-style: none; flex: 1; }
+        .cat-list li {
+            padding: 9px 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: .88rem;
+            border-left: 3px solid transparent;
+            transition: background .15s;
+        }
+        .cat-list li:hover { background: rgba(255,255,255,0.04); }
+        .cat-list li.active {
+            background: rgba(20,184,166,0.1);
+            border-left-color: #14b8a6;
+            font-weight: 600;
+        }
+        .cat-list li .cnt {
+            margin-left: auto;
+            background: rgba(255,255,255,0.06);
+            border-radius: 10px;
+            padding: 1px 7px;
+            font-size: .75rem;
+        }
+        .sidebar-actions {
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        /* Buttons */
+        .btn {
+            border: 1px solid var(--box-crisp-col, rgba(255,255,255,0.14));
+            border-radius: 10px;
+            background: rgba(255,255,255,0.03);
+            color: inherit;
+            padding: 8px 14px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: .86rem;
+            transition: background .15s;
+            justify-content: center;
+        }
+        .btn:hover { background: rgba(255,255,255,0.08); }
+        .btn.primary {
+            border-color: rgba(20,184,166,0.6);
+            background: rgba(20,184,166,0.18);
+        }
+        .btn.primary:hover { background: rgba(20,184,166,0.28); }
+        .btn.danger { border-color: rgba(239,68,68,0.5); color: #f87171; }
+        .btn.danger:hover { background: rgba(239,68,68,0.15); }
+        .btn .material-symbols-rounded { font-size: 18px; }
+        .icon-btn {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 6px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: background .15s;
+            color: var(--col-txt2, #acb2c2);
+        }
+        .icon-btn:hover { background: rgba(255,255,255,0.08); color: var(--col-txt1, #f6f8ff); }
+
+        /* Main */
+        .main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .main-header {
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--box-crisp-col, rgba(255,255,255,0.09));
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .main-header h2 { font-size: 1rem; font-weight: 600; }
+        .address-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px;
+        }
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            gap: 12px;
+            opacity: .55;
+        }
+        .empty-state .material-symbols-rounded { font-size: 48px; }
+
+        /* Address Card */
+        .addr-card {
+            border: 1px solid var(--box-crisp-col, rgba(255,255,255,0.09));
+            border-radius: var(--siz-radius1, 12px);
+            background: var(--col-bg2, #171b22);
+            padding: 12px 14px;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: border-color .2s;
+        }
+        .addr-card:hover {
+            border-color: rgba(20,184,166,0.35);
+        }
+        .addr-card .chain-dot {
+            width: 10px; height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        .addr-card .info { flex: 1; min-width: 0; }
+        .addr-card .label-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 3px;
+        }
+        .addr-card .label-row .label-text { font-weight: 600; font-size: .92rem; }
+        .addr-card .label-row .fav-star { color: #fbbf24; font-size: 15px; }
+        .addr-card .addr-text {
+            font-family: 'SF Mono','Fira Code',Consolas,monospace;
+            font-size: .82rem;
+            color: var(--col-txt2, #acb2c2);
+            margin-bottom: 5px;
+        }
+        .pills { display: flex; gap: 4px; flex-wrap: wrap; }
+        .pill {
+            font-size: .7rem;
+            padding: 2px 8px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.04);
+            white-space: nowrap;
+        }
+        .pill.chain { border-color: rgba(20,184,166,0.3); color: #5eead4; }
+        .pill.category { border-color: rgba(139,92,246,0.3); color: #c4b5fd; }
+        .pill.tag { border-color: rgba(59,130,246,0.25); color: #93c5fd; }
+        .addr-card .actions {
+            display: flex;
+            gap: 2px;
+            flex-shrink: 0;
+        }
+        .copy-ok { color: #34d399 !important; }
+
+        /* Modal overlay */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.55);
+            z-index: 900;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-overlay.open { display: flex; }
+        .modal {
+            background: var(--col-bg2, #171b22);
+            border: 1px solid var(--box-crisp-col, rgba(255,255,255,0.12));
+            border-radius: 14px;
+            padding: 20px;
+            width: 440px;
+            max-width: 95vw;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+        .modal h3 {
+            font-size: 1.05rem;
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .form-row {
+            margin-bottom: 12px;
+        }
+        .form-row label {
+            display: block;
+            font-size: .8rem;
+            margin-bottom: 4px;
+            color: var(--col-txt2, #acb2c2);
+        }
+        .form-row input, .form-row select, .form-row textarea {
+            width: 100%;
+        }
+        .form-row textarea {
+            resize: vertical;
+            min-height: 60px;
+        }
+        .validation-hint {
+            font-size: .75rem;
+            margin-top: 3px;
+        }
+        .validation-hint.valid { color: #34d399; }
+        .validation-hint.invalid { color: #f87171; }
+        .fav-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            font-size: .88rem;
+            padding: 6px 0;
+        }
+        .fav-toggle input { width: auto; }
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            margin-top: 16px;
+        }
+
+        /* QR Modal */
+        .qr-modal .qr-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 14px;
+        }
+        .qr-modal .qr-img {
+            border-radius: 10px;
+            border: 8px solid #fff;
+        }
+        .qr-modal .qr-addr {
+            font-family: 'SF Mono','Fira Code',Consolas,monospace;
+            font-size: .82rem;
+            word-break: break-all;
+            text-align: center;
+            color: var(--col-txt2, #acb2c2);
+        }
+
+        /* Clipboard panel */
+        .clip-panel {
+            position: fixed;
+            top: 0;
+            right: -360px;
+            width: 340px;
+            height: 100vh;
+            background: var(--col-bg2, #171b22);
+            border-left: 1px solid var(--box-crisp-col, rgba(255,255,255,0.09));
+            z-index: 850;
+            display: flex;
+            flex-direction: column;
+            transition: right .25s ease;
+            box-shadow: -6px 0 30px rgba(0,0,0,0.3);
+        }
+        .clip-panel.open { right: 0; }
+        .clip-header {
+            padding: 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--box-crisp-col, rgba(255,255,255,0.09));
+        }
+        .clip-header h3 { font-size: .95rem; }
+        .clip-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px;
+        }
+        .clip-item {
+            border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 8px;
+            padding: 8px 10px;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .clip-item .clip-text {
+            flex: 1;
+            min-width: 0;
+            font-family: 'SF Mono',Consolas,monospace;
+            font-size: .8rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .clip-item .clip-time {
+            font-size: .7rem;
+            color: var(--col-txt2, #acb2c2);
+            white-space: nowrap;
+        }
+        .clip-footer {
+            padding: 10px;
+            border-top: 1px solid var(--box-crisp-col, rgba(255,255,255,0.09));
+        }
+
+        /* Responsive */
+        @media (max-width: 680px) {
+            body { flex-direction: column; }
+            .sidebar { width: 100%; min-width: 0; height: auto; border-right: none; border-bottom: 1px solid var(--box-crisp-col, rgba(255,255,255,0.09)); }
+            .cat-list { display: flex; overflow-x: auto; }
+            .cat-list li { white-space: nowrap; border-left: none; border-bottom: 3px solid transparent; padding: 8px 12px; }
+            .cat-list li.active { border-left-color: transparent; border-bottom-color: #14b8a6; }
+            .main { height: auto; min-height: 70vh; }
+            .clip-panel { width: 100%; right: -100%; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <span class="material-symbols-rounded" style="font-size:22px;color:#14b8a6">contacts</span>
+            Address Book
+        </div>
+        <div class="sidebar-search">
+            <input type="text" id="searchInput" placeholder="Search addresses..." />
+        </div>
+        <ul class="cat-list" id="catList">
+            <li class="active" data-cat="all"><span class="material-symbols-rounded" style="font-size:18px">list</span> All <span class="cnt" id="cnt-all">0</span></li>
+            <li data-cat="favorites"><span class="material-symbols-rounded" style="font-size:18px;color:#fbbf24">star</span> Favorites <span class="cnt" id="cnt-favorites">0</span></li>
+            <li data-cat="my-wallets"><span class="material-symbols-rounded" style="font-size:18px;color:#3b82f6">account_balance_wallet</span> My Wallets <span class="cnt" id="cnt-my-wallets">0</span></li>
+            <li data-cat="friends"><span class="material-symbols-rounded" style="font-size:18px;color:#a78bfa">group</span> Friends <span class="cnt" id="cnt-friends">0</span></li>
+            <li data-cat="contracts"><span class="material-symbols-rounded" style="font-size:18px;color:#f59e0b">description</span> Contracts <span class="cnt" id="cnt-contracts">0</span></li>
+            <li data-cat="dexes"><span class="material-symbols-rounded" style="font-size:18px;color:#ec4899">swap_horiz</span> DEXes <span class="cnt" id="cnt-dexes">0</span></li>
+            <li data-cat="bridges"><span class="material-symbols-rounded" style="font-size:18px;color:#06b6d4">cable</span> Bridges <span class="cnt" id="cnt-bridges">0</span></li>
+        </ul>
+        <div class="sidebar-actions">
+            <button class="btn primary" onclick="openAddModal()"><span class="material-symbols-rounded">add</span> Add Address</button>
+            <button class="btn" onclick="toggleClipboard()"><span class="material-symbols-rounded">content_paste</span> Clipboard</button>
+        </div>
+    </aside>
+
+    <!-- Main -->
+    <div class="main">
+        <div class="main-header">
+            <h2 id="mainTitle">All Addresses</h2>
+            <div style="display:flex;gap:6px;align-items:center;">
+                <span class="muted" id="countLabel">0 entries</span>
+                <button class="btn" onclick="openAddModal()"><span class="material-symbols-rounded">add</span> Add</button>
+            </div>
+        </div>
+        <div class="address-list" id="addressList">
+            <div class="empty-state" id="emptyState">
+                <span class="material-symbols-rounded">contacts</span>
+                <div>No addresses yet</div>
+                <button class="btn primary" onclick="openAddModal()">Add your first address</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Modal -->
+    <div class="modal-overlay" id="addModal">
+        <div class="modal">
+            <h3><span class="material-symbols-rounded" style="color:#14b8a6">person_add</span> <span id="modalTitle">Add Address</span></h3>
+            <div class="form-row">
+                <label>Label *</label>
+                <input type="text" id="fLabel" placeholder="e.g. My Main ETH Wallet" maxlength="80" />
+            </div>
+            <div class="form-row">
+                <label>Address *</label>
+                <input type="text" id="fAddress" class="mono" placeholder="0x... / bc1... / base58..." />
+                <div class="validation-hint" id="addrHint"></div>
+            </div>
+            <div class="form-row">
+                <label>Chain</label>
+                <select id="fChain">
+                    <option value="ethereum">Ethereum</option>
+                    <option value="base">Base</option>
+                    <option value="arbitrum">Arbitrum</option>
+                    <option value="polygon">Polygon</option>
+                    <option value="solana">Solana</option>
+                    <option value="bitcoin">Bitcoin</option>
+                </select>
+            </div>
+            <div class="form-row">
+                <label>Category</label>
+                <select id="fCategory">
+                    <option value="my-wallets">My Wallets</option>
+                    <option value="friends">Friends</option>
+                    <option value="contracts">Contracts</option>
+                    <option value="dexes">DEXes</option>
+                    <option value="bridges">Bridges</option>
+                </select>
+            </div>
+            <div class="form-row">
+                <label>Tags (comma-separated)</label>
+                <input type="text" id="fTags" placeholder="e.g. trading, main" />
+            </div>
+            <div class="form-row">
+                <label>Notes</label>
+                <textarea id="fNotes" placeholder="Optional notes..."></textarea>
+            </div>
+            <label class="fav-toggle">
+                <input type="checkbox" id="fFavorite" /> <span class="material-symbols-rounded" style="font-size:18px;color:#fbbf24">star</span> Mark as favorite
+            </label>
+            <div class="modal-actions">
+                <button class="btn" onclick="closeAddModal()">Cancel</button>
+                <button class="btn primary" id="saveBtn" onclick="saveContact()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- QR Modal -->
+    <div class="modal-overlay qr-modal" id="qrModal">
+        <div class="modal" style="width:340px;">
+            <h3><span class="material-symbols-rounded" style="color:#14b8a6">qr_code_2</span> QR Code</h3>
+            <div class="qr-content">
+                <img id="qrImg" class="qr-img" width="200" height="200" alt="QR Code" />
+                <div class="qr-addr" id="qrAddr"></div>
+                <div class="pill chain" id="qrChain"></div>
+            </div>
+            <div class="modal-actions" style="margin-top:14px;">
+                <button class="btn" onclick="closeQrModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Clipboard Panel -->
+    <div class="clip-panel" id="clipPanel">
+        <div class="clip-header">
+            <h3><span class="material-symbols-rounded" style="font-size:18px">content_paste</span> Clipboard History</h3>
+            <button class="icon-btn" onclick="toggleClipboard()" title="Close"><span class="material-symbols-rounded">close</span></button>
+        </div>
+        <div class="clip-list" id="clipList">
+            <div class="empty-state" style="padding:30px 0;height:auto;">
+                <span class="material-symbols-rounded" style="font-size:32px">content_paste_off</span>
+                <div style="font-size:.85rem">No clipboard history yet</div>
+            </div>
+        </div>
+        <div class="clip-footer">
+            <button class="btn danger" style="width:100%" onclick="clearClipboard()"><span class="material-symbols-rounded">delete</span> Clear History</button>
+        </div>
+    </div>
+
+<script>
+/* ── State ── */
+let contacts = [];
+let clipboardHistory = [];
+let activeCategory = 'all';
+let editingId = null;
+const STORAGE_KEY = 'lair-address-book';
+const CLIP_KEY = 'lair-clipboard-history';
+const MAX_CLIP = 20;
+
+/* ── Chain Config ── */
+const CHAINS = {
+    ethereum:  { label: 'Ethereum', color: '#627eea', explorer: 'https://etherscan.io/address/' },
+    base:      { label: 'Base',     color: '#0052ff', explorer: 'https://basescan.org/address/' },
+    arbitrum:  { label: 'Arbitrum', color: '#28a0f0', explorer: 'https://arbiscan.io/address/' },
+    polygon:   { label: 'Polygon',  color: '#8247e5', explorer: 'https://polygonscan.com/address/' },
+    solana:    { label: 'Solana',   color: '#9945ff', explorer: 'https://solscan.io/account/' },
+    bitcoin:   { label: 'Bitcoin',  color: '#f7931a', explorer: 'https://blockstream.info/address/' }
+};
+
+const CATEGORIES = {
+    'my-wallets': 'My Wallets',
+    'friends': 'Friends',
+    'contracts': 'Contracts',
+    'dexes': 'DEXes',
+    'bridges': 'Bridges'
+};
+
+/* ── Persistence ── */
+function load() {
+    try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) contacts = JSON.parse(raw);
+    } catch {}
+    try {
+        const raw = localStorage.getItem(CLIP_KEY);
+        if (raw) clipboardHistory = JSON.parse(raw);
+    } catch {}
+}
+
+function save() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(contacts));
+    localStorage.setItem(CLIP_KEY, JSON.stringify(clipboardHistory));
+}
+
+/* ── Validation ── */
+function validateEVMAddress(addr) {
+    return /^0x[0-9a-fA-F]{40}$/.test(addr);
+}
+
+function validateSolanaAddress(addr) {
+    return /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(addr);
+}
+
+function validateBitcoinAddress(addr) {
+    return /^(bc1|[13])[a-zA-HJ-NP-Z0-9]{25,62}$/.test(addr);
+}
+
+function validateAddress(addr, chain) {
+    if (!addr) return false;
+    if (['ethereum','base','arbitrum','polygon'].includes(chain)) return validateEVMAddress(addr);
+    if (chain === 'solana') return validateSolanaAddress(addr);
+    if (chain === 'bitcoin') return validateBitcoinAddress(addr);
+    return addr.length > 0;
+}
+
+function autoDetectChain(addr) {
+    if (/^0x[0-9a-fA-F]{40}$/.test(addr)) return 'ethereum';
+    if (/^(bc1|[13])[a-zA-HJ-NP-Z0-9]{25,62}$/.test(addr)) return 'bitcoin';
+    if (/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(addr)) return 'solana';
+    return null;
+}
+
+/* ── UUID ── */
+function uuid() {
+    return 'xxxx-xxxx-xxxx'.replace(/x/g, () => ((Math.random()*16)|0).toString(16));
+}
+
+/* ── Truncate address ── */
+function truncAddr(addr, pre=6, suf=4) {
+    if (addr.length <= pre + suf + 3) return addr;
+    return addr.slice(0, pre) + '...' + addr.slice(-suf);
+}
+
+/* ── Copy to clipboard ── */
+async function copyToClipboard(text, btnEl) {
+    try {
+        await navigator.clipboard.writeText(text);
+    } catch {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+    }
+    /* Record in clipboard history */
+    clipboardHistory.unshift({ text, copiedAt: new Date().toISOString(), source: 'manual' });
+    if (clipboardHistory.length > MAX_CLIP) clipboardHistory.length = MAX_CLIP;
+    save();
+    renderClipboard();
+
+    /* Visual feedback */
+    if (btnEl) {
+        const icon = btnEl.querySelector('.material-symbols-rounded');
+        if (icon) {
+            const orig = icon.textContent;
+            icon.textContent = 'check_circle';
+            btnEl.classList.add('copy-ok');
+            setTimeout(() => { icon.textContent = orig; btnEl.classList.remove('copy-ok'); }, 2000);
+        }
+    }
+
+    /* Update lastUsed on matching contact */
+    const c = contacts.find(c => c.address === text);
+    if (c) { c.lastUsed = new Date().toISOString(); save(); }
+}
+
+/* ── Render: Categories ── */
+function renderCounts() {
+    const all = contacts.length;
+    const favs = contacts.filter(c => c.isFavorite).length;
+    document.getElementById('cnt-all').textContent = all;
+    document.getElementById('cnt-favorites').textContent = favs;
+    Object.keys(CATEGORIES).forEach(cat => {
+        const el = document.getElementById('cnt-' + cat);
+        if (el) el.textContent = contacts.filter(c => c.category === cat).length;
+    });
+}
+
+/* ── Render: Address list ── */
+function renderAddresses() {
+    const list = document.getElementById('addressList');
+    const query = document.getElementById('searchInput').value.toLowerCase().trim();
+
+    let filtered = contacts;
+    if (activeCategory === 'favorites') {
+        filtered = filtered.filter(c => c.isFavorite);
+    } else if (activeCategory !== 'all') {
+        filtered = filtered.filter(c => c.category === activeCategory);
+    }
+    if (query) {
+        filtered = filtered.filter(c =>
+            c.label.toLowerCase().includes(query) ||
+            c.address.toLowerCase().includes(query) ||
+            (c.notes || '').toLowerCase().includes(query) ||
+            (c.tags || []).some(t => t.toLowerCase().includes(query))
+        );
+    }
+
+    document.getElementById('countLabel').textContent = filtered.length + ' entr' + (filtered.length === 1 ? 'y' : 'ies');
+    const catNames = { all: 'All Addresses', favorites: 'Favorites', ...CATEGORIES };
+    document.getElementById('mainTitle').textContent = catNames[activeCategory] || 'All Addresses';
+
+    if (filtered.length === 0) {
+        list.innerHTML = `<div class="empty-state"><span class="material-symbols-rounded">contacts</span><div>${contacts.length === 0 ? 'No addresses yet' : 'No matches'}</div>${contacts.length === 0 ? '<button class="btn primary" onclick="openAddModal()">Add your first address</button>' : ''}</div>`;
+        return;
+    }
+
+    list.innerHTML = filtered.map(c => {
+        const ch = CHAINS[c.chain] || CHAINS.ethereum;
+        const pills = [
+            `<span class="pill chain">${ch.label}</span>`,
+            `<span class="pill category">${CATEGORIES[c.category] || c.category}</span>`,
+            ...(c.tags || []).map(t => `<span class="pill tag">${esc(t)}</span>`)
+        ].join('');
+
+        return `<div class="addr-card" data-id="${c.id}">
+            <span class="chain-dot" style="background:${ch.color}"></span>
+            <div class="info">
+                <div class="label-row">
+                    <span class="label-text">${esc(c.label)}</span>
+                    ${c.isFavorite ? '<span class="material-symbols-rounded fav-star">star</span>' : ''}
+                </div>
+                <div class="addr-text">${truncAddr(c.address)}</div>
+                <div class="pills">${pills}</div>
+            </div>
+            <div class="actions">
+                <button class="icon-btn" onclick="copyToClipboard('${c.address}',this)" title="Copy address"><span class="material-symbols-rounded">content_copy</span></button>
+                <button class="icon-btn" onclick="showQr('${c.id}')" title="QR Code"><span class="material-symbols-rounded">qr_code_2</span></button>
+                <a class="icon-btn" href="${ch.explorer}${c.address}" target="_blank" rel="noopener" title="View on explorer"><span class="material-symbols-rounded">open_in_new</span></a>
+                <button class="icon-btn" onclick="openEditModal('${c.id}')" title="Edit"><span class="material-symbols-rounded">edit</span></button>
+                <button class="icon-btn" onclick="deleteContact('${c.id}')" title="Delete" style="color:#f87171"><span class="material-symbols-rounded">delete</span></button>
+            </div>
+        </div>`;
+    }).join('');
+
+    renderCounts();
+}
+
+function esc(s) {
+    const d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+}
+
+/* ── Category nav ── */
+document.getElementById('catList').addEventListener('click', e => {
+    const li = e.target.closest('li');
+    if (!li) return;
+    document.querySelectorAll('#catList li').forEach(l => l.classList.remove('active'));
+    li.classList.add('active');
+    activeCategory = li.dataset.cat;
+    renderAddresses();
+});
+
+/* ── Search ── */
+document.getElementById('searchInput').addEventListener('input', () => renderAddresses());
+
+/* ── Add/Edit Modal ── */
+function openAddModal() {
+    editingId = null;
+    document.getElementById('modalTitle').textContent = 'Add Address';
+    document.getElementById('fLabel').value = '';
+    document.getElementById('fAddress').value = '';
+    document.getElementById('fChain').value = 'ethereum';
+    document.getElementById('fCategory').value = 'my-wallets';
+    document.getElementById('fTags').value = '';
+    document.getElementById('fNotes').value = '';
+    document.getElementById('fFavorite').checked = false;
+    document.getElementById('addrHint').textContent = '';
+    document.getElementById('addrHint').className = 'validation-hint';
+    document.getElementById('addModal').classList.add('open');
+    document.getElementById('fLabel').focus();
+}
+
+function openEditModal(id) {
+    const c = contacts.find(c => c.id === id);
+    if (!c) return;
+    editingId = id;
+    document.getElementById('modalTitle').textContent = 'Edit Address';
+    document.getElementById('fLabel').value = c.label;
+    document.getElementById('fAddress').value = c.address;
+    document.getElementById('fChain').value = c.chain;
+    document.getElementById('fCategory').value = c.category;
+    document.getElementById('fTags').value = (c.tags || []).join(', ');
+    document.getElementById('fNotes').value = c.notes || '';
+    document.getElementById('fFavorite').checked = c.isFavorite || false;
+    updateAddrHint();
+    document.getElementById('addModal').classList.add('open');
+    document.getElementById('fLabel').focus();
+}
+
+function closeAddModal() {
+    document.getElementById('addModal').classList.remove('open');
+    editingId = null;
+}
+
+function updateAddrHint() {
+    const addr = document.getElementById('fAddress').value.trim();
+    const chain = document.getElementById('fChain').value;
+    const hint = document.getElementById('addrHint');
+    if (!addr) { hint.textContent = ''; hint.className = 'validation-hint'; return; }
+    if (validateAddress(addr, chain)) {
+        hint.textContent = '✅ Valid ' + (CHAINS[chain]?.label || chain) + ' address';
+        hint.className = 'validation-hint valid';
+    } else {
+        hint.textContent = '❌ Invalid format for ' + (CHAINS[chain]?.label || chain);
+        hint.className = 'validation-hint invalid';
+    }
+}
+
+document.getElementById('fAddress').addEventListener('blur', updateAddrHint);
+document.getElementById('fAddress').addEventListener('input', () => {
+    const addr = document.getElementById('fAddress').value.trim();
+    const detected = autoDetectChain(addr);
+    if (detected) document.getElementById('fChain').value = detected;
+});
+document.getElementById('fChain').addEventListener('change', updateAddrHint);
+
+function saveContact() {
+    const label = document.getElementById('fLabel').value.trim();
+    const address = document.getElementById('fAddress').value.trim();
+    const chain = document.getElementById('fChain').value;
+    const category = document.getElementById('fCategory').value;
+    const tagsRaw = document.getElementById('fTags').value;
+    const notes = document.getElementById('fNotes').value.trim();
+    const isFavorite = document.getElementById('fFavorite').checked;
+
+    if (!label || !address) {
+        document.getElementById('addrHint').textContent = '⚠ Label and address are required';
+        document.getElementById('addrHint').className = 'validation-hint invalid';
+        return;
+    }
+    if (!validateAddress(address, chain)) {
+        document.getElementById('addrHint').textContent = '❌ Invalid address format';
+        document.getElementById('addrHint').className = 'validation-hint invalid';
+        return;
+    }
+
+    const tags = tagsRaw.split(',').map(t => t.trim()).filter(Boolean);
+    const now = new Date().toISOString();
+
+    if (editingId) {
+        const c = contacts.find(c => c.id === editingId);
+        if (c) {
+            c.label = label;
+            c.address = address;
+            c.chain = chain;
+            c.category = category;
+            c.tags = tags;
+            c.notes = notes;
+            c.isFavorite = isFavorite;
+        }
+    } else {
+        contacts.push({
+            id: uuid(),
+            label,
+            address,
+            chain,
+            category,
+            tags,
+            notes,
+            addedAt: now,
+            lastUsed: null,
+            isFavorite
+        });
+    }
+
+    save();
+    closeAddModal();
+    renderAddresses();
+    renderCounts();
+}
+
+/* ── Delete ── */
+function deleteContact(id) {
+    if (!confirm('Delete this address?')) return;
+    contacts = contacts.filter(c => c.id !== id);
+    save();
+    renderAddresses();
+    renderCounts();
+}
+
+/* ── QR Code ── */
+function showQr(id) {
+    const c = contacts.find(c => c.id === id);
+    if (!c) return;
+    const ch = CHAINS[c.chain] || CHAINS.ethereum;
+    document.getElementById('qrImg').src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(c.address)}&bgcolor=1a1a2e&color=f6f8ff`;
+    document.getElementById('qrAddr').textContent = c.address;
+    document.getElementById('qrChain').textContent = ch.label;
+    document.getElementById('qrModal').classList.add('open');
+}
+
+function closeQrModal() {
+    document.getElementById('qrModal').classList.remove('open');
+}
+
+/* ── Clipboard Panel ── */
+function toggleClipboard() {
+    document.getElementById('clipPanel').classList.toggle('open');
+    renderClipboard();
+}
+
+function renderClipboard() {
+    const list = document.getElementById('clipList');
+    if (clipboardHistory.length === 0) {
+        list.innerHTML = `<div class="empty-state" style="padding:30px 0;height:auto;"><span class="material-symbols-rounded" style="font-size:32px">content_paste_off</span><div style="font-size:.85rem">No clipboard history yet</div></div>`;
+        return;
+    }
+    list.innerHTML = clipboardHistory.map((item, i) => {
+        const time = timeAgo(item.copiedAt);
+        return `<div class="clip-item">
+            <div class="clip-text" title="${esc(item.text)}">${esc(item.text)}</div>
+            <span class="clip-time">${time}</span>
+            <button class="icon-btn" onclick="copyToClipboard('${item.text.replace(/'/g,"\\'")}',this)" title="Copy again"><span class="material-symbols-rounded">content_copy</span></button>
+        </div>`;
+    }).join('');
+}
+
+function clearClipboard() {
+    if (!confirm('Clear all clipboard history?')) return;
+    clipboardHistory = [];
+    save();
+    renderClipboard();
+}
+
+function timeAgo(iso) {
+    const diff = Date.now() - new Date(iso).getTime();
+    const sec = Math.floor(diff / 1000);
+    if (sec < 60) return 'just now';
+    const min = Math.floor(sec / 60);
+    if (min < 60) return min + 'm ago';
+    const hr = Math.floor(min / 60);
+    if (hr < 24) return hr + 'h ago';
+    const d = Math.floor(hr / 24);
+    return d + 'd ago';
+}
+
+/* ── Close modals on overlay click / Escape ── */
+document.getElementById('addModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeAddModal(); });
+document.getElementById('qrModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeQrModal(); });
+document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+        if (document.getElementById('qrModal').classList.contains('open')) closeQrModal();
+        else if (document.getElementById('addModal').classList.contains('open')) closeAddModal();
+        else if (document.getElementById('clipPanel').classList.contains('open')) toggleClipboard();
+    }
+});
+
+/* ── Init ── */
+load();
+renderAddresses();
+renderCounts();
+</script>
+</body>
+</html>

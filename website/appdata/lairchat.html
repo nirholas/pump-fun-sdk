@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="lair-include" content="lair.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="permissions" content="unsandboxed">
+    <title>Lair Chat</title>
+    <meta name="lair-icon" content="<svg width='232' height='232' viewBox='0 0 232 232' fill='none' xmlns='http://www.w3.org/2000/svg'><rect width='232' height='232' rx='40' fill='#6366f1'/><path d='M60 80h112a16 16 0 0116 16v48a16 16 0 01-16 16h-60l-32 24v-24H60a16 16 0 01-16-16V96a16 16 0 0116-16z' stroke='#fff' stroke-width='12' stroke-linecap='round' stroke-linejoin='round'/><circle cx='92' cy='120' r='8' fill='#fff'/><circle cx='116' cy='120' r='8' fill='#fff'/><circle cx='140' cy='120' r='8' fill='#fff'/></svg>">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { 
+            width: 100%; 
+            height: 100%; 
+            overflow: hidden; 
+            background: #0a0a0a;
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+        #frame { 
+            width: 100%; 
+            height: 100%; 
+            border: none; 
+        }
+        .loading {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
+            color: #fff;
+            gap: 16px;
+        }
+        .spinner {
+            width: 48px;
+            height: 48px;
+            border: 3px solid rgba(255,255,255,0.1);
+            border-top-color: #6366f1;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading p { opacity: 0.7; font-size: 14px; }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+    <div class="loading" id="loading">
+        <div class="spinner"></div>
+        <p>Loading Chat...</p>
+    </div>
+    <iframe id="frame" class="hidden" allow="clipboard-write; microphone"></iframe>
+    
+    <script>
+        const CHAT_URL = '/Lair-Store/apps/lairbot.html';
+        const frame = document.getElementById('frame');
+        const loading = document.getElementById('loading');
+        
+        // Load the chat
+        frame.src = CHAT_URL;
+        
+        frame.onload = () => {
+            loading.classList.add('hidden');
+            frame.classList.remove('hidden');
+        };
+        
+        // Fallback timeout
+        setTimeout(() => {
+            loading.classList.add('hidden');
+            frame.classList.remove('hidden');
+        }, 8000);
+        
+        // Listen for messages from embedded app
+        window.addEventListener('message', (e) => {
+            if (e.origin !== window.location.origin) return;
+            
+            if (e.data?.source === 'lair') {
+                console.log('[Chat] Message from chat:', e.data);
+                
+                if (e.data.event === 'ready') {
+                    loading.classList.add('hidden');
+                    frame.classList.remove('hidden');
+                }
+            }
+        });
+    </script>
+</body>
+</html>

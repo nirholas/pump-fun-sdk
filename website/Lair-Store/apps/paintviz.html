@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="lair-include" content="lair.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Artion</title>
+    <meta name="lair-icon" content="
+<svg width='412' height='412' viewBox='0 0 412 412' fill='none' xmlns='http://www.w3.org/2000/svg'>
+<rect x='200.544' y='63' width='214.561' height='74.271' transform='rotate(44.7205 200.544 63)' fill='#60AFFF'/>
+<rect x='275.936' y='137.66' width='108.457' height='74.271' transform='rotate(44.7205 275.936 137.66)' fill='#43849D'/>
+<path d='M141.184 122.51L292.563 272.545L86.1315 328.412L141.184 122.51Z' fill='#FFBE55'/>
+<path d='M110.283 238.164L174.023 304.738L85.5 329L110.283 238.164Z' fill='#514737'/>
+</svg>
+">
+    <style>
+        /* General Styles */
+body {
+    font-family: 'Arial', sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #1e1e1e; /* Dark background */
+    color: #dcdcdc; /* Light text color */
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+/* Toolbar Styles */
+.toolbar {
+    background-color: #252526;
+    display: flex;
+    gap: 10px;
+    padding: 10px;
+    border-bottom: 2px solid #333;
+}
+
+.tool-button {
+    background-color: #333;
+    border: none;
+    color: #dcdcdc;
+    font-size: 18px;
+    padding: 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.tool-button:hover {
+    background-color: #444;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+}
+
+.tool-button:active {
+    background-color: #555;
+}
+
+/* Canvas Container */
+.canvas-container {
+    display: flex;
+    flex: 1;
+    justify-content: center;
+    align-items: center;
+    background-color: #1e1e1e;
+    padding: 10px;
+}
+
+canvas {
+    background-color: #ffffff; /* White canvas */
+    border: 2px solid #333;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+    cursor: crosshair;
+    transition: box-shadow 0.3s ease;
+    max-width: 100%;
+    max-height: 100%;
+}
+
+canvas:hover {
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.7);
+}
+
+/* Controls */
+.controls {
+    background-color: #252526;
+    padding: 10px;
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    border-top: 2px solid #333;
+}
+
+.color-controls, .brush-controls, .shape-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+input[type="color"] {
+    border: none;
+    padding: 0;
+    width: 40px;
+    height: 40px;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+input[type="range"] {
+    width: 100px;
+    background-color: #333;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    height: 5px;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+    width: 20px;
+    height: 20px;
+    background: #dcdcdc;
+    cursor: pointer;
+    border-radius: 50%;
+}
+
+select {
+    background-color: #333;
+    color: #dcdcdc;
+    border: 1px solid #444;
+    border-radius: 5px;
+    padding: 5px;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+select:focus {
+    outline: none;
+}
+
+.color-palette button {
+    width: 24px;
+    height: 24px;
+    border: 2px solid #1e1e1e;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: transform 0.2s ease, border-color 0.3s ease;
+}
+
+.color-palette button:hover {
+    transform: scale(1.2);
+    border-color: #dcdcdc;
+}
+
+.color-palette button:focus {
+    outline: 2px solid #dcdcdc;
+    outline-offset: 2px;
+}
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <!-- Toolbar -->
+    <div class="toolbar">
+        <button id="newButton" class="tool-button" title="New"><i class="fas fa-file"></i></button>
+        <button id="openButton" class="tool-button" title="Open"><i class="fas fa-folder-open"></i></button>
+        <button id="saveButton" class="tool-button" title="Save"><i class="fas fa-save"></i></button>
+        <button id="undoButton" class="tool-button" title="Undo"><i class="fas fa-undo"></i></button>
+        <button id="redoButton" class="tool-button" title="Redo"><i class="fas fa-redo"></i></button>
+        <button id="eraserButton" class="tool-button" title="Eraser"><i class="fas fa-eraser"></i></button>
+        <button id="clearButton" class="tool-button" title="Clear"><i class="fas fa-trash"></i></button>
+        <button id="resizeButton" class="tool-button" title="Resize Canvas"><i class="fas fa-expand-alt"></i></button>
+    </div>
+
+    <!-- Canvas Container -->
+    <div class="canvas-container">
+        <canvas id="paintCanvas"></canvas>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls">
+        <div class="color-controls">
+            <label for="colorPicker">Color:</label>
+            <input type="color" id="colorPicker" value="#000000">
+            <div id="colorPalette" class="color-palette"></div>
+        </div>
+        <div class="brush-controls">
+            <label for="brushSize">Brush Size:</label>
+            <input type="range" id="brushSize" min="1" max="20" value="5">
+        </div>
+        <div class="shape-controls">
+            <label for="brushShape">Brush Shape:</label>
+            <select id="brushShape">
+                <option value="round">Round</option>
+                <option value="square">Square</option>
+            </select>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+    const canvas = document.getElementById("paintCanvas");
+    const context = canvas.getContext("2d");
+    let painting = false;
+    let eraserMode = false;
+    let undoStack = [];
+    let redoStack = [];
+
+    // Initialize canvas size
+    resizeCanvas(window.innerWidth * 0.8, window.innerHeight * 0.6);
+
+    // Predefined color palette
+    const colors = ["#000000", "#FF0000", "#00FF00", "#0000FF", "#FFFF00", "#FF00FF", "#00FFFF"];
+
+    // Populate color palette
+    const colorPalette = document.getElementById("colorPalette");
+    colors.forEach(color => {
+        const colorButton = document.createElement("button");
+        colorButton.style.backgroundColor = color;
+        colorButton.addEventListener("click", () => {
+            document.getElementById("colorPicker").value = color;
+        });
+        colorPalette.appendChild(colorButton);
+    });
+
+    function startPosition(e) {
+        painting = true;
+        draw(e);
+    }
+
+    function endPosition() {
+        painting = false;
+        context.beginPath();
+        saveState();
+    }
+
+    function draw(e) {
+        if (!painting) return;
+
+        const x = e.clientX || e.touches[0].clientX;
+        const y = e.clientY || e.touches[0].clientY;
+
+        context.lineWidth = document.getElementById("brushSize").value;
+
+        if (eraserMode) {
+            context.strokeStyle = "#ffffff"; // Use white for erasing
+        } else {
+            context.strokeStyle = document.getElementById("colorPicker").value;
+        }
+
+        const brushShape = document.getElementById("brushShape").value;
+
+        context.lineCap = brushShape;
+
+        context.lineTo(x - canvas.offsetLeft, y - canvas.offsetTop);
+        context.stroke();
+        context.beginPath();
+        context.moveTo(x - canvas.offsetLeft, y - canvas.offsetTop);
+    }
+
+    function clearCanvas() {
+        context.clearRect(0, 0, canvas.width, canvas.height);
+        saveState();
+    }
+
+    function toggleEraser() {
+        eraserMode = !eraserMode;
+        const eraserButton = document.getElementById("eraserButton");
+        eraserButton.innerHTML = eraserMode ? '<i class="fas fa-paint-brush"></i>' : '<i class="fas fa-eraser"></i>';
+    }
+
+    function saveCanvas() {
+        const image = canvas.toDataURL("image/png");
+        const link = document.createElement("a");
+        link.href = image;
+        link.download = "painting.png";
+        link.click();
+    }
+
+    function resizeCanvas(width, height) {
+        canvas.width = width;
+        canvas.height = height;
+        context.clearRect(0, 0, canvas.width, canvas.height);
+        saveState();
+    }
+
+    function resizeCanvasPrompt() {
+        const newWidth = prompt("Enter new canvas width:", canvas.width);
+        const newHeight = prompt("Enter new canvas height:", canvas.height);
+        if (newWidth && newHeight) {
+            resizeCanvas(parseInt(newWidth, 10), parseInt(newHeight, 10));
+        }
+    }
+
+    function saveState() {
+        undoStack.push(context.getImageData(0, 0, canvas.width, canvas.height));
+        redoStack = []; // Clear redo stack
+    }
+
+    function undo() {
+        if (undoStack.length > 1) {
+            redoStack.push(undoStack.pop());
+            context.putImageData(undoStack[undoStack.length - 1], 0, 0);
+        }
+    }
+
+    function redo() {
+        if (redoStack.length > 0) {
+            undoStack.push(redoStack.pop());
+            context.putImageData(undoStack[undoStack.length - 1], 0, 0);
+        }
+    }
+
+    canvas.addEventListener("mousedown", startPosition);
+    canvas.addEventListener("mouseup", endPosition);
+    canvas.addEventListener("mousemove", draw);
+
+    canvas.addEventListener("touchstart", startPosition);
+    canvas.addEventListener("touchend", endPosition);
+    canvas.addEventListener("touchmove", draw);
+
+    document.getElementById("clearButton").addEventListener("click", clearCanvas);
+    document.getElementById("eraserButton").addEventListener("click", toggleEraser);
+    document.getElementById("saveButton").addEventListener("click", saveCanvas);
+    document.getElementById("undoButton").addEventListener("click", undo);
+    document.getElementById("redoButton").addEventListener("click", redo);
+    document.getElementById("resizeButton").addEventListener("click", resizeCanvasPrompt);
+
+    // Initial state save
+    saveState();
+});
+    </script>
+</body>
+</html>

@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="lair-include" content="lair.css">
+    <meta name="capabilities" content="options_analytics">
+    <meta name="lair-icon" content="<svg width='232' height='232' viewBox='0 0 232 232' fill='none' xmlns='http://www.w3.org/2000/svg'><rect width='232' height='232' rx='40' fill='#0F0A2E'/><path d='M40 160 L80 120 L120 140 L160 80 L200 100' stroke='#A855F7' stroke-width='4' fill='none'/><path d='M40 160 L80 150 L120 130 L160 150 L200 120' stroke='#22C55E' stroke-width='3' fill='none' stroke-dasharray='6,4'/><circle cx='160' cy='80' r='8' fill='#F59E0B'/><text x='116' y='200' text-anchor='middle' fill='#A855F7' font-size='20' font-weight='bold'>OPTIONS</text></svg>">
+    <meta name="lair-perms" content="network" />
+    <title>Options Intelligence</title>
+    <style>
+        :root {
+            --bg1: #0a0a14; --bg2: #0f0f1e; --bg3: #1a1a2e; --bg4: #252540;
+            --txt1: #e2e8f0; --txt2: #94a3b8; --txt3: #64748b;
+            --accent: #a855f7; --green: #22c55e; --red: #ef4444; --yellow: #f59e0b; --blue: #3b82f6;
+            --call: #22c55e; --put: #ef4444; --radius: 8px;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body { height: 100%; background: var(--bg1); color: var(--txt1); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        .app { height: 100%; display: grid; grid-template-rows: auto auto 1fr; overflow: hidden; }
+        .header { padding: 10px 16px; background: var(--bg2); border-bottom: 1px solid rgba(168,85,247,.15); display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .header h1 { font-size: 15px; font-weight: 700; white-space: nowrap; }
+        .header h1 span { color: var(--accent); }
+        .controls { display: flex; gap: 6px; margin-left: auto; align-items: center; flex-wrap: wrap; }
+        select, button { background: var(--bg3); color: var(--txt1); border: 1px solid rgba(168,85,247,.2); border-radius: 6px; padding: 5px 10px; font-size: 12px; cursor: pointer; font-family: inherit; }
+        select:focus, button:focus { outline: none; border-color: var(--accent); }
+        button:hover { background: var(--accent); color: #fff; }
+        .tabs { display: flex; gap: 4px; padding: 8px 16px; background: var(--bg1); border-bottom: 1px solid rgba(255,255,255,.05); overflow-x: auto; }
+        .tab { padding: 5px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; background: transparent; color: var(--txt2); border: 1px solid transparent; white-space: nowrap; transition: all .15s; }
+        .tab:hover { color: var(--txt1); background: var(--bg3); }
+        .tab.active { background: var(--accent); color: #fff; }
+        .content { overflow: auto; padding: 12px 16px; }
+        .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+        .grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+        .card { background: var(--bg2); border: 1px solid rgba(255,255,255,.06); border-radius: var(--radius); padding: 12px; }
+        .card-title { font-size: 10px; text-transform: uppercase; letter-spacing: .5px; color: var(--txt3); margin-bottom: 6px; }
+        .card-value { font-size: 20px; font-weight: 700; font-family: 'SF Mono', 'Fira Code', monospace; }
+        .card-sub { font-size: 11px; color: var(--txt2); margin-top: 4px; }
+        .up { color: var(--green); } .down { color: var(--red); }
+        table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        th { position: sticky; top: 0; background: var(--bg2); text-align: left; padding: 8px; font-size: 10px; text-transform: uppercase; letter-spacing: .5px; color: var(--txt3); border-bottom: 1px solid rgba(255,255,255,.08); }
+        td { padding: 7px 8px; border-bottom: 1px solid rgba(255,255,255,.04); }
+        tr:hover td { background: rgba(168,85,247,.04); }
+        .mono { font-family: 'SF Mono', 'Fira Code', monospace; }
+        .badge { font-size: 10px; padding: 2px 7px; border-radius: 999px; font-weight: 600; }
+        .badge-call { background: rgba(34,197,94,.12); color: var(--call); }
+        .badge-put { background: rgba(239,68,68,.12); color: var(--put); }
+        .heatmap-grid { display: grid; gap: 2px; }
+        .heatmap-cell { border-radius: 3px; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 600; min-height: 28px; cursor: pointer; transition: transform .1s; }
+        .heatmap-cell:hover { transform: scale(1.1); z-index: 1; }
+        .bar-container { display: flex; height: 20px; border-radius: 4px; overflow: hidden; }
+        .bar-call { background: var(--call); height: 100%; transition: width .4s; }
+        .bar-put { background: var(--put); height: 100%; transition: width .4s; }
+        .legend { display: flex; gap: 14px; font-size: 11px; margin-top: 8px; flex-wrap: wrap; }
+        .legend-item { display: flex; align-items: center; gap: 4px; }
+        .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+        .loading { display: flex; align-items: center; justify-content: center; height: 200px; color: var(--txt3); font-size: 13px; }
+        .loading::after { content: ''; width: 16px; height: 16px; border: 2px solid var(--accent); border-top-color: transparent; border-radius: 50%; animation: spin .6s linear infinite; margin-left: 8px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .term-chart { position: relative; height: 260px; background: var(--bg2); border-radius: var(--radius); border: 1px solid rgba(255,255,255,.06); overflow: hidden; }
+        .term-canvas { width: 100%; height: 100%; }
+        .pain-chart { position: relative; }
+        .pain-bar { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; }
+        .pain-label { width: 60px; text-align: right; font-size: 11px; color: var(--txt2); font-family: monospace; }
+        .pain-fill { height: 16px; border-radius: 3px; transition: width .4s; min-width: 1px; }
+        .pain-val { font-size: 10px; color: var(--txt3); }
+        .pain-marker { position: absolute; left: 60px; border-left: 2px dashed var(--yellow); height: 100%; z-index: 2; }
+        .pain-marker-label { position: absolute; top: -18px; font-size: 10px; color: var(--yellow); font-weight: 700; white-space: nowrap; }
+        .tooltip { position: fixed; background: var(--bg3); border: 1px solid rgba(168,85,247,.3); border-radius: 6px; padding: 8px 10px; font-size: 11px; pointer-events: none; z-index: 999; display: none; max-width: 200px; }
+        @media (max-width: 768px) { .grid2, .grid3, .grid4 { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+<div class="app">
+    <div class="header">
+        <h1><span>◉</span> Options Intelligence</h1>
+        <div class="controls">
+            <select id="currency"><option value="BTC">BTC</option><option value="ETH">ETH</option></select>
+            <button id="refreshBtn">↻ Refresh</button>
+        </div>
+    </div>
+    <div class="tabs" id="tabs"></div>
+    <div class="content" id="content"></div>
+</div>
+<div class="tooltip" id="tooltip"></div>
+
+<script>
+(function() {
+    const F = window.cfetch || fetch;
+    const $ = s => document.querySelector(s);
+    const TABS = ['overview','iv-surface','max-pain','term-structure','unusual-activity','put-call'];
+    const LABELS = { 'overview':'Overview','iv-surface':'IV Surface','max-pain':'Max Pain','term-structure':'Term Structure','unusual-activity':'Unusual Activity','put-call':'Put/Call Ratio' };
+    let tab = 'overview', currency = 'BTC', data = null, loading = false;
+
+    function init() {
+        renderTabs();
+        $('#currency').onchange = e => { currency = e.target.value; load(); };
+        $('#refreshBtn').onclick = load;
+        load();
+    }
+
+    function renderTabs() {
+        $('#tabs').innerHTML = TABS.map(t =>
+            `<div class="tab ${t===tab?'active':''}" data-t="${t}">${LABELS[t]}</div>`
+        ).join('');
+        $('#tabs').querySelectorAll('.tab').forEach(el => {
+            el.onclick = () => { tab = el.dataset.t; renderTabs(); render(); };
+        });
+    }
+
+    async function load() {
+        if (loading) return;
+        loading = true;
+        $('#content').innerHTML = '<div class="loading">Loading Deribit options data</div>';
+        try {
+            const [instruments, bookSummary, indexPrice] = await Promise.all([
+                F(`https://www.deribit.com/api/v2/public/get_instruments?currency=${currency}&kind=option&expired=false`).then(r => r.json()),
+                F(`https://www.deribit.com/api/v2/public/get_book_summary_by_currency?currency=${currency}&kind=option`).then(r => r.json()),
+                F(`https://www.deribit.com/api/v2/public/get_index_price?index_name=${currency.toLowerCase()}_usd`).then(r => r.json())
+            ]);
+            data = processData(instruments.result || [], bookSummary.result || [], indexPrice.result?.index_price || 0);
+            render();
+        } catch(e) {
+            $('#content').innerHTML = `<div class="card" style="color:var(--red)">Error loading data: ${e.message}. Deribit API may be temporarily unavailable.</div>`;
+        }
+        loading = false;
+    }
+
+    function processData(instruments, books, indexPrice) {
+        const bookMap = {};
+        books.forEach(b => { bookMap[b.instrument_name] = b; });
+
+        const options = instruments.map(inst => {
+            const book = bookMap[inst.instrument_name] || {};
+            const parts = inst.instrument_name.split('-');
+            const expiry = parts[1];
+            const strike = parseFloat(parts[2]);
+            const type = parts[3]; // C or P
+            return {
+                name: inst.instrument_name,
+                expiry,
+                expiryTs: inst.expiration_timestamp,
+                strike,
+                type, // C or P
+                iv: book.mark_iv || book.interest_rate || 0,
+                markPrice: book.mark_price || 0,
+                volume: book.volume || 0,
+                openInterest: book.open_interest || 0,
+                bid: book.bid_price || 0,
+                ask: book.ask_price || 0,
+                delta: book.greeks?.delta || 0,
+                gamma: book.greeks?.gamma || 0,
+                vega: book.greeks?.vega || 0,
+                theta: book.greeks?.theta || 0,
+                underlying: book.underlying_price || indexPrice
+            };
+        }).filter(o => o.openInterest > 0 || o.volume > 0);
+
+        // Group by expiry
+        const byExpiry = {};
+        options.forEach(o => {
+            if (!byExpiry[o.expiry]) byExpiry[o.expiry] = [];
+            byExpiry[o.expiry].push(o);
+        });
+
+        // Sort expiries chronologically
+        const expiries = Object.keys(byExpiry).sort((a, b) => {
+            const da = byExpiry[a][0]?.expiryTs || 0;
+            const db = byExpiry[b][0]?.expiryTs || 0;
+            return da - db;
+        });
+
+        // Max pain calculation per expiry
+        const maxPainData = {};
+        expiries.forEach(exp => {
+            const opts = byExpiry[exp];
+            const strikes = [...new Set(opts.map(o => o.strike))].sort((a,b) => a - b);
+            let minPain = Infinity, painStrike = 0;
+            const painByStrike = {};
+            strikes.forEach(k => {
+                let totalPain = 0;
+                opts.forEach(o => {
+                    if (o.type === 'C') totalPain += Math.max(0, k - o.strike) * o.openInterest;
+                    else totalPain += Math.max(0, o.strike - k) * o.openInterest;
+                });
+                painByStrike[k] = totalPain;
+                if (totalPain < minPain) { minPain = totalPain; painStrike = k; }
+            });
+            maxPainData[exp] = { strike: painStrike, pain: minPain, byStrike: painByStrike, strikes };
+        });
+
+        // Put/Call ratios
+        let totalCallOI = 0, totalPutOI = 0, totalCallVol = 0, totalPutVol = 0;
+        options.forEach(o => {
+            if (o.type === 'C') { totalCallOI += o.openInterest; totalCallVol += o.volume; }
+            else { totalPutOI += o.openInterest; totalPutVol += o.volume; }
+        });
+
+        // IV by expiry (ATM)
+        const ivByExpiry = {};
+        expiries.forEach(exp => {
+            const opts = byExpiry[exp];
+            const atm = opts.reduce((best, o) => (!best || Math.abs(o.strike - indexPrice) < Math.abs(best.strike - indexPrice)) ? o : best, null);
+            const calls = opts.filter(o => o.type === 'C' && Math.abs(o.strike - indexPrice) / indexPrice < 0.1);
+            const puts = opts.filter(o => o.type === 'P' && Math.abs(o.strike - indexPrice) / indexPrice < 0.1);
+            const avgCallIV = calls.length ? calls.reduce((s,o) => s + o.iv, 0) / calls.length : 0;
+            const avgPutIV = puts.length ? puts.reduce((s,o) => s + o.iv, 0) / puts.length : 0;
+            ivByExpiry[exp] = { atm: atm?.iv || 0, call: avgCallIV, put: avgPutIV, daysToExpiry: atm ? Math.max(0, Math.round((atm.expiryTs - Date.now()) / 86400000)) : 0 };
+        });
+
+        // Unusual activity: high volume relative to OI
+        const unusual = options
+            .filter(o => o.volume > 0 && o.openInterest > 0)
+            .map(o => ({ ...o, ratio: o.volume / o.openInterest }))
+            .sort((a, b) => b.ratio - a.ratio)
+            .slice(0, 50);
+
+        return {
+            options, byExpiry, expiries, indexPrice, maxPainData, ivByExpiry, unusual,
+            totalCallOI, totalPutOI, totalCallVol, totalPutVol,
+            pcRatioOI: totalCallOI > 0 ? totalPutOI / totalCallOI : 0,
+            pcRatioVol: totalCallVol > 0 ? totalPutVol / totalCallVol : 0
+        };
+    }
+
+    function fmt(n, d=0) { return n >= 1e9 ? (n/1e9).toFixed(1)+'B' : n >= 1e6 ? (n/1e6).toFixed(1)+'M' : n >= 1e3 ? (n/1e3).toFixed(1)+'K' : n.toFixed(d); }
+    function fmtUSD(n) { return '$' + fmt(n); }
+
+    function render() {
+        if (!data) return;
+        const fn = { 'overview': renderOverview, 'iv-surface': renderIVSurface, 'max-pain': renderMaxPain, 'term-structure': renderTermStructure, 'unusual-activity': renderUnusual, 'put-call': renderPutCall };
+        (fn[tab] || renderOverview)();
+    }
+
+    function renderOverview() {
+        const d = data;
+        const nearestExp = d.expiries[0] || '—';
+        const mpData = d.maxPainData[nearestExp];
+        const callPct = d.totalCallOI + d.totalPutOI > 0 ? (d.totalCallOI / (d.totalCallOI + d.totalPutOI) * 100) : 50;
+        const sentiment = d.pcRatioOI < 0.7 ? 'Bullish' : d.pcRatioOI > 1.3 ? 'Bearish' : 'Neutral';
+        const sentColor = sentiment === 'Bullish' ? 'var(--green)' : sentiment === 'Bearish' ? 'var(--red)' : 'var(--yellow)';
+
+        $('#content').innerHTML = `
+            <div class="grid4" style="margin-bottom:12px">
+                <div class="card">
+                    <div class="card-title">${currency} Index Price</div>
+                    <div class="card-value">${fmtUSD(d.indexPrice)}</div>
+                    <div class="card-sub">Live spot index</div>
+                </div>
+                <div class="card">
+                    <div class="card-title">Put/Call Ratio (OI)</div>
+                    <div class="card-value" style="color:${sentColor}">${d.pcRatioOI.toFixed(3)}</div>
+                    <div class="card-sub">${sentiment} sentiment</div>
+                </div>
+                <div class="card">
+                    <div class="card-title">Total Open Interest</div>
+                    <div class="card-value">${fmt(d.totalCallOI + d.totalPutOI)}</div>
+                    <div class="card-sub">Calls: ${fmt(d.totalCallOI)} · Puts: ${fmt(d.totalPutOI)}</div>
+                </div>
+                <div class="card">
+                    <div class="card-title">Nearest Max Pain</div>
+                    <div class="card-value" style="color:var(--yellow)">${mpData ? fmtUSD(mpData.strike) : '—'}</div>
+                    <div class="card-sub">Expiry: ${nearestExp}</div>
+                </div>
+            </div>
+            <div class="grid2" style="margin-bottom:12px">
+                <div class="card">
+                    <div class="card-title">Call vs Put Open Interest</div>
+                    <div class="bar-container" style="margin:8px 0">
+                        <div class="bar-call" style="width:${callPct}%"></div>
+                        <div class="bar-put" style="width:${100-callPct}%"></div>
+                    </div>
+                    <div class="legend">
+                        <div class="legend-item"><div class="legend-dot" style="background:var(--call)"></div>Calls ${callPct.toFixed(1)}%</div>
+                        <div class="legend-item"><div class="legend-dot" style="background:var(--put)"></div>Puts ${(100-callPct).toFixed(1)}%</div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-title">ATM IV by Expiry (Term Structure)</div>
+                    ${renderMiniTermStructure()}
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-title">Top Volume Options Today</div>
+                <table>
+                    <thead><tr><th>Instrument</th><th>Type</th><th>Strike</th><th>Expiry</th><th>IV</th><th>Volume</th><th>OI</th><th>Mark</th></tr></thead>
+                    <tbody>${data.options.sort((a,b) => b.volume - a.volume).slice(0,15).map(o => `
+                        <tr>
+                            <td class="mono" style="font-size:11px">${o.name}</td>
+                            <td><span class="badge ${o.type==='C'?'badge-call':'badge-put'}">${o.type==='C'?'CALL':'PUT'}</span></td>
+                            <td class="mono">${fmtUSD(o.strike)}</td>
+                            <td>${o.expiry}</td>
+                            <td class="mono">${o.iv.toFixed(1)}%</td>
+                            <td class="mono">${fmt(o.volume)}</td>
+                            <td class="mono">${fmt(o.openInterest)}</td>
+                            <td class="mono">${o.markPrice.toFixed(4)}</td>
+                        </tr>`).join('')}
+                    </tbody>
+                </table>
+            </div>`;
+    }
+
+    function renderMiniTermStructure() {
+        const entries = data.expiries.slice(0, 8).map(exp => data.ivByExpiry[exp]).filter(e => e && e.atm > 0);
+        if (!entries.length) return '<div style="color:var(--txt3);font-size:12px;padding:10px">No ATM IV data</div>';
+        const maxIV = Math.max(...entries.map(e => e.atm));
+        return `<div style="display:flex;align-items:end;gap:4px;height:80px;margin-top:8px">
+            ${entries.map((e, i) => {
+                const h = maxIV > 0 ? (e.atm / maxIV * 100) : 0;
+                return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px">
+                    <span style="font-size:9px;color:var(--accent)">${e.atm.toFixed(0)}%</span>
+                    <div style="width:100%;height:${h}%;background:var(--accent);border-radius:3px 3px 0 0;min-height:2px"></div>
+                    <span style="font-size:8px;color:var(--txt3)">${e.daysToExpiry}d</span>
+                </div>`;
+            }).join('')}
+        </div>`;
+    }
+
+    function renderIVSurface() {
+        const expSlice = data.expiries.slice(0, 6);
+        if (!expSlice.length) { $('#content').innerHTML = '<div class="card">No expiry data available</div>'; return; }
+
+        // Get all strikes near ATM for the surface
+        const allStrikes = new Set();
+        expSlice.forEach(exp => {
+            data.byExpiry[exp].forEach(o => {
+                if (Math.abs(o.strike - data.indexPrice) / data.indexPrice < 0.25) allStrikes.add(o.strike);
+            });
+        });
+        const strikes = [...allStrikes].sort((a,b) => a - b);
+        const strikeSample = strikes.length > 20 ? strikes.filter((_, i) => i % Math.ceil(strikes.length / 20) === 0) : strikes;
+
+        // Build IV matrix
+        const matrix = {};
+        let minIV = Infinity, maxIV = 0;
+        expSlice.forEach(exp => {
+            matrix[exp] = {};
+            const opts = data.byExpiry[exp];
+            strikeSample.forEach(k => {
+                const match = opts.filter(o => o.strike === k && o.iv > 0);
+                const iv = match.length ? match.reduce((s,o) => s + o.iv, 0) / match.length : 0;
+                matrix[exp][k] = iv;
+                if (iv > 0) { minIV = Math.min(minIV, iv); maxIV = Math.max(maxIV, iv); }
+            });
+        });
+
+        function ivColor(iv) {
+            if (iv === 0) return 'var(--bg3)';
+            const t = maxIV > minIV ? (iv - minIV) / (maxIV - minIV) : 0.5;
+            if (t < 0.25) return `rgba(59,130,246,${0.3 + t*1.2})`;
+            if (t < 0.5) return `rgba(168,85,247,${0.3 + (t-0.25)*1.2})`;
+            if (t < 0.75) return `rgba(245,158,11,${0.4 + (t-0.5)*1.2})`;
+            return `rgba(239,68,68,${0.5 + (t-0.75)*1.5})`;
+        }
+
+        const cols = strikeSample.length;
+        $('#content').innerHTML = `
+            <div class="card" style="margin-bottom:12px">
+                <div class="card-title">Implied Volatility Surface — ${currency} Options</div>
+                <div style="font-size:11px;color:var(--txt2);margin-bottom:10px">Rows = Expiry (near → far) · Columns = Strike Price · Color = IV Level</div>
+                <div style="overflow-x:auto">
+                    <div style="display:grid;grid-template-columns:70px repeat(${cols}, minmax(36px, 1fr));gap:2px;min-width:${cols*40}px">
+                        <div style="font-size:9px;color:var(--txt3);padding:4px">STRIKE→</div>
+                        ${strikeSample.map(k => `<div style="font-size:9px;color:var(--txt3);text-align:center;padding:4px">${fmt(k)}</div>`).join('')}
+                        ${expSlice.map(exp => {
+                            const dte = data.ivByExpiry[exp]?.daysToExpiry || '?';
+                            return `<div style="font-size:10px;color:var(--txt2);padding:4px;white-space:nowrap">${exp}<br><span style="font-size:8px;color:var(--txt3)">${dte}d</span></div>
+                            ${strikeSample.map(k => {
+                                const iv = matrix[exp][k];
+                                return `<div class="heatmap-cell" style="background:${ivColor(iv)};color:${iv > 0 ? '#fff' : 'var(--txt3)'}" title="${exp} | $${k} | IV: ${iv.toFixed(1)}%">${iv > 0 ? iv.toFixed(0) : '·'}</div>`;
+                            }).join('')}`;
+                        }).join('')}
+                    </div>
+                </div>
+                <div class="legend" style="margin-top:10px">
+                    <div class="legend-item"><div class="legend-dot" style="background:#3b82f6"></div>Low IV</div>
+                    <div class="legend-item"><div class="legend-dot" style="background:#a855f7"></div>Medium</div>
+                    <div class="legend-item"><div class="legend-dot" style="background:#f59e0b"></div>Elevated</div>
+                    <div class="legend-item"><div class="legend-dot" style="background:#ef4444"></div>High IV</div>
+                </div>
+            </div>
+            <div class="grid2">
+                <div class="card">
+                    <div class="card-title">Volatility Smile — Nearest Expiry (${expSlice[0]})</div>
+                    ${renderSmile(expSlice[0], strikeSample)}
+                </div>
+                <div class="card">
+                    <div class="card-title">IV Skew Analysis</div>
+                    ${renderSkew(expSlice)}
+                </div>
+            </div>`;
+    }
+
+    function renderSmile(exp, strikes) {
+        const opts = data.byExpiry[exp] || [];
+        const points = strikes.map(k => {
+            const match = opts.filter(o => o.strike === k && o.iv > 0);
+            return { strike: k, iv: match.length ? match.reduce((s,o) => s + o.iv, 0) / match.length : 0 };
+        }).filter(p => p.iv > 0);
+        if (!points.length) return '<div style="color:var(--txt3);font-size:12px">No data</div>';
+        const maxIV = Math.max(...points.map(p => p.iv));
+        const minIV = Math.min(...points.map(p => p.iv));
+        return `<div style="display:flex;align-items:end;gap:3px;height:120px;margin-top:8px">
+            ${points.map(p => {
+                const h = maxIV > minIV ? ((p.iv - minIV) / (maxIV - minIV) * 80 + 20) : 50;
+                const isATM = Math.abs(p.strike - data.indexPrice) / data.indexPrice < 0.03;
+                return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px">
+                    <span style="font-size:8px;color:var(--accent)">${p.iv.toFixed(0)}%</span>
+                    <div style="width:100%;height:${h}%;background:${isATM ? 'var(--yellow)' : 'var(--accent)'};border-radius:3px 3px 0 0;opacity:${isATM ? 1 : 0.6}"></div>
+                    <span style="font-size:7px;color:var(--txt3)">${fmt(p.strike)}</span>
+                </div>`;
+            }).join('')}
+        </div>`;
+    }
+
+    function renderSkew(expiries) {
+        const skews = expiries.map(exp => {
+            const opts = data.byExpiry[exp];
+            const otmPuts = opts.filter(o => o.type === 'P' && o.strike < data.indexPrice * 0.95 && o.iv > 0);
+            const otmCalls = opts.filter(o => o.type === 'C' && o.strike > data.indexPrice * 1.05 && o.iv > 0);
+            const avgPutIV = otmPuts.length ? otmPuts.reduce((s,o) => s + o.iv, 0) / otmPuts.length : 0;
+            const avgCallIV = otmCalls.length ? otmCalls.reduce((s,o) => s + o.iv, 0) / otmCalls.length : 0;
+            const skew = avgPutIV - avgCallIV;
+            return { exp, putIV: avgPutIV, callIV: avgCallIV, skew, dte: data.ivByExpiry[exp]?.daysToExpiry || 0 };
+        }).filter(s => s.putIV > 0 || s.callIV > 0);
+
+        if (!skews.length) return '<div style="color:var(--txt3);font-size:12px">Insufficient data</div>';
+        return `<table style="margin-top:6px">
+            <thead><tr><th>Expiry</th><th>DTE</th><th>OTM Put IV</th><th>OTM Call IV</th><th>Skew</th></tr></thead>
+            <tbody>${skews.map(s => `<tr>
+                <td>${s.exp}</td><td class="mono">${s.dte}d</td>
+                <td class="mono">${s.putIV.toFixed(1)}%</td>
+                <td class="mono">${s.callIV.toFixed(1)}%</td>
+                <td class="mono ${s.skew > 0 ? 'down' : 'up'}">${s.skew > 0 ? '+' : ''}${s.skew.toFixed(1)}%</td>
+            </tr>`).join('')}</tbody>
+        </table>
+        <div class="card-sub" style="margin-top:6px">Positive skew = puts more expensive (fear premium). Negative = calls bid up (FOMO).</div>`;
+    }
+
+    function renderMaxPain() {
+        const selectedExp = data.expiries[0];
+        if (!selectedExp) { $('#content').innerHTML = '<div class="card">No data</div>'; return; }
+
+        let html = `<div style="margin-bottom:10px;display:flex;gap:6px;flex-wrap:wrap">
+            ${data.expiries.slice(0,8).map(exp => `<button class="tab ${exp === selectedExp ? 'active' : ''}" data-exp="${exp}">${exp} (${data.ivByExpiry[exp]?.daysToExpiry || '?'}d)</button>`).join('')}
+        </div>`;
+
+        // Use first expiry for initial render, add click handlers
+        html += renderMaxPainChart(selectedExp);
+        $('#content').innerHTML = html;
+
+        // Add expiry switcher
+        $('#content').querySelectorAll('[data-exp]').forEach(btn => {
+            btn.onclick = () => {
+                const newHtml = `<div style="margin-bottom:10px;display:flex;gap:6px;flex-wrap:wrap">
+                    ${data.expiries.slice(0,8).map(exp => `<button class="tab ${exp === btn.dataset.exp ? 'active' : ''}" data-exp="${exp}">${exp} (${data.ivByExpiry[exp]?.daysToExpiry || '?'}d)</button>`).join('')}
+                </div>` + renderMaxPainChart(btn.dataset.exp);
+                $('#content').innerHTML = newHtml;
+                // Re-add handlers
+                renderMaxPain.__reattach && renderMaxPain.__reattach();
+            };
+        });
+    }
+
+    function renderMaxPainChart(exp) {
+        const mp = data.maxPainData[exp];
+        if (!mp) return '<div class="card">No max pain data</div>';
+
+        const entries = mp.strikes.map(k => ({ strike: k, pain: mp.byStrike[k] || 0 }));
+        const maxPainVal = Math.max(...entries.map(e => e.pain));
+
+        // OI breakdown per strike
+        const opts = data.byExpiry[exp];
+        const callOI = {}, putOI = {};
+        opts.forEach(o => {
+            if (o.type === 'C') callOI[o.strike] = (callOI[o.strike] || 0) + o.openInterest;
+            else putOI[o.strike] = (putOI[o.strike] || 0) + o.openInterest;
+        });
+        const maxOI = Math.max(...mp.strikes.map(k => (callOI[k] || 0) + (putOI[k] || 0)), 1);
+
+        // Filter to strikes within 25% of index
+        const relevant = entries.filter(e => Math.abs(e.strike - data.indexPrice) / data.indexPrice < 0.25);
+
+        return `
+            <div class="grid2" style="margin-bottom:12px">
+                <div class="card">
+                    <div class="card-title">Max Pain: ${exp}</div>
+                    <div class="card-value" style="color:var(--yellow)">${fmtUSD(mp.strike)}</div>
+                    <div class="card-sub">Current: ${fmtUSD(data.indexPrice)} · Distance: ${((mp.strike - data.indexPrice) / data.indexPrice * 100).toFixed(1)}%</div>
+                </div>
+                <div class="card">
+                    <div class="card-title">What is Max Pain?</div>
+                    <div style="font-size:11px;color:var(--txt2);line-height:1.5">The price at which option writers (sellers) would suffer the least financial loss. Historically, price tends to gravitate toward max pain at expiry as market makers hedge positions.</div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-title">Open Interest by Strike — Calls vs Puts</div>
+                <div style="margin-top:8px;max-height:400px;overflow-y:auto">
+                    ${relevant.map(e => {
+                        const cOI = callOI[e.strike] || 0;
+                        const pOI = putOI[e.strike] || 0;
+                        const cW = maxOI > 0 ? (cOI / maxOI * 100) : 0;
+                        const pW = maxOI > 0 ? (pOI / maxOI * 100) : 0;
+                        const isMP = e.strike === mp.strike;
+                        const isSpot = Math.abs(e.strike - data.indexPrice) / data.indexPrice < 0.02;
+                        return `<div style="display:grid;grid-template-columns:55px 1fr 12px 1fr;gap:4px;align-items:center;margin-bottom:3px;${isMP ? 'background:rgba(245,158,11,.08);border-radius:4px;padding:2px 0;' : ''}${isSpot ? 'border-left:2px solid var(--blue);padding-left:4px;' : ''}">
+                            <div style="font-size:10px;text-align:right;color:${isMP ? 'var(--yellow)' : 'var(--txt2)'};font-family:monospace;font-weight:${isMP ? '700' : '400'}">${fmt(e.strike)}${isMP ? ' ★' : ''}</div>
+                            <div style="display:flex;justify-content:flex-end"><div style="height:14px;width:${cW}%;background:var(--call);border-radius:2px;min-width:${cOI > 0 ? '2px' : '0'}"></div></div>
+                            <div></div>
+                            <div style="display:flex"><div style="height:14px;width:${pW}%;background:var(--put);border-radius:2px;min-width:${pOI > 0 ? '2px' : '0'}"></div></div>
+                        </div>`;
+                    }).join('')}
+                </div>
+                <div class="legend" style="margin-top:8px">
+                    <div class="legend-item"><div class="legend-dot" style="background:var(--call)"></div>Call OI</div>
+                    <div class="legend-item"><div class="legend-dot" style="background:var(--put)"></div>Put OI</div>
+                    <div class="legend-item"><div class="legend-dot" style="background:var(--yellow)"></div>Max Pain</div>
+                    <div class="legend-item"><div class="legend-dot" style="background:var(--blue)"></div>Spot Price</div>
+                </div>
+            </div>`;
+    }
+
+    function renderTermStructure() {
+        const entries = data.expiries.map(exp => ({
+            exp,
+            ...data.ivByExpiry[exp]
+        })).filter(e => e.atm > 0).slice(0, 12);
+
+        if (!entries.length) { $('#content').innerHTML = '<div class="card">No term structure data available</div>'; return; }
+
+        const maxIV = Math.max(...entries.map(e => Math.max(e.atm, e.call, e.put)));
+        const barH = 200;
+
+        $('#content').innerHTML = `
+            <div class="card" style="margin-bottom:12px">
+                <div class="card-title">Implied Volatility Term Structure — ${currency}</div>
+                <div style="font-size:11px;color:var(--txt2);margin-bottom:12px">ATM implied volatility across expiries. Normal = upward slope (contango). Inverted = near-term fear.</div>
+                <div style="display:flex;align-items:end;gap:8px;height:${barH}px;padding:0 10px">
+                    ${entries.map(e => {
+                        const h = maxIV > 0 ? (e.atm / maxIV * (barH - 30)) : 0;
+                        const ch = maxIV > 0 ? (e.call / maxIV * (barH - 30)) : 0;
+                        const ph = maxIV > 0 ? (e.put / maxIV * (barH - 30)) : 0;
+                        return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;position:relative">
+                            <span style="font-size:9px;color:var(--accent);font-weight:600">${e.atm.toFixed(0)}%</span>
+                            <div style="width:100%;display:flex;gap:2px;align-items:end;justify-content:center;height:${barH - 40}px">
+                                <div style="width:30%;height:${ch}px;background:var(--call);border-radius:2px 2px 0 0;opacity:.5" title="Call IV: ${e.call.toFixed(1)}%"></div>
+                                <div style="width:40%;height:${h}px;background:var(--accent);border-radius:3px 3px 0 0" title="ATM IV: ${e.atm.toFixed(1)}%"></div>
+                                <div style="width:30%;height:${ph}px;background:var(--put);border-radius:2px 2px 0 0;opacity:.5" title="Put IV: ${e.put.toFixed(1)}%"></div>
+                            </div>
+                            <span style="font-size:8px;color:var(--txt3);writing-mode:vertical-lr;max-height:40px;overflow:hidden">${e.exp}</span>
+                        </div>`;
+                    }).join('')}
+                </div>
+                <div class="legend" style="margin-top:10px">
+                    <div class="legend-item"><div class="legend-dot" style="background:var(--accent)"></div>ATM IV</div>
+                    <div class="legend-item"><div class="legend-dot" style="background:var(--call)"></div>Call IV</div>
+                    <div class="legend-item"><div class="legend-dot" style="background:var(--put)"></div>Put IV</div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-title">Term Structure Table</div>
+                <table>
+                    <thead><tr><th>Expiry</th><th>DTE</th><th>ATM IV</th><th>Call IV</th><th>Put IV</th><th>Put-Call Spread</th><th>Shape</th></tr></thead>
+                    <tbody>${entries.map((e, i) => {
+                        const spread = e.put - e.call;
+                        const prev = i > 0 ? entries[i-1].atm : null;
+                        const shape = prev ? (e.atm > prev ? '↗ Contango' : e.atm < prev ? '↘ Backwardation' : '→ Flat') : '—';
+                        const shapeColor = prev ? (e.atm > prev ? 'var(--green)' : e.atm < prev ? 'var(--red)' : 'var(--txt2)') : 'var(--txt2)';
+                        return `<tr>
+                            <td class="mono">${e.exp}</td>
+                            <td class="mono">${e.daysToExpiry}d</td>
+                            <td class="mono" style="font-weight:600">${e.atm.toFixed(1)}%</td>
+                            <td class="mono">${e.call.toFixed(1)}%</td>
+                            <td class="mono">${e.put.toFixed(1)}%</td>
+                            <td class="mono ${spread > 0 ? 'down' : 'up'}">${spread > 0 ? '+' : ''}${spread.toFixed(1)}%</td>
+                            <td style="color:${shapeColor};font-size:11px">${shape}</td>
+                        </tr>`;
+                    }).join('')}</tbody>
+                </table>
+            </div>`;
+    }
+
+    function renderUnusual() {
+        const items = data.unusual;
+        const c = $('#content');
+        c.innerHTML = `
+            <div class="card" style="margin-bottom:12px">
+                <div class="card-title">Unusual Options Activity — ${currency}</div>
+                <div style="font-size:11px;color:var(--txt2);margin-bottom:4px">Options with high Volume/OI ratio suggest new positioning. Ratio &gt; 1.0 means more contracts traded today than exist — strong signal.</div>
+            </div>
+            <div class="card">
+                <table>
+                    <thead><tr><th>Instrument</th><th>Type</th><th>Strike</th><th>Expiry</th><th>IV</th><th>Volume</th><th>Open Interest</th><th>Vol/OI</th><th>Signal</th></tr></thead>
+                    <tbody>${items.map(o => {
+                        const sigText = o.ratio > 3 ? 'VERY HIGH' : o.ratio > 1.5 ? 'HIGH' : o.ratio > 0.5 ? 'MODERATE' : 'LOW';
+                        const sigColor = o.ratio > 3 ? 'var(--red)' : o.ratio > 1.5 ? 'var(--yellow)' : o.ratio > 0.5 ? 'var(--accent)' : 'var(--txt3)';
+                        const moneyness = o.type === 'C' ? (o.strike > data.indexPrice ? 'OTM' : o.strike < data.indexPrice ? 'ITM' : 'ATM') : (o.strike < data.indexPrice ? 'OTM' : o.strike > data.indexPrice ? 'ITM' : 'ATM');
+                        return `<tr>
+                            <td class="mono" style="font-size:10px">${o.name}</td>
+                            <td><span class="badge ${o.type==='C'?'badge-call':'badge-put'}">${o.type==='C'?'CALL':'PUT'} ${moneyness}</span></td>
+                            <td class="mono">${fmtUSD(o.strike)}</td>
+                            <td>${o.expiry}</td>
+                            <td class="mono">${o.iv.toFixed(1)}%</td>
+                            <td class="mono">${fmt(o.volume)}</td>
+                            <td class="mono">${fmt(o.openInterest)}</td>
+                            <td class="mono" style="font-weight:700;color:${sigColor}">${o.ratio.toFixed(2)}x</td>
+                            <td style="color:${sigColor};font-weight:600;font-size:10px">${sigText}</td>
+                        </tr>`;
+                    }).join('')}
+                    </tbody>
+                </table>
+            </div>`;
+    }
+
+    function renderPutCall() {
+        const d = data;
+        const byExpPC = data.expiries.slice(0, 10).map(exp => {
+            const opts = data.byExpiry[exp];
+            let cOI = 0, pOI = 0, cVol = 0, pVol = 0;
+            opts.forEach(o => {
+                if (o.type === 'C') { cOI += o.openInterest; cVol += o.volume; }
+                else { pOI += o.openInterest; pVol += o.volume; }
+            });
+            return { exp, cOI, pOI, cVol, pVol, pcOI: cOI > 0 ? pOI / cOI : 0, pcVol: cVol > 0 ? pVol / cVol : 0, dte: data.ivByExpiry[exp]?.daysToExpiry || 0 };
+        });
+
+        const callPct = d.totalCallOI + d.totalPutOI > 0 ? (d.totalCallOI / (d.totalCallOI + d.totalPutOI) * 100) : 50;
+
+        $('#content').innerHTML = `
+            <div class="grid3" style="margin-bottom:12px">
+                <div class="card">
+                    <div class="card-title">P/C Ratio (Open Interest)</div>
+                    <div class="card-value" style="color:${d.pcRatioOI > 1 ? 'var(--red)' : 'var(--green)'}">${d.pcRatioOI.toFixed(3)}</div>
+                    <div class="card-sub">${d.pcRatioOI > 1.3 ? 'Bearish — heavy put buying' : d.pcRatioOI > 0.7 ? 'Neutral range' : 'Bullish — call dominated'}</div>
+                </div>
+                <div class="card">
+                    <div class="card-title">P/C Ratio (Volume)</div>
+                    <div class="card-value" style="color:${d.pcRatioVol > 1 ? 'var(--red)' : 'var(--green)'}">${d.pcRatioVol.toFixed(3)}</div>
+                    <div class="card-sub">${d.pcRatioVol > 1.3 ? 'Bearish flow today' : d.pcRatioVol > 0.7 ? 'Balanced volume' : 'Bullish flow today'}</div>
+                </div>
+                <div class="card">
+                    <div class="card-title">OI Distribution</div>
+                    <div class="bar-container" style="margin:8px 0">
+                        <div class="bar-call" style="width:${callPct}%"></div>
+                        <div class="bar-put" style="width:${100-callPct}%"></div>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;font-size:10px">
+                        <span style="color:var(--call)">Calls: ${fmt(d.totalCallOI)}</span>
+                        <span style="color:var(--put)">Puts: ${fmt(d.totalPutOI)}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="card" style="margin-bottom:12px">
+                <div class="card-title">Put/Call Ratio by Expiry</div>
+                <div style="display:flex;align-items:end;gap:6px;height:180px;margin-top:10px;padding:0 4px">
+                    ${byExpPC.map(e => {
+                        const h = Math.min(e.pcOI / 2, 1) * 160;
+                        const color = e.pcOI > 1.3 ? 'var(--red)' : e.pcOI > 0.7 ? 'var(--yellow)' : 'var(--green)';
+                        return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px">
+                            <span style="font-size:9px;color:${color};font-weight:600">${e.pcOI.toFixed(2)}</span>
+                            <div style="width:70%;height:${h}px;background:${color};border-radius:3px 3px 0 0;opacity:.7"></div>
+                            <span style="font-size:7px;color:var(--txt3)">${e.exp}</span>
+                        </div>`;
+                    }).join('')}
+                </div>
+                <div style="height:1px;background:var(--txt3);opacity:.3;margin:4px 0"></div>
+                <div style="text-align:center;font-size:9px;color:var(--txt3)">P/C = 1.0 line (neutral)</div>
+            </div>
+            <div class="card">
+                <div class="card-title">Detailed Breakdown</div>
+                <table>
+                    <thead><tr><th>Expiry</th><th>DTE</th><th>Call OI</th><th>Put OI</th><th>P/C OI</th><th>Call Vol</th><th>Put Vol</th><th>P/C Vol</th><th>Signal</th></tr></thead>
+                    <tbody>${byExpPC.map(e => {
+                        const sig = e.pcOI > 1.3 ? 'BEARISH' : e.pcOI < 0.7 ? 'BULLISH' : 'NEUTRAL';
+                        const sc = e.pcOI > 1.3 ? 'var(--red)' : e.pcOI < 0.7 ? 'var(--green)' : 'var(--txt2)';
+                        return `<tr>
+                            <td>${e.exp}</td><td class="mono">${e.dte}d</td>
+                            <td class="mono">${fmt(e.cOI)}</td><td class="mono">${fmt(e.pOI)}</td>
+                            <td class="mono" style="font-weight:600;color:${sc}">${e.pcOI.toFixed(2)}</td>
+                            <td class="mono">${fmt(e.cVol)}</td><td class="mono">${fmt(e.pVol)}</td>
+                            <td class="mono">${e.pcVol.toFixed(2)}</td>
+                            <td style="color:${sc};font-weight:600;font-size:10px">${sig}</td>
+                        </tr>`;
+                    }).join('')}</tbody>
+                </table>
+            </div>`;
+    }
+
+    init();
+})();
+</script>
+</body>
+</html>

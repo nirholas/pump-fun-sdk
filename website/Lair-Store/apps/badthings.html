@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<!--[if lt IE 7]>      <html class="no-js lt-ie9 lt-ie8 lt-ie7"> <![endif]-->
+<!--[if IE 7]>         <html class="no-js lt-ie9 lt-ie8"> <![endif]-->
+<!--[if IE 8]>         <html class="no-js lt-ie9"> <![endif]-->
+<!--[if gt IE 8]>      <html class="no-js"> <!--<![endif]-->
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="lair-include" content="lair.css">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="lair-icon" content="visibility">
+    <title>bad things happening</title>
+    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        html {
+            height: 100%;
+        }
+
+        body {
+            background: linear-gradient(0deg, #2d0000, #000000);
+            color: #ff8a00;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            height: calc(100% - 4rem);
+            margin: 0;
+            padding: 2rem 4rem;
+            text-align: center;
+        }
+
+        small {
+            color: red;
+        }
+
+        input,
+        button {
+            background: #130000;
+            padding: 1rem 1.5rem;
+            font-size: 1rem;
+            border-radius: 2rem;
+            border: 0;
+            box-shadow: 0.3rem 0.3rem 1rem #000000, -0.3rem -0.3rem 1rem #774e0247, 0 0 10px #ff0000 inset;
+            border: 1px solid orange;
+            color: orange;
+        }
+
+        #progress-bar {
+            width: 100%;
+            height: 30px;
+            background: #130000;
+            box-shadow: 0.3rem 0.3rem 1rem #000000, -0.3rem -0.3rem 1rem #774e0247, 0 0 10px #ff0000 inset;
+            overflow: hidden;
+            border-radius: 2rem;
+            position: relative;
+        }
+
+        #bar {
+            height: 100%;
+            background: #ba0000;
+            box-shadow: 0.3rem 0.3rem 1rem #900000, -0.3rem -0.3rem 1rem #d50000bf, 0 0 10px #ff0000 inset;
+            border-radius: 2rem;
+            transition: width 0.1s linear;
+        }
+
+        #inputcontainer {
+
+            display: flex;
+            flex-direction: row;
+            align-items: stretch;
+            gap: 0.5rem;
+        }
+
+        div#startupstuff {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+    </style>
+</head>
+
+<body>
+    <!--[if lt IE 7]>
+            <p class="browsehappy">You are using an <strong>outdated</strong> browser. Please <a href="#">upgrade your browser</a> to improve your experience.</p>
+        <![endif]-->
+    <div id="startupstuff">
+        <b>Remember this text that has no meaning.</b>
+        <b>It will dissapear once the timer ends.</b>
+        <b>You have to write it once the input box appears.</b>
+        <b>One wrong answer resets your system.</b>
+        <b>Take the risk or quit as a loser.</b>
+        <button onclick="startgame();">Start</button>
+    </div>
+    <div id="actualgame">
+        <div id="teasepart">
+
+            <h1 id="quest"></h1>
+            <div id="progress-bar">
+                <div id="bar"></div>
+            </div>
+        </div>
+        <div id="inputcontainer">
+            <input placeholder="Enter your answer" id="answerinput"><button>Submit</button>
+        </div>
+    </div>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            document.getElementById('actualgame').style.display = 'none';
+            document.getElementById('startupstuff').style.display = 'flex';
+        });
+
+
+        function startgame() {
+            document.getElementById('startupstuff').style.display = 'none';
+            document.getElementById('actualgame').style.display = 'block';
+            document.getElementById('inputcontainer').style.display = 'none';
+            document.getElementById('teasepart').style.display = 'block';
+            startTimer();
+            generateQuestion();
+        }
+
+        var duration = 80, generated;
+
+        function startTimer() {
+            let width = 100;
+            let interval = setInterval(function () {
+                width -= 100 / duration;
+                bar.style.width = width + '%';
+                if (width <= 0) {
+                    clearInterval(interval);
+                    hideAfterTimer();
+                }
+            }, 100);
+        }
+
+    async function hideAfterTimer() {
+            function delay(ms) {
+                return new Promise(resolve => setTimeout(resolve, ms));
+            }
+
+            async function run() {
+                for (let i = 0; i <= 10; i++) {
+                    generateQuestion();
+                    await delay(50);
+                }
+            }
+
+            await run();
+            document.getElementById('teasepart').style.display = 'none';
+
+            document.getElementById('inputcontainer').style.display = 'flex';
+        }
+
+        function generateQuestion() {
+            let question = getQuestion();
+            generated = question
+            document.getElementById('quest').innerText = question;
+        }
+
+        function getQuestion() {
+
+            const items = ['a', 'u', 'c', 'k', 'c', 'o', 'l', 'a', 'd', 'i', 'l', 'p', 't', 'o', 'd', 'o', 'd', 'g', 'e', 'c', 'h', 's', 't', 'n', 'e', 'm'];
+            return generate(items, 3, 5, 3);
+        }
+
+        function validateAnswer(answer) {
+            if (answer.toLowerCase() === generated.toLowerCase()) {
+                return true;
+            }
+            return false;
+        }
+
+        document.querySelector('#inputcontainer button').addEventListener('click', function () {
+            let answer = document.getElementById('answerinput').value;
+            if (validateAnswer(answer)) {
+                startgame();
+            } else {
+                alert("Due to the fact that this game in on development, and to make it easier to work with, losing just closes the window for now :), you're welcome!");
+                myWindow.close();
+            }
+        });
+
+
+        // pronounceable gibberish generator by adthoughtsglobal
+        function generate(arr, minLen = 3, maxLen = 6, count = 50) { const vowels = ['a', 'e', 'i', 'o', 'u']; const consonants = 'bcdfghjklmnpqrstvwxyz'.split(''); const validTwoLetterWords = new Set(consonants.flatMap(consonant => vowels.map(vowel => consonant + vowel))); const predefinedCombinations = ['au', 'ck', 'co', 'la', 'di', 'p', 'to', 'do', 'dge', 'ch', 'st', 'ne', 'ar', 'br', 'ci', 'ea', 'en', 'er', 'fa', 'fo', 'gi', 'gl', 'gr', 'in', 'ir', 'is', 'it', 'jo', 'la', 'le', 'me', 'mo', 'ni', 'no', 'or', 'ou', 'pa', 'pe', 'ra', 'ri', 'sa', 'se', 'si', 'sk', 'so', 'sp', 'ta', 'th', 'ti', 'tr', 'un', 'ur', 'us', 'va', 've', 'wi', 'wo', 'za', 'zi', 'll', 'ba', 'uh', 'du', 'su', 'ma', 'ch', 'pe', 'pp', 'nd', 'dr', 'ro', 'de', 'be', 'oo', 'rm', 'tra', 'ry', 'oa', 'ste']; const results = new Set(predefinedCombinations); function combine(prefix, start) { for (let i = start; i < arr.length; i++) { const item = arr[i]; const newPrefix = prefix + item; if (newPrefix.length >= minLen && newPrefix.length <= maxLen) { if (isPronounceable(newPrefix) && !containsInvalidTwoLetterWords(newPrefix)) { results.add(newPrefix); } } if (newPrefix.length < maxLen) { combine(newPrefix, i + 1); } } } function isPronounceable(combination) { let lastCharWasVowel = vowels.includes(combination[0]); for (let char of combination.slice(1)) { if (vowels.includes(char)) { lastCharWasVowel = true; } else { if (!lastCharWasVowel) { return false; } lastCharWasVowel = false; } } return true; } function containsInvalidTwoLetterWords(combination) { const words = combination.match(/\b\w{2}\b/g) || []; for (let i = 0; i < words.length - 1; i++) { const currentWord = words[i]; const nextWord = words[i + 1]; if (validTwoLetterWords.has(currentWord) && validTwoLetterWords.has(nextWord)) { return true; } } return false; } combine('', 0); function padCombination(combination) { if (combination.length >= minLen) return combination; const paddingLength = minLen - combination.length; return combination + vowels.slice(0, paddingLength).join(''); } const paddedResults = Array.from(results).map(padCombination); function getRandomSubset(array, size) { const shuffled = array.slice().sort(() => 0.5 - Math.random()); return shuffled.slice(0, size); } function balanceStartingCharacters(combinations) { const balancedResults = []; const startLetters = Array.from(new Set(combinations.map(c => c[0]))); for (let letter of startLetters) { const subset = combinations.filter(c => c[0] === letter); balancedResults.push(...getRandomSubset(subset, Math.ceil(count / startLetters.length))); } return balancedResults; } const subsetSize = Math.min(count, paddedResults.length); const balancedResults = balanceStartingCharacters(paddedResults); const finalCombinations = getRandomSubset(balancedResults, subsetSize); function createParagraph(combinations) { const punctuation = ['.', '!', '?']; let paragraph = ''; let sentence = ''; const maxWordsPerSentence = 8; for (let i = 0; i < combinations.length; i++) { sentence += combinations[i] + ' '; if ((i + 1) % maxWordsPerSentence === 0 || i === combinations.length - 1) { const endPunctuation = ''; sentence = sentence.trim(); paragraph += sentence.charAt(0).toUpperCase() + sentence.slice(1) + endPunctuation + ' '; sentence = ''; } } return paragraph.trim(); } return createParagraph(finalCombinations); }
+    </script>
+</body>
+
+</html>

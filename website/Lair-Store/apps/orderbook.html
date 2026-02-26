@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="lair-include" content="lair.css material-symbols-rounded">
+    <meta name="capabilities" content="order_book">
+    <meta name="permissions" content="network">
+    <meta name="lair-icon" content="<svg width='232' height='232' viewBox='0 0 232 232' fill='none' xmlns='http://www.w3.org/2000/svg'><rect width='232' height='232' rx='40' fill='#0C0F27'/><rect x='30' y='80' width='80' height='12' rx='3' fill='#5be45b' opacity='0.9'/><rect x='30' y='100' width='60' height='12' rx='3' fill='#5be45b' opacity='0.7'/><rect x='30' y='120' width='40' height='12' rx='3' fill='#5be45b' opacity='0.5'/><rect x='122' y='80' width='80' height='12' rx='3' fill='#d44343' opacity='0.9'/><rect x='142' y='100' width='60' height='12' rx='3' fill='#d44343' opacity='0.7'/><rect x='162' y='120' width='40' height='12' rx='3' fill='#d44343' opacity='0.5'/><line x1='116' y1='60' x2='116' y2='172' stroke='#6179FF' stroke-width='2' stroke-dasharray='4 4'/></svg>">
+    <title>Order Book</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{height:100vh;overflow:hidden;background:var(--col-bg1,#101010);color:var(--col-txt1,#fff);font-family:'Poppins',-apple-system,BlinkMacSystemFont,sans-serif;display:flex;flex-direction:column}
+        .header{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--col-bg2,#171717);border-bottom:1px solid var(--col-bg3,#262626);flex-shrink:0;flex-wrap:wrap}
+        .header h2{font-size:14px;font-weight:700;display:flex;align-items:center;gap:6px;white-space:nowrap}
+        select,.ctrl-btn{background:var(--col-bg1,#101010);border:1px solid var(--col-bg3,#262626);color:#ccc;border-radius:4px;padding:4px 10px;cursor:pointer;font-size:11px;font-family:inherit;transition:all .15s;outline:none}
+        select:hover,.ctrl-btn:hover{color:#fff;border-color:#555}
+        .ctrl-btn.active{background:var(--colors-accent,#6179ff);color:#fff;border-color:var(--colors-accent,#6179ff)}
+        .price-display{font-size:16px;font-weight:800;margin-left:8px;font-variant-numeric:tabular-nums}
+        .spread-info{font-size:11px;color:#888;margin-left:auto;display:flex;gap:12px;align-items:center}
+        .imbalance-wrap{display:flex;align-items:center;gap:6px;font-size:10px}
+        .imbalance-bar{width:100px;height:6px;border-radius:3px;overflow:hidden;display:flex;background:var(--col-bg3,#262626)}
+        .imbalance-bar .bid-fill{background:#5be45b;height:100%;transition:width .3s}
+        .imbalance-bar .ask-fill{background:#d44343;height:100%;transition:width .3s}
+        .main{flex:1;display:flex;overflow:hidden}
+        .depth-panel{flex:1;min-width:0;position:relative;border-right:1px solid var(--col-bg3,#262626)}
+        .depth-panel canvas{width:100%;height:100%}
+        .ladder-panel{width:320px;display:flex;flex-direction:column;overflow:hidden}
+        .ladder-head{display:grid;grid-template-columns:1fr 1fr 1fr;padding:4px 10px;font-size:10px;color:#666;font-weight:600;text-transform:uppercase;background:var(--col-bg2,#171717);border-bottom:1px solid var(--col-bg3,#262626);flex-shrink:0}
+        .ladder-head span:last-child{text-align:right}
+        .ladder-head span:nth-child(2){text-align:center}
+        .ladder-asks,.ladder-bids{flex:1;overflow:hidden;display:flex;flex-direction:column}
+        .ladder-asks{justify-content:flex-end}
+        .ladder-row{display:grid;grid-template-columns:1fr 1fr 1fr;padding:2px 10px;font-size:11px;font-variant-numeric:tabular-nums;position:relative;transition:background .1s}
+        .ladder-row:hover{background:rgba(255,255,255,.03)}
+        .ladder-row .bg-bar{position:absolute;top:0;height:100%;opacity:.12;pointer-events:none}
+        .ladder-row.ask .bg-bar{right:0;background:#d44343}
+        .ladder-row.bid .bg-bar{right:0;background:#5be45b}
+        .ladder-row .price{font-weight:600}
+        .ladder-row.ask .price{color:#d44343}
+        .ladder-row.bid .price{color:#5be45b}
+        .ladder-row .size{text-align:center;color:#ccc}
+        .ladder-row .total{text-align:right;color:#888}
+        .spread-row{display:flex;align-items:center;justify-content:center;padding:6px 10px;font-size:11px;color:var(--colors-accent,#6179ff);background:var(--col-bg2,#171717);border-top:1px solid var(--col-bg3,#262626);border-bottom:1px solid var(--col-bg3,#262626);font-weight:600;gap:8px;flex-shrink:0}
+        .footer{padding:6px 14px;background:var(--col-bg2,#171717);border-top:1px solid var(--col-bg3,#262626);display:flex;gap:16px;font-size:10px;color:#666;flex-shrink:0;align-items:center}
+        .footer strong{color:#aaa}
+        .ws-dot{width:6px;height:6px;border-radius:50%;display:inline-block;margin-right:4px}
+        .ws-dot.on{background:#5be45b}
+        .ws-dot.off{background:#d44343}
+        .state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px;width:100%;height:100%}
+        .spinner{width:28px;height:28px;border:3px solid var(--col-bg3,#262626);border-top-color:var(--colors-accent,#6179ff);border-radius:50%;animation:spin .7s linear infinite;margin-bottom:12px}
+        @keyframes spin{to{transform:rotate(360deg)}}
+        .state p{color:#666;font-size:12px}
+        @media(max-width:640px){.depth-panel{display:none}.ladder-panel{width:100%}}
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h2><span class="material-symbols-rounded" style="font-size:18px">menu_book</span> Order Book</h2>
+        <select id="pairSelect">
+            <option value="BTCUSDT">BTC / USDT</option>
+            <option value="ETHUSDT">ETH / USDT</option>
+            <option value="SOLUSDT">SOL / USDT</option>
+            <option value="BNBUSDT">BNB / USDT</option>
+            <option value="XRPUSDT">XRP / USDT</option>
+            <option value="DOGEUSDT">DOGE / USDT</option>
+            <option value="ARBUSDT">ARB / USDT</option>
+            <option value="AVAXUSDT">AVAX / USDT</option>
+            <option value="SUIUSDT">SUI / USDT</option>
+            <option value="LINKUSDT">LINK / USDT</option>
+            <option value="ADAUSDT">ADA / USDT</option>
+            <option value="NEARUSDT">NEAR / USDT</option>
+        </select>
+        <span id="lastPrice" class="price-display">—</span>
+        <div style="display:flex;gap:3px">
+            <button class="ctrl-btn active" data-d="20" onclick="setDepth(20)">20</button>
+            <button class="ctrl-btn" data-d="50" onclick="setDepth(50)">50</button>
+            <button class="ctrl-btn" data-d="100" onclick="setDepth(100)">100</button>
+        </div>
+        <div class="spread-info">
+            <span>Spread: <strong id="spreadVal">—</strong></span>
+            <div class="imbalance-wrap">
+                <span style="color:#5be45b" id="bidPct">50%</span>
+                <div class="imbalance-bar"><div class="bid-fill" id="bidBar" style="width:50%"></div><div class="ask-fill" id="askBar" style="width:50%"></div></div>
+                <span style="color:#d44343" id="askPct">50%</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="main">
+        <div class="depth-panel" id="depthPanel">
+            <canvas id="depthCanvas"></canvas>
+        </div>
+        <div class="ladder-panel" id="ladderPanel">
+            <div class="ladder-head"><span>Price</span><span>Size</span><span>Total</span></div>
+            <div class="ladder-asks" id="ladderAsks"></div>
+            <div class="spread-row" id="spreadRow">—</div>
+            <div class="ladder-bids" id="ladderBids"></div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <span><span class="ws-dot off" id="wsDot"></span><span id="wsStatus">Connecting…</span></span>
+        <span>24h Vol: <strong id="vol24">—</strong></span>
+        <span>24h High: <strong id="high24">—</strong></span>
+        <span>24h Low: <strong id="low24">—</strong></span>
+        <span style="margin-left:auto">Updated: <strong id="lastUpdate">—</strong></span>
+    </div>
+
+<script>
+const PAIRS = {
+    BTCUSDT:{base:'BTC',quote:'USDT',dp:2,qp:5},
+    ETHUSDT:{base:'ETH',quote:'USDT',dp:2,qp:4},
+    SOLUSDT:{base:'SOL',quote:'USDT',dp:2,qp:2},
+    BNBUSDT:{base:'BNB',quote:'USDT',dp:2,qp:3},
+    XRPUSDT:{base:'XRP',quote:'USDT',dp:4,qp:1},
+    DOGEUSDT:{base:'DOGE',quote:'USDT',dp:5,qp:0},
+    ARBUSDT:{base:'ARB',quote:'USDT',dp:4,qp:1},
+    AVAXUSDT:{base:'AVAX',quote:'USDT',dp:2,qp:2},
+    SUIUSDT:{base:'SUI',quote:'USDT',dp:4,qp:1},
+    LINKUSDT:{base:'LINK',quote:'USDT',dp:3,qp:2},
+    ADAUSDT:{base:'ADA',quote:'USDT',dp:4,qp:1},
+    NEARUSDT:{base:'NEAR',quote:'USDT',dp:3,qp:1},
+};
+
+let currentPair = 'BTCUSDT';
+let depthLevel = 20;
+let ws = null;
+let bids = []; // [[price, qty], ...]
+let asks = [];
+let lastPriceVal = 0;
+let prevPrice = 0;
+let renderPending = false;
+let tickerWs = null;
+
+const $ = id => document.getElementById(id);
+const pairSelect = $('pairSelect');
+const depthCanvas = $('depthCanvas');
+const ctx = depthCanvas.getContext('2d');
+
+function fmtNum(n, dp) { return Number(n).toLocaleString('en-US', {minimumFractionDigits:dp, maximumFractionDigits:dp}); }
+function fmtK(n) {
+    if (n >= 1e9) return (n/1e9).toFixed(2)+'B';
+    if (n >= 1e6) return (n/1e6).toFixed(2)+'M';
+    if (n >= 1e3) return (n/1e3).toFixed(1)+'K';
+    return n.toFixed(2);
+}
+
+// --- WebSocket Management ---
+function connectOrderBook() {
+    if (ws) { ws.onclose = null; ws.close(); ws = null; }
+    bids = []; asks = [];
+    setWsStatus(false, 'Connecting…');
+
+    const sym = currentPair.toLowerCase();
+    const url = `wss://stream.binance.com:9443/ws/${sym}@depth${depthLevel}@100ms`;
+
+    ws = new WebSocket(url);
+    ws.onopen = () => setWsStatus(true, 'Connected');
+    ws.onmessage = (e) => {
+        try {
+            const data = JSON.parse(e.data);
+            if (data.bids) bids = data.bids.map(([p,q]) => [parseFloat(p), parseFloat(q)]).filter(([,q]) => q > 0);
+            if (data.asks) asks = data.asks.map(([p,q]) => [parseFloat(p), parseFloat(q)]).filter(([,q]) => q > 0);
+            bids.sort((a,b) => b[0] - a[0]);
+            asks.sort((a,b) => a[0] - b[0]);
+            scheduleRender();
+        } catch(_) {}
+    };
+    ws.onerror = () => setWsStatus(false, 'Error');
+    ws.onclose = () => {
+        setWsStatus(false, 'Disconnected');
+        setTimeout(() => { if (currentPair) connectOrderBook(); }, 3000);
+    };
+}
+
+function connectTicker() {
+    if (tickerWs) { tickerWs.onclose = null; tickerWs.close(); tickerWs = null; }
+    const sym = currentPair.toLowerCase();
+    tickerWs = new WebSocket(`wss://stream.binance.com:9443/ws/${sym}@ticker`);
+    tickerWs.onmessage = (e) => {
+        try {
+            const d = JSON.parse(e.data);
+            prevPrice = lastPriceVal;
+            lastPriceVal = parseFloat(d.c);
+            const pi = PAIRS[currentPair];
+            const el = $('lastPrice');
+            el.textContent = fmtNum(lastPriceVal, pi.dp);
+            el.style.color = lastPriceVal >= prevPrice ? '#5be45b' : '#d44343';
+            $('vol24').textContent = fmtK(parseFloat(d.q));
+            $('high24').textContent = fmtNum(parseFloat(d.h), pi.dp);
+            $('low24').textContent = fmtNum(parseFloat(d.l), pi.dp);
+        } catch(_) {}
+    };
+}
+
+function setWsStatus(connected, text) {
+    $('wsDot').className = 'ws-dot ' + (connected ? 'on' : 'off');
+    $('wsStatus').textContent = text;
+}
+
+function scheduleRender() {
+    if (renderPending) return;
+    renderPending = true;
+    requestAnimationFrame(() => {
+        renderPending = false;
+        renderAll();
+    });
+}
+
+// --- Render ---
+function renderAll() {
+    if (!bids.length && !asks.length) return;
+    const pi = PAIRS[currentPair];
+    renderLadder(pi);
+    renderSpread(pi);
+    renderImbalance();
+    renderDepthChart(pi);
+    $('lastUpdate').textContent = new Date().toLocaleTimeString();
+}
+
+function renderLadder(pi) {
+    const maxRows = Math.min(depthLevel, 25);
+    const displayBids = bids.slice(0, maxRows);
+    const displayAsks = asks.slice(0, maxRows).reverse();
+    const allSizes = [...displayBids, ...displayAsks].map(([,q]) => q);
+    const maxSize = Math.max(...allSizes, 1);
+
+    let askHtml = '';
+    let cumAsk = 0;
+    for (const [p, q] of displayAsks) {
+        cumAsk += q;
+    }
+    let runAsk = cumAsk;
+    for (const [p, q] of displayAsks) {
+        const pct = (q / maxSize * 100).toFixed(1);
+        askHtml += `<div class="ladder-row ask"><div class="bg-bar" style="width:${pct}%"></div><span class="price">${fmtNum(p, pi.dp)}</span><span class="size">${fmtK(q)}</span><span class="total">${fmtK(runAsk)}</span></div>`;
+        runAsk -= q;
+    }
+
+    let bidHtml = '';
+    let cumBid = 0;
+    for (const [p, q] of displayBids) {
+        cumBid += q;
+        const pct = (q / maxSize * 100).toFixed(1);
+        bidHtml += `<div class="ladder-row bid"><div class="bg-bar" style="width:${pct}%"></div><span class="price">${fmtNum(p, pi.dp)}</span><span class="size">${fmtK(q)}</span><span class="total">${fmtK(cumBid)}</span></div>`;
+    }
+
+    $('ladderAsks').innerHTML = askHtml;
+    $('ladderBids').innerHTML = bidHtml;
+}
+
+function renderSpread(pi) {
+    if (!bids.length || !asks.length) return;
+    const bestBid = bids[0][0];
+    const bestAsk = asks[0][0];
+    const spread = bestAsk - bestBid;
+    const spreadPct = (spread / bestAsk * 100);
+    $('spreadRow').innerHTML = `Spread: ${fmtNum(spread, pi.dp)} (${spreadPct.toFixed(4)}%)`;
+    $('spreadVal').textContent = `${fmtNum(spread, pi.dp)} (${spreadPct.toFixed(4)}%)`;
+}
+
+function renderImbalance() {
+    const totalBid = bids.reduce((s, [,q]) => s + q, 0);
+    const totalAsk = asks.reduce((s, [,q]) => s + q, 0);
+    const total = totalBid + totalAsk || 1;
+    const bidPct = (totalBid / total * 100).toFixed(0);
+    const askPct = (totalAsk / total * 100).toFixed(0);
+    $('bidPct').textContent = bidPct + '%';
+    $('askPct').textContent = askPct + '%';
+    $('bidBar').style.width = bidPct + '%';
+    $('askBar').style.width = askPct + '%';
+}
+
+function renderDepthChart(pi) {
+    const dpr = window.devicePixelRatio || 1;
+    const rect = depthCanvas.parentElement.getBoundingClientRect();
+    const w = rect.width, h = rect.height;
+    depthCanvas.width = w * dpr;
+    depthCanvas.height = h * dpr;
+    depthCanvas.style.width = w + 'px';
+    depthCanvas.style.height = h + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+
+    if (!bids.length || !asks.length) return;
+
+    const midPrice = (bids[0][0] + asks[0][0]) / 2;
+    const maxSpread = Math.max(midPrice - bids[bids.length-1][0], asks[asks.length-1][0] - midPrice);
+    const priceRange = maxSpread * 1.05;
+
+    // Build cumulative arrays
+    let cumBids = [], cumAsks = [];
+    let cb = 0;
+    for (const [p, q] of bids) {
+        cb += q;
+        cumBids.push([p, cb]);
+    }
+    let ca = 0;
+    for (const [p, q] of asks) {
+        ca += q;
+        cumAsks.push([p, ca]);
+    }
+
+    const maxVol = Math.max(cb, ca) * 1.1 || 1;
+    const pad = {t:20, b:30, l:50, r:50};
+    const cw = w - pad.l - pad.r;
+    const ch = h - pad.t - pad.b;
+
+    function priceToX(p) {
+        const offset = (p - midPrice) / priceRange;
+        return pad.l + cw / 2 + offset * (cw / 2);
+    }
+    function volToY(v) {
+        return pad.t + ch - (v / maxVol) * ch;
+    }
+
+    // Grid lines
+    ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i <= 4; i++) {
+        const y = pad.t + (ch / 4) * i;
+        ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(w - pad.r, y); ctx.stroke();
+        ctx.fillStyle = '#555';
+        ctx.font = '9px monospace';
+        ctx.textAlign = 'left';
+        ctx.fillText(fmtK(maxVol - (maxVol / 4) * i), 4, y + 3);
+    }
+
+    // Midpoint line
+    const mx = priceToX(midPrice);
+    ctx.strokeStyle = 'rgba(97,121,255,0.5)';
+    ctx.setLineDash([4,4]);
+    ctx.beginPath(); ctx.moveTo(mx, pad.t); ctx.lineTo(mx, h - pad.b); ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Draw bid area
+    ctx.beginPath();
+    ctx.moveTo(priceToX(cumBids[0][0]), volToY(0));
+    for (const [p, v] of cumBids) {
+        ctx.lineTo(priceToX(p), volToY(v));
+    }
+    ctx.lineTo(priceToX(cumBids[cumBids.length-1][0]), volToY(0));
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(91,228,91,0.12)';
+    ctx.fill();
+    ctx.strokeStyle = '#5be45b';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    for (let i = 0; i < cumBids.length; i++) {
+        const [p, v] = cumBids[i];
+        i === 0 ? ctx.moveTo(priceToX(p), volToY(v)) : ctx.lineTo(priceToX(p), volToY(v));
+    }
+    ctx.stroke();
+
+    // Draw ask area
+    ctx.beginPath();
+    ctx.moveTo(priceToX(cumAsks[0][0]), volToY(0));
+    for (const [p, v] of cumAsks) {
+        ctx.lineTo(priceToX(p), volToY(v));
+    }
+    ctx.lineTo(priceToX(cumAsks[cumAsks.length-1][0]), volToY(0));
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(212,67,67,0.12)';
+    ctx.fill();
+    ctx.strokeStyle = '#d44343';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    for (let i = 0; i < cumAsks.length; i++) {
+        const [p, v] = cumAsks[i];
+        i === 0 ? ctx.moveTo(priceToX(p), volToY(v)) : ctx.lineTo(priceToX(p), volToY(v));
+    }
+    ctx.stroke();
+
+    // Price axis labels
+    ctx.fillStyle = '#555';
+    ctx.font = '9px monospace';
+    ctx.textAlign = 'center';
+    const steps = 6;
+    for (let i = 0; i <= steps; i++) {
+        const p = midPrice - priceRange + (2 * priceRange / steps) * i;
+        const x = priceToX(p);
+        if (x > pad.l && x < w - pad.r) {
+            ctx.fillText(fmtNum(p, pi.dp), x, h - pad.b + 14);
+        }
+    }
+
+    // Mid price label
+    ctx.fillStyle = 'rgba(97,121,255,0.8)';
+    ctx.font = 'bold 10px monospace';
+    ctx.fillText(fmtNum(midPrice, pi.dp), mx, pad.t - 6);
+}
+
+// --- Controls ---
+pairSelect.addEventListener('change', () => {
+    currentPair = pairSelect.value;
+    bids = []; asks = [];
+    $('ladderAsks').innerHTML = '';
+    $('ladderBids').innerHTML = '';
+    $('lastPrice').textContent = '—';
+    connectOrderBook();
+    connectTicker();
+});
+
+function setDepth(d) {
+    depthLevel = d;
+    document.querySelectorAll('.ctrl-btn[data-d]').forEach(b => b.classList.toggle('active', Number(b.dataset.d) === d));
+    connectOrderBook();
+}
+
+// --- Resize ---
+let resizeTimer;
+window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => scheduleRender(), 100);
+});
+
+// --- Cleanup ---
+window.addEventListener('beforeunload', () => {
+    if (ws) { ws.onclose = null; ws.close(); }
+    if (tickerWs) { tickerWs.onclose = null; tickerWs.close(); }
+});
+
+// --- Init ---
+async function greenflag() {
+    connectOrderBook();
+    connectTicker();
+}
+if (!window.myWindow) document.addEventListener('DOMContentLoaded', greenflag);
+</script>
+</body>
+</html>

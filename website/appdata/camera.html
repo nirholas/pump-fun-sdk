@@ -1,0 +1,1183 @@
+<!DOCTYPE html>
+<html lang="en" ok>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="lair-icon"
+        content="<svg width='232' height='232' viewBox='0 0 232 232' fill='none' xmlns='http://www.w3.org/2000/svg'> <path d='M0 187.772C0 149.24 0 93.5136 0 73.0886C0 63.6775 9.67014 54.1013 19.7566 54.1013C26.7145 54.1013 40.1383 54.1013 56.9901 54.1013C66.254 54.1013 76.5538 26 87.3849 26C106.66 26 125.339 26 145.135 26C153.795 26 167.552 54.1013 175.53 54.1013C189.899 54.1013 199.734 54.1013 209.724 54.1013C222.854 54.1013 231 62.8095 231 71.5696C231 92.0769 231 150.106 231 187.772C231 198.955 222.582 206 213.523 206C187.743 206 65.4563 206 19.7566 206C9.32268 206 0 200.697 0 187.772Z' fill='#32364E'/> <path d='M0 110C0 110 0 93.8818 0 73.3454C0 63.883 9.67014 54.2545 19.7566 54.2545C26.7145 54.2545 40.1383 54.2545 56.9901 54.2545C66.254 54.2545 76.5538 26 87.3849 26C106.66 26 125.339 26 145.135 26C153.795 26 167.552 54.2545 175.53 54.2545C189.899 54.2545 199.734 54.2545 209.724 54.2545C222.854 54.2545 231 63.0102 231 71.8182C231 92.4373 231 110 231 110L0 110Z' fill='#6179FF'/> <path d='M54 128C54 93.7584 81.9822 66 116.5 66C151.018 66 179 93.7583 179 128C179 162.242 151.018 190 116.5 190C81.9822 190 54 162.242 54 128Z' fill='#E3E3E3'/> <path d='M70 128.5C70 102.819 90.8188 82 116.5 82C142.181 82 163 102.819 163 128.5C163 154.181 142.181 175 116.5 175C90.8188 175 70 154.181 70 128.5Z' fill='#464E79'/> <path d='M13 82C13 74.8203 18.8203 69 26 69C33.1797 69 39 74.8203 39 82C39 89.1797 33.1797 95 26 95C18.8203 95 13 89.1797 13 82Z' fill='white'/> </svg>">
+    <meta name="capabilities" content="camera">
+    <meta name="permissions" content="settings, unsandboxed, fileGet, fileSet, olp, appStorage">
+    <meta name="lair-include" content="lair.css material-symbols-rounded">
+    <title>Camera App</title>
+    <style>
+        html {
+            height: 100%;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: stretch;
+            flex-direction: column;
+            margin: 0;
+            height: 100%;
+            background-color: var(--col-bg1);
+            user-select: none;
+            overflow-y: hidden;
+        }
+
+        .mainUI {
+            display: flex;
+            justify-content: center;
+            align-items: stretch;
+            flex-direction: row;
+            margin: 0;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .videopart {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .toolpart {
+            width: fit-content;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: calc(100% - 1em);
+            padding: .5em;
+            background: var(--col-bg2);
+            border-left: 1px solid #7b7b7b4f;
+            align-items: center;
+
+            &>.actionBtnPrt {
+                width: fit-content;
+                background-color: #ffffff0c;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                background-color: #ffffff0c;
+                gap: 2px;
+                overflow: hidden;
+                height: fit-content;
+                border-radius: var(--siz-radius1);
+            }
+
+            &>.filter_btn_section {
+                padding: .5em;
+                background: var(--col-bg3);
+                border: var(--box-crisp);
+                border-radius: var(--siz-radius1);
+                display: flex;
+            }
+        }
+
+        #video-container {
+            width: 100%;
+            height: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            position: relative;
+            align-items: center;
+            flex: 1;
+        }
+
+        #video,
+        canvas {
+            transition: 0.2s ease-in-out;
+            max-width: calc(100% - 10px);
+            max-height: calc(100% - 10px);
+            border-radius: var(--siz-radius1);
+            overflow: hidden;
+            object-fit: cover;
+            width: fit-content;
+            height: fit-content;
+            object-fit: scale-down;
+            display: none;
+        }
+
+        #videoCanvas {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+
+        .floattopnav {
+            display: flex;
+            gap: 1px;
+            transition: 0.2s ease-out;
+            justify-content: center;
+            flex-direction: row;
+            padding: .2em;
+
+            &>.btnCont {
+                display: flex;
+                border-radius: var(--siz-radius1);
+                flex-direction: row;
+                gap: 1px;
+                background-color: #7b7b7b3b;
+                border: 1px solid #7b7b7b0c;
+                overflow: hidden;
+            }
+        }
+
+        .floattopnav:hover {
+            opacity: 1;
+        }
+
+        .floattopnav select {
+            max-width: 130px;
+            padding: 0 5px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: inline-flex;
+        }
+
+        .floattopnav select,
+        #mirror-btn,
+        #flashlight-btn,
+        #stopwatch-btn {
+            color: var(--col-txt1);
+            border: none;
+            cursor: pointer;
+            padding: .3em;
+            border-radius: 0;
+            background-color: var(--col-bg2);
+
+            &:hover {
+                background-color: var(--col-bg3);
+            }
+        }
+
+
+        button#stopwatch-btn {
+            gap: 0.3rem;
+            display: none;
+        }
+
+
+        #stopwatch-btn .recording-blinker {
+            width: 15px;
+            height: 15px;
+            display: flex;
+            border-radius: 1rem;
+            background-color: rgb(255, 120, 120);
+            animation: blink 1s ease-out infinite;
+        }
+
+        @keyframes blink {
+
+            0%,
+            100% {
+                opacity: 0;
+            }
+
+            50% {
+                opacity: 1;
+                box-shadow: 0 0 10px rgb(255, 120, 120);
+            }
+        }
+
+        #mirror-btn,
+        #flashlight-btn,
+        #stopwatch-btn {
+            padding: .3em;
+            display: inline-flex;
+            border-radius: 0;
+            justify-items: center;
+            align-items: center;
+            flex-direction: row;
+            flex-wrap: nowrap;
+        }
+
+        #mirror-btn span,
+        #flashlight-btn span {
+            font-size: 1rem !important;
+            opacity: 1;
+        }
+
+        .captoolbtn {
+            height: fit-content;
+            border: none;
+            aspect-ratio: 1 / 1;
+            display: grid;
+            align-items: center;
+            justify-items: center;
+            background: var(--col-bg3);
+            color: var(--col-txt1);
+            border: 1px solid #ffffff0c;
+            transition: box-shadow .5s;
+            padding: 1em;
+
+            &:hover {
+                box-shadow: 0 0 10px #0000001a;
+                filter: brightness(120%);
+            }
+        }
+
+        .captoolbtn:active {
+            transform: scale(0.9);
+        }
+
+        #timer,
+        #filterNameDisp {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: 2;
+            display: grid;
+            justify-content: center;
+            align-items: center;
+            align-content: center;
+            display: none;
+            color: var(--col-txt1);
+            text-shadow: 0 0 1rem #0000007a;
+        }
+
+        #timer {
+            font-size: 5em;
+        }
+
+        #filterNameDisp {
+            font-size: 2em;
+        }
+
+        @keyframes fade-in {
+            0% {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .timer-animate {
+            animation: fade-in 0.5s ease-out;
+        }
+
+        .rotate-animation {
+            animation: rotate 0.5s ease-in-out;
+        }
+
+        @keyframes rotate {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @media screen and (max-width: 450px) {
+            body {
+                flex-direction: column;
+            }
+
+            .toolpart {
+                flex-direction: row;
+                width: 100%;
+                height: fit-content;
+                align-items: center;
+
+                width: calc(100% - 1em);
+
+                &>.actionBtnPrt {
+                    flex-direction: row;
+                }
+            }
+
+            .videopart {
+                height: 0;
+            }
+
+            .captoolbtn {
+                width: fit-content;
+                height: auto;
+            }
+
+            .mainUI {
+                flex-direction: column;
+            }
+
+            .fineToolPage {
+                width: 100% !important;
+            }
+        }
+
+        img#last_img_prviw {
+            width: 2.5em;
+            object-fit: cover;
+            aspect-ratio: 1 / 1;
+            border-radius: var(--siz-radius1);
+            border: var(--box-crisp);
+            cursor: pointer;
+        }
+
+        #fineToolPages {
+            display: flex;
+        }
+
+        #ft-filtersPage {
+            display: flex;
+            flex-direction: row;
+            gap: .5em;
+            padding: .5em;
+            background: var(--col-bg2);
+            border: var(--box-crisp);
+            border-radius: var(--siz-radius1);
+            width: calc(100vw - 7em);
+            margin: .5em;
+            overflow-x: scroll;
+
+            &>.single_filter {
+                position: relative;
+                border-radius: var(--siz-radius2);
+                overflow: hidden;
+                width: 70px;
+                min-width: 70px;
+                aspect-ratio: 1 / 1;
+                font-size: small;
+
+                &>.label {
+                    position: absolute;
+                    bottom: 0;
+                    left: 0;
+                    background-color: #0000007d;
+                    width: calc(100% - 10px);
+                    padding: 1px 5px;
+                    text-align: center;
+                }
+
+                &>img {
+                    width: 100%;
+                    object-fit: cover;
+                    object-position: top;
+                    position: absolute;
+                    height: 100%;
+                }
+
+            }
+        }
+    </style>
+    <meta name="lair-include" content="lair.css material-symbols-rounded">
+</head>
+
+<body>
+
+    <div class="mainUI">
+        <div class="videopart">
+            <div class="floattopnav">
+                <div class="btnCont">
+                    <select id="camera-select"></select>
+                    <button id="mirror-btn" onclick="toggleMirror()"><span class="material-symbols-rounded">
+                            360
+                        </span></button>
+                    <button id="flashlight-btn" onclick="toggleFlashlight()"><span class="material-symbols-rounded">
+                            flash_on
+                        </span></button>
+                    <select id="timer-select">
+                        <option selected value="0">0s</option>
+                        <option value="2">3s</option>
+                        <option value="5">5s</option>
+                        <option value="10">10s</option>
+                    </select>
+
+                    <button id="stopwatch-btn">
+                        <span class="recording-blinker"></span>
+                        <span id="recording-stopwatch">00:00</span>
+                    </button>
+                </div>
+            </div>
+            <div id="video-container">
+                <video id="video" playsinline autoplay style="display:none"></video>
+                <canvas id="videoCanvas" style="display:block; width:100%; height:auto;"></canvas>
+                <div id="filterNameDisp">
+
+                </div>
+            </div>
+            <div id="fineToolPages">
+                <div class="fineToolPage" id="ft-filtersPage">
+
+                </div>
+            </div>
+            <div id="timer">
+                3
+            </div>
+        </div>
+        <div class="toolpart">
+            <div class="filter_btn_section" onclick="openFineTool('filtersPage')">
+                <span class="material-symbols-rounded">
+                    blur_on
+                </span>
+            </div>
+            <div class="actionBtnPrt">
+                <button class="captoolbtn" id="photo-btn" onclick="capture(this)">
+                    <span class="material-symbols-rounded">camera</span>
+                </button>
+                <button class="captoolbtn" id="video-btn" onclick="startRecording(this)">
+                    <span class="material-symbols-rounded">videocam</span>
+                </button>
+                <button class="captoolbtn" id="pause-btn" style="display: none;">
+                    <span class="material-symbols-rounded">
+                        pause
+                    </span>
+                </button>
+                <button class="captoolbtn" id="stop-btn" style="display: none;">
+                    <span class="material-symbols-rounded">stop</span>
+                </button>
+            </div>
+            <div class="view_output_section" onclick="ntxSession.send('olp.useHandler', 'gallery');">
+                <img src="" id="last_img_prviw">
+            </div>
+        </div>
+    </div>
+    <script>
+        let isMirrored = false;
+        let isFlashlightOn = false;
+        let currentStream = null;
+        let mediaRecorder;
+        let recordedChunks = [];
+        let isRecording = false;
+        let isPaused = false;
+        let originalText = '', obj;
+
+        let currentFilter = "original";
+        let animationFrameId;
+
+        async function getVideoSources() {
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            return devices.filter(device => device.kind === 'videoinput');
+        }
+
+        async function startCamera() {
+            const cameras = await getVideoSources();
+            const cameraSelect = document.getElementById('camera-select');
+
+            if (cameras.length === 0) {
+                console.error('No cameras found.');
+                return;
+            }
+
+            cameraSelect.innerHTML = "";
+            cameras.forEach(camera => {
+                const option = document.createElement('option');
+                option.value = camera.deviceId;
+                option.text = camera.label || `Camera ${cameraSelect.length + 1}`;
+                cameraSelect.appendChild(option);
+            });
+
+            cameraSelect.addEventListener('change', async () => {
+                try {
+                    await startStream(cameraSelect.value);
+                    resetMirror();
+                } catch (error) {
+                    console.error('Error accessing camera:', error);
+                }
+            });
+
+            try {
+                await startStream(cameras[0].deviceId);
+            } catch (error) {
+                console.error('Error accessing default camera:', error);
+            }
+        }
+
+        function applyLiveFilter(preset) {
+            currentFilter = preset in filterFunctions ? preset : "original";
+        }
+
+        function renderLoop(video, canvas) {
+            const ctx = canvas.getContext("2d");
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+
+            function frame() {
+                ctx.save();
+                if (isMirrored) {
+                    ctx.translate(canvas.width, 0);
+                    ctx.scale(-1, 1);
+                }
+                filterFunctions[currentFilter](ctx, canvas, video);
+                ctx.restore();
+                animationFrameId = requestAnimationFrame(frame);
+            }
+            frame();
+        }
+
+        async function startStream(deviceId) {
+            const video = document.getElementById('video');
+            const canvas = document.getElementById('videoCanvas');
+            video.muted = true;
+            if (currentStream) {
+                currentStream.getTracks().forEach(track => track.stop());
+            }
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: { deviceId: deviceId },
+                audio: true
+            });
+            video.srcObject = stream; 1
+            currentStream = stream;
+
+            video.onloadedmetadata = () => {
+                video.play();
+                cancelAnimationFrame(animationFrameId);
+                renderLoop(video, canvas);
+            };
+        }
+
+
+        function pauseRecording() {
+            if (mediaRecorder && isRecording && !isPaused) {
+                mediaRecorder.pause();
+                isPaused = true;
+                lastPauseTime = Date.now();
+                clearInterval(stopwatchInterval);
+                updateUI("paused");
+            }
+        }
+
+        function resumeRecording() {
+            if (mediaRecorder && isPaused) {
+                mediaRecorder.resume();
+                isPaused = false;
+
+                // Add paused time to elapsedPausedTime
+                elapsedPausedTime += Date.now() - lastPauseTime;
+
+                // Resume stopwatch updates
+                updateStopwatch();
+                stopwatchInterval = setInterval(updateStopwatch, 1000);
+
+                updateUI("recording");
+            }
+        }
+
+        function stopRecording() {
+            if (!isRecording) return;
+
+            clearInterval(stopwatchInterval);
+            document.getElementById("stopwatch-btn").style.display = "none";
+
+            if (mediaRecorder) {
+                mediaRecorder.stop();
+            }
+
+            isRecording = false;
+            isPaused = false;
+            elapsedPausedTime = 0;
+            updateUI("stopped");
+
+            if (obj) obj.innerHTML = originalText;
+        }
+
+
+        function updateUI(state) {
+            const photoBtn = document.getElementById("photo-btn");
+            const videoBtn = document.getElementById("video-btn");
+            const pauseBtn = document.getElementById("pause-btn");
+            const stopBtn = document.getElementById("stop-btn");
+
+            if (state === "recording") {
+                photoBtn.style.display = "none";
+                videoBtn.style.display = "none";
+                pauseBtn.style.display = "grid";
+                stopBtn.style.display = "grid";
+                pauseBtn.innerHTML = `<span class="material-symbols-rounded">pause</span>`;
+            } else if (state === "paused") {
+                pauseBtn.innerHTML = `<span class="material-symbols-rounded">play_arrow</span>`;
+            } else if (state === "stopped") {
+                photoBtn.style.display = "grid";
+                videoBtn.style.display = "grid";
+                pauseBtn.style.display = "none";
+                stopBtn.style.display = "none";
+            }
+        }
+
+        async function updatePreviewImage() {
+            let lastFileID = await ntxSession.send("appStorage.get", "lastFile");
+            let lastFileContent = await ntxSession.send("fileGet.byId", lastFileID);
+            document.getElementById("last_img_prviw").src = lastFileContent.content;
+        }
+
+        function greenflag() {
+            startCamera();
+            updatePreviewImage();
+
+            document.getElementById("pause-btn").addEventListener("click", function () {
+                if (isPaused) {
+                    resumeRecording();
+                } else {
+                    pauseRecording();
+                }
+            }());
+            document.getElementById("stop-btn").addEventListener("click", stopRecording);
+
+        }
+
+        function startRecording(obj1) {
+            obj = obj1;
+            if (!currentStream) {
+                console.error("No active stream to record.");
+                return;
+            }
+
+            let timerValue = parseInt(document.getElementById('timer-select').value);
+            let timerelem = document.getElementById("timer");
+            let videoBtn = document.getElementById("video-btn");
+            originalText = videoBtn.innerHTML;
+            videoBtn.innerHTML = `
+            <span class="material-symbols-rounded">videocam</span>`;
+            timerelem.style.display = 'grid';
+
+            if (isNaN(timerValue) || timerValue <= 0) {
+                timerelem.textContent = "";
+                timerelem.style.display = 'none';
+                actuallyStartRecording();
+            } else {
+                timerelem.textContent = timerValue + 1;
+
+                let countdown = setInterval(() => {
+                    timerelem.textContent = timerValue;
+                    timerelem.classList.remove('timer-animate');
+                    void timerelem.offsetWidth;
+                    timerelem.classList.add('timer-animate');
+
+                    if (--timerValue < 0) {
+                        clearInterval(countdown);
+                        timerelem.style.display = 'none';
+                        actuallyStartRecording();
+                    }
+                }, 1000);
+            }
+        }
+        let recordingStartTime;
+let elapsedPausedTime = 0;
+let lastPauseTime;
+
+async function actuallyStartRecording() {
+    recordedChunks = [];
+
+    const video = document.getElementById('video');
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    function drawFrame() {
+        ctx.save();
+        if (isMirrored) {
+            ctx.translate(canvas.width, 0);
+            ctx.scale(-1, 1);
+        }
+        if (filterFunctions[currentFilter]) {
+            filterFunctions[currentFilter](ctx, canvas, video);
+        } else {
+            filterFunctions.original(ctx, canvas, video);
+        }
+        ctx.restore();
+        requestAnimationFrame(drawFrame);
+    }
+    drawFrame();
+
+    const videoStream = canvas.captureStream(30);
+    const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const combinedStream = new MediaStream([
+        ...videoStream.getTracks(),
+        ...audioStream.getTracks()
+    ]);
+
+    mediaRecorder = new MediaRecorder(combinedStream, { mimeType: "video/webm; codecs=vp9" });
+
+    mediaRecorder.ondataavailable = (event) => {
+        if (event.data && event.data.size > 0) {
+            recordedChunks.push(event.data);
+        }
+    };
+
+    mediaRecorder.onstop = saveRecording;
+
+    mediaRecorder.start();
+    isRecording = true;
+    isPaused = false;
+    elapsedPausedTime = 0;
+
+    updateUI("recording");
+    document.getElementById("stopwatch-btn").style.display = "inline-flex";
+
+    recordingStartTime = Date.now();
+    updateStopwatch();
+    stopwatchInterval = setInterval(updateStopwatch, 1000);
+
+    document.getElementById("pause-btn").onclick = function () {
+        if (isPaused) {
+            resumeRecording();
+        } else {
+            pauseRecording();
+        }
+    };
+    document.getElementById("stop-btn").onclick = stopRecording;
+}
+
+        function updateStopwatch() {
+            if (!isRecording || isPaused) return; // Don't update if paused
+
+            let elapsedTime = Math.floor((Date.now() - recordingStartTime - elapsedPausedTime) / 1000);
+            let minutes = String(Math.floor(elapsedTime / 60)).padStart(2, "0");
+            let seconds = String(elapsedTime % 60).padStart(2, "0");
+
+            document.getElementById("recording-stopwatch").textContent = `${minutes}:${seconds}`;
+        }
+
+        let stateFilter = {
+            saturation: 100,
+            brightness: 100,
+            hue: 0,
+            invert: 0
+        };
+
+        function getFilterCSS() {
+            let { saturation, brightness, hue, invert } = stateFilter;
+            return `saturate(${saturation}%) brightness(${brightness}%) hue-rotate(${hue}deg) invert(${invert})`;
+        }
+
+        function updateVideoFilter() {
+            const video = document.getElementById('video');
+            if (video) video.style.filter = getFilterCSS();
+        }
+
+        async function captureCameraImage(preset = currentFilter) {
+            const video = document.getElementById('video');
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+
+            if (isMirrored) {
+                ctx.translate(canvas.width, 0);
+                ctx.scale(-1, 1);
+            }
+
+            if (filterFunctions[preset]) {
+                filterFunctions[preset](ctx, canvas, video);
+            } else {
+                filterFunctions.original(ctx, canvas, video);
+            }
+
+            let dataUrl;
+            try {
+                let format = await ntxSession.send("settings.get", "CamImgFormat");
+                dataUrl = canvas.toDataURL(`image/${format ? format.toLowerCase() : 'webp'}`);
+            } catch (error) {
+                console.log("safe error: " + error);
+            }
+            return dataUrl;
+        }
+        const filterFunctions = {
+            original: (ctx, canvas, video) => {
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            },
+            bw: (ctx, canvas, video) => { ctx.drawImage(video, 0, 0, canvas.width, canvas.height); let imgData = ctx.getImageData(0, 0, canvas.width, canvas.height); let d = imgData.data; for (let i = 0; i < d.length; i += 4) { let avg = (d[i] + d[i + 1] + d[i + 2]) / 3; d[i] = d[i + 1] = d[i + 2] = avg; } ctx.putImageData(imgData, 0, 0); },
+            inverted: (ctx, canvas, video) => { ctx.drawImage(video, 0, 0, canvas.width, canvas.height); let imgData = ctx.getImageData(0, 0, canvas.width, canvas.height); let d = imgData.data; for (let i = 0; i < d.length; i += 4) { d[i] = 255 - d[i]; d[i + 1] = 255 - d[i + 1]; d[i + 2] = 255 - d[i + 2]; } ctx.putImageData(imgData, 0, 0); },
+            sepia: (ctx, canvas, video) => {
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                let imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                let d = imgData.data;
+                for (let i = 0; i < d.length; i += 4) {
+                    let r = d[i], g = d[i + 1], b = d[i + 2];
+                    d[i] = Math.min(255, 0.393 * r + 0.769 * g + 0.189 * b);
+                    d[i + 1] = Math.min(255, 0.349 * r + 0.686 * g + 0.168 * b);
+                    d[i + 2] = Math.min(255, 0.272 * r + 0.534 * g + 0.131 * b);
+                }
+                ctx.putImageData(imgData, 0, 0);
+            },
+            glitch: (ctx, canvas, video) => {
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                if (Math.random() < 0.2) {
+                    let sliceHeight = 5 + Math.random() * 30;
+                    let y = Math.floor(Math.random() * (canvas.height - sliceHeight));
+                    let slice = ctx.getImageData(0, y, canvas.width, sliceHeight);
+                    let dx = Math.floor((Math.random() - 0.5) * 40);
+                    ctx.putImageData(slice, dx, y);
+                }
+                if (Math.random() < 0.05) {
+                    ctx.globalCompositeOperation = "screen";
+                    ctx.drawImage(canvas, Math.random() * 5, 0);
+                    ctx.globalCompositeOperation = "source-over";
+                }
+            },
+            filmGrain: (ctx, canvas, video) => {
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                let imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                let d = imgData.data;
+
+                for (let y = 0; y < canvas.height; y++) {
+                    for (let x = 0; x < canvas.width; x++) {
+                        let i = (y * canvas.width + x) * 4;
+                        let fine = (Math.random() - 0.5) * 20;
+                        let medium = (Math.sin(x * 0.8 + y * 0.8 + Math.random() * 5) - 0.5) * 10;
+                        let coarse = (Math.sin(x * 0.2 + y * 0.2 + Math.random() * 20) - 0.5) * 5;
+                        let grain = fine + medium + coarse;
+                        d[i] = Math.min(255, Math.max(0, d[i] + grain));
+                        d[i + 1] = Math.min(255, Math.max(0, d[i + 1] + grain));
+                        d[i + 2] = Math.min(255, Math.max(0, d[i + 2] + grain));
+                    }
+                }
+
+                ctx.putImageData(imgData, 0, 0);
+            }
+            ,
+            posterize: (ctx, canvas, video) => {
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                let imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                let d = imgData.data;
+                let levels = 4;
+                for (let i = 0; i < d.length; i += 4) {
+                    d[i] = Math.floor(d[i] / 255 * levels) * (255 / (levels - 1));
+                    d[i + 1] = Math.floor(d[i + 1] / 255 * levels) * (255 / (levels - 1));
+                    d[i + 2] = Math.floor(d[i + 2] / 255 * levels) * (255 / (levels - 1));
+                }
+                ctx.putImageData(imgData, 0, 0);
+            },
+            crt: (ctx, canvas, video) => {
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                let imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                let d = imgData.data;
+                for (let y = 0; y < canvas.height; y++) {
+                    if (y % 3 === 0) {
+                        for (let x = 0; x < canvas.width; x++) {
+                            let i = (y * canvas.width + x) * 4;
+                            d[i] *= 0.7;
+                            d[i + 1] *= 0.7;
+                            d[i + 2] *= 0.7;
+                        }
+                    }
+                }
+                ctx.putImageData(imgData, 0, 0);
+                let gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+                gradient.addColorStop(0, "rgba(255,255,255,0.05)");
+                gradient.addColorStop(0.5, "rgba(0,0,0,0.2)");
+                gradient.addColorStop(1, "rgba(255,255,255,0.05)");
+                ctx.fillStyle = gradient;
+                for (let y = 0; y < canvas.height; y += 3) {
+                    ctx.fillRect(0, y, canvas.width, 2);
+                }
+            },
+            bloom: (ctx, canvas, video) => {
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                let imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                let d = imgData.data;
+                let glow = ctx.createImageData(canvas.width, canvas.height);
+                let g = glow.data;
+                for (let i = 0; i < d.length; i += 4) {
+                    let brightness = (d[i] + d[i + 1] + d[i + 2]) / 3;
+                    if (brightness > 180) {
+                        g[i] = d[i];
+                        g[i + 1] = d[i + 1];
+                        g[i + 2] = d[i + 2];
+                        g[i + 3] = 255;
+                    }
+                }
+                let glowCanvas = document.createElement("canvas");
+                glowCanvas.width = canvas.width;
+                glowCanvas.height = canvas.height;
+                let glowCtx = glowCanvas.getContext("2d");
+                glowCtx.putImageData(glow, 0, 0);
+                glowCtx.filter = "blur(12px)";
+                glowCtx.drawImage(glowCanvas, 0, 0);
+                ctx.globalCompositeOperation = "lighter";
+                ctx.drawImage(glowCanvas, 0, 0);
+                ctx.globalCompositeOperation = "source-over";
+            },
+            vivid: (ctx, canvas, video) => {
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                let imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                let d = imgData.data;
+                for (let i = 0; i < d.length; i += 4) {
+                    d[i] = Math.min(255, d[i] * 1.2);     // red boost
+                    d[i + 1] = Math.min(255, d[i + 1] * 1.2); // green boost
+                    d[i + 2] = Math.min(255, d[i + 2] * 1.2); // blue boost
+                }
+                ctx.putImageData(imgData, 0, 0);
+            },
+            pixelArt: (ctx, canvas, video) => {
+                let scale = 0.1;
+                let w = Math.max(1, Math.floor(canvas.width * scale));
+                let h = Math.max(1, Math.floor(canvas.height * scale));
+                ctx.imageSmoothingEnabled = false;
+                ctx.drawImage(video, 0, 0, w, h);
+                ctx.drawImage(canvas, 0, 0, w, h, 0, 0, canvas.width, canvas.height);
+                ctx.imageSmoothingEnabled = true;
+
+                let imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                let d = imgData.data;
+                let levels = 6;
+                for (let i = 0; i < d.length; i += 4) {
+                    d[i] = Math.floor(d[i] / 255 * levels) * (255 / (levels - 1));
+                    d[i + 1] = Math.floor(d[i + 1] / 255 * levels) * (255 / (levels - 1));
+                    d[i + 2] = Math.floor(d[i + 2] / 255 * levels) * (255 / (levels - 1));
+                }
+                ctx.putImageData(imgData, 0, 0);
+            },
+            halftone: (ctx, canvas, video) => {
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                let step = 6;
+                let imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                let d = imgData.data;
+                ctx.fillStyle = "black";
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                for (let y = 0; y < canvas.height; y += step) {
+                    for (let x = 0; x < canvas.width; x += step) {
+                        let i = (y * canvas.width + x) * 4;
+                        let brightness = (d[i] + d[i + 1] + d[i + 2]) / 3;
+                        let radius = (brightness / 255) * (step / 2);
+                        ctx.beginPath();
+                        ctx.arc(x, y, radius, 0, Math.PI * 2);
+                        ctx.fillStyle = "white";
+                        ctx.fill();
+                    }
+                }
+            },
+            ascii: (ctx, canvas, video) => {
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                let chars = "@#%*+=-:. ";
+                let step = 8;
+                let imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                let d = imgData.data;
+                ctx.fillStyle = "black";
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.font = step + "px monospace";
+                ctx.fillStyle = "white";
+                for (let y = 0; y < canvas.height; y += step) {
+                    for (let x = 0; x < canvas.width; x += step) {
+                        let i = (y * canvas.width + x) * 4;
+                        let brightness = (d[i] + d[i + 1] + d[i + 2]) / 3;
+                        let char = chars[Math.floor((brightness / 255) * (chars.length - 1))];
+                        ctx.fillText(char, x, y);
+                    }
+                }
+            },
+            Rainbow: (ctx, canvas, video) => {
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+                let colors = [
+                    "rgba(228,3,3,0.4)",
+                    "rgba(255,140,0,0.4)",
+                    "rgba(255,237,0,0.4)",
+                    "rgba(0,128,38,0.4)",
+                    "rgba(0,77,255,0.4)",
+                    "rgba(117,7,135,0.4)"
+                ];
+
+                let stripeHeight = canvas.height / colors.length;
+                for (let i = 0; i < colors.length; i++) {
+                    ctx.fillStyle = colors[i];
+                    ctx.fillRect(0, i * stripeHeight, canvas.width, stripeHeight);
+                }
+            }
+        };
+
+
+        function filterToCSS(f) {
+            return `saturate(${f.saturation}%) brightness(${f.brightness}%) hue-rotate(${f.hue}deg) invert(${f.invert})`;
+        }
+
+        const filtersPage = document.getElementById("ft-filtersPage");
+        filtersPage.innerHTML = Object.entries(filterFunctions).map(([key, f]) => `
+    <div class="single_filter" data-filter="${key}">
+        <img src="../cameraSample.png">
+        <span class="label">${key.replace(/([A-Z])/g, " $1").replace(/^./, s => s.toUpperCase())}</span>
+    </div>
+`).join("");
+
+        Array.from(document.getElementsByClassName("single_filter")).forEach((element) => {
+            const img = element.getElementsByTagName("img")[0];
+            const preset = element.getAttribute("data-filter");
+            img.onload = () => {
+                const thumbCanvas = document.createElement("canvas");
+                thumbCanvas.width = img.naturalWidth;
+                thumbCanvas.height = img.naturalHeight;
+                const ctx = thumbCanvas.getContext("2d");
+                const tempImg = new window.Image();
+                tempImg.crossOrigin = "anonymous";
+                tempImg.src = img.src;
+                tempImg.onload = () => {
+                    if (filterFunctions[preset]) {
+                        filterFunctions[preset](ctx, thumbCanvas, tempImg);
+                    } else {
+                        filterFunctions.original(ctx, thumbCanvas, tempImg);
+                    }
+                    img.onload = null;
+                    img.src = thumbCanvas.toDataURL();
+
+                };
+            };
+            if (img.complete) img.onload();
+
+            element.onclick = () => {
+                applyFilter(preset);
+            };
+        });
+        function applyFilter(preset) {
+            currentFilter = preset in filterFunctions ? preset : "original";
+            let timerelem = document.getElementById("filterNameDisp");
+            timerelem.style.display = 'grid';
+            timerelem.textContent = preset;
+            setTimeout(() => {
+                timerelem.style.display = 'none';
+            }, 1000);
+        }
+
+        function applyFilterToImage(imgElement, preset) {
+            const filter = filterFunctions[preset] ? filterToCSS(filterFunctions[preset]) : getFilterCSS();
+            imgElement.style.filter = filter;
+        }
+
+
+
+        async function capture(obj1) {
+            obj = obj1;
+            const video = document.getElementById('videoCanvas');
+            originalText = obj.innerHTML;
+            obj.innerHTML = "...";
+
+            let timerValue = parseInt(document.getElementById('timer-select').value);
+            let timerelem = document.getElementById("timer");
+            timerelem.style.display = 'grid';
+
+            if (isNaN(timerValue) || timerValue <= 0) {
+                timerelem.textContent = "";
+                video.style.display = "none";
+                await startCaptureProcess();
+            } else {
+                timerelem.textContent = timerValue + 1;
+
+                let countdown = setInterval(async () => {
+                    timerelem.textContent = timerValue;
+                    timerelem.classList.remove('timer-animate');
+                    void timerelem.offsetWidth;
+                    timerelem.classList.add('timer-animate');
+
+                    if (--timerValue < 0) {
+                        clearInterval(countdown);
+                        timerelem.textContent = "";
+                        video.style.display = "none";
+                        await startCaptureProcess();
+                    }
+                }, 1000);
+            }
+
+            async function startCaptureProcess() {
+                try {
+                    let imgData = await captureCameraImage(currentFilter);
+                    let format = (await ntxSession.send("settings.get", "CamImgFormat")) || 'webp';
+                    let filename = await generateFilename();
+                    let lastFileID = await createFile("Media/", filename, format, imgData);
+                    ntxSession.send("appStorage.set", "lastFile", lastFileID);
+                    obj.innerHTML = originalText;
+                    video.style.display = "block";
+                    setTimeout(updatePreviewImage, 1000)
+                } catch (error) {
+                    console.log("Capture error:", error);
+                    obj.innerHTML = originalText;
+                }
+                timerelem.style.display = 'none';
+            }
+        }
+
+        function saveRecording() {
+            async function createFileWithTimestamp() {
+                let filename = await generateFilename("video");
+                let blob = new Blob(recordedChunks, { type: 'video/webm' });
+                let reader = new FileReader();
+                reader.onloadend = async function () {
+                    let dataUri = reader.result;
+                    await createFile("Media/", filename, "webm", dataUri);
+                };
+                reader.readAsDataURL(blob);
+            }
+            createFileWithTimestamp();
+        }
+
+        async function generateFilename(prefix = "") {
+            let now = new Date();
+            let timestamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}, ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+            let uid = await ntxSession.send("utility.genUID");
+            return prefix ? `${prefix}_${timestamp} ${uid}` : `${timestamp} ${uid}`;
+        }
+
+        async function createFile(path, filename, format, data) {
+            return await ntxSession.send("fileSet.createFile", path, filename, format, data);
+
+        }
+
+
+        function toggleMirror() {
+            const video = document.getElementById('videoCanvas');
+            const mirrorBtn = document.getElementById('mirror-btn');
+
+            isMirrored = !isMirrored;
+            video.style.transition = 'transform 0.5s ease-in-out';
+            video.style.transform = isMirrored ? 'scaleX(-1)' : 'scaleX(1)';
+
+            mirrorBtn.classList.add('rotate-animation');
+            setTimeout(() => {
+                mirrorBtn.classList.remove('rotate-animation');
+            }, 500);
+        }
+
+
+        async function toggleFlashlight() {
+            const flashlightBtn = document.getElementById('flashlight-btn');
+
+            if (!currentStream) return console.error("No active stream");
+
+            let videoTrack = currentStream.getVideoTracks()[0];
+            let capabilities = videoTrack.getCapabilities();
+
+            if (!capabilities.torch) return console.warn("Flashlight not supported on this device");
+
+            try {
+                isFlashlightOn = !isFlashlightOn;
+                await videoTrack.applyConstraints({ advanced: [{ torch: isFlashlightOn }] });
+
+                flashlightBtn.innerHTML = `<span class="material-symbols-rounded">${isFlashlightOn ? 'flash_off' : 'flash_on'}</span>`;
+            } catch (error) {
+                console.error("Error toggling flashlight:", error);
+            }
+        }
+
+        Array.from(document.getElementsByClassName("fineToolPage")).forEach((element) => {
+            element.style.display = "none";
+        });
+        document.getElementById("fineToolPages").style.display = "none";
+        function openFineTool(toolName) {
+            if (document.getElementById("fineToolPages").style.display == "none") {
+                document.getElementById("fineToolPages").style.display = "flex";
+            } else {
+                document.getElementById("fineToolPages").style.display = "none";
+                return
+            }
+            Array.from(document.getElementsByClassName("fineToolPage")).forEach((element) => {
+                element.style.display = "none";
+            });
+            if (document.getElementById("ft-" + toolName).style.display != "flex")
+                document.getElementById("ft-" + toolName).style.display = "flex";
+        }
+
+
+    </script>
+</body>
+
+</html>

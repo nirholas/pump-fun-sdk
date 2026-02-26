@@ -1,0 +1,624 @@
+{
+  "LairOS Classic": {
+    "type": "dark",
+    "colors": {
+      "--col-bg1": "#101010",
+      "--col-bg2": "#171717",
+      "--col-bg3": "#262626",
+      "--col-bgh": "#44403C",
+      "--col-txth": "#ffffff",
+      "--col-txt1": "#FFFFFF",
+      "--col-good": "#49AC49",
+      "--col-bad": "#AC4949"
+    },
+    "wallpaper": "https://images.unsplash.com/photo-1533135404995-a618910b7b6f?q=80&w=1769&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+  },
+  "Obsidian+": {
+    "by": "un4ya.1024",
+    "type": "dark",
+    "colors": {
+      "--col-bg1": "#000000",
+      "--col-bg2": "#0B0915",
+      "--col-bg3": "#100A1C",
+      "--col-bgh": "#513E92",
+      "--col-txth": "#FFFFFF",
+      "--col-txt1": "#CACAFF",
+      "--col-good": "#50358C",
+      "--col-bad": "#AC2487"
+    },
+    "wallpaper": "https://file.garden/ZYaO49YewxMFnAd1/LairOS%20TTA%20Wallpapers/Rock/Obsidian1"
+  },
+  "Crimson Midnight": {
+    "type": "dark",
+    "colors": {
+      "--col-bg1": "#4C0519",
+      "--col-bg2": "#5F061F",
+      "--col-bg3": "#BE123C",
+      "--col-bgh": "#F43F5E",
+      "--col-txth": "#D4D4D4",
+      "--col-txt1": "#FFFFFF",
+      "--col-good": "#49AC49",
+      "--col-bad": "#AC4949"
+    },
+    "wallpaper": "https://images.unsplash.com/photo-1477346611705-65d1883cee1e?q=80&w=1770&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+  },
+  "Material Dark": {
+    "type": "dark",
+    "colors": {
+      "--col-bg1": "#212121",
+      "--col-bg2": "#161616",
+      "--col-bg3": "#2F2F2F",
+      "--col-bgh": "#455A64",
+      "--col-txth": "#FFFFFF",
+      "--col-txt1": "#FFFFFF",
+      "--col-good": "#49AC49",
+      "--col-bad": "#AC4949"
+    },
+    "wallpaper": "https://images.unsplash.com/photo-1728493411049-f0a8b0d68885?q=80&w=1779&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+  },
+  "Scarlet Gold": {
+    "type": "dark",
+    "colors": {
+      "--col-bg1": "#000000",
+      "--col-bg2": "#1D0000",
+      "--col-bg3": "#321800",
+      "--col-bgh": "#9B5600",
+      "--col-txth": "#ffffff",
+      "--col-txt1": "#FFDB53",
+      "--col-good": "#FF9700",
+      "--col-bad": "#FF0000"
+    },
+    "wallpaper": "https://images.unsplash.com/photo-1575041051612-323e644ca1b8?q=80&w=1770&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+  },
+  "Material Bright": {
+    "type": "bright",
+    "colors": {
+      "--col-bg1": "#ECEFF1",
+      "--col-bg3": "#B0BEC5",
+      "--col-bg2": "#FAFAFA",
+      "--col-bgh": "#90A4AE",
+      "--col-txth": "#000000",
+      "--col-txt1": "#161616",
+      "--col-good": "#49AC49",
+      "--col-bad": "#AC4949"
+    },
+    "wallpaper": "https://images.unsplash.com/photo-1572775396187-ab78b80b32b2?q=80&w=1770&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+  },
+  "Win Classic Dark": {
+    "type": "dark",
+    "colors": {
+      "--col-bg1": "#232A32",
+      "--col-bg2": "#2E2E2E",
+      "--col-bg3": "#374049",
+      "--col-bgh": "#56738E",
+      "--col-txth": "#ffffff",
+      "--col-txt1": "#FFFFFF",
+      "--col-good": "#49AC49",
+      "--col-bad": "#AC4949"
+    },
+    "wallpaper": "https://images.unsplash.com/photo-1687918233668-af9967e8052e?q=80&w=1955&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+  },
+  "Monkai Yellow": {
+    "type": "dark",
+    "colors": {
+      "--col-bg1": "#21211A",
+      "--col-bg2": "#1A1B17",
+      "--col-bg3": "#2A2B23",
+      "--col-bgh": "#4D4D4D",
+      "--col-txth": "#ffffff",
+      "--col-txt1": "#FFF8CF",
+      "--col-good": "#49AC49",
+      "--col-bad": "#AC4949"
+    },
+    "wallpaper": "https://images.unsplash.com/photo-1504458003692-463a8064ee4a?q=80&w=1770&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+  },
+  "Raw jungle": {
+    "type": "dark",
+    "colors": {
+      "--col-bg1": "#010500",
+      "--col-bg2": "#030705",
+      "--col-bg3": "#032600",
+      "--col-bgh": "#0D1609",
+      "--col-txth": "#ffffff",
+      "--col-txt1": "#3DFF00",
+      "--col-good": "#3DFF00",
+      "--col-bad": "#FF0000"
+    }
+  },
+  "Aqua marine": {
+    "type": "dark",
+    "colors": {
+      "--col-bg1": "#263A39",
+      "--col-bg2": "#365351",
+      "--col-bg3": "#1E2E2D",
+      "--col-bgh": "#2DA8A6",
+      "--col-txth": "#FFFFFF",
+      "--col-txt1": "#FFFFFF",
+      "--col-good": "#49AC49",
+      "--col-bad": "#AC4949"
+    },
+    "wallpaper": "https://images.unsplash.com/photo-1698728877137-963bca5b5310?q=80&w=1932&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+  },
+  "Twilight Nomad": {
+    "type": "bright",
+    "colors": {
+      "--col-bg1": "#CB9862",
+      "--col-bg2": "#D7AE66",
+      "--col-bg3": "#F8BF60",
+      "--col-bgh": "#6B4A26",
+      "--col-txth": "#F5FFFF",
+      "--col-txt1": "#09211E",
+      "--col-good": "#49AC49",
+      "--col-bad": "#AC4949"
+    },
+    "wallpaper": "https://cdn.pixabay.com/photo/2022/12/01/04/40/backpacker-7628303_1280.jpg"
+  },
+  "Diorite": {
+    "type": "bright",
+    "by": "un4ya.1024",
+    "colors": {
+      "--col-bg1": "#DFDFDF",
+      "--col-bg2": "#F4F9F0",
+      "--col-bg3": "#D8D8D8",
+      "--col-bgh": "#FFFFFF",
+      "--col-txth": "#607460",
+      "--col-txt1": "#424D43",
+      "--col-good": "#49AC49",
+      "--col-bad": "#AC4949"
+    },
+    "wallpaper": "https://file.garden/ZYaO49YewxMFnAd1/LairOS%20TTA%20Wallpapers/Rock/Diorite1"
+  },
+  "Dorito Dust": {
+    "type": "bright",
+    "colors": {
+      "--col-bg1": "#FFE8C1",
+      "--col-bg2": "#FFC67F",
+      "--col-bg3": "#FFB22E",
+      "--col-bgh": "#FF9A1E",
+      "--col-txth": "#FFFFFF",
+      "--col-txt1": "#874500",
+      "--col-good": "#49AC49",
+      "--col-bad": "#AC4949"
+    },
+    "wallpaper": "https://images.unsplash.com/photo-1503494201477-5e04f651cfe5?q=80&w=1770&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+  },
+  "October Glow": {
+    "type": "dark",
+    "colors": {
+      "--col-bg1": "#190900",
+      "--col-bg2": "#5A1904",
+      "--col-bg3": "#E76531",
+      "--col-bgh": "#E98006",
+      "--col-txth": "#FFFFFF",
+      "--col-txt1": "#FFFFFF",
+      "--col-good": "#FF0000",
+      "--col-bad": "#FF0093"
+    },
+    "wallpaper": "https://images.unsplash.com/photo-1445586831130-7f00f5eac0f2?q=80&w=1769&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+  },
+  "Panels": {
+    "type": "dark",
+    "colors": {
+      "--col-bg1": "#263238",
+      "--col-txt1": "#FFFFFF",
+      "--col-bg2": "#37474F",
+      "--colors-text-section": "#FFFFFF",
+      "--col-bg3": "#455A64",
+      "--colors-text-sub": "#FFFFFF",
+      "--col-bgh": "#546E7A",
+      "--col-txth": "#FFFFFF",
+      "--col-good": "#9DFF7E",
+      "--col-bad": "#AC4949",
+      "--siz-radius1": ".3rem",
+      "--spacing-normal": "3px",
+      "--sizing-normal": "10px"
+    }
+  },
+  "Ristretto": {
+    "type": "dark",
+    "colors": {
+      "--col-bg1": "#191515",
+      "--col-bg2": "#2C2525",
+      "--col-bg3": "#211C1C",
+      "--col-bgh": "#F9CC6C",
+      "--col-txt1": "#F2F1F3",
+      "--col-txth": "#141414",
+      "--siz-radius1": ".7rem",
+      "--spacing-normal": "0.3rem"
+    },
+    "wallpaper": "https://images.unsplash.com/photo-1744274800188-4f3159c408cf?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+  },
+  "Aquamarine+": {
+    "type": "dark",
+    "by": "un4ya.1024",
+    "colors": {
+      "--col-bg1": "#101819",
+      "--col-bg2": "#182227",
+      "--col-bg3": "#253D3E",
+      "--col-bgh": "#A9F9EF",
+      "--col-txt1": "#C5F3EE",
+      "--col-txth": "#203638",
+      "--col-good": "#85FF85",
+      "--col-bad": "#AC4949",
+      "--siz-radius1": ".5rem",
+      "--spacing-normal": "0.2rem",
+      "--spacing-gap": "5px",
+      "--sizing-normal": "0.41rem"
+    },
+    "wallpaper": "https://images.unsplash.com/photo-1668964640519-fcbce3f0449d?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+  },
+  "Iceberg": {
+    "type": "light",
+    "by": "un4ya.1024",
+    "colors": {
+      "--col-bg1": "#E6EFFF",
+      "--col-bg2": "#D6E3FF",
+      "--col-bg3": "#FFFFFF",
+      "--col-bgh": "#94A9D7",
+      "--col-txt1": "#748BA5",
+      "--col-txth": "#FFFFFF",
+      "--col-good": "#FFFFFF",
+      "--col-bad": "#A2AADF",
+      "--siz-radius1": "0.0875rem",
+      "--spacing-normal": "0.1rem",
+      "--spacing-gap": "5px",
+      "--sizing-normal": "0.24rem"
+    },
+    "wallpaper": "https://images.unsplash.com/photo-1514912167371-414eb14af094?q=80&w=2071&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+  },
+  "Forest": {
+    "type": "dark",
+    "by": "un4ya.1024",
+    "colors": {
+      "--col-bg1": "#2C3D2C",
+      "--col-bg2": "#345037",
+      "--col-bg3": "#3F5F36",
+      "--col-bgh": "#77B87C",
+      "--col-txt1": "#93BD9A",
+      "--col-txth": "#273B2B",
+      "--col-good": "#C7FFC7",
+      "--col-bad": "#90BA8D",
+      "--siz-radius1": ".2rem",
+      "--spacing-normal": "0.1rem",
+      "--spacing-gap": "5px",
+      "--sizing-normal": "0.42rem"
+    },
+    "wallpaper": "https://images.unsplash.com/photo-1727067113385-40c036c0f779?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+  },
+  "Evening": {
+    "type": "dark",
+    "by": "un4ya.1024",
+    "colors": {
+      "--col-bg1": "#0E162A",
+      "--col-bg2": "#1F2541",
+      "--col-bg3": "#313353",
+      "--col-bgh": "#F9F7C9",
+      "--col-txt1": "#F3F3B3",
+      "--col-txth": "#1D2138",
+      "--col-good": "#85FF85",
+      "--col-bad": "#AC4949",
+      "--siz-radius1": ".3rem",
+      "--spacing-normal": "0.2rem",
+      "--spacing-gap": "5px",
+      "--sizing-normal": "0.41rem"
+    },
+    "wallpaper": "https://images.unsplash.com/photo-1610798018989-001c5150766a?q=80&w=2008&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+  },
+  "Ultramarine": {
+    "type": "dark",
+    "by": "un4ya.1024",
+    "colors": {
+      "--col-bg1": "#080A19",
+      "--col-bg2": "#0C0F27",
+      "--col-bg3": "#15183E",
+      "--col-bgh": "#70BCF9",
+      "--col-txt1": "#A7C2F3",
+      "--col-txth": "#0F1538",
+      "--col-good": "#85FF85",
+      "--col-bad": "#AC4949",
+      "--siz-radius1": ".7rem",
+      "--spacing-normal": "0.4rem",
+      "--spacing-gap": "8px",
+      "--sizing-normal": "0.48rem"
+    },
+    "wallpaper": "https://images.unsplash.com/photo-1563891907885-f01bba599417?q=80&w=2072&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+  },
+  "Twilight": {
+    "type": "dark",
+    "by": "un4ya.1024",
+    "colors": {
+      "--col-bg1": "#493866",
+      "--col-bg2": "#5E4B86",
+      "--col-bg3": "#6E598F",
+      "--col-bgh": "#D7B6F9",
+      "--col-txt1": "#E7C5F3",
+      "--col-txth": "#82518E",
+      "--col-good": "#85FF85",
+      "--col-bad": "#AC4949",
+      "--siz-radius1": ".7rem",
+      "--spacing-normal": "0rem",
+      "--spacing-gap": "8px",
+      "--sizing-normal": "0.57rem"
+    },
+    "wallpaper": "https://images.unsplash.com/photo-1618814941106-07c927b7078d?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+  },
+  "Vehemence": {
+    "type": "dark",
+    "by": "un4ya.1024",
+    "colors": {
+      "--col-bg1": "#2A0505",
+      "--col-bg2": "#1E0C0C",
+      "--col-bg3": "#000000",
+      "--col-bgh": "#D13A3A",
+      "--col-txt1": "#F3A4A4",
+      "--col-txth": "#3A1212",
+      "--col-good": "#85FF85",
+      "--col-bad": "#AC4949",
+      "--siz-radius1": "0rem",
+      "--spacing-normal": "0.42rem",
+      "--spacing-gap": "8.8px",
+      "--sizing-normal": "0.34rem"
+    },
+    "wallpaper": "https://images.unsplash.com/photo-1626548752000-afb81286797e?q=80&w=1931&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+  },
+  "Midnight dawn": {
+    "type": "dark",
+    "by": "OriginOS Inspired",
+    "colors": {
+      "--col-bg1": "#000000",
+      "--col-bg2": "#111111",
+      "--col-bg3": "#111111",
+      "--col-bgh": "#FF8161",
+      "--col-txt1": "#FFFFFF",
+      "--col-txth": "#000000",
+      "--col-good": "#85FF85",
+      "--col-bad": "#AC4949",
+      "--siz-radius1": ".5rem",
+      "--spacing-normal": "7px",
+      "--spacing-gap": "10px",
+      "--sizing-normal": "7px"
+    },
+    "wallpaper": "https://raw.githubusercontent.com/Mistium/Origin-OS/main/Wallpapers/originOS%20Dawn.png"
+  },
+  "Starry Maze": {
+    "colors": {
+      "--col-bg1": "#000000",
+      "--col-bg2": "#070707",
+      "--col-bg3": "#101010",
+      "--col-bgh": "#FFF0E5",
+      "--col-txt1": "#FFFFFF",
+      "--col-txth": "#171717",
+      "--col-good": "#49AC49",
+      "--col-bad": "#AC4949",
+      "--siz-radius1": ".3rem",
+      "--spacing-normal": "0.3rem",
+      "--spacing-gap": "6px",
+      "--sizing-normal": "0.5rem"
+    },
+    "wallpaper": "https://images.unsplash.com/photo-1514669362126-0d8bb38261a3?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+  },
+  "Minionese": {
+    "type": "dark",
+    "colors": {
+      "--col-bg1": "#0B3643",
+      "--col-bg2": "#015663",
+      "--col-bg3": "#8E771A",
+      "--col-bgh": "#E1AE20",
+      "--col-txt1": "#E9E8E7",
+      "--col-txth": "#12272B",
+      "--col-good": "#49AC49",
+      "--col-bad": "#AC4949",
+      "--siz-radius1": "1rem",
+      "--spacing-normal": "0.3rem",
+      "--spacing-gap": "6px",
+      "--sizing-normal": "0.5rem"
+    },
+    "wallpaper": "https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Fwallpaperaccess.com%2Ffull%2F27847.jpg&f=1&nofb=1&ipt=0ed41065890108465c6c528df110fa56a32064e760537dddf93a3cfd792fcdc0"
+  },
+  "Invisible universe": {
+    "type": "dark",
+    "colors": {
+      "--col-bg1": "#150E1B",
+      "--col-bg2": "#2E1B3C",
+      "--col-bg3": "#67507E",
+      "--col-bgh": "#BCA7F9",
+      "--col-txt1": "#F3F3F3",
+      "--col-txth": "#2F1E56",
+      "--col-good": "#85FF85",
+      "--col-bad": "#AC4949",
+      "--siz-radius1": ".5rem",
+      "--spacing-normal": "0.2rem",
+      "--spacing-gap": "5px",
+      "--sizing-normal": "0.41rem"
+    },
+    "wallpaper": "https://images.unsplash.com/photo-1688614598602-0a71fbfed6c5?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+  },
+  "Cherry pink": {
+    "type": "light",
+    "colors": {
+      "--col-bg1": "#FFEDF6",
+      "--col-bg2": "#FFD1DF",
+      "--col-bg3": "#FFF2FB",
+      "--col-bgh": "#D77496",
+      "--col-txt1": "#724F72",
+      "--col-txth": "#FFFFFF",
+      "--col-good": "#FFFFFF",
+      "--col-bad": "#A2AADF",
+      "--siz-radius1": "1rem",
+      "--spacing-normal": "0.3rem",
+      "--spacing-gap": ".5px",
+      "--sizing-normal": "0.5rem"
+    },
+    "wallpaper": "https://images.unsplash.com/photo-1555231955-348aa2312e19?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+  },
+  "Mint default": {
+    "type": "dark",
+    "colors": {
+      "--col-bg1": "#2E2E2E",
+      "--col-bg2": "#404040",
+      "--col-bg3": "#6C6C6C",
+      "--col-bgh": "#8AB057",
+      "--col-txt1": "#FFFFFF",
+      "--col-txth": "#FFFFFF",
+      "--col-good": "#8BB158",
+      "--col-bad": "#E03022",
+      "--siz-radius1": "0rem",
+      "--spacing-normal": "3px",
+      "--spacing-gap": "3px",
+      "--sizing-normal": "5px 10px"
+    },
+    "wallpaper": "https://wallpapers.com/images/high/operating-system-linux-mint-20-default-v8tc8pbevmmyxtib.webp"
+  },
+  "Lair Neon": {
+    "type": "dark",
+    "by": "LairOS",
+    "colors": {
+      "--col-bg1": "#0A0A0F",
+      "--col-bg2": "#12121C",
+      "--col-bg3": "#1A1A2E",
+      "--col-bgh": "#00FF88",
+      "--col-txt1": "#E0FFE0",
+      "--col-txth": "#0A0A0F",
+      "--col-good": "#00FF88",
+      "--col-bad": "#FF3366",
+      "--siz-radius1": ".5rem",
+      "--spacing-normal": "0.2rem",
+      "--spacing-gap": "6px",
+      "--sizing-normal": "0.41rem"
+    },
+    "wallpaper": "https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3"
+  },
+  "Lair Abyss": {
+    "type": "dark",
+    "by": "LairOS",
+    "colors": {
+      "--col-bg1": "#060612",
+      "--col-bg2": "#0C0C24",
+      "--col-bg3": "#141438",
+      "--col-bgh": "#6C5CE7",
+      "--col-txt1": "#D4D0FF",
+      "--col-txth": "#FFFFFF",
+      "--col-good": "#55EFC4",
+      "--col-bad": "#FF6B6B",
+      "--siz-radius1": ".6rem",
+      "--spacing-normal": "0.3rem",
+      "--spacing-gap": "6px",
+      "--sizing-normal": "0.45rem"
+    },
+    "wallpaper": "https://images.unsplash.com/photo-1534796636912-3b95b3ab5986?q=80&w=2071&auto=format&fit=crop&ixlib=rb-4.0.3"
+  },
+  "Lair Ember": {
+    "type": "dark",
+    "by": "LairOS",
+    "colors": {
+      "--col-bg1": "#0F0806",
+      "--col-bg2": "#1A100A",
+      "--col-bg3": "#2A1A10",
+      "--col-bgh": "#FF6B35",
+      "--col-txt1": "#FFE8D6",
+      "--col-txth": "#FFFFFF",
+      "--col-good": "#FFB347",
+      "--col-bad": "#FF4757",
+      "--siz-radius1": ".4rem",
+      "--spacing-normal": "0.2rem",
+      "--spacing-gap": "5px",
+      "--sizing-normal": "0.4rem"
+    },
+    "wallpaper": "https://images.unsplash.com/photo-1573455494060-c5595004fb6c?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3"
+  },
+  "Lair Frost": {
+    "type": "light",
+    "by": "LairOS",
+    "colors": {
+      "--col-bg1": "#E8F0FE",
+      "--col-bg2": "#F5F8FF",
+      "--col-bg3": "#D4E4FF",
+      "--col-bgh": "#3B82F6",
+      "--col-txt1": "#1E3A5F",
+      "--col-txth": "#FFFFFF",
+      "--col-good": "#10B981",
+      "--col-bad": "#EF4444",
+      "--siz-radius1": ".5rem",
+      "--spacing-normal": "0.2rem",
+      "--spacing-gap": "5px",
+      "--sizing-normal": "0.41rem"
+    },
+    "wallpaper": "https://images.unsplash.com/photo-1478719059408-592965723cbc?q=80&w=2012&auto=format&fit=crop&ixlib=rb-4.0.3"
+  },
+  "Lair Phantom": {
+    "type": "dark",
+    "by": "LairOS",
+    "colors": {
+      "--col-bg1": "#0D0B14",
+      "--col-bg2": "#16131F",
+      "--col-bg3": "#201C2B",
+      "--col-bgh": "#A855F7",
+      "--col-txt1": "#E2D9F3",
+      "--col-txth": "#FFFFFF",
+      "--col-good": "#A855F7",
+      "--col-bad": "#F43F5E",
+      "--siz-radius1": ".7rem",
+      "--spacing-normal": "0.3rem",
+      "--spacing-gap": "7px",
+      "--sizing-normal": "0.48rem"
+    },
+    "wallpaper": "https://images.unsplash.com/photo-1519681393784-d120267933ba?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3"
+  },
+  "Lair Signal": {
+    "type": "dark",
+    "by": "LairOS",
+    "colors": {
+      "--col-bg1": "#080C14",
+      "--col-bg2": "#0F1520",
+      "--col-bg3": "#182030",
+      "--col-bgh": "#38BDF8",
+      "--col-txt1": "#E0F2FE",
+      "--col-txth": "#0C1829",
+      "--col-good": "#34D399",
+      "--col-bad": "#FB7185",
+      "--siz-radius1": ".5rem",
+      "--spacing-normal": "0.2rem",
+      "--spacing-gap": "6px",
+      "--sizing-normal": "0.41rem"
+    },
+    "wallpaper": "https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072&auto=format&fit=crop&ixlib=rb-4.0.3"
+  },
+  "Lair Vault": {
+    "type": "dark",
+    "by": "LairOS",
+    "colors": {
+      "--col-bg1": "#0A0A0A",
+      "--col-bg2": "#141414",
+      "--col-bg3": "#1E1E1E",
+      "--col-bgh": "#F59E0B",
+      "--col-txt1": "#FEF3C7",
+      "--col-txth": "#0A0A0A",
+      "--col-good": "#F59E0B",
+      "--col-bad": "#EF4444",
+      "--siz-radius1": ".3rem",
+      "--spacing-normal": "0.2rem",
+      "--spacing-gap": "5px",
+      "--sizing-normal": "0.4rem"
+    },
+    "wallpaper": "https://images.unsplash.com/photo-1618044733300-9472054094ee?q=80&w=2071&auto=format&fit=crop&ixlib=rb-4.0.3"
+  },
+  "Lair Pulse": {
+    "type": "dark",
+    "by": "LairOS",
+    "colors": {
+      "--col-bg1": "#0B0010",
+      "--col-bg2": "#150020",
+      "--col-bg3": "#200030",
+      "--col-bgh": "#E040FB",
+      "--col-txt1": "#F3E5F5",
+      "--col-txth": "#FFFFFF",
+      "--col-good": "#00E676",
+      "--col-bad": "#FF1744",
+      "--siz-radius1": ".5rem",
+      "--spacing-normal": "0.3rem",
+      "--spacing-gap": "6px",
+      "--sizing-normal": "0.45rem"
+    },
+    "wallpaper": "https://images.unsplash.com/photo-1614850523459-c2f4c699c52e?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3"
+  }
+}

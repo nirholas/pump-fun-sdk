@@ -1,0 +1,1058 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+    <meta name="lair-include" content="lair.css">
+  <meta name="viewport" content="width=device-width">
+  <meta name="lair-icon" content="apps">
+  <title>Tic Tac Toe</title>
+  <style>
+    html, body {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  background-color: black;
+  color: white;
+}
+*{
+  padding: 0;
+  margin: 0;
+}
+#name {
+  font-size: 42px;
+  font-weight: bold;
+  color: #dde92f;
+  position: absolute;
+  transform: translateX(-50%);
+  left: 50%;
+  top: 50px;
+}
+#size1 {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  position: absolute;
+  transform: translateX(-50%);
+  left: 50%;
+  width: 480px;
+  height: 75px;
+  top: 130px;
+}
+#sizetext,
+#in,
+#sizeindicator {
+  position: absolute;
+  transform: translateX(-50%);
+}
+#sizetext {
+  left: 30%;
+}
+#in {
+  left: 55%;
+  text-align: center;
+  font-size: 32px;
+  width: 100px;
+  background-color: gray;
+}
+#sizeindicator {
+    color: #babfbc;
+    left: 80%;
+}
+#size2 {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  position: absolute;
+  transform: translateX(-50%);
+  left: 50%;
+  width: 480px;
+  height: 75px;
+  top: 200px;
+}
+#sizetext2,
+#in2,
+#sizeindicator2 {
+  position: absolute;
+  transform: translateX(-50%);
+}
+#sizetext2{
+  left: 30%;
+}
+#in2 {
+  left: 55%;
+  text-align: center;
+  font-size: 32px;
+  width: 100px;
+  background-color: gray;
+}
+#sizeindicator2 {
+  color: #babfbc;
+  left: 80%;
+}
+#playmod {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  position: absolute;
+  transform: translateX(-50%);
+  left: 50%;
+  width: 480px;
+  height: 75px;
+  top: 300px;
+}
+#playmodtext,
+#start,
+#online {
+  position: absolute;
+  transform: translateX(-50%);
+}
+#playmodtext {
+  left: 30%;
+}
+#start {
+  font-size: 32px;
+  left: 55%;
+  width: 100px;
+  background-color: #2cdd6a;
+  border-radius:5px;
+}
+#online {
+  font-size: 32px;
+  left: 80%;
+  width: 100px;
+  background-color: #2cdd6a;
+  border-radius:5px;
+}
+#as1,
+#as2,
+#as3,
+#as4{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  position: absolute;
+  transform: translateX(-50%);
+  left: 50%;
+  width: 400px;
+  height: 75px;
+}
+#as1 {
+  top: 370px;
+}
+#l1,
+#in3x,
+#in3o {
+  position: absolute;
+  transform: translateX(-50%);
+}
+#l1 {
+  left: 30%;
+}
+#in3x {
+  width: 90px;
+  left: 55%;
+}
+#in3o {
+  width: 90px;
+  left: 80%;
+}
+#as2 {
+  top: 402px;
+}
+#l2,
+#in4x,
+#in4o {
+  position: absolute;
+  transform: translateX(-50%);
+}
+#l2 {
+  left: 30%;
+}
+#in4x {
+  width: 90px;
+  left: 55%;
+}
+#in4o {
+  width: 90px;
+  left: 80%;
+}
+#as3 {
+  top: 434px;
+}
+#l3,
+#in5x,
+#in5o {
+  position: absolute;
+  transform: translateX(-50%);
+}
+#l3 {
+  left: 30%;
+}
+#in5x {
+  width: 90px;
+  left: 55%;
+}
+#in5o {
+  width: 90px;
+  left: 80%;
+}
+#as4 {
+  top: 466px;
+}
+#l4,
+#in6 {
+  position: absolute;
+  transform: translateX(-50%);
+}
+#l4 {
+  left: 30%;
+}
+#in6 {
+  width: 90px;
+  left: 55%;
+}
+#replay {
+  bottom: 32px;
+  font-size: 32px;
+  position: absolute;
+  transform: translateX(-50%);
+  left: 50%;
+  background-color: #2cdd6a;
+}
+#restart {
+    background-color: #ff6161;
+    padding: 5px 50px;
+    font-size: 32px;
+    position: absolute;
+    transform: translateX(-50%);
+    left: 50%;
+    top: 30px;
+    color: #1e008a;
+}
+#restart:Hover {
+    background-color: #ff6161;
+    padding: 5px 50px;
+    font-size: 32px;
+    position: absolute;
+    transform: translateX(-50%);
+    left: 50%;
+    top: 30px;
+    color: #00babd;
+}
+#ingamefooter {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    position: absolute;
+    transform: translateX(-50%);
+    left: 50%;
+    width: 90%;
+    height: 75px;
+    bottom: 30px;
+    color: #babfbc;
+    background-color: #281501;
+}
+#wins,
+#turn,
+#time {
+    position: absolute;
+    transform: translateX(-50%);
+}
+#wins {
+  left: 50%;
+}
+#turn {
+  left: 15%
+}
+#time {
+  left: 82%;
+}
+#gameovertext {
+  color: #c1331aaa;
+  font-size: 38px;
+  position: absolute;
+  transform: translateX(-50%);
+  left: 50%;
+  top: 60px;
+}
+#detailwin {
+  color: #24ff78;
+  text-align: center;
+  font-size: 28px;
+  position: absolute;
+  transform: translateX(-50%);
+  left: 50%;
+  top: 25%;
+}
+#replaysave,
+#backhome {
+  font-size: 28px;
+  position: absolute;
+  transform: translateX(-50%);
+  bottom: 60px;
+}
+#replaysave {
+  left: 30%;
+  width: 30%;
+}
+#backhome {
+  left: 70%;
+  width: 30%;
+}
+  </style>
+</head>
+
+<body>
+  <div id="menu">
+    <h1 id="name">Tic Tac Toe</h1>
+    <div id="size1">
+      <label id="sizetext">Size:</label>
+      <input id="in" type="number" value="3" min="3" max="10">
+      <p id=sizeindicator>3x3</p>
+    </div>
+    <div id="size2">
+      <label id="sizetext2">Win range:</label>
+      <input id="in2" type="number" value="5" min="3" max="10">
+      <p id=sizeindicator2>3x3</p>
+    </div>
+    <div id="playmod">
+      <label id="playmodtext">Play Now:</label>
+      <button id="start" onclick="Started()">Offline</button>
+      <button id="online">Online</button>
+    </div>
+    <div id="as1">
+      <label id="l1">Time:</label>
+      <input id="in3x" type="number" value="30" min="3" max="60">
+      <input id="in3o" type="number" value="" min="3" max="60">
+    </div>
+    <div id="as2">
+      <label id="l2">Draw Point:</label>
+      <input id="in4x" type="number" value="0.5" min="0.01" max="1000">
+      <input id="in4o" type="number" value="" min="0.01" max="1000">
+    </div>
+    <div id="as3">
+      <label id="l3">Point For Wins</label>
+      <input id="in5x" type="number" value="3" min="1" max="1000">
+      <input id="in5o" type="number" value="" min="1" max="1000">
+    </div>
+    <div id="as4">
+      <label id="l4">Player Count</label>
+      <input id="in6" disabled value="X,O (coming soon)">
+    </div>
+    <button id="replay">Load Replay Recording</button>
+  </div>
+  <div id=ingame>
+    <button id="restart" onclick="restart()">Restart</button>
+    <canvas id="can"></canvas>
+    <div id=ingamefooter>
+      <p id=turn>Turn:<br>X</p>
+      <p id=wins>Points:<br>O: 0, X: 0</p>
+      <p id=time>Time:<br>0000</p>
+    </div>
+  </div>
+  <div id=gameover>
+    <h1 id="gameovertext">Game Over</h1>
+    <p id="detailwin">Winner: X<br>Points: O: 0, X: 0</p>
+    <button id="replaysave" onclick="save()">Save Replay</button>
+    <button id="backhome" onclick="overtoback()">Back To Home</button>
+  </div>
+  <script defer>
+    const canvas = document.getElementById("can");
+const ctx = canvas.getContext("2d");
+canvas.style.background = "#f0ed97";
+canvas.style.position = "absolute";
+const menu = document.getElementById("menu");
+const NameText = document.getElementById("name");
+const Sizeindicate = document.getElementById("sizeindicator");
+const Sizeindicate2 = document.getElementById("sizeindicator2");
+let detail = document.getElementById("detailwin");
+let movement = [];
+let sg1 = [];
+let sg2 = [];
+let turnXstart = true;
+let Size = 3;
+let Size2 = 5;
+let sizein = document.getElementById("in");
+let sizein2 = document.getElementById("in2");
+function PointForWin() {
+  if (parseInt(sizein2.value, 10) > Size) {
+    Size2 = Size;
+    Sizeindicate2.innerHTML = `${Size2}x${Size2}`;
+  } else {
+    Size2 = parseInt(sizein2.value, 10)
+    Sizeindicate2.innerHTML = `${Size2}x${Size2}`;
+  }
+}
+PointForWin()
+let dp = document.getElementById("in4x");
+let wr = document.getElementById("in5x");
+let drawpo = parseFloat(dp.value, 10);
+let winra = parseInt(wr.value, 10);
+let drawpoint = drawpo;
+let winrange = winra;
+let Time = document.getElementById("time");
+let getTime = document.getElementById("in3x");
+let time = false;
+let t = parseInt(getTime.value, 10);
+let timeX = t;
+let timeO = t;
+const getSize = document.addEventListener("change", () => {
+  let parsedSize = parseInt(sizein.value, 10);
+  t = parseInt(getTime.value, 10);
+  timeX = t;
+  timeO = t;
+  drawpo = parseFloat(dp.value);
+  winra = parseInt(wr.value, 10);
+  drawpoint = drawpo;
+  winrange = winra;
+  console.log(drawpoint, winrange);
+  if (parsedSize > 2) {
+    Size = parsedSize;
+    Sizeindicate.innerHTML = `${Size}x${Size}`;
+  }
+  PointForWin()
+});
+const restartButton = document.getElementById("restart");
+const Turn = document.getElementById("turn");
+let turnX = true;
+const Wins = document.getElementById("wins");
+let winX = 0;
+let winO = 0;
+let winsize;
+let cenX;
+let cenY;
+let cenX2;
+let cenY2;
+let GraphHave = false;
+function is4x3AspectRatio(num1, num2) {
+  const windowWidth = window.innerWidth;
+  const windowHeight = window.innerHeight;
+  const aspectRatio = windowWidth / windowHeight;
+  return Math.abs(aspectRatio - (num1 / num2)) < 1;
+}
+function windowResize() {
+  if (is4x3AspectRatio(625, 400)) {
+    winsize = window.innerHeight - 205
+    cenX = window.innerWidth / 2 - winsize / 2;
+    cenY = window.innerHeight / 2 - winsize / 2 - 15;
+    cenX2 = window.innerWidth / 2 + winsize / 2;
+    cenY2 = window.innerHeight / 2 + winsize / 2 - 15;
+  } else {
+    winsize = window.innerWidth - 20;
+    cenX = window.innerWidth / 2 - winsize / 2;
+    cenY = window.innerHeight / 2 - winsize / 2;
+    cenX2 = window.innerWidth / 2 + winsize / 2;
+    cenY2 = window.innerHeight / 2 + winsize / 2;
+  }
+  if(window.innerWidth < 700) {
+    Turn.innerHTML = `Turn:<br>${turnX ? 'X' : 'O'}`
+    Wins.innerHTML = `Points:<br>O: ${winO}, X: ${winX}`;
+    Time.innerHTML = "Time:<br>0000"
+  } else {
+    Turn.innerHTML = `Turn: ${turnX ? 'X' : 'O'}`
+    Wins.innerHTML = `Points: O: ${winO}, X: ${winX}`;
+    Time.innerHTML = "Time: 0000"
+  }
+  canvas.style.top = `${cenY}px`;
+  canvas.style.left = `${cenX}px`;
+  restartButton.style.width = `${winsize}px`;
+}
+windowResize();
+function papernoice() {
+  const numParticles = 5000;
+  const minRadius = 1;
+  const maxRadius = 2;
+  function getRandomNumber(min, max) {
+    return min + Math.random() * (max - min);
+  }
+  for (let i = 0; i < numParticles; i++) {
+    const x = Math.random() * canvas.width;
+    const y = Math.random() * canvas.height;
+    const radius = minRadius + Math.random() * (maxRadius - minRadius);
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, 2 * Math.PI);
+    ctx.fillStyle = `rgba(79, 47, 3, ${getRandomNumber(0.05, 0.2)})`;
+    ctx.fill();
+  }
+}
+window.addEventListener("resize", windowResize);
+let loseOpacity = 0;
+let con1 = document.getElementById("menu");
+let con2 = document.getElementById("ingame");
+let con3 = document.getElementById("gameover");
+con3.remove();
+con2.remove();
+function Started() {
+  canvas.width = winsize;
+  canvas.height = winsize;
+  if (loseOpacity === 100) {
+    document.body.removeChild(con1);
+    document.body.appendChild(con2);
+    con2.style.opacity = 1;
+    GraphGen()
+    papernoice()
+    time = false;
+    timeX = t;
+    timeO = t;
+    winX = 0;
+    winO = 0;
+    if (winnerX === true) {
+      detail.innerHTML = `Winner: X<br>Points: X: ${winX}, O: ${winO}`;
+    } else {
+      detail.innerHTML = `Winner: O<br>Points: O: ${winO}, X: ${winX}`;
+    }
+    if(window.innerWidth < 700) {
+      Turn.innerHTML = `Turn:<br>${turnX ? 'X' : 'O'}`
+      Wins.innerHTML = `Points:<br>O: ${winO}, X: ${winX}`;
+      Time.innerHTML = "Time:<br>0000"
+    } else {
+      Turn.innerHTML = `Turn: ${turnX ? 'X' : 'O'}`
+      Wins.innerHTML = `Points: O: ${winO}, X: ${winX}`;
+      Time.innerHTML = "Time: 0000"
+    }
+    loseOpacity = 0;
+  } else {
+    loseOpacity ++;
+    con1.style.opacity = (100 - loseOpacity)/100;
+    setTimeout(Started, 5);
+  }
+}
+let Graph = [];
+function restart() {
+  if (loseOpacity === 100) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    document.body.removeChild(con2);
+    document.body.appendChild(con1);
+    con1.style.opacity = 1;
+    loseOpacity = 0;
+  } else {
+    loseOpacity ++;
+    con2.style.opacity = (100 - loseOpacity)/100;
+    setTimeout(restart, 5);
+  }
+  Graph = [];
+  GraphX = [];
+  GraphO = [];
+}
+let winnerX;
+function over() {
+  if (winnerX === true) {
+    detail.innerHTML = `Winner: X<br>Points: X: ${winX}, O: ${winO}`;
+  } else {
+    detail.innerHTML = `Winner: O<br>Points: O: ${winO}, X: ${winX}`;
+  }
+  if (loseOpacity === 100) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    con2.remove();
+    document.body.appendChild(con3);
+    con3.style.opacity = 1;
+    loseOpacity = 0;
+  } else {
+    loseOpacity ++;
+    con2.style.opacity = (100 - loseOpacity)/100;
+    setTimeout(over, 5);
+  }
+}
+function overtoback() {
+  if (loseOpacity === 100) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    document.body.removeChild(con3);
+    document.body.appendChild(con1);
+    con1.style.opacity = 1;
+    loseOpacity = 0;
+  } else {
+    loseOpacity ++;
+    con3.style.opacity = (100 - loseOpacity)/100;
+    setTimeout(overtoback, 5);
+  }
+  Graph = [];
+  GraphX = [];
+  GraphO = [];
+}
+function GraphGen() {
+  GraphHave = true
+  ctx.strokeStyle = '#465050';
+  ctx.lineWidth = 20/Size;
+  let dx = 0;
+  for (let x = 1; x < Size; x++) {
+    dx = winsize / Size;
+    ctx.beginPath();
+    ctx.moveTo(dx * x, 0);
+    ctx.lineTo(dx * x, winsize);
+    ctx.stroke();
+  }
+  let dy = 0;
+  for (let y = 1; y < Size; y++) {
+    dy = winsize / Size;
+    ctx.beginPath();
+    ctx.moveTo(0, dy * y);
+    ctx.lineTo(winsize, dy * y);
+    ctx.stroke();
+  }
+}
+let GraphX = [];
+let GraphO = [];
+let Xpoint;
+let Ypoint;  
+function NoDuplicatesGraph(graph, point) {
+  return graph.every(p => p[0] !== point[0] || p[1] !== point[1]);
+}
+let turningX = false;
+let turningO = false;
+let XandO = canvas.addEventListener("click", (e) => {
+  time = true;
+  ctx.fillStyle = 'rgba(80, 0, 0, 1)';
+  ctx.linewidth = 20 / Size;
+  ctx.font = `${winsize / Size}px Arial`;
+  ctx.textAlign = "center";
+  let pieseSize = winsize / Size;
+  let text = "";
+  let X;
+  let Y;
+  if (e.clientX - cenX < winsize && e.clientY - cenY < winsize) {
+    Xpoint = Math.round(((e.clientX - cenX + pieseSize / 2) / pieseSize));
+    Ypoint = Math.round((e.clientY - cenY + pieseSize / 2) / pieseSize);
+    let g = [Xpoint, Ypoint];
+    if (turnX) {
+      if (NoDuplicatesGraph(Graph, g)) {
+        GraphX.push(g);
+        Graph.push(g);
+        text = "X";
+        turnX = false;
+        turningO = true;
+        timeon();
+        Xwin();
+        if (winX >= winrange) {
+          winnerX = true;
+          over();
+        }
+      }
+    } else {
+      if (NoDuplicatesGraph(Graph, g)) {
+        GraphO.push(g);
+        Graph.push(g);
+        text = "O";
+        turnX = true;
+        turningX = true;
+        timeon();
+        Owin();
+        if (winO >= winrange) {
+          winnerX = false;
+          over();
+        }
+      }
+    }
+    if (text !== "") {
+      X = (Xpoint - 1) * pieseSize + pieseSize / 2;
+      Y = Ypoint * pieseSize - pieseSize / 6;
+      ctx.fillText(text, X, Y);
+    }
+  }
+  if (window.innerWidth < 700) {
+    Turn.innerHTML = `Turn:<br>${turnX ? 'X' : 'O'}`
+  } else {
+    Turn.innerHTML = `Turn: ${turnX ? 'X' : 'O'}`
+  }
+  draw()
+});
+var interval;
+function timeon() {
+  clearInterval(interval);
+  if (turnX && turningX) {
+    timeX --;
+    if (timeX === 0) {
+        winO++;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        GraphGen();
+        papernoice();
+        GraphX = [];
+        Graph = [];
+        GraphO = [];
+        turnX = true;
+        turnXstart = true;
+        if (window.innerWidth < 700) {
+          Wins.innerHTML = `Points:<br>O: ${winO}, X: ${winX}`;
+        } else {
+          Wins.innerHTML = `Points: O: ${winO}, X: ${winX}`;
+        }
+        if (winO === winrange) {
+          winnerX = false;
+          over();
+        }
+        time = false;
+        timeX = t;
+        timeO = t;
+        turningO = false;
+        turningX = false;
+        } else {
+        if (time) {
+          interval = setInterval(timeon, 1000);
+          Time.innerHTML = `Time: ${timeX}, ${timeO}`;
+        }
+      }
+  } else if (!turnX && turningO) {
+    timeO --;
+    if (timeO === 0) {
+      winX++;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      GraphGen();
+      papernoice();
+      GraphX = [];
+      Graph = [];
+      GraphO = [];
+      turnX = true;
+      turnXstart = true;
+      if (window.innerWidth < 700) {
+        Wins.innerHTML = `Points:<br>O: ${winO}, X: ${winX}`;
+      } else {
+        Wins.innerHTML = `Points: O: ${winO}, X: ${winX}`;
+      }
+      if (winX >= winrange) {
+        winnerX = true;
+        over();
+      }
+      time = false;
+      timeX = t;
+      timeO = t;
+      turningO = false;
+      turningX = false;
+      } else {
+      if (time) {
+        interval = setInterval(timeon, 1000);
+        Time.innerHTML = `Time: ${timeX}, ${timeO}`;
+      }
+    }
+  }
+}
+function Xwin() {
+  let aa = 1;
+  let bb = 1;
+  let aLeft = 1;
+  for (let io = 0; io < aLeft; io++) {
+    let x = GraphX[GraphX.length - 1][0];
+    let g = [x - aLeft, Ypoint];
+    if (GraphX.some(point => point[0] === g[0] && point[1] === g[1])) {
+      aa++;
+      aLeft++;
+    } else {
+      break;
+    }
+  }
+  let aRight = 1;
+  for (let ii = 0; ii < aRight; ii++) {
+    let x = GraphX[GraphX.length - 1][0];
+    let g = [x + aRight, Ypoint];
+    if (GraphX.some(point => point[0] === g[0] && point[1] === g[1])) {
+      aa++;
+      aRight++;
+    } else {
+      break;
+    }
+  }
+  let b = 1;
+  for (let j = 0; j < b; j++) {
+    let x = GraphX[GraphX.length - 1][1];
+    let g = [Xpoint, x - b];
+    if (GraphX.some(point => point[0] === g[0] && point[1] === g[1])) {
+      bb++;
+      b++;
+    } else {
+      break;
+    }
+  }
+  let b2 = 1;
+  for (let jj = 0; jj < b2; jj++) {
+    let x = GraphX[GraphX.length - 1][1];
+    let g = [Xpoint, x + b2];
+    if (GraphX.some(point => point[0] === g[0] && point[1] === g[1])) {
+      bb++;
+      b2++;
+    } else {
+      break;
+    }
+  }
+  let aab = 1;
+  let ab = 1;
+  for (let oo = 0; oo < aab; oo++) {
+    if (ab < GraphX.length) {
+      let x = GraphX[GraphX.length - 1][0];
+      let y = GraphX[GraphX.length - 1][1];
+      let g = [x - aab, y - aab];
+      if (GraphX.some(point => point[0] === g[0] && point[1] === g[1])) {
+        ab++;
+        aab++;
+      } else {
+        break;
+      }
+    }
+  }
+  let abb = 1;
+  for (let iio = 0; iio < abb; iio++) {
+    let x = GraphX[GraphX.length - 1][0];
+    let y = GraphX[GraphX.length - 1][1];
+    let g = [x + abb, y + abb];
+    if (GraphX.some(point => point[0] === g[0] && point[1] === g[1])) {
+      ab++;
+      abb++;
+    } else {
+      break;
+    }
+  }
+  let ba = 1;
+  let bba = 1;
+  for (let jo = 0; jo < ba; jo++) {
+    let x = GraphX[GraphX.length - 1][0];
+    let y = GraphX[GraphX.length - 1][1];
+    let g = [x + bba, y - bba];
+    if (GraphX.some(point => point[0] === g[0] && point[1] === g[1])) {
+      bba++;
+      ba++;
+    } else {
+      break;
+    }
+  }
+  let baa = 1;
+  for (let joo = 0; joo < baa; joo++) {
+    let x = GraphX[GraphX.length - 1][0];
+    let y = GraphX[GraphX.length - 1][1];
+    let g = [x - baa, y + baa];
+    if (GraphX.some(point => point[0] === g[0] && point[1] === g[1])) {
+      baa++;
+      ba++;
+    } else {
+      break;
+    }
+  }
+  if (aa >= Size2 || bb >= Size2 || ab >= Size2 || ba >= Size2) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    GraphGen();
+    papernoice();
+    time = false;
+    timeX = t;
+    timeO = t;
+    turningO = false;
+    turningX = false;
+    sg1 = GraphX;
+    sg2 = GraphO;
+    GraphX = [];
+    Graph = [];
+    GraphO = [];
+    turnX = false;
+    turnXstart = false;
+    Xpoint = 0;
+    Ypoint = 0;
+    g = [];
+    winX++;
+    if (window.innerWidth < 700) {
+      Wins.innerHTML = `Points:<br>O: ${winO}, X: ${winX}`;
+    } else {
+      Wins.innerHTML = `Points: O: ${winO}, X: ${winX}`;
+    }
+  }
+}
+function Owin() {
+  let aa = 1;
+  let bb = 1;
+  let aLeft = 1;
+  for (let io = 0; io < aLeft; io++) {
+    let x = GraphO[GraphO.length - 1][0];
+    let g = [x - aLeft, Ypoint];
+    if (GraphO.some(point => point[0] === g[0] && point[1] === g[1])) {
+      aa++;
+      aLeft++;
+    } else {
+      break;
+    }
+  }
+  let aRight = 1;
+  for (let ii = 0; ii < aRight; ii++) {
+    let x = GraphO[GraphO.length - 1][0];
+    let g = [x + aRight, Ypoint];
+    if (GraphO.some(point => point[0] === g[0] && point[1] === g[1])) {
+      aa++;
+      aRight++;
+    } else {
+      break;
+    }
+  }
+  let b = 1;
+  for (let j = 0; j < b; j++) {
+    let x = GraphO[GraphO.length - 1][1];
+    let g = [Xpoint, x - b];
+    if (GraphO.some(point => point[0] === g[0] && point[1] === g[1])) {
+      bb++;
+      b++;
+    } else {
+      break;
+    }
+  }
+  let b2 = 1;
+  for (let jj = 0; jj < b2; jj++) {
+    let x = GraphO[GraphO.length - 1][1];
+    let g = [Xpoint, x + b2];
+    if (GraphO.some(point => point[0] === g[0] && point[1] === g[1])) {
+      bb++;
+      b2++;
+    } else {
+      break;
+    }
+  }
+  let aab = 1;
+  let ab = 1;
+  for (let oo = 0; oo < aab; oo++) {
+    if (ab < GraphO.length) {
+      let x = GraphO[GraphO.length - 1][0];
+      let y = GraphO[GraphO.length - 1][1];
+      let g = [x - aab, y - aab];
+      if (GraphO.some(point => point[0] === g[0] && point[1] === g[1])) {
+        ab++;
+        aab++;
+      } else {
+        break;
+      }
+    }
+  }
+  let abb = 1;
+  for (let iio = 0; iio < abb; iio++) {
+    let x = GraphO[GraphO.length - 1][0];
+    let y = GraphO[GraphO.length - 1][1];
+    let g = [x + abb, y + abb];
+    if (GraphO.some(point => point[0] === g[0] && point[1] === g[1])) {
+      ab++;
+      abb++;
+    } else {
+      break;
+    }
+  }
+  let ba = 1;
+  let bba = 1;
+  for (let jo = 0; jo < ba; jo++) {
+    let x = GraphO[GraphO.length - 1][0];
+    let y = GraphO[GraphO.length - 1][1];
+    let g = [x + bba, y - bba];
+    if (GraphO.some(point => point[0] === g[0] && point[1] === g[1])) {
+      bba++;
+      ba++;
+    } else {
+      break;
+    }
+  }
+  let baa = 1;
+  for (let joo = 0; joo < baa; joo++) {
+    let x = GraphO[GraphO.length - 1][0];
+    let y = GraphO[GraphO.length - 1][1];
+    let g = [x - baa, y + baa];
+    if (GraphO.some(point => point[0] === g[0] && point[1] === g[1])) {
+      baa++;
+      ba++;
+    } else {
+      break;
+    }
+  }
+  if (aa >= Size2 || bb >= Size2 || ab >= Size2 || ba >= Size2) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    GraphGen();
+    papernoice();
+    time = false;
+    timeX = t;
+    timeO = t;
+    turningO = false;
+    turningX = false;
+    sg1 = GraphX;
+    sg2 = GraphO;
+    GraphX = [];
+    Graph = [];
+    GraphO = [];
+    turnX = true;
+    Xpoint = 0;
+    Ypoint = 0;
+    g = [];
+    winO++;
+    if (window.innerWidth < 700) {
+      Wins.innerHTML = `Points:<br>O: ${winO}, X: ${winX}`;
+    } else {
+      Wins.innerHTML = `Points: O: ${winO}, X: ${winX}`;
+    }
+  }
+}
+function draw() {
+  if (Graph.length === Size * Size) {
+    console.log(drawpoint)
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    GraphGen();
+    papernoice();
+    time = false;
+    timeX = t;
+    timeO = t;
+    turningO = false;
+    turningX = false;
+    GraphX = [];
+    Graph = [];
+    GraphO = [];
+    turnX = true;
+    turnXstart = true;
+    Xpoint = 0;
+    Ypoint = 0;
+    g = [];
+    winX = winX + drawpoint;
+    winO = winO + drawpoint;
+    if (window.innerWidth < 700) {
+      Wins.innerHTML = `Points:<br>O: ${winO}, X: ${winX}`;
+    } else {
+      Wins.innerHTML = `Points: O: ${winO}, X: ${winX}`;
+    }
+    if (winO >= winrange) {
+      winnerX = false;
+      over();
+    }
+    if (winX >= winrange) {
+      winnerX = true;
+      over();
+    }
+  }
+}
+function saveVariablesToFile(variables, fileName) {
+    var jsonData = JSON.stringify(variables);
+    var blob = new Blob([jsonData], { type: 'application/json' });
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+}
+function loadVariablesFromFile(fileInput, callback) {
+    var file = fileInput.files[0];
+    if (file) {
+        var reader = new FileReader();
+        reader.onload = function (e) {
+            var content = e.target.result;
+            try {
+                var loadedData = JSON.parse(content);
+                callback(loadedData);
+            } catch (error) {
+                console.error('Error parsing JSON:', error);
+            }
+        };
+        reader.readAsText(file);
+    }
+}
+function save() {
+  var variablesToSave = {
+    a: turnXstart,
+    b: movement,
+    c: sg1,
+    d: sg2
+  };
+  saveVariablesToFile(variablesToSave, 'replay.json');
+}
+  </script>
+</body>
+
+</html>

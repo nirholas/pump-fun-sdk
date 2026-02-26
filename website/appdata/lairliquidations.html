@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Liquidation Tracker</title>
+    <meta name="lair-icon" content="<svg width='232' height='232' viewBox='0 0 232 232' fill='none' xmlns='http://www.w3.org/2000/svg'><rect width='232' height='232' rx='40' fill='#dc2626'/><path d='M116 190c-40 0-70-30-70-70 0-50 70-100 70-100s70 50 70 100c0 40-30 70-70 70z' fill='#fbbf24'/><path d='M116 190c-25 0-45-20-45-45 0-35 45-70 45-70s45 35 45 70c0 25-20 45-45 45z' fill='#ff8c00'/><path d='M116 190c-14 0-24-12-24-26 0-20 24-40 24-40s24 20 24 40c0 14-10 26-24 26z' fill='#ffcc02'/></svg>">
+    <meta name="lair-include" content="lair.css material-symbols-rounded">
+    <meta name="permissions" content="appStorage, network">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            height: 100vh; overflow: hidden;
+            background: var(--col-bg1, #101010);
+            color: var(--col-txt1, #fff);
+            font-family: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
+            display: flex; flex-direction: column;
+        }
+
+        /* ── Header ── */
+        .header {
+            display: flex; align-items: center; gap: 10px;
+            padding: 12px 16px;
+            background: var(--col-bg2, #171717);
+            border-bottom: 1px solid var(--col-bg3, #262626);
+            flex-shrink: 0; flex-wrap: wrap;
+        }
+        .header h2 { font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 6px; }
+        .live-badge {
+            display: flex; align-items: center; gap: 4px;
+            background: rgba(91,228,91,0.1); border: 1px solid rgba(91,228,91,0.2);
+            border-radius: 12px; padding: 2px 8px; font-size: 10px; color: #5be45b; font-weight: 600;
+        }
+        .live-dot { width: 5px; height: 5px; border-radius: 50%; background: #5be45b; animation: pulse 2s infinite; }
+        @keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.3} }
+        .ctrl-btn {
+            background: var(--col-bg1, #101010); border: 1px solid var(--col-bg3, #262626);
+            color: #888; border-radius: 4px; padding: 4px 10px; cursor: pointer;
+            font-size: 11px; font-family: inherit; transition: all 0.15s;
+        }
+        .ctrl-btn:hover { color: var(--col-txt1, #fff); }
+        .ctrl-btn.active { background: var(--colors-accent, #6179ff); color: #fff; border-color: var(--colors-accent, #6179ff); }
+
+        /* ── Stats cards ── */
+        .stats-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 8px; padding: 10px 16px; flex-shrink: 0;
+        }
+        .stat-card {
+            background: var(--col-bg2, #171717); border: 1px solid var(--col-bg3, #262626);
+            border-radius: 8px; padding: 10px 12px;
+        }
+        .stat-label { font-size: 10px; color: #555; text-transform: uppercase; margin-bottom: 2px; }
+        .stat-value { font-size: 18px; font-weight: 700; }
+        .stat-sub { font-size: 10px; color: #666; margin-top: 2px; }
+        .up { color: #5be45b; }
+        .dn { color: #ef4444; }
+
+        /* ── Main grid ── */
+        .main { display: flex; flex: 1; overflow: hidden; gap: 0; }
+
+        /* ── Liquidation feed ── */
+        .feed { flex: 1; overflow-y: auto; padding: 0; }
+        .feed::-webkit-scrollbar { width: 4px; }
+        .feed::-webkit-scrollbar-thumb { background: var(--col-bg3, #333); border-radius: 2px; }
+        .liq-item {
+            display: flex; align-items: center; gap: 10px;
+            padding: 8px 16px; border-bottom: 1px solid rgba(255,255,255,0.02);
+            animation: fadeIn 0.3s ease;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+        .liq-item.long { border-left: 3px solid #ef4444; }
+        .liq-item.short { border-left: 3px solid #5be45b; }
+        .liq-icon { font-size: 20px; flex-shrink: 0; }
+        .liq-body { flex: 1; min-width: 0; }
+        .liq-headline { font-size: 12px; font-weight: 600; }
+        .liq-detail { font-size: 10px; color: #888; margin-top: 1px; }
+        .liq-amount { font-size: 14px; font-weight: 700; flex-shrink: 0; }
+        .liq-time { font-size: 10px; color: #555; flex-shrink: 0; min-width: 50px; text-align: right; }
+
+        /* ── Side panel: top liquidated ── */
+        .side-panel {
+            width: 260px; flex-shrink: 0;
+            background: var(--col-bg2, #171717);
+            border-left: 1px solid var(--col-bg3, #262626);
+            display: flex; flex-direction: column; overflow: hidden;
+        }
+        .sp-title {
+            padding: 10px 12px; font-size: 12px; font-weight: 700;
+            border-bottom: 1px solid var(--col-bg3, #262626);
+            display: flex; align-items: center; gap: 6px;
+        }
+        .sp-list { flex: 1; overflow-y: auto; }
+        .sp-list::-webkit-scrollbar { width: 4px; }
+        .sp-list::-webkit-scrollbar-thumb { background: var(--col-bg3, #333); border-radius: 2px; }
+        .sp-item {
+            display: flex; align-items: center; gap: 8px;
+            padding: 8px 12px; border-bottom: 1px solid rgba(255,255,255,0.03);
+        }
+        .sp-rank { font-size: 10px; color: #555; width: 16px; }
+        .sp-sym { font-weight: 600; font-size: 12px; }
+        .sp-bar-bg { flex: 1; height: 6px; background: var(--col-bg3, #262626); border-radius: 3px; overflow: hidden; }
+        .sp-bar-fill { height: 100%; border-radius: 3px; transition: width 0.5s; }
+        .sp-val { font-size: 11px; font-weight: 600; min-width: 50px; text-align: right; }
+
+        /* ── Long/Short ratio bar ── */
+        .ratio-bar-container { padding: 8px 12px; }
+        .ratio-header { display: flex; justify-content: space-between; font-size: 10px; color: #888; margin-bottom: 4px; }
+        .ratio-bar { height: 8px; border-radius: 4px; display: flex; overflow: hidden; }
+        .ratio-long { background: #ef4444; height: 100%; transition: width 0.5s; }
+        .ratio-short { background: #5be45b; height: 100%; transition: width 0.5s; }
+
+        .state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 48px; flex: 1; }
+        .spinner { width: 30px; height: 30px; border: 3px solid var(--col-bg3, #262626); border-top-color: var(--colors-accent, #6179ff); border-radius: 50%; animation: spin 0.7s linear infinite; margin-bottom: 14px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .state p { color: #666; font-size: 13px; }
+
+        @media (max-width: 600px) { .side-panel { display: none; } }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h2><span class="material-symbols-rounded" style="font-size:18px;">whatshot</span> Liquidations</h2>
+        <div class="live-badge" id="liveBadge"><div class="live-dot"></div> LIVE</div>
+        <div style="flex:1;"></div>
+        <div style="display:flex;gap:4px;">
+            <button class="ctrl-btn active" data-f="all" onclick="setFilter('all')">All</button>
+            <button class="ctrl-btn" data-f="long" onclick="setFilter('long')">Longs</button>
+            <button class="ctrl-btn" data-f="short" onclick="setFilter('short')">Shorts</button>
+        </div>
+    </div>
+
+    <div class="stats-grid" id="statsGrid">
+        <div class="stat-card"><div class="stat-label">Total Liquidated (1h)</div><div class="stat-value" id="totalLiq">—</div><div class="stat-sub" id="totalCount">— liquidations</div></div>
+        <div class="stat-card"><div class="stat-label">Longs Liquidated</div><div class="stat-value dn" id="longLiq">—</div><div class="stat-sub" id="longPct">—</div></div>
+        <div class="stat-card"><div class="stat-label">Shorts Liquidated</div><div class="stat-value up" id="shortLiq">—</div><div class="stat-sub" id="shortPct">—</div></div>
+        <div class="stat-card"><div class="stat-label">Largest Single</div><div class="stat-value" id="largestLiq">—</div><div class="stat-sub" id="largestDetail">—</div></div>
+    </div>
+
+    <div class="main">
+        <div class="feed" id="feedList">
+            <div class="state"><div class="spinner"></div><p>Connecting to liquidation stream…</p></div>
+        </div>
+
+        <div class="side-panel">
+            <div class="sp-title"><span class="material-symbols-rounded" style="font-size:16px;">bar_chart</span> Top Liquidated Coins</div>
+            <div class="sp-list" id="topList"></div>
+            <div class="sp-title" style="margin-top:auto;"><span class="material-symbols-rounded" style="font-size:16px;">swap_vert</span> Long / Short Ratio</div>
+            <div class="ratio-bar-container" id="ratioContainer">
+                <div class="ratio-header"><span class="dn">Longs</span><span class="up">Shorts</span></div>
+                <div class="ratio-bar"><div class="ratio-long" style="width:50%"></div><div class="ratio-short" style="width:50%"></div></div>
+            </div>
+        </div>
+    </div>
+
+<script>
+/* ═══════════ State ═══════════ */
+const liquidations = [];
+const coinTotals = {};
+let filter = 'all';
+let totalLongUsd = 0, totalShortUsd = 0, totalCount = 0, largestLiq = null;
+let ws = null;
+let wsRetries = 0;
+let wsConnected = false;
+let restFailed = false;
+
+const BINANCE_FAPI = 'https://fapi.binance.com';
+const BINANCE_WS = 'wss://fstream.binance.com/ws';
+
+/* Lazily resolve cfetch at call-time so kernel's earlyScript has executed */
+function getFetch() { return window.cfetch || fetch; }
+
+/* ═══════════ Helpers ═══════════ */
+function fmtUsd(n) {
+    if (n >= 1e6) return '$' + (n/1e6).toFixed(2) + 'M';
+    if (n >= 1e3) return '$' + (n/1e3).toFixed(1) + 'K';
+    return '$' + n.toFixed(0);
+}
+
+function timeAgo(ts) {
+    const d = Date.now() - ts;
+    const s = Math.floor(d / 1000);
+    if (s < 60) return s + 's ago';
+    const m = Math.floor(s / 60);
+    if (m < 60) return m + 'm ago';
+    return Math.floor(m / 60) + 'h ago';
+}
+
+function cleanSymbol(s) {
+    return s.replace(/USDT$|BUSD$|USD$/, '');
+}
+
+function setLiveBadge(connected) {
+    const badge = document.getElementById('liveBadge');
+    if (!badge) return;
+    if (connected) {
+        badge.innerHTML = '<div class="live-dot"></div> LIVE';
+        badge.style.borderColor = 'rgba(91,228,91,0.2)';
+        badge.style.background = 'rgba(91,228,91,0.1)';
+        badge.style.color = '#5be45b';
+    } else {
+        badge.innerHTML = '<span class="material-symbols-rounded" style="font-size:12px;">cloud_off</span> CONNECTING';
+        badge.style.borderColor = 'rgba(245,158,11,0.3)';
+        badge.style.background = 'rgba(245,158,11,0.1)';
+        badge.style.color = '#f59e0b';
+    }
+}
+
+/* ═══════════ Fetch recent liquidations via proxy ═══════════ */
+async function fetchRecentLiquidations() {
+    try {
+        const symbols = ['BTCUSDT','ETHUSDT','SOLUSDT','BNBUSDT','XRPUSDT','DOGEUSDT','ADAUSDT','AVAXUSDT','DOTUSDT','LINKUSDT','ARBUSDT','OPUSDT','NEARUSDT','SUIUSDT','APTUSDT','INJUSDT','PEPEUSDT','WIFUSDT','MATICUSDT','ATOMUSDT'];
+        const fetchFn = getFetch();
+
+        const allLiqs = [];
+        let failCount = 0;
+
+        // Fetch in batches of 5
+        for (let i = 0; i < symbols.length; i += 5) {
+            const batch = symbols.slice(i, i + 5);
+            const results = await Promise.all(batch.map(async (sym) => {
+                try {
+                    const r = await fetchFn(`${BINANCE_FAPI}/fapi/v1/allForceOrders?symbol=${sym}&limit=20`);
+                    if (r.status === 451 || r.status === 403) { failCount++; return []; }
+                    if (!r.ok) return [];
+                    return await r.json();
+                } catch(_) { failCount++; return []; }
+            }));
+            results.forEach(arr => allLiqs.push(...arr));
+            // Stop early if API is geo-blocked (all requests failing with 451)
+            if (failCount >= batch.length && allLiqs.length === 0) {
+                restFailed = true;
+                console.warn('Binance Futures REST API unavailable (451/geo-blocked). Relying on WebSocket stream.');
+                break;
+            }
+            if (i + 5 < symbols.length) await new Promise(r => setTimeout(r, 200));
+        }
+
+        if (!allLiqs.length) return;
+
+        // Process
+        allLiqs.sort((a, b) => b.time - a.time);
+        const oneHourAgo = Date.now() - 3600000;
+
+        for (const l of allLiqs) {
+            const side = l.side === 'BUY' ? 'short' : 'long';
+            const sym = l.symbol;
+            const price = parseFloat(l.price);
+            const qty = parseFloat(l.origQty);
+            const usd = price * qty;
+            const ts = l.time;
+
+            const liq = { sym, side, price, qty, usd, ts, clean: cleanSymbol(sym) };
+            liquidations.push(liq);
+
+            if (ts > oneHourAgo) {
+                if (side === 'long') totalLongUsd += usd;
+                else totalShortUsd += usd;
+                totalCount++;
+                if (!largestLiq || usd > largestLiq.usd) largestLiq = liq;
+                coinTotals[sym] = (coinTotals[sym] || 0) + usd;
+            }
+        }
+
+        if (liquidations.length > 200) liquidations.length = 200;
+
+        updateStats();
+        renderFeed();
+        renderTopCoins();
+    } catch(e) {
+        restFailed = true;
+        console.warn('Fetch liqs error (will rely on WebSocket):', e.message || e);
+    }
+}
+
+/* ═══════════ WebSocket for real-time liquidations ═══════════ */
+function connectWS() {
+    if (ws) { try { ws.close(); } catch(_){} ws = null; }
+    setLiveBadge(false);
+
+    try {
+        ws = new WebSocket(`${BINANCE_WS}/!forceOrder@arr`);
+    } catch(e) {
+        scheduleReconnect();
+        return;
+    }
+
+    ws.onopen = () => {
+        wsConnected = true;
+        wsRetries = 0;
+        setLiveBadge(true);
+        // If REST failed, show "waiting" message instead of "unavailable"
+        if (restFailed && liquidations.length === 0) {
+            document.getElementById('feedList').innerHTML = '<div class="state"><span class="material-symbols-rounded" style="font-size:40px;color:#555;">cell_tower</span><p>Stream connected — waiting for liquidation events…</p></div>';
+        }
+    };
+
+    ws.onmessage = (ev) => {
+        try {
+            const data = JSON.parse(ev.data);
+            const o = data.o;
+            if (!o) return;
+
+            const side = o.S === 'BUY' ? 'short' : 'long';
+            const sym = o.s;
+            const price = parseFloat(o.p);
+            const qty = parseFloat(o.q);
+            const usd = price * qty;
+            const ts = o.T;
+
+            const liq = { sym, side, price, qty, usd, ts, clean: cleanSymbol(sym) };
+
+            liquidations.unshift(liq);
+            if (liquidations.length > 300) liquidations.length = 300;
+
+            if (side === 'long') totalLongUsd += usd;
+            else totalShortUsd += usd;
+            totalCount++;
+            if (!largestLiq || usd > largestLiq.usd) largestLiq = liq;
+            coinTotals[sym] = (coinTotals[sym] || 0) + usd;
+
+            updateStats();
+            prependLiqItem(liq);
+            renderTopCoins();
+        } catch(_) {}
+    };
+
+    ws.onclose = () => {
+        wsConnected = false;
+        setLiveBadge(false);
+        scheduleReconnect();
+    };
+
+    ws.onerror = () => {
+        // onclose will fire after this
+    };
+}
+
+function scheduleReconnect() {
+    // Exponential backoff: 2s, 4s, 8s, 16s, 30s max
+    const delay = Math.min(2000 * Math.pow(2, wsRetries), 30000);
+    wsRetries++;
+    setTimeout(() => {
+        // Don't reconnect if we've exceeded max retries and have no data
+        if (wsRetries > 8 && liquidations.length === 0) {
+            showUnavailable();
+            return;
+        }
+        connectWS();
+    }, delay);
+}
+
+function showUnavailable() {
+    setLiveBadge(false);
+    const el = document.getElementById('feedList');
+    if (liquidations.length === 0) {
+        el.innerHTML = `<div class="state">
+            <span class="material-symbols-rounded" style="font-size:48px;color:#555;">cloud_off</span>
+            <p style="margin-top:12px;color:#888;font-size:13px;text-align:center;max-width:320px;">
+                Binance Futures liquidation feed is currently unavailable.<br>
+                <span style="color:#666;font-size:11px;">This API may be restricted in your region (HTTP 451). Try again later or use a VPN.</span>
+            </p>
+            <button onclick="wsRetries=0;connectWS();fetchRecentLiquidations();" style="margin-top:14px;padding:6px 16px;border-radius:6px;border:1px solid var(--col-bg3,#333);background:var(--col-bg2,#171717);color:var(--col-txt1,#fff);cursor:pointer;font-size:12px;font-family:inherit;">
+                <span class="material-symbols-rounded" style="font-size:14px;vertical-align:middle;">refresh</span> Retry
+            </button>
+        </div>`;
+    }
+}
+
+/* ═══════════ Render ═══════════ */
+function updateStats() {
+    const total = totalLongUsd + totalShortUsd;
+    document.getElementById('totalLiq').textContent = fmtUsd(total);
+    document.getElementById('totalCount').textContent = totalCount + ' liquidations';
+    document.getElementById('longLiq').textContent = fmtUsd(totalLongUsd);
+    document.getElementById('longPct').textContent = total > 0 ? (totalLongUsd / total * 100).toFixed(1) + '% of total' : '—';
+    document.getElementById('shortLiq').textContent = fmtUsd(totalShortUsd);
+    document.getElementById('shortPct').textContent = total > 0 ? (totalShortUsd / total * 100).toFixed(1) + '% of total' : '—';
+
+    if (largestLiq) {
+        document.getElementById('largestLiq').textContent = fmtUsd(largestLiq.usd);
+        document.getElementById('largestDetail').innerHTML = `<span class="${largestLiq.side === 'long' ? 'dn' : 'up'}">${largestLiq.side.toUpperCase()}</span> ${largestLiq.clean}`;
+    }
+
+    // Ratio bar
+    if (total > 0) {
+        const longPct = (totalLongUsd / total * 100).toFixed(1);
+        const shortPct = (totalShortUsd / total * 100).toFixed(1);
+        document.getElementById('ratioContainer').innerHTML = `
+            <div class="ratio-header"><span class="dn">Longs ${longPct}%</span><span class="up">Shorts ${shortPct}%</span></div>
+            <div class="ratio-bar"><div class="ratio-long" style="width:${longPct}%"></div><div class="ratio-short" style="width:${shortPct}%"></div></div>
+        `;
+    }
+}
+
+function liqItemHtml(l) {
+    const icon = l.usd >= 100000 ? '🔥' : l.usd >= 50000 ? '⚡' : l.side === 'long' ? '📉' : '📈';
+    return `<div class="liq-item ${l.side}" data-side="${l.side}">
+        <div class="liq-icon">${icon}</div>
+        <div class="liq-body">
+            <div class="liq-headline"><span class="${l.side === 'long' ? 'dn' : 'up'}">${l.side.toUpperCase()}</span> ${l.clean} Liquidated</div>
+            <div class="liq-detail">at $${l.price >= 1 ? l.price.toFixed(2) : l.price.toFixed(6)} · ${l.qty.toFixed(4)} ${l.clean}</div>
+        </div>
+        <div class="liq-amount ${l.usd >= 100000 ? '' : ''}" style="${l.usd >= 100000 ? 'color:#f59e0b;' : ''}">${fmtUsd(l.usd)}</div>
+        <div class="liq-time">${timeAgo(l.ts)}</div>
+    </div>`;
+}
+
+function renderFeed() {
+    const el = document.getElementById('feedList');
+    const filtered = filter === 'all' ? liquidations : liquidations.filter(l => l.side === filter);
+    if (!filtered.length) {
+        el.innerHTML = '<div class="state"><span class="material-symbols-rounded" style="font-size:40px;color:#333;">hourglass_empty</span><p>Waiting for liquidations…</p></div>';
+        return;
+    }
+    el.innerHTML = filtered.slice(0, 100).map(liqItemHtml).join('');
+}
+
+function prependLiqItem(l) {
+    if (filter !== 'all' && l.side !== filter) return;
+    const el = document.getElementById('feedList');
+    // Remove "waiting" / "unavailable" state
+    const stateEl = el.querySelector('.state');
+    if (stateEl) stateEl.remove();
+
+    el.insertAdjacentHTML('afterbegin', liqItemHtml(l));
+
+    // Keep feed manageable
+    while (el.children.length > 100) {
+        el.removeChild(el.lastChild);
+    }
+}
+
+function renderTopCoins() {
+    const sorted = Object.entries(coinTotals)
+        .map(([sym, total]) => ({ sym, clean: cleanSymbol(sym), total }))
+        .sort((a, b) => b.total - a.total)
+        .slice(0, 15);
+
+    const max = sorted[0]?.total || 1;
+
+    document.getElementById('topList').innerHTML = sorted.map((c, i) => {
+        const pct = (c.total / max * 100).toFixed(0);
+        const color = c.total > max * 0.5 ? '#f59e0b' : 'var(--colors-accent, #6179ff)';
+        return `<div class="sp-item">
+            <div class="sp-rank">${i + 1}</div>
+            <div class="sp-sym">${c.clean}</div>
+            <div class="sp-bar-bg"><div class="sp-bar-fill" style="width:${pct}%;background:${color};"></div></div>
+            <div class="sp-val">${fmtUsd(c.total)}</div>
+        </div>`;
+    }).join('');
+}
+
+function setFilter(f) {
+    filter = f;
+    document.querySelectorAll('.ctrl-btn[data-f]').forEach(b => b.classList.toggle('active', b.dataset.f === f));
+    renderFeed();
+}
+
+/* ═══════════ Init ═══════════ */
+async function greenflag() {
+    // Start WebSocket first (primary data source, connects from user's browser)
+    connectWS();
+
+    // Try REST API for historical seed data (may fail with 451 in some regions)
+    await fetchRecentLiquidations();
+
+    // Update timestamps every 10s
+    setInterval(() => {
+        document.querySelectorAll('.liq-time').forEach((el, i) => {
+            if (liquidations[i]) el.textContent = timeAgo(liquidations[i].ts);
+        });
+    }, 10000);
+}
+if (!window.myWindow) document.addEventListener('DOMContentLoaded', greenflag);
+</script>
+</body>
+</html>

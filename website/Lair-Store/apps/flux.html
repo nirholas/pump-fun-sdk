@@ -1,0 +1,1145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="lair-include" content="lair.css material-symbols-rounded">
+    <meta name="lair-icon" content='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"><defs><linearGradient id="fg" x1="0" y1="0" x2="24" y2="24"><stop offset="0%" stop-color="#6179ff"/><stop offset="100%" stop-color="#ff6b9d"/></linearGradient></defs><circle cx="5" cy="5" r="2" fill="url(#fg)" opacity=".8"/><circle cx="19" cy="5" r="2.5" fill="url(#fg)" opacity=".7"/><circle cx="12" cy="12" r="3" fill="url(#fg)" opacity=".9"/><circle cx="5" cy="19" r="1.8" fill="url(#fg)" opacity=".6"/><circle cx="19" cy="19" r="2.2" fill="url(#fg)" opacity=".75"/><line x1="5" y1="5" x2="12" y2="12" stroke="url(#fg)" stroke-width=".5" opacity=".4"/><line x1="19" y1="5" x2="12" y2="12" stroke="url(#fg)" stroke-width=".5" opacity=".4"/><line x1="5" y1="19" x2="12" y2="12" stroke="url(#fg)" stroke-width=".5" opacity=".4"/><line x1="19" y1="19" x2="12" y2="12" stroke="url(#fg)" stroke-width=".5" opacity=".4"/><line x1="5" y1="5" x2="19" y2="5" stroke="url(#fg)" stroke-width=".3" opacity=".25"/><line x1="5" y1="19" x2="19" y2="19" stroke="url(#fg)" stroke-width=".3" opacity=".25"/></svg>'>
+    <meta name="permissions" content="network">
+    <meta name="capabilities" content="crypto_capital_flow_visualization">
+    <meta name="lair-category" content="analytics">
+    <meta name="lair-perms" content="network" />
+    <title>Lair Flux</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body {
+            width: 100%; height: 100%;
+            overflow: hidden;
+            background: #020108;
+            color: #fff;
+            font-family: 'SF Pro Text', -apple-system, system-ui, sans-serif;
+            cursor: default;
+            user-select: none;
+        }
+
+        canvas#flux {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 0;
+        }
+
+        /* ─── HUD ─── */
+        .hud {
+            position: fixed;
+            z-index: 10;
+            pointer-events: none;
+        }
+        .hud-top {
+            top: 14px; left: 14px; right: 14px;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .hud-title {
+            font-size: 11px;
+            letter-spacing: 0.35em;
+            text-transform: uppercase;
+            opacity: 0.4;
+            font-weight: 600;
+        }
+        .hud-stats {
+            display: flex; gap: 16px;
+            font-size: 10px; opacity: 0.35;
+            letter-spacing: 0.08em;
+            font-variant-numeric: tabular-nums;
+        }
+        .hud-bottom {
+            bottom: 14px; left: 14px; right: 14px;
+            display: flex; justify-content: space-between; align-items: flex-end;
+        }
+        .hud-controls {
+            display: flex; gap: 6px; pointer-events: auto;
+        }
+        .hud-btn {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            color: rgba(255,255,255,0.5);
+            border-radius: 8px;
+            padding: 6px 10px;
+            font-size: 10px;
+            cursor: pointer;
+            letter-spacing: 0.05em;
+            transition: all 0.2s;
+            font-family: inherit;
+            display: flex; align-items: center; gap: 4px;
+        }
+        .hud-btn:hover {
+            background: rgba(255,255,255,0.08);
+            color: rgba(255,255,255,0.8);
+            border-color: rgba(255,255,255,0.15);
+        }
+        .hud-btn.active {
+            background: rgba(97,121,255,0.15);
+            border-color: rgba(97,121,255,0.4);
+            color: #8fa4ff;
+        }
+        .hud-btn .material-symbols-rounded { font-size: 14px; }
+        .hud-legend {
+            font-size: 9px; opacity: 0.3;
+            line-height: 1.6; text-align: right;
+        }
+
+        /* ─── Tooltip ─── */
+        #tooltip {
+            position: fixed; z-index: 20;
+            display: none; pointer-events: none;
+            min-width: 220px; max-width: 300px;
+            background: rgba(8,8,20,0.94);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 14px;
+            box-shadow: 0 8px 40px rgba(0,0,0,0.6);
+        }
+        .tt-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+        .tt-name { font-weight: 700; font-size: 14px; }
+        .tt-change { font-size: 12px; font-weight: 600; }
+        .tt-change.pos { color: #85ff85; }
+        .tt-change.neg { color: #ff6b6b; }
+        .tt-row { display: flex; justify-content: space-between; font-size: 11px; padding: 3px 0; }
+        .tt-label { opacity: 0.4; }
+        .tt-value { font-weight: 600; font-variant-numeric: tabular-nums; }
+        .tt-divider { border: none; border-top: 1px solid rgba(255,255,255,0.06); margin: 8px 0; }
+        .tt-top-coins { font-size: 10px; opacity: 0.5; margin-top: 4px; line-height: 1.5; }
+
+        /* ─── Flow panel (sector detail) ─── */
+        #detail-panel {
+            position: fixed; z-index: 25;
+            top: 50px; right: 14px;
+            width: 280px;
+            background: rgba(8,8,20,0.95);
+            backdrop-filter: blur(24px);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 14px;
+            padding: 16px;
+            display: none;
+            pointer-events: auto;
+            box-shadow: 0 12px 60px rgba(0,0,0,0.5);
+        }
+        .dp-close {
+            position: absolute; top: 10px; right: 10px;
+            background: none; border: none;
+            color: rgba(255,255,255,0.3); cursor: pointer;
+            font-size: 16px; font-family: inherit;
+        }
+        .dp-close:hover { color: rgba(255,255,255,0.7); }
+        .dp-title { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+        .dp-subtitle { font-size: 11px; opacity: 0.4; margin-bottom: 12px; }
+        .dp-stat { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.04); font-size: 12px; }
+        .dp-stat-label { opacity: 0.45; }
+        .dp-stat-value { font-weight: 600; font-variant-numeric: tabular-nums; }
+        .dp-bar-container { margin-top: 12px; }
+        .dp-bar-label { font-size: 10px; opacity: 0.35; margin-bottom: 4px; }
+        .dp-bar { height: 4px; border-radius: 2px; background: rgba(255,255,255,0.06); overflow: hidden; }
+        .dp-bar-fill { height: 100%; border-radius: 2px; transition: width 0.8s ease; }
+        .dp-coins { margin-top: 12px; }
+        .dp-coins-title { font-size: 10px; opacity: 0.35; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.1em; }
+        .dp-coin { display: flex; align-items: center; gap: 6px; padding: 4px 0; font-size: 11px; }
+        .dp-coin-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+        .dp-coin-name { flex: 1; opacity: 0.7; }
+        .dp-coin-change { font-weight: 600; font-variant-numeric: tabular-nums; }
+
+        /* ─── Search overlay ─── */
+        #search-overlay {
+            position: fixed; z-index: 30;
+            inset: 0;
+            background: rgba(2,1,8,0.85);
+            backdrop-filter: blur(30px);
+            display: none;
+            justify-content: center;
+            align-items: flex-start;
+            padding-top: 18vh;
+        }
+        #search-overlay.open { display: flex; }
+        #search-box {
+            width: 420px; max-width: 90vw;
+            background: rgba(15,15,35,0.9);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 14px;
+            padding: 16px 20px;
+        }
+        #search-input {
+            width: 100%; background: none; border: none;
+            color: #fff; font-size: 18px; font-family: inherit;
+            outline: none; caret-color: #6179ff;
+        }
+        #search-input::placeholder { color: rgba(255,255,255,0.2); }
+        #search-results {
+            margin-top: 12px; max-height: 300px; overflow-y: auto;
+        }
+        .sr-item {
+            padding: 10px 8px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex; justify-content: space-between; align-items: center;
+            font-size: 13px;
+            transition: background 0.15s;
+        }
+        .sr-item:hover, .sr-item.active { background: rgba(97,121,255,0.1); }
+        .sr-item-name { font-weight: 600; }
+        .sr-item-change { font-size: 12px; font-weight: 600; }
+
+        /* ─── Loading ─── */
+        #loader {
+            position: fixed; inset: 0; z-index: 50;
+            background: #020108;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            gap: 16px;
+            transition: opacity 0.8s ease;
+        }
+        #loader.fade { opacity: 0; pointer-events: none; }
+        .loader-ring {
+            width: 40px; height: 40px;
+            border: 2px solid rgba(97,121,255,0.15);
+            border-top-color: #6179ff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loader-text {
+            font-size: 11px; letter-spacing: 0.3em;
+            text-transform: uppercase; opacity: 0.35;
+        }
+    </style>
+</head>
+<body>
+
+<canvas id="flux"></canvas>
+
+<!-- HUD -->
+<div class="hud hud-top">
+    <div class="hud-title">Lair Flux</div>
+    <div class="hud-stats">
+        <span id="stat-sectors">—</span>
+        <span id="stat-mcap">—</span>
+        <span id="stat-flows">—</span>
+        <span id="stat-time">—</span>
+    </div>
+</div>
+
+<div class="hud hud-bottom">
+    <div class="hud-controls">
+        <button class="hud-btn" id="btn-layout" title="Cycle layout">
+            <span class="material-symbols-rounded">hub</span> Layout
+        </button>
+        <button class="hud-btn" id="btn-audio" title="Toggle sonification">
+            <span class="material-symbols-rounded">volume_off</span>
+        </button>
+        <button class="hud-btn" id="btn-labels" title="Toggle labels">
+            <span class="material-symbols-rounded">label</span> Labels
+        </button>
+        <button class="hud-btn" id="btn-search" title="Search (/)">
+            <span class="material-symbols-rounded">search</span>
+        </button>
+    </div>
+    <div class="hud-legend">
+        <div><span style="color:#85ff85">●</span> Capital inflow (24h)</div>
+        <div><span style="color:#ff6b6b">●</span> Capital outflow (24h)</div>
+        <div>Node size = market cap</div>
+        <div>Flow speed = volume intensity</div>
+        <div>Click node = details · / = search</div>
+    </div>
+</div>
+
+<!-- Tooltip -->
+<div id="tooltip">
+    <div class="tt-header">
+        <span class="tt-name" id="tt-name"></span>
+        <span class="tt-change" id="tt-change"></span>
+    </div>
+    <div class="tt-row"><span class="tt-label">Market Cap</span><span class="tt-value" id="tt-mcap"></span></div>
+    <div class="tt-row"><span class="tt-label">24h Volume</span><span class="tt-value" id="tt-vol"></span></div>
+    <div class="tt-row"><span class="tt-label">Dominance</span><span class="tt-value" id="tt-dom"></span></div>
+    <hr class="tt-divider">
+    <div class="tt-top-coins" id="tt-coins"></div>
+</div>
+
+<!-- Detail panel -->
+<div id="detail-panel">
+    <button class="dp-close" id="dp-close">✕</button>
+    <div class="dp-title" id="dp-title"></div>
+    <div class="dp-subtitle" id="dp-subtitle"></div>
+    <div id="dp-stats"></div>
+    <div class="dp-bar-container">
+        <div class="dp-bar-label">Dominance share</div>
+        <div class="dp-bar"><div class="dp-bar-fill" id="dp-bar-fill"></div></div>
+    </div>
+    <div class="dp-coins" id="dp-coins"></div>
+</div>
+
+<!-- Search -->
+<div id="search-overlay">
+    <div id="search-box">
+        <input id="search-input" type="text" placeholder="Search sectors..." autocomplete="off" spellcheck="false">
+        <div id="search-results"></div>
+    </div>
+</div>
+
+<!-- Loader -->
+<div id="loader">
+    <div class="loader-ring"></div>
+    <div class="loader-text">Mapping capital flows</div>
+</div>
+
+<script>
+'use strict';
+
+// ─── Canvas setup ────────────────────────────────────────────────────────────
+const canvas = document.getElementById('flux');
+const ctx = canvas.getContext('2d');
+let W, H, cx, cy;
+
+function resize() {
+    const dpr = window.devicePixelRatio || 1;
+    W = canvas.clientWidth;
+    H = canvas.clientHeight;
+    canvas.width = W * dpr;
+    canvas.height = H * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    cx = W / 2;
+    cy = H / 2;
+}
+resize();
+window.addEventListener('resize', () => { resize(); layoutNodes(); });
+
+// ─── State ───────────────────────────────────────────────────────────────────
+const REFRESH_MS = 120_000;
+let sectors = [];
+let edges = [];
+let particles = [];
+let bgStars = [];
+let lastFetch = 0;
+let animFrame = 0;
+let hoveredNode = null;
+let selectedNode = null;
+let showLabels = true;
+let audioOn = false;
+let layoutMode = 0; // 0=radial, 1=force, 2=grid
+const LAYOUT_NAMES = ['Radial', 'Force', 'Grid'];
+let totalMcap = 0;
+
+// CoinGecko category mapping → friendly names + colors
+const CAT_MAP = {
+    'layer-1':                  { name: 'Layer 1',       color: '#6179ff', emoji: '⛓' },
+    'layer-2':                  { name: 'Layer 2',       color: '#34d4f1', emoji: '🔗' },
+    'decentralized-finance-defi': { name: 'DeFi',       color: '#85ff85', emoji: '🏦' },
+    'stablecoins':              { name: 'Stablecoins',   color: '#ffd700', emoji: '💵' },
+    'meme-token':               { name: 'Meme',          color: '#ff6b9d', emoji: '🐕' },
+    'non-fungible-tokens-nft':  { name: 'NFTs',          color: '#c084fc', emoji: '🖼' },
+    'gaming':                   { name: 'Gaming',        color: '#f97316', emoji: '🎮' },
+    'artificial-intelligence':  { name: 'AI & Compute',  color: '#22d3ee', emoji: '🤖' },
+    'exchange-based-tokens':    { name: 'Exchange',      color: '#fbbf24', emoji: '🏛' },
+    'infrastructure':           { name: 'Infrastructure', color: '#a78bfa', emoji: '🏗' },
+    'privacy-coins':            { name: 'Privacy',       color: '#64748b', emoji: '🔒' },
+    'real-world-assets-rwa':    { name: 'RWA',           color: '#f59e0b', emoji: '🏠' },
+    'liquid-staking-tokens':    { name: 'Liquid Staking', color: '#38bdf8', emoji: '💧' },
+    'oracle':                   { name: 'Oracles',       color: '#e879f9', emoji: '🔮' },
+    'storage':                  { name: 'Storage',       color: '#2dd4bf', emoji: '💾' },
+    'zero-knowledge-zk':        { name: 'ZK',            color: '#818cf8', emoji: '🧬' },
+    'rollup':                   { name: 'Rollups',       color: '#67e8f9', emoji: '📦' },
+    'restaking':                { name: 'Restaking',     color: '#4ade80', emoji: '♻️' },
+    'social-fi':                { name: 'SocialFi',      color: '#fb923c', emoji: '📱' },
+    'cross-chain':              { name: 'Cross-Chain',   color: '#a3e635', emoji: '🌉' },
+    'governance':               { name: 'Governance',    color: '#d946ef', emoji: '🗳' },
+    'yield-farming':            { name: 'Yield',         color: '#86efac', emoji: '🌾' },
+    'data-availability':        { name: 'Data Avail.',   color: '#7dd3fc', emoji: '📊' },
+    'lending-borrowing':        { name: 'Lending',       color: '#fca5a5', emoji: '💳' },
+};
+
+const CAT_IDS = Object.keys(CAT_MAP);
+
+// ─── Data fetching ───────────────────────────────────────────────────────────
+const _f = window.cfetch || fetch;
+async function fetchData() {
+    try {
+        const results = await Promise.allSettled(
+            CAT_IDS.map(id =>
+                _f(`https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&category=${id}&order=market_cap_desc&per_page=10&page=1&sparkline=false`)
+                    .then(r => {
+                        if (r.status === 429) throw new Error('rate-limited');
+                        if (!r.ok) throw new Error(r.status);
+                        return r.json();
+                    })
+            )
+        );
+
+        const newSectors = [];
+        totalMcap = 0;
+
+        results.forEach((result, i) => {
+            const catId = CAT_IDS[i];
+            const meta = CAT_MAP[catId];
+            if (result.status !== 'fulfilled' || !Array.isArray(result.value) || result.value.length === 0) return;
+
+            const coins = result.value;
+            const mcap = coins.reduce((s, c) => s + (c.market_cap || 0), 0);
+            const vol = coins.reduce((s, c) => s + (c.total_volume || 0), 0);
+            const avgChange = coins.reduce((s, c) => s + (c.price_change_percentage_24h || 0), 0) / coins.length;
+            totalMcap += mcap;
+
+            // Find existing sector to preserve position
+            const existing = sectors.find(s => s.id === catId);
+
+            newSectors.push({
+                id: catId,
+                name: meta.name,
+                color: meta.color,
+                emoji: meta.emoji,
+                mcap,
+                vol,
+                change24h: avgChange,
+                coins: coins.slice(0, 8).map(c => ({
+                    name: c.name,
+                    symbol: (c.symbol || '').toUpperCase(),
+                    price: c.current_price,
+                    change: c.price_change_percentage_24h,
+                    mcap: c.market_cap,
+                    image: c.image,
+                })),
+                // Preserve position if exists
+                x: existing ? existing.x : 0,
+                y: existing ? existing.y : 0,
+                tx: 0, ty: 0, // target position
+                radius: 0,
+                pulsePhase: Math.random() * Math.PI * 2,
+                glowIntensity: 0,
+            });
+        });
+
+        if (newSectors.length > 0) {
+            sectors = newSectors;
+            computeSizes();
+            layoutNodes();
+            buildEdges();
+            spawnParticles();
+        }
+
+        lastFetch = Date.now();
+
+        // Update HUD
+        document.getElementById('stat-sectors').textContent = `${sectors.length} sectors`;
+        document.getElementById('stat-mcap').textContent = `$${fmtB(totalMcap)} total`;
+        document.getElementById('stat-flows').textContent = `${edges.length} flows`;
+
+        // Hide loader
+        const loader = document.getElementById('loader');
+        if (loader && !loader.classList.contains('fade')) {
+            loader.classList.add('fade');
+            setTimeout(() => loader.remove(), 800);
+        }
+    } catch (e) {
+        console.error('Fetch error:', e);
+        // Retry in 10s
+        setTimeout(fetchData, 10_000);
+    }
+}
+
+function computeSizes() {
+    const maxMcap = Math.max(...sectors.map(s => s.mcap), 1);
+    sectors.forEach(s => {
+        const norm = s.mcap / maxMcap;
+        s.radius = 18 + norm * 52; // 18-70px radius
+    });
+}
+
+// ─── Layout algorithms ───────────────────────────────────────────────────────
+function layoutNodes() {
+    if (sectors.length === 0) return;
+    if (layoutMode === 0) layoutRadial();
+    else if (layoutMode === 1) layoutForce();
+    else layoutGrid();
+}
+
+function layoutRadial() {
+    const n = sectors.length;
+    const maxR = Math.min(W, H) * 0.38;
+    // Sort by mcap for better visual hierarchy
+    const sorted = [...sectors].sort((a, b) => b.mcap - a.mcap);
+    // Center the largest
+    if (sorted.length > 0) {
+        sorted[0].tx = cx;
+        sorted[0].ty = cy;
+    }
+    // Rest in concentric rings
+    const inner = sorted.slice(1, 9);
+    const outer = sorted.slice(9);
+
+    inner.forEach((s, i) => {
+        const angle = (i / inner.length) * Math.PI * 2 - Math.PI / 2;
+        s.tx = cx + Math.cos(angle) * maxR * 0.5;
+        s.ty = cy + Math.sin(angle) * maxR * 0.5;
+    });
+
+    outer.forEach((s, i) => {
+        const angle = (i / Math.max(outer.length, 1)) * Math.PI * 2 - Math.PI / 4;
+        s.tx = cx + Math.cos(angle) * maxR * 0.88;
+        s.ty = cy + Math.sin(angle) * maxR * 0.88;
+    });
+}
+
+function layoutForce() {
+    // Simple force-directed placement
+    const n = sectors.length;
+    sectors.forEach((s, i) => {
+        const angle = (i / n) * Math.PI * 2;
+        const r = Math.min(W, H) * 0.3;
+        s.tx = cx + Math.cos(angle) * r;
+        s.ty = cy + Math.sin(angle) * r;
+    });
+
+    // Iterative repulsion
+    for (let iter = 0; iter < 50; iter++) {
+        for (let i = 0; i < n; i++) {
+            for (let j = i + 1; j < n; j++) {
+                const dx = sectors[j].tx - sectors[i].tx;
+                const dy = sectors[j].ty - sectors[i].ty;
+                const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+                const minDist = sectors[i].radius + sectors[j].radius + 40;
+                if (dist < minDist) {
+                    const push = (minDist - dist) / 2;
+                    const nx = dx / dist;
+                    const ny = dy / dist;
+                    sectors[i].tx -= nx * push;
+                    sectors[i].ty -= ny * push;
+                    sectors[j].tx += nx * push;
+                    sectors[j].ty += ny * push;
+                }
+            }
+            // Pull toward center
+            sectors[i].tx += (cx - sectors[i].tx) * 0.02;
+            sectors[i].ty += (cy - sectors[i].ty) * 0.02;
+        }
+    }
+}
+
+function layoutGrid() {
+    const n = sectors.length;
+    const cols = Math.ceil(Math.sqrt(n * (W / H)));
+    const rows = Math.ceil(n / cols);
+    const cellW = W / (cols + 1);
+    const cellH = H / (rows + 1);
+
+    const sorted = [...sectors].sort((a, b) => b.mcap - a.mcap);
+    sorted.forEach((s, i) => {
+        const col = i % cols;
+        const row = Math.floor(i / cols);
+        s.tx = (col + 1) * cellW;
+        s.ty = (row + 1) * cellH;
+    });
+}
+
+// ─── Edge / flow building ────────────────────────────────────────────────────
+function buildEdges() {
+    edges = [];
+    const n = sectors.length;
+
+    for (let i = 0; i < n; i++) {
+        for (let j = i + 1; j < n; j++) {
+            const a = sectors[i];
+            const b = sectors[j];
+
+            // Flow strength based on relative volume and change correlation
+            const volA = a.vol / (a.mcap || 1);
+            const volB = b.vol / (b.mcap || 1);
+            const activity = (volA + volB) / 2;
+
+            // Direction: capital flows FROM negative change TO positive change
+            const changeDiff = b.change24h - a.change24h;
+            const flowStrength = Math.min(Math.abs(changeDiff) * activity * 50, 1);
+
+            if (flowStrength > 0.05) {
+                edges.push({
+                    from: changeDiff > 0 ? i : j,
+                    to: changeDiff > 0 ? j : i,
+                    strength: flowStrength,
+                    opacity: 0.08 + flowStrength * 0.15,
+                });
+            }
+        }
+    }
+
+    // Keep only strongest edges to avoid clutter
+    edges.sort((a, b) => b.strength - a.strength);
+    edges = edges.slice(0, Math.min(edges.length, sectors.length * 3));
+}
+
+// ─── Particle system ─────────────────────────────────────────────────────────
+const MAX_PARTICLES = 600;
+
+function spawnParticles() {
+    // Keep existing, top up
+    const needed = MAX_PARTICLES - particles.length;
+    for (let i = 0; i < needed && edges.length > 0; i++) {
+        const edge = edges[Math.floor(Math.random() * edges.length)];
+        spawnParticle(edge);
+    }
+}
+
+function spawnParticle(edge) {
+    const from = sectors[edge.from];
+    const to = sectors[edge.to];
+    if (!from || !to) return;
+
+    const speed = 0.002 + edge.strength * 0.006;
+
+    particles.push({
+        edge,
+        t: Math.random() * 0.3, // start slightly spread
+        speed: speed + Math.random() * 0.002,
+        size: 1 + edge.strength * 2.5,
+        opacity: 0.3 + edge.strength * 0.5,
+        offset: (Math.random() - 0.5) * 12, // perpendicular offset for depth
+    });
+}
+
+function updateParticles() {
+    for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.t += p.speed;
+
+        if (p.t >= 1) {
+            // Respawn on a random edge
+            if (edges.length > 0) {
+                const edge = edges[Math.floor(Math.random() * edges.length)];
+                p.edge = edge;
+                p.t = 0;
+                p.speed = 0.002 + edge.strength * 0.006 + Math.random() * 0.002;
+                p.size = 1 + edge.strength * 2.5;
+                p.opacity = 0.3 + edge.strength * 0.5;
+                p.offset = (Math.random() - 0.5) * 12;
+            } else {
+                particles.splice(i, 1);
+            }
+        }
+    }
+}
+
+// ─── Background stars ────────────────────────────────────────────────────────
+function generateBgStars() {
+    bgStars = [];
+    const count = Math.floor((W * H) / 4000);
+    for (let i = 0; i < count; i++) {
+        bgStars.push({
+            x: Math.random() * W,
+            y: Math.random() * H,
+            r: Math.random() * 1.2,
+            twinkleSpeed: 0.01 + Math.random() * 0.03,
+            phase: Math.random() * Math.PI * 2,
+        });
+    }
+}
+generateBgStars();
+window.addEventListener('resize', generateBgStars);
+
+// ─── Audio (Web Audio API) ───────────────────────────────────────────────────
+let audioCtx = null;
+let masterGain = null;
+let ambientOsc = null;
+
+function initAudio() {
+    if (audioCtx) return;
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    masterGain = audioCtx.createGain();
+    masterGain.gain.value = 0.15;
+    masterGain.connect(audioCtx.destination);
+
+    // Ambient low drone
+    ambientOsc = audioCtx.createOscillator();
+    ambientOsc.type = 'sine';
+    ambientOsc.frequency.value = 55; // Low A
+    const ambGain = audioCtx.createGain();
+    ambGain.gain.value = 0.04;
+    ambientOsc.connect(ambGain);
+    ambGain.connect(masterGain);
+    ambientOsc.start();
+}
+
+const PENTATONIC = [261.6, 293.7, 329.6, 392.0, 440.0, 523.3, 587.3, 659.3];
+
+function playFlowNote(sector) {
+    if (!audioCtx || !audioOn) return;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+
+    // Map change to pitch
+    const pitchIdx = Math.floor(((sector.change24h + 20) / 40) * PENTATONIC.length);
+    const freq = PENTATONIC[Math.max(0, Math.min(pitchIdx, PENTATONIC.length - 1))];
+
+    osc.type = 'triangle';
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.8);
+
+    osc.connect(gain);
+    gain.connect(masterGain);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.8);
+}
+
+// ─── Rendering ───────────────────────────────────────────────────────────────
+function render() {
+    animFrame++;
+    const t = animFrame / 60;
+
+    ctx.clearRect(0, 0, W, H);
+
+    // ── Background gradient
+    const bgGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.max(W, H) * 0.7);
+    bgGrad.addColorStop(0, '#060418');
+    bgGrad.addColorStop(0.5, '#030210');
+    bgGrad.addColorStop(1, '#020108');
+    ctx.fillStyle = bgGrad;
+    ctx.fillRect(0, 0, W, H);
+
+    // ── Background stars
+    bgStars.forEach(star => {
+        const twinkle = 0.2 + Math.sin(t * star.twinkleSpeed * 60 + star.phase) * 0.3 + 0.3;
+        ctx.beginPath();
+        ctx.arc(star.x, star.y, star.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(180,190,255,${twinkle})`;
+        ctx.fill();
+    });
+
+    // ── Animate node positions (smooth lerp)
+    sectors.forEach(s => {
+        s.x += (s.tx - s.x) * 0.06;
+        s.y += (s.ty - s.y) * 0.06;
+    });
+
+    // ── Draw edges (flow lines)
+    edges.forEach(edge => {
+        const from = sectors[edge.from];
+        const to = sectors[edge.to];
+        if (!from || !to) return;
+
+        // Bezier control point (perpendicular offset)
+        const mx = (from.x + to.x) / 2;
+        const my = (from.y + to.y) / 2;
+        const dx = to.x - from.x;
+        const dy = to.y - from.y;
+        const len = Math.sqrt(dx * dx + dy * dy) || 1;
+        const nx = -dy / len;
+        const ny = dx / len;
+        const bend = len * 0.15;
+        const cpx = mx + nx * bend;
+        const cpy = my + ny * bend;
+
+        ctx.beginPath();
+        ctx.moveTo(from.x, from.y);
+        ctx.quadraticCurveTo(cpx, cpy, to.x, to.y);
+        ctx.strokeStyle = `rgba(255,255,255,${edge.opacity * 0.5})`;
+        ctx.lineWidth = 0.5 + edge.strength;
+        ctx.stroke();
+    });
+
+    // ── Draw particles
+    updateParticles();
+    particles.forEach(p => {
+        const from = sectors[p.edge.from];
+        const to = sectors[p.edge.to];
+        if (!from || !to) return;
+
+        // Position along quadratic bezier
+        const mx = (from.x + to.x) / 2;
+        const my = (from.y + to.y) / 2;
+        const dx = to.x - from.x;
+        const dy = to.y - from.y;
+        const len = Math.sqrt(dx * dx + dy * dy) || 1;
+        const nx = -dy / len;
+        const ny = dx / len;
+        const bend = len * 0.15;
+        const cpx = mx + nx * bend;
+        const cpy = my + ny * bend;
+
+        const tt = p.t;
+        const mt = 1 - tt;
+        const px = mt * mt * from.x + 2 * mt * tt * cpx + tt * tt * to.x;
+        const py = mt * mt * from.y + 2 * mt * tt * cpy + tt * tt * to.y;
+
+        // Add perpendicular offset
+        const tangentX = 2 * mt * (cpx - from.x) + 2 * tt * (to.x - cpx);
+        const tangentY = 2 * mt * (cpy - from.y) + 2 * tt * (to.y - cpy);
+        const tLen = Math.sqrt(tangentX * tangentX + tangentY * tangentY) || 1;
+        const perpX = -tangentY / tLen;
+        const perpY = tangentX / tLen;
+
+        const finalX = px + perpX * p.offset;
+        const finalY = py + perpY * p.offset;
+
+        // Color: green if flowing to positive sector, red if to negative
+        const toSector = sectors[p.edge.to];
+        const isPositive = toSector && toSector.change24h > 0;
+        const particleColor = isPositive ? '133,255,133' : '255,107,107';
+
+        // Fade in/out at endpoints
+        const fadeIn = Math.min(p.t * 5, 1);
+        const fadeOut = Math.min((1 - p.t) * 5, 1);
+        const alpha = p.opacity * fadeIn * fadeOut;
+
+        // Glow
+        ctx.beginPath();
+        ctx.arc(finalX, finalY, p.size * 3, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(${particleColor},${alpha * 0.15})`;
+        ctx.fill();
+
+        // Core
+        ctx.beginPath();
+        ctx.arc(finalX, finalY, p.size, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(${particleColor},${alpha})`;
+        ctx.fill();
+    });
+
+    // ── Draw nodes
+    sectors.forEach((s, i) => {
+        const pulse = Math.sin(t * 2 + s.pulsePhase) * 0.15 + 1;
+        const r = s.radius * pulse;
+        const isHovered = hoveredNode === i;
+        const isSelected = selectedNode === i;
+        const highlight = isHovered || isSelected;
+
+        // Outer glow
+        const glowR = r * (highlight ? 2.5 : 1.8);
+        const glow = ctx.createRadialGradient(s.x, s.y, r * 0.3, s.x, s.y, glowR);
+        glow.addColorStop(0, hexToRGBA(s.color, highlight ? 0.25 : 0.12));
+        glow.addColorStop(0.5, hexToRGBA(s.color, highlight ? 0.08 : 0.04));
+        glow.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, glowR, 0, Math.PI * 2);
+        ctx.fillStyle = glow;
+        ctx.fill();
+
+        // Node body
+        const bodyGrad = ctx.createRadialGradient(s.x - r * 0.2, s.y - r * 0.2, 0, s.x, s.y, r);
+        bodyGrad.addColorStop(0, hexToRGBA(s.color, highlight ? 0.5 : 0.3));
+        bodyGrad.addColorStop(0.7, hexToRGBA(s.color, highlight ? 0.25 : 0.12));
+        bodyGrad.addColorStop(1, hexToRGBA(s.color, 0.03));
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, r, 0, Math.PI * 2);
+        ctx.fillStyle = bodyGrad;
+        ctx.fill();
+
+        // Ring
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, r, 0, Math.PI * 2);
+        ctx.strokeStyle = hexToRGBA(s.color, highlight ? 0.6 : 0.25);
+        ctx.lineWidth = highlight ? 2 : 1;
+        ctx.stroke();
+
+        // Change indicator ring (partial arc)
+        const changeNorm = Math.max(-1, Math.min(1, s.change24h / 15));
+        const arcLen = Math.abs(changeNorm) * Math.PI;
+        if (arcLen > 0.05) {
+            ctx.beginPath();
+            ctx.arc(s.x, s.y, r + 4, -Math.PI / 2, -Math.PI / 2 + arcLen * Math.sign(changeNorm), changeNorm < 0);
+            ctx.strokeStyle = changeNorm > 0 ? 'rgba(133,255,133,0.6)' : 'rgba(255,107,107,0.6)';
+            ctx.lineWidth = 2.5;
+            ctx.lineCap = 'round';
+            ctx.stroke();
+            ctx.lineCap = 'butt';
+        }
+
+        // ── Labels
+        if (showLabels || highlight) {
+            // Emoji
+            ctx.font = `${Math.max(14, r * 0.45)}px serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(s.emoji, s.x, s.y - (r > 30 ? 6 : 0));
+
+            // Name
+            ctx.font = `600 ${Math.max(9, Math.min(12, r * 0.22))}px -apple-system, system-ui, sans-serif`;
+            ctx.fillStyle = `rgba(255,255,255,${highlight ? 0.9 : 0.55})`;
+            ctx.fillText(s.name, s.x, s.y + r + 14);
+
+            // Change %
+            const chStr = (s.change24h >= 0 ? '+' : '') + s.change24h.toFixed(1) + '%';
+            ctx.font = `600 ${Math.max(8, Math.min(10, r * 0.18))}px -apple-system, system-ui, sans-serif`;
+            ctx.fillStyle = s.change24h >= 0 ? 'rgba(133,255,133,0.7)' : 'rgba(255,107,107,0.7)';
+            ctx.fillText(chStr, s.x, s.y + r + 26);
+        }
+    });
+
+    // ── Timestamp
+    document.getElementById('stat-time').textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    requestAnimationFrame(render);
+
+    // ── Mouse hover detection
+    if (mouseX !== null) {
+        let closest = null;
+        let closestDist = Infinity;
+        sectors.forEach((s, i) => {
+            const dx = s.x - mouseX;
+            const dy = s.y - mouseY;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < s.radius * 1.3 && dist < closestDist) {
+                closest = i;
+                closestDist = dist;
+            }
+        });
+
+        if (closest !== null && closest !== hoveredNode) {
+            hoveredNode = closest;
+            showTooltip(sectors[closest]);
+            canvas.style.cursor = 'pointer';
+            if (audioOn && animFrame % 20 === 0) playFlowNote(sectors[closest]);
+        } else if (closest === null) {
+            hoveredNode = null;
+            hideTooltip();
+            canvas.style.cursor = 'default';
+        }
+    }
+
+    // ── Auto-refresh
+    if (Date.now() - lastFetch > REFRESH_MS && lastFetch > 0) {
+        fetchData();
+    }
+}
+
+// ─── Mouse interaction ───────────────────────────────────────────────────────
+let mouseX = null, mouseY = null;
+
+canvas.addEventListener('mousemove', e => {
+    mouseX = e.clientX;
+    mouseY = e.clientY;
+});
+
+canvas.addEventListener('mouseleave', () => {
+    mouseX = null;
+    mouseY = null;
+    hoveredNode = null;
+    hideTooltip();
+});
+
+canvas.addEventListener('click', e => {
+    if (hoveredNode !== null) {
+        selectedNode = hoveredNode;
+        showDetailPanel(sectors[selectedNode]);
+        if (audioOn) playFlowNote(sectors[selectedNode]);
+    } else {
+        selectedNode = null;
+        hideDetailPanel();
+    }
+});
+
+// ─── Touch support ───────────────────────────────────────────────────────────
+canvas.addEventListener('touchstart', e => {
+    const touch = e.touches[0];
+    mouseX = touch.clientX;
+    mouseY = touch.clientY;
+}, { passive: true });
+
+canvas.addEventListener('touchend', () => {
+    if (hoveredNode !== null) {
+        selectedNode = hoveredNode;
+        showDetailPanel(sectors[selectedNode]);
+    }
+    setTimeout(() => { mouseX = null; mouseY = null; hoveredNode = null; hideTooltip(); }, 100);
+}, { passive: true });
+
+// ─── Tooltip ─────────────────────────────────────────────────────────────────
+const tooltip = document.getElementById('tooltip');
+
+function showTooltip(sector) {
+    document.getElementById('tt-name').textContent = `${sector.emoji} ${sector.name}`;
+
+    const chEl = document.getElementById('tt-change');
+    chEl.textContent = (sector.change24h >= 0 ? '+' : '') + sector.change24h.toFixed(2) + '%';
+    chEl.className = 'tt-change ' + (sector.change24h >= 0 ? 'pos' : 'neg');
+
+    document.getElementById('tt-mcap').textContent = '$' + fmtB(sector.mcap);
+    document.getElementById('tt-vol').textContent = '$' + fmtB(sector.vol);
+    document.getElementById('tt-dom').textContent = totalMcap > 0 ? ((sector.mcap / totalMcap) * 100).toFixed(1) + '%' : '—';
+
+    const coinsStr = sector.coins.slice(0, 5).map(c =>
+        `${c.symbol}: $${fmtPrice(c.price)} (${c.change >= 0 ? '+' : ''}${(c.change || 0).toFixed(1)}%)`
+    ).join('\n');
+    document.getElementById('tt-coins').textContent = coinsStr;
+
+    tooltip.style.display = 'block';
+
+    // Position tooltip
+    let tx = mouseX + 16;
+    let ty = mouseY - 10;
+    if (tx + 300 > W) tx = mouseX - 310;
+    if (ty + 200 > H) ty = H - 210;
+    if (ty < 10) ty = 10;
+    tooltip.style.left = tx + 'px';
+    tooltip.style.top = ty + 'px';
+}
+
+function hideTooltip() {
+    tooltip.style.display = 'none';
+}
+
+// ─── Detail panel ────────────────────────────────────────────────────────────
+const detailPanel = document.getElementById('detail-panel');
+
+function showDetailPanel(sector) {
+    document.getElementById('dp-title').textContent = `${sector.emoji} ${sector.name}`;
+    document.getElementById('dp-subtitle').textContent = `${sector.coins.length} top tokens tracked`;
+
+    const statsHtml = [
+        ['Market Cap', '$' + fmtB(sector.mcap)],
+        ['24h Volume', '$' + fmtB(sector.vol)],
+        ['24h Change', (sector.change24h >= 0 ? '+' : '') + sector.change24h.toFixed(2) + '%'],
+        ['Vol/MCap', ((sector.vol / (sector.mcap || 1)) * 100).toFixed(2) + '%'],
+        ['Dominance', totalMcap > 0 ? ((sector.mcap / totalMcap) * 100).toFixed(2) + '%' : '—'],
+    ].map(([label, value]) => `<div class="dp-stat"><span class="dp-stat-label">${label}</span><span class="dp-stat-value" style="${label === '24h Change' ? 'color:' + (sector.change24h >= 0 ? '#85ff85' : '#ff6b6b') : ''}">${value}</span></div>`).join('');
+
+    document.getElementById('dp-stats').innerHTML = statsHtml;
+
+    // Dominance bar
+    const dom = totalMcap > 0 ? (sector.mcap / totalMcap) * 100 : 0;
+    const barFill = document.getElementById('dp-bar-fill');
+    barFill.style.width = Math.min(dom * 2, 100) + '%'; // Scale up for visibility
+    barFill.style.background = sector.color;
+
+    // Top coins
+    const coinsHtml = sector.coins.slice(0, 6).map(c => {
+        const ch = (c.change || 0);
+        const chColor = ch >= 0 ? '#85ff85' : '#ff6b6b';
+        return `<div class="dp-coin">
+            <div class="dp-coin-dot" style="background:${sector.color}"></div>
+            <span class="dp-coin-name">${c.symbol}</span>
+            <span class="dp-coin-change" style="color:${chColor}">${ch >= 0 ? '+' : ''}${ch.toFixed(1)}%</span>
+        </div>`;
+    }).join('');
+
+    document.getElementById('dp-coins').innerHTML = `<div class="dp-coins-title">Top tokens</div>${coinsHtml}`;
+    detailPanel.style.display = 'block';
+}
+
+function hideDetailPanel() {
+    detailPanel.style.display = 'none';
+}
+
+document.getElementById('dp-close').addEventListener('click', () => {
+    selectedNode = null;
+    hideDetailPanel();
+});
+
+// ─── Search ──────────────────────────────────────────────────────────────────
+const searchOverlay = document.getElementById('search-overlay');
+const searchInput = document.getElementById('search-input');
+const searchResults = document.getElementById('search-results');
+
+function openSearch() {
+    searchOverlay.classList.add('open');
+    searchInput.value = '';
+    searchInput.focus();
+    renderSearchResults('');
+}
+
+function closeSearch() {
+    searchOverlay.classList.remove('open');
+}
+
+function renderSearchResults(query) {
+    const q = query.toLowerCase().trim();
+    const matches = sectors.filter(s =>
+        !q || s.name.toLowerCase().includes(q) || s.id.includes(q) ||
+        s.coins.some(c => c.name.toLowerCase().includes(q) || c.symbol.toLowerCase().includes(q))
+    );
+
+    searchResults.innerHTML = matches.map((s, i) => {
+        const ch = s.change24h;
+        return `<div class="sr-item" data-idx="${sectors.indexOf(s)}">
+            <span class="sr-item-name">${s.emoji} ${s.name}</span>
+            <span class="sr-item-change" style="color:${ch >= 0 ? '#85ff85' : '#ff6b6b'}">${ch >= 0 ? '+' : ''}${ch.toFixed(1)}%</span>
+        </div>`;
+    }).join('');
+
+    // Click handlers
+    searchResults.querySelectorAll('.sr-item').forEach(el => {
+        el.addEventListener('click', () => {
+            const idx = parseInt(el.dataset.idx);
+            selectedNode = idx;
+            showDetailPanel(sectors[idx]);
+            closeSearch();
+        });
+    });
+}
+
+searchInput.addEventListener('input', () => renderSearchResults(searchInput.value));
+
+searchOverlay.addEventListener('click', e => {
+    if (e.target === searchOverlay) closeSearch();
+});
+
+document.addEventListener('keydown', e => {
+    if (e.key === '/' && !searchOverlay.classList.contains('open')) {
+        e.preventDefault();
+        openSearch();
+    }
+    if (e.key === 'Escape') {
+        if (searchOverlay.classList.contains('open')) closeSearch();
+        else if (selectedNode !== null) { selectedNode = null; hideDetailPanel(); }
+    }
+});
+
+// ─── HUD Buttons ─────────────────────────────────────────────────────────────
+document.getElementById('btn-layout').addEventListener('click', () => {
+    layoutMode = (layoutMode + 1) % 3;
+    document.getElementById('btn-layout').querySelector('.material-symbols-rounded').textContent =
+        ['hub', 'scatter_plot', 'grid_view'][layoutMode];
+    document.getElementById('btn-layout').childNodes[1].textContent = ' ' + LAYOUT_NAMES[layoutMode];
+    layoutNodes();
+});
+
+document.getElementById('btn-audio').addEventListener('click', () => {
+    audioOn = !audioOn;
+    if (audioOn) initAudio();
+    document.getElementById('btn-audio').querySelector('.material-symbols-rounded').textContent =
+        audioOn ? 'volume_up' : 'volume_off';
+    document.getElementById('btn-audio').classList.toggle('active', audioOn);
+});
+
+document.getElementById('btn-labels').addEventListener('click', () => {
+    showLabels = !showLabels;
+    document.getElementById('btn-labels').classList.toggle('active', showLabels);
+});
+
+document.getElementById('btn-search').addEventListener('click', openSearch);
+
+// ─── Utilities ───────────────────────────────────────────────────────────────
+function fmtB(n) {
+    if (n >= 1e12) return (n / 1e12).toFixed(2) + 'T';
+    if (n >= 1e9) return (n / 1e9).toFixed(2) + 'B';
+    if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+    if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+    return n.toFixed(0);
+}
+
+function fmtPrice(n) {
+    if (n == null) return '—';
+    if (n >= 1) return n.toLocaleString(undefined, { maximumFractionDigits: 2 });
+    if (n >= 0.01) return n.toFixed(4);
+    return n.toFixed(6);
+}
+
+function hexToRGBA(hex, alpha) {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return `rgba(${r},${g},${b},${alpha})`;
+}
+
+// ─── Start ───────────────────────────────────────────────────────────────────
+fetchData();
+render();
+
+</script>
+</body>
+</html>

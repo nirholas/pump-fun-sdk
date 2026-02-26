@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="lair-include" content="lair.css">
+    <meta name="capabilities" content="unit_converter">
+    <meta name="aspect-ratio" content="3/4">
+    <meta name="lair-icon" content="swap_horiz">
+    <meta name="lair-perms" content="network" />
+    <title>Unit Converter</title>
+    <style>
+        :root {
+            --col-bg1: #101010;
+            --col-bg2: #171717;
+            --col-bg3: #222222;
+            --col-txt1: white;
+            --col-txt2: #aaa;
+            --colors-accent: rgb(97, 121, 255);
+            --col-good: #5be45b;
+            --col-bad: #d44343;
+            --siz-radius1: 0.5em;
+            --siz-radius2: 0.375em;
+            --font-size-small: 0.75em;
+            --box-crisp-col: #333;
+        }
+
+        html { height: 100%; }
+
+        body {
+            margin: 0;
+            height: 100%;
+            background: var(--col-bg1);
+            color: var(--col-txt1);
+            font-family: inherit;
+            overflow-y: auto;
+        }
+
+        * { box-sizing: border-box; }
+
+        .app {
+            max-width: 480px;
+            margin: 0 auto;
+            padding: 0.75em;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5em;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.5em;
+        }
+
+        .header h1 {
+            font-size: 1.1em;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .price-badge {
+            font-size: 0.7em;
+            background: var(--col-bg2);
+            border: 1px solid var(--col-bg3);
+            border-radius: var(--siz-radius2);
+            padding: 0.25em 0.5em;
+            color: var(--col-txt2);
+            cursor: pointer;
+            transition: border-color 0.2s;
+        }
+
+        .price-badge:hover {
+            border-color: var(--colors-accent);
+        }
+
+        .price-badge .val {
+            color: var(--col-txt1);
+            font-weight: 500;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 2px;
+            background: var(--col-bg2);
+            border-radius: var(--siz-radius1);
+            padding: 3px;
+        }
+
+        .tab {
+            flex: 1;
+            text-align: center;
+            padding: 0.4em 0.5em;
+            font-size: 0.8em;
+            font-weight: 500;
+            border: none;
+            background: transparent;
+            color: var(--col-txt2);
+            border-radius: calc(var(--siz-radius1) - 2px);
+            cursor: pointer;
+            transition: background 0.2s, color 0.2s;
+        }
+
+        .tab:hover { color: var(--col-txt1); }
+
+        .tab.active {
+            background: var(--colors-accent);
+            color: #fff;
+        }
+
+        /* Panels */
+        .panel { display: none; }
+        .panel.active { display: flex; flex-direction: column; gap: 0.4em; }
+
+        /* Field row */
+        .field {
+            display: flex;
+            flex-direction: column;
+            gap: 0.2em;
+        }
+
+        .field-label {
+            font-size: var(--font-size-small);
+            opacity: 0.6;
+            letter-spacing: 0.03em;
+            text-transform: uppercase;
+            padding-left: 0.15em;
+        }
+
+        .field-row {
+            display: flex;
+            gap: 0.35em;
+        }
+
+        .field-row input {
+            flex: 1;
+            min-width: 0;
+            background: var(--col-bg2);
+            border: 1px solid var(--box-crisp-col);
+            border-radius: var(--siz-radius2);
+            color: var(--col-txt1);
+            padding: 0.5rem 0.6rem;
+            font-size: 0.9em;
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .field-row input:focus {
+            border-color: var(--colors-accent);
+        }
+
+        .field-row input::placeholder {
+            color: var(--col-txt2);
+            opacity: 0.5;
+        }
+
+        .copy-btn {
+            background: var(--col-bg2);
+            border: 1px solid var(--box-crisp-col);
+            border-radius: var(--siz-radius2);
+            color: var(--col-txt2);
+            padding: 0 0.55em;
+            cursor: pointer;
+            font-size: 0.85em;
+            display: flex;
+            align-items: center;
+            transition: background 0.15s, color 0.15s;
+            flex-shrink: 0;
+        }
+
+        .copy-btn:hover {
+            background: var(--col-bg3);
+            color: var(--col-txt1);
+        }
+
+        .copy-btn.copied {
+            color: var(--col-good);
+            border-color: var(--col-good);
+        }
+
+        /* Divider */
+        .divider {
+            border: none;
+            border-top: 1px solid var(--col-bg3);
+            margin: 0.25em 0;
+        }
+
+        /* Info row */
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.7em;
+            color: var(--col-txt2);
+            padding: 0 0.15em;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 1em;
+            left: 50%;
+            transform: translateX(-50%) translateY(2em);
+            background: var(--colors-accent);
+            color: #fff;
+            padding: 0.4em 1em;
+            border-radius: var(--siz-radius1);
+            font-size: 0.8em;
+            opacity: 0;
+            transition: opacity 0.2s, transform 0.2s;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* Responsive */
+        @media (max-width: 360px) {
+            .app { padding: 0.5em; }
+            .field-row input { font-size: 0.82em; padding: 0.4rem 0.5rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <!-- Header -->
+        <div class="header">
+            <h1>⚖️ Unit Converter</h1>
+            <span class="price-badge" id="priceBadge" title="Click to refresh prices">
+                ETH <span class="val" id="ethPriceDisplay">…</span> · BTC <span class="val" id="btcPriceDisplay">…</span>
+            </span>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs" id="tabs">
+            <button class="tab active" data-tab="eth">ETH</button>
+            <button class="tab" data-tab="btc">BTC</button>
+            <button class="tab" data-tab="time">Time</button>
+            <button class="tab" data-tab="hex">Hex</button>
+        </div>
+
+        <!-- ETH Panel -->
+        <div class="panel active" id="panel-eth">
+            <div class="field">
+                <span class="field-label">Wei</span>
+                <div class="field-row">
+                    <input type="text" id="eth-wei" placeholder="0" data-unit="wei" inputmode="numeric">
+                    <button class="copy-btn" data-copy="eth-wei" title="Copy">📋</button>
+                </div>
+            </div>
+            <div class="field">
+                <span class="field-label">Gwei</span>
+                <div class="field-row">
+                    <input type="text" id="eth-gwei" placeholder="0" data-unit="gwei" inputmode="decimal">
+                    <button class="copy-btn" data-copy="eth-gwei" title="Copy">📋</button>
+                </div>
+            </div>
+            <div class="field">
+                <span class="field-label">Finney (milliether)</span>
+                <div class="field-row">
+                    <input type="text" id="eth-finney" placeholder="0" data-unit="finney" inputmode="decimal">
+                    <button class="copy-btn" data-copy="eth-finney" title="Copy">📋</button>
+                </div>
+            </div>
+            <div class="field">
+                <span class="field-label">ETH (Ether)</span>
+                <div class="field-row">
+                    <input type="text" id="eth-ether" placeholder="0" data-unit="ether" inputmode="decimal">
+                    <button class="copy-btn" data-copy="eth-ether" title="Copy">📋</button>
+                </div>
+            </div>
+            <hr class="divider">
+            <div class="field">
+                <span class="field-label">USD Value</span>
+                <div class="field-row">
+                    <input type="text" id="eth-usd" placeholder="0.00" data-unit="eth-usd" inputmode="decimal">
+                    <button class="copy-btn" data-copy="eth-usd" title="Copy">📋</button>
+                </div>
+            </div>
+            <div class="info-row">
+                <span id="eth-info"></span>
+            </div>
+        </div>
+
+        <!-- BTC Panel -->
+        <div class="panel" id="panel-btc">
+            <div class="field">
+                <span class="field-label">Satoshi</span>
+                <div class="field-row">
+                    <input type="text" id="btc-sat" placeholder="0" data-unit="sat" inputmode="numeric">
+                    <button class="copy-btn" data-copy="btc-sat" title="Copy">📋</button>
+                </div>
+            </div>
+            <div class="field">
+                <span class="field-label">mBTC (milliBitcoin)</span>
+                <div class="field-row">
+                    <input type="text" id="btc-mbtc" placeholder="0" data-unit="mbtc" inputmode="decimal">
+                    <button class="copy-btn" data-copy="btc-mbtc" title="Copy">📋</button>
+                </div>
+            </div>
+            <div class="field">
+                <span class="field-label">BTC (Bitcoin)</span>
+                <div class="field-row">
+                    <input type="text" id="btc-btc" placeholder="0" data-unit="btc" inputmode="decimal">
+                    <button class="copy-btn" data-copy="btc-btc" title="Copy">📋</button>
+                </div>
+            </div>
+            <hr class="divider">
+            <div class="field">
+                <span class="field-label">USD Value</span>
+                <div class="field-row">
+                    <input type="text" id="btc-usd" placeholder="0.00" data-unit="btc-usd" inputmode="decimal">
+                    <button class="copy-btn" data-copy="btc-usd" title="Copy">📋</button>
+                </div>
+            </div>
+            <div class="info-row">
+                <span id="btc-info"></span>
+            </div>
+        </div>
+
+        <!-- Time Panel -->
+        <div class="panel" id="panel-time">
+            <div class="field">
+                <span class="field-label">Unix Timestamp (seconds)</span>
+                <div class="field-row">
+                    <input type="text" id="time-unix" placeholder="e.g. 1700000000" data-unit="unix" inputmode="numeric">
+                    <button class="copy-btn" data-copy="time-unix" title="Copy">📋</button>
+                </div>
+            </div>
+            <div class="field">
+                <span class="field-label">Unix Timestamp (milliseconds)</span>
+                <div class="field-row">
+                    <input type="text" id="time-unixms" placeholder="e.g. 1700000000000" data-unit="unixms" inputmode="numeric">
+                    <button class="copy-btn" data-copy="time-unixms" title="Copy">📋</button>
+                </div>
+            </div>
+            <div class="field">
+                <span class="field-label">UTC Date</span>
+                <div class="field-row">
+                    <input type="text" id="time-utc" placeholder="e.g. 2024-01-15 12:00:00" data-unit="utc">
+                    <button class="copy-btn" data-copy="time-utc" title="Copy">📋</button>
+                </div>
+            </div>
+            <div class="field">
+                <span class="field-label">Local Date</span>
+                <div class="field-row">
+                    <input type="text" id="time-local" placeholder="Local time" data-unit="local" readonly>
+                    <button class="copy-btn" data-copy="time-local" title="Copy">📋</button>
+                </div>
+            </div>
+            <div class="field">
+                <span class="field-label">ISO 8601</span>
+                <div class="field-row">
+                    <input type="text" id="time-iso" placeholder="ISO format" data-unit="iso" readonly>
+                    <button class="copy-btn" data-copy="time-iso" title="Copy">📋</button>
+                </div>
+            </div>
+            <hr class="divider">
+            <div class="field">
+                <span class="field-label">Relative</span>
+                <div class="field-row">
+                    <input type="text" id="time-relative" placeholder="—" readonly>
+                    <button class="copy-btn" data-copy="time-relative" title="Copy">📋</button>
+                </div>
+            </div>
+            <div class="info-row">
+                <span>Now: <span id="time-now"></span></span>
+                <button class="copy-btn" style="border:none;background:none;padding:0;font-size:1em;color:var(--colors-accent);cursor:pointer;" id="time-now-btn" title="Use current time">⏱ Now</button>
+            </div>
+        </div>
+
+        <!-- Hex Panel -->
+        <div class="panel" id="panel-hex">
+            <div class="field">
+                <span class="field-label">Decimal</span>
+                <div class="field-row">
+                    <input type="text" id="hex-dec" placeholder="e.g. 255" data-unit="dec" inputmode="numeric">
+                    <button class="copy-btn" data-copy="hex-dec" title="Copy">📋</button>
+                </div>
+            </div>
+            <div class="field">
+                <span class="field-label">Hexadecimal</span>
+                <div class="field-row">
+                    <input type="text" id="hex-hex" placeholder="e.g. 0xff" data-unit="hex">
+                    <button class="copy-btn" data-copy="hex-hex" title="Copy">📋</button>
+                </div>
+            </div>
+            <div class="field">
+                <span class="field-label">Binary</span>
+                <div class="field-row">
+                    <input type="text" id="hex-bin" placeholder="e.g. 11111111" data-unit="bin">
+                    <button class="copy-btn" data-copy="hex-bin" title="Copy">📋</button>
+                </div>
+            </div>
+            <div class="field">
+                <span class="field-label">Octal</span>
+                <div class="field-row">
+                    <input type="text" id="hex-oct" placeholder="e.g. 377" data-unit="oct">
+                    <button class="copy-btn" data-copy="hex-oct" title="Copy">📋</button>
+                </div>
+            </div>
+            <hr class="divider">
+            <div class="field">
+                <span class="field-label">Base58 Check</span>
+                <div class="field-row">
+                    <input type="text" id="hex-b58" placeholder="Paste a Base58 string" data-unit="b58">
+                    <button class="copy-btn" data-copy="hex-b58" title="Copy">📋</button>
+                </div>
+            </div>
+            <div class="info-row">
+                <span id="b58-info">Enter a Base58 string to validate</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast">Copied!</div>
+
+    <script>
+    (function() {
+        'use strict';
+        const fetchFn = window.cfetch || fetch;
+
+        // --- State ---
+        let ethPrice = 0;
+        let btcPrice = 0;
+
+        // --- DOM helpers ---
+        const $ = (sel) => document.querySelector(sel);
+        const $$ = (sel) => document.querySelectorAll(sel);
+
+        // --- Number formatting ---
+        function fmtCommas(str) {
+            if (!str) return '';
+            const parts = str.split('.');
+            parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+            return parts.join('.');
+        }
+
+        function stripCommas(str) {
+            return str.replace(/,/g, '');
+        }
+
+        function smartFormat(num, maxDecimals = 18) {
+            if (num === 0n || num === 0) return '0';
+            if (typeof num === 'bigint') return num.toLocaleString('en-US');
+            // For very small numbers use scientific
+            if (Math.abs(num) < 1e-10 && num !== 0) return num.toExponential(6);
+            // For very large numbers use scientific
+            if (Math.abs(num) > 1e15) return num.toExponential(6);
+            // Normal: trim trailing zeros
+            let s = num.toFixed(maxDecimals);
+            if (s.includes('.')) {
+                s = s.replace(/0+$/, '').replace(/\.$/, '');
+            }
+            return fmtCommas(s);
+        }
+
+        // --- BigInt Wei math ---
+        // All ETH conversions go through Wei (BigInt) to avoid FP errors
+        // 1 ETH   = 10^18 Wei
+        // 1 Gwei  = 10^9  Wei
+        // 1 Finney= 10^15 Wei
+
+        const WEI_PER_GWEI   = 10n ** 9n;
+        const WEI_PER_FINNEY = 10n ** 15n;
+        const WEI_PER_ETHER  = 10n ** 18n;
+        const SAT_PER_MBTC   = 100000n;     // 10^5
+        const SAT_PER_BTC    = 100000000n;   // 10^8
+
+        // Parse a decimal string to wei BigInt
+        // Supports decimals: "1.5" gwei => 1500000000 wei
+        function decimalToWei(str, unitWei) {
+            str = stripCommas(str).trim();
+            if (!str || str === '-') return null;
+            const neg = str.startsWith('-');
+            if (neg) str = str.slice(1);
+
+            const parts = str.split('.');
+            let whole = parts[0] || '0';
+            let frac = parts[1] || '';
+
+            // Determine how many decimals this unit supports
+            const unitStr = unitWei.toString();
+            const unitDecimals = unitStr.length - 1; // 10^18 has 18 zeros
+
+            // Pad or trim fractional part
+            if (frac.length > unitDecimals) {
+                frac = frac.slice(0, unitDecimals);
+            } else {
+                frac = frac.padEnd(unitDecimals, '0');
+            }
+
+            let wei = BigInt(whole) * unitWei + BigInt(frac);
+            return neg ? -wei : wei;
+        }
+
+        // Wei BigInt to decimal string for a given unit
+        function weiToDecimal(wei, unitWei) {
+            const neg = wei < 0n;
+            let abs = neg ? -wei : wei;
+            const unitStr = unitWei.toString();
+            const unitDecimals = unitStr.length - 1;
+
+            const whole = abs / unitWei;
+            const remainder = abs % unitWei;
+            const fracStr = remainder.toString().padStart(unitDecimals, '0').replace(/0+$/, '');
+
+            let result = whole.toLocaleString('en-US');
+            if (fracStr) result += '.' + fracStr;
+            return neg ? '-' + result : result;
+        }
+
+        // Same approach for satoshi
+        function decimalToSat(str, unitSat) {
+            str = stripCommas(str).trim();
+            if (!str || str === '-') return null;
+            const neg = str.startsWith('-');
+            if (neg) str = str.slice(1);
+
+            const parts = str.split('.');
+            let whole = parts[0] || '0';
+            let frac = parts[1] || '';
+            const unitStr = unitSat.toString();
+            const unitDecimals = unitStr.length - 1;
+
+            if (frac.length > unitDecimals) frac = frac.slice(0, unitDecimals);
+            else frac = frac.padEnd(unitDecimals, '0');
+
+            let sat = BigInt(whole) * unitSat + BigInt(frac);
+            return neg ? -sat : sat;
+        }
+
+        function satToDecimal(sat, unitSat) {
+            const neg = sat < 0n;
+            let abs = neg ? -sat : sat;
+            const unitStr = unitSat.toString();
+            const unitDecimals = unitStr.length - 1;
+
+            const whole = abs / unitSat;
+            const remainder = abs % unitSat;
+            const fracStr = remainder.toString().padStart(unitDecimals, '0').replace(/0+$/, '');
+
+            let result = whole.toLocaleString('en-US');
+            if (fracStr) result += '.' + fracStr;
+            return neg ? '-' + result : result;
+        }
+
+        // --- Price fetching ---
+        async function fetchPrices() {
+            try {
+                const res = await fetchFn('https://api.coingecko.com/api/v3/simple/price?ids=ethereum,bitcoin&vs_currencies=usd');
+                const data = await res.json();
+                ethPrice = data.ethereum?.usd || 0;
+                btcPrice = data.bitcoin?.usd || 0;
+                $('#ethPriceDisplay').textContent = '$' + ethPrice.toLocaleString('en-US');
+                $('#btcPriceDisplay').textContent = '$' + btcPrice.toLocaleString('en-US');
+            } catch (e) {
+                $('#ethPriceDisplay').textContent = 'err';
+                $('#btcPriceDisplay').textContent = 'err';
+            }
+        }
+
+        // --- Tab switching ---
+        $$('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                $$('.tab').forEach(t => t.classList.remove('active'));
+                $$('.panel').forEach(p => p.classList.remove('active'));
+                tab.classList.add('active');
+                $(`#panel-${tab.dataset.tab}`).classList.add('active');
+                // Focus first input
+                const first = $(`#panel-${tab.dataset.tab} input:not([readonly])`);
+                if (first) first.focus();
+            });
+        });
+
+        // --- ETH conversion ---
+        function updateEth(sourceId) {
+            const sourceEl = $(`#${sourceId}`);
+            const raw = stripCommas(sourceEl.value);
+            if (!raw.trim()) {
+                ['eth-wei','eth-gwei','eth-finney','eth-ether','eth-usd'].forEach(id => {
+                    if (id !== sourceId) $(`#${id}`).value = '';
+                });
+                $('#eth-info').textContent = '';
+                return;
+            }
+
+            let wei = null;
+            const unit = sourceEl.dataset.unit;
+
+            if (unit === 'wei') {
+                try { wei = BigInt(raw.split('.')[0]); } catch(e) { return; }
+            } else if (unit === 'gwei') {
+                wei = decimalToWei(raw, WEI_PER_GWEI);
+            } else if (unit === 'finney') {
+                wei = decimalToWei(raw, WEI_PER_FINNEY);
+            } else if (unit === 'ether') {
+                wei = decimalToWei(raw, WEI_PER_ETHER);
+            } else if (unit === 'eth-usd') {
+                if (!ethPrice) return;
+                const usd = parseFloat(raw);
+                if (isNaN(usd)) return;
+                const eth = usd / ethPrice;
+                // Convert ETH to wei
+                wei = decimalToWei(eth.toFixed(18), WEI_PER_ETHER);
+            }
+
+            if (wei === null) return;
+
+            if (sourceId !== 'eth-wei')    $('#eth-wei').value = wei.toLocaleString('en-US');
+            if (sourceId !== 'eth-gwei')   $('#eth-gwei').value = weiToDecimal(wei, WEI_PER_GWEI);
+            if (sourceId !== 'eth-finney') $('#eth-finney').value = weiToDecimal(wei, WEI_PER_FINNEY);
+            if (sourceId !== 'eth-ether')  $('#eth-ether').value = weiToDecimal(wei, WEI_PER_ETHER);
+
+            // USD
+            if (sourceId !== 'eth-usd' && ethPrice) {
+                const ethVal = Number(wei) / 1e18;
+                const usd = ethVal * ethPrice;
+                $('#eth-usd').value = smartFormat(usd, 2);
+            }
+
+            // Info
+            const ethVal = Number(wei) / 1e18;
+            if (ethPrice && ethVal) {
+                $('#eth-info').textContent = `1 ETH = $${ethPrice.toLocaleString('en-US')}`;
+            }
+        }
+
+        ['eth-wei','eth-gwei','eth-finney','eth-ether','eth-usd'].forEach(id => {
+            $(`#${id}`).addEventListener('input', () => updateEth(id));
+        });
+
+        // --- BTC conversion ---
+        function updateBtc(sourceId) {
+            const sourceEl = $(`#${sourceId}`);
+            const raw = stripCommas(sourceEl.value);
+            if (!raw.trim()) {
+                ['btc-sat','btc-mbtc','btc-btc','btc-usd'].forEach(id => {
+                    if (id !== sourceId) $(`#${id}`).value = '';
+                });
+                $('#btc-info').textContent = '';
+                return;
+            }
+
+            let sat = null;
+            const unit = sourceEl.dataset.unit;
+
+            if (unit === 'sat') {
+                try { sat = BigInt(raw.split('.')[0]); } catch(e) { return; }
+            } else if (unit === 'mbtc') {
+                sat = decimalToSat(raw, SAT_PER_MBTC);
+            } else if (unit === 'btc') {
+                sat = decimalToSat(raw, SAT_PER_BTC);
+            } else if (unit === 'btc-usd') {
+                if (!btcPrice) return;
+                const usd = parseFloat(raw);
+                if (isNaN(usd)) return;
+                const btc = usd / btcPrice;
+                sat = decimalToSat(btc.toFixed(8), SAT_PER_BTC);
+            }
+
+            if (sat === null) return;
+
+            if (sourceId !== 'btc-sat')  $('#btc-sat').value = sat.toLocaleString('en-US');
+            if (sourceId !== 'btc-mbtc') $('#btc-mbtc').value = satToDecimal(sat, SAT_PER_MBTC);
+            if (sourceId !== 'btc-btc')  $('#btc-btc').value = satToDecimal(sat, SAT_PER_BTC);
+
+            if (sourceId !== 'btc-usd' && btcPrice) {
+                const btcVal = Number(sat) / 1e8;
+                const usd = btcVal * btcPrice;
+                $('#btc-usd').value = smartFormat(usd, 2);
+            }
+
+            const btcVal = Number(sat) / 1e8;
+            if (btcPrice && btcVal) {
+                $('#btc-info').textContent = `1 BTC = $${btcPrice.toLocaleString('en-US')}`;
+            }
+        }
+
+        ['btc-sat','btc-mbtc','btc-btc','btc-usd'].forEach(id => {
+            $(`#${id}`).addEventListener('input', () => updateBtc(id));
+        });
+
+        // --- Time conversion ---
+        function updateTime(sourceId) {
+            const sourceEl = $(`#${sourceId}`);
+            const raw = sourceEl.value.trim();
+
+            if (!raw) {
+                ['time-unix','time-unixms','time-utc','time-local','time-iso','time-relative'].forEach(id => {
+                    if (id !== sourceId) $(`#${id}`).value = '';
+                });
+                return;
+            }
+
+            let date = null;
+            const unit = sourceEl.dataset.unit;
+
+            if (unit === 'unix') {
+                const n = parseInt(raw, 10);
+                if (isNaN(n)) return;
+                date = new Date(n * 1000);
+            } else if (unit === 'unixms') {
+                const n = parseInt(raw, 10);
+                if (isNaN(n)) return;
+                date = new Date(n);
+            } else if (unit === 'utc') {
+                // Try parsing the date string
+                date = new Date(raw.includes('T') ? raw : raw.replace(' ', 'T') + 'Z');
+            }
+
+            if (!date || isNaN(date.getTime())) return;
+
+            const unixS = Math.floor(date.getTime() / 1000);
+            const unixMs = date.getTime();
+
+            if (sourceId !== 'time-unix')   $('#time-unix').value = unixS.toString();
+            if (sourceId !== 'time-unixms') $('#time-unixms').value = unixMs.toString();
+            if (sourceId !== 'time-utc') {
+                const y = date.getUTCFullYear();
+                const m = String(date.getUTCMonth() + 1).padStart(2, '0');
+                const d = String(date.getUTCDate()).padStart(2, '0');
+                const h = String(date.getUTCHours()).padStart(2, '0');
+                const mi = String(date.getUTCMinutes()).padStart(2, '0');
+                const s = String(date.getUTCSeconds()).padStart(2, '0');
+                $('#time-utc').value = `${y}-${m}-${d} ${h}:${mi}:${s}`;
+            }
+            $('#time-local').value = date.toLocaleString();
+            $('#time-iso').value = date.toISOString();
+
+            // Relative
+            const now = Date.now();
+            const diffMs = now - date.getTime();
+            const absDiff = Math.abs(diffMs);
+            const seconds = Math.floor(absDiff / 1000);
+            const minutes = Math.floor(seconds / 60);
+            const hours = Math.floor(minutes / 60);
+            const days = Math.floor(hours / 24);
+            const years = Math.floor(days / 365.25);
+
+            let relative = '';
+            if (years > 0) relative = `${years} year${years > 1 ? 's' : ''}`;
+            else if (days > 0) relative = `${days} day${days > 1 ? 's' : ''}`;
+            else if (hours > 0) relative = `${hours} hour${hours > 1 ? 's' : ''}`;
+            else if (minutes > 0) relative = `${minutes} minute${minutes > 1 ? 's' : ''}`;
+            else relative = `${seconds} second${seconds !== 1 ? 's' : ''}`;
+
+            relative += diffMs >= 0 ? ' ago' : ' from now';
+            $('#time-relative').value = relative;
+        }
+
+        ['time-unix','time-unixms','time-utc'].forEach(id => {
+            $(`#${id}`).addEventListener('input', () => updateTime(id));
+        });
+
+        // "Now" button
+        $('#time-now-btn').addEventListener('click', () => {
+            $('#time-unix').value = Math.floor(Date.now() / 1000).toString();
+            updateTime('time-unix');
+        });
+
+        // Live clock
+        function updateNowDisplay() {
+            $('#time-now').textContent = Math.floor(Date.now() / 1000);
+        }
+        setInterval(updateNowDisplay, 1000);
+        updateNowDisplay();
+
+        // --- Hex/Dec/Bin/Oct conversion ---
+        function updateHex(sourceId) {
+            const sourceEl = $(`#${sourceId}`);
+            const raw = stripCommas(sourceEl.value).trim();
+
+            if (!raw) {
+                ['hex-dec','hex-hex','hex-bin','hex-oct'].forEach(id => {
+                    if (id !== sourceId) $(`#${id}`).value = '';
+                });
+                return;
+            }
+
+            let val = null;
+            const unit = sourceEl.dataset.unit;
+
+            try {
+                if (unit === 'dec') {
+                    val = BigInt(raw);
+                } else if (unit === 'hex') {
+                    const cleaned = raw.toLowerCase().startsWith('0x') ? raw : '0x' + raw;
+                    val = BigInt(cleaned);
+                } else if (unit === 'bin') {
+                    const cleaned = raw.startsWith('0b') ? raw : '0b' + raw;
+                    val = BigInt(cleaned);
+                } else if (unit === 'oct') {
+                    const cleaned = raw.startsWith('0o') ? raw : '0o' + raw;
+                    val = BigInt(cleaned);
+                }
+            } catch (e) { return; }
+
+            if (val === null) return;
+
+            if (sourceId !== 'hex-dec') $('#hex-dec').value = val.toLocaleString('en-US');
+            if (sourceId !== 'hex-hex') $('#hex-hex').value = '0x' + val.toString(16);
+            if (sourceId !== 'hex-bin') $('#hex-bin').value = val.toString(2);
+            if (sourceId !== 'hex-oct') $('#hex-oct').value = val.toString(8);
+        }
+
+        ['hex-dec','hex-hex','hex-bin','hex-oct'].forEach(id => {
+            $(`#${id}`).addEventListener('input', () => updateHex(id));
+        });
+
+        // --- Base58 check ---
+        const BASE58_ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+
+        function isValidBase58(str) {
+            if (!str) return { valid: false, reason: 'Empty input' };
+            for (const ch of str) {
+                if (!BASE58_ALPHABET.includes(ch)) {
+                    return { valid: false, reason: `Invalid character '${ch}' — Base58 excludes 0, O, I, l` };
+                }
+            }
+            // Decode to BigInt
+            let val = 0n;
+            for (const ch of str) {
+                val = val * 58n + BigInt(BASE58_ALPHABET.indexOf(ch));
+            }
+            return {
+                valid: true,
+                reason: `Valid Base58 (${str.length} chars) → decimal: ${val.toLocaleString('en-US')} (${val.toString(16).length} hex digits)`
+            };
+        }
+
+        $('#hex-b58').addEventListener('input', () => {
+            const raw = $('#hex-b58').value.trim();
+            if (!raw) {
+                $('#b58-info').textContent = 'Enter a Base58 string to validate';
+                return;
+            }
+            const result = isValidBase58(raw);
+            const el = $('#b58-info');
+            el.textContent = result.reason;
+            el.style.color = result.valid ? 'var(--col-good)' : 'var(--col-bad)';
+        });
+
+        // --- Copy to clipboard ---
+        function showToast(msg) {
+            const toast = $('#toast');
+            toast.textContent = msg || 'Copied!';
+            toast.classList.add('show');
+            clearTimeout(toast._timer);
+            toast._timer = setTimeout(() => toast.classList.remove('show'), 1200);
+        }
+
+        $$('.copy-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const targetId = btn.dataset.copy;
+                if (!targetId) return;
+                const el = $(`#${targetId}`);
+                if (!el || !el.value) return;
+                navigator.clipboard.writeText(stripCommas(el.value)).then(() => {
+                    btn.classList.add('copied');
+                    btn.textContent = '✓';
+                    showToast('Copied!');
+                    setTimeout(() => {
+                        btn.classList.remove('copied');
+                        btn.textContent = '📋';
+                    }, 1200);
+                }).catch(() => {
+                    // Fallback
+                    el.select();
+                    document.execCommand('copy');
+                    showToast('Copied!');
+                });
+            });
+        });
+
+        // --- Price badge refresh ---
+        $('#priceBadge').addEventListener('click', fetchPrices);
+
+        // --- Init ---
+        fetchPrices();
+    })();
+    </script>
+</body>
+</html>

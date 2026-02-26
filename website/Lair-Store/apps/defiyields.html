@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="lair-include" content="lair.css">
+    <meta name="capabilities" content="defi_yields">
+    <meta name="lair-icon" content="trending_up">
+    <meta name="lair-perms" content="network" />
+    <title>DeFi Yields</title>
+    <style>
+        :root {
+            --col-bg1: #101010;
+            --col-bg2: #171717;
+            --col-bg3: #222222;
+            --col-txt1: white;
+            --col-txt2: #aaa;
+            --colors-accent: rgb(97, 121, 255);
+            --col-good: #5be45b;
+            --col-bad: #d44343;
+            --col-warn: #f0a030;
+            --siz-radius1: 0.5em;
+            --siz-radius2: 0.375em;
+            --font-size-small: 0.75em;
+        }
+
+        html { height: 100%; }
+
+        body {
+            margin: 0;
+            height: 100%;
+            background: var(--col-bg1);
+            color: var(--col-txt1);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            overflow-y: auto;
+        }
+
+        * { box-sizing: border-box; }
+
+        .app {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0.75em;
+        }
+
+        /* Header */
+        .app-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5em;
+            margin-bottom: 0.75em;
+        }
+        .app-header h1 {
+            font-size: 1.2em;
+            margin: 0;
+            font-weight: 700;
+        }
+        .app-header .subtitle {
+            font-size: var(--font-size-small);
+            color: var(--col-txt2);
+            margin-left: auto;
+        }
+        .refresh-btn {
+            background: var(--col-bg3);
+            border: 1px solid #333;
+            color: var(--col-txt1);
+            border-radius: var(--siz-radius2);
+            padding: 0.35em 0.65em;
+            font-size: 0.8em;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        .refresh-btn:hover { background: var(--colors-accent); }
+
+        /* Hero Cards */
+        .hero-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.6em;
+            margin-bottom: 0.75em;
+        }
+        .hero-card {
+            border-radius: var(--siz-radius1);
+            padding: 0.85em 1em;
+            position: relative;
+            overflow: hidden;
+        }
+        .hero-card.stablecoin {
+            background: linear-gradient(135deg, #1a3a2a 0%, #0f2a1c 100%);
+            border: 1px solid #2a5a3a;
+        }
+        .hero-card.eth {
+            background: linear-gradient(135deg, #1a2a3a 0%, #0f1c2a 100%);
+            border: 1px solid #2a3a5a;
+        }
+        .hero-label {
+            font-size: var(--font-size-small);
+            opacity: 0.7;
+            margin-bottom: 0.2em;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .hero-apy {
+            font-size: 1.6em;
+            font-weight: 800;
+            color: var(--col-good);
+            line-height: 1.1;
+        }
+        .hero-meta {
+            font-size: 0.75em;
+            color: var(--col-txt2);
+            margin-top: 0.25em;
+        }
+        .hero-meta span { color: var(--col-txt1); font-weight: 600; }
+
+        /* Filter bar */
+        .filter-bar {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            gap: 0.5em;
+            padding: 0.6em 0;
+            background: var(--col-bg1);
+            border-bottom: 1px solid var(--col-bg3);
+            flex-wrap: wrap;
+            margin-bottom: 0.5em;
+        }
+        .filter-bar input,
+        .filter-bar select {
+            background: var(--col-bg2);
+            border: 1px solid #333;
+            border-radius: var(--siz-radius2);
+            color: var(--col-txt1);
+            padding: 0.4em 0.6em;
+            font-size: 0.8em;
+            outline: none;
+        }
+        .filter-bar input:focus,
+        .filter-bar select:focus {
+            border-color: var(--colors-accent);
+        }
+        .filter-bar input::placeholder { color: #555; }
+        .search-input { flex: 1; min-width: 140px; max-width: 240px; }
+        .filter-bar label {
+            font-size: var(--font-size-small);
+            color: var(--col-txt2);
+        }
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 0.3em;
+        }
+        .result-count {
+            font-size: var(--font-size-small);
+            color: var(--col-txt2);
+            margin-left: auto;
+        }
+
+        /* Table */
+        .table-wrap {
+            overflow-x: auto;
+            border-radius: var(--siz-radius1);
+            border: 1px solid var(--col-bg3);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.82em;
+        }
+        thead th {
+            background: var(--col-bg2);
+            text-align: left;
+            padding: 0.6em 0.65em;
+            font-weight: 600;
+            font-size: 0.85em;
+            color: var(--col-txt2);
+            border-bottom: 1px solid var(--col-bg3);
+            cursor: pointer;
+            user-select: none;
+            white-space: nowrap;
+            position: sticky;
+            top: 0;
+        }
+        thead th:hover { color: var(--col-txt1); }
+        thead th .sort-arrow { margin-left: 0.3em; font-size: 0.75em; }
+        tbody tr {
+            border-bottom: 1px solid #1e1e1e;
+            cursor: pointer;
+            transition: background 0.12s;
+        }
+        tbody tr:nth-child(even) { background: rgba(255,255,255,0.015); }
+        tbody tr:hover { background: rgba(97,121,255,0.08); }
+        tbody td {
+            padding: 0.55em 0.65em;
+            white-space: nowrap;
+        }
+
+        /* Protocol cell */
+        .proto-cell {
+            display: flex;
+            align-items: center;
+            gap: 0.45em;
+        }
+        .proto-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.75em;
+            flex-shrink: 0;
+            color: #fff;
+        }
+        .proto-name {
+            font-weight: 600;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 120px;
+        }
+
+        /* Chain badge */
+        .chain-badge {
+            display: inline-block;
+            padding: 0.15em 0.45em;
+            border-radius: 999px;
+            font-size: 0.72em;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+        }
+
+        /* APY */
+        .apy-val {
+            color: var(--col-good);
+            font-weight: 700;
+            font-size: 1.05em;
+        }
+        .apy-val.low { color: var(--col-txt2); }
+        .apy-val.high { color: #00e676; }
+        .apy-val.mega { color: #ffd740; }
+
+        /* TVL */
+        .tvl-val { font-weight: 600; }
+
+        /* Risk */
+        .risk-badge {
+            display: inline-block;
+            padding: 0.15em 0.4em;
+            border-radius: var(--siz-radius2);
+            font-size: 0.72em;
+            font-weight: 600;
+        }
+        .risk-low { background: rgba(91,228,91,0.15); color: var(--col-good); }
+        .risk-med { background: rgba(240,160,48,0.15); color: var(--col-warn); }
+        .risk-high { background: rgba(212,67,67,0.15); color: var(--col-bad); }
+
+        /* Pool detail */
+        .pool-symbol {
+            font-weight: 600;
+        }
+        .pool-sub {
+            font-size: var(--font-size-small);
+            color: var(--col-txt2);
+        }
+
+        /* Detail panel */
+        .detail-panel {
+            display: none;
+            background: var(--col-bg2);
+            border: 1px solid var(--col-bg3);
+            border-radius: var(--siz-radius1);
+            padding: 1em;
+            margin: 0.5em 0;
+        }
+        .detail-panel.open { display: block; }
+        .detail-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 0.75em;
+        }
+        .detail-item label {
+            display: block;
+            font-size: var(--font-size-small);
+            color: var(--col-txt2);
+            margin-bottom: 0.15em;
+        }
+        .detail-item .val {
+            font-weight: 600;
+            font-size: 0.95em;
+        }
+        .detail-close {
+            float: right;
+            background: none;
+            border: none;
+            color: var(--col-txt2);
+            cursor: pointer;
+            font-size: 1.1em;
+            padding: 0.2em;
+        }
+        .detail-close:hover { color: var(--col-txt1); }
+
+        /* Show More */
+        .show-more-wrap {
+            text-align: center;
+            padding: 0.75em;
+        }
+        .show-more-btn {
+            background: var(--col-bg3);
+            border: 1px solid #333;
+            color: var(--col-txt1);
+            border-radius: var(--siz-radius2);
+            padding: 0.5em 1.5em;
+            font-size: 0.85em;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        .show-more-btn:hover { background: var(--colors-accent); }
+
+        /* Skeleton rows */
+        @keyframes shimmer {
+            0% { background-position: -400px 0; }
+            100% { background-position: 400px 0; }
+        }
+        .skeleton-row td {
+            padding: 0.55em 0.65em;
+        }
+        .skeleton-bar {
+            height: 14px;
+            border-radius: 4px;
+            background: linear-gradient(90deg, var(--col-bg3) 25%, #2a2a2a 50%, var(--col-bg3) 75%);
+            background-size: 400px 100%;
+            animation: shimmer 1.5s infinite;
+        }
+        .skeleton-bar.w80 { width: 80%; }
+        .skeleton-bar.w60 { width: 60%; }
+        .skeleton-bar.w40 { width: 40%; }
+        .skeleton-bar.w50 { width: 50%; }
+
+        /* Error / Empty */
+        .status-msg {
+            text-align: center;
+            padding: 2em;
+            color: var(--col-txt2);
+        }
+        .status-msg.error { color: var(--col-bad); }
+    </style>
+</head>
+<body>
+<div class="app">
+    <!-- Header -->
+    <div class="app-header">
+        <h1>📊 DeFi Yields</h1>
+        <span class="subtitle" id="lastUpdated"></span>
+        <button class="refresh-btn" onclick="loadData(true)" title="Refresh data">⟳ Refresh</button>
+    </div>
+
+    <!-- Hero Cards -->
+    <div class="hero-row">
+        <div class="hero-card stablecoin" id="heroStable">
+            <div class="hero-label">Best Stablecoin Yield</div>
+            <div class="hero-apy" id="heroStableApy">—</div>
+            <div class="hero-meta" id="heroStableMeta">Loading...</div>
+        </div>
+        <div class="hero-card eth" id="heroEth">
+            <div class="hero-label">Best ETH Yield</div>
+            <div class="hero-apy" id="heroEthApy">—</div>
+            <div class="hero-meta" id="heroEthMeta">Loading...</div>
+        </div>
+    </div>
+
+    <!-- Filter bar -->
+    <div class="filter-bar">
+        <input type="text" class="search-input" id="searchInput" placeholder="Search protocol or token…" oninput="applyFilters()">
+        <div class="filter-group">
+            <label>Chain:</label>
+            <select id="chainFilter" onchange="applyFilters()">
+                <option value="all">All Chains</option>
+                <option value="Ethereum">Ethereum</option>
+                <option value="BSC">BSC</option>
+                <option value="Arbitrum">Arbitrum</option>
+                <option value="Polygon">Polygon</option>
+                <option value="Avalanche">Avalanche</option>
+                <option value="Base">Base</option>
+                <option value="Optimism">Optimism</option>
+                <option value="Solana">Solana</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label>Min TVL:</label>
+            <select id="tvlFilter" onchange="applyFilters()">
+                <option value="1000000" selected>$1M</option>
+                <option value="100000">$100K</option>
+                <option value="10000000">$10M</option>
+                <option value="100000000">$100M</option>
+                <option value="1000000000">$1B</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label>Min APY:</label>
+            <select id="apyFilter" onchange="applyFilters()">
+                <option value="0" selected>Any</option>
+                <option value="1">1%+</option>
+                <option value="5">5%+</option>
+                <option value="10">10%+</option>
+                <option value="20">20%+</option>
+                <option value="50">50%+</option>
+            </select>
+        </div>
+        <span class="result-count" id="resultCount"></span>
+    </div>
+
+    <!-- Table -->
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th data-sort="project" onclick="setSort('project')">Protocol <span class="sort-arrow" id="sort-project"></span></th>
+                    <th data-sort="chain" onclick="setSort('chain')">Chain <span class="sort-arrow" id="sort-chain"></span></th>
+                    <th data-sort="symbol" onclick="setSort('symbol')">Pool / Token <span class="sort-arrow" id="sort-symbol"></span></th>
+                    <th data-sort="tvlUsd" onclick="setSort('tvlUsd')">TVL <span class="sort-arrow" id="sort-tvlUsd"></span></th>
+                    <th data-sort="apyBase" onclick="setSort('apyBase')">APY (Base) <span class="sort-arrow" id="sort-apyBase"></span></th>
+                    <th data-sort="apyReward" onclick="setSort('apyReward')">APY (Reward) <span class="sort-arrow" id="sort-apyReward"></span></th>
+                    <th data-sort="apy" onclick="setSort('apy')">Total APY <span class="sort-arrow" id="sort-apy"></span></th>
+                    <th>Risk</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+        </table>
+    </div>
+
+    <!-- Show More -->
+    <div class="show-more-wrap" id="showMoreWrap" style="display:none;">
+        <button class="show-more-btn" onclick="showMore()">Show More</button>
+    </div>
+
+    <!-- Detail Panel -->
+    <div class="detail-panel" id="detailPanel">
+        <button class="detail-close" onclick="closeDetail()">✕</button>
+        <div class="detail-grid" id="detailGrid"></div>
+    </div>
+</div>
+
+<script>
+(function() {
+    'use strict';
+    const fetchFn = window.cfetch || fetch;
+
+    const CACHE_KEY = 'defiyields_cache';
+    const CACHE_TTL = 10 * 60 * 1000; // 10 minutes
+    const PAGE_SIZE = 100;
+
+    let allPools = [];
+    let filteredPools = [];
+    let displayCount = PAGE_SIZE;
+    let currentSort = { key: 'apy', dir: 'desc' };
+
+    // Chain colors
+    const CHAIN_COLORS = {
+        'Ethereum': { bg: 'rgba(98,126,234,0.2)', color: '#627eea' },
+        'BSC': { bg: 'rgba(243,186,47,0.2)', color: '#f3ba2f' },
+        'Arbitrum': { bg: 'rgba(40,160,240,0.2)', color: '#28a0f0' },
+        'Polygon': { bg: 'rgba(130,71,229,0.2)', color: '#8247e5' },
+        'Avalanche': { bg: 'rgba(232,65,66,0.2)', color: '#e84142' },
+        'Base': { bg: 'rgba(0,82,255,0.2)', color: '#0052ff' },
+        'Optimism': { bg: 'rgba(255,4,32,0.2)', color: '#ff0420' },
+        'Solana': { bg: 'rgba(153,69,255,0.2)', color: '#9945ff' },
+        'Fantom': { bg: 'rgba(19,181,236,0.2)', color: '#13b5ec' },
+        'Gnosis': { bg: 'rgba(4,149,116,0.2)', color: '#049574' },
+    };
+
+    // Protocol color from name hash
+    function protoColor(name) {
+        let h = 0;
+        for (let i = 0; i < name.length; i++) h = name.charCodeAt(i) + ((h << 5) - h);
+        const hue = Math.abs(h) % 360;
+        return `hsl(${hue}, 55%, 45%)`;
+    }
+
+    // Format numbers
+    function fmtTVL(v) {
+        if (v == null) return '—';
+        if (v >= 1e9) return '$' + (v / 1e9).toFixed(2) + 'B';
+        if (v >= 1e6) return '$' + (v / 1e6).toFixed(2) + 'M';
+        if (v >= 1e3) return '$' + (v / 1e3).toFixed(1) + 'K';
+        return '$' + v.toFixed(0);
+    }
+
+    function fmtAPY(v) {
+        if (v == null || isNaN(v)) return '—';
+        if (v >= 10000) return v.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',') + '%';
+        if (v >= 100) return v.toFixed(1) + '%';
+        return v.toFixed(2) + '%';
+    }
+
+    function apyClass(v) {
+        if (v == null) return '';
+        if (v >= 100) return 'mega';
+        if (v >= 20) return 'high';
+        if (v < 1) return 'low';
+        return '';
+    }
+
+    function chainBadge(chain) {
+        const c = CHAIN_COLORS[chain] || { bg: 'rgba(255,255,255,0.08)', color: '#888' };
+        return `<span class="chain-badge" style="background:${c.bg};color:${c.color}">${esc(chain)}</span>`;
+    }
+
+    function riskBadge(pool) {
+        const il = pool.ilRisk === 'yes';
+        const exposure = pool.exposure || '';
+        const audits = pool.audits;
+        // Simple risk heuristic
+        let level = 'low';
+        if (il || exposure === 'multi') level = 'med';
+        if (pool.apy > 500 || (il && !audits)) level = 'high';
+        const labels = { low: 'Low', med: 'Med', high: 'High' };
+        return `<span class="risk-badge risk-${level}">${labels[level]}</span>`;
+    }
+
+    function esc(s) {
+        if (!s) return '';
+        const d = document.createElement('div');
+        d.textContent = s;
+        return d.innerHTML;
+    }
+
+    // Skeleton
+    function showSkeleton() {
+        const tbody = document.getElementById('tableBody');
+        let html = '';
+        for (let i = 0; i < 12; i++) {
+            html += `<tr class="skeleton-row">
+                <td><div class="skeleton-bar w80"></div></td>
+                <td><div class="skeleton-bar w60"></div></td>
+                <td><div class="skeleton-bar w80"></div></td>
+                <td><div class="skeleton-bar w50"></div></td>
+                <td><div class="skeleton-bar w40"></div></td>
+                <td><div class="skeleton-bar w40"></div></td>
+                <td><div class="skeleton-bar w40"></div></td>
+                <td><div class="skeleton-bar w40"></div></td>
+            </tr>`;
+        }
+        tbody.innerHTML = html;
+    }
+
+    // Stablecoin detection
+    const STABLECOINS = ['usdc', 'usdt', 'dai', 'frax', 'lusd', 'tusd', 'busd', 'gusd', 'susd', 'usdd', 'usde', 'eurs', 'eurt', 'pyusd', 'gho', 'cusd', 'crvusd', 'mkusd'];
+    function isStablecoin(pool) {
+        const sym = (pool.symbol || '').toLowerCase();
+        return STABLECOINS.some(s => sym.includes(s)) || (pool.stablecoin === true);
+    }
+
+    // ETH detection
+    function isEthPool(pool) {
+        const sym = (pool.symbol || '').toLowerCase();
+        return /\beth\b|weth|steth|reth|cbeth|wsteth|sweth|frxeth|seth|ankreth/.test(sym);
+    }
+
+    // Update hero cards
+    function updateHeroes() {
+        const minTVL = 1e6;
+        const stablePools = allPools.filter(p => isStablecoin(p) && (p.tvlUsd || 0) >= minTVL && (p.apy || 0) > 0);
+        const ethPools = allPools.filter(p => isEthPool(p) && (p.tvlUsd || 0) >= minTVL && (p.apy || 0) > 0);
+
+        stablePools.sort((a, b) => (b.apy || 0) - (a.apy || 0));
+        ethPools.sort((a, b) => (b.apy || 0) - (a.apy || 0));
+
+        if (stablePools.length > 0) {
+            const s = stablePools[0];
+            document.getElementById('heroStableApy').textContent = fmtAPY(s.apy);
+            document.getElementById('heroStableMeta').innerHTML =
+                `<span>${esc(s.project)}</span> · ${esc(s.symbol)} · ${esc(s.chain)} · TVL ${fmtTVL(s.tvlUsd)}`;
+        }
+
+        if (ethPools.length > 0) {
+            const e = ethPools[0];
+            document.getElementById('heroEthApy').textContent = fmtAPY(e.apy);
+            document.getElementById('heroEthMeta').innerHTML =
+                `<span>${esc(e.project)}</span> · ${esc(e.symbol)} · ${esc(e.chain)} · TVL ${fmtTVL(e.tvlUsd)}`;
+        }
+    }
+
+    // Sort
+    function setSort(key) {
+        if (currentSort.key === key) {
+            currentSort.dir = currentSort.dir === 'desc' ? 'asc' : 'desc';
+        } else {
+            currentSort.key = key;
+            currentSort.dir = key === 'project' || key === 'chain' || key === 'symbol' ? 'asc' : 'desc';
+        }
+        applyFilters();
+        updateSortArrows();
+    }
+
+    function updateSortArrows() {
+        document.querySelectorAll('.sort-arrow').forEach(el => el.textContent = '');
+        const el = document.getElementById('sort-' + currentSort.key);
+        if (el) el.textContent = currentSort.dir === 'desc' ? '▼' : '▲';
+    }
+
+    function comparePools(a, b) {
+        const key = currentSort.key;
+        const dir = currentSort.dir === 'desc' ? -1 : 1;
+        let va = a[key], vb = b[key];
+        if (typeof va === 'string') va = (va || '').toLowerCase();
+        if (typeof vb === 'string') vb = (vb || '').toLowerCase();
+        if (va == null) va = key === 'project' || key === 'chain' || key === 'symbol' ? '' : -Infinity;
+        if (vb == null) vb = key === 'project' || key === 'chain' || key === 'symbol' ? '' : -Infinity;
+        if (va < vb) return -1 * dir;
+        if (va > vb) return 1 * dir;
+        return 0;
+    }
+
+    // Apply filters + render
+    function applyFilters() {
+        const search = document.getElementById('searchInput').value.toLowerCase().trim();
+        const chain = document.getElementById('chainFilter').value;
+        const minTVL = parseFloat(document.getElementById('tvlFilter').value) || 0;
+        const minAPY = parseFloat(document.getElementById('apyFilter').value) || 0;
+
+        filteredPools = allPools.filter(p => {
+            if (chain !== 'all' && p.chain !== chain) return false;
+            if ((p.tvlUsd || 0) < minTVL) return false;
+            if ((p.apy || 0) < minAPY) return false;
+            if (search) {
+                const target = ((p.project || '') + ' ' + (p.symbol || '') + ' ' + (p.chain || '')).toLowerCase();
+                if (!target.includes(search)) return false;
+            }
+            return true;
+        });
+
+        filteredPools.sort(comparePools);
+        displayCount = PAGE_SIZE;
+        renderTable();
+        updateSortArrows();
+    }
+
+    function renderTable() {
+        const tbody = document.getElementById('tableBody');
+        const pools = filteredPools.slice(0, displayCount);
+
+        document.getElementById('resultCount').textContent =
+            `${Math.min(displayCount, filteredPools.length)} of ${filteredPools.length.toLocaleString()} pools`;
+
+        if (pools.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="8" class="status-msg">No pools match your filters</td></tr>`;
+            document.getElementById('showMoreWrap').style.display = 'none';
+            return;
+        }
+
+        let html = '';
+        for (let i = 0; i < pools.length; i++) {
+            const p = pools[i];
+            const pc = protoColor(p.project || '');
+            const initial = (p.project || '?')[0].toUpperCase();
+            html += `<tr data-idx="${i}" onclick="window._showDetail(${i})">
+                <td>
+                    <div class="proto-cell">
+                        <div class="proto-icon" style="background:${pc}">${initial}</div>
+                        <span class="proto-name" title="${esc(p.project)}">${esc(p.project)}</span>
+                    </div>
+                </td>
+                <td>${chainBadge(p.chain)}</td>
+                <td>
+                    <div class="pool-symbol">${esc(p.symbol)}</div>
+                    ${p.poolMeta ? `<div class="pool-sub">${esc(p.poolMeta)}</div>` : ''}
+                </td>
+                <td class="tvl-val">${fmtTVL(p.tvlUsd)}</td>
+                <td><span class="apy-val ${apyClass(p.apyBase)}">${fmtAPY(p.apyBase)}</span></td>
+                <td><span class="apy-val ${apyClass(p.apyReward)}">${fmtAPY(p.apyReward)}</span></td>
+                <td><span class="apy-val ${apyClass(p.apy)}">${fmtAPY(p.apy)}</span></td>
+                <td>${riskBadge(p)}</td>
+            </tr>`;
+        }
+        tbody.innerHTML = html;
+
+        document.getElementById('showMoreWrap').style.display =
+            displayCount < filteredPools.length ? '' : 'none';
+    }
+
+    function showMore() {
+        displayCount += PAGE_SIZE;
+        renderTable();
+    }
+
+    // Detail panel
+    window._showDetail = function(idx) {
+        const p = filteredPools[idx];
+        if (!p) return;
+        const panel = document.getElementById('detailPanel');
+        const grid = document.getElementById('detailGrid');
+
+        const fields = [
+            ['Protocol', p.project],
+            ['Chain', p.chain],
+            ['Pool / Token', p.symbol],
+            ['Pool Meta', p.poolMeta || '—'],
+            ['TVL', fmtTVL(p.tvlUsd)],
+            ['APY (Base)', fmtAPY(p.apyBase)],
+            ['APY (Reward)', fmtAPY(p.apyReward)],
+            ['Total APY', fmtAPY(p.apy)],
+            ['APY 7-day Mean', fmtAPY(p.apyMean7d)],
+            ['APY 30-day Mean', fmtAPY(p.apyMean30d)],
+            ['IL Risk', p.ilRisk || 'none'],
+            ['Exposure', p.exposure || '—'],
+            ['Stablecoin', p.stablecoin ? 'Yes' : 'No'],
+            ['Pool ID', p.pool ? p.pool.substring(0, 20) + '…' : '—'],
+        ];
+
+        grid.innerHTML = fields.map(([label, val]) =>
+            `<div class="detail-item"><label>${label}</label><div class="val">${esc(String(val))}</div></div>`
+        ).join('');
+
+        panel.classList.add('open');
+        panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    };
+
+    function closeDetail() {
+        document.getElementById('detailPanel').classList.remove('open');
+    }
+    window.closeDetail = closeDetail;
+
+    // Load data
+    async function loadData(forceRefresh) {
+        showSkeleton();
+
+        // Check cache
+        if (!forceRefresh) {
+            try {
+                const cached = sessionStorage.getItem(CACHE_KEY);
+                if (cached) {
+                    const { data, ts } = JSON.parse(cached);
+                    if (Date.now() - ts < CACHE_TTL && data && data.length) {
+                        allPools = data;
+                        onDataReady();
+                        return;
+                    }
+                }
+            } catch(e) { /* ignore cache errors */ }
+        }
+
+        try {
+            const resp = await fetchFn('https://yields.llama.fi/pools');
+            if (!resp.ok) throw new Error('API error: ' + resp.status);
+            const json = await resp.json();
+            allPools = (json.data || []).filter(p => p.apy != null && p.tvlUsd != null);
+
+            // Cache to sessionStorage
+            try {
+                sessionStorage.setItem(CACHE_KEY, JSON.stringify({ data: allPools, ts: Date.now() }));
+            } catch(e) {
+                // sessionStorage might be full with ~5MB data, that's ok
+            }
+
+            onDataReady();
+        } catch(err) {
+            document.getElementById('tableBody').innerHTML =
+                `<tr><td colspan="8" class="status-msg error">Failed to load data: ${esc(err.message)}<br>Try refreshing.</td></tr>`;
+        }
+    }
+
+    function onDataReady() {
+        document.getElementById('lastUpdated').textContent =
+            'Updated: ' + new Date().toLocaleTimeString();
+        updateHeroes();
+        applyFilters();
+    }
+
+    // Expose for onclick
+    window.loadData = loadData;
+    window.applyFilters = applyFilters;
+    window.setSort = setSort;
+    window.showMore = showMore;
+
+    // Init
+    updateSortArrows();
+    loadData(false);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="lair-include" content="lair.css material-symbols-rounded">
+    <meta name="capabilities" content="defi_terminal funding_rates liquidations microstructure macro">
+    <meta name="lair-icon" content="monitoring">
+    <meta name="lair-perms" content="network" />
+    <title>Alpha Terminal</title>
+    <style>
+        :root {
+            --col-bg1: #080A19;
+            --col-bg2: #0C0F27;
+            --col-bg3: #15183E;
+            --col-txt1: #A7C2F3;
+            --colors-accent: rgb(97,121,255);
+            --col-good: #22c55e;
+            --col-bad: #ef4444;
+            --col-warn: #f59e0b;
+        }
+        * { box-sizing: border-box; }
+        html, body {
+            margin: 0;
+            height: 100%;
+            background: var(--col-bg1);
+            color: var(--col-txt1);
+            font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+        .app {
+            height: 100%;
+            display: grid;
+            grid-template-rows: auto auto 1fr auto;
+            overflow: hidden;
+        }
+        .topbar {
+            border-bottom: 1px solid rgba(167,194,243,.1);
+            padding: 10px 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            background: var(--col-bg2);
+        }
+        .title-wrap { display: flex; gap: 8px; align-items: center; }
+        .title-wrap .material-symbols-rounded { font-size: 20px; color: var(--colors-accent); }
+        .title { font-weight: 700; font-size: 14px; }
+        .subtitle { font-size: 11px; opacity: .75; }
+        .controls { display: flex; gap: 6px; flex-wrap: wrap; }
+        button, select {
+            background: var(--col-bg3);
+            border: 1px solid rgba(167,194,243,.18);
+            color: var(--col-txt1);
+            border-radius: 6px;
+            padding: 6px 9px;
+            font-size: 12px;
+        }
+        button { cursor: pointer; }
+        button.active {
+            background: var(--colors-accent);
+            border-color: transparent;
+            color: #fff;
+        }
+        .stats {
+            border-bottom: 1px solid rgba(167,194,243,.08);
+            padding: 10px 12px;
+            display: grid;
+            grid-template-columns: repeat(5, minmax(120px, 1fr));
+            gap: 8px;
+            background: var(--col-bg1);
+        }
+        .card {
+            background: var(--col-bg2);
+            border: 1px solid rgba(167,194,243,.12);
+            border-radius: 8px;
+            padding: 8px 10px;
+        }
+        .k { font-size: 10px; text-transform: uppercase; opacity: .72; letter-spacing: .04em; }
+        .v { font-size: 16px; font-weight: 800; margin-top: 3px; }
+        .small { font-size: 11px; opacity: .8; }
+        .good { color: var(--col-good); }
+        .bad { color: var(--col-bad); }
+        .warn { color: var(--col-warn); }
+
+        .content {
+            padding: 10px 12px;
+            overflow: auto;
+        }
+        .grid {
+            display: grid;
+            gap: 10px;
+            min-height: 100%;
+        }
+        .layout-balanced {
+            grid-template-columns: 1.2fr 1fr;
+            grid-template-rows: minmax(220px, auto) minmax(220px, auto) minmax(180px, auto);
+            grid-template-areas:
+                "movers micro"
+                "funding liq"
+                "macro macro";
+        }
+        .layout-focus {
+            grid-template-columns: 1.4fr 1fr;
+            grid-template-rows: minmax(260px, auto) minmax(220px, auto);
+            grid-template-areas:
+                "micro liq"
+                "movers funding";
+        }
+        .panel {
+            background: var(--col-bg2);
+            border: 1px solid rgba(167,194,243,.12);
+            border-radius: 10px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+        .panel-header {
+            padding: 8px 10px;
+            border-bottom: 1px solid rgba(167,194,243,.08);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+        }
+        .panel-title { font-weight: 700; font-size: 12px; }
+        .panel-body {
+            padding: 8px 10px;
+            overflow: auto;
+            font-size: 12px;
+            flex: 1;
+        }
+        .movers { grid-area: movers; }
+        .funding { grid-area: funding; }
+        .micro { grid-area: micro; }
+        .liq { grid-area: liq; }
+        .macro { grid-area: macro; }
+
+        .table { width: 100%; border-collapse: collapse; }
+        .table th, .table td {
+            text-align: left;
+            padding: 6px 4px;
+            border-bottom: 1px solid rgba(167,194,243,.08);
+            font-size: 11px;
+        }
+        .table th {
+            position: sticky;
+            top: 0;
+            background: var(--col-bg2);
+            font-size: 10px;
+            text-transform: uppercase;
+            opacity: .8;
+            z-index: 1;
+        }
+        .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+        .badge {
+            font-size: 10px;
+            border-radius: 999px;
+            padding: 2px 6px;
+            background: rgba(97,121,255,.2);
+            white-space: nowrap;
+        }
+        .micro-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+        .micro-box {
+            border: 1px solid rgba(167,194,243,.1);
+            border-radius: 8px;
+            padding: 7px;
+            background: rgba(8,10,25,.45);
+        }
+        .tape {
+            display: grid;
+            gap: 6px;
+        }
+        .tape-item {
+            display: grid;
+            grid-template-columns: 60px 1fr 1fr auto;
+            gap: 8px;
+            font-size: 11px;
+            border-bottom: 1px solid rgba(167,194,243,.08);
+            padding-bottom: 6px;
+        }
+        .credit {
+            border-top: 1px solid rgba(167,194,243,.08);
+            background: var(--col-bg2);
+            padding: 8px 12px;
+            font-size: 11px;
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .credit a { color: #8db0ff; text-decoration: none; }
+        .credit a:hover { text-decoration: underline; }
+        .status { font-size: 11px; opacity: .75; }
+        @media (max-width: 980px) {
+            .stats { grid-template-columns: repeat(2, minmax(120px, 1fr)); }
+            .layout-balanced,
+            .layout-focus {
+                grid-template-columns: 1fr;
+                grid-template-rows: repeat(5, minmax(180px, auto));
+                grid-template-areas:
+                    "micro"
+                    "movers"
+                    "funding"
+                    "liq"
+                    "macro";
+            }
+            .micro-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .tape-item { grid-template-columns: 1fr 1fr; }
+        }
+    </style>
+</head>
+<body>
+<div class="app">
+    <div class="topbar">
+        <div class="title-wrap">
+            <span class="material-symbols-rounded">monitoring</span>
+            <div>
+                <div class="title">Alpha Terminal</div>
+                <div class="subtitle">Real-time DeFi market + derivatives intelligence workspace</div>
+            </div>
+        </div>
+        <div class="controls">
+            <select id="symbolSelect"></select>
+            <button id="layoutBalanced" class="active">Balanced</button>
+            <button id="layoutFocus">Focus</button>
+            <button id="refreshBtn">Refresh</button>
+        </div>
+    </div>
+
+    <div class="stats" id="stats"></div>
+
+    <div class="content">
+        <div class="grid layout-balanced" id="grid">
+            <section class="panel movers">
+                <div class="panel-header">
+                    <span class="panel-title">Top Perp Movers (24h)</span>
+                    <span class="status" id="moversStatus">Loading...</span>
+                </div>
+                <div class="panel-body" id="moversPane"></div>
+            </section>
+
+            <section class="panel funding">
+                <div class="panel-header">
+                    <span class="panel-title">Funding + OI Context</span>
+                    <span class="status" id="fundingStatus">Loading...</span>
+                </div>
+                <div class="panel-body" id="fundingPane"></div>
+            </section>
+
+            <section class="panel micro">
+                <div class="panel-header">
+                    <span class="panel-title">Microstructure: <span id="microSymbol">BTCUSDT</span></span>
+                    <span class="status" id="microStatus">Connecting...</span>
+                </div>
+                <div class="panel-body" id="microPane"></div>
+            </section>
+
+            <section class="panel liq">
+                <div class="panel-header">
+                    <span class="panel-title">Liquidation Tape</span>
+                    <span class="status" id="liqStatus">Connecting...</span>
+                </div>
+                <div class="panel-body" id="liqPane"></div>
+            </section>
+
+            <section class="panel macro">
+                <div class="panel-header">
+                    <span class="panel-title">Macro / Regime Snapshot</span>
+                    <span class="status" id="macroStatus">Loading...</span>
+                </div>
+                <div class="panel-body" id="macroPane"></div>
+            </section>
+        </div>
+    </div>
+
+    <div class="credit">
+        <span>Inspired by open-source trading terminals and dashboards: <a href="https://github.com/RAYDENFLY/quantumterminal" target="_blank" rel="noopener">quantumterminal</a>, <a href="https://github.com/jackburrus/dexterfinance" target="_blank" rel="noopener">dexterfinance</a>, and <a href="https://github.com/Mohamed1756/Crypto-Liquidation-Feed" target="_blank" rel="noopener">crypto-liquidation-feed</a>.</span>
+        <span id="lastUpdate">Last update: —</span>
+    </div>
+</div>
+
+<script>
+(function () {
+    const fetchFn = window.cfetch || fetch;
+
+    const symbols = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'XRPUSDT', 'DOGEUSDT', 'AVAXUSDT', 'LINKUSDT'];
+    let selectedSymbol = 'BTCUSDT';
+
+    const state = {
+        tickers: [],
+        funding: [],
+        macro: null,
+        fearGreed: null,
+        micro: {
+            bestBid: null,
+            bestAsk: null,
+            spreadBps: null,
+            imbalance: null,
+            trades: []
+        },
+        liquidations: []
+    };
+
+    let microWs = null;
+    let liqWs = null;
+
+    const els = {
+        symbolSelect: document.getElementById('symbolSelect'),
+        layoutBalanced: document.getElementById('layoutBalanced'),
+        layoutFocus: document.getElementById('layoutFocus'),
+        refreshBtn: document.getElementById('refreshBtn'),
+        grid: document.getElementById('grid'),
+        stats: document.getElementById('stats'),
+        moversPane: document.getElementById('moversPane'),
+        fundingPane: document.getElementById('fundingPane'),
+        microPane: document.getElementById('microPane'),
+        liqPane: document.getElementById('liqPane'),
+        macroPane: document.getElementById('macroPane'),
+        microSymbol: document.getElementById('microSymbol'),
+        moversStatus: document.getElementById('moversStatus'),
+        fundingStatus: document.getElementById('fundingStatus'),
+        microStatus: document.getElementById('microStatus'),
+        liqStatus: document.getElementById('liqStatus'),
+        macroStatus: document.getElementById('macroStatus'),
+        lastUpdate: document.getElementById('lastUpdate')
+    };
+
+    function fmtUsd(v) {
+        if (!Number.isFinite(v)) return '—';
+        if (Math.abs(v) >= 1e12) return '$' + (v / 1e12).toFixed(2) + 'T';
+        if (Math.abs(v) >= 1e9) return '$' + (v / 1e9).toFixed(2) + 'B';
+        if (Math.abs(v) >= 1e6) return '$' + (v / 1e6).toFixed(2) + 'M';
+        if (Math.abs(v) >= 1e3) return '$' + v.toLocaleString(undefined, { maximumFractionDigits: 0 });
+        return '$' + v.toFixed(2);
+    }
+
+    function fmtPct(v) {
+        if (!Number.isFinite(v)) return '—';
+        const out = v > 0 ? '+' + v.toFixed(2) : v.toFixed(2);
+        return out + '%';
+    }
+
+    function clsBySign(v) {
+        if (!Number.isFinite(v)) return '';
+        return v >= 0 ? 'good' : 'bad';
+    }
+
+    async function getJson(url) {
+        const res = await fetchFn(url);
+        if (!res.ok) throw new Error('HTTP ' + res.status + ' for ' + url);
+        return res.json();
+    }
+
+    function buildSymbolPicker() {
+        els.symbolSelect.innerHTML = symbols.map(s => '<option value="' + s + '">' + s + '</option>').join('');
+        els.symbolSelect.value = selectedSymbol;
+    }
+
+    function applyLayout(layout) {
+        const isBalanced = layout === 'balanced';
+        els.grid.classList.toggle('layout-balanced', isBalanced);
+        els.grid.classList.toggle('layout-focus', !isBalanced);
+        els.layoutBalanced.classList.toggle('active', isBalanced);
+        els.layoutFocus.classList.toggle('active', !isBalanced);
+    }
+
+    function renderStats() {
+        const activeTicker = state.tickers.find(t => t.symbol === selectedSymbol) || null;
+        const avgFunding = state.funding.length ? state.funding.reduce((sum, i) => sum + i.ratePct, 0) / state.funding.length : NaN;
+        const longBias = state.funding.filter(x => x.ratePct > 0).length;
+        const shortBias = state.funding.filter(x => x.ratePct < 0).length;
+        const liqNotional = state.liquidations.reduce((sum, x) => sum + x.notional, 0);
+
+        const cards = [
+            { k: selectedSymbol + ' Mark', v: activeTicker ? fmtUsd(activeTicker.lastPrice) : '—', s: activeTicker ? fmtPct(activeTicker.priceChangePercent) : '—', c: activeTicker ? clsBySign(activeTicker.priceChangePercent) : '' },
+            { k: '24h Volume', v: activeTicker ? fmtUsd(activeTicker.quoteVolume) : '—', s: activeTicker ? ('OI ' + fmtUsd(activeTicker.openInterestValue)) : '—', c: '' },
+            { k: 'Avg Funding (8h)', v: Number.isFinite(avgFunding) ? fmtPct(avgFunding) : '—', s: longBias + ' pos / ' + shortBias + ' neg', c: clsBySign(avgFunding) },
+            { k: 'Recent Liquidations', v: fmtUsd(liqNotional), s: state.liquidations.length + ' events', c: liqNotional > 0 ? 'warn' : '' },
+            { k: 'Bid/Ask Spread', v: Number.isFinite(state.micro.spreadBps) ? state.micro.spreadBps.toFixed(2) + ' bps' : '—', s: Number.isFinite(state.micro.imbalance) ? 'Imbalance ' + state.micro.imbalance.toFixed(1) + '%' : '—', c: '' }
+        ];
+
+        els.stats.innerHTML = cards.map(card =>
+            '<div class="card">' +
+                '<div class="k">' + card.k + '</div>' +
+                '<div class="v ' + card.c + '">' + card.v + '</div>' +
+                '<div class="small">' + card.s + '</div>' +
+            '</div>'
+        ).join('');
+    }
+
+    function renderMovers() {
+        if (!state.tickers.length) {
+            els.moversPane.innerHTML = '<div class="small">No ticker data available.</div>';
+            return;
+        }
+        const rows = [...state.tickers]
+            .filter(t => t.symbol.endsWith('USDT') && t.quoteVolume > 15000000)
+            .sort((a, b) => Math.abs(b.priceChangePercent) - Math.abs(a.priceChangePercent))
+            .slice(0, 18)
+            .map(t => '<tr>' +
+                '<td class="mono"><strong>' + t.symbol + '</strong></td>' +
+                '<td class="mono ' + clsBySign(t.priceChangePercent) + '">' + fmtPct(t.priceChangePercent) + '</td>' +
+                '<td class="mono">' + fmtUsd(t.quoteVolume) + '</td>' +
+                '<td class="mono">' + fmtUsd(t.openInterestValue) + '</td>' +
+                '</tr>')
+            .join('');
+
+        els.moversPane.innerHTML =
+            '<table class="table">' +
+                '<thead><tr><th>Symbol</th><th>24h</th><th>Volume</th><th>OI Est.</th></tr></thead>' +
+                '<tbody>' + rows + '</tbody>' +
+            '</table>';
+    }
+
+    function renderFunding() {
+        if (!state.funding.length) {
+            els.fundingPane.innerHTML = '<div class="small">No funding snapshot available.</div>';
+            return;
+        }
+        const rows = [...state.funding]
+            .filter(item => symbols.includes(item.symbol))
+            .sort((a, b) => Math.abs(b.ratePct) - Math.abs(a.ratePct))
+            .map(item => {
+                const ticker = state.tickers.find(t => t.symbol === item.symbol);
+                const oi = ticker ? fmtUsd(ticker.openInterestValue) : '—';
+                return '<tr>' +
+                    '<td class="mono"><strong>' + item.symbol + '</strong></td>' +
+                    '<td class="mono ' + clsBySign(item.ratePct) + '">' + fmtPct(item.ratePct) + '</td>' +
+                    '<td class="mono">' + oi + '</td>' +
+                    '<td class="mono"><span class="badge">next ' + item.nextFunding + '</span></td>' +
+                    '</tr>';
+            }).join('');
+
+        els.fundingPane.innerHTML =
+            '<table class="table">' +
+                '<thead><tr><th>Symbol</th><th>8h Funding</th><th>OI Est.</th><th>Window</th></tr></thead>' +
+                '<tbody>' + rows + '</tbody>' +
+            '</table>';
+    }
+
+    function renderMicro() {
+        const trades = state.micro.trades.slice(0, 18).map(t => {
+            return '<tr>' +
+                '<td class="mono">' + t.time + '</td>' +
+                '<td class="mono ' + (t.side === 'SELL' ? 'bad' : 'good') + '">' + t.side + '</td>' +
+                '<td class="mono">' + t.price + '</td>' +
+                '<td class="mono">' + t.qty + '</td>' +
+                '</tr>';
+        }).join('');
+
+        els.microPane.innerHTML =
+            '<div class="micro-grid">' +
+                '<div class="micro-box"><div class="k">Best Bid</div><div class="v mono">' + (state.micro.bestBid || '—') + '</div></div>' +
+                '<div class="micro-box"><div class="k">Best Ask</div><div class="v mono">' + (state.micro.bestAsk || '—') + '</div></div>' +
+                '<div class="micro-box"><div class="k">Spread</div><div class="v mono">' + (Number.isFinite(state.micro.spreadBps) ? state.micro.spreadBps.toFixed(2) + ' bps' : '—') + '</div></div>' +
+                '<div class="micro-box"><div class="k">Depth Imbalance</div><div class="v mono">' + (Number.isFinite(state.micro.imbalance) ? state.micro.imbalance.toFixed(1) + '%' : '—') + '</div></div>' +
+                '<div class="micro-box"><div class="k">Agg Trades</div><div class="v mono">' + state.micro.trades.length + '</div></div>' +
+                '<div class="micro-box"><div class="k">Feed</div><div class="v mono">' + (microWs && microWs.readyState === 1 ? 'LIVE' : 'RETRY') + '</div></div>' +
+            '</div>' +
+            '<table class="table">' +
+                '<thead><tr><th>Time</th><th>Side</th><th>Price</th><th>Qty</th></tr></thead>' +
+                '<tbody>' + trades + '</tbody>' +
+            '</table>';
+    }
+
+    function renderLiquidations() {
+        if (!state.liquidations.length) {
+            els.liqPane.innerHTML = '<div class="small">Waiting for liquidation events…</div>';
+            return;
+        }
+        els.liqPane.innerHTML = '<div class="tape">' + state.liquidations.map(item => {
+            return '<div class="tape-item">' +
+                '<span class="mono">' + item.time + '</span>' +
+                '<span class="mono"><strong>' + item.symbol + '</strong></span>' +
+                '<span class="mono ' + (item.side === 'SELL' ? 'bad' : 'good') + '">' + item.side + '</span>' +
+                '<span class="mono">' + fmtUsd(item.notional) + '</span>' +
+                '</div>';
+        }).join('') + '</div>';
+    }
+
+    function renderMacro() {
+        const g = state.macro?.data || null;
+        const fg = state.fearGreed?.data?.[0] || null;
+        const dom = g?.market_cap_percentage || {};
+
+        if (!g) {
+            els.macroPane.innerHTML = '<div class="small">Macro snapshot unavailable right now.</div>';
+            return;
+        }
+
+        els.macroPane.innerHTML =
+            '<div class="micro-grid">' +
+                '<div class="micro-box"><div class="k">Crypto MCap</div><div class="v">' + fmtUsd(g.total_market_cap?.usd || NaN) + '</div></div>' +
+                '<div class="micro-box"><div class="k">24h Volume</div><div class="v">' + fmtUsd(g.total_volume?.usd || NaN) + '</div></div>' +
+                '<div class="micro-box"><div class="k">BTC Dominance</div><div class="v">' + (Number.isFinite(dom.btc) ? dom.btc.toFixed(1) + '%' : '—') + '</div></div>' +
+                '<div class="micro-box"><div class="k">ETH Dominance</div><div class="v">' + (Number.isFinite(dom.eth) ? dom.eth.toFixed(1) + '%' : '—') + '</div></div>' +
+                '<div class="micro-box"><div class="k">Markets</div><div class="v">' + (g.markets || '—') + '</div></div>' +
+                '<div class="micro-box"><div class="k">Fear & Greed</div><div class="v ' + (fg && Number(fg.value) < 35 ? 'bad' : fg && Number(fg.value) > 65 ? 'good' : 'warn') + '">' + (fg ? (fg.value + ' · ' + fg.value_classification) : '—') + '</div></div>' +
+            '</div>' +
+            '<div class="small">Sources: Binance Futures + CoinGecko Global + Alternative.me Fear & Greed.</div>';
+    }
+
+    function renderAll() {
+        renderStats();
+        renderMovers();
+        renderFunding();
+        renderMicro();
+        renderLiquidations();
+        renderMacro();
+        els.lastUpdate.textContent = 'Last update: ' + new Date().toLocaleTimeString();
+    }
+
+    async function loadCoreData() {
+        els.moversStatus.textContent = 'Loading...';
+        els.fundingStatus.textContent = 'Loading...';
+        els.macroStatus.textContent = 'Loading...';
+
+        try {
+            const [ticker24h, fundingRaw, openInterestRaw, macro, fearGreed] = await Promise.all([
+                getJson('https://fapi.binance.com/fapi/v1/ticker/24hr'),
+                getJson('https://fapi.binance.com/fapi/v1/premiumIndex'),
+                getJson('https://fapi.binance.com/fapi/v1/openInterest'),
+                getJson('https://api.coingecko.com/api/v3/global'),
+                getJson('https://api.alternative.me/fng/?limit=1')
+            ]);
+
+            const oiMap = Array.isArray(openInterestRaw)
+                ? Object.fromEntries(openInterestRaw.map(i => [i.symbol, Number(i.openInterest || 0)]))
+                : {};
+
+            state.tickers = (ticker24h || []).map(item => {
+                const oi = Number(oiMap[item.symbol] || 0);
+                const lastPrice = Number(item.lastPrice || 0);
+                return {
+                    symbol: item.symbol,
+                    priceChangePercent: Number(item.priceChangePercent || 0),
+                    quoteVolume: Number(item.quoteVolume || 0),
+                    lastPrice,
+                    openInterestValue: oi * lastPrice
+                };
+            });
+
+            state.funding = (fundingRaw || [])
+                .filter(x => symbols.includes(x.symbol))
+                .map(item => {
+                    const nextTs = Number(item.nextFundingTime || 0);
+                    return {
+                        symbol: item.symbol,
+                        ratePct: Number(item.lastFundingRate || 0) * 100,
+                        nextFunding: nextTs ? new Date(nextTs).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'
+                    };
+                });
+
+            state.macro = macro;
+            state.fearGreed = fearGreed;
+
+            els.moversStatus.textContent = 'Live';
+            els.fundingStatus.textContent = 'Live';
+            els.macroStatus.textContent = 'Live';
+        } catch (error) {
+            els.moversStatus.textContent = 'Error';
+            els.fundingStatus.textContent = 'Error';
+            els.macroStatus.textContent = 'Error';
+            els.moversPane.innerHTML = '<div class="small">Unable to load market data: ' + error.message + '</div>';
+        }
+
+        renderAll();
+    }
+
+    async function refreshDepthImbalance() {
+        try {
+            const depth = await getJson('https://fapi.binance.com/fapi/v1/depth?symbol=' + selectedSymbol + '&limit=20');
+            const bidVol = (depth.bids || []).reduce((sum, row) => sum + Number(row[1] || 0), 0);
+            const askVol = (depth.asks || []).reduce((sum, row) => sum + Number(row[1] || 0), 0);
+            const total = bidVol + askVol;
+            state.micro.imbalance = total > 0 ? ((bidVol - askVol) / total) * 100 : null;
+        } catch (_) {
+            state.micro.imbalance = null;
+        }
+        renderStats();
+        renderMicro();
+    }
+
+    function connectMicroWs() {
+        if (microWs) {
+            try { microWs.close(); } catch (_) {}
+        }
+
+        state.micro.bestBid = null;
+        state.micro.bestAsk = null;
+        state.micro.spreadBps = null;
+        state.micro.trades = [];
+        els.microSymbol.textContent = selectedSymbol;
+
+        const stream = selectedSymbol.toLowerCase() + '@bookTicker/' + selectedSymbol.toLowerCase() + '@aggTrade';
+        microWs = new WebSocket('wss://fstream.binance.com/stream?streams=' + stream);
+
+        microWs.onopen = function () {
+            els.microStatus.textContent = 'Live';
+        };
+
+        microWs.onmessage = function (evt) {
+            try {
+                const payload = JSON.parse(evt.data);
+                const data = payload.data || payload;
+                const eventType = data.e;
+
+                if (eventType === 'bookTicker') {
+                    const bid = Number(data.b || 0);
+                    const ask = Number(data.a || 0);
+                    state.micro.bestBid = bid ? bid.toFixed(2) : null;
+                    state.micro.bestAsk = ask ? ask.toFixed(2) : null;
+                    if (bid && ask) {
+                        const mid = (bid + ask) / 2;
+                        state.micro.spreadBps = ((ask - bid) / mid) * 10000;
+                    }
+                }
+
+                if (eventType === 'aggTrade') {
+                    const side = data.m ? 'SELL' : 'BUY';
+                    state.micro.trades.unshift({
+                        time: new Date(Number(data.T || Date.now())).toLocaleTimeString(),
+                        side,
+                        price: Number(data.p || 0).toFixed(2),
+                        qty: Number(data.q || 0).toFixed(3)
+                    });
+                    state.micro.trades = state.micro.trades.slice(0, 40);
+                }
+
+                renderStats();
+                renderMicro();
+            } catch (_) {}
+        };
+
+        microWs.onerror = function () {
+            els.microStatus.textContent = 'Disconnected';
+        };
+
+        microWs.onclose = function () {
+            els.microStatus.textContent = 'Retrying...';
+            setTimeout(connectMicroWs, 2500);
+        };
+    }
+
+    function connectLiqWs() {
+        if (liqWs) {
+            try { liqWs.close(); } catch (_) {}
+        }
+
+        liqWs = new WebSocket('wss://fstream.binance.com/ws/!forceOrder@arr');
+
+        liqWs.onopen = function () {
+            els.liqStatus.textContent = 'Live';
+        };
+
+        liqWs.onmessage = function (evt) {
+            try {
+                const arr = JSON.parse(evt.data);
+                if (!Array.isArray(arr)) return;
+                arr.forEach(item => {
+                    const o = item.o;
+                    if (!o || !symbols.includes(o.s)) return;
+                    const notional = Number(o.ap || 0) * Number(o.q || 0);
+                    state.liquidations.unshift({
+                        symbol: o.s,
+                        side: o.S === 'SELL' ? 'SELL' : 'BUY',
+                        notional,
+                        time: new Date(Number(o.T || Date.now())).toLocaleTimeString()
+                    });
+                });
+                state.liquidations = state.liquidations.slice(0, 40);
+                renderStats();
+                renderLiquidations();
+            } catch (_) {}
+        };
+
+        liqWs.onerror = function () {
+            els.liqStatus.textContent = 'Disconnected';
+        };
+
+        liqWs.onclose = function () {
+            els.liqStatus.textContent = 'Retrying...';
+            setTimeout(connectLiqWs, 3000);
+        };
+    }
+
+    function bind() {
+        buildSymbolPicker();
+        applyLayout('balanced');
+
+        els.symbolSelect.addEventListener('change', function () {
+            selectedSymbol = this.value;
+            connectMicroWs();
+            refreshDepthImbalance();
+            renderAll();
+        });
+
+        els.layoutBalanced.addEventListener('click', function () { applyLayout('balanced'); });
+        els.layoutFocus.addEventListener('click', function () { applyLayout('focus'); });
+        els.refreshBtn.addEventListener('click', function () {
+            loadCoreData();
+            refreshDepthImbalance();
+        });
+    }
+
+    function init() {
+        bind();
+        loadCoreData();
+        refreshDepthImbalance();
+        connectMicroWs();
+        connectLiqWs();
+        setInterval(refreshDepthImbalance, 20000);
+        setInterval(loadCoreData, 120000);
+    }
+
+    init();
+})();
+</script>
+</body>
+</html>

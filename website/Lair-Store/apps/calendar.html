@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="lair-include" content="lair.css">
+    <meta name="lair-icon" content='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="24" height="24" fill="white"><path d="M200-80q-33 0-56.5-23.5T120-160v-560q0-33 23.5-56.5T200-800h40v-80h80v80h320v-80h80v80h40q33 0 56.5 23.5T840-720v560q0 33-23.5 56.5T760-80H200Zm0-80h560v-400H200v400Zm0-480h560v-80H200v80Zm0 0v-80 80Z"/></svg>'>
+    <meta name="capabilities" content="economic_calendar">
+    <meta name="lair-perms" content="network" />
+    <title>Economic Calendar</title>
+    <style>
+        :root {
+            --col-bg1: #080A19;
+            --col-bg2: #0C0F27;
+            --col-bg3: #15183E;
+            --col-txt1: #A7C2F3;
+            --colors-accent: rgb(97, 121, 255);
+            --macro: #facc15;
+            --protocol: #60a5fa;
+            --unlock: #f87171;
+            --listing: #4ade80;
+            --airdrop: #c084fc;
+            --high: #ef4444;
+            --medium: #f59e0b;
+            --low: #22c55e;
+        }
+        * { box-sizing: border-box; }
+        html, body { margin: 0; height: 100%; background: var(--col-bg1); color: var(--col-txt1); font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+        .app { height: 100%; display: grid; grid-template-rows: auto auto 1fr; }
+        .topbar {
+            display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
+            padding: 10px 14px; background: rgba(12, 15, 39, 0.92); border-bottom: 1px solid rgba(167, 194, 243, 0.1);
+        }
+        .title { font-size: 14px; font-weight: 700; }
+        .controls { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+        .btn, select, input {
+            background: var(--col-bg3); color: var(--col-txt1); border: 1px solid rgba(167, 194, 243, 0.16);
+            border-radius: 6px; padding: 6px 9px; font-size: 12px;
+        }
+        .btn { cursor: pointer; }
+        .btn.active { background: var(--colors-accent); border-color: transparent; color: #fff; }
+        .quick {
+            display: grid; grid-template-columns: repeat(3, minmax(120px, 1fr)); gap: 8px; padding: 10px 14px;
+            border-bottom: 1px solid rgba(167, 194, 243, 0.08);
+        }
+        .card { background: var(--col-bg2); border: 1px solid rgba(167,194,243,0.12); border-radius: 8px; padding: 8px 10px; }
+        .k { font-size: 10px; opacity: 0.75; text-transform: uppercase; }
+        .v { font-size: 13px; font-weight: 700; margin-top: 2px; }
+        .content { display: grid; grid-template-columns: 1.2fr 1fr; min-height: 0; }
+        .calendar-wrap { padding: 10px 14px; overflow: auto; }
+        .month-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+        .dow { font-size: 11px; opacity: 0.65; text-align: center; padding: 4px 0; }
+        .day {
+            min-height: 84px; border: 1px solid rgba(167,194,243,0.1); background: var(--col-bg2);
+            border-radius: 8px; padding: 6px; cursor: pointer;
+        }
+        .day.today { border-color: var(--colors-accent); }
+        .day.off { opacity: 0.45; }
+        .num { font-size: 11px; font-weight: 700; }
+        .dots { display: flex; gap: 4px; margin-top: 6px; flex-wrap: wrap; }
+        .dot { width: 7px; height: 7px; border-radius: 999px; }
+        .panel { border-left: 1px solid rgba(167,194,243,0.08); padding: 10px; overflow: auto; }
+        .event { border: 1px solid rgba(167,194,243,0.12); background: var(--col-bg2); border-radius: 8px; padding: 8px; margin-bottom: 8px; }
+        .line { display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+        .tag { font-size: 10px; text-transform: uppercase; padding: 2px 6px; border-radius: 999px; color: #fff; }
+        .impact { font-size: 12px; font-weight: 700; }
+        .high { color: var(--high); } .medium { color: var(--medium); } .low { color: var(--low); }
+        .empty { opacity: 0.7; font-size: 12px; padding: 18px 8px; }
+        .loading { font-size: 12px; opacity: 0.7; }
+        @media (max-width: 980px) { .content { grid-template-columns: 1fr; } .panel { border-left: 0; border-top: 1px solid rgba(167,194,243,0.08); } }
+    </style>
+</head>
+<body>
+<div class="app">
+    <div class="topbar">
+        <div class="title">Crypto Economic Calendar</div>
+        <div class="controls">
+            <button class="btn" id="prevMonth">◀</button>
+            <button class="btn" id="todayBtn">Today</button>
+            <button class="btn" id="nextMonth">▶</button>
+            <select id="typeFilter">
+                <option value="all">All Types</option>
+                <option value="macro">Macro</option>
+                <option value="protocol">Protocol</option>
+                <option value="unlock">Unlock</option>
+                <option value="listing">Listing</option>
+                <option value="airdrop">Airdrop</option>
+            </select>
+            <button class="btn" id="addBtn">Add Event</button>
+        </div>
+    </div>
+    <div class="quick">
+        <div class="card"><div class="k">Today</div><div class="v" id="todayCount">0 Events</div></div>
+        <div class="card"><div class="k">This Week</div><div class="v" id="weekCount">0 Events</div></div>
+        <div class="card"><div class="k">Next High Impact</div><div class="v" id="nextHigh">—</div></div>
+    </div>
+    <div class="content">
+        <div class="calendar-wrap">
+            <div class="month-header"><strong id="monthLabel"></strong><span class="loading" id="loadState">Loading events...</span></div>
+            <div class="grid" id="calendarGrid"></div>
+        </div>
+        <div class="panel">
+            <div id="selectedDayTitle" style="font-size:13px;font-weight:700;margin-bottom:8px;">Events</div>
+            <div id="eventsPanel"></div>
+        </div>
+    </div>
+</div>
+<script>
+(function () {
+    const fetchFn = window.cfetch || fetch;
+    const typeColor = { macro: 'var(--macro)', protocol: 'var(--protocol)', unlock: 'var(--unlock)', listing: 'var(--listing)', airdrop: 'var(--airdrop)' };
+    const impactEmoji = { high: '🔴', medium: '🟡', low: '🟢' };
+    const calendarGrid = document.getElementById('calendarGrid');
+    const monthLabel = document.getElementById('monthLabel');
+    const eventsPanel = document.getElementById('eventsPanel');
+    const selectedDayTitle = document.getElementById('selectedDayTitle');
+    const loadState = document.getElementById('loadState');
+    const typeFilter = document.getElementById('typeFilter');
+    let viewDate = new Date();
+    let selectedDate = formatDate(new Date());
+    let events = [];
+    let customEvents = JSON.parse(localStorage.getItem('lair.calendar.custom') || '[]');
+
+    function formatDate(d) { return d.toISOString().slice(0, 10); }
+    function dateKey(y, m, d) { return new Date(Date.UTC(y, m, d)).toISOString().slice(0, 10); }
+    function parseISO(iso) { return new Date(iso + 'T00:00:00Z'); }
+    function impactClass(v) { return v === 'high' ? 'high' : v === 'medium' ? 'medium' : 'low'; }
+    function typeImpact(type) { return type === 'macro' || type === 'unlock' ? 'high' : type === 'protocol' ? 'medium' : 'low'; }
+    function relTime(dateStr) {
+        const now = new Date();
+        const d = parseISO(dateStr);
+        const ms = d - new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+        const days = Math.ceil(ms / 86400000);
+        if (days <= 0) return 'Today';
+        if (days === 1) return 'Tomorrow';
+        return 'In ' + days + 'd';
+    }
+    function recurringMacro(year, month) {
+        const firstFri = (() => {
+            for (let i = 1; i <= 7; i++) { if (new Date(Date.UTC(year, month, i)).getUTCDay() === 5) return i; }
+            return 1;
+        })();
+        const lastFri = (() => {
+            const last = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
+            for (let i = last; i > last - 7; i--) { if (new Date(Date.UTC(year, month, i)).getUTCDay() === 5) return i; }
+            return last;
+        })();
+        return [
+            { date: dateKey(year, month, 10), type: 'macro', impact: 'high', name: 'US CPI Release', desc: 'Monthly CPI print; strong market volatility catalyst.' },
+            { date: dateKey(year, month, firstFri), type: 'macro', impact: 'high', name: 'US NFP Jobs Report', desc: 'Employment report and unemployment data release.' },
+            { date: dateKey(year, month, lastFri), type: 'macro', impact: 'high', name: 'US Core PCE Release', desc: 'Federal Reserve preferred inflation metric.' },
+            { date: dateKey(year, month, 14), type: 'macro', impact: 'medium', name: 'US PPI Release', desc: 'Producer inflation data for macro positioning.' }
+        ];
+    }
+
+    async function loadCryptoCatalysts() {
+        const out = [];
+        try {
+            const res = await fetchFn('https://api.coingecko.com/api/v3/search/trending');
+            if (!res.ok) throw new Error('Trending unavailable');
+            const data = await res.json();
+            const base = new Date();
+            (data.coins || []).slice(0, 5).forEach((item, i) => {
+                const day = new Date(base);
+                day.setUTCDate(base.getUTCDate() + i + 1);
+                out.push({ date: formatDate(day), type: 'protocol', impact: 'medium', name: item.item.name + ' Momentum Watch', desc: 'Trending token monitoring window for volatility and liquidity shifts.' });
+            });
+        } catch (_) {}
+        return out;
+    }
+
+    async function buildEventSet() {
+        loadState.textContent = 'Loading events...';
+        const y = viewDate.getUTCFullYear();
+        const m = viewDate.getUTCMonth();
+        const macro = recurringMacro(y, m);
+        const crypto = await loadCryptoCatalysts();
+        events = [...macro, ...crypto, ...customEvents].sort((a, b) => a.date.localeCompare(b.date));
+        loadState.textContent = '';
+        render();
+    }
+
+    function getFilteredEvents() {
+        const filter = typeFilter.value;
+        return events.filter(e => (filter === 'all' || e.type === filter));
+    }
+
+    function renderCalendar(daysEvents) {
+        const year = viewDate.getUTCFullYear();
+        const month = viewDate.getUTCMonth();
+        const first = new Date(Date.UTC(year, month, 1));
+        const start = new Date(first);
+        start.setUTCDate(first.getUTCDate() - first.getUTCDay());
+        const monthName = first.toLocaleString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+        monthLabel.textContent = monthName;
+        const byDate = Object.create(null);
+        daysEvents.forEach(e => { (byDate[e.date] ||= []).push(e); });
+
+        const dows = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        calendarGrid.innerHTML = dows.map(d => '<div class="dow">' + d + '</div>').join('');
+        for (let i = 0; i < 42; i++) {
+            const d = new Date(start); d.setUTCDate(start.getUTCDate() + i);
+            const key = formatDate(d);
+            const inMonth = d.getUTCMonth() === month;
+            const isToday = key === formatDate(new Date());
+            const ev = byDate[key] || [];
+            const day = document.createElement('div');
+            day.className = 'day' + (inMonth ? '' : ' off') + (isToday ? ' today' : '');
+            day.innerHTML = '<div class="num">' + d.getUTCDate() + '</div><div class="dots">' + ev.slice(0, 6).map(x => '<span class="dot" style="background:' + (typeColor[x.type] || '#6b7280') + '"></span>').join('') + '</div>';
+            day.addEventListener('click', () => { selectedDate = key; renderPanel(daysEvents); });
+            calendarGrid.appendChild(day);
+        }
+    }
+
+    function renderPanel(daysEvents) {
+        const list = daysEvents.filter(e => e.date === selectedDate);
+        selectedDayTitle.textContent = selectedDate;
+        if (!list.length) {
+            eventsPanel.innerHTML = '<div class="empty">No events for this day.</div>';
+            return;
+        }
+        eventsPanel.innerHTML = list.map(e => (
+            '<div class="event">' +
+            '<div class="line"><span class="tag" style="background:' + (typeColor[e.type] || '#64748b') + '">' + e.type + '</span><span class="impact ' + impactClass(e.impact) + '">' + impactEmoji[e.impact] + ' ' + e.impact.toUpperCase() + '</span></div>' +
+            '<div style="font-size:13px;font-weight:700;margin-top:6px;">' + e.name + '</div>' +
+            '<div style="font-size:12px;opacity:.82;margin-top:4px;">' + (e.desc || '') + '</div>' +
+            '<div style="font-size:11px;opacity:.7;margin-top:6px;">' + relTime(e.date) + '</div>' +
+            '</div>'
+        )).join('');
+    }
+
+    function updateQuick(daysEvents) {
+        const today = formatDate(new Date());
+        const week = new Date();
+        week.setUTCDate(week.getUTCDate() + 7);
+        const weekKey = formatDate(week);
+        const todayEvents = daysEvents.filter(e => e.date === today).length;
+        const weekEvents = daysEvents.filter(e => e.date >= today && e.date <= weekKey).length;
+        const nextHigh = daysEvents.find(e => e.impact === 'high' && e.date >= today);
+        document.getElementById('todayCount').textContent = todayEvents + ' Events';
+        document.getElementById('weekCount').textContent = weekEvents + ' Events';
+        document.getElementById('nextHigh').textContent = nextHigh ? nextHigh.name + ' • ' + relTime(nextHigh.date) : 'None scheduled';
+    }
+
+    function render() {
+        const filtered = getFilteredEvents();
+        renderCalendar(filtered);
+        renderPanel(filtered);
+        updateQuick(filtered);
+    }
+
+    document.getElementById('prevMonth').addEventListener('click', async () => { viewDate.setUTCMonth(viewDate.getUTCMonth() - 1); await buildEventSet(); });
+    document.getElementById('nextMonth').addEventListener('click', async () => { viewDate.setUTCMonth(viewDate.getUTCMonth() + 1); await buildEventSet(); });
+    document.getElementById('todayBtn').addEventListener('click', async () => { viewDate = new Date(); selectedDate = formatDate(new Date()); await buildEventSet(); });
+    typeFilter.addEventListener('change', render);
+    document.getElementById('addBtn').addEventListener('click', () => {
+        const date = prompt('Date (YYYY-MM-DD)');
+        const name = prompt('Event name');
+        const type = (prompt('Type: macro/protocol/unlock/listing/airdrop', 'protocol') || 'protocol').toLowerCase();
+        const impact = (prompt('Impact: high/medium/low', typeImpact(type)) || 'medium').toLowerCase();
+        const desc = prompt('Description', 'Custom user event') || '';
+        if (!date || !name) return;
+        customEvents.push({ date, name, type, impact, desc });
+        localStorage.setItem('lair.calendar.custom', JSON.stringify(customEvents));
+        buildEventSet();
+    });
+
+    buildEventSet();
+})();
+</script>
+</body>
+</html>
+</div>
+<div class="drawer" id="drawer"><div class="drawer-head"><strong id="drawerDate">Events</strong><button class="btn" id="closeDrawer">Close</button></div><div class="drawer-body" id="drawerBody"></div></div>
+<script>
+(()=>{
+  const fetchFn = window.cfetch || fetch;
+  const main=document.getElementById('main'); const countdowns=document.getElementById('countdowns');
+  const drawer=document.getElementById('drawer'); const drawerDate=document.getElementById('drawerDate'); const drawerBody=document.getElementById('drawerBody');
+  let view='month'; let selectedMonth=new Date(new Date().getFullYear(), new Date().getMonth(), 1); let events=[];
+
+  const recurringMacro=[
+    {name:'FOMC Meeting Window',type:'macro',impact:'high',rule:'fomc'},
+    {name:'CPI Release Window',type:'macro',impact:'high',rule:'cpi'},
+    {name:'NFP Jobs Report',type:'macro',impact:'high',rule:'nfp'},
+    {name:'PPI Release Window',type:'macro',impact:'medium',rule:'ppi'}
+  ];
+
+  function toISO(d){return d.toISOString().slice(0,10)}
+  function fromISO(s){const [y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d)}
+  function impactClass(v){return v==='high'?'impact-high':v==='medium'?'impact-medium':'impact-low'}
+
+  function buildRecurring(year,month){
+    const out=[];
+    const firstFriday = new Date(year,month,1); while(firstFriday.getDay()!==5) firstFriday.setDate(firstFriday.getDate()+1);
+    out.push({date:toISO(firstFriday),name:'NFP Jobs Report',type:'macro',impact:'high',desc:'US payroll and unemployment release'});
+    out.push({date:toISO(new Date(year,month,10)),name:'CPI Release Window',type:'macro',impact:'high',desc:'US inflation publication window'});
+    out.push({date:toISO(new Date(year,month,14)),name:'PPI Release Window',type:'macro',impact:'medium',desc:'US producer-price window'});
+    out.push({date:toISO(new Date(year,month,18)),name:'FOMC Meeting Window',type:'macro',impact:'high',desc:'Federal Reserve rate-decision window'});
+    return out;
+  }
+
+  function saveCustom(list){localStorage.setItem('lair-calendar-custom',JSON.stringify(list));}
+  function loadCustom(){try{return JSON.parse(localStorage.getItem('lair-calendar-custom')||'[]')}catch{return []}}
+
+  async function loadUnlockEvents(){
+    const r=await fetchFn('https://api.llama.fi/unlocks?limit=100');
+    if(!r.ok) throw new Error('unlock api');
+    const j=await r.json();
+    const rows=(j||[]).slice(0,70).map(it=>{
+      const ts=(it.date||it.unlockDate||it.timestamp||it.time||0); const date=new Date((Number(ts)>1e12?Number(ts):Number(ts)*1000)||Date.now());
+      return {date:toISO(date),name:`${it.symbol||it.name||'Token'} unlock`,type:'unlock',impact:'high',desc:`Estimated unlocked value ${money(Number(it.amountUsd||it.usdValue||0))}`};
+    });
+    return rows.filter(v=>v.date && v.name);
+  }
+
+  function money(v){if(!Number.isFinite(v)||v<=0)return'—'; if(v>=1e9)return`$${(v/1e9).toFixed(2)}B`; if(v>=1e6)return`$${(v/1e6).toFixed(2)}M`; if(v>=1e3)return`$${(v/1e3).toFixed(1)}K`; return`$${v.toFixed(0)}`}
+  function daysAway(iso){return Math.ceil((fromISO(iso)-new Date())/86400000)}
+
+  function renderCountdowns(){
+    const upcoming=[...events].filter(e=>daysAway(e.date)>=0).sort((a,b)=>a.date.localeCompare(b.date)).slice(0,3);
+    countdowns.innerHTML=upcoming.map(e=>`<div class="cd"><h4>${e.type.toUpperCase()}</h4><p>${e.name}</p><div class="meta ${impactClass(e.impact)}">${e.impact||'medium'} impact • in ${daysAway(e.date)}d</div></div>`).join('') || '<div class="cd"><h4>Countdown</h4><p>No upcoming events</p></div>';
+  }
+
+  function dayEvents(dateIso){return events.filter(e=>e.date===dateIso).sort((a,b)=>(a.impact||'').localeCompare(b.impact||''));}
+
+  function openDay(dateIso){
+    const list=dayEvents(dateIso);
+    drawerDate.textContent=`Events • ${dateIso}`;
+    drawerBody.innerHTML=list.length?list.map(e=>`<div class="card"><div class="meta"><span class="dot ${e.type}"></span><span>${e.type.toUpperCase()}</span><span class="${impactClass(e.impact)}">${e.impact||'medium'} impact</span></div><h4>${e.name}</h4><p>${e.desc||'—'}</p><div class="meta">${daysAway(e.date)>=0?`In ${daysAway(e.date)}d`:'Past'}</div></div>`).join(''):'<div class="card">No events for this day.</div>';
+    drawer.classList.add('open');
+  }
+
+  function renderMonth(){
+    const y=selectedMonth.getFullYear(), m=selectedMonth.getMonth();
+    const first=new Date(y,m,1), start=new Date(first); start.setDate(1-first.getDay());
+    const todayIso=toISO(new Date());
+    const cells=[];
+    for(let i=0;i<42;i++){
+      const d=new Date(start); d.setDate(start.getDate()+i); const iso=toISO(d); const same=d.getMonth()===m; const ev=dayEvents(iso);
+      cells.push(`<button class="day ${same?'':'muted'} ${iso===todayIso?'today':''}" data-date="${iso}"><div class="num">${d.getDate()}</div>${ev.slice(0,3).map(e=>`<div class="ev ${e.type}">${e.name}</div>`).join('')}${ev.length>3?`<div class="ev">+${ev.length-3} more</div>`:''}</button>`)
+    }
+    main.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><button class="btn" id="prevMonth">◀</button><strong>${selectedMonth.toLocaleString(undefined,{month:'long',year:'numeric'})}</strong><button class="btn" id="nextMonth">▶</button></div><div class="calendar">${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d=>`<div class="dow">${d}</div>`).join('')}${cells.join('')}</div>`;
+    main.querySelectorAll('.day').forEach(btn=>btn.addEventListener('click',()=>openDay(btn.dataset.date)));
+    document.getElementById('prevMonth').onclick=()=>{selectedMonth.setMonth(selectedMonth.getMonth()-1);render();};
+    document.getElementById('nextMonth').onclick=()=>{selectedMonth.setMonth(selectedMonth.getMonth()+1);render();};
+  }
+
+  function renderList(){
+    const upcoming=[...events].filter(e=>daysAway(e.date)>=-1).sort((a,b)=>a.date.localeCompare(b.date)).slice(0,120);
+    main.innerHTML=upcoming.length?upcoming.map(e=>`<div class="card" style="margin-bottom:8px"><div class="meta"><span class="dot ${e.type}"></span><span>${e.date}</span><span>${e.type.toUpperCase()}</span><span class="${impactClass(e.impact)}">${e.impact||'medium'} impact</span></div><h4>${e.name}</h4><p>${e.desc||''}</p><div class="meta">${daysAway(e.date)>=0?`In ${daysAway(e.date)}d`:'Live/Passed'}</div></div>`).join(''):'<div class="card">No upcoming events.</div>';
+  }
+
+  function render(){ renderCountdowns(); if(view==='month') renderMonth(); else renderList(); }
+
+  async function reload(){
+    const y=selectedMonth.getFullYear(), m=selectedMonth.getMonth();
+    const recurring=buildRecurring(y,m);
+    const custom=loadCustom();
+    let unlock=[];
+    try{unlock=await loadUnlockEvents();}catch{}
+    events=[...recurring,...unlock,...custom];
+    render();
+  }
+
+  document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-view]').forEach(x=>x.classList.remove('active'));b.classList.add('active');view=b.dataset.view;render();});
+  document.getElementById('todayBtn').onclick=()=>{selectedMonth=new Date(new Date().getFullYear(),new Date().getMonth(),1);render();};
+  document.getElementById('refreshBtn').onclick=reload;
+  document.getElementById('closeDrawer').onclick=()=>drawer.classList.remove('open');
+  document.getElementById('customForm').onsubmit=(e)=>{e.preventDefault(); const name=document.getElementById('name').value.trim(); const date=document.getElementById('date').value; const type=document.getElementById('type').value; if(!name||!date)return; const custom=loadCustom(); custom.push({name,date,type,impact:'medium',desc:'Custom event'}); saveCustom(custom); e.target.reset(); reload();};
+
+  reload();
+  if(typeof window.greenflag==='function')window.greenflag();
+})();
+</script>
+</body>
+</html>

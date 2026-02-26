@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="lair-include" content="lair.css">
+    <meta name="capabilities" content="coingecko_widgets">
+    <meta name="lair-icon" content="currency_bitcoin">
+    <title>CoinGecko</title>
+    <style>
+        html { height: 100%; }
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            background: var(--col-bg1, #101010);
+            color: var(--col-txt1, #fff);
+            font-family: 'Poppins', sans-serif;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        .marquee-bar {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background: var(--col-bg2, #171717);
+            border-bottom: 1px solid var(--box-crisp-col, #ffffff0c);
+            padding: 4px 0;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 0;
+            padding: 0.5rem 1rem 0;
+            background: var(--col-bg1, #101010);
+            border-bottom: 1px solid var(--box-crisp-col, #ffffff0c);
+            position: sticky;
+            top: 52px;
+            z-index: 9;
+        }
+        .tab-btn {
+            background: none;
+            border: none;
+            color: var(--col-txt1, #fff);
+            opacity: 0.5;
+            padding: 0.6rem 1rem;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-family: inherit;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        .tab-btn:hover { opacity: 0.8; }
+        .tab-btn.active {
+            opacity: 1;
+            border-bottom-color: var(--colors-accent, rgb(97, 121, 255));
+        }
+
+        .tab-content {
+            display: none;
+            padding: 1rem;
+            min-height: 400px;
+        }
+        .tab-content.active { display: block; }
+
+        .widget-section {
+            margin-bottom: 1.5rem;
+        }
+        .widget-section h3 {
+            margin: 0 0 0.75rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+            opacity: 0.7;
+            letter-spacing: 0.03em;
+        }
+
+        .widget-frame {
+            background: var(--col-bg2, #171717);
+            border-radius: var(--siz-radius1, 0.5em);
+            border: 1px solid var(--box-crisp-col, #ffffff0c);
+            padding: 0.5rem;
+            overflow: hidden;
+        }
+
+        .coin-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1rem;
+        }
+
+        .chart-pair {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+        @media (max-width: 600px) {
+            .chart-pair { grid-template-columns: 1fr; }
+        }
+
+        .loading-msg {
+            text-align: center;
+            padding: 3rem;
+            opacity: 0.4;
+            font-size: 0.85rem;
+        }
+
+        .widget-error {
+            margin: 1rem;
+            padding: 0.9rem 1rem;
+            border-radius: var(--siz-radius1, 0.5em);
+            border: 1px solid #f97316;
+            background: #26160e;
+            color: #fdba74;
+            display: none;
+        }
+
+        .retry-btn {
+            margin-top: 0.7rem;
+            border: 1px solid #444;
+            background: var(--col-bg2, #171717);
+            color: var(--col-txt1, #fff);
+            padding: 0.35rem 0.7rem;
+            border-radius: 0.35rem;
+            cursor: pointer;
+        }
+
+        /* Override CoinGecko widget dark theme */
+        coingecko-coin-price-marquee-widget,
+        coingecko-coin-price-chart-widget,
+        coingecko-coin-compare-chart-widget,
+        coingecko-coin-converter-widget,
+        coingecko-coin-list-widget,
+        coingecko-coin-heatmap-widget,
+        gecko-coin-price-chart-widget {
+            --cg-bg: var(--col-bg2, #171717) !important;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Marquee ticker (always visible) -->
+<div class="marquee-bar">
+    <coingecko-coin-price-marquee-widget
+        coin-ids="bitcoin,ethereum,solana,binancecoin,avalanche-2,matic-network,arbitrum,optimism,tron,dogecoin"
+        currency="usd"
+        background-color="transparent"
+        font-color="#ffffff"
+        locale="en">
+    </coingecko-coin-price-marquee-widget>
+</div>
+
+<!-- Tab navigation -->
+<div class="tabs">
+    <button class="tab-btn active" data-tab="overview">Overview</button>
+    <button class="tab-btn" data-tab="charts">Charts</button>
+    <button class="tab-btn" data-tab="compare">Compare</button>
+    <button class="tab-btn" data-tab="converter">Converter</button>
+    <button class="tab-btn" data-tab="list">Top 100</button>
+</div>
+
+<!-- Tab: Overview -->
+<div id="tab-overview" class="tab-content active">
+    <div class="widget-section">
+        <h3>Bitcoin</h3>
+        <div class="widget-frame">
+            <coingecko-coin-price-chart-widget
+                coin-id="bitcoin"
+                currency="usd"
+                height="250"
+                locale="en"
+                background-color="transparent"
+                font-color="#ffffff">
+            </coingecko-coin-price-chart-widget>
+        </div>
+    </div>
+    <div class="widget-section">
+        <h3>Ethereum</h3>
+        <div class="widget-frame">
+            <coingecko-coin-price-chart-widget
+                coin-id="ethereum"
+                currency="usd"
+                height="250"
+                locale="en"
+                background-color="transparent"
+                font-color="#ffffff">
+            </coingecko-coin-price-chart-widget>
+        </div>
+    </div>
+    <div class="widget-section">
+        <h3>Solana</h3>
+        <div class="widget-frame">
+            <coingecko-coin-price-chart-widget
+                coin-id="solana"
+                currency="usd"
+                height="250"
+                locale="en"
+                background-color="transparent"
+                font-color="#ffffff">
+            </coingecko-coin-price-chart-widget>
+        </div>
+    </div>
+</div>
+
+<!-- Tab: Charts (side by side) -->
+<div id="tab-charts" class="tab-content">
+    <div class="widget-section">
+        <h3>Price Charts</h3>
+        <div class="chart-pair">
+            <div class="widget-frame">
+                <coingecko-coin-price-chart-widget
+                    coin-id="bitcoin"
+                    currency="usd"
+                    height="300"
+                    locale="en"
+                    background-color="transparent"
+                    font-color="#ffffff">
+                </coingecko-coin-price-chart-widget>
+            </div>
+            <div class="widget-frame">
+                <coingecko-coin-price-chart-widget
+                    coin-id="ethereum"
+                    currency="usd"
+                    height="300"
+                    locale="en"
+                    background-color="transparent"
+                    font-color="#ffffff">
+                </coingecko-coin-price-chart-widget>
+            </div>
+        </div>
+    </div>
+    <div class="widget-section">
+        <div class="chart-pair">
+            <div class="widget-frame">
+                <coingecko-coin-price-chart-widget
+                    coin-id="binancecoin"
+                    currency="usd"
+                    height="300"
+                    locale="en"
+                    background-color="transparent"
+                    font-color="#ffffff">
+                </coingecko-coin-price-chart-widget>
+            </div>
+            <div class="widget-frame">
+                <coingecko-coin-price-chart-widget
+                    coin-id="solana"
+                    currency="usd"
+                    height="300"
+                    locale="en"
+                    background-color="transparent"
+                    font-color="#ffffff">
+                </coingecko-coin-price-chart-widget>
+            </div>
+        </div>
+    </div>
+    <div class="widget-section">
+        <div class="chart-pair">
+            <div class="widget-frame">
+                <coingecko-coin-price-chart-widget
+                    coin-id="avalanche-2"
+                    currency="usd"
+                    height="300"
+                    locale="en"
+                    background-color="transparent"
+                    font-color="#ffffff">
+                </coingecko-coin-price-chart-widget>
+            </div>
+            <div class="widget-frame">
+                <coingecko-coin-price-chart-widget
+                    coin-id="dogecoin"
+                    currency="usd"
+                    height="300"
+                    locale="en"
+                    background-color="transparent"
+                    font-color="#ffffff">
+                </coingecko-coin-price-chart-widget>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tab: Compare -->
+<div id="tab-compare" class="tab-content">
+    <div class="widget-section">
+        <h3>BTC vs ETH vs SOL</h3>
+        <div class="widget-frame">
+            <coingecko-coin-compare-chart-widget
+                coin-ids="bitcoin,ethereum,solana"
+                currency="usd"
+                height="400"
+                locale="en"
+                background-color="transparent"
+                font-color="#ffffff">
+            </coingecko-coin-compare-chart-widget>
+        </div>
+    </div>
+    <div class="widget-section">
+        <h3>Layer 2: ARB vs OP vs MATIC</h3>
+        <div class="widget-frame">
+            <coingecko-coin-compare-chart-widget
+                coin-ids="arbitrum,optimism,matic-network"
+                currency="usd"
+                height="400"
+                locale="en"
+                background-color="transparent"
+                font-color="#ffffff">
+            </coingecko-coin-compare-chart-widget>
+        </div>
+    </div>
+    <div class="widget-section">
+        <h3>Memecoins: DOGE vs SHIB vs PEPE</h3>
+        <div class="widget-frame">
+            <coingecko-coin-compare-chart-widget
+                coin-ids="dogecoin,shiba-inu,pepe"
+                currency="usd"
+                height="400"
+                locale="en"
+                background-color="transparent"
+                font-color="#ffffff">
+            </coingecko-coin-compare-chart-widget>
+        </div>
+    </div>
+</div>
+
+<!-- Tab: Converter -->
+<div id="tab-converter" class="tab-content">
+    <div class="widget-section">
+        <h3>Bitcoin Converter</h3>
+        <div class="widget-frame">
+            <coingecko-coin-converter-widget
+                coin-id="bitcoin"
+                currency="usd"
+                background-color="transparent"
+                font-color="#ffffff"
+                locale="en">
+            </coingecko-coin-converter-widget>
+        </div>
+    </div>
+    <div class="widget-section">
+        <h3>Ethereum Converter</h3>
+        <div class="widget-frame">
+            <coingecko-coin-converter-widget
+                coin-id="ethereum"
+                currency="usd"
+                background-color="transparent"
+                font-color="#ffffff"
+                locale="en">
+            </coingecko-coin-converter-widget>
+        </div>
+    </div>
+    <div class="widget-section">
+        <h3>Solana Converter</h3>
+        <div class="widget-frame">
+            <coingecko-coin-converter-widget
+                coin-id="solana"
+                currency="usd"
+                background-color="transparent"
+                font-color="#ffffff"
+                locale="en">
+            </coingecko-coin-converter-widget>
+        </div>
+    </div>
+</div>
+
+<!-- Tab: Top 100 List -->
+<div id="tab-list" class="tab-content">
+    <div class="widget-section">
+        <h3>Top Cryptocurrencies by Market Cap</h3>
+        <div class="widget-frame">
+            <coingecko-coin-list-widget
+                coin-ids=""
+                currency="usd"
+                locale="en"
+                background-color="transparent"
+                font-color="#ffffff">
+            </coingecko-coin-list-widget>
+        </div>
+    </div>
+</div>
+
+<!-- CoinGecko widget scripts -->
+<div class="widget-error" id="widgetError">
+    Unable to load CoinGecko widgets. Network restrictions or script blocking may be preventing widget scripts from loading.
+    <br>
+    <button class="retry-btn" id="retryWidgets">Retry Widgets</button>
+</div>
+
+<script>
+    const widgetScriptUrls = [
+        'https://widgets.coingecko.com/gecko-coin-price-marquee-widget.js',
+        'https://widgets.coingecko.com/gecko-coin-price-chart-widget.js',
+        'https://widgets.coingecko.com/gecko-coin-compare-chart-widget.js',
+        'https://widgets.coingecko.com/gecko-coin-converter-widget.js',
+        'https://widgets.coingecko.com/gecko-coin-list-widget.js'
+    ];
+
+    async function loadWidgetScripts() {
+        const errorBanner = document.getElementById('widgetError');
+        errorBanner.style.display = 'none';
+        try {
+            for (const url of widgetScriptUrls) {
+                await new Promise((resolve, reject) => {
+                    const script = document.createElement('script');
+                    script.src = url;
+                    script.async = true;
+                    script.onload = resolve;
+                    script.onerror = reject;
+                    document.head.appendChild(script);
+                });
+            }
+        } catch (_) {
+            errorBanner.style.display = 'block';
+        }
+    }
+
+    document.getElementById('retryWidgets').addEventListener('click', loadWidgetScripts);
+
+    // Tab switching
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+        });
+    });
+
+    loadWidgetScripts();
+</script>
+</body>
+</html>

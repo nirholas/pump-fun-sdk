@@ -1,0 +1,442 @@
+<html>
+
+<head>
+	<title>Lair New Tab</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+	<style>
+		@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300&family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Seaweed+Script&display=swap');
+
+		/* width */
+		::-webkit-scrollbar {
+			width: 0.5rem;
+		}
+
+		/* Track */
+		::-webkit-scrollbar-track {
+			background: transparent;
+			border-radius: 5px;
+		}
+
+		/* Handle */
+		::-webkit-scrollbar-thumb {
+			background: #555555;
+			border-radius: 5px;
+		}
+
+		/* Handle on hover */
+		::-webkit-scrollbar-thumb:hover {
+			background: #3b3b3b;
+		}
+
+		html {
+			height: 100%;
+			width: 100%;
+		}
+
+		button,
+		input,
+		textarea {
+			outline: none;
+		}
+
+		body {
+			margin: 0;
+			height: 100vh;
+			width: 100%;
+			background-color: #181a1b;
+			overflow: hidden;
+			background-image: url('https://tab.sli.ce.it/static/media/tobiasRademacher.7c48d501f5cd4031ca0f.webp');
+			background-repeat: no-repeat;
+			background-size: cover;
+			color: white;
+			font-family: 'Poppins', sans-serif;
+			transition: 2s;
+			background-repeat: no-repeat;
+			display: flex;
+			flex-direction: column;
+		}
+
+		.logo {
+			font-family: "poppins", sans-serif;
+			font-size: 1.5rem;
+			margin: 10px;
+			background: #00000030;
+			padding: 1rem 2rem;
+			border-radius: 1rem;
+		}
+
+		.mains {
+			display: grid;
+			align-content: center;
+			justify-content: center;
+			align-items: center;
+			min-height: 214px;
+			height: 0;
+			flex: 9;
+			justify-items: center;
+		}
+
+		/* Lair Shortcuts Section */
+		.shortcuts {
+			display: grid;
+			grid-template-columns: repeat(4, 1fr);
+			gap: 15px;
+			max-width: 600px;
+			margin: 20px auto;
+		}
+
+		.shortcut {
+			background: rgba(255, 255, 255, 0.1);
+			backdrop-filter: blur(10px);
+			border: 1px solid rgba(255, 255, 255, 0.2);
+			border-radius: 12px;
+			padding: 15px 10px;
+			cursor: pointer;
+			transition: all 0.3s ease;
+			text-align: center;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			gap: 8px;
+		}
+
+		.shortcut:hover {
+			background: rgba(255, 255, 255, 0.2);
+			transform: translateY(-3px);
+			box-shadow: 0 5px 15px rgba(0, 102, 255, 0.3);
+		}
+
+		.shortcut-icon {
+			font-size: 28px;
+		}
+
+		.shortcut-name {
+			font-size: 12px;
+			font-weight: 500;
+			color: white;
+		}
+
+		#news-section {
+			overflow-x: hidden;
+			overflow-y: scroll;
+			border-radius: 10px;
+			margin: 1rem 1rem;
+			height: 0;
+			flex-direction: column;
+			flex-wrap: nowrap;
+			flex: 0;
+			padding-right: 0.3rem;
+		}
+
+		.news-item {
+			background: rgb(44, 44, 44);
+			color: #dddddd;
+			padding: 5px 27px;
+			border-radius: 10px;
+			margin-bottom: 10px;
+		}
+
+		form {
+			margin: 0;
+		}
+
+		.searchbr {
+			overflow: hidden;
+			border-radius: 25px;
+			padding: 0;
+			background: #2b2b2b;
+			display: flex;
+			flex-direction: row;
+			align-items: center;
+			width: 45vw;
+			gap: 0.3rem;
+		}
+
+		.searchbr form {
+			width: inherit;
+			display: inherit;
+		}
+
+		.searchbr input {
+			min-width: 180px;
+			flex: 1;
+			padding: 5px;
+			padding-left: 1rem;
+			font-size: 1rem;
+			border: none;
+			margin: 0;
+			background-color: inherit;
+			color: inherit;
+			display: inline-block;
+		}
+
+		.searchbr button {
+			color: white;
+			background: rgb(77, 77, 77);
+			border: 0;
+			margin: 5px;
+			border-radius: 50%;
+			aspect-ratio: 1 / 1;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+		}
+
+		#newses {
+			margin: 1rem;
+			border-radius: 1rem;
+			display: flex;
+			flex-direction: column;
+			height: 0;
+			flex: 1;
+			background: #101010;
+		}
+
+		#slideshow-container {
+			width: 80%;
+			overflow: hidden;
+			text-overflow: ellipsis;
+			opacity: .5;
+			white-space: nowrap;
+			font-size: 0.8rem;
+		}
+
+		[subb] {
+			height: fit-content;
+			background-color: grey;
+			border: none;
+			padding: 7px 10px;
+			color: white;
+			margin: 1rem;
+			border-radius: 5px;
+		}
+
+		.newsnav {
+			display: flex;
+			padding: 0.5rem 1rem;
+			background: #2b2b2b;
+			align-items: center;
+			justify-content: space-between;
+			cursor: pointer;
+		}
+
+		.newstitlsprt {
+			display: flex;
+			flex-direction: column;
+			flex: 1;
+			width: 0;
+		}
+
+		@media (max-width: 600px) {
+			.shortcuts {
+				grid-template-columns: repeat(2, 1fr);
+			}
+		}
+	</style>
+</head>
+
+<body>
+	<div class="mains">
+		<h1 class="logo" id="titlet">Good afternoon!</h1>
+		
+		<!-- Lair Shortcuts -->
+		<div class="shortcuts">
+			<div class="shortcut" onclick="openLairApp('/Lair-Store/apps/lairdocs.html')">
+				<span class="material-icons shortcut-icon">menu_book</span>
+				<div class="shortcut-name">LairOS Docs</div>
+			</div>
+			<div class="shortcut" onclick="openLairApp('/Lair-Store/apps/lairdefi.html')">
+				<span class="material-icons shortcut-icon">account_balance</span>
+				<div class="shortcut-name">Lair DeFi</div>
+			</div>
+			<div class="shortcut" onclick="openLairApp('/Lair-Store/apps/lairai.html')">
+				<span class="material-icons shortcut-icon">psychology</span>
+				<div class="shortcut-name">Lair AI</div>
+			</div>
+			<div class="shortcut" onclick="openLairApp('/Lair-Store/apps/lairbot.html')">
+				<span class="material-icons shortcut-icon">smart_toy</span>
+				<div class="shortcut-name">Telegram Bot</div>
+			</div>
+		</div>
+
+		<div class="searchbr">
+			<form action="https://www.bing.com/search">
+				<input placeholder="Search Bing..." name="q" id="q">
+				<button><span class="material-icons">search</span></button>
+			</form>
+
+		</div>
+	</div>
+	<div id="newses">
+		<div class="newsnav" onclick="togglenews()">
+			<span class="newstitlsprt">News <div id="slideshow-container"></div></span>
+			<span class="material-icons">expand_less</span>
+		</div>
+		<div id="news-section">
+
+		</div>
+	</div>
+	<script>
+
+		// Function to open Lair apps
+		function openLairApp(appPath) {
+			// Navigate within the browser iframe
+			window.location.href = appPath;
+		}
+
+		const slideshowContainer = document.getElementById('slideshow-container');
+		let currentIndex = 0;
+		const fadeDuration = 3000;
+		var newssection = document.querySelector("#newses");
+		var searchsec = document.querySelector(".mains");
+		const newsContainer = document.getElementById('news-section');
+
+		var newsopen = false;
+		newsContainer.style.display = "none";
+		newsopen = false;
+		newsContainer.style.flex = 0;
+		newssection.style.flex = 0;
+		newssection.style.height = "fit-content";
+
+		function togglenews() {
+			if (newsopen) {
+				newsContainer.style.display = "none";
+				newsopen = false;
+				newsContainer.style.flex = 0;
+				newssection.style.height = "fit-content";
+				newssection.style.flex = 0;
+				searchsec.style.display = "grid";
+			} else {
+				newsContainer.style.display = "flex";
+				newsContainer.style.flex = 1;
+				newssection.style.flex = 6;
+				newssection.style.height = 0;
+				newsopen = true;
+				searchsec.style.display = "none";
+			}
+		}
+
+		function nwpsearch() {
+			location.href = "https://adthoughtsglobal.github.io/Search?q=" + document.getElementById("q").value
+		}
+
+		var titlet = document.getElementById("titlet");
+		var now = new Date();
+		var hour = now.getHours();
+		var greeting, newsItems;
+
+		var holidays = {
+			"01-01": "Happy New Year!",
+			"02-14": "Happy Valentine's Day!",
+			"03-17": "Happy St. Patrick's Day!",
+			"04-01": "Happy April Fools' Day!",
+			"05-01": "Happy Labor Day!",
+			"07-04": "Happy Independence Day!",
+			"10-31": "Happy Halloween!",
+			"11-11": "Happy Veterans Day!",
+			"12-24": "Merry Christmas Eve!",
+			"12-25": "Merry Christmas!",
+			"01-20": "Happy Martin Luther King Jr. Day!",
+			"02-12": "Happy Abraham Lincoln's Birthday!",
+			"03-08": "Happy International Women's Day!",
+			"04-22": "Happy Earth Day!",
+			"05-05": "Happy Cinco de Mayo!",
+			"06-14": "Happy Flag Day!",
+			"08-15": "Happy Assumption of Mary!",
+			"09-06": "Happy Labor Day!",
+			"10-12": "Happy Columbus Day!",
+			"11-28": "Happy Thanksgiving!",
+			"12-31": "Happy New Year's Eve!",
+			"03-20": "Happy International Day of Happiness!",
+			"06-21": "Happy International Yoga Day!",
+			"08-26": "Happy Women's Equality Day!",
+			"09-19": "Happy Talk Like a Pirate Day!",
+			"10-16": "Happy World Food Day!",
+			"11-01": "Happy Day of the Dead!",
+			"12-07": "Happy Pearl Harbor Remembrance Day!",
+			"12-26": "Happy Boxing Day!"
+		};
+
+		var currentDate = now.toISOString().slice(5, 10).replace("-", "");
+
+		if (holidays[currentDate]) {
+			greeting = holidays[currentDate];
+		} else {
+			if (hour < 12) {
+				greeting = "Good morning!";
+			} else if (hour < 18) {
+				greeting = "Good afternoon!";
+			} else {
+				greeting = "Good evening!";
+			}
+		}
+
+		titlet.textContent = greeting;
+
+		async function fetchWikinews(callback) {
+			const script = document.createElement('script');
+			const callbackName = 'wikinewsCallback';
+
+			window[callbackName] = function (data) {
+				callback(data);
+				delete window[callbackName];
+				document.body.removeChild(script);
+			};
+
+			script.src = 'https://en.wikinews.org/w/api.php?action=query&list=search&srsearch=technology&srlimit=20&srprop=timestamp|snippet|titles&format=json&callback=' + callbackName;
+			document.body.appendChild(script);
+		}
+
+		async function news() {
+			fetchWikinews(function (data) {
+				newsItems = data.query.search
+				console.log(newsItems); // Log the items to check the structure
+
+				newsItems.forEach(function (newsItem) {
+					const div = document.createElement('div');
+					div.classList.add('news-item');
+					div.onclick = function () {
+						window.parent.newtab("https://en.wikinews.org/wiki/" + newsItem.title + "?dpl_id=" + newsItem.pageid);
+					}
+
+					const title = document.createElement('h3');
+					title.textContent = newsItem.title;
+
+					const timestamp = document.createElement('p');
+					timestamp.textContent = new Date(newsItem.timestamp).toDateString();
+
+					div.appendChild(title);
+					div.appendChild(timestamp);
+
+					document.getElementById('news-section').appendChild(div);
+				});
+
+				// Start the slideshow after news items are rendered
+				startSlideshow();
+			});
+		}
+
+		function startSlideshow() {
+			if (newsItems.length === 0) return;
+
+			// Initial render of the first news item in the slideshow
+			slideshowContainer.textContent = newsItems[currentIndex].title;
+
+			setInterval(() => {
+				// Move to the next news item
+				currentIndex = (currentIndex + 1) % newsItems.length;
+
+				// Update the slideshow content
+				slideshowContainer.textContent = newsItems[currentIndex].title;
+			}, fadeDuration); // Update every `fadeDuration` milliseconds
+		}
+
+		// Call the news fetching function
+		news();
+	</script>
+
+
+</body>
+
+</html>

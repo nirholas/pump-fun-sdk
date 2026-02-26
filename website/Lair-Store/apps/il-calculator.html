@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="lair-include" content="lair.css">
+    <meta name="capabilities" content="il_calculator">
+    <meta name="lair-icon" content="water_drop">
+    <title>IL Calculator</title>
+    <style>
+        :root{--bg1:#101010;--bg2:#171717;--bg3:#222;--t1:#fff;--t2:#999;--t3:#666;--acc:rgb(97,121,255);--gn:#5be45b;--rd:#d44343;--yl:#f0b90b;--r1:6px;--font:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
+        *{margin:0;padding:0;box-sizing:border-box}
+        body,html{width:100%;height:100%;overflow:hidden;font-family:var(--font);background:var(--bg1);color:var(--t1)}
+        .app{display:flex;flex-direction:column;height:100%}
+
+        .hdr{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--bg1);border-bottom:1px solid #1e1e1e;flex-shrink:0;flex-wrap:wrap}
+        .hdr-title{font-size:13px;font-weight:600}
+        .pills{display:flex;gap:3px}
+        .pill{background:var(--bg2);color:var(--t2);border:1px solid #262626;border-radius:4px;padding:3px 8px;font-size:10px;font-weight:600;cursor:pointer;transition:all .12s;font-family:var(--font)}
+        .pill:hover{border-color:#444;color:var(--t1)}
+        .pill.on{background:rgba(97,121,255,.12);border-color:var(--acc);color:var(--acc)}
+        .sep{width:1px;height:20px;background:#262626;flex-shrink:0}
+        .spacer{flex:1}
+
+        .content{flex:1;overflow:auto;padding:12px;display:grid;grid-template-columns:300px 1fr;gap:12px}
+        .content::-webkit-scrollbar{width:4px}
+        .content::-webkit-scrollbar-thumb{background:#333;border-radius:2px}
+
+        /* Input panel */
+        .panel{background:var(--bg2);border:1px solid #1e1e1e;border-radius:var(--r1);padding:14px;display:flex;flex-direction:column;gap:12px;overflow-y:auto}
+        .panel::-webkit-scrollbar{width:4px}
+        .panel::-webkit-scrollbar-thumb{background:#333;border-radius:2px}
+        .sect{font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;font-weight:500}
+        .field{display:flex;flex-direction:column;gap:4px}
+        .field label{font-size:10px;color:var(--t2)}
+        .field input,.field select{background:var(--bg3);color:var(--t1);border:1px solid #333;border-radius:4px;padding:6px 10px;font-size:12px;font-family:var(--font);outline:none}
+        .field input:focus,.field select:focus{border-color:var(--acc)}
+        .field input[type=range]{padding:0;height:6px;-webkit-appearance:none;background:var(--bg3);border:none;border-radius:3px}
+        .field input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--acc);cursor:pointer}
+        .range-val{display:flex;justify-content:space-between;font-size:10px;color:var(--t3)}
+        .pair-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+        .btn{width:100%;background:var(--acc);color:#fff;border:none;border-radius:var(--r1);padding:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);margin-top:4px}
+        .btn:hover{opacity:.9}
+
+        /* Results */
+        .results{display:flex;flex-direction:column;gap:12px;overflow-y:auto}
+        .results::-webkit-scrollbar{width:4px}
+        .results::-webkit-scrollbar-thumb{background:#333;border-radius:2px}
+
+        .metric-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}
+        .metric{background:var(--bg2);border:1px solid #1e1e1e;border-radius:var(--r1);padding:10px}
+        .m-label{font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.4px}
+        .m-val{font-size:16px;font-weight:700;margin-top:3px;font-variant-numeric:tabular-nums}
+        .m-sub{font-size:10px;color:var(--t3);margin-top:2px}
+
+        .chart-box{background:var(--bg2);border:1px solid #1e1e1e;border-radius:var(--r1);padding:12px}
+        .chart-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--t2);margin-bottom:8px}
+        canvas{width:100%;border-radius:4px}
+
+        /* Comparison table */
+        .cmp-table{width:100%;border-collapse:collapse;font-size:11px;font-variant-numeric:tabular-nums}
+        .cmp-table th{background:var(--bg3);color:var(--t3);font-weight:500;text-align:left;padding:6px 8px;font-size:10px;text-transform:uppercase}
+        .cmp-table td{padding:6px 8px;border-bottom:1px solid #141414}
+        .up{color:var(--gn)}.dn{color:var(--rd)}.yl{color:var(--yl)}
+
+        @media(max-width:768px){
+            .content{grid-template-columns:1fr}
+            .metric-grid{grid-template-columns:repeat(2,1fr)}
+        }
+    </style>
+</head>
+<body>
+<div class="app">
+    <div class="hdr">
+        <span class="hdr-title">💧 Impermanent Loss Calculator</span>
+        <div class="sep"></div>
+        <div class="pills" id="amm-pills">
+            <button class="pill on" data-a="v2">Uniswap V2</button>
+            <button class="pill" data-a="v3">Uni V3 (Concentrated)</button>
+            <button class="pill" data-a="curve">Curve (Stable)</button>
+        </div>
+        <div class="spacer"></div>
+    </div>
+
+    <div class="content">
+        <div class="panel">
+            <div class="sect">Token Pair</div>
+            <div class="pair-row">
+                <div class="field">
+                    <label>Token A</label>
+                    <select id="tokenA">
+                        <option value="ethereum" data-s="ETH">ETH</option>
+                        <option value="bitcoin" data-s="BTC">BTC</option>
+                        <option value="solana" data-s="SOL">SOL</option>
+                        <option value="binancecoin" data-s="BNB">BNB</option>
+                        <option value="chainlink" data-s="LINK">LINK</option>
+                        <option value="uniswap" data-s="UNI">UNI</option>
+                        <option value="aave" data-s="AAVE">AAVE</option>
+                        <option value="arbitrum" data-s="ARB">ARB</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label>Token B</label>
+                    <select id="tokenB">
+                        <option value="usd" data-s="USDC">USDC (Stable)</option>
+                        <option value="ethereum" data-s="ETH">ETH</option>
+                        <option value="bitcoin" data-s="BTC">BTC</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="sect">Position</div>
+            <div class="field">
+                <label>Investment Amount ($)</label>
+                <input type="number" id="investment" value="10000" min="100" step="100">
+            </div>
+
+            <div class="sect">Price Change Simulation</div>
+            <div class="field">
+                <label>Token A Price Change: <b id="chgA-val">+50%</b></label>
+                <input type="range" id="chgA" min="-90" max="500" value="50" step="1">
+                <div class="range-val"><span>-90%</span><span>+500%</span></div>
+            </div>
+            <div class="field">
+                <label>Token B Price Change: <b id="chgB-val">0%</b></label>
+                <input type="range" id="chgB" min="-90" max="500" value="0" step="1">
+                <div class="range-val"><span>-90%</span><span>+500%</span></div>
+            </div>
+
+            <div class="sect">Fees & Yield</div>
+            <div class="field">
+                <label>Pool Fee Tier</label>
+                <select id="feeTier">
+                    <option value="0.01">0.01% (Stables)</option>
+                    <option value="0.05">0.05% (Low vol)</option>
+                    <option value="0.3" selected>0.30% (Standard)</option>
+                    <option value="1.0">1.00% (Exotic)</option>
+                </select>
+            </div>
+            <div class="field">
+                <label>Daily Volume / TVL Ratio: <b id="vol-val">0.5x</b></label>
+                <input type="range" id="volRatio" min="0.01" max="5" value="0.5" step="0.01">
+                <div class="range-val"><span>0.01x</span><span>5x</span></div>
+            </div>
+            <div class="field">
+                <label>Time Period (Days): <b id="days-val">30</b></label>
+                <input type="range" id="days" min="1" max="365" value="30" step="1">
+                <div class="range-val"><span>1d</span><span>365d</span></div>
+            </div>
+
+            <div class="sect" id="v3-section" style="display:none">Concentrated Liquidity (V3)</div>
+            <div id="v3-fields" style="display:none">
+                <div class="field" style="margin-bottom:8px">
+                    <label>Price Range: <b id="range-val">±30%</b></label>
+                    <input type="range" id="priceRange" min="1" max="200" value="30" step="1">
+                    <div class="range-val"><span>±1%</span><span>±200%</span></div>
+                </div>
+            </div>
+
+            <button class="btn" id="calc">Calculate IL</button>
+        </div>
+
+        <div class="results">
+            <div class="metric-grid" id="metrics"></div>
+
+            <div class="chart-box">
+                <div class="chart-title">IL vs Price Change (Token A)</div>
+                <canvas id="il-chart" height="200"></canvas>
+            </div>
+
+            <div class="chart-box">
+                <div class="chart-title">LP Value vs HODL Value Over Time</div>
+                <canvas id="time-chart" height="180"></canvas>
+            </div>
+
+            <div class="chart-box">
+                <div class="chart-title">Price Scenarios Comparison</div>
+                <table class="cmp-table">
+                    <thead><tr><th>Scenario</th><th>Token A Δ</th><th>HODL Value</th><th>LP Value</th><th>IL</th><th>Fees Earned</th><th>Net P&L</th></tr></thead>
+                    <tbody id="scenarios"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+let ammType='v2';
+
+/* ── IL formulas ── */
+
+// Uniswap V2: IL = 2*sqrt(r)/(1+r) - 1,  where r = priceRatio
+function ilV2(priceRatioA,priceRatioB){
+    // For A/B pair: combined ratio
+    const r=priceRatioA/priceRatioB;
+    return 2*Math.sqrt(r)/(1+r)-1;
+}
+
+// Uniswap V3 concentrated: magnified IL based on range
+function ilV3(priceRatioA,priceRatioB,rangePct){
+    const r=priceRatioA/priceRatioB;
+    const baseIL=ilV2(priceRatioA,priceRatioB);
+    // Concentration multiplier: narrower range = higher IL and higher fees
+    const concentration=1/(rangePct/100);
+    // If price moves outside range, LP is 100% in one token
+    const pLow=1-rangePct/100,pHigh=1+rangePct/100;
+    if(r<pLow||r>pHigh){
+        // Out of range — extreme IL
+        return Math.min(baseIL*concentration*2,-0.01);
+    }
+    return baseIL*Math.min(concentration,10);
+}
+
+// Curve StableSwap: much lower IL due to concentrated curve
+function ilCurve(priceRatioA,priceRatioB){
+    const r=priceRatioA/priceRatioB;
+    const baseIL=ilV2(priceRatioA,priceRatioB);
+    // Curve's amplification factor reduces IL dramatically for stables
+    return baseIL*0.1;
+}
+
+function calculateIL(chgA,chgB,ammType,rangePct){
+    const ratioA=1+chgA/100;
+    const ratioB=1+chgB/100;
+    if(ammType==='v2')return ilV2(ratioA,ratioB);
+    if(ammType==='v3')return ilV3(ratioA,ratioB,rangePct);
+    return ilCurve(ratioA,ratioB);
+}
+
+function calcFeeAPR(feeTier,volRatio,days,ammType,rangePct){
+    // Daily fees = feeTier * daily volume / TVL
+    const dailyFees=parseFloat(feeTier)*volRatio;
+    // V3 concentration multiplier
+    const mult=ammType==='v3'?Math.min(1/(rangePct/100),20):1;
+    return dailyFees*mult*days;
+}
+
+/* ── Update display values ── */
+const chgASlider=document.getElementById('chgA');
+const chgBSlider=document.getElementById('chgB');
+const volSlider=document.getElementById('volRatio');
+const daysSlider=document.getElementById('days');
+const rangeSlider=document.getElementById('priceRange');
+
+chgASlider.addEventListener('input',()=>{document.getElementById('chgA-val').textContent=(chgASlider.value>=0?'+':'')+chgASlider.value+'%'});
+chgBSlider.addEventListener('input',()=>{document.getElementById('chgB-val').textContent=(chgBSlider.value>=0?'+':'')+chgBSlider.value+'%'});
+volSlider.addEventListener('input',()=>{document.getElementById('vol-val').textContent=parseFloat(volSlider.value).toFixed(2)+'x'});
+daysSlider.addEventListener('input',()=>{document.getElementById('days-val').textContent=daysSlider.value});
+rangeSlider.addEventListener('input',()=>{document.getElementById('range-val').textContent='±'+rangeSlider.value+'%'});
+
+document.getElementById('amm-pills').addEventListener('click',e=>{
+    const p=e.target.closest('.pill');if(!p)return;
+    document.querySelectorAll('#amm-pills .pill').forEach(x=>x.classList.remove('on'));
+    p.classList.add('on');
+    ammType=p.dataset.a;
+    const v3=ammType==='v3';
+    document.getElementById('v3-section').style.display=v3?'':'none';
+    document.getElementById('v3-fields').style.display=v3?'':'none';
+});
+
+/* ── Calculate ── */
+function calculate(){
+    const inv=parseFloat(document.getElementById('investment').value)||10000;
+    const chgA=parseFloat(chgASlider.value);
+    const chgB=parseFloat(chgBSlider.value);
+    const feeTier=document.getElementById('feeTier').value;
+    const volRatio=parseFloat(volSlider.value);
+    const days=parseInt(daysSlider.value);
+    const rangePct=parseInt(rangeSlider.value);
+
+    const il=calculateIL(chgA,chgB,ammType,rangePct);
+    const feeReturn=calcFeeAPR(feeTier,volRatio,days,ammType,rangePct);
+
+    // HODL value
+    const hodlA=inv/2*(1+chgA/100);
+    const hodlB=inv/2*(1+chgB/100);
+    const hodlTotal=hodlA+hodlB;
+
+    // LP value
+    const lpValueBeforeFees=hodlTotal*(1+il);
+    const feesEarned=inv*feeReturn;
+    const lpValueAfterFees=lpValueBeforeFees+feesEarned;
+
+    const ilDollar=hodlTotal-lpValueBeforeFees;
+    const netPnL=lpValueAfterFees-inv;
+    const hodlPnL=hodlTotal-inv;
+    const feeAPR=(feeReturn/days*365)*100;
+
+    // Breakeven: days until fees cover IL
+    const dailyFeeRate=feeReturn/days;
+    const breakeven=dailyFeeRate>0?Math.abs(il)/dailyFeeRate:Infinity;
+
+    const metricsEl=document.getElementById('metrics');
+    metricsEl.innerHTML=[
+        {label:'Impermanent Loss',val:(il*100).toFixed(3)+'%',color:il<-0.05?'var(--rd)':il<-0.01?'var(--yl)':'var(--gn)',sub:'$'+Math.abs(ilDollar).toFixed(2)+' lost to IL'},
+        {label:'LP Value',val:'$'+lpValueAfterFees.toFixed(2),color:lpValueAfterFees>inv?'var(--gn)':'var(--rd)',sub:'After fees'},
+        {label:'HODL Value',val:'$'+hodlTotal.toFixed(2),color:hodlTotal>inv?'var(--gn)':'var(--rd)',sub:'If you just held'},
+        {label:'Fees Earned',val:'$'+feesEarned.toFixed(2),color:'var(--gn)',sub:feeAPR.toFixed(1)+'% APR'},
+        {label:'Net P&L (LP)',val:(netPnL>=0?'+':'')+netPnL.toFixed(2),color:netPnL>=0?'var(--gn)':'var(--rd)',sub:'LP strategy'},
+        {label:'Net P&L (HODL)',val:(hodlPnL>=0?'+':'')+hodlPnL.toFixed(2),color:hodlPnL>=0?'var(--gn)':'var(--rd)',sub:'Hold strategy'},
+        {label:'LP vs HODL',val:(lpValueAfterFees>hodlTotal?'+':'')+(lpValueAfterFees-hodlTotal).toFixed(2),color:lpValueAfterFees>hodlTotal?'var(--gn)':'var(--rd)',sub:lpValueAfterFees>hodlTotal?'LP wins':'HODL wins'},
+        {label:'Breakeven Days',val:breakeven<10000?Math.ceil(breakeven)+'d':'Never',color:breakeven<days?'var(--gn)':breakeven<365?'var(--yl)':'var(--rd)',sub:'Fees ≥ IL'}
+    ].map(m=>`<div class="metric"><div class="m-label">${m.label}</div><div class="m-val" style="color:${m.color}">${m.val}</div><div class="m-sub">${m.sub}</div></div>`).join('');
+
+    // IL curve chart
+    drawILCurve(ammType,rangePct,chgB);
+
+    // Time chart
+    drawTimeChart(inv,chgA,chgB,feeTier,volRatio,days,ammType,rangePct);
+
+    // Scenarios table
+    drawScenarios(inv,feeTier,volRatio,days,ammType,rangePct);
+}
+
+function drawILCurve(ammType,rangePct,chgB){
+    const c=document.getElementById('il-chart');
+    const ctx=c.getContext('2d');
+    const rect=c.parentElement.getBoundingClientRect();
+    c.width=(rect.width-24)*devicePixelRatio;
+    c.height=200*devicePixelRatio;
+    c.style.width=(rect.width-24)+'px';
+    c.style.height='200px';
+    ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
+
+    const W=rect.width-24,H=200;
+    const pad={left:45,right:15,top:10,bottom:25};
+    const cw=W-pad.left-pad.right,ch=H-pad.top-pad.bottom;
+
+    ctx.clearRect(0,0,W,H);
+
+    // Draw IL curve from -90% to +500%
+    const points=[];
+    for(let x=-90;x<=500;x+=2){
+        const il=calculateIL(x,chgB,ammType,rangePct);
+        points.push({x,il:Math.max(il,-1)});
+    }
+
+    const minIL=Math.min(...points.map(p=>p.il));
+    const maxIL=0;
+    const range=maxIL-minIL;
+
+    // Grid
+    ctx.strokeStyle='#1e1e1e';
+    ctx.lineWidth=0.5;
+    for(let i=0;i<=4;i++){
+        const y=pad.top+ch*(i/4);
+        ctx.beginPath();ctx.moveTo(pad.left,y);ctx.lineTo(W-pad.right,y);ctx.stroke();
+    }
+
+    // Zero line
+    const zeroY=pad.top;
+    ctx.strokeStyle='#333';
+    ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(pad.left,zeroY);ctx.lineTo(W-pad.right,zeroY);ctx.stroke();
+
+    // IL curve
+    ctx.beginPath();
+    ctx.strokeStyle='var(--rd)';
+    ctx.lineWidth=2;
+    points.forEach((p,i)=>{
+        const px=pad.left+((p.x+90)/590)*cw;
+        const py=pad.top+((maxIL-p.il)/range)*ch;
+        i===0?ctx.moveTo(px,py):ctx.lineTo(px,py);
+    });
+    ctx.stroke();
+
+    // Fill under curve
+    ctx.lineTo(pad.left+cw,pad.top+ch);
+    ctx.lineTo(pad.left,pad.top+ch);
+    ctx.closePath();
+    ctx.fillStyle='rgba(212,67,67,0.08)';
+    ctx.fill();
+
+    // Current price marker
+    const curChg=parseFloat(document.getElementById('chgA').value);
+    const curIL=calculateIL(curChg,chgB,ammType,rangePct);
+    const curX=pad.left+((curChg+90)/590)*cw;
+    const curY=pad.top+((maxIL-Math.max(curIL,-1))/range)*ch;
+
+    ctx.beginPath();
+    ctx.arc(curX,curY,5,0,Math.PI*2);
+    ctx.fillStyle='var(--acc)';
+    ctx.fill();
+    ctx.fillStyle='var(--acc)';
+    ctx.font='bold 9px '+getComputedStyle(document.body).fontFamily;
+    ctx.textAlign='center';
+    ctx.fillText((curIL*100).toFixed(2)+'%',curX,curY-10);
+
+    // Axes labels
+    ctx.fillStyle='#666';
+    ctx.font='9px '+getComputedStyle(document.body).fontFamily;
+    ctx.textAlign='right';
+    for(let i=0;i<=4;i++){
+        const v=maxIL-(range*i/4);
+        ctx.fillText((v*100).toFixed(0)+'%',pad.left-5,pad.top+ch*(i/4)+3);
+    }
+    ctx.textAlign='center';
+    [-50,0,100,200,300,400,500].forEach(v=>{
+        const x=pad.left+((v+90)/590)*cw;
+        ctx.fillText((v>=0?'+':'')+v+'%',x,H-5);
+    });
+}
+
+function drawTimeChart(inv,chgA,chgB,feeTier,volRatio,days,ammType,rangePct){
+    const c=document.getElementById('time-chart');
+    const ctx=c.getContext('2d');
+    const rect=c.parentElement.getBoundingClientRect();
+    c.width=(rect.width-24)*devicePixelRatio;
+    c.height=180*devicePixelRatio;
+    c.style.width=(rect.width-24)+'px';
+    c.style.height='180px';
+    ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
+
+    const W=rect.width-24,H=180;
+    const pad={left:50,right:15,top:10,bottom:25};
+    const cw=W-pad.left-pad.right,ch=H-pad.top-pad.bottom;
+    ctx.clearRect(0,0,W,H);
+
+    // Simulate daily progression
+    const hodlLine=[],lpLine=[];
+    for(let d=0;d<=days;d++){
+        const t=d/days;
+        const curChgA=chgA*t;
+        const curChgB=chgB*t;
+        const hodlA=inv/2*(1+curChgA/100);
+        const hodlB=inv/2*(1+curChgB/100);
+        const hodl=hodlA+hodlB;
+
+        const il=calculateIL(curChgA,curChgB,ammType,rangePct);
+        const fees=inv*calcFeeAPR(feeTier,volRatio,d,ammType,rangePct);
+        const lp=hodl*(1+il)+fees;
+
+        hodlLine.push(hodl);
+        lpLine.push(lp);
+    }
+
+    const allVals=[...hodlLine,...lpLine];
+    const minV=Math.min(...allVals)*0.98;
+    const maxV=Math.max(...allVals)*1.02;
+    const range=maxV-minV;
+
+    // HODL line
+    ctx.beginPath();
+    ctx.strokeStyle='#888';
+    ctx.lineWidth=1.5;
+    ctx.setLineDash([4,3]);
+    hodlLine.forEach((v,i)=>{
+        const x=pad.left+(i/days)*cw;
+        const y=pad.top+((maxV-v)/range)*ch;
+        i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    });
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // LP line
+    ctx.beginPath();
+    ctx.strokeStyle='var(--acc)';
+    ctx.lineWidth=2;
+    lpLine.forEach((v,i)=>{
+        const x=pad.left+(i/days)*cw;
+        const y=pad.top+((maxV-v)/range)*ch;
+        i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    });
+    ctx.stroke();
+
+    // Investment line
+    const invY=pad.top+((maxV-inv)/range)*ch;
+    ctx.strokeStyle='#333';
+    ctx.lineWidth=0.5;
+    ctx.setLineDash([2,2]);
+    ctx.beginPath();ctx.moveTo(pad.left,invY);ctx.lineTo(W-pad.right,invY);ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Legend
+    ctx.fillStyle='var(--acc)';ctx.fillRect(W-pad.right-80,pad.top,8,2);
+    ctx.fillStyle='var(--t2)';ctx.font='9px '+getComputedStyle(document.body).fontFamily;
+    ctx.textAlign='left';ctx.fillText('LP Value',W-pad.right-68,pad.top+4);
+    ctx.fillStyle='#888';ctx.fillRect(W-pad.right-80,pad.top+12,8,2);
+    ctx.fillStyle='var(--t3)';ctx.fillText('HODL',W-pad.right-68,pad.top+16);
+
+    // Y axis
+    ctx.fillStyle='#666';ctx.textAlign='right';ctx.font='9px '+getComputedStyle(document.body).fontFamily;
+    for(let i=0;i<=4;i++){
+        const v=maxV-(range*i/4);
+        ctx.fillText('$'+Math.round(v).toLocaleString(),pad.left-5,pad.top+ch*(i/4)+3);
+    }
+    // X axis
+    ctx.textAlign='center';
+    for(let i=0;i<=4;i++){
+        const d=Math.round(days*i/4);
+        ctx.fillText('Day '+d,pad.left+cw*(i/4),H-5);
+    }
+}
+
+function drawScenarios(inv,feeTier,volRatio,days,ammType,rangePct){
+    const scenarios=[
+        {name:'Sideways',chgA:0,chgB:0},
+        {name:'Modest +20%',chgA:20,chgB:0},
+        {name:'Bull +100%',chgA:100,chgB:0},
+        {name:'Moon +500%',chgA:500,chgB:0},
+        {name:'Dip -30%',chgA:-30,chgB:0},
+        {name:'Crash -70%',chgA:-70,chgB:0},
+        {name:'Both +50%',chgA:50,chgB:50},
+        {name:'Diverge +50/-20',chgA:50,chgB:-20}
+    ];
+
+    document.getElementById('scenarios').innerHTML=scenarios.map(s=>{
+        const hodl=inv/2*(1+s.chgA/100)+inv/2*(1+s.chgB/100);
+        const il=calculateIL(s.chgA,s.chgB,ammType,rangePct);
+        const fees=inv*calcFeeAPR(feeTier,volRatio,days,ammType,rangePct);
+        const lpVal=hodl*(1+il)+fees;
+        const net=lpVal-inv;
+        const ilPct=(il*100).toFixed(2);
+        return`<tr>
+            <td style="font-weight:600">${s.name}</td>
+            <td>${s.chgA>=0?'+':''}${s.chgA}% / ${s.chgB>=0?'+':''}${s.chgB}%</td>
+            <td>$${hodl.toFixed(0)}</td>
+            <td>$${lpVal.toFixed(0)}</td>
+            <td class="dn">${ilPct}%</td>
+            <td class="up">$${fees.toFixed(0)}</td>
+            <td class="${net>=0?'up':'dn'}">${net>=0?'+':''}$${net.toFixed(0)}</td>
+        </tr>`;
+    }).join('');
+}
+
+document.getElementById('calc').addEventListener('click',calculate);
+
+// Recalculate on slider change
+[chgASlider,chgBSlider,volSlider,daysSlider,rangeSlider].forEach(el=>{
+    el.addEventListener('input',()=>{
+        clearTimeout(el._t);
+        el._t=setTimeout(calculate,200);
+    });
+});
+
+// Auto-calculate on load
+calculate();
+})();
+</script>
+</body>
+</html>

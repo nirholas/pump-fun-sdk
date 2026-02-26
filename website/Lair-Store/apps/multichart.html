@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="lair-include" content="lair.css material-symbols-rounded">
+    <meta name="capabilities" content="tradingview_charts">
+    <meta name="lair-icon" content="<svg width='232' height='232' viewBox='0 0 232 232' fill='none' xmlns='http://www.w3.org/2000/svg'><rect width='232' height='232' rx='40' fill='#131722'/><path d='M40 160L80 120L110 140L160 80L192 110' stroke='#2962FF' stroke-width='6' stroke-linecap='round' stroke-linejoin='round'/><circle cx='192' cy='110' r='6' fill='#2962FF'/><path d='M40 180h152' stroke='#363A45' stroke-width='2'/><path d='M60 180v-100' stroke='#363A45' stroke-width='2'/></svg>">
+    <title>TradingView</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { width: 100%; height: 100%; overflow: hidden; background: var(--col-bg1, #080A19); color: var(--col-txt1, #A7C2F3); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+
+        .controls {
+            position: absolute; top: 0; left: 0; right: 0; z-index: 100;
+            display: flex; align-items: center; gap: 6px;
+            padding: 6px 12px;
+            background: rgba(8, 10, 25, 0.92);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(112, 188, 249, 0.1);
+            flex-wrap: wrap;
+        }
+
+        .search-box {
+            display: flex; align-items: center; gap: 4px;
+            background: var(--col-bg3, #15183E); border-radius: 6px;
+            padding: 4px 8px; flex: 0 1 200px; min-width: 120px;
+        }
+        .search-box .material-symbols-rounded { font-size: 16px; color: #5A6080; }
+        .search-box input {
+            background: none; border: none; outline: none; color: var(--col-txt1, #A7C2F3);
+            font-size: 13px; width: 100%; font-family: inherit;
+        }
+        .search-box input::placeholder { color: #5A6080; }
+
+        .divider { width: 1px; height: 20px; background: rgba(112, 188, 249, 0.12); margin: 0 2px; }
+
+        .pair-pills { display: flex; gap: 3px; flex-wrap: wrap; }
+        .pair-pill {
+            background: transparent; border: 1px solid rgba(112, 188, 249, 0.1);
+            color: var(--col-txt1, #A7C2F3); border-radius: 4px;
+            padding: 3px 8px; font-size: 11px; font-weight: 600;
+            cursor: pointer; transition: all 0.15s; white-space: nowrap;
+            font-family: 'SF Mono', 'Fira Code', monospace;
+        }
+        .pair-pill:hover { background: rgba(112, 188, 249, 0.08); border-color: rgba(112, 188, 249, 0.25); }
+        .pair-pill.active { background: rgba(41, 98, 255, 0.25); border-color: #2962FF; color: #fff; }
+
+        .exchange-select {
+            background: var(--col-bg3, #15183E); color: var(--col-txt1, #A7C2F3);
+            border: 1px solid rgba(112, 188, 249, 0.1); border-radius: 4px;
+            padding: 3px 6px; font-size: 11px; cursor: pointer; outline: none;
+            font-family: inherit;
+        }
+        .exchange-select:focus { border-color: #2962FF; }
+
+        .tf-pills { display: flex; gap: 2px; }
+        .tf-pill {
+            background: transparent; border: none;
+            color: #5A6080; border-radius: 3px;
+            padding: 3px 6px; font-size: 11px; font-weight: 600;
+            cursor: pointer; transition: all 0.15s;
+            font-family: 'SF Mono', 'Fira Code', monospace;
+        }
+        .tf-pill:hover { color: var(--col-txt1, #A7C2F3); background: rgba(112, 188, 249, 0.06); }
+        .tf-pill.active { color: #2962FF; background: rgba(41, 98, 255, 0.12); }
+
+        #chart-area {
+            position: absolute; top: 38px; left: 0; right: 0; bottom: 0;
+        }
+
+        .loading-overlay {
+            position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+            background: var(--col-bg1, #080A19); z-index: 50;
+            flex-direction: column; gap: 12px;
+        }
+        .loading-overlay .spinner {
+            width: 32px; height: 32px; border: 3px solid rgba(41, 98, 255, 0.2);
+            border-top-color: #2962FF; border-radius: 50%; animation: spin 0.8s linear infinite;
+        }
+        .loading-overlay span { font-size: 13px; color: #5A6080; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        @media (max-width: 580px) {
+            .controls { gap: 4px; padding: 4px 8px; }
+            .pair-pills { display: none; }
+            .search-box { flex: 1; min-width: 100px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="controls">
+        <div class="search-box">
+            <span class="material-symbols-rounded">search</span>
+            <input type="text" id="symbolInput" placeholder="BTCUSDT" autocomplete="off" spellcheck="false">
+        </div>
+        <div class="divider"></div>
+        <select class="exchange-select" id="exchangeSelect">
+            <option value="BINANCE">Binance</option>
+            <option value="COINBASE">Coinbase</option>
+            <option value="BYBIT">Bybit</option>
+            <option value="OKX">OKX</option>
+            <option value="KRAKEN">Kraken</option>
+        </select>
+        <div class="divider"></div>
+        <div class="pair-pills" id="pairPills">
+            <button class="pair-pill active" data-sym="BTCUSDT">BTC</button>
+            <button class="pair-pill" data-sym="ETHUSDT">ETH</button>
+            <button class="pair-pill" data-sym="SOLUSDT">SOL</button>
+            <button class="pair-pill" data-sym="BNBUSDT">BNB</button>
+            <button class="pair-pill" data-sym="AVAXUSDT">AVAX</button>
+            <button class="pair-pill" data-sym="ARBUSDT">ARB</button>
+            <button class="pair-pill" data-sym="SUIUSDT">SUI</button>
+            <button class="pair-pill" data-sym="DOGEUSDT">DOGE</button>
+        </div>
+        <div class="divider"></div>
+        <div class="tf-pills" id="tfPills">
+            <button class="tf-pill" data-tf="1">1m</button>
+            <button class="tf-pill" data-tf="5">5m</button>
+            <button class="tf-pill" data-tf="15">15m</button>
+            <button class="tf-pill active" data-tf="60">1H</button>
+            <button class="tf-pill" data-tf="240">4H</button>
+            <button class="tf-pill" data-tf="D">1D</button>
+            <button class="tf-pill" data-tf="W">1W</button>
+        </div>
+    </div>
+
+    <div id="chart-area">
+        <div class="loading-overlay" id="loading">
+            <div class="spinner"></div>
+            <span>Loading TradingView...</span>
+        </div>
+    </div>
+
+    <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+    <script>
+    (function() {
+        let widget = null;
+        let currentExchange = 'BINANCE';
+        let currentSymbol = 'BTCUSDT';
+        let currentInterval = '60';
+
+        const symbolInput = document.getElementById('symbolInput');
+        const exchangeSelect = document.getElementById('exchangeSelect');
+        const pairPills = document.getElementById('pairPills');
+        const tfPills = document.getElementById('tfPills');
+        const loading = document.getElementById('loading');
+
+        function fullSymbol() {
+            return currentExchange + ':' + currentSymbol;
+        }
+
+        function createWidget() {
+            const container = document.getElementById('chart-area');
+            // Remove old widget iframe if any
+            const oldFrame = container.querySelector('iframe');
+            if (oldFrame) oldFrame.remove();
+            const oldDiv = document.getElementById('tv_chart_widget');
+            if (oldDiv) oldDiv.remove();
+
+            const div = document.createElement('div');
+            div.id = 'tv_chart_widget';
+            div.style.cssText = 'width:100%;height:100%;';
+            container.appendChild(div);
+
+            loading.style.display = 'flex';
+
+            const isNarrow = window.innerWidth < 500;
+
+            widget = new TradingView.widget({
+                autosize: true,
+                symbol: fullSymbol(),
+                interval: currentInterval,
+                timezone: 'Etc/UTC',
+                theme: 'dark',
+                style: '1',
+                locale: 'en',
+                toolbar_bg: '#080A19',
+                enable_publishing: false,
+                allow_symbol_change: true,
+                container_id: 'tv_chart_widget',
+                hide_side_toolbar: isNarrow,
+                hide_top_toolbar: false,
+                hide_legend: false,
+                save_image: true,
+                studies: ['RSI@tv-basicstudies', 'MAExp@tv-basicstudies'],
+                backgroundColor: '#080A19',
+                gridColor: '#111336',
+                loading_screen: { backgroundColor: '#080A19', foregroundColor: '#2962FF' },
+                overrides: {
+                    'mainSeriesProperties.candleStyle.upColor': '#26a69a',
+                    'mainSeriesProperties.candleStyle.downColor': '#ef5350',
+                    'mainSeriesProperties.candleStyle.wickUpColor': '#26a69a',
+                    'mainSeriesProperties.candleStyle.wickDownColor': '#ef5350',
+                    'mainSeriesProperties.candleStyle.borderUpColor': '#26a69a',
+                    'mainSeriesProperties.candleStyle.borderDownColor': '#ef5350',
+                    'paneProperties.background': '#080A19',
+                    'paneProperties.vertGridProperties.color': '#111336',
+                    'paneProperties.horzGridProperties.color': '#111336',
+                    'scalesProperties.textColor': '#5A6080',
+                    'scalesProperties.lineColor': '#111336',
+                }
+            });
+
+            // Hide loading after widget loads
+            widget.onChartReady && widget.onChartReady(function() {
+                loading.style.display = 'none';
+            });
+            // Fallback hide
+            setTimeout(() => { loading.style.display = 'none'; }, 4000);
+        }
+
+        // Pair pills
+        pairPills.addEventListener('click', (e) => {
+            const pill = e.target.closest('.pair-pill');
+            if (!pill) return;
+            pairPills.querySelectorAll('.pair-pill').forEach(p => p.classList.remove('active'));
+            pill.classList.add('active');
+            currentSymbol = pill.dataset.sym;
+            symbolInput.value = '';
+            createWidget();
+        });
+
+        // Timeframe pills
+        tfPills.addEventListener('click', (e) => {
+            const pill = e.target.closest('.tf-pill');
+            if (!pill) return;
+            tfPills.querySelectorAll('.tf-pill').forEach(p => p.classList.remove('active'));
+            pill.classList.add('active');
+            currentInterval = pill.dataset.tf;
+            createWidget();
+        });
+
+        // Exchange change
+        exchangeSelect.addEventListener('change', () => {
+            currentExchange = exchangeSelect.value;
+            createWidget();
+        });
+
+        // Symbol search
+        symbolInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                const val = symbolInput.value.trim().toUpperCase();
+                if (val) {
+                    currentSymbol = val;
+                    // Deactivate pair pills
+                    pairPills.querySelectorAll('.pair-pill').forEach(p => p.classList.remove('active'));
+                    createWidget();
+                }
+            }
+        });
+
+        // Handle resize
+        let resizeTimer;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(() => createWidget(), 300);
+        });
+
+        // Wait for TradingView library to load
+        function init() {
+            if (typeof TradingView !== 'undefined' && TradingView.widget) {
+                createWidget();
+            } else {
+                setTimeout(init, 200);
+            }
+        }
+        init();
+    })();
+    </script>
+</body>
+</html>

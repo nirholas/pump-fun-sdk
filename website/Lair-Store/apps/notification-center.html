@@ -1,0 +1,1229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="lair-include" content="lair.css material-symbols-rounded">
+    <meta name="permissions" content="appStorage">
+    <meta name="capabilities" content="notifications">
+    <meta name="lair-icon" content="<svg width='232' height='232' viewBox='0 0 232 232' fill='none' xmlns='http://www.w3.org/2000/svg'><rect width='232' height='232' rx='40' fill='#EF4444'/><text x='116' y='140' text-anchor='middle' fill='white' font-size='100' font-weight='bold'>🔔</text></svg>">
+    <meta name="lair-perms" content="network" />
+    <title>Notifications</title>
+    <script src="../../libs/lair-bus.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { height: 100%; }
+        body {
+            overflow: hidden;
+            background: var(--col-bg1, #101010);
+            color: var(--col-txt1, #fff);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            display: flex; flex-direction: column;
+        }
+
+        /* ── Header ── */
+        .header {
+            display: flex; align-items: center; gap: 10px;
+            padding: 12px 16px;
+            background: var(--col-bg2, #171717);
+            border-bottom: 1px solid var(--col-bg3, #262626);
+            flex-shrink: 0;
+        }
+        .header-title {
+            font-size: 15px; font-weight: 700;
+            display: flex; align-items: center; gap: 6px; flex: 1;
+        }
+        .header-title .material-symbols-rounded { font-size: 20px; color: #EF4444; }
+        .unread-badge {
+            background: #EF4444; color: #fff; font-size: 10px; font-weight: 700;
+            min-width: 18px; height: 18px; border-radius: 9px;
+            display: inline-flex; align-items: center; justify-content: center;
+            padding: 0 5px; line-height: 1;
+        }
+        .unread-badge.hidden { display: none; }
+        .header-btn {
+            background: var(--col-bg1, #101010); border: 1px solid var(--col-bg3, #262626);
+            color: var(--col-txt2, #aaa); border-radius: 6px; padding: 5px 10px;
+            cursor: pointer; font-size: 11px; font-family: inherit;
+            display: flex; align-items: center; gap: 4px; transition: all 0.15s;
+        }
+        .header-btn:hover { color: var(--col-txt1, #fff); border-color: #444; }
+        .header-btn .material-symbols-rounded { font-size: 14px; }
+        .header-btn.active { background: var(--colors-accent, #6179ff); color: #fff; border-color: var(--colors-accent, #6179ff); }
+
+        /* ── Tabs ── */
+        .tabs {
+            display: flex; gap: 0;
+            background: var(--col-bg2, #171717);
+            border-bottom: 1px solid var(--col-bg3, #262626);
+            flex-shrink: 0;
+        }
+        .tab {
+            flex: 1; padding: 8px 0; text-align: center;
+            font-size: 12px; font-weight: 600; cursor: pointer;
+            color: var(--col-txt2, #aaa); border-bottom: 2px solid transparent;
+            transition: all 0.15s; user-select: none;
+        }
+        .tab:hover { color: var(--col-txt1, #fff); }
+        .tab.active { color: var(--col-txt1, #fff); border-bottom-color: var(--colors-accent, #6179ff); }
+
+        /* ── Panels ── */
+        .panel { display: none; flex: 1; flex-direction: column; overflow: hidden; }
+        .panel.active { display: flex; }
+
+        /* ── Status bar ── */
+        .status-bar {
+            display: flex; align-items: center; gap: 8px;
+            padding: 6px 16px; font-size: 11px;
+            background: var(--col-bg2, #171717);
+            border-bottom: 1px solid var(--col-bg3, #262626);
+            color: var(--col-txt2, #aaa); flex-shrink: 0;
+        }
+        .status-dot {
+            width: 6px; height: 6px; border-radius: 50%;
+            background: var(--col-good, #5be45b);
+            box-shadow: 0 0 4px var(--col-good, #5be45b);
+        }
+        .status-dot.paused { background: var(--col-warn, #f0a030); box-shadow: 0 0 4px var(--col-warn, #f0a030); }
+        .status-dot.error { background: var(--col-bad, #d44343); box-shadow: 0 0 4px var(--col-bad, #d44343); }
+
+        /* ── Notification Feed ── */
+        .feed { flex: 1; overflow-y: auto; padding: 8px 12px; }
+        .feed::-webkit-scrollbar { width: 4px; }
+        .feed::-webkit-scrollbar-thumb { background: var(--col-bg3, #333); border-radius: 2px; }
+
+        .time-group-label {
+            font-size: 10px; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.08em; color: var(--col-txt2, #aaa);
+            padding: 10px 4px 4px; opacity: 0.6;
+        }
+
+        .notif-card {
+            display: flex; gap: 10px; padding: 10px 12px;
+            border-radius: 8px; margin-bottom: 4px;
+            border-left: 3px solid transparent;
+            transition: background 0.15s;
+            position: relative; cursor: default;
+        }
+        .notif-card:hover { background: var(--col-bg2, #171717); }
+        .notif-card.unread { background: rgba(97,121,255,0.04); }
+        .notif-card.severity-high { border-left-color: #EF4444; }
+        .notif-card.severity-medium { border-left-color: #F59E0B; }
+        .notif-card.severity-low { border-left-color: #3B82F6; }
+        .notif-card.severity-info { border-left-color: #6B7280; }
+
+        .notif-icon {
+            width: 32px; height: 32px; border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0; font-size: 16px;
+        }
+        .notif-icon.high { background: rgba(239,68,68,0.15); color: #EF4444; }
+        .notif-icon.medium { background: rgba(245,158,11,0.15); color: #F59E0B; }
+        .notif-icon.low { background: rgba(59,130,246,0.15); color: #3B82F6; }
+        .notif-icon.info { background: rgba(107,114,128,0.15); color: #6B7280; }
+
+        .notif-body { flex: 1; min-width: 0; }
+        .notif-title { font-size: 12px; font-weight: 600; margin-bottom: 2px; }
+        .notif-msg { font-size: 11px; color: var(--col-txt2, #aaa); line-height: 1.4; }
+        .notif-time { font-size: 10px; color: #666; margin-top: 3px; }
+
+        .notif-actions {
+            display: flex; flex-direction: column; align-items: center;
+            gap: 4px; flex-shrink: 0; opacity: 0; transition: opacity 0.15s;
+        }
+        .notif-card:hover .notif-actions { opacity: 1; }
+        .notif-dismiss {
+            background: none; border: none; color: #666; cursor: pointer;
+            padding: 2px; display: flex; border-radius: 4px; transition: all 0.15s;
+        }
+        .notif-dismiss:hover { color: var(--col-bad, #d44343); background: rgba(239,68,68,0.1); }
+        .notif-dismiss .material-symbols-rounded { font-size: 14px; }
+
+        .unread-dot {
+            width: 6px; height: 6px; border-radius: 50%;
+            background: var(--colors-accent, #6179ff);
+            flex-shrink: 0; margin-top: 4px;
+        }
+        .unread-dot.read { background: transparent; }
+
+        .empty-state {
+            flex: 1; display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            color: var(--col-txt2, #aaa); gap: 8px; padding: 40px;
+        }
+        .empty-state .material-symbols-rounded { font-size: 48px; opacity: 0.3; }
+        .empty-state p { font-size: 13px; opacity: 0.5; text-align: center; }
+
+        /* ── Rules Panel ── */
+        .rules-panel { flex: 1; overflow-y: auto; padding: 12px; }
+        .rules-panel::-webkit-scrollbar { width: 4px; }
+        .rules-panel::-webkit-scrollbar-thumb { background: var(--col-bg3, #333); border-radius: 2px; }
+
+        .rules-header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 12px;
+        }
+        .rules-title { font-size: 13px; font-weight: 700; }
+        .add-rule-btn {
+            background: var(--colors-accent, #6179ff); border: none; color: #fff;
+            border-radius: 6px; padding: 6px 14px; cursor: pointer;
+            font-size: 11px; font-family: inherit; font-weight: 600;
+            display: flex; align-items: center; gap: 4px; transition: opacity 0.15s;
+        }
+        .add-rule-btn:hover { opacity: 0.85; }
+        .add-rule-btn .material-symbols-rounded { font-size: 14px; }
+
+        .rule-card {
+            background: var(--col-bg2, #171717);
+            border: 1px solid var(--col-bg3, #262626);
+            border-radius: 8px; padding: 12px; margin-bottom: 8px;
+            display: flex; align-items: center; gap: 10px;
+        }
+        .rule-icon {
+            width: 32px; height: 32px; border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0; font-size: 16px;
+            background: rgba(97,121,255,0.1); color: var(--colors-accent, #6179ff);
+        }
+        .rule-info { flex: 1; min-width: 0; }
+        .rule-desc { font-size: 12px; font-weight: 600; }
+        .rule-meta { font-size: 10px; color: #666; margin-top: 2px; }
+
+        /* Toggle switch */
+        .toggle {
+            position: relative; width: 34px; height: 18px;
+            flex-shrink: 0; cursor: pointer;
+        }
+        .toggle input { display: none; }
+        .toggle-track {
+            position: absolute; inset: 0; border-radius: 9px;
+            background: var(--col-bg3, #333); transition: background 0.2s;
+        }
+        .toggle input:checked + .toggle-track { background: var(--colors-accent, #6179ff); }
+        .toggle-thumb {
+            position: absolute; top: 2px; left: 2px;
+            width: 14px; height: 14px; border-radius: 50%;
+            background: #fff; transition: transform 0.2s;
+        }
+        .toggle input:checked ~ .toggle-thumb { transform: translateX(16px); }
+
+        .rule-actions {
+            display: flex; gap: 4px; flex-shrink: 0;
+        }
+        .rule-btn {
+            background: none; border: none; color: #666; cursor: pointer;
+            padding: 4px; display: flex; border-radius: 4px; transition: all 0.15s;
+        }
+        .rule-btn:hover { color: var(--col-txt1, #fff); background: var(--col-bg3, #262626); }
+        .rule-btn.delete:hover { color: var(--col-bad, #d44343); background: rgba(239,68,68,0.1); }
+        .rule-btn .material-symbols-rounded { font-size: 16px; }
+
+        .rules-empty {
+            text-align: center; padding: 40px 20px; color: #666; font-size: 12px;
+        }
+
+        /* ── Settings Panel ── */
+        .settings-panel { flex: 1; overflow-y: auto; padding: 16px; }
+        .settings-panel::-webkit-scrollbar { width: 4px; }
+        .settings-panel::-webkit-scrollbar-thumb { background: var(--col-bg3, #333); border-radius: 2px; }
+
+        .settings-group {
+            background: var(--col-bg2, #171717);
+            border: 1px solid var(--col-bg3, #262626);
+            border-radius: 8px; padding: 12px 14px; margin-bottom: 10px;
+        }
+        .settings-group-title {
+            font-size: 11px; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.06em; color: var(--col-txt2, #aaa);
+            margin-bottom: 10px;
+        }
+        .setting-row {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 6px 0; font-size: 12px;
+        }
+        .setting-row + .setting-row { border-top: 1px solid var(--col-bg3, #262626); }
+        .setting-label { color: var(--col-txt1, #fff); }
+        .setting-value { color: var(--col-txt2, #aaa); font-size: 11px; }
+
+        .setting-input {
+            background: var(--col-bg1, #101010);
+            border: 1px solid var(--col-bg3, #262626);
+            color: var(--col-txt1, #fff); border-radius: 4px;
+            padding: 4px 8px; font-size: 11px; width: 70px;
+            text-align: right; font-family: inherit; outline: none;
+        }
+        .setting-input:focus { border-color: var(--colors-accent, #6179ff); }
+
+        /* ── Modal ── */
+        .modal-overlay {
+            display: none; position: fixed; inset: 0; z-index: 100;
+            background: rgba(0,0,0,0.7); align-items: center; justify-content: center;
+        }
+        .modal-overlay.show { display: flex; }
+        .modal {
+            background: var(--col-bg2, #171717); border: 1px solid var(--col-bg3, #262626);
+            border-radius: 12px; width: 92%; max-width: 420px;
+            display: flex; flex-direction: column; overflow: hidden;
+        }
+        .modal-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 14px 16px; border-bottom: 1px solid var(--col-bg3, #262626);
+        }
+        .modal-title { font-size: 14px; font-weight: 700; }
+        .modal-close {
+            background: none; border: none; color: #888; cursor: pointer;
+            padding: 4px; display: flex; align-items: center; border-radius: 4px;
+        }
+        .modal-close:hover { color: #fff; background: var(--col-bg3, #262626); }
+        .modal-close .material-symbols-rounded { font-size: 18px; }
+        .modal-body { padding: 16px; }
+
+        .form-group { margin-bottom: 12px; }
+        .form-label {
+            display: block; font-size: 11px; font-weight: 600;
+            color: var(--col-txt2, #aaa); margin-bottom: 4px; text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+        .form-select, .form-input {
+            width: 100%; background: var(--col-bg1, #101010);
+            border: 1px solid var(--col-bg3, #262626);
+            color: var(--col-txt1, #fff); border-radius: 6px;
+            padding: 8px 12px; font-size: 13px; font-family: inherit; outline: none;
+        }
+        .form-select:focus, .form-input:focus { border-color: var(--colors-accent, #6179ff); }
+        .form-select option { background: var(--col-bg1, #101010); }
+
+        .form-row { display: flex; gap: 10px; }
+        .form-row .form-group { flex: 1; }
+
+        .modal-footer {
+            display: flex; justify-content: flex-end; gap: 8px;
+            padding: 12px 16px; border-top: 1px solid var(--col-bg3, #262626);
+        }
+        .btn-cancel {
+            background: var(--col-bg3, #262626); border: none; color: var(--col-txt2, #aaa);
+            border-radius: 6px; padding: 8px 16px; cursor: pointer;
+            font-size: 12px; font-family: inherit; font-weight: 600;
+        }
+        .btn-cancel:hover { color: var(--col-txt1, #fff); }
+        .btn-save {
+            background: var(--colors-accent, #6179ff); border: none; color: #fff;
+            border-radius: 6px; padding: 8px 16px; cursor: pointer;
+            font-size: 12px; font-family: inherit; font-weight: 600;
+        }
+        .btn-save:hover { opacity: 0.85; }
+
+        /* Dynamic form fields */
+        .dynamic-fields { display: none; }
+        .dynamic-fields.visible { display: block; }
+
+        /* ── Scrollbar ── */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--col-bg3, #333); border-radius: 2px; }
+    </style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+    <div class="header-title">
+        <span class="material-symbols-rounded">notifications</span>
+        Notifications
+        <span class="unread-badge hidden" id="unreadBadge">0</span>
+    </div>
+    <button class="header-btn" id="btnMarkRead" title="Mark all read">
+        <span class="material-symbols-rounded">done_all</span> Read
+    </button>
+    <button class="header-btn" id="btnClearAll" title="Clear all">
+        <span class="material-symbols-rounded">delete_sweep</span> Clear
+    </button>
+    <button class="header-btn" id="btnPause" title="Pause/resume polling">
+        <span class="material-symbols-rounded" id="pauseIcon">pause</span>
+    </button>
+</div>
+
+<!-- Tabs -->
+<div class="tabs">
+    <div class="tab active" data-tab="feed">Feed</div>
+    <div class="tab" data-tab="rules">Alert Rules</div>
+    <div class="tab" data-tab="settings">Settings</div>
+</div>
+
+<!-- Status bar -->
+<div class="status-bar">
+    <span class="status-dot" id="statusDot"></span>
+    <span id="statusText">Monitoring active</span>
+    <span style="margin-left:auto" id="lastPoll">—</span>
+</div>
+
+<!-- Feed Panel -->
+<div class="panel active" id="panelFeed">
+    <div class="feed" id="feedContainer">
+        <div class="empty-state" id="emptyFeed">
+            <span class="material-symbols-rounded">notifications_off</span>
+            <p>No notifications yet.<br>Configure alert rules to start monitoring.</p>
+        </div>
+    </div>
+</div>
+
+<!-- Rules Panel -->
+<div class="panel" id="panelRules">
+    <div class="rules-panel">
+        <div class="rules-header">
+            <span class="rules-title">Alert Rules</span>
+            <button class="add-rule-btn" id="btnAddRule">
+                <span class="material-symbols-rounded">add</span> Add Alert
+            </button>
+        </div>
+        <div id="rulesContainer">
+            <div class="rules-empty" id="emptyRules">No alert rules configured. Add one to start receiving notifications.</div>
+        </div>
+    </div>
+</div>
+
+<!-- Settings Panel -->
+<div class="panel" id="panelSettings">
+    <div class="settings-panel">
+        <div class="settings-group">
+            <div class="settings-group-title">General</div>
+            <div class="setting-row">
+                <span class="setting-label">Sound alerts</span>
+                <label class="toggle">
+                    <input type="checkbox" id="settingSound" checked>
+                    <div class="toggle-track"></div>
+                    <div class="toggle-thumb"></div>
+                </label>
+            </div>
+            <div class="setting-row">
+                <span class="setting-label">Poll interval (seconds)</span>
+                <input type="number" class="setting-input" id="settingInterval" value="30" min="10" max="300">
+            </div>
+            <div class="setting-row">
+                <span class="setting-label">Max history</span>
+                <input type="number" class="setting-input" id="settingMaxHistory" value="100" min="10" max="500">
+            </div>
+        </div>
+        <div class="settings-group">
+            <div class="settings-group-title">Data Sources</div>
+            <div class="setting-row">
+                <span class="setting-label">CoinGecko Prices</span>
+                <span class="setting-value" id="srcPriceStatus">Active</span>
+            </div>
+            <div class="setting-row">
+                <span class="setting-label">Etherscan Gas</span>
+                <span class="setting-value" id="srcGasStatus">Active</span>
+            </div>
+            <div class="setting-row">
+                <span class="setting-label">Whale Alert</span>
+                <span class="setting-value" id="srcWhaleStatus">Active</span>
+            </div>
+            <div class="setting-row">
+                <span class="setting-label">Fear & Greed</span>
+                <span class="setting-value" id="srcFngStatus">Active</span>
+            </div>
+        </div>
+        <div class="settings-group">
+            <div class="settings-group-title">About</div>
+            <div class="setting-row">
+                <span class="setting-label">Version</span>
+                <span class="setting-value">1.0.0</span>
+            </div>
+            <div class="setting-row">
+                <span class="setting-label">Notifications stored</span>
+                <span class="setting-value" id="settingCount">0</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add/Edit Rule Modal -->
+<div class="modal-overlay" id="ruleModal">
+    <div class="modal">
+        <div class="modal-header">
+            <span class="modal-title" id="modalTitle">Add Alert Rule</span>
+            <button class="modal-close" id="modalClose">
+                <span class="material-symbols-rounded">close</span>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label class="form-label">Alert Type</label>
+                <select class="form-select" id="ruleType">
+                    <option value="">Select type...</option>
+                    <option value="price_above">Price Above</option>
+                    <option value="price_below">Price Below</option>
+                    <option value="gas_below">Gas Below (Gwei)</option>
+                    <option value="whale_alert">Whale Alert (Min USD)</option>
+                    <option value="fng_above">Fear/Greed Above</option>
+                    <option value="fng_below">Fear/Greed Below</option>
+                </select>
+            </div>
+
+            <!-- Price fields -->
+            <div class="dynamic-fields" id="fieldPrice">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Asset</label>
+                        <select class="form-select" id="ruleAsset">
+                            <option value="bitcoin">Bitcoin (BTC)</option>
+                            <option value="ethereum">Ethereum (ETH)</option>
+                            <option value="solana">Solana (SOL)</option>
+                            <option value="binancecoin">BNB</option>
+                            <option value="cardano">Cardano (ADA)</option>
+                            <option value="ripple">XRP</option>
+                            <option value="dogecoin">Dogecoin (DOGE)</option>
+                            <option value="avalanche-2">Avalanche (AVAX)</option>
+                            <option value="polkadot">Polkadot (DOT)</option>
+                            <option value="chainlink">Chainlink (LINK)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Price (USD)</label>
+                        <input type="number" class="form-input" id="rulePrice" placeholder="e.g. 4000" step="any">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Gas fields -->
+            <div class="dynamic-fields" id="fieldGas">
+                <div class="form-group">
+                    <label class="form-label">Gas Threshold (Gwei)</label>
+                    <input type="number" class="form-input" id="ruleGas" placeholder="e.g. 20" step="any">
+                </div>
+            </div>
+
+            <!-- Whale fields -->
+            <div class="dynamic-fields" id="fieldWhale">
+                <div class="form-group">
+                    <label class="form-label">Minimum Value (USD)</label>
+                    <input type="number" class="form-input" id="ruleWhaleMin" placeholder="e.g. 5000000" step="any">
+                </div>
+            </div>
+
+            <!-- Fear/Greed fields -->
+            <div class="dynamic-fields" id="fieldFng">
+                <div class="form-group">
+                    <label class="form-label">Index Threshold (0-100)</label>
+                    <input type="number" class="form-input" id="ruleFng" placeholder="e.g. 25" min="0" max="100">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Cooldown (seconds)</label>
+                <input type="number" class="form-input" id="ruleCooldown" value="3600" min="60" style="width:100%">
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-cancel" id="modalCancel">Cancel</button>
+            <button class="btn-save" id="modalSave">Save Rule</button>
+        </div>
+    </div>
+</div>
+
+<script>
+(function() {
+    'use strict';
+
+    const _f = window.cfetch || fetch;
+
+    /* ── State ── */
+    const STORAGE_KEY = 'lair_notification_center';
+    let state = {
+        notifications: [],
+        rules: [],
+        settings: { soundEnabled: true, maxHistory: 100, pollInterval: 30 }
+    };
+    let pollTimers = {};
+    let paused = false;
+    let editingRuleId = null;
+    let lastPrices = {};
+    let lastGas = null;
+    let lastFng = null;
+
+    /* ── DOM Refs ── */
+    const $ = id => document.getElementById(id);
+    const feedContainer = $('feedContainer');
+    const emptyFeed = $('emptyFeed');
+    const rulesContainer = $('rulesContainer');
+    const emptyRules = $('emptyRules');
+    const unreadBadge = $('unreadBadge');
+    const statusDot = $('statusDot');
+    const statusText = $('statusText');
+    const lastPollEl = $('lastPoll');
+    const ruleModal = $('ruleModal');
+
+    /* ── Persistence ── */
+    function save() {
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify({
+                notifications: state.notifications,
+                rules: state.rules,
+                settings: state.settings
+            }));
+        } catch(e) { /* quota exceeded — drop oldest */ }
+    }
+
+    function load() {
+        try {
+            const raw = localStorage.getItem(STORAGE_KEY);
+            if (raw) {
+                const data = JSON.parse(raw);
+                state.notifications = data.notifications || [];
+                state.rules = data.rules || [];
+                state.settings = { ...state.settings, ...(data.settings || {}) };
+            }
+        } catch(e) { /* corrupt data, use defaults */ }
+    }
+
+    /* ── UUID ── */
+    function uuid() {
+        return 'xxxx-xxxx-xxxx'.replace(/x/g, () => ((Math.random()*16)|0).toString(16));
+    }
+
+    /* ── Relative time ── */
+    function relativeTime(ts) {
+        const diff = Date.now() - new Date(ts).getTime();
+        const sec = Math.floor(diff / 1000);
+        if (sec < 60) return 'Just now';
+        const min = Math.floor(sec / 60);
+        if (min < 60) return min + ' min ago';
+        const hr = Math.floor(min / 60);
+        if (hr < 24) return hr + 'h ago';
+        const d = Math.floor(hr / 24);
+        if (d === 1) return 'Yesterday';
+        return d + 'd ago';
+    }
+
+    function timeGroup(ts) {
+        const now = new Date();
+        const d = new Date(ts);
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const yesterday = new Date(today.getTime() - 86400000);
+        if (d >= today) return 'Today';
+        if (d >= yesterday) return 'Yesterday';
+        return 'Earlier';
+    }
+
+    /* ── Sound ── */
+    function playAlertSound() {
+        if (!state.settings.soundEnabled) return;
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.frequency.value = 800;
+            gain.gain.value = 0.3;
+            osc.start();
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+            osc.stop(ctx.currentTime + 0.3);
+        } catch(e) { /* no audio support */ }
+    }
+
+    /* ── Notification helpers ── */
+    function getIcon(type) {
+        const icons = {
+            price: 'trending_up', gas: 'local_gas_station',
+            whale: 'phishing', fng: 'speed', general: 'info'
+        };
+        return icons[type] || 'notifications';
+    }
+
+    function getTypeFromRule(ruleType) {
+        if (ruleType.startsWith('price')) return 'price';
+        if (ruleType.startsWith('gas')) return 'gas';
+        if (ruleType.startsWith('whale')) return 'whale';
+        if (ruleType.startsWith('fng')) return 'fng';
+        return 'general';
+    }
+
+    function addNotification(type, title, message, severity, source) {
+        const notif = {
+            id: uuid(), type, title, message,
+            icon: getIcon(type), severity: severity || 'info',
+            timestamp: new Date().toISOString(),
+            read: false, source: source || 'system'
+        };
+        state.notifications.unshift(notif);
+        // Cap history
+        const max = state.settings.maxHistory || 100;
+        if (state.notifications.length > max) {
+            state.notifications = state.notifications.slice(0, max);
+        }
+        save();
+        playAlertSound();
+        renderFeed();
+        updateBadge();
+    }
+
+    /* ── Render Feed ── */
+    function renderFeed() {
+        const notifs = state.notifications;
+        if (!notifs.length) {
+            emptyFeed.style.display = 'flex';
+            // Remove any rendered cards
+            feedContainer.querySelectorAll('.time-group-label, .notif-card').forEach(el => el.remove());
+            return;
+        }
+        emptyFeed.style.display = 'none';
+
+        // Group by time
+        const groups = {};
+        notifs.forEach(n => {
+            const g = timeGroup(n.timestamp);
+            if (!groups[g]) groups[g] = [];
+            groups[g].push(n);
+        });
+
+        let html = '';
+        const order = ['Today', 'Yesterday', 'Earlier'];
+        order.forEach(g => {
+            if (!groups[g]) return;
+            html += `<div class="time-group-label">${g}</div>`;
+            groups[g].forEach(n => {
+                const sev = n.severity || 'info';
+                html += `
+                <div class="notif-card ${n.read ? '' : 'unread'} severity-${sev}" data-id="${n.id}">
+                    <div class="notif-icon ${sev}">
+                        <span class="material-symbols-rounded">${n.icon}</span>
+                    </div>
+                    <div class="notif-body">
+                        <div class="notif-title">${escHtml(n.title)}</div>
+                        <div class="notif-msg">${escHtml(n.message)}</div>
+                        <div class="notif-time">${relativeTime(n.timestamp)}</div>
+                    </div>
+                    <div class="unread-dot ${n.read ? 'read' : ''}"></div>
+                    <div class="notif-actions">
+                        <button class="notif-dismiss" data-dismiss="${n.id}" title="Dismiss">
+                            <span class="material-symbols-rounded">close</span>
+                        </button>
+                    </div>
+                </div>`;
+            });
+        });
+
+        // Replace content (keep emptyFeed element)
+        feedContainer.querySelectorAll('.time-group-label, .notif-card').forEach(el => el.remove());
+        feedContainer.insertAdjacentHTML('beforeend', html);
+
+        // Click to mark read
+        feedContainer.querySelectorAll('.notif-card').forEach(card => {
+            card.addEventListener('click', e => {
+                if (e.target.closest('.notif-dismiss')) return;
+                const id = card.dataset.id;
+                const n = state.notifications.find(x => x.id === id);
+                if (n && !n.read) {
+                    n.read = true;
+                    save();
+                    renderFeed();
+                    updateBadge();
+                }
+            });
+        });
+
+        // Dismiss buttons
+        feedContainer.querySelectorAll('.notif-dismiss').forEach(btn => {
+            btn.addEventListener('click', e => {
+                e.stopPropagation();
+                const id = btn.dataset.dismiss;
+                state.notifications = state.notifications.filter(n => n.id !== id);
+                save();
+                renderFeed();
+                updateBadge();
+            });
+        });
+
+        $('settingCount').textContent = state.notifications.length;
+    }
+
+    function escHtml(str) {
+        const d = document.createElement('div');
+        d.textContent = str;
+        return d.innerHTML;
+    }
+
+    /* ── Badge ── */
+    function updateBadge() {
+        const count = state.notifications.filter(n => !n.read).length;
+        unreadBadge.textContent = count;
+        unreadBadge.classList.toggle('hidden', count === 0);
+    }
+
+    /* ── Render Rules ── */
+    function renderRules() {
+        if (!state.rules.length) {
+            emptyRules.style.display = 'block';
+            rulesContainer.querySelectorAll('.rule-card').forEach(el => el.remove());
+            return;
+        }
+        emptyRules.style.display = 'none';
+
+        let html = '';
+        state.rules.forEach(r => {
+            const desc = ruleDescription(r);
+            const icon = getIcon(getTypeFromRule(r.type));
+            const cooldownMin = Math.round((r.cooldown || 3600) / 60);
+            html += `
+            <div class="rule-card" data-rid="${r.id}">
+                <div class="rule-icon">
+                    <span class="material-symbols-rounded">${icon}</span>
+                </div>
+                <div class="rule-info">
+                    <div class="rule-desc">${escHtml(desc)}</div>
+                    <div class="rule-meta">Cooldown: ${cooldownMin}min${r.lastTriggered ? ' · Last: ' + relativeTime(r.lastTriggered) : ''}</div>
+                </div>
+                <label class="toggle">
+                    <input type="checkbox" ${r.enabled ? 'checked' : ''} data-toggle="${r.id}">
+                    <div class="toggle-track"></div>
+                    <div class="toggle-thumb"></div>
+                </label>
+                <div class="rule-actions">
+                    <button class="rule-btn" data-edit="${r.id}" title="Edit">
+                        <span class="material-symbols-rounded">edit</span>
+                    </button>
+                    <button class="rule-btn delete" data-del="${r.id}" title="Delete">
+                        <span class="material-symbols-rounded">delete</span>
+                    </button>
+                </div>
+            </div>`;
+        });
+
+        rulesContainer.querySelectorAll('.rule-card').forEach(el => el.remove());
+        rulesContainer.insertAdjacentHTML('beforeend', html);
+
+        // Toggle handlers
+        rulesContainer.querySelectorAll('[data-toggle]').forEach(inp => {
+            inp.addEventListener('change', () => {
+                const r = state.rules.find(x => x.id === inp.dataset.toggle);
+                if (r) { r.enabled = inp.checked; save(); restartPolling(); }
+            });
+        });
+        // Edit
+        rulesContainer.querySelectorAll('[data-edit]').forEach(btn => {
+            btn.addEventListener('click', () => openEditRule(btn.dataset.edit));
+        });
+        // Delete
+        rulesContainer.querySelectorAll('[data-del]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                state.rules = state.rules.filter(r => r.id !== btn.dataset.del);
+                save();
+                renderRules();
+                restartPolling();
+            });
+        });
+    }
+
+    function ruleDescription(r) {
+        const assetLabel = (r.asset || '').replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+        switch (r.type) {
+            case 'price_above': return `${assetLabel} price above $${fmtNum(r.threshold)}`;
+            case 'price_below': return `${assetLabel} price below $${fmtNum(r.threshold)}`;
+            case 'gas_below': return `ETH gas below ${r.threshold} gwei`;
+            case 'whale_alert': return `Whale tx over $${fmtNum(r.threshold)}`;
+            case 'fng_above': return `Fear & Greed index above ${r.threshold}`;
+            case 'fng_below': return `Fear & Greed index below ${r.threshold}`;
+            default: return r.type;
+        }
+    }
+
+    function fmtNum(n) {
+        if (n == null) return '—';
+        if (n >= 1e9) return (n / 1e9).toFixed(1) + 'B';
+        if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+        if (n >= 1e3) return n.toLocaleString('en-US');
+        return String(n);
+    }
+
+    /* ── Tabs ── */
+    document.querySelectorAll('.tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+            tab.classList.add('active');
+            const panel = $('panel' + capitalize(tab.dataset.tab));
+            if (panel) panel.classList.add('active');
+        });
+    });
+
+    function capitalize(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+
+    /* ── Header buttons ── */
+    $('btnMarkRead').addEventListener('click', () => {
+        state.notifications.forEach(n => n.read = true);
+        save(); renderFeed(); updateBadge();
+    });
+
+    $('btnClearAll').addEventListener('click', () => {
+        state.notifications = [];
+        save(); renderFeed(); updateBadge();
+    });
+
+    $('btnPause').addEventListener('click', () => {
+        paused = !paused;
+        $('pauseIcon').textContent = paused ? 'play_arrow' : 'pause';
+        statusDot.classList.toggle('paused', paused);
+        statusText.textContent = paused ? 'Monitoring paused' : 'Monitoring active';
+        if (paused) stopPolling(); else restartPolling();
+    });
+
+    /* ── Modal ── */
+    $('btnAddRule').addEventListener('click', () => openNewRule());
+    $('modalClose').addEventListener('click', closeModal);
+    $('modalCancel').addEventListener('click', closeModal);
+    ruleModal.addEventListener('click', e => { if (e.target === ruleModal) closeModal(); });
+
+    $('ruleType').addEventListener('change', () => {
+        const v = $('ruleType').value;
+        document.querySelectorAll('.dynamic-fields').forEach(f => f.classList.remove('visible'));
+        if (v.startsWith('price')) $('fieldPrice').classList.add('visible');
+        else if (v.startsWith('gas')) $('fieldGas').classList.add('visible');
+        else if (v.startsWith('whale')) $('fieldWhale').classList.add('visible');
+        else if (v.startsWith('fng')) $('fieldFng').classList.add('visible');
+    });
+
+    function openNewRule() {
+        editingRuleId = null;
+        $('modalTitle').textContent = 'Add Alert Rule';
+        $('ruleType').value = '';
+        $('ruleAsset').value = 'bitcoin';
+        $('rulePrice').value = '';
+        $('ruleGas').value = '';
+        $('ruleWhaleMin').value = '';
+        $('ruleFng').value = '';
+        $('ruleCooldown').value = '3600';
+        document.querySelectorAll('.dynamic-fields').forEach(f => f.classList.remove('visible'));
+        ruleModal.classList.add('show');
+    }
+
+    function openEditRule(id) {
+        const r = state.rules.find(x => x.id === id);
+        if (!r) return;
+        editingRuleId = id;
+        $('modalTitle').textContent = 'Edit Alert Rule';
+        $('ruleType').value = r.type;
+        $('ruleType').dispatchEvent(new Event('change'));
+        $('ruleCooldown').value = r.cooldown || 3600;
+        if (r.type.startsWith('price')) {
+            $('ruleAsset').value = r.asset || 'bitcoin';
+            $('rulePrice').value = r.threshold || '';
+        } else if (r.type.startsWith('gas')) {
+            $('ruleGas').value = r.threshold || '';
+        } else if (r.type.startsWith('whale')) {
+            $('ruleWhaleMin').value = r.threshold || '';
+        } else if (r.type.startsWith('fng')) {
+            $('ruleFng').value = r.threshold || '';
+        }
+        ruleModal.classList.add('show');
+    }
+
+    function closeModal() {
+        ruleModal.classList.remove('show');
+        editingRuleId = null;
+    }
+
+    $('modalSave').addEventListener('click', () => {
+        const type = $('ruleType').value;
+        if (!type) return;
+
+        let threshold, asset;
+        if (type.startsWith('price')) {
+            asset = $('ruleAsset').value;
+            threshold = parseFloat($('rulePrice').value);
+        } else if (type.startsWith('gas')) {
+            threshold = parseFloat($('ruleGas').value);
+        } else if (type.startsWith('whale')) {
+            threshold = parseFloat($('ruleWhaleMin').value);
+        } else if (type.startsWith('fng')) {
+            threshold = parseFloat($('ruleFng').value);
+        }
+
+        if (isNaN(threshold) || threshold <= 0) return;
+
+        if (editingRuleId) {
+            const r = state.rules.find(x => x.id === editingRuleId);
+            if (r) {
+                r.type = type;
+                r.threshold = threshold;
+                if (asset) r.asset = asset;
+                r.cooldown = parseInt($('ruleCooldown').value) || 3600;
+            }
+        } else {
+            state.rules.push({
+                id: uuid(), type, asset: asset || null,
+                threshold, enabled: true,
+                cooldown: parseInt($('ruleCooldown').value) || 3600,
+                lastTriggered: null
+            });
+        }
+
+        save();
+        renderRules();
+        closeModal();
+        restartPolling();
+    });
+
+    /* ── Settings ── */
+    $('settingSound').addEventListener('change', () => {
+        state.settings.soundEnabled = $('settingSound').checked;
+        save();
+    });
+    $('settingInterval').addEventListener('change', () => {
+        state.settings.pollInterval = Math.max(10, parseInt($('settingInterval').value) || 30);
+        $('settingInterval').value = state.settings.pollInterval;
+        save(); restartPolling();
+    });
+    $('settingMaxHistory').addEventListener('change', () => {
+        state.settings.maxHistory = Math.max(10, parseInt($('settingMaxHistory').value) || 100);
+        $('settingMaxHistory').value = state.settings.maxHistory;
+        save();
+    });
+
+    /* ── Polling Engine ── */
+    function stopPolling() {
+        Object.values(pollTimers).forEach(clearInterval);
+        pollTimers = {};
+    }
+
+    function restartPolling() {
+        stopPolling();
+        if (paused) return;
+
+        const interval = (state.settings.pollInterval || 30) * 1000;
+        const enabledRules = state.rules.filter(r => r.enabled);
+
+        const needsPrice = enabledRules.some(r => r.type.startsWith('price'));
+        const needsGas = enabledRules.some(r => r.type.startsWith('gas'));
+        const needsWhale = enabledRules.some(r => r.type.startsWith('whale'));
+        const needsFng = enabledRules.some(r => r.type.startsWith('fng'));
+
+        if (needsPrice) {
+            pollPrices();
+            pollTimers.price = setInterval(pollPrices, interval);
+        }
+        if (needsGas) {
+            pollGas();
+            pollTimers.gas = setInterval(pollGas, interval);
+        }
+        if (needsWhale) {
+            pollWhales();
+            pollTimers.whale = setInterval(pollWhales, Math.max(interval, 60000)); // min 60s for whale API
+        }
+        if (needsFng) {
+            pollFng();
+            pollTimers.fng = setInterval(pollFng, Math.max(interval, 60000)); // FnG updates slowly
+        }
+
+        updateSourceStatuses(needsPrice, needsGas, needsWhale, needsFng);
+    }
+
+    function updateSourceStatuses(price, gas, whale, fng) {
+        $('srcPriceStatus').textContent = price ? 'Active' : 'Idle';
+        $('srcGasStatus').textContent = gas ? 'Active' : 'Idle';
+        $('srcWhaleStatus').textContent = whale ? 'Active' : 'Idle';
+        $('srcFngStatus').textContent = fng ? 'Active' : 'Idle';
+    }
+
+    function updateLastPoll() {
+        lastPollEl.textContent = 'Last poll: ' + new Date().toLocaleTimeString();
+    }
+
+    /* ── Price Polling ── */
+    async function pollPrices() {
+        const priceRules = state.rules.filter(r => r.enabled && r.type.startsWith('price'));
+        const assets = [...new Set(priceRules.map(r => r.asset))].filter(Boolean);
+        if (!assets.length) return;
+
+        try {
+            const resp = await _f(
+                `https://api.coingecko.com/api/v3/simple/price?ids=${assets.join(',')}&vs_currencies=usd`
+            );
+            if (!resp.ok) throw new Error('API error');
+            const data = await resp.json();
+            updateLastPoll();
+
+            priceRules.forEach(rule => {
+                const price = data[rule.asset]?.usd;
+                if (price == null) return;
+                lastPrices[rule.asset] = price;
+
+                const shouldTrigger = rule.type === 'price_above' ? price >= rule.threshold : price <= rule.threshold;
+                if (shouldTrigger && !isOnCooldown(rule)) {
+                    const assetName = (rule.asset || '').replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+                    const dir = rule.type === 'price_above' ? 'above' : 'below';
+                    addNotification(
+                        'price',
+                        `${assetName} Price Alert`,
+                        `${assetName} crossed ${dir} $${fmtNum(rule.threshold)} — now at $${price.toLocaleString('en-US', {maximumFractionDigits: 2})}`,
+                        'high', 'coingecko'
+                    );
+                    rule.lastTriggered = new Date().toISOString();
+                    save(); renderRules();
+                }
+            });
+
+            statusDot.classList.remove('error');
+        } catch(e) {
+            statusDot.classList.add('error');
+            statusText.textContent = 'Price API error';
+            setTimeout(() => {
+                if (!paused) { statusDot.classList.remove('error'); statusText.textContent = 'Monitoring active'; }
+            }, 5000);
+        }
+    }
+
+    /* ── Gas Polling ── */
+    async function pollGas() {
+        const gasRules = state.rules.filter(r => r.enabled && r.type === 'gas_below');
+        if (!gasRules.length) return;
+
+        try {
+            const resp = await _f(
+                'https://api.etherscan.io/v2/api?chainid=1&module=gastracker&action=gasoracle'
+            );
+            if (!resp.ok) throw new Error('API error');
+            const data = await resp.json();
+            const gasPrice = parseFloat(data?.result?.SafeGasPrice || data?.result?.ProposeGasPrice);
+            if (isNaN(gasPrice)) return;
+            lastGas = gasPrice;
+            updateLastPoll();
+
+            gasRules.forEach(rule => {
+                if (gasPrice <= rule.threshold && !isOnCooldown(rule)) {
+                    addNotification(
+                        'gas',
+                        'Low Gas Alert',
+                        `ETH gas dropped to ${gasPrice} gwei (threshold: ${rule.threshold} gwei)`,
+                        'medium', 'etherscan'
+                    );
+                    rule.lastTriggered = new Date().toISOString();
+                    save(); renderRules();
+                }
+            });
+        } catch(e) { /* silent fail, retry next poll */ }
+    }
+
+    /* ── Whale Polling ── */
+    async function pollWhales() {
+        const whaleRules = state.rules.filter(r => r.enabled && r.type === 'whale_alert');
+        if (!whaleRules.length) return;
+
+        try {
+            const since = Math.floor((Date.now() - 120000) / 1000); // last 2 min
+            const minVal = Math.min(...whaleRules.map(r => r.threshold));
+            const resp = await _f(
+                `https://api.whale-alert.io/v1/transactions?api_key=demo&min_value=${minVal}&start=${since}`
+            );
+            if (!resp.ok) throw new Error('API error');
+            const data = await resp.json();
+            updateLastPoll();
+
+            if (data.transactions && data.transactions.length) {
+                data.transactions.forEach(tx => {
+                    const val = tx.amount_usd || tx.amount * (tx.price || 1);
+                    whaleRules.forEach(rule => {
+                        if (val >= rule.threshold && !isOnCooldown(rule)) {
+                            const sym = (tx.symbol || 'UNKNOWN').toUpperCase();
+                            addNotification(
+                                'whale',
+                                `Whale Movement: ${sym}`,
+                                `$${fmtNum(Math.round(val))} ${sym} transferred (${tx.transaction_type || 'transfer'})`,
+                                'high', 'whale-alert'
+                            );
+                            rule.lastTriggered = new Date().toISOString();
+                            save(); renderRules();
+                        }
+                    });
+                });
+            }
+        } catch(e) { /* silent fail */ }
+    }
+
+    /* ── Fear & Greed Polling ── */
+    async function pollFng() {
+        const fngRules = state.rules.filter(r => r.enabled && r.type.startsWith('fng'));
+        if (!fngRules.length) return;
+
+        try {
+            const resp = await _f('https://api.alternative.me/fng/?limit=1');
+            if (!resp.ok) throw new Error('API error');
+            const data = await resp.json();
+            const current = parseInt(data?.data?.[0]?.value);
+            const label = data?.data?.[0]?.value_classification || '';
+            if (isNaN(current)) return;
+            lastFng = current;
+            updateLastPoll();
+
+            fngRules.forEach(rule => {
+                const shouldTrigger = rule.type === 'fng_above'
+                    ? current >= rule.threshold
+                    : current <= rule.threshold;
+                if (shouldTrigger && !isOnCooldown(rule)) {
+                    const dir = rule.type === 'fng_above' ? 'rose above' : 'dropped below';
+                    addNotification(
+                        'fng',
+                        'Fear & Greed Alert',
+                        `Index ${dir} ${rule.threshold} — now at ${current} (${label})`,
+                        current <= 25 || current >= 75 ? 'high' : 'medium',
+                        'alternative.me'
+                    );
+                    rule.lastTriggered = new Date().toISOString();
+                    save(); renderRules();
+                }
+            });
+        } catch(e) { /* silent fail */ }
+    }
+
+    /* ── Cooldown check ── */
+    function isOnCooldown(rule) {
+        if (!rule.lastTriggered) return false;
+        const elapsed = Date.now() - new Date(rule.lastTriggered).getTime();
+        return elapsed < (rule.cooldown || 3600) * 1000;
+    }
+
+    function setupLairBus() {
+        const lairBus = window.LairBus;
+        if (!lairBus) return;
+
+        lairBus.register('notification-center');
+        lairBus.on('alert:fired', (payload) => {
+            const severity = payload?.type === 'token-risk' ? 'high' : 'medium';
+            addNotification(
+                'general',
+                payload?.type ? `Alert: ${String(payload.type).replace(/[-_]/g, ' ')}` : 'Alert Fired',
+                payload?.message || 'An app triggered an alert event.',
+                severity,
+                'lair-bus'
+            );
+            return { ok: true };
+        });
+    }
+
+    /* ── Init ── */
+    function init() {
+        load();
+        setupLairBus();
+
+        // Apply settings to UI
+        $('settingSound').checked = state.settings.soundEnabled;
+        $('settingInterval').value = state.settings.pollInterval;
+        $('settingMaxHistory').value = state.settings.maxHistory;
+
+        renderFeed();
+        renderRules();
+        updateBadge();
+        restartPolling();
+
+        // Update relative times every 30s
+        setInterval(() => {
+            renderFeed();
+            renderRules();
+        }, 30000);
+    }
+
+    init();
+})();
+</script>
+</body>
+</html>

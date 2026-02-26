@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="lair-include" content="lair.css">
+    <meta name="capabilities" content="defi_llama">
+    <meta name="lair-icon" content="monitoring">
+    <meta name="lair-perms" content="network" />
+    <title>DeFi Llama</title>
+    <style>
+        :root { --col-bg1:#080A19; --col-bg2:#0C0F27; --col-bg3:#15183E; --col-txt1:#A7C2F3; --colors-accent:rgb(97,121,255); --col-good:#85FF85; --col-bad:#AC4949; }
+        * { box-sizing: border-box; }
+        html, body { margin: 0; height: 100%; background: var(--col-bg1); color: var(--col-txt1); font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+        .app { height: 100%; display: grid; grid-template-rows: auto auto 1fr; }
+        .header { padding: 10px 14px; border-bottom: 1px solid rgba(167,194,243,.1); display:flex; justify-content: space-between; gap:8px; align-items:center; flex-wrap:wrap; }
+        .title { font-size:14px; font-weight:700; }
+        .tabs { display:flex; gap:6px; overflow-x:auto; padding: 8px 14px; border-bottom:1px solid rgba(167,194,243,.08); }
+        .tab { background: var(--col-bg3); border:1px solid rgba(167,194,243,.16); color:var(--col-txt1); border-radius:6px; padding:6px 10px; font-size:12px; cursor:pointer; white-space:nowrap; }
+        .tab.active { background: var(--colors-accent); color:#fff; border-color:transparent; }
+        .content { padding: 10px 14px; overflow: auto; }
+        .stats { display:grid; grid-template-columns: repeat(4, minmax(140px, 1fr)); gap:8px; }
+        .card { background: var(--col-bg2); border:1px solid rgba(167,194,243,.12); border-radius:8px; padding: 10px; }
+        .k { font-size:10px; opacity:.7; text-transform:uppercase; }
+        .v { font-size:18px; font-weight:800; margin-top:4px; }
+        .delta.plus { color: var(--col-good); } .delta.minus { color: var(--col-bad); }
+        table { width:100%; border-collapse: collapse; font-size: 12px; margin-top:10px; }
+        th, td { text-align:left; padding:8px; border-bottom:1px solid rgba(167,194,243,.08); }
+        th { position: sticky; top: 0; background: var(--col-bg2); font-size:10px; letter-spacing:.04em; text-transform:uppercase; }
+        .badge { font-size: 10px; padding: 2px 6px; border-radius: 999px; background: rgba(97,121,255,.18); }
+        .loading, .error { font-size:12px; opacity:.8; margin-top:8px; }
+        @media (max-width:900px) { .stats { grid-template-columns: repeat(2, minmax(140px, 1fr)); } }
+    </style>
+</head>
+<body>
+<div class="app">
+    <div class="header">
+        <div class="title">DeFi Llama Dashboard</div>
+        <button id="refreshBtn" class="tab">Refresh</button>
+    </div>
+    <div class="tabs" id="tabs"></div>
+    <div class="content">
+        <div class="loading" id="state">Loading live DeFi data...</div>
+        <div id="view"></div>
+    </div>
+</div>
+<script>
+(function () {
+    const fetchFn = window.cfetch || fetch;
+    const tabs = [
+        { key: 'overview', label: 'Overview' },
+        { key: 'chains', label: 'Chains' },
+        { key: 'protocols', label: 'Protocols' },
+        { key: 'stablecoins', label: 'Stablecoins' },
+        { key: 'dex', label: 'DEX Volume' },
+        { key: 'yields', label: 'Yields' },
+        { key: 'bridges', label: 'Bridges' }
+    ];
+    let active = 'overview';
+    let cache = {};
+
+    const state = document.getElementById('state');
+    const view = document.getElementById('view');
+    const tabsEl = document.getElementById('tabs');
+
+    function fmtUsd(v) {
+        if (!Number.isFinite(v)) return '—';
+        if (v >= 1e12) return '$' + (v / 1e12).toFixed(2) + 'T';
+        if (v >= 1e9) return '$' + (v / 1e9).toFixed(2) + 'B';
+        if (v >= 1e6) return '$' + (v / 1e6).toFixed(2) + 'M';
+        return '$' + v.toLocaleString(undefined, { maximumFractionDigits: 0 });
+    }
+    function pct(v) {
+        if (!Number.isFinite(v)) return '—';
+        return (v > 0 ? '+' : '') + v.toFixed(2) + '%';
+    }
+    function renderTabs() {
+        tabsEl.innerHTML = tabs.map(t => '<button class="tab' + (t.key === active ? ' active' : '') + '" data-key="' + t.key + '">' + t.label + '</button>').join('');
+        tabsEl.querySelectorAll('.tab').forEach(el => el.addEventListener('click', () => { active = el.dataset.key; render(); }));
+    }
+
+    async function getJson(url) {
+        const res = await fetchFn(url);
+        if (!res.ok) throw new Error('HTTP ' + res.status + ' for ' + url);
+        return res.json();
+    }
+
+    async function load() {
+        state.textContent = 'Loading live DeFi data...';
+        state.className = 'loading';
+        try {
+            const now = Math.floor(Date.now() / 1000);
+            const start = now - 86400;
+            const [protocols, chains, stables, dex, yields, bridgesMeta, bridgesVolume] = await Promise.all([
+                getJson('https://api.llama.fi/protocols'),
+                getJson('https://api.llama.fi/v2/chains'),
+                getJson('https://stablecoins.llama.fi/stablecoins?includePrices=true'),
+                getJson('https://api.llama.fi/overview/dexs?excludeTotalDataChart=true&excludeTotalDataChartBreakdown=true'),
+                getJson('https://yields.llama.fi/pools'),
+                getJson('https://bridges.llama.fi/bridges?includeChains=true'),
+                getJson('https://bridges.llama.fi/bridgevolume/all?starttimestamp=' + start + '&endtimestamp=' + now)
+            ]);
+            cache = { protocols, chains, stables, dex, yields, bridgesMeta, bridgesVolume };
+            state.textContent = '';
+            render();
+        } catch (err) {
+            state.className = 'error';
+            state.textContent = 'Failed to load DeFiLlama endpoints: ' + err.message;
+            view.innerHTML = '';
+        }
+    }
+
+    function table(headers, rows) {
+        return '<table><thead><tr>' + headers.map(h => '<th>' + h + '</th>').join('') + '</tr></thead><tbody>' + rows.map(r => '<tr>' + r.map(c => '<td>' + c + '</td>').join('') + '</tr>').join('') + '</tbody></table>';
+    }
+
+    function render() {
+        renderTabs();
+        if (!cache.protocols) return;
+
+        if (active === 'overview') {
+            const totalTVL = cache.chains.reduce((sum, c) => sum + (c.tvl || 0), 0);
+            const topChains = [...cache.chains].sort((a, b) => (b.tvl || 0) - (a.tvl || 0)).slice(0, 5);
+            const topProtocols = [...cache.protocols].sort((a, b) => (b.tvl || 0) - (a.tvl || 0)).slice(0, 5);
+            const stablesTotal = cache.stables?.peggedAssets?.reduce((sum, s) => sum + (s.circulatingUSD || 0), 0) || 0;
+            const topYields = [...(cache.yields?.data || [])].sort((a, b) => (b.apy || 0) - (a.apy || 0))[0];
+            view.innerHTML =
+                '<div class="stats">' +
+                    '<div class="card"><div class="k">Total TVL</div><div class="v">' + fmtUsd(totalTVL) + '</div></div>' +
+                    '<div class="card"><div class="k">Protocols</div><div class="v">' + cache.protocols.length + '</div></div>' +
+                    '<div class="card"><div class="k">Stablecoin MCap</div><div class="v">' + fmtUsd(stablesTotal) + '</div></div>' +
+                    '<div class="card"><div class="k">Top APY</div><div class="v">' + (topYields ? topYields.apy.toFixed(2) + '%' : '—') + '</div></div>' +
+                '</div>' +
+                '<div class="card" style="margin-top:10px;">' +
+                    '<div class="k">Top Chains</div>' +
+                    table(['Chain', 'TVL'], topChains.map(c => [c.name, fmtUsd(c.tvl)])) +
+                '</div>' +
+                '<div class="card" style="margin-top:10px;">' +
+                    '<div class="k">Top Protocols</div>' +
+                    table(['Protocol', 'Category', 'TVL'], topProtocols.map(p => [p.name, '<span class="badge">' + (p.category || 'N/A') + '</span>', fmtUsd(p.tvl)])) +
+                '</div>';
+            return;
+        }
+
+        if (active === 'chains') {
+            const rows = [...cache.chains].sort((a, b) => (b.tvl || 0) - (a.tvl || 0)).slice(0, 80)
+                .map(c => [c.name, fmtUsd(c.tvl), '<span class="delta ' + ((c.change_1d || 0) >= 0 ? 'plus' : 'minus') + '">' + pct(c.change_1d || 0) + '</span>', '<span class="delta ' + ((c.change_7d || 0) >= 0 ? 'plus' : 'minus') + '">' + pct(c.change_7d || 0) + '</span>']);
+            view.innerHTML = '<div class="card">' + table(['Chain', 'TVL', '24h', '7d'], rows) + '</div>';
+            return;
+        }
+
+        if (active === 'protocols') {
+            const rows = [...cache.protocols].sort((a, b) => (b.tvl || 0) - (a.tvl || 0)).slice(0, 120)
+                .map(p => [p.name, p.chain || 'Multi-Chain', p.category || 'N/A', fmtUsd(p.tvl), '<span class="delta ' + ((p.change_1d || 0) >= 0 ? 'plus' : 'minus') + '">' + pct(p.change_1d || 0) + '</span>']);
+            view.innerHTML = '<div class="card">' + table(['Protocol', 'Chain', 'Category', 'TVL', '24h'], rows) + '</div>';
+            return;
+        }
+
+        if (active === 'stablecoins') {
+            const assets = [...(cache.stables?.peggedAssets || [])].sort((a, b) => (b.circulatingUSD || 0) - (a.circulatingUSD || 0)).slice(0, 80);
+            const rows = assets.map(a => [a.symbol || a.name, fmtUsd(a.circulatingUSD || 0), (a.chains?.length || 0).toString(), a.price ? ('$' + Number(a.price).toFixed(3)) : '—']);
+            view.innerHTML = '<div class="card">' + table(['Stablecoin', 'Market Cap', 'Chains', 'Price'], rows) + '</div>';
+            return;
+        }
+
+        if (active === 'dex') {
+            const protocols = cache.dex?.protocols || [];
+            const rows = [...protocols].sort((a, b) => (b.total24h || 0) - (a.total24h || 0)).slice(0, 60)
+                .map(p => [p.name, fmtUsd(p.total24h || 0), fmtUsd(p.total7d || 0), fmtUsd(p.total30d || 0)]);
+            view.innerHTML = '<div class="card">' + table(['DEX', '24h Vol', '7d Vol', '30d Vol'], rows) + '</div>';
+            return;
+        }
+
+        if (active === 'yields') {
+            const rows = [...(cache.yields?.data || [])]
+                .filter(p => Number.isFinite(p.apy) && (p.tvlUsd || 0) > 1000000)
+                .sort((a, b) => (b.apy || 0) - (a.apy || 0))
+                .slice(0, 100)
+                .map(p => [p.project || 'N/A', p.chain || 'N/A', p.symbol || 'N/A', fmtUsd(p.tvlUsd || 0), (p.apy || 0).toFixed(2) + '%']);
+            view.innerHTML = '<div class="card">' + table(['Protocol', 'Chain', 'Pool', 'TVL', 'APY'], rows) + '</div>';
+            return;
+        }
+
+        if (active === 'bridges') {
+            const bridgeRows = [...(cache.bridgesMeta?.bridges || [])]
+                .sort((a, b) => (b.volumePrevDay || 0) - (a.volumePrevDay || 0))
+                .slice(0, 60)
+                .map(b => [b.name || 'N/A', fmtUsd(b.volumePrevDay || 0), fmtUsd(b.volumePrevWeek || 0), (b.chains?.length || 0).toString()]);
+
+            const chainMap = new Map();
+            for (const bridge of (cache.bridgesVolume?.bridges || [])) {
+                const breakdown = bridge.chainBreakdown || {};
+                for (const [chain, value] of Object.entries(breakdown)) {
+                    const current = chainMap.get(chain) || { inflow: 0, outflow: 0 };
+                    const num = Number(value || 0);
+                    if (num >= 0) current.inflow += num;
+                    else current.outflow += Math.abs(num);
+                    chainMap.set(chain, current);
+                }
+            }
+
+            const topFlowChains = [...chainMap.entries()]
+                .map(([chain, v]) => ({ chain, inflow: v.inflow, outflow: v.outflow, net: v.inflow - v.outflow }))
+                .sort((a, b) => b.net - a.net)
+                .slice(0, 40)
+                .map(c => [c.chain, fmtUsd(c.inflow), fmtUsd(c.outflow), fmtUsd(c.net)]);
+
+            view.innerHTML =
+                '<div class="card"><div class="k">Top Bridges by 24h Volume</div>' + table(['Bridge', '24h Volume', '7d Volume', 'Chains'], bridgeRows) + '</div>' +
+                '<div class="card" style="margin-top:10px;"><div class="k">Top Chain Net Flows (24h)</div>' + table(['Chain', 'Inflow', 'Outflow', 'Net'], topFlowChains) + '</div>';
+            return;
+        }
+    }
+
+    document.getElementById('refreshBtn').addEventListener('click', load);
+    renderTabs();
+    load();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lair AI</title>
+    <meta name="lair-icon" content="<svg width='232' height='232' viewBox='0 0 232 232' fill='none' xmlns='http://www.w3.org/2000/svg'><rect width='232' height='232' rx='40' fill='#a855f7'/><circle cx='116' cy='100' r='50' fill='white' opacity='0.9'/><path d='M90 90c0-14 12-26 26-26s26 12 26 26' stroke='#a855f7' stroke-width='8' stroke-linecap='round' fill='none'/><circle cx='116' cy='116' r='6' fill='#a855f7'/><path d='M116 122v14' stroke='#a855f7' stroke-width='6' stroke-linecap='round'/><rect x='60' y='160' width='112' height='40' rx='20' fill='white' opacity='0.9'/><circle cx='88' cy='180' r='6' fill='#a855f7'/><circle cx='116' cy='180' r='6' fill='#a855f7'/><circle cx='144' cy='180' r='6' fill='#a855f7'/><circle cx='76' cy='70' r='12' fill='white' opacity='0.5'/><circle cx='156' cy='70' r='12' fill='white' opacity='0.5'/><path d='M68 60l-10-16M164 60l10-16' stroke='white' stroke-width='4' stroke-linecap='round' opacity='0.6'/></svg>">
+    <meta name="lair-include" content="lair.css material-symbols-rounded">
+    <meta name="permissions" content="appStorage, network">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            height: 100vh; overflow: hidden;
+            background: var(--col-bg1, #101010);
+            color: var(--col-txt1, #fff);
+            font-family: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
+            display: flex; flex-direction: column;
+        }
+
+        /* Header */
+        .header {
+            display: flex; align-items: center; gap: 10px;
+            padding: 10px 16px;
+            background: var(--col-bg2, #171717);
+            border-bottom: 1px solid var(--col-bg3, #262626);
+            flex-shrink: 0;
+        }
+        .header .material-symbols-rounded { font-size: 22px; color: var(--colors-accent, #6179ff); }
+        .header-title { font-weight: 600; font-size: 14px; }
+        .header-sub { font-size: 11px; color: #666; }
+        .model-badge {
+            margin-left: auto; font-size: 10px;
+            padding: 2px 8px; border-radius: 5px;
+            background: rgba(97,121,255,0.12); color: var(--colors-accent, #6179ff);
+            font-weight: 600;
+        }
+
+        /* Messages area */
+        .messages {
+            flex: 1; overflow-y: auto; padding: 16px;
+            display: flex; flex-direction: column; gap: 12px;
+        }
+        .messages::-webkit-scrollbar { width: 5px; }
+        .messages::-webkit-scrollbar-track { background: transparent; }
+        .messages::-webkit-scrollbar-thumb { background: var(--col-bg3, #333); border-radius: 3px; }
+
+        .msg { max-width: 85%; padding: 10px 14px; border-radius: 12px; font-size: 13px; line-height: 1.5; }
+        .msg.user { align-self: flex-end; background: var(--colors-accent, #6179ff); color: #fff; border-bottom-right-radius: 4px; }
+        .msg.ai { align-self: flex-start; background: var(--col-bg2, #171717); border: 1px solid var(--col-bg3, #262626); border-bottom-left-radius: 4px; }
+        .msg.ai .src { font-size: 10px; color: #555; margin-top: 6px; }
+        .msg code { background: rgba(0,0,0,0.3); padding: 1px 5px; border-radius: 3px; font-size: 12px; font-family: monospace; }
+        .msg pre { background: rgba(0,0,0,0.4); padding: 10px; border-radius: 6px; margin: 6px 0; overflow-x: auto; font-size: 12px; font-family: monospace; line-height: 1.4; }
+
+        /* Typing indicator */
+        .typing { display: none; align-self: flex-start; padding: 10px 14px; }
+        .typing.show { display: flex; gap: 4px; align-items: center; }
+        .typing span {
+            width: 6px; height: 6px; border-radius: 50%;
+            background: #555; animation: bounce 1.2s infinite;
+        }
+        .typing span:nth-child(2) { animation-delay: 0.2s; }
+        .typing span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes bounce {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-6px); }
+        }
+
+        /* Suggested prompts */
+        .suggestions {
+            display: flex; flex-wrap: wrap; gap: 6px;
+            padding: 0 16px 12px; flex-shrink: 0;
+        }
+        .sug-btn {
+            padding: 6px 12px; border-radius: 8px; font-size: 11px;
+            background: var(--col-bg2, #171717); border: 1px solid var(--col-bg3, #262626);
+            color: var(--col-txt1, #ccc); cursor: pointer;
+            transition: all 0.15s; font-family: inherit;
+        }
+        .sug-btn:hover { border-color: var(--colors-accent, #6179ff); color: #fff; }
+
+        /* Input area */
+        .input-area {
+            display: flex; align-items: flex-end; gap: 8px;
+            padding: 10px 16px;
+            background: var(--col-bg2, #171717);
+            border-top: 1px solid var(--col-bg3, #262626);
+            flex-shrink: 0;
+        }
+        .input-area textarea {
+            flex: 1; background: var(--col-bg1, #101010);
+            border: 1px solid var(--col-bg3, #262626);
+            border-radius: 10px; padding: 10px 14px;
+            color: var(--col-txt1, #fff); font-size: 13px;
+            outline: none; font-family: inherit;
+            resize: none; min-height: 40px; max-height: 120px;
+            line-height: 1.4;
+        }
+        .input-area textarea:focus { border-color: var(--colors-accent, #6179ff); }
+        .input-area textarea::placeholder { color: #555; }
+        .send-btn {
+            width: 40px; height: 40px; border-radius: 10px;
+            background: var(--colors-accent, #6179ff); border: none;
+            color: #fff; cursor: pointer; display: flex;
+            align-items: center; justify-content: center;
+            transition: opacity 0.15s; flex-shrink: 0;
+        }
+        .send-btn:hover { opacity: 0.85; }
+        .send-btn:disabled { opacity: 0.4; cursor: default; }
+
+        /* Market data cards in chat */
+        .data-card {
+            background: var(--col-bg1, #101010);
+            border: 1px solid var(--col-bg3, #262626);
+            border-radius: 8px; padding: 10px; margin: 6px 0;
+            font-size: 12px;
+        }
+        .data-card .row { display: flex; justify-content: space-between; padding: 3px 0; }
+        .data-card .label { color: #666; }
+        .data-card .val { font-weight: 600; }
+        .up { color: #5be45b; }
+        .dn { color: #ef4444; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <span class="material-symbols-rounded">psychology</span>
+        <div>
+            <div class="header-title">Lair AI</div>
+            <div class="header-sub">DeFi data assistant — real API data</div>
+        </div>
+        <div class="model-badge">Data Assistant</div>
+    </div>
+
+    <div class="messages" id="msgs">
+        <div class="msg ai">
+            Hey! I'm <strong>Lair Data Assistant</strong> — I route your queries to real DeFi APIs and return live data. I can help you with:
+            <br><br>
+            <strong>📊 Market Data</strong> — live prices from CoinGecko<br>
+            <strong>🔥 Trending</strong> — trending tokens on CoinGecko<br>
+            <strong>⛽ Gas Prices</strong> — real-time from Etherscan<br>
+            <strong>😱 Fear & Greed</strong> — Alternative.me index<br>
+            <strong>📊 DeFi TVL</strong> — protocol rankings from DeFi Llama<br>
+            <strong>🌍 Market Overview</strong> — global crypto market stats<br>
+            <br>
+            <em style="font-size:11px;color:#666">Powered by keyword routing to real APIs — not a language model.</em>
+        </div>
+    </div>
+
+    <div class="suggestions" id="sugs">
+        <button class="sug-btn" onclick="ask(this.textContent)">What's Bitcoin's price?</button>
+        <button class="sug-btn" onclick="ask(this.textContent)">Show trending tokens</button>
+        <button class="sug-btn" onclick="ask(this.textContent)">Is ETH gas cheap right now?</button>
+        <button class="sug-btn" onclick="ask(this.textContent)">Analyze 0x... token</button>
+        <button class="sug-btn" onclick="ask(this.textContent)">Fear & greed index</button>
+        <button class="sug-btn" onclick="ask(this.textContent)">Top DeFi protocols by TVL</button>
+    </div>
+
+    <div class="input-area">
+        <textarea id="input" placeholder="Ask about crypto, DeFi, tokens…" rows="1"
+            oninput="autoResize(this)" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();send()}"></textarea>
+        <button class="send-btn" id="sendBtn" onclick="send()">
+            <span class="material-symbols-rounded" style="font-size:20px;">send</span>
+        </button>
+    </div>
+
+<script>
+const LAIR_HOST = window.LAIR_HOST || (window.location.ancestorOrigins?.[0] || '').replace(/\/$/, '') || location.origin;
+const API = (location.hostname==='localhost'||location.hostname==='127.0.0.1')
+    ? 'http://localhost:3001' : (window.LAIR_API_URL || LAIR_HOST);
+const CG = 'https://api.coingecko.com/api/v3';
+const FNG_API = 'https://api.alternative.me/fng';
+
+/* CORS-safe fetch — use OS-injected cfetch or define a fallback */
+if (!window.cfetch) {
+  window.cfetch = async function cfetch(url, opts) {
+    try { const r = await fetch(url, opts); if (r.ok) return r; } catch(_) {}
+    return fetch(LAIR_HOST + '/api/proxy?url=' + encodeURIComponent(url), opts);
+  };
+}
+
+let history = [];
+let busy = false;
+
+function autoResize(el) {
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+function addMsg(role, html) {
+    const msgs = document.getElementById('msgs');
+    const div = document.createElement('div');
+    div.className = 'msg ' + role;
+    div.innerHTML = html;
+    msgs.appendChild(div);
+    msgs.scrollTop = msgs.scrollHeight;
+    return div;
+}
+
+function showTyping(show) {
+    let el = document.getElementById('typing');
+    if (!el && show) {
+        el = document.createElement('div');
+        el.id = 'typing';
+        el.className = 'typing show';
+        el.innerHTML = '<span></span><span></span><span></span>';
+        document.getElementById('msgs').appendChild(el);
+        document.getElementById('msgs').scrollTop = document.getElementById('msgs').scrollHeight;
+    } else if (el) {
+        if (show) el.classList.add('show');
+        else el.remove();
+    }
+}
+
+function ask(text) {
+    document.getElementById('input').value = text;
+    send();
+}
+
+async function send() {
+    const input = document.getElementById('input');
+    const text = input.value.trim();
+    if (!text || busy) return;
+
+    // Hide suggestions after first message
+    document.getElementById('sugs').style.display = 'none';
+
+    busy = true;
+    document.getElementById('sendBtn').disabled = true;
+    addMsg('user', escHtml(text));
+    input.value = '';
+    input.style.height = 'auto';
+    history.push({ role: 'user', content: text });
+
+    showTyping(true);
+
+    try {
+        const response = await processQuery(text);
+        showTyping(false);
+        const aiDiv = addMsg('ai', response);
+        history.push({ role: 'assistant', content: aiDiv.textContent });
+    } catch (e) {
+        showTyping(false);
+        addMsg('ai', `Sorry, I couldn't process that. <span class="src">${e.message}</span>`);
+    }
+
+    busy = false;
+    document.getElementById('sendBtn').disabled = false;
+    input.focus();
+}
+
+function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+/* ═══════════ Query processor ═══════════ */
+async function processQuery(q) {
+    const ql = q.toLowerCase();
+
+    // Price queries
+    if (ql.match(/price|worth|cost|how much/)) {
+        const coin = extractCoin(ql);
+        if (coin) return await getCoinPrice(coin);
+    }
+
+    // Trending
+    if (ql.match(/trending|hot|popular/)) return await getTrending();
+
+    // Fear & Greed
+    if (ql.match(/fear|greed|sentiment|mood/)) return await getFearGreed();
+
+    // Gas
+    if (ql.match(/gas|gwei|fee|cheap/)) return await getGasInfo();
+
+    // DeFi / TVL
+    if (ql.match(/tvl|defi|protocol|lock/)) return await getTopDeFi();
+
+    // Market overview
+    if (ql.match(/market|overview|global|recap/)) return await getMarketOverview();
+
+    // Whale
+    if (ql.match(/whale|large|movement/)) return getWhaleInfo();
+
+    // Token analysis
+    if (ql.match(/analyz|scan|safe|rug|audit|0x[0-9a-f]/i)) return getAnalysisInfo(q);
+
+    // Fallback — try to find a coin
+    const coin = extractCoin(ql);
+    if (coin) return await getCoinPrice(coin);
+
+    // General fallback
+    return `I can help with:
+<br>• <strong>Prices</strong> — "What's Bitcoin's price?"
+<br>• <strong>Trending</strong> — "Show trending tokens"
+<br>• <strong>Gas</strong> — "Is gas cheap right now?"
+<br>• <strong>Fear & Greed</strong> — "What's the sentiment?"
+<br>• <strong>DeFi TVL</strong> — "Top DeFi protocols"
+<br>• <strong>Market Overview</strong> — "Give me a market recap"
+<br><br>Try asking about a specific coin or topic!`;
+}
+
+function extractCoin(q) {
+    const map = {
+        bitcoin:'bitcoin', btc:'bitcoin', eth:'ethereum', ethereum:'ethereum',
+        sol:'solana', solana:'solana', bnb:'binancecoin', doge:'dogecoin',
+        xrp:'ripple', ada:'cardano', avax:'avalanche-2', dot:'polkadot',
+        matic:'matic-network', polygon:'matic-network', link:'chainlink',
+        uni:'uniswap', aave:'aave', arb:'arbitrum', op:'optimism',
+        atom:'cosmos', near:'near', apt:'aptos', sui:'sui', pepe:'pepe',
+        shib:'shiba-inu', ton:'the-open-network', trx:'tron'
+    };
+    for (const [key, id] of Object.entries(map)) {
+        if (q.includes(key)) return id;
+    }
+    return null;
+}
+
+async function getCoinPrice(id) {
+    const r = await cfetch(`${CG}/coins/${id}?localization=false&tickers=false&community_data=false&developer_data=false`);
+    const c = await r.json();
+    const md = c.market_data || {};
+    const ch = md.price_change_percentage_24h || 0;
+    return `
+        <strong>${c.name} (${c.symbol?.toUpperCase()})</strong>
+        <div class="data-card">
+            <div class="row"><span class="label">Price</span><span class="val">$${md.current_price?.usd?.toLocaleString()}</span></div>
+            <div class="row"><span class="label">24h Change</span><span class="val ${ch>=0?'up':'dn'}">${ch>=0?'+':''}${ch.toFixed(2)}%</span></div>
+            <div class="row"><span class="label">Market Cap</span><span class="val">$${fmtNum(md.market_cap?.usd)}</span></div>
+            <div class="row"><span class="label">24h Volume</span><span class="val">$${fmtNum(md.total_volume?.usd)}</span></div>
+            <div class="row"><span class="label">24h High</span><span class="val">$${md.high_24h?.usd?.toLocaleString()}</span></div>
+            <div class="row"><span class="label">24h Low</span><span class="val">$${md.low_24h?.usd?.toLocaleString()}</span></div>
+            <div class="row"><span class="label">ATH</span><span class="val">$${md.ath?.usd?.toLocaleString()}</span></div>
+            <div class="row"><span class="label">Rank</span><span class="val">#${c.market_cap_rank||'—'}</span></div>
+        </div>
+        ${c.description?.en ? `<div style="margin-top:6px;font-size:11px;color:#aaa;">${c.description.en.replace(/<[^>]+>/g,'').slice(0,200)}…</div>` : ''}
+    `;
+}
+
+async function getTrending() {
+    const r = await cfetch(`${CG}/search/trending`);
+    const d = await r.json();
+    const coins = (d.coins||[]).slice(0,7);
+    return `
+        <strong>🔥 Trending on CoinGecko</strong>
+        <div class="data-card">
+            ${coins.map((c,i) => `<div class="row">
+                <span class="label">#${i+1} ${c.item.name} (${c.item.symbol})</span>
+                <span class="val">Rank #${c.item.market_cap_rank||'—'}</span>
+            </div>`).join('')}
+        </div>
+        <div class="src">Source: CoinGecko Trending</div>
+    `;
+}
+
+async function getFearGreed() {
+    const r = await cfetch(`${FNG_API}/?limit=7`);
+    const d = await r.json();
+    const curr = d.data?.[0];
+    if (!curr) return 'Could not fetch Fear & Greed data.';
+    const v = parseInt(curr.value);
+    const hist = d.data.slice(1).reverse();
+    return `
+        <strong>Fear & Greed Index</strong>
+        <div class="data-card">
+            <div class="row"><span class="label">Current</span><span class="val" style="color:${fgColor(v)};">${v} — ${curr.value_classification}</span></div>
+            ${hist.map(h => `<div class="row"><span class="label">${new Date(parseInt(h.timestamp)*1000).toLocaleDateString()}</span><span class="val" style="color:${fgColor(parseInt(h.value))};">${h.value}</span></div>`).join('')}
+        </div>
+        <div class="src">Source: Alternative.me</div>
+    `;
+}
+
+async function getGasInfo() {
+    let gasText = '';
+    try {
+        const r = await cfetch('https://api.etherscan.io/api?module=gastracker&action=gasoracle');
+        const d = await r.json();
+        if (d.result) {
+            gasText = `
+                <strong>⛽ Ethereum Gas Prices</strong>
+                <div class="data-card">
+                    <div class="row"><span class="label">🐢 Low</span><span class="val">${d.result.SafeGasPrice} gwei</span></div>
+                    <div class="row"><span class="label">🚗 Standard</span><span class="val">${d.result.ProposeGasPrice} gwei</span></div>
+                    <div class="row"><span class="label">⚡ Fast</span><span class="val">${d.result.FastGasPrice} gwei</span></div>
+                    <div class="row"><span class="label">Base Fee</span><span class="val">${parseFloat(d.result.suggestBaseFee||0).toFixed(2)} gwei</span></div>
+                </div>
+                ${parseFloat(d.result.SafeGasPrice) < 20 ? '<div class="up" style="font-size:12px;margin-top:4px;">✅ Gas is relatively cheap right now — good time to transact!</div>' : '<div class="dn" style="font-size:12px;margin-top:4px;">⚠️ Gas is elevated — consider waiting for lower fees.</div>'}
+                <div class="src">Source: Etherscan</div>
+            `;
+        }
+    } catch(_) {}
+    return gasText || 'Could not fetch gas prices. Try again in a moment.';
+}
+
+async function getTopDeFi() {
+    try {
+        const r = await cfetch('https://api.llama.fi/protocols');
+        const protocols = await r.json();
+        const top = protocols.sort((a,b) => (b.tvl||0)-(a.tvl||0)).slice(0,10);
+        return `
+            <strong>📊 Top DeFi Protocols by TVL</strong>
+            <div class="data-card">
+                ${top.map((p,i) => `<div class="row">
+                    <span class="label">#${i+1} ${p.name}</span>
+                    <span class="val">$${fmtNum(p.tvl)}</span>
+                </div>`).join('')}
+            </div>
+            <div class="src">Source: DeFi Llama</div>
+        `;
+    } catch(e) { return 'Could not fetch DeFi data: ' + e.message; }
+}
+
+async function getMarketOverview() {
+    const r = await cfetch(`${CG}/global`);
+    const {data} = await r.json();
+    const ch = data.market_cap_change_percentage_24h_usd||0;
+    return `
+        <strong>🌍 Crypto Market Overview</strong>
+        <div class="data-card">
+            <div class="row"><span class="label">Total Market Cap</span><span class="val">$${fmtNum(data.total_market_cap?.usd)}</span></div>
+            <div class="row"><span class="label">24h Change</span><span class="val ${ch>=0?'up':'dn'}">${ch>=0?'+':''}${ch.toFixed(2)}%</span></div>
+            <div class="row"><span class="label">24h Volume</span><span class="val">$${fmtNum(data.total_volume?.usd)}</span></div>
+            <div class="row"><span class="label">BTC Dominance</span><span class="val">${(data.market_cap_percentage?.btc||0).toFixed(1)}%</span></div>
+            <div class="row"><span class="label">ETH Dominance</span><span class="val">${(data.market_cap_percentage?.eth||0).toFixed(1)}%</span></div>
+            <div class="row"><span class="label">Active Cryptos</span><span class="val">${data.active_cryptocurrencies?.toLocaleString()}</span></div>
+            <div class="row"><span class="label">Markets</span><span class="val">${data.markets?.toLocaleString()}</span></div>
+        </div>
+        <div class="src">Source: CoinGecko Global</div>
+    `;
+}
+
+function getWhaleInfo() {
+    return `
+        <strong>🐋 Whale Monitoring</strong><br><br>
+        Whale tracking is available in the <strong>DeFi app</strong> under the Whales tab. 
+        It monitors large transactions across major blockchains including:
+        <br><br>
+        • Exchange deposits & withdrawals > $1M<br>
+        • Large wallet-to-wallet transfers<br>
+        • Smart money movements<br>
+        <br>
+        For real-time alerts, use the Telegram bot: <code>/whale setup</code>
+    `;
+}
+
+function getAnalysisInfo(q) {
+    const addr = q.match(/0x[0-9a-fA-F]{40}/)?.[0];
+    return `
+        <strong>🔍 Token Analysis</strong><br><br>
+        ${addr ? `I see address <code>${addr.slice(0,6)}…${addr.slice(-4)}</code>. ` : ''}
+        Full token security analysis is available through the Telegram bot:
+        <br><br>
+        • <code>/scan &lt;address&gt;</code> — Security audit (GoPlus)<br>
+        • <code>/analyze &lt;token&gt;</code> — Deep analysis with holder data<br>
+        • <code>/holders &lt;address&gt;</code> — Top holders breakdown<br>
+        <br>
+        These commands check for: honeypot detection, ownership renounced, proxy contracts, 
+        tax manipulation, and holder concentration risks.
+    `;
+}
+
+/* Helpers */
+function fmtNum(n) {
+    if (n==null||isNaN(n)) return '—';
+    if (Math.abs(n)>=1e12) return (n/1e12).toFixed(2)+'T';
+    if (Math.abs(n)>=1e9) return (n/1e9).toFixed(2)+'B';
+    if (Math.abs(n)>=1e6) return (n/1e6).toFixed(2)+'M';
+    if (Math.abs(n)>=1e3) return (n/1e3).toFixed(2)+'K';
+    return n.toFixed(2);
+}
+function fgColor(v) {
+    if (v<=25) return '#ef4444'; if (v<=45) return '#f97316';
+    if (v<=55) return '#eab308'; if (v<=75) return '#84cc16'; return '#5be45b';
+}
+
+/* Init */
+function greenflag() { /* ready */ }
+if (!window.myWindow) document.addEventListener('DOMContentLoaded', greenflag);
+</script>
+</body>
+</html>

@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="lair-perms" content="network" />
+    <title>On-Chain Analytics</title>
+    <meta name="lair-icon" content="monitoring">
+    <meta name="lair-include" content="lair.css material-symbols-rounded">
+    <meta name="permissions" content="appStorage, network">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { height: 100vh; overflow: hidden; background: var(--col-bg1, #101010); color: var(--col-txt1, #fff); font-family: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif; display: flex; flex-direction: column; }
+        .header { display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: var(--col-bg2, #171717); border-bottom: 1px solid var(--col-bg3, #262626); flex-shrink: 0; flex-wrap: wrap; }
+        .header h2 { font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 6px; }
+        .tab-row { display: flex; gap: 2px; background: var(--col-bg1, #101010); border-radius: 6px; padding: 2px; overflow-x: auto; }
+        .tab-btn { background: transparent; border: none; color: #888; border-radius: 4px; padding: 5px 12px; cursor: pointer; font-size: 11px; font-family: inherit; transition: all 0.15s; display: flex; align-items: center; gap: 4px; white-space: nowrap; }
+        .tab-btn:hover { color: var(--col-txt1, #fff); }
+        .tab-btn.active { background: var(--colors-accent, #6179ff); color: #fff; }
+        .refresh-info { margin-left: auto; font-size: 10px; color: #555; }
+        .content { flex: 1; overflow-y: auto; padding: 16px; }
+        .content::-webkit-scrollbar { width: 6px; }
+        .content::-webkit-scrollbar-thumb { background: var(--col-bg3, #333); border-radius: 3px; }
+        .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; margin-bottom: 20px; }
+        .metric-card { background: var(--col-bg2, #171717); border: 1px solid var(--col-bg3, #262626); border-radius: 10px; padding: 16px; transition: border-color 0.2s; }
+        .metric-card:hover { border-color: var(--colors-accent, #6179ff); }
+        .mc-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+        .mc-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+        .mc-label { font-size: 11px; color: #888; }
+        .mc-value { font-size: 22px; font-weight: 700; margin: 4px 0; }
+        .mc-change { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; font-weight: 600; padding: 2px 6px; border-radius: 4px; }
+        .mc-change.up { background: rgba(91,228,91,0.1); color: #5be45b; }
+        .mc-change.dn { background: rgba(239,68,68,0.1); color: #ef4444; }
+        .mc-sub { font-size: 10px; color: #555; margin-top: 6px; }
+        .mc-sparkline { margin-top: 10px; }
+        .mc-sparkline canvas { width: 100%; height: 40px; display: block; }
+        .up { color: #5be45b; } .dn { color: #ef4444; } .neutral { color: #f59e0b; }
+        .section-title { font-size: 13px; font-weight: 700; color: #aaa; margin-bottom: 12px; padding-bottom: 6px; border-bottom: 1px solid var(--col-bg3, #262626); display: flex; align-items: center; gap: 6px; }
+        .flow-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        .flow-table th { text-align: left; font-size: 10px; color: #888; text-transform: uppercase; padding: 8px 10px; border-bottom: 1px solid var(--col-bg3, #262626); }
+        .flow-table td { padding: 8px 10px; font-size: 12px; border-bottom: 1px solid rgba(255,255,255,0.02); }
+        .flow-bar { display: flex; align-items: center; gap: 6px; }
+        .flow-bar-bg { flex: 1; height: 6px; background: var(--col-bg3, #262626); border-radius: 3px; overflow: hidden; }
+        .flow-bar-fill { height: 100%; border-radius: 3px; }
+        .state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 48px; width: 100%; }
+        .spinner { width: 30px; height: 30px; border: 3px solid var(--col-bg3, #262626); border-top-color: var(--colors-accent, #6179ff); border-radius: 50%; animation: spin 0.7s linear infinite; margin-bottom: 14px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .state p { color: #666; font-size: 13px; }
+        @media (max-width: 640px) { .cards-grid { grid-template-columns: 1fr 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h2><span class="material-symbols-rounded" style="font-size:18px;">monitoring</span> On-Chain Analytics</h2>
+        <div class="tab-row">
+            <button class="tab-btn active" data-tab="overview" onclick="switchTab('overview')">
+                <span class="material-symbols-rounded" style="font-size:14px;">dashboard</span> Overview
+            </button>
+            <button class="tab-btn" data-tab="tvl" onclick="switchTab('tvl')">
+                <span class="material-symbols-rounded" style="font-size:14px;">lock</span> TVL
+            </button>
+            <button class="tab-btn" data-tab="stablecoins" onclick="switchTab('stablecoins')">
+                <span class="material-symbols-rounded" style="font-size:14px;">payments</span> Stablecoins
+            </button>
+            <button class="tab-btn" data-tab="bridges" onclick="switchTab('bridges')">
+                <span class="material-symbols-rounded" style="font-size:14px;">compare_arrows</span> Bridges
+            </button>
+            <button class="tab-btn" data-tab="gas" onclick="switchTab('gas')">
+                <span class="material-symbols-rounded" style="font-size:14px;">local_gas_station</span> Gas
+            </button>
+            <button class="tab-btn" data-tab="fees" onclick="switchTab('fees')">
+                <span class="material-symbols-rounded" style="font-size:14px;">receipt_long</span> Fees
+            </button>
+        </div>
+        <div class="refresh-info" id="refreshInfo">&mdash;</div>
+    </div>
+
+    <div class="content" id="content">
+        <div class="state"><div class="spinner"></div><p>Loading on-chain data&hellip;</p></div>
+    </div>
+
+<script>
+(function() {
+    'use strict';
+    var currentTab = 'overview';
+    var cache = {};
+    var REFRESH_MS = 60000;
+
+    function fmtNum(n) {
+        if (n >= 1e12) return (n / 1e12).toFixed(2) + 'T';
+        if (n >= 1e9) return (n / 1e9).toFixed(2) + 'B';
+        if (n >= 1e6) return (n / 1e6).toFixed(2) + 'M';
+        if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+        return n.toFixed(0);
+    }
+
+    function fmtUsd(n) { return '$' + fmtNum(n); }
+    function pctClass(v) { return v >= 0 ? 'up' : 'dn'; }
+    function pctStr(v) { return (v >= 0 ? '+' : '') + v.toFixed(2) + '%'; }
+    function drawSparkline(canvas, data, color) {
+        var ctx = canvas.getContext('2d');
+        var w = canvas.width = canvas.offsetWidth * 2;
+        var h = canvas.height = 80;
+        ctx.clearRect(0, 0, w, h);
+        if (!data || data.length < 2) return;
+        var min = Math.min.apply(null, data), max = Math.max.apply(null, data), range = max - min || 1;
+        var step = w / (data.length - 1);
+        var grad = ctx.createLinearGradient(0, 0, 0, h);
+        grad.addColorStop(0, color + '33'); grad.addColorStop(1, color + '00');
+        ctx.beginPath();
+        ctx.moveTo(0, h - ((data[0] - min) / range) * h * 0.8 - h * 0.1);
+        for (var i = 0; i < data.length; i++) ctx.lineTo(i * step, h - ((data[i] - min) / range) * h * 0.8 - h * 0.1);
+        ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.stroke();
+        ctx.lineTo(w, h); ctx.lineTo(0, h); ctx.closePath(); ctx.fillStyle = grad; ctx.fill();
+    }
+
+    async function cfetch(url) {
+        if (window.cfetch && window.cfetch !== cfetch) {
+            try { var r0 = await window.cfetch(url); if (r0 && r0.ok) return r0; } catch(e) {}
+        }
+        try { var r = await fetch(url); if (r.ok) return r; } catch(e) {}
+        try { var r2 = await fetch('https://api.allorigins.win/raw?url=' + encodeURIComponent(url)); if (r2.ok) return r2; } catch(e) {}
+        return null;
+    }
+
+    async function getJson(url, cacheKey) {
+        if (cacheKey && cache[cacheKey]) return cache[cacheKey];
+        var r = await cfetch(url);
+        if (!r) return null;
+        var data = await r.json();
+        if (cacheKey) cache[cacheKey] = data;
+        return data;
+    }
+
+    /* ===== Overview Tab ===== */
+    async function renderOverview() {
+        var chains = await getJson('https://api.llama.fi/v2/chains', 'chains');
+        var global = await getJson('https://api.coingecko.com/api/v3/global', 'global');
+        var fng = await getJson('https://api.alternative.me/fng/?limit=1', 'fng');
+
+        if (!chains) return '<div class="state"><p>Failed to load data</p></div>';
+
+        var topChains = chains.sort(function(a,b){return (b.tvl||0)-(a.tvl||0);}).slice(0, 6);
+        var totalTvl = chains.reduce(function(s,c){return s + (c.tvl||0);}, 0);
+        var gd = global ? global.data : null;
+        var fear = fng && fng.data ? fng.data[0] : null;
+
+        var html = '<div class="section-title"><span class="material-symbols-rounded" style="font-size:16px;">public</span> Market Overview</div><div class="cards-grid">';
+        html += '<div class="metric-card"><div class="mc-header"><div class="mc-icon" style="background:rgba(97,121,255,0.15);">🌍</div><div class="mc-label">Total DeFi TVL</div></div><div class="mc-value" style="color:#6179ff;">' + fmtUsd(totalTvl) + '</div><div class="mc-sub">' + chains.length + ' chains tracked</div></div>';
+
+        if (gd) {
+            var mktCap = gd.total_market_cap ? gd.total_market_cap.usd : 0;
+            var mktChange = gd.market_cap_change_percentage_24h_usd || 0;
+            var vol24 = gd.total_volume ? gd.total_volume.usd : 0;
+            var btcDom = gd.market_cap_percentage ? gd.market_cap_percentage.btc : 0;
+            html += '<div class="metric-card"><div class="mc-header"><div class="mc-icon" style="background:rgba(91,228,91,0.15);">💰</div><div class="mc-label">Crypto Market Cap</div></div><div class="mc-value ' + pctClass(mktChange) + '">' + fmtUsd(mktCap) + '</div><div class="mc-change ' + pctClass(mktChange) + '">' + pctStr(mktChange) + ' (24h)</div></div>';
+            html += '<div class="metric-card"><div class="mc-header"><div class="mc-icon" style="background:rgba(245,158,11,0.15);">📊</div><div class="mc-label">24h Volume</div></div><div class="mc-value">' + fmtUsd(vol24) + '</div><div class="mc-sub">BTC Dominance: ' + btcDom.toFixed(1) + '%</div></div>';
+        }
+
+        if (fear) {
+            var fval = Number(fear.value);
+            var blocks = Math.round(fval / 100 * 20);
+            var bar = '';
+            for (var b = 0; b < 20; b++) bar += b < blocks ? '\u2588' : '\u2591';
+            html += '<div class="metric-card"><div class="mc-header"><div class="mc-icon" style="background:rgba(139,92,246,0.15);">' + (fval > 50 ? '\uD83D\uDE00' : '\uD83D\uDE28') + '</div><div class="mc-label">Fear & Greed Index</div></div><div class="mc-value" style="color:' + (fval > 60 ? '#5be45b' : fval < 40 ? '#ef4444' : '#f59e0b') + ';">' + fval + '</div><div class="mc-sub">' + fear.value_classification + ' ' + bar + '</div></div>';
+        }
+        html += '</div>';
+
+        html += '<div class="section-title"><span class="material-symbols-rounded" style="font-size:16px;">hub</span> Top Chains by TVL</div><div class="cards-grid">';
+        var chainColors = { Ethereum: '#627eea', Solana: '#9945ff', BSC: '#f0b90b', Arbitrum: '#28a0f0', Base: '#0052ff', Polygon: '#8247e5', Avalanche: '#e84142', Optimism: '#ff0420', Tron: '#eb0029' };
+        topChains.forEach(function(c) {
+            var color = chainColors[c.name] || '#6179ff';
+            var tvlShare = totalTvl > 0 ? (c.tvl / totalTvl * 100).toFixed(1) : '0';
+            html += '<div class="metric-card"><div class="mc-header"><div class="mc-icon" style="background:' + color + '22;">' + (c.name === 'Ethereum' ? '\u039E' : c.name === 'Solana' ? '\u25CE' : '\u26D3\uFE0F') + '</div><div class="mc-label">' + c.name + '</div></div><div class="mc-value" style="color:' + color + ';">' + fmtUsd(c.tvl) + '</div><div class="mc-sub">Share: ' + tvlShare + '% of total TVL</div></div>';
+        });
+        html += '</div>';
+
+        return html;
+    }
+
+    /* ===== TVL Tab ===== */
+    async function renderTVL() {
+        var chains = await getJson('https://api.llama.fi/v2/chains', 'chains');
+        if (!chains) return '<div class="state"><p>Failed to load TVL data</p></div>';
+
+        var sorted = chains.filter(function(c){return c.tvl > 0;}).sort(function(a,b){return b.tvl - a.tvl;});
+        var maxTvl = sorted[0] ? sorted[0].tvl : 1;
+
+        var html = '<div class="section-title"><span class="material-symbols-rounded" style="font-size:16px;">lock</span> Total Value Locked by Chain</div>';
+        html += '<table class="flow-table"><thead><tr><th>#</th><th>Chain</th><th>TVL</th><th>Change (1d)</th><th></th></tr></thead><tbody>';
+
+        sorted.slice(0, 30).forEach(function(c, i) {
+            var barWidth = (c.tvl / maxTvl * 100).toFixed(1);
+            var change1d = c.change_1d || 0;
+            html += '<tr><td style="color:#555;">' + (i+1) + '</td><td style="font-weight:600;">' + c.name + '</td><td style="font-weight:600;">' + fmtUsd(c.tvl) + '</td><td class="' + pctClass(change1d) + '">' + pctStr(change1d) + '</td><td style="width:40%;"><div class="flow-bar"><div class="flow-bar-bg"><div class="flow-bar-fill" style="width:' + barWidth + '%;background:var(--colors-accent,#6179ff);"></div></div></div></td></tr>';
+        });
+
+        html += '</tbody></table>';
+        return html;
+    }
+
+    /* ===== Stablecoins Tab ===== */
+    async function renderStablecoins() {
+        var stables = await getJson('https://stablecoins.llama.fi/stablecoins?includePrices=true', 'stablecoins');
+        if (!stables) return '<div class="state"><p>Failed to load stablecoin data</p></div>';
+
+        var coins = (stables.peggedAssets || []).sort(function(a,b){
+            var amc = a.circulating ? (a.circulating.peggedUSD || 0) : 0;
+            var bmc = b.circulating ? (b.circulating.peggedUSD || 0) : 0;
+            return bmc - amc;
+        });
+
+        var totalMcap = coins.reduce(function(s,c){ return s + (c.circulating ? (c.circulating.peggedUSD || 0) : 0); }, 0);
+
+        var html = '<div class="section-title"><span class="material-symbols-rounded" style="font-size:16px;">payments</span> Stablecoin Market</div>';
+        html += '<div class="cards-grid">';
+        html += '<div class="metric-card"><div class="mc-header"><div class="mc-icon" style="background:rgba(91,228,91,0.15);">💵</div><div class="mc-label">Total Stablecoin Market Cap</div></div><div class="mc-value up">' + fmtUsd(totalMcap) + '</div><div class="mc-sub">' + coins.length + ' stablecoins tracked</div></div>';
+
+        coins.slice(0, 3).forEach(function(c) {
+            var mcap = c.circulating ? (c.circulating.peggedUSD || 0) : 0;
+            var share = totalMcap > 0 ? (mcap / totalMcap * 100).toFixed(1) : '0';
+            html += '<div class="metric-card"><div class="mc-header"><div class="mc-icon" style="background:rgba(97,121,255,0.15);">' + (c.symbol === 'USDT' ? '\uD83C\uDFE6' : c.symbol === 'USDC' ? '\uD83D\uDD35' : '\uD83D\uDCB0') + '</div><div class="mc-label">' + c.name + ' (' + c.symbol + ')</div></div><div class="mc-value">' + fmtUsd(mcap) + '</div><div class="mc-sub">Market share: ' + share + '%</div></div>';
+        });
+        html += '</div>';
+
+        var maxMcap = coins[0] ? (coins[0].circulating ? coins[0].circulating.peggedUSD : 0) : 1;
+        html += '<table class="flow-table"><thead><tr><th>#</th><th>Stablecoin</th><th>Market Cap</th><th>Type</th><th>Share</th><th></th></tr></thead><tbody>';
+        coins.slice(0, 20).forEach(function(c, i) {
+            var mcap = c.circulating ? (c.circulating.peggedUSD || 0) : 0;
+            var barW = maxMcap > 0 ? (mcap / maxMcap * 100).toFixed(1) : 0;
+            var share = totalMcap > 0 ? (mcap / totalMcap * 100).toFixed(1) : '0';
+            html += '<tr><td style="color:#555;">' + (i+1) + '</td><td style="font-weight:600;">' + c.symbol + ' <span style="color:#555;font-weight:400;">' + c.name + '</span></td><td>' + fmtUsd(mcap) + '</td><td style="font-size:11px;color:#888;">' + (c.pegType || 'repeg') + '</td><td>' + share + '%</td><td style="width:30%;"><div class="flow-bar"><div class="flow-bar-bg"><div class="flow-bar-fill" style="width:' + barW + '%;background:#26a17b;"></div></div></div></td></tr>';
+        });
+        html += '</tbody></table>';
+        return html;
+    }
+
+    /* ===== Bridges Tab ===== */
+    async function renderBridges() {
+        var bridges = await getJson('https://bridges.llama.fi/bridges?includeChains=true', 'bridges');
+        if (!bridges) return '<div class="state"><p>Failed to load bridge data</p></div>';
+
+        var bridgeList = (bridges.bridges || []).sort(function(a,b){
+            return (b.lastDailyVolume || 0) - (a.lastDailyVolume || 0);
+        });
+
+        var totalVol = bridgeList.reduce(function(s,b){return s + (b.lastDailyVolume || 0);}, 0);
+        var maxVol = bridgeList[0] ? (bridgeList[0].lastDailyVolume || 1) : 1;
+
+        var html = '<div class="section-title"><span class="material-symbols-rounded" style="font-size:16px;">compare_arrows</span> Bridge Activity</div>';
+        html += '<div class="cards-grid">';
+        html += '<div class="metric-card"><div class="mc-header"><div class="mc-icon" style="background:rgba(97,121,255,0.15);">\uD83C\uDF09</div><div class="mc-label">Total Bridge Volume (24h)</div></div><div class="mc-value" style="color:#6179ff;">' + fmtUsd(totalVol) + '</div><div class="mc-sub">' + bridgeList.length + ' bridges active</div></div>';
+
+        bridgeList.slice(0, 3).forEach(function(b) {
+            var vol = b.lastDailyVolume || 0;
+            html += '<div class="metric-card"><div class="mc-header"><div class="mc-icon" style="background:rgba(245,158,11,0.15);">\uD83D\uDD17</div><div class="mc-label">' + b.displayName + '</div></div><div class="mc-value">' + fmtUsd(vol) + '</div><div class="mc-sub">' + (b.chains ? b.chains.length + ' chains' : '') + '</div></div>';
+        });
+        html += '</div>';
+
+        html += '<table class="flow-table"><thead><tr><th>#</th><th>Bridge</th><th>24h Volume</th><th>Chains</th><th></th></tr></thead><tbody>';
+        bridgeList.slice(0, 25).forEach(function(b, i) {
+            var vol = b.lastDailyVolume || 0;
+            var barW = maxVol > 0 ? (vol / maxVol * 100).toFixed(1) : 0;
+            html += '<tr><td style="color:#555;">' + (i+1) + '</td><td style="font-weight:600;">' + b.displayName + '</td><td>' + fmtUsd(vol) + '</td><td style="font-size:11px;color:#888;">' + (b.chains ? b.chains.length : 0) + '</td><td style="width:35%;"><div class="flow-bar"><div class="flow-bar-bg"><div class="flow-bar-fill" style="width:' + barW + '%;background:#f59e0b;"></div></div></div></td></tr>';
+        });
+        html += '</tbody></table>';
+        return html;
+    }
+
+    /* ===== Gas Tab ===== */
+    async function renderGas() {
+        var etherscanKey = localStorage.getItem('lair_cli_etherscan_key') || 'YourApiKeyToken';
+        var chainIds = [
+            { name: 'Ethereum', id: '1', color: '#627eea' },
+            { name: 'Base', id: '8453', color: '#0052ff' },
+            { name: 'Arbitrum', id: '42161', color: '#28a0f0' },
+            { name: 'Polygon', id: '137', color: '#8247e5' },
+            { name: 'BSC', id: '56', color: '#f0b90b' },
+            { name: 'Optimism', id: '10', color: '#ff0420' },
+            { name: 'Avalanche', id: '43114', color: '#e84142' }
+        ];
+
+        var results = await Promise.allSettled(chainIds.map(function(c) {
+            return cfetch('https://api.etherscan.io/v2/api?chainid=' + c.id + '&module=gastracker&action=gasoracle&apikey=' + encodeURIComponent(etherscanKey)).then(function(r){return r ? r.json() : null;});
+        }));
+
+        var html = '<div class="section-title"><span class="material-symbols-rounded" style="font-size:16px;">local_gas_station</span> Live Gas Prices Across Chains</div>';
+        html += '<div class="cards-grid">';
+
+        results.forEach(function(res, i) {
+            var chain = chainIds[i];
+            var gas = res.status === 'fulfilled' && res.value ? res.value.result : null;
+            if (!gas || typeof gas === 'string') {
+                html += '<div class="metric-card"><div class="mc-header"><div class="mc-icon" style="background:' + chain.color + '22;">\u26FD</div><div class="mc-label">' + chain.name + '</div></div><div class="mc-value" style="color:#555;">N/A</div><div class="mc-sub">Gas data unavailable</div></div>';
+                return;
+            }
+            html += '<div class="metric-card"><div class="mc-header"><div class="mc-icon" style="background:' + chain.color + '22;">\u26FD</div><div class="mc-label">' + chain.name + '</div></div>'
+                + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:8px;">'
+                + '<div><div style="font-size:10px;color:#888;">Safe</div><div style="font-size:16px;font-weight:700;color:#5be45b;">' + (gas.SafeGasPrice || 'N/A') + '</div></div>'
+                + '<div><div style="font-size:10px;color:#888;">Standard</div><div style="font-size:16px;font-weight:700;color:#f59e0b;">' + (gas.ProposeGasPrice || 'N/A') + '</div></div>'
+                + '<div><div style="font-size:10px;color:#888;">Fast</div><div style="font-size:16px;font-weight:700;color:#ef4444;">' + (gas.FastGasPrice || 'N/A') + '</div></div>'
+                + '</div><div class="mc-sub">Gwei' + (gas.suggestBaseFee ? ' \u2022 Base: ' + Number(gas.suggestBaseFee).toFixed(2) : '') + '</div></div>';
+        });
+        html += '</div>';
+        return html;
+    }
+
+    /* ===== Fees Tab ===== */
+    async function renderFees() {
+        var fees = await getJson('https://api.llama.fi/overview/fees?excludeTotalDataChart=true&excludeTotalDataChartBreakdown=true&dataType=dailyFees', 'fees');
+        if (!fees) return '<div class="state"><p>Failed to load fees data</p></div>';
+
+        var protocols = (fees.protocols || []).sort(function(a,b){ return (b.total24h || 0) - (a.total24h || 0); });
+        var totalFees = protocols.reduce(function(s,p){return s + (p.total24h || 0);}, 0);
+        var maxFee = protocols[0] ? (protocols[0].total24h || 1) : 1;
+
+        var html = '<div class="section-title"><span class="material-symbols-rounded" style="font-size:16px;">receipt_long</span> Protocol Fees (24h)</div>';
+        html += '<div class="cards-grid">';
+        html += '<div class="metric-card"><div class="mc-header"><div class="mc-icon" style="background:rgba(91,228,91,0.15);">\uD83D\uDCB8</div><div class="mc-label">Total Protocol Fees (24h)</div></div><div class="mc-value up">' + fmtUsd(totalFees) + '</div><div class="mc-sub">' + protocols.length + ' protocols generating fees</div></div>';
+        protocols.slice(0, 3).forEach(function(p) {
+            html += '<div class="metric-card"><div class="mc-header"><div class="mc-icon" style="background:rgba(97,121,255,0.15);">\uD83C\uDFED</div><div class="mc-label">' + p.name + '</div></div><div class="mc-value">' + fmtUsd(p.total24h || 0) + '</div><div class="mc-sub">' + (p.category || 'Protocol') + ' \u2022 ' + (p.chains ? p.chains.slice(0,3).join(', ') : '') + '</div></div>';
+        });
+        html += '</div>';
+
+        html += '<table class="flow-table"><thead><tr><th>#</th><th>Protocol</th><th>Fees (24h)</th><th>Category</th><th></th></tr></thead><tbody>';
+        protocols.slice(0, 30).forEach(function(p, i) {
+            var barW = maxFee > 0 ? ((p.total24h || 0) / maxFee * 100).toFixed(1) : 0;
+            html += '<tr><td style="color:#555;">' + (i+1) + '</td><td style="font-weight:600;">' + p.name + '</td><td>' + fmtUsd(p.total24h || 0) + '</td><td style="font-size:11px;color:#888;">' + (p.category || '\u2014') + '</td><td style="width:35%;"><div class="flow-bar"><div class="flow-bar-bg"><div class="flow-bar-fill" style="width:' + barW + '%;background:#8b5cf6;"></div></div></div></td></tr>';
+        });
+        html += '</tbody></table>';
+        return html;
+    }
+
+    /* ===== Tab Switcher ===== */
+    async function switchTab(tab) {
+        currentTab = tab;
+        document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.toggle('active', b.dataset.tab === tab);});
+        var content = document.getElementById('content');
+        content.innerHTML = '<div class="state"><div class="spinner"></div><p>Loading data\u2026</p></div>';
+
+        try {
+            var html = '';
+            switch(tab) {
+                case 'overview': html = await renderOverview(); break;
+                case 'tvl': html = await renderTVL(); break;
+                case 'stablecoins': html = await renderStablecoins(); break;
+                case 'bridges': html = await renderBridges(); break;
+                case 'gas': html = await renderGas(); break;
+                case 'fees': html = await renderFees(); break;
+            }
+            content.innerHTML = html;
+            document.getElementById('refreshInfo').textContent = 'Updated ' + new Date().toLocaleTimeString();
+        } catch(e) {
+            console.error('Tab render error:', e);
+            content.innerHTML = '<div class="state"><span class="material-symbols-rounded" style="font-size:40px;color:#333;">error</span><p>Failed to load data. Try refreshing.</p></div>';
+        }
+    }
+
+    // Auto-refresh
+    setInterval(function() { cache = {}; switchTab(currentTab); }, REFRESH_MS);
+
+    // Init
+    switchTab('overview');
+})();
+</script>
+</body>
+</html>

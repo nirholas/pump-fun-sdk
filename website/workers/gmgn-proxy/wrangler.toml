@@ -1,0 +1,17 @@
+name = "gmgn-proxy"
+main = "index.js"
+compatibility_date = "2024-01-01"
+
+# Optional: Add environment variables for session cookies
+# [vars]
+# GMGN_COOKIES = "cf_clearance=..."
+
+# Optional: KV namespace for caching
+# [[kv_namespaces]]
+# binding = "CACHE"
+# id = "your-kv-namespace-id"
+
+# Optional: Rate limiting with Durable Objects
+# [[durable_objects.bindings]]
+# name = "RATE_LIMITER"
+# class_name = "RateLimiter"

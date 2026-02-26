@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="lair-include" content="lair.css material-symbols-rounded" />
+  <meta name="lair-icon" content="swap_horiz" />
+  <meta name="capabilities" content="bridge_tracker" />
+  <meta name="lair-perms" content="network" />
+  <title>Bridge Tracker</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; background: var(--col-bg1, #080A19); color: var(--col-txt1, #A7C2F3); font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+    .app { height: 100%; display: grid; grid-template-rows: auto auto minmax(160px, 34%) 1fr; overflow: hidden; }
+    .header { padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; border-bottom: 1px solid rgba(112,188,249,0.12); background: var(--col-bg2, #0C0F27); }
+    .title { display: flex; gap: 8px; align-items: center; font-size: 14px; font-weight: 700; }
+    .title .material-symbols-rounded { color: var(--colors-accent, rgb(97,121,255)); }
+    .controls { display: flex; align-items: center; gap: 8px; }
+    .btn { background: var(--col-bg3, #15183E); color: var(--col-txt1, #A7C2F3); border: 1px solid rgba(112,188,249,0.2); border-radius: 8px; padding: 6px 10px; font-size: 12px; cursor: pointer; }
+
+    .stats { display: grid; grid-template-columns: repeat(3, minmax(160px, 1fr)); gap: 8px; padding: 8px 14px; border-bottom: 1px solid rgba(112,188,249,0.08); }
+    .stat { background: rgba(112,188,249,0.05); border: 1px solid rgba(112,188,249,0.09); border-radius: 10px; padding: 8px 10px; }
+    .k { font-size: 10px; color: #7384b1; text-transform: uppercase; letter-spacing: .04em; }
+    .v { margin-top: 2px; font-size: 14px; font-weight: 700; }
+    .good { color: var(--col-good, #85FF85); }
+    .bad { color: var(--col-bad, #AC4949); }
+
+    .flows { padding: 8px 14px; border-bottom: 1px solid rgba(112,188,249,0.08); overflow: auto; }
+    .flow-title { font-size: 11px; color: #7f8cb4; margin-bottom: 6px; }
+    .flow-list { display: grid; gap: 4px; }
+    .route { font-size: 12px; color: #c4d3ff; padding: 6px 8px; border: 1px solid rgba(112,188,249,0.08); border-radius: 8px; background: rgba(112,188,249,0.03); display: flex; justify-content: space-between; }
+
+    .table-wrap { overflow: auto; }
+    table { width: 100%; border-collapse: collapse; min-width: 840px; }
+    thead th { position: sticky; top: 0; background: var(--col-bg2, #0C0F27); font-size: 11px; color: #6f7ea8; text-align: right; padding: 8px 10px; border-bottom: 1px solid rgba(112,188,249,0.1); }
+    thead th:first-child, tbody td:first-child { text-align: left; }
+    tbody tr { border-bottom: 1px solid rgba(112,188,249,0.06); }
+    tbody tr:hover { background: rgba(112,188,249,0.05); }
+    tbody td { padding: 8px 10px; font-size: 12px; text-align: right; }
+
+    @media (max-width: 900px) { .stats { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="header">
+      <div class="title"><span class="material-symbols-rounded">swap_horiz</span> Multi-Chain Bridge Tracker</div>
+      <div class="controls">
+        <button class="btn" id="refresh">Refresh</button>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><div class="k">Top Bridge (24h volume)</div><div class="v" id="topBridge">—</div></div>
+      <div class="stat"><div class="k">Best Net Inflow Chain</div><div class="v good" id="bestChain">—</div></div>
+      <div class="stat"><div class="k">Worst Net Flow Chain</div><div class="v bad" id="worstChain">—</div></div>
+    </div>
+
+    <div class="flows">
+      <div class="flow-title">Top Routes (from latest bridge transactions sample)</div>
+      <div class="flow-list" id="routes"><div class="route"><span>Loading route flows…</span><span></span></div></div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Chain</th>
+            <th>24h Inflow</th>
+            <th>24h Outflow</th>
+            <th>Net Flow</th>
+            <th>Trend</th>
+          </tr>
+        </thead>
+        <tbody id="rows"><tr><td colspan="5">Loading bridge flows…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    (() => {
+      const fetchFn = window.cfetch || fetch;
+      const rowsEl = document.getElementById('rows');
+      const routesEl = document.getElementById('routes');
+      const topBridgeEl = document.getElementById('topBridge');
+      const bestChainEl = document.getElementById('bestChain');
+      const worstChainEl = document.getElementById('worstChain');
+      const refreshBtn = document.getElementById('refresh');
+
+      function money(v) {
+        if (!Number.isFinite(v)) return '—';
+        if (v >= 1e9) return `$${(v / 1e9).toFixed(2)}B`;
+        if (v >= 1e6) return `$${(v / 1e6).toFixed(2)}M`;
+        if (v >= 1e3) return `$${(v / 1e3).toFixed(1)}K`;
+        return `$${v.toFixed(0)}`;
+      }
+
+      function trend(net, inflow, outflow) {
+        const total = Math.max(inflow + outflow, 1);
+        const strength = Math.abs(net) / total;
+        if (net > 0) return strength > 0.2 ? '↗️↗️' : '↗️';
+        if (net < 0) return strength > 0.2 ? '↘️↘️' : '↘️';
+        return '→';
+      }
+
+      async function json(url) {
+        const res = await fetchFn(url);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      }
+
+      function aggregateChainFlows(bridgeVolumes) {
+        const byChain = new Map();
+
+        bridgeVolumes.forEach(entry => {
+          const chains = entry?.chainBreakdown || {};
+          Object.entries(chains).forEach(([chain, value]) => {
+            const current = byChain.get(chain) || { chain, inflow: 0, outflow: 0 };
+            const num = Number(value || 0);
+            if (num >= 0) current.inflow += num;
+            else current.outflow += Math.abs(num);
+            byChain.set(chain, current);
+          });
+        });
+
+        return [...byChain.values()].map(v => ({ ...v, net: v.inflow - v.outflow }));
+      }
+
+      function renderRows(chainStats) {
+        if (!chainStats.length) {
+          rowsEl.innerHTML = '<tr><td colspan="5">No bridge flow data available</td></tr>';
+          return;
+        }
+
+        const sorted = [...chainStats].sort((a, b) => b.net - a.net);
+        rowsEl.innerHTML = sorted.map(c => {
+          const netClass = c.net >= 0 ? 'good' : 'bad';
+          const sign = c.net >= 0 ? '+' : '';
+          return `<tr>
+            <td><strong>${c.chain}</strong></td>
+            <td>${money(c.inflow)}</td>
+            <td>${money(c.outflow)}</td>
+            <td class="${netClass}">${sign}${money(c.net)}</td>
+            <td>${trend(c.net, c.inflow, c.outflow)}</td>
+          </tr>`;
+        }).join('');
+
+        const best = sorted[0];
+        const worst = sorted[sorted.length - 1];
+        bestChainEl.textContent = `${best.chain} (${money(best.net)})`;
+        worstChainEl.textContent = `${worst.chain} (${money(worst.net)})`;
+      }
+
+      function renderRoutes(txs) {
+        if (!txs.length) {
+          routesEl.innerHTML = '<div class="route"><span>No route transaction sample available</span><span></span></div>';
+          return;
+        }
+
+        const routeMap = new Map();
+        txs.forEach(tx => {
+          const src = tx.sourceChain || tx.fromChain || tx.originChain || 'Unknown';
+          const dst = tx.destinationChain || tx.toChain || tx.destChain || 'Unknown';
+          const amount = Number(tx.amountUSD || tx.valueUSD || tx.amount || 0);
+          const key = `${src}→${dst}`;
+          routeMap.set(key, (routeMap.get(key) || 0) + amount);
+        });
+
+        const top = [...routeMap.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
+        routesEl.innerHTML = top.map(([route, value]) => {
+          const [src, dst] = route.split('→');
+          return `<div class="route"><span>${src} → ${dst}</span><span>${money(value)}</span></div>`;
+        }).join('');
+      }
+
+      async function loadData() {
+        refreshBtn.disabled = true;
+        refreshBtn.textContent = 'Refreshing…';
+        rowsEl.innerHTML = '<tr><td colspan="5">Loading bridge data…</td></tr>';
+
+        try {
+          const bridges = await json('https://bridges.llama.fi/bridges?includeChains=true');
+          const topBridge = [...bridges.bridges].sort((a, b) => (b.volumePrevDay || 0) - (a.volumePrevDay || 0))[0];
+          topBridgeEl.textContent = topBridge ? `${topBridge.name} (${money(topBridge.volumePrevDay || 0)})` : '—';
+
+          const now = Math.floor(Date.now() / 1000);
+          const start = now - 86400;
+          const volumeAll = await json(`https://bridges.llama.fi/bridgevolume/all?starttimestamp=${start}&endtimestamp=${now}`);
+          const chainStats = aggregateChainFlows(volumeAll?.bridges || []);
+          renderRows(chainStats);
+
+          const txBridgeId = topBridge?.id;
+          if (txBridgeId) {
+            const txs = await json(`https://bridges.llama.fi/transactions/${txBridgeId}?starttimestamp=${start}&endtimestamp=${now}`);
+            renderRoutes(txs?.data || txs?.transactions || []);
+          } else {
+            renderRoutes([]);
+          }
+        } catch (error) {
+          rowsEl.innerHTML = `<tr><td colspan="5">Failed to load bridge data: ${error.message}</td></tr>`;
+          routesEl.innerHTML = '<div class="route"><span>Route sample unavailable</span><span></span></div>';
+        } finally {
+          refreshBtn.disabled = false;
+          refreshBtn.textContent = 'Refresh';
+        }
+      }
+
+      refreshBtn.addEventListener('click', loadData);
+      loadData();
+      setInterval(loadData, 300000);
+      if (typeof window.greenflag === 'function') window.greenflag();
+    })();
+  </script>
+</body>
+</html>

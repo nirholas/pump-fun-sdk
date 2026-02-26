@@ -1,0 +1,18 @@
+{
+  "name": "lairos-bare-server",
+  "version": "1.0.0",
+  "description": "Bare Server for LairOS web proxy",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node index.js"
+  },
+  "dependencies": {
+    "@tomphttp/bare-server-node": "^2.0.4",
+    "express": "^4.18.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

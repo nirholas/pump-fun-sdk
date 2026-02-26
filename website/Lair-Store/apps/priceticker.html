@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="lair-include" content="lair.css">
+    <meta name="lair-icon" content="../../assets/logo.svg">
+    <meta name="capabilities" content="price_ticker">
+    <meta name="lair-perms" content="network" />
+    <title>Price Ticker</title>
+    <style>
+        html { height: 100%; }
+
+        body {
+            margin: 0;
+            height: 100%;
+            background: var(--col-bg1);
+            color: var(--col-txt1);
+            font-family: inherit;
+        }
+
+        * { box-sizing: border-box; }
+
+        .app {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1em;
+            display: flex;
+            flex-direction: column;
+            gap: 0.85em;
+        }
+
+        .toolbar {
+            display: grid;
+            grid-template-columns: 1fr auto auto auto;
+            gap: 0.5em;
+            align-items: center;
+        }
+
+        .search {
+            width: 100%;
+            border: 1px solid var(--col-bg3);
+            background: var(--col-bg2);
+            color: var(--col-txt1);
+            border-radius: var(--siz-radius1);
+            padding: 0.6em 0.75em;
+            outline: none;
+            font-size: 0.9em;
+        }
+
+        .search:focus { border-color: var(--colors-accent); }
+        .search::placeholder { color: color-mix(in srgb, var(--col-txt1) 58%, transparent); }
+
+        .select,
+        .btn {
+            border: 1px solid var(--col-bg3);
+            background: var(--col-bg2);
+            color: var(--col-txt1);
+            border-radius: var(--siz-radius1);
+            padding: 0.6em 0.8em;
+            font-size: 0.85em;
+            cursor: pointer;
+        }
+
+        .btn:hover,
+        .select:hover { background: var(--col-bg3); }
+
+        .btn:disabled { cursor: not-allowed; opacity: 0.6; }
+
+        .view-toggle {
+            display: inline-flex;
+            border: 1px solid var(--col-bg3);
+            border-radius: var(--siz-radius1);
+            overflow: hidden;
+        }
+
+        .view-toggle button {
+            border: none;
+            margin: 0;
+            background: var(--col-bg2);
+            color: var(--col-txt1);
+            padding: 0.6em 0.8em;
+            cursor: pointer;
+            font-size: 0.82em;
+        }
+
+        .view-toggle button.active {
+            background: var(--colors-accent);
+            color: var(--col-txt1);
+        }
+
+        .status {
+            background: var(--col-bg2);
+            border: 1px solid var(--col-bg3);
+            border-radius: var(--siz-radius1);
+            padding: 0.65em 0.8em;
+            display: grid;
+            gap: 0.55em;
+        }
+
+        .status-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 0.75em;
+            font-size: 0.8em;
+            color: color-mix(in srgb, var(--col-txt1) 75%, transparent);
+        }
+
+        .status-dot {
+            display: inline-block;
+            width: 0.55em;
+            height: 0.55em;
+            border-radius: 50%;
+            margin-right: 0.45em;
+            background: var(--col-good);
+        }
+
+        .status-dot.error { background: var(--col-bad); }
+
+        .progress-track {
+            width: 100%;
+            height: 0.36em;
+            border-radius: 999px;
+            background: var(--col-bg3);
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            width: 100%;
+            background: var(--colors-accent);
+            transform-origin: left;
+            transition: width 1s linear;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 0.5em;
+        }
+
+        .stat-card {
+            background: var(--col-bg2);
+            border: 1px solid var(--col-bg3);
+            border-radius: var(--siz-radius1);
+            padding: 0.75em;
+            min-height: 4.25em;
+        }
+
+        .stat-label {
+            color: color-mix(in srgb, var(--col-txt1) 65%, transparent);
+            font-size: 0.72em;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            margin-bottom: 0.35em;
+        }
+
+        .stat-value {
+            font-size: 0.96em;
+            font-weight: 600;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .content {
+            background: var(--col-bg2);
+            border: 1px solid var(--col-bg3);
+            border-radius: var(--siz-radius1);
+            overflow: hidden;
+        }
+
+        .table-wrap { overflow: auto; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85em;
+            min-width: 880px;
+        }
+
+        th,
+        td {
+            padding: 0.7em 0.75em;
+            border-bottom: 1px solid var(--col-bg3);
+            white-space: nowrap;
+        }
+
+        th {
+            text-align: left;
+            color: color-mix(in srgb, var(--col-txt1) 68%, transparent);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            font-size: 0.75em;
+            cursor: pointer;
+            user-select: none;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+            background: var(--col-bg2);
+        }
+
+        th.active { color: var(--colors-accent); }
+
+        tbody tr:hover { background: var(--col-bg3); }
+
+        .num { text-align: right; font-variant-numeric: tabular-nums; }
+        .coin-cell { display: flex; align-items: center; gap: 0.6em; }
+        .coin-cell img { width: 1.4em; height: 1.4em; border-radius: 50%; }
+        .symbol { color: color-mix(in srgb, var(--col-txt1) 65%, transparent); text-transform: uppercase; }
+        .change-up { color: var(--col-good); }
+        .change-down { color: var(--col-bad); }
+
+        .star-btn {
+            border: none;
+            background: transparent;
+            color: color-mix(in srgb, var(--col-txt1) 46%, transparent);
+            cursor: pointer;
+            font-size: 1.05em;
+            padding: 0;
+            line-height: 1;
+        }
+
+        .star-btn.active { color: var(--colors-accent); }
+
+        .spark {
+            width: 120px;
+            height: 34px;
+            display: block;
+        }
+
+        .flash-up { animation: flashup 0.55s ease; }
+        .flash-down { animation: flashdown 0.55s ease; }
+
+        @keyframes flashup {
+            0% { background: color-mix(in srgb, var(--col-good) 28%, transparent); }
+            100% { background: transparent; }
+        }
+
+        @keyframes flashdown {
+            0% { background: color-mix(in srgb, var(--col-bad) 25%, transparent); }
+            100% { background: transparent; }
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+            gap: 0.55em;
+            padding: 0.55em;
+        }
+
+        .coin-card {
+            border: 1px solid var(--col-bg3);
+            border-radius: var(--siz-radius1);
+            padding: 0.75em;
+            background: var(--col-bg2);
+            display: grid;
+            gap: 0.4em;
+            min-height: 8.5em;
+        }
+
+        .coin-card:hover { background: var(--col-bg3); }
+
+        .card-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 0.5em;
+        }
+
+        .card-name { display: flex; align-items: center; gap: 0.45em; min-width: 0; }
+        .card-name img { width: 1.25em; height: 1.25em; border-radius: 50%; }
+        .card-text { min-width: 0; }
+        .card-title { font-size: 0.9em; font-weight: 600; overflow: hidden; text-overflow: ellipsis; }
+
+        .card-row {
+            display: flex;
+            justify-content: space-between;
+            color: color-mix(in srgb, var(--col-txt1) 75%, transparent);
+            font-size: 0.78em;
+        }
+
+        .card-price {
+            font-size: 1.05em;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .loading,
+        .error,
+        .empty {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.7em;
+            min-height: 320px;
+            text-align: center;
+            color: color-mix(in srgb, var(--col-txt1) 70%, transparent);
+            padding: 1em;
+        }
+
+        .spinner {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            border: 3px solid var(--col-bg3);
+            border-top-color: var(--colors-accent);
+            animation: spin 0.85s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .skeleton-row {
+            height: 42px;
+            margin: 0.4em;
+            border-radius: var(--siz-radius1);
+            background: linear-gradient(90deg, var(--col-bg2), var(--col-bg3), var(--col-bg2));
+            background-size: 220% 100%;
+            animation: pulse 1.2s infinite linear;
+        }
+
+        @keyframes pulse {
+            0% { background-position: 180% 0; }
+            100% { background-position: -40% 0; }
+        }
+
+        @media (max-width: 1024px) {
+            .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+
+        @media (max-width: 760px) {
+            .app { padding: 0.75em; }
+            .toolbar { grid-template-columns: 1fr 1fr; }
+            .search { grid-column: 1 / -1; }
+            .stats { grid-template-columns: 1fr; }
+            .status-row { flex-direction: column; align-items: flex-start; }
+            .spark { width: 92px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <div class="toolbar">
+            <input id="search" class="search" type="text" placeholder="Search top coins by name or symbol" autocomplete="off">
+            <select id="perPage" class="select" aria-label="Coins per page">
+                <option value="20">Top 20</option>
+                <option value="50">Top 50</option>
+                <option value="100">Top 100</option>
+            </select>
+            <div class="view-toggle" aria-label="View mode">
+                <button id="listViewBtn" class="active" type="button">List</button>
+                <button id="gridViewBtn" type="button">Grid</button>
+            </div>
+            <button id="refreshBtn" class="btn" type="button">Refresh</button>
+        </div>
+
+        <div class="status">
+            <div class="status-row">
+                <div><span id="statusDot" class="status-dot"></span><span id="statusText">Loading market data...</span></div>
+                <div id="refreshText">Next refresh in 60s</div>
+            </div>
+            <div class="progress-track"><div id="progressBar" class="progress-bar"></div></div>
+        </div>
+
+        <div id="stats" class="stats"></div>
+        <div id="content" class="content"></div>
+    </div>
+
+    <script>
+        const fetchFn = window.cfetch || fetch;
+        const REFRESH_SECONDS = 60;
+        const FAVORITES_KEY = 'lair_priceticker_favorites';
+
+        const state = {
+            allCoins: [],
+            previousPrices: new Map(),
+            favorites: new Set(loadFavorites()),
+            sortKey: 'market_cap_rank',
+            sortDir: 'asc',
+            viewMode: 'list',
+            perPage: 20,
+            secondsLeft: REFRESH_SECONDS,
+            timer: null,
+            firstLoadDone: false
+        };
+
+        const contentEl = document.getElementById('content');
+        const statsEl = document.getElementById('stats');
+        const statusDotEl = document.getElementById('statusDot');
+        const statusTextEl = document.getElementById('statusText');
+        const refreshTextEl = document.getElementById('refreshText');
+        const progressBarEl = document.getElementById('progressBar');
+        const searchEl = document.getElementById('search');
+        const perPageEl = document.getElementById('perPage');
+        const listViewBtn = document.getElementById('listViewBtn');
+        const gridViewBtn = document.getElementById('gridViewBtn');
+        const refreshBtn = document.getElementById('refreshBtn');
+
+        function getApiUrl() {
+            return `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=${state.perPage}&sparkline=true&price_change_percentage=24h,7d`;
+        }
+
+        function getGlobalUrl() {
+            return 'https://api.coingecko.com/api/v3/global';
+        }
+
+        function loadFavorites() {
+            try {
+                const raw = localStorage.getItem(FAVORITES_KEY);
+                if (!raw) return [];
+                const parsed = JSON.parse(raw);
+                return Array.isArray(parsed) ? parsed : [];
+            } catch {
+                return [];
+            }
+        }
+
+        function saveFavorites() {
+            try {
+                localStorage.setItem(FAVORITES_KEY, JSON.stringify([...state.favorites]));
+            } catch {
+                // noop
+            }
+        }
+
+        function escapeHtml(input) {
+            const node = document.createElement('div');
+            node.textContent = String(input ?? '');
+            return node.innerHTML;
+        }
+
+        function formatPrice(value) {
+            if (value == null || Number.isNaN(value)) return '—';
+            if (value >= 1000) return '$' + value.toLocaleString(undefined, { maximumFractionDigits: 2 });
+            if (value >= 1) return '$' + value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            if (value >= 0.01) return '$' + value.toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 4 });
+            return '$' + value.toLocaleString(undefined, { minimumFractionDigits: 6, maximumFractionDigits: 8 });
+        }
+
+        function formatCompactUsd(value) {
+            if (value == null || Number.isNaN(value)) return '—';
+            return '$' + value.toLocaleString(undefined, { notation: 'compact', maximumFractionDigits: 2 });
+        }
+
+        function formatPct(value) {
+            if (value == null || Number.isNaN(value)) return '—';
+            const sign = value >= 0 ? '+' : '';
+            return sign + value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%';
+        }
+
+        function formatNumber(value) {
+            if (value == null || Number.isNaN(value)) return '—';
+            return value.toLocaleString();
+        }
+
+        function classForChange(value) {
+            return value >= 0 ? 'change-up' : 'change-down';
+        }
+
+        function renderSkeleton() {
+            const lines = Array.from({ length: 10 }).map(() => '<div class="skeleton-row"></div>').join('');
+            contentEl.innerHTML = lines;
+        }
+
+        function renderInitialLoading() {
+            contentEl.innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <div>Fetching live market data...</div>
+                </div>
+            `;
+        }
+
+        function renderError(message) {
+            contentEl.innerHTML = `
+                <div class="error">
+                    <div style="font-size:1.8em;">⚠️</div>
+                    <div>${escapeHtml(message || 'Unable to load market data.')}</div>
+                    <button id="retryBtn" class="btn" type="button">Retry</button>
+                </div>
+            `;
+            const retryBtn = document.getElementById('retryBtn');
+            retryBtn?.addEventListener('click', () => fetchAll(true));
+        }
+
+        function renderNoResults() {
+            contentEl.innerHTML = '<div class="empty"><div>No coins match your search.</div></div>';
+        }
+
+        function sparklineSvg(points, isUp) {
+            if (!Array.isArray(points) || points.length < 2) return '—';
+            const width = 120;
+            const height = 34;
+            const min = Math.min(...points);
+            const max = Math.max(...points);
+            const range = max - min || 1;
+
+            const d = points.map((value, index) => {
+                const x = (index / (points.length - 1)) * width;
+                const y = height - ((value - min) / range) * height;
+                return `${index === 0 ? 'M' : 'L'}${x.toFixed(2)} ${y.toFixed(2)}`;
+            }).join(' ');
+
+            const stroke = isUp ? 'var(--col-good)' : 'var(--col-bad)';
+            return `<svg class="spark" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" aria-hidden="true"><path d="${d}" fill="none" stroke="${stroke}" stroke-width="2" stroke-linecap="round"/></svg>`;
+        }
+
+        function filteredSortedCoins() {
+            const query = searchEl.value.trim().toLowerCase();
+            let rows = state.allCoins;
+
+            if (query) {
+                rows = rows.filter((coin) => (
+                    coin.name.toLowerCase().includes(query)
+                    || coin.symbol.toLowerCase().includes(query)
+                ));
+            }
+
+            rows = [...rows].sort((a, b) => {
+                if (state.sortKey === 'favorite') {
+                    const av = state.favorites.has(a.id) ? 1 : 0;
+                    const bv = state.favorites.has(b.id) ? 1 : 0;
+                    return state.sortDir === 'asc' ? av - bv : bv - av;
+                }
+                const av = a[state.sortKey] ?? 0;
+                const bv = b[state.sortKey] ?? 0;
+
+                if (typeof av === 'string' || typeof bv === 'string') {
+                    const cmp = String(av).localeCompare(String(bv));
+                    return state.sortDir === 'asc' ? cmp : -cmp;
+                }
+
+                return state.sortDir === 'asc' ? av - bv : bv - av;
+            });
+
+            return rows;
+        }
+
+        function setSort(key) {
+            if (state.sortKey === key) {
+                state.sortDir = state.sortDir === 'asc' ? 'desc' : 'asc';
+            } else {
+                state.sortKey = key;
+                state.sortDir = key === 'name' ? 'asc' : 'desc';
+                if (key === 'market_cap_rank') state.sortDir = 'asc';
+            }
+            renderContent();
+        }
+
+        function renderStats(globalData) {
+            if (!globalData) {
+                statsEl.innerHTML = '';
+                return;
+            }
+
+            const marketCap = globalData.total_market_cap?.usd;
+            const volume = globalData.total_volume?.usd;
+            const btcDom = globalData.market_cap_percentage?.btc;
+            const active = globalData.active_cryptocurrencies;
+
+            statsEl.innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-label">Total Market Cap</div>
+                    <div class="stat-value">${formatCompactUsd(marketCap)}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">24h Volume</div>
+                    <div class="stat-value">${formatCompactUsd(volume)}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">BTC Dominance</div>
+                    <div class="stat-value">${btcDom == null ? '—' : btcDom.toLocaleString(undefined, { maximumFractionDigits: 2 }) + '%'}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Active Coins</div>
+                    <div class="stat-value">${formatNumber(active)}</div>
+                </div>
+            `;
+        }
+
+        function buildPriceFlashClass(coin) {
+            const prev = state.previousPrices.get(coin.id);
+            if (prev == null || prev === coin.current_price) return '';
+            return coin.current_price > prev ? 'flash-up' : 'flash-down';
+        }
+
+        function renderList(rows) {
+            const columns = [
+                ['★', 'favorite', ''],
+                ['#', 'market_cap_rank', 'num'],
+                ['Coin', 'name', ''],
+                ['Price', 'current_price', 'num'],
+                ['24h', 'price_change_percentage_24h', 'num'],
+                ['7d', 'price_change_percentage_7d_in_currency', 'num'],
+                ['Market Cap', 'market_cap', 'num'],
+                ['Volume', 'total_volume', 'num'],
+                ['Sparkline', 'sparkline', 'num']
+            ];
+
+            const arrow = state.sortDir === 'asc' ? ' ▲' : ' ▼';
+            const head = columns.map(([label, key, cls]) => {
+                const active = state.sortKey === key ? ' active' : '';
+                const hint = state.sortKey === key ? arrow : '';
+                return `<th class="${cls}${active}" data-key="${key}">${label}${hint}</th>`;
+            }).join('');
+
+            const body = rows.map((coin) => {
+                const c24 = coin.price_change_percentage_24h;
+                const c7 = coin.price_change_percentage_7d_in_currency;
+                const favorited = state.favorites.has(coin.id);
+                const flashClass = buildPriceFlashClass(coin);
+                return `
+                    <tr data-id="${escapeHtml(coin.id)}" class="${flashClass}">
+                        <td>
+                            <button class="star-btn ${favorited ? 'active' : ''}" type="button" data-fav="${escapeHtml(coin.id)}">${favorited ? '★' : '☆'}</button>
+                        </td>
+                        <td class="num">${coin.market_cap_rank ?? '—'}</td>
+                        <td>
+                            <div class="coin-cell">
+                                <img src="${escapeHtml(coin.image)}" alt="${escapeHtml(coin.symbol)}" loading="lazy" onerror="this.style.display='none'">
+                                <div>
+                                    <div>${escapeHtml(coin.name)}</div>
+                                    <div class="symbol">${escapeHtml(coin.symbol)}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="num">${formatPrice(coin.current_price)}</td>
+                        <td class="num ${classForChange(c24)}">${formatPct(c24)}</td>
+                        <td class="num ${classForChange(c7 || 0)}">${formatPct(c7)}</td>
+                        <td class="num">${formatCompactUsd(coin.market_cap)}</td>
+                        <td class="num">${formatCompactUsd(coin.total_volume)}</td>
+                        <td class="num">${sparklineSvg(coin.sparkline_in_7d?.price, (c7 || 0) >= 0)}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            contentEl.innerHTML = `<div class="table-wrap"><table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`;
+
+            contentEl.querySelectorAll('th[data-key]').forEach((th) => {
+                th.addEventListener('click', () => {
+                    const key = th.getAttribute('data-key');
+                    if (key === 'sparkline') return;
+                    setSort(key);
+                });
+            });
+
+            contentEl.querySelectorAll('[data-fav]').forEach((btn) => {
+                btn.addEventListener('click', (event) => {
+                    const id = event.currentTarget.getAttribute('data-fav');
+                    toggleFavorite(id);
+                });
+            });
+        }
+
+        function renderGrid(rows) {
+            contentEl.innerHTML = `<div class="grid">${rows.map((coin) => {
+                const c24 = coin.price_change_percentage_24h;
+                const c7 = coin.price_change_percentage_7d_in_currency;
+                const favorited = state.favorites.has(coin.id);
+                const flashClass = buildPriceFlashClass(coin);
+                return `
+                    <article class="coin-card ${flashClass}">
+                        <div class="card-top">
+                            <div class="card-name">
+                                <img src="${escapeHtml(coin.image)}" alt="${escapeHtml(coin.symbol)}" loading="lazy" onerror="this.style.display='none'">
+                                <div class="card-text">
+                                    <div class="card-title">${escapeHtml(coin.name)}</div>
+                                    <div class="symbol">${escapeHtml(coin.symbol)}</div>
+                                </div>
+                            </div>
+                            <button class="star-btn ${favorited ? 'active' : ''}" type="button" data-fav="${escapeHtml(coin.id)}">${favorited ? '★' : '☆'}</button>
+                        </div>
+                        <div class="card-price">${formatPrice(coin.current_price)}</div>
+                        <div class="card-row"><span>24h</span><span class="${classForChange(c24 || 0)}">${formatPct(c24)}</span></div>
+                        <div class="card-row"><span>7d</span><span class="${classForChange(c7 || 0)}">${formatPct(c7)}</span></div>
+                        <div class="card-row"><span>MCap</span><span>${formatCompactUsd(coin.market_cap)}</span></div>
+                        <div class="card-row"><span>Volume</span><span>${formatCompactUsd(coin.total_volume)}</span></div>
+                        ${sparklineSvg(coin.sparkline_in_7d?.price, (c7 || 0) >= 0)}
+                    </article>
+                `;
+            }).join('')}</div>`;
+
+            contentEl.querySelectorAll('[data-fav]').forEach((btn) => {
+                btn.addEventListener('click', (event) => {
+                    const id = event.currentTarget.getAttribute('data-fav');
+                    toggleFavorite(id);
+                });
+            });
+        }
+
+        function renderContent() {
+            const rows = filteredSortedCoins();
+            if (!rows.length) {
+                renderNoResults();
+                return;
+            }
+            if (state.viewMode === 'grid') {
+                renderGrid(rows);
+            } else {
+                renderList(rows);
+            }
+        }
+
+        function toggleFavorite(id) {
+            if (!id) return;
+            if (state.favorites.has(id)) {
+                state.favorites.delete(id);
+            } else {
+                state.favorites.add(id);
+            }
+            saveFavorites();
+            renderContent();
+        }
+
+        function markHealthy(lastUpdated) {
+            statusDotEl.classList.remove('error');
+            statusTextEl.textContent = `Updated ${lastUpdated.toLocaleTimeString()}`;
+        }
+
+        function markError(message) {
+            statusDotEl.classList.add('error');
+            statusTextEl.textContent = `Error: ${message}`;
+        }
+
+        function updateRefreshUI() {
+            refreshTextEl.textContent = `Next refresh in ${state.secondsLeft}s`;
+            const pct = (state.secondsLeft / REFRESH_SECONDS) * 100;
+            progressBarEl.style.width = `${Math.max(0, Math.min(100, pct))}%`;
+        }
+
+        function resetTimer() {
+            state.secondsLeft = REFRESH_SECONDS;
+            updateRefreshUI();
+            if (state.timer) clearInterval(state.timer);
+            state.timer = setInterval(() => {
+                state.secondsLeft -= 1;
+                if (state.secondsLeft <= 0) {
+                    fetchAll(false);
+                }
+                updateRefreshUI();
+            }, 1000);
+        }
+
+        async function fetchAll(manual) {
+            refreshBtn.disabled = true;
+
+            if (!state.firstLoadDone) {
+                renderInitialLoading();
+            } else if (manual) {
+                renderSkeleton();
+            }
+
+            try {
+                const [coinsRes, globalRes] = await Promise.all([
+                    fetchFn(getApiUrl()),
+                    fetchFn(getGlobalUrl())
+                ]);
+
+                if (!coinsRes.ok) throw new Error(`Price API HTTP ${coinsRes.status}`);
+                if (!globalRes.ok) throw new Error(`Global API HTTP ${globalRes.status}`);
+
+                const [coinsData, globalData] = await Promise.all([
+                    coinsRes.json(),
+                    globalRes.json()
+                ]);
+
+                if (!Array.isArray(coinsData)) throw new Error('Invalid market response format');
+
+                state.previousPrices = new Map(state.allCoins.map((coin) => [coin.id, coin.current_price]));
+                state.allCoins = coinsData;
+                renderStats(globalData?.data);
+                renderContent();
+                markHealthy(new Date());
+                state.firstLoadDone = true;
+                resetTimer();
+            } catch (error) {
+                const message = error?.message || 'Request failed';
+                markError(message);
+                if (!state.allCoins.length) {
+                    renderError(message);
+                }
+                resetTimer();
+            } finally {
+                refreshBtn.disabled = false;
+            }
+        }
+
+        searchEl.addEventListener('input', () => {
+            if (state.allCoins.length) renderContent();
+        });
+
+        perPageEl.addEventListener('change', () => {
+            state.perPage = Number(perPageEl.value) || 20;
+            fetchAll(true);
+        });
+
+        refreshBtn.addEventListener('click', () => fetchAll(true));
+
+        listViewBtn.addEventListener('click', () => {
+            state.viewMode = 'list';
+            listViewBtn.classList.add('active');
+            gridViewBtn.classList.remove('active');
+            renderContent();
+        });
+
+        gridViewBtn.addEventListener('click', () => {
+            state.viewMode = 'grid';
+            gridViewBtn.classList.add('active');
+            listViewBtn.classList.remove('active');
+            renderContent();
+        });
+
+        fetchAll(false);
+    </script>
+</body>
+</html>

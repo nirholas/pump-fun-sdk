@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="lair-include" content="lair.css material-symbols-rounded">
+    <meta name="capabilities" content="arbitrage_scanner">
+    <meta name="permissions" content="network">
+    <meta name="lair-icon" content="<svg width='232' height='232' viewBox='0 0 232 232' fill='none' xmlns='http://www.w3.org/2000/svg'><rect width='232' height='232' rx='40' fill='#0A1628'/><path d='M50 160 L90 100 L116 130 L150 80 L182 120' stroke='#22C55E' stroke-width='4' stroke-linecap='round' fill='none'/><path d='M50 160 L90 130 L116 100 L150 130 L182 90' stroke='#EF4444' stroke-width='4' stroke-linecap='round' fill='none' stroke-dasharray='6 3'/><circle cx='116' cy='70' r='14' fill='none' stroke='#F59E0B' stroke-width='3'/><line x1='116' y1='56' x2='116' y2='84' stroke='#F59E0B' stroke-width='2'/><line x1='102' y1='70' x2='130' y2='70' stroke='#F59E0B' stroke-width='2'/></svg>">
+    <meta name="lair-perms" content="network" />
+    <title>Arbitrage Scanner</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { height: 100%; background: var(--col-bg1, #0A1628); color: var(--col-txt1, #E2E8F0); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+
+        .app { height: 100%; display: flex; flex-direction: column; overflow: hidden; }
+
+        .header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 10px 16px; gap: 12px;
+            background: var(--col-bg2, #111B2E);
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            flex-shrink: 0; flex-wrap: wrap;
+        }
+        .header-left { display: flex; align-items: center; gap: 8px; }
+        .header-left h1 { font-size: 14px; font-weight: 700; }
+        .header-left .material-symbols-rounded { font-size: 20px; color: #F59E0B; }
+
+        .header-right { display: flex; gap: 6px; align-items: center; }
+
+        .exchange-toggle {
+            display: flex; gap: 2px; border: 1px solid rgba(255,255,255,0.06); border-radius: 6px; overflow: hidden;
+        }
+        .exchange-toggle label { padding: 4px 8px; font-size: 10px; cursor: pointer; transition: all 0.15s; color: #5A6080; font-weight: 600; }
+        .exchange-toggle input { display: none; }
+        .exchange-toggle input:checked + label { color: #F59E0B; background: rgba(245,158,11,0.1); }
+
+        .refresh-btn {
+            background: transparent; border: 1px solid rgba(255,255,255,0.06);
+            color: #5A6080; border-radius: 6px; padding: 4px 8px;
+            cursor: pointer; display: flex; align-items: center; gap: 4px;
+            font-size: 11px; font-family: inherit; transition: all 0.15s;
+        }
+        .refresh-btn:hover { color: var(--col-txt1); border-color: rgba(255,255,255,0.12); }
+        .refresh-btn .material-symbols-rounded { font-size: 14px; }
+        .refresh-btn.loading .material-symbols-rounded { animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .stats-bar {
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 8px 16px;
+            background: var(--col-bg1);
+        }
+        .stat-card {
+            background: var(--col-bg2, #111B2E); border: 1px solid rgba(255,255,255,0.04);
+            border-radius: 8px; padding: 8px 10px; text-align: center;
+        }
+        .stat-card .stat-label { font-size: 10px; color: #5A6080; display: block; margin-bottom: 2px; }
+        .stat-card .stat-value { font-size: 16px; font-weight: 700; }
+        .stat-value.green { color: #22C55E; }
+        .stat-value.yellow { color: #F59E0B; }
+        .stat-value.red { color: #EF4444; }
+        .stat-value.blue { color: #3B82F6; }
+
+        .table-header {
+            display: grid; grid-template-columns: 30px 1fr 100px 100px 80px 80px 70px;
+            gap: 8px; padding: 6px 16px; font-size: 10px; color: #5A6080;
+            text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            flex-shrink: 0;
+        }
+
+        .table-body { flex: 1; overflow-y: auto; overflow-x: hidden; }
+
+        .row {
+            display: grid; grid-template-columns: 30px 1fr 100px 100px 80px 80px 70px;
+            gap: 8px; padding: 8px 16px; align-items: center;
+            border-bottom: 1px solid rgba(255,255,255,0.02);
+            transition: background 0.15s;
+        }
+        .row:hover { background: rgba(255,255,255,0.02); }
+
+        .rank { font-size: 11px; color: #5A6080; font-weight: 600; }
+        .symbol-cell { display: flex; flex-direction: column; }
+        .symbol { font-weight: 700; font-size: 13px; }
+        .route { font-size: 10px; color: #5A6080; }
+
+        .spread { font-weight: 700; font-size: 13px; }
+        .spread.high { color: #22C55E; }
+        .spread.medium { color: #F59E0B; }
+        .spread.low { color: #5A6080; }
+
+        .profit { font-size: 12px; color: #22C55E; font-weight: 600; }
+        .exchange-name { font-size: 11px; color: #94A3B8; }
+        .price-cell { font-size: 11px; font-family: monospace; }
+
+        .confidence {
+            font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px;
+            text-align: center; display: inline-block;
+        }
+        .confidence.high { background: rgba(34,197,94,0.15); color: #22C55E; }
+        .confidence.medium { background: rgba(245,158,11,0.15); color: #F59E0B; }
+        .confidence.low { background: rgba(239,68,68,0.15); color: #EF4444; }
+
+        .empty-state {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            gap: 8px; padding: 40px; color: #5A6080; font-size: 13px; height: 100%;
+        }
+        .empty-state .material-symbols-rounded { font-size: 36px; }
+
+        .credit { font-size: 9px; color: #3A4060; text-align: center; padding: 4px; }
+        .credit a { color: #5A6080; text-decoration: none; }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <div class="header">
+            <div class="header-left">
+                <span class="material-symbols-rounded">swap_horiz</span>
+                <h1>Arbitrage Scanner</h1>
+            </div>
+            <div class="header-right">
+                <div class="exchange-toggle" id="exchangeToggles">
+                    <input type="checkbox" id="ex-binance" checked><label for="ex-binance">Binance</label>
+                    <input type="checkbox" id="ex-bybit" checked><label for="ex-bybit">Bybit</label>
+                    <input type="checkbox" id="ex-okx" checked><label for="ex-okx">OKX</label>
+                    <input type="checkbox" id="ex-coinbase" checked><label for="ex-coinbase">Coinbase</label>
+                    <input type="checkbox" id="ex-kraken" checked><label for="ex-kraken">Kraken</label>
+                    <input type="checkbox" id="ex-kucoin" checked><label for="ex-kucoin">KuCoin</label>
+                </div>
+                <button class="refresh-btn" id="refreshBtn">
+                    <span class="material-symbols-rounded">refresh</span>
+                    Scan
+                </button>
+            </div>
+        </div>
+
+        <div class="stats-bar">
+            <div class="stat-card">
+                <span class="stat-label">Opportunities</span>
+                <span class="stat-value yellow" id="oppCount">—</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Best Spread</span>
+                <span class="stat-value green" id="bestSpread">—</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Pairs Scanned</span>
+                <span class="stat-value blue" id="pairsScanned">—</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Scan Time</span>
+                <span class="stat-value" id="scanTime" style="color:#94A3B8">—</span>
+            </div>
+        </div>
+
+        <div class="table-header">
+            <span>#</span>
+            <span>Pair</span>
+            <span>Buy @</span>
+            <span>Sell @</span>
+            <span>Spread</span>
+            <span>$1K Profit</span>
+            <span>Conf.</span>
+        </div>
+
+        <div class="table-body" id="tableBody">
+            <div class="empty-state" id="emptyState">
+                <span class="material-symbols-rounded">travel_explore</span>
+                <span>Click "Scan" to search for arbitrage opportunities</span>
+                <span style="font-size:11px">Compares prices across 6 exchanges in real-time</span>
+            </div>
+        </div>
+
+        <div class="credit">Powered by <a href="https://github.com/ccxt/ccxt" target="_blank">ccxt</a> — open-source exchange library (28k ⭐)</div>
+    </div>
+
+    <script>
+    (function() {
+        const fetchFn = window.cfetch || fetch;
+        const tableBody = document.getElementById('tableBody');
+        const refreshBtn = document.getElementById('refreshBtn');
+        let scanning = false;
+
+        // Major pairs to scan
+        const PAIRS = [
+            'BTCUSDT','ETHUSDT','SOLUSDT','BNBUSDT','XRPUSDT',
+            'DOGEUSDT','ADAUSDT','AVAXUSDT','DOTUSDT','LINKUSDT',
+            'MATICUSDT','UNIUSDT','ARBUSDT','OPUSDT','SUIUSDT',
+            'APTUSDT','NEARUSDT','FILUSDT','ATOMUSDT','LTCUSDT',
+            'TRXUSDT','BCHUSDT','PEPEUSDT','SHIBUSDT','INJUSDT',
+        ];
+
+        // Exchange API endpoints for spot tickers
+        const EXCHANGE_APIS = {
+            binance: { url: sym => `https://api.binance.com/api/v3/ticker/bookTicker?symbol=${sym}`, parse: d => ({ bid: +d.bidPrice, ask: +d.askPrice }) },
+            bybit: { url: sym => `https://api.bybit.com/v5/market/tickers?category=spot&symbol=${sym}`, parse: d => { const t = d.result?.list?.[0]; return t ? { bid: +t.bid1Price, ask: +t.ask1Price } : null; } },
+            okx: { url: sym => `https://www.okx.com/api/v5/market/ticker?instId=${sym.replace('USDT','-USDT')}`, parse: d => { const t = d.data?.[0]; return t ? { bid: +t.bidPx, ask: +t.askPx } : null; } },
+            kucoin: { url: sym => `https://api.kucoin.com/api/v1/market/orderbook/level1?symbol=${sym.replace('USDT','-USDT')}`, parse: d => { const t = d.data; return t ? { bid: +t.bestBid, ask: +t.bestAsk } : null; } },
+        };
+
+        // Fee estimates per exchange (taker %)
+        const FEES = { binance: 0.1, bybit: 0.1, okx: 0.08, coinbase: 0.4, kraken: 0.16, kucoin: 0.1 };
+
+        function getActiveExchanges() {
+            return Array.from(document.querySelectorAll('#exchangeToggles input:checked'))
+                .map(el => el.id.replace('ex-', ''));
+        }
+
+        refreshBtn.addEventListener('click', () => scan());
+
+        async function fetchTicker(exchange, symbol) {
+            const api = EXCHANGE_APIS[exchange];
+            if (!api) return null;
+            try {
+                const res = await fetchFn(api.url(symbol));
+                if (!res.ok) return null;
+                const data = await res.json();
+                return api.parse(data);
+            } catch { return null; }
+        }
+
+        async function scan() {
+            if (scanning) return;
+            scanning = true;
+            refreshBtn.classList.add('loading');
+            tableBody.innerHTML = `<div class="empty-state"><span class="material-symbols-rounded">hourglass_empty</span><span>Scanning exchanges...</span></div>`;
+
+            const startTime = Date.now();
+            const exchanges = getActiveExchanges().filter(e => EXCHANGE_APIS[e]);
+            const opportunities = [];
+
+            // Process pairs in batches
+            for (let i = 0; i < PAIRS.length; i += 5) {
+                const batch = PAIRS.slice(i, i + 5);
+                const batchResults = await Promise.allSettled(
+                    batch.map(async (sym) => {
+                        const tickers = {};
+                        const results = await Promise.allSettled(
+                            exchanges.map(async (ex) => {
+                                const t = await fetchTicker(ex, sym);
+                                if (t && t.bid > 0 && t.ask > 0) tickers[ex] = t;
+                            })
+                        );
+
+                        // Find arb opportunities
+                        const exNames = Object.keys(tickers);
+                        for (let a = 0; a < exNames.length; a++) {
+                            for (let b = a + 1; b < exNames.length; b++) {
+                                checkArb(sym, exNames[a], tickers[exNames[a]], exNames[b], tickers[exNames[b]], opportunities);
+                                checkArb(sym, exNames[b], tickers[exNames[b]], exNames[a], tickers[exNames[a]], opportunities);
+                            }
+                        }
+                    })
+                );
+            }
+
+            // Sort by net profit
+            opportunities.sort((a, b) => b.netProfitPct - a.netProfitPct);
+
+            const scanDuration = Date.now() - startTime;
+            updateUI(opportunities, PAIRS.length, scanDuration);
+
+            scanning = false;
+            refreshBtn.classList.remove('loading');
+        }
+
+        function checkArb(sym, buyEx, buyTicker, sellEx, sellTicker, results) {
+            const buyPrice = buyTicker.ask;
+            const sellPrice = sellTicker.bid;
+            if (buyPrice <= 0 || sellPrice <= 0) return;
+
+            const spreadPct = ((sellPrice - buyPrice) / buyPrice) * 100;
+            if (spreadPct < 0.05) return;
+
+            const feeTotal = (FEES[buyEx] || 0.15) + (FEES[sellEx] || 0.15);
+            const netProfitPct = spreadPct - feeTotal;
+            if (netProfitPct <= 0) return;
+
+            const profitOn1K = 1000 * (netProfitPct / 100);
+            const confidence = netProfitPct > 0.5 ? 'high' : netProfitPct > 0.2 ? 'medium' : 'low';
+
+            results.push({
+                symbol: sym,
+                buyExchange: buyEx,
+                sellExchange: sellEx,
+                buyPrice,
+                sellPrice,
+                spreadPct,
+                feeTotal,
+                netProfitPct,
+                profitOn1K,
+                confidence,
+            });
+        }
+
+        function updateUI(opps, pairsScanned, scanDuration) {
+            document.getElementById('oppCount').textContent = opps.length;
+            document.getElementById('bestSpread').textContent = opps.length > 0
+                ? opps[0].netProfitPct.toFixed(3) + '%' : '0%';
+            document.getElementById('pairsScanned').textContent = pairsScanned;
+            document.getElementById('scanTime').textContent = (scanDuration / 1000).toFixed(1) + 's';
+
+            if (opps.length === 0) {
+                tableBody.innerHTML = `<div class="empty-state"><span class="material-symbols-rounded">check_circle</span><span>No arbitrage found above fee threshold</span><span style="font-size:11px">Markets are efficiently priced right now</span></div>`;
+                return;
+            }
+
+            tableBody.innerHTML = opps.slice(0, 30).map((o, i) => `
+                <div class="row">
+                    <span class="rank">${i + 1}</span>
+                    <div class="symbol-cell">
+                        <span class="symbol">${o.symbol.replace('USDT','')}/USDT</span>
+                        <span class="route">${cap(o.buyExchange)} → ${cap(o.sellExchange)}</span>
+                    </div>
+                    <div>
+                        <span class="exchange-name">${cap(o.buyExchange)}</span>
+                        <span class="price-cell">$${fmtPrice(o.buyPrice)}</span>
+                    </div>
+                    <div>
+                        <span class="exchange-name">${cap(o.sellExchange)}</span>
+                        <span class="price-cell">$${fmtPrice(o.sellPrice)}</span>
+                    </div>
+                    <span class="spread ${o.confidence}">${o.netProfitPct.toFixed(3)}%</span>
+                    <span class="profit">+$${o.profitOn1K.toFixed(2)}</span>
+                    <span class="confidence ${o.confidence}">${cap(o.confidence)}</span>
+                </div>
+            `).join('');
+        }
+
+        function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+
+        function fmtPrice(p) {
+            if (p >= 1000) return p.toLocaleString('en', { maximumFractionDigits: 2 });
+            if (p >= 1) return p.toFixed(2);
+            if (p >= 0.01) return p.toFixed(4);
+            return p.toFixed(6);
+        }
+    })();
+    </script>
+</body>
+</html>

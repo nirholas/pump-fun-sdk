@@ -1,0 +1,2192 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Store App</title>
+	<meta name="capabilities" content="content_store, onStartup">
+	<meta name="lair-include" content="lair.css material-symbols-rounded">
+	<meta name="permissions" content="fileSet, settings, fileGet, appStorage, unsandboxed">
+	<meta name="lair-icon"
+		content="<svg width='232' height='232' viewBox='0 0 232 232' fill='none' xmlns='http://www.w3.org/2000/svg'> <g clip-path='url(#clip0_0_1)'> <rect y='47' width='232' height='185' rx='40' fill='#384AAE'/> <rect y='71' width='232' height='161' rx='40' fill='#6179FF'/> <path d='M189 105C189 51.9807 156.093 9 115.5 9C74.9071 9 42 51.9807 42 105' stroke='#6179FF' stroke-width='18'/> <path d='M92.3167 143.277C93.4444 140.963 94.6125 138.732 95.8208 136.583C97.0292 134.435 98.3583 132.286 99.8083 130.138L93.0417 128.774L82.8917 139.186L92.3167 143.277ZM150.558 109.189C144.919 109.354 138.898 111.048 132.494 114.271C126.09 117.494 120.269 121.791 115.033 127.163C111.65 130.633 108.629 134.352 105.971 138.319C103.312 142.285 101.339 146.004 100.05 149.475L113.825 163.482C117.208 162.16 120.833 160.135 124.7 157.408C128.567 154.681 132.192 151.582 135.575 148.111C140.811 142.74 145 136.79 148.142 130.261C151.283 123.733 152.935 117.576 153.096 111.792C153.096 111.461 153.035 111.131 152.915 110.8C152.794 110.469 152.612 110.18 152.371 109.932C152.129 109.684 151.847 109.498 151.525 109.374C151.203 109.251 150.881 109.189 150.558 109.189ZM123.975 138.939C122.122 137.038 121.196 134.703 121.196 131.935C121.196 129.166 122.122 126.832 123.975 124.931C125.828 123.031 128.124 122.08 130.862 122.08C133.601 122.08 135.897 123.031 137.75 124.931C139.603 126.832 140.529 129.166 140.529 131.935C140.529 134.703 139.603 137.038 137.75 138.939C135.897 140.839 133.601 141.79 130.862 141.79C128.124 141.79 125.828 140.839 123.975 138.939ZM119.867 171.416L123.854 181.208L134.004 170.796L132.675 163.854C130.581 165.342 128.486 166.685 126.392 167.883C124.297 169.081 122.122 170.259 119.867 171.416ZM162.279 105.222C162.924 114.312 161.474 123.175 157.929 131.811C154.385 140.447 148.786 148.69 141.133 156.541L143.55 168.813C143.872 170.465 143.792 172.077 143.308 173.647C142.825 175.217 142.019 176.581 140.892 177.738L125.667 193.356C124.458 194.596 123.008 195.071 121.317 194.782C119.625 194.493 118.457 193.522 117.812 191.869L110.442 174.143L89.7792 152.946L72.5 145.384C70.8889 144.723 69.9222 143.525 69.6 141.79C69.2778 140.054 69.7208 138.567 70.9292 137.327L86.1542 121.708C87.2819 120.551 88.6312 119.725 90.2021 119.229C91.7729 118.733 93.3639 118.651 94.975 118.981L106.937 121.46C114.59 113.61 122.626 107.866 131.044 104.23C139.462 100.594 148.101 99.1066 156.962 99.7677C157.607 99.8503 158.251 100.036 158.896 100.326C159.54 100.615 160.104 101.007 160.587 101.503C161.071 101.999 161.453 102.577 161.735 103.239C162.017 103.9 162.199 104.561 162.279 105.222ZM76.9708 166.209C79.7903 163.317 83.234 161.85 87.3021 161.809C91.3701 161.768 94.8139 163.193 97.6333 166.085C100.453 168.978 101.842 172.511 101.802 176.684C101.762 180.857 100.332 184.39 97.5125 187.282C93.6458 191.249 89.0743 193.604 83.7979 194.348C78.5215 195.092 73.225 195.835 67.9083 196.579C68.6333 191.125 69.3583 185.691 70.0833 180.279C70.8083 174.866 73.1042 170.176 76.9708 166.209ZM83.8583 173.151C82.4889 174.556 81.5424 176.25 81.0187 178.233C80.4951 180.217 80.0722 182.241 79.75 184.307C81.7639 183.977 83.7375 183.564 85.6708 183.068C87.6042 182.572 89.2556 181.622 90.625 180.217C91.5917 179.225 92.1153 178.027 92.1958 176.622C92.2764 175.217 91.8333 174.019 90.8667 173.027C89.9 172.035 88.7319 171.56 87.3625 171.602C85.9931 171.643 84.825 172.159 83.8583 173.151Z' fill='#9CABFF'/> </g> <defs> <clipPath id='clip0_0_1'> <rect width='232' height='232' fill='white'/> </clipPath> </defs> </svg>">
+
+	<style>
+		* {
+			box-sizing: border-box;
+		}
+
+		html {
+			height: 100%;
+			width: 100%;
+			scroll-behavior: smooth;
+		}
+
+		body {
+			height: 100%;
+			margin: 0px;
+			background: var(--col-bg1);
+		}
+
+		.tab {
+			flex-grow: 2;
+			height: calc(100% - 10px);
+			overflow-y: auto;
+			max-width: 150px;
+			max-width: 200px;
+			display: flex;
+			flex-direction: column;
+			gap: 0.2rem;
+			transition: .3s ease-out;
+			background-color: var(--col-bg2);
+			padding: .5em;
+			border-radius: var(--siz-radius1);
+			border: 1px solid #ffffff0c;
+		}
+
+		p {
+			margin: 0;
+		}
+
+		.tab::after {
+			height: 10vh;
+			width: calc(100% - 10px);
+			background: linear-gradient(0deg, var(--col-bg1), transparent);
+			content: "";
+			display: block;
+			position: absolute;
+			bottom: 0px;
+			z-index: 1;
+			left: 0;
+		}
+
+		.tab h3 {
+			padding-left: 5px;
+			margin: 5px 0px;
+			font-weight: normal;
+			font-size: var(--font-size-normal);
+		}
+
+		.tab button.active {
+			background-color: var(--col-bg3);
+			color: var(--colors-text-sub);
+			opacity: 1;
+		}
+
+		.tab button.active:hover {
+			opacity: 0.8;
+		}
+
+
+		.btnlike {
+			color: inherit;
+			width: 100%;
+			flex-shrink: 0;
+			border-radius: var(--siz-radius1);
+		}
+
+		.tab button {
+			background-color: transparent;
+			padding: 4px 7px;
+			border: 2px solid transparent;
+			display: block;
+			width: 100%;
+			border-radius: var(--siz-radius2);
+			outline: none;
+			text-align: left;
+			cursor: pointer;
+			transition: 0.3s;
+			font-size: inherit;
+			overflow: hidden;
+			white-space: nowrap;
+			text-overflow: ellipsis;
+			opacity: 0.7;
+			font-family: inherit;
+			position: relative;
+		}
+
+		.tab button:hover {
+			background-color: var(--col-bg3);
+			color: var(--colors-text-sub);
+		}
+
+		.tab button i {
+			font-size: 10px;
+			transform: translate(-6px, 0px) scale(1.5);
+			margin-left: 10px;
+		}
+
+		
+
+		h1 {
+			font-weight: normal;
+			font-size: var(--font-size-normal);
+			margin-top: var(--sizing-huge);
+			display: flex;
+			flex-direction: row;
+			gap: 0.5rem;
+			align-items: center;
+		}
+
+		h3 {
+			font-weight: normal;
+			font-size: var(--font-size-normal);
+			opacity: 0.7;
+			margin-top: var(--sizing-huge);
+			margin-bottom: var(--sizing-nano);
+
+		}
+
+		@keyframes rotation {
+			0% {
+				transform: rotate(0deg);
+			}
+
+			100% {
+				transform: rotate(360deg);
+			}
+		}
+
+		.settingName {
+			flex: 1;
+		}
+
+		.searchInputSec {
+			display: flex;
+			flex-direction: row;
+			align-items: center;
+			background-color: var(--col-bg3);
+			padding: .2em .5em;
+			gap: 0.3rem;
+			border-radius: var(--siz-radius1);
+			width: 100%;
+			margin: 0.3rem 0;
+			margin-bottom: .5em;
+			border: 1px solid #ffffff0c;
+		}
+
+		.searchInputSec input {
+			background-color: transparent;
+			color: var(--col-txt1);
+			outline: 0;
+			border: 0;
+			min-width: 0;
+			padding: 0.3rem;
+			text-overflow: ellipsis;
+			flex: 1;
+		}
+
+		.searchInputSec i.material-symbols-rounded {
+			font-size: 20px;
+			margin-right: 5px;
+			opacity: 0.7;
+		}
+
+		.searchTabIllus {
+			width: 100%;
+			height: 100px;
+			object-fit: contain;
+			margin: 2em 0;
+		}
+
+		label[real] {
+			font-size: var(--font-size-small);
+			background-color: rgb(139 62 62);
+			color: white;
+			border-radius: 5px;
+			padding: 3px 5px;
+			margin-left: 5px;
+		}
+
+
+		@keyframes tab {
+			0% {
+				opacity: 0.1;
+			}
+
+			100% {
+				opacity: 1;
+			}
+		}
+
+		container {
+			height: 100%;
+			display: flex;
+			padding: 5px;
+			flex-direction: row;
+			flex-wrap: nowrap;
+		}
+
+
+		.tabcontent {
+			padding: 0px 12px;
+			width: 0;
+			flex-grow: 3;
+			padding-bottom: 30vh;
+			background-color: inherit;
+			animation: drop .2s ease-out;
+			border-left: none;
+			border-radius: var(--siz-radius1);
+			height: calc(100% - 5px);
+			animation: tab .2s;
+			overflow-y: auto;
+			margin-left: 5px;
+		}
+
+
+		.app {
+			animation: fa 0.5s;
+			border-radius: var(--siz-radius1);
+			background: var(--col-bg2);
+			color: var(--col-txt1);
+			border: 1px solid #ffffff1c;
+			display: flex;
+			flex: 1;
+			min-width: 200px;
+			transition: .2s;
+			user-select: none;
+			cursor: pointer;
+			margin-left: 0px;
+			padding-bottom: 16px;
+			flex-direction: column;
+			flex-wrap: wrap;
+			overflow: hidden;
+
+			& p {
+				opacity: 0.7;
+				padding: .5em;
+			}
+
+			&>.appfes {
+				display: flex;
+				flex-direction: row;
+				align-items: center;
+				gap: .5em;
+				height: 67px;
+				background: var(--col-bg3);
+				padding: .5em;
+
+				.appdet {
+					display: flex;
+					font-size: var(--font-size-small);
+					border: none;
+					flex: 1;
+					overflow: hidden;
+					width: 0;
+					text-overflow: ellipsis;
+					flex-direction: column;
+					white-space: nowrap;
+
+					&>* {
+						overflow: hidden;
+						text-overflow: ellipsis;
+						white-space: nowrap;
+					}
+				}
+
+				&>.appicon {
+					display: flex;
+					align-items: center;
+					justify-content: center;
+					font-size: 1.5em;
+					width: 50px;
+					height: 50px;
+					padding: .5em;
+					border-radius: var(--siz-radius2);
+					border: 1px solid #8a8a8a75;
+					text-shadow: 0 0 10px #00000082;
+					opacity: 1;
+				}
+			}
+		}
+
+		.app:hover {
+			box-shadow: 0 0 10px #121212;
+			filter: brightness(110%);
+			background-color: var(--col-bg3);
+		}
+
+		.app h3 {
+			margin: 0;
+			margin-bottom: 3px;
+			font-weight: normal;
+			font-size: 1.3em;
+		}
+
+		.applist {
+			padding: 0;
+			align-items: stretch;
+			display: grid;
+			gap: .7em;
+			grid-template-columns: repeat(auto-fit, minmax(180px, 2fr));
+		}
+
+		#defapppack {
+			margin: 10px 0;
+			white-space: normal;
+			padding: 0;
+			padding-left: 10px;
+			justify-content: flex-start;
+			display: grid;
+			grid-template-columns: repeat(auto-fit, minmax(134px, 1fr));
+		}
+
+		& .catosmall {
+			font-size: 1em;
+			opacity: .5;
+			margin: .5em 0;
+			display: flex;
+		}
+
+		#offlinesug {
+			position: absolute;
+			top: 0;
+			left: 0;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			justify-content: center;
+			width: 100%;
+			height: 100%;
+			background: var(--col-bg1);
+			z-index: 99;
+		}
+
+		#offlinesug code {
+			background-color: var(--col-bg2);
+			padding: .5em .7em;
+			border-radius: .77em;
+			color: grey;
+			width: 300px;
+			font-size: small;
+		}
+
+		.themecolorssing {
+			width: 0;
+			flex: 1;
+			height: 20px;
+		}
+
+		.themesing {
+			background-color: var(--col-bg2);
+			padding: 0.5rem;
+			border-radius: 0.5rem;
+			text-overflow: ellipsis;
+			white-space: break-spaces;
+			overflow: hidden;
+			display: flex;
+			flex-direction: column;
+			transition: .2s ease-out;
+			gap: 0.5rem;
+		}
+
+		.themeinfodiv {
+			display: flex;
+			align-items: flex-start;
+			justify-content: space-between;
+			gap: 0.3rem;
+			flex-direction: column;
+			width: 0;
+			flex: 1;
+			overflow-x: hidden;
+		}
+
+		.themedetdiv {
+			display: flex;
+			align-items: flex-start;
+			justify-content: space-between;
+			flex-direction: row;
+			gap: 0.5rem;
+		}
+
+		.themedetdiv button {
+			display: flex;
+			border: 0;
+
+			background-color: var(--col-good);
+			color: var(--col-txth);
+			padding: 0.3rem;
+			border-radius: 0.5rem;
+		}
+
+		.themecolors {
+			display: flex;
+			flex-direction: row;
+			flex-wrap: nowrap;
+			background-size: cover !important;
+			background-position: center !important;
+			border-radius: 0.5rem;
+		}
+
+		.openablewin {
+			display: none;
+		}
+
+		path,
+		svg {
+			border-radius: 0.5rem;
+			height: fit-content;
+		}
+
+		.themename {
+			flex: 1;
+			text-overflow: ellipsis;
+		}
+
+		.themeauth {
+			opacity: 0.5;
+			font-size: .8em;
+		}
+
+		.sewid>button {
+			background: transparent;
+			color: inherit;
+			border: none;
+			border-bottom: 3px solid transparent;
+			transition: .3s;
+			text-transform: capitalize;
+			padding: 0;
+
+			&.active-filter {
+				border-bottom: 3px solid var(--col-bgh);
+			}
+		}
+
+		.sewid {
+			margin: .5em 0;
+			display: flex;
+			gap: 1em;
+			overflow-x: auto;
+			overflow-y: hidden;
+			white-space: nowrap;
+			padding-bottom: 5px;
+		}
+
+
+		#installer {
+			&>nav {
+				background: none;
+				padding: 0;
+			}
+
+			&>.appname {
+				display: inline-block;
+				width: calc(100% - 110px);
+				white-space: nowrap;
+				overflow: hidden;
+				text-overflow: ellipsis;
+				width: 0;
+				flex: 1;
+				margin-bottom: 0.3rem;
+			}
+
+			&>button {
+				float: right;
+				padding: 5px 15px;
+				border: none;
+				background: #43A047;
+				color: var(--col-txt1);
+				outline: 0;
+				border-radius: 4px;
+				width: fit-content;
+				cursor: pointer;
+				font-family: inherit;
+			}
+
+			&>button:hover {
+				background-color: var(--col-bg3);
+			}
+
+			& #installerappname {
+				font-size: 1.5em;
+				margin: 0;
+			}
+
+			& .dostuffwithit {
+				display: flex;
+				flex-direction: row;
+				align-items: stretch;
+				gap: 1px;
+				border-radius: var(--siz-radius1);
+				overflow: hidden;
+				height: fit-content;
+
+				&>button {
+					color: white;
+					border: none;
+					padding: .5em 1em;
+					min-width: 5.5em;
+					background-color: #43A047 !important;
+
+					&:hover {
+						background-color: #3c933c;
+					}
+				}
+			}
+
+			.containdiv {
+				max-width: 500px;
+				margin: auto;
+
+				&>#installerappdesc h4 {
+					font-weight: normal;
+					opacity: .5;
+					margin: 1em 0;
+					margin-bottom: .3em;
+					font-size: small;
+				}
+			}
+
+
+			.installerappbasedata {
+				display: flex;
+				flex-direction: row;
+				justify-content: space-between;
+				margin: 1em 0;
+				align-items: center;
+			}
+
+			span.advancedsetsbackbtn.material-symbols-rounded {
+				display: inline-flex;
+				font-size: 20px;
+				background: var(--col-bg2);
+				color: var(--colors-text-section);
+				padding: 0.3rem;
+				border-radius: 50%;
+				align-items: center;
+				justify-content: center;
+				cursor: pointer;
+			}
+
+
+			#apptheme {
+				display: flex;
+				width: 100%;
+				justify-content: space-between;
+				align-items: center;
+				justify-items: center;
+				padding: 1em;
+				font-size: var(--font-size-subheading);
+				background: var(--col-bg2);
+				border-radius: 5px;
+				text-shadow: 0 0 10px #000000ab;
+				flex-direction: row-reverse;
+
+				&>.material-symbols-rounded {
+					font-size: 30px;
+				}
+			}
+
+			#installer #installerappby {
+				display: block;
+				opacity: 0.7;
+				margin-bottom: 10px;
+				font-weight: normal;
+			}
+
+			#installer p button {
+				float: none;
+				background: var(--col-bgh);
+			}
+
+			.srca {
+				margin-top: 1em;
+				padding-top: .5em;
+				border-top: 1px solid #8080805e;
+				display: flex;
+				flex-direction: row;
+				justify-content: flex-start;
+				opacity: .5;
+				font-size: small;
+				gap: 1em;
+				flex-wrap: wrap;
+			}
+		}
+
+		@keyframes pop {
+			0% {
+				opacity: 0;
+			}
+
+			100% {
+				opacity: 1;
+			}
+		}
+
+		.loader22 {
+			width: 15px;
+			height: 15px;
+			border-radius: 50%;
+			display: inline-block;
+			border-top: 3px solid var(--col-txt1);
+			border-right: 3px solid transparent;
+			box-sizing: border-box;
+			animation: slideIn .3s ease-out, rotation 1s linear infinite;
+		}
+
+		@keyframes rotation {
+			0% {
+				transform: rotate(0deg);
+			}
+
+			100% {
+				transform: rotate(360deg);
+			}
+		}
+
+		.panel {
+			background: var(--col-bg2);
+			padding: var(--sizing-huge);
+			border-radius: var(--siz-radius1);
+			border: 1px solid #ffffff0c;
+		}
+
+		#knowBar {
+			display: flex;
+			flex-direction: row;
+			gap: 2em;
+			align-items: center;
+			margin-bottom: 1em;
+
+			&>#knowbaricns {
+				display: flex;
+				align-items: center;
+				flex-direction: row;
+				flex-wrap: wrap;
+				gap: .5em;
+				max-width: 105px;
+
+				&>.knowbarrandicn {
+					width: 3em;
+					aspect-ratio: 1 / 1;
+					height: auto;
+					display: flex;
+					background: #80808017;
+					padding: 5px;
+					border-radius: var(--siz-radius2);
+					overflow: hidden;
+					align-items: center;
+				}
+			}
+
+			&>.knowBarCont {
+				flex: 1;
+
+				&>.gotobutton {
+					width: fit-content;
+					min-width: 7rem;
+					padding: 5px;
+					background: var(--col-bgh);
+					color: var(--col-txth);
+					border-radius: var(--siz-radius2);
+					cursor: pointer;
+					text-align: center;
+				}
+
+				&>#knowmuchupdates {
+					margin: 0;
+					margin-bottom: .3em;
+					font-size: 1.5em;
+				}
+
+				&>p {
+					margin: 0;
+					opacity: .7;
+					margin-bottom: .7em;
+				}
+			}
+
+		}
+
+		@keyframes apppop {
+			0% {
+				opacity: 0;
+				transform: translateY(5px);
+			}
+
+			100% {
+				opacity: 1;
+			}
+		}
+
+		.singular_app {
+			animation: apppop .2s ease-out;
+			display: flex;
+			flex-direction: row;
+			background-color: var(--col-bg2);
+			padding: .5em;
+			gap: .5em;
+			border-radius: var(--siz-radius1);
+			border: 1px solid #ffffff0c;
+			justify-content: space-between;
+			align-items: center;
+
+			& .app_detail {
+				width: 0;
+				flex: 1;
+				overflow: hidden;
+
+				&>div {
+					overflow: hidden;
+					text-overflow: ellipsis;
+					white-space: nowrap;
+				}
+			}
+
+			& .app_options {
+				padding: 5px;
+				display: flex;
+				border-radius: 50%;
+				background: #285b28;
+				color: #ffffff;
+
+				& span {
+					font-size: 1em;
+					opacity: 1;
+				}
+
+				&:hover {
+					filter: brightness(120%);
+				}
+			}
+
+			& .app_risk {
+				opacity: .5;
+				font-size: small;
+			}
+
+			& .app_icon>svg {
+				width: 25px;
+				height: 25px;
+				border-radius: .5em;
+			}
+
+			& .app_left {
+				display: flex;
+				flex-direction: row;
+				gap: .5em;
+				align-items: center;
+				flex: 1;
+
+				& .app_icon {
+					display: flex;
+				}
+			}
+		}
+
+		b#installerappby {
+			opacity: .5;
+			font-weight: normal;
+		}
+
+		.tobeupdatedcounter {
+			position: absolute;
+			right: .5em;
+			background: #c93636;
+			color: #ffffff;
+			font-size: 13px;
+			width: 40px;
+			height: 20px;
+			top: .5em;
+			display: flex;
+			padding: 4px;
+			text-align: center;
+			border-radius: 15px;
+			justify-content: flex-start;
+			align-items: center;
+			flex-direction: row;
+		}
+
+		.transparentbtn {
+			margin: 0;
+			padding: var(--sizing-normal);
+			background: var(--col-bg3);
+			border-radius: var(--siz-radius2);
+			color: inherit;
+			border: 0;
+			outline: navajowhite;
+			text-align: inherit;
+			display: flex;
+			flex-direction: row;
+			flex-wrap: nowrap;
+			width: fit-content;
+			align-items: center;
+			justify-content: flex-start;
+			border: var(--box-crisp);
+			gap: .5em;
+
+			&>.desc {
+				width: fit-content;
+			}
+
+			&>.material-symbols-rounded {
+				font-size: 20px;
+
+			}
+		}
+
+		.singular_ad {
+			display: flex;
+			flex-direction: row;
+			align-items: stretch;
+			flex-wrap: nowrap;
+			gap: .5em;
+			transition: .5s;
+			height: 180px;
+			pointer-events: none;
+			position: absolute;
+			top: 0;
+			left: 0;
+			width: 100%;
+
+			&>* {
+				width: 0;
+			}
+
+
+			&>.ad_left {
+				flex: 3;
+				padding-bottom: 1em;
+
+				&>h1 {
+					font-size: 1.5em;
+					margin: 0;
+					margin-bottom: .3em;
+				}
+			}
+
+			&>img {
+				flex: 2;
+				object-fit: cover;
+				border-radius: var(--siz-radius2);
+				object-position: top left;
+				animation: imgscrll 10s ease-in-out infinite;
+			}
+		}
+
+		@keyframes imgscrll {
+			50% {
+				object-position: bottom right;
+			}
+		}
+
+		.featured-container {
+			position: relative;
+			margin-bottom: 1em;
+		}
+
+		.dots-nav {
+			display: flex;
+			justify-content: center;
+			gap: 8px;
+			position: absolute;
+			bottom: var(--sizing-huge);
+			left: var(--sizing-huge);
+		}
+
+		.dot {
+			width: 8px;
+			height: 8px;
+			background: var(--col-bgh);
+			opacity: .5;
+			border-radius: 50%;
+			cursor: pointer;
+			transition: all 0.3s;
+		}
+
+		.dot.active {
+			width: 20px;
+			background: var(--col-bgh);
+			border-radius: 999px;
+			opacity: 1;
+		}
+
+		.panel:first-child {
+			position: relative;
+		}
+
+		.panel[style*="opacity: 1"] {
+			pointer-events: auto;
+		}
+
+		.thisfolderisempty {
+			margin: 2em auto;
+			opacity: .5;
+			font-size: small;
+			width: 8em;
+
+			&>svg {
+				width: 3em;
+				height: 3em;
+			}
+		}
+
+		@keyframes gradientFlow {
+			0% {
+				background-position: 0% 50%
+			}
+
+			50% {
+				background-position: 100% 50%
+			}
+
+			100% {
+				background-position: 0% 50%
+			}
+		}
+
+		@media only screen and (max-width: 600px) {
+
+			.singular_ad {
+				flex-direction: column;
+				height: 50vh;
+				overflow: hidden;
+				&>* {
+					width: 100%;
+				}
+			}
+
+			.tab .btnlike {
+				width: 38px;
+			}
+
+			.tab {
+				width: 55px;
+				flex-grow: 0;
+				overflow: hidden;
+				min-width: 0;
+			}
+
+			#navSearch {
+				display: none;
+			}
+		}
+
+		@media only screen and (max-width: 100px) {
+			.tab button i {
+				margin-bottom: 8px;
+				display: block;
+			}
+		}
+	</style>
+</head>
+
+<body>
+	<container>
+		<div class="tab">
+			<button class="tablinks btnlike"
+				onclick="openCity(event, 'search'); document.getElementById('searchInput').focus();"><i
+					class="material-symbols-rounded">search</i> Search</button>
+			<button class="tablinks btnlike" onclick="openCity(event, 'system')" id="defaultOpen"><i
+					class="material-symbols-rounded">apps</i> Apps</button>
+			<button class="tablinks btnlike" onclick="openCity(event, 'themes'); 
+						loadThemes();"><i class="material-symbols-rounded">brush</i> Themes</button>
+			<button class="tablinks btnlike" onclick="openCity(event, 'myApps');loadMyApps()"><i
+					class="material-symbols-rounded">sync_saved_locally</i> My Apps <span class="tobeupdatedcounter"><i
+						class="material-symbols-rounded">arrow_upward</i><a id="tobeupdatedalert"></a></span></button>
+		</div>
+
+		<div id="system" class="tabcontent">
+			<div id="featuredSection">
+
+			</div>
+			<div id="categorynav" class="sewid">
+			</div>
+			<div id="sugapps"></div>
+		</div>
+
+		<div id="themes" class="tabcontent">
+
+			<div id="themenavsel" class="sewid">
+				<button data-filter="all" class="active-filter">All</button>
+				<button data-filter="Dark">Dark</button>
+				<button data-filter="Light">Light</button>
+				<button data-filter="Lair">Lair</button>
+				<button data-filter="Accelerator">Accelerator</button>
+			</div>
+			<div id="themeslist" class="applist"></div>
+		</div>
+		<div id="search" class="tabcontent">
+			<div class="searchInputSec btnlike">
+				<input id="searchInput" placeholder="Search apps or paste a URL..." spellcheck="none" autocomplete="off"
+					onkeydown="handleEnterKey(event)" oninput="updateButtonText()">
+				<i class="material-symbols-rounded" id="actionButton">search</i>
+			</div>
+			<div id="searchOutputList" class="applist">
+
+			</div>
+		</div>
+		<div id="installer" class="tabcontent">
+			<h1><span class="material-symbols-rounded advancedsetsbackbtn" onclick="openCity(event, 'system');">
+					arrow_back
+				</span> Back</h1>
+			<div class="containdiv">
+				<div id="apptheme">
+					Theme
+				</div>
+				<div class="installerappbasedata">
+					<div class="namebatch">
+						<h1 class="appname" id="installerappname">Loading...</h1>
+						<b id="installerappby">...</b>
+
+					</div>
+					<div class="dostuffwithit">
+						<button id="openbtn">Open</button>
+						<button id="removeButton">Uninstall</button>
+						<button id="installButton">Install</button>
+						<button id="updateButton">Update</button>
+					</div>
+				</div>
+				<p id="installerappdesc">...</p>
+			</div>
+		</div>
+		<div id="myApps" class="tabcontent">
+
+			<div id="myappssel" class="sewid">
+				<button data-filter="installedappslist" class="active-filter">Installed</button>
+				<button data-filter="defaultappslist" onclick="addDefaultApps(window.parent.defAppsList)">Default
+					apps</button>
+			</div>
+			<div id="installedappslistwrap" class="applistwrap">
+				<div id="knowBar" class="panel">
+					<div class="knowBarCont">
+						<h1 id="knowmuchupdates">12 Apps have updates</h1>
+						<p>Update apps for new features and fixed bugs.</p>
+						<div class="gotobutton" id="myappsupdateallbtn">
+							Update All
+						</div>
+					</div>
+					<div id="knowbaricns"></div>
+				</div>
+				<div id="installedappslist" class="applist myappslist"></div>
+			</div>
+
+			<div id="defaultappslistwrap" class="applistwrap">
+				<div id="defaultappslist" class="applist myappslist"></div>
+			</div>
+	</container>
+
+	<script>
+		function openCity(evt, cityName) {
+			currentpage = cityName;
+			var i, tabcontent, tablinks;
+			tabcontent = document.getElementsByClassName("tabcontent");
+			for (i = 0; i < tabcontent.length; i++) {
+				tabcontent[i].style.display = "none";
+			}
+			tablinks = document.getElementsByClassName("tablinks");
+			for (i = 0; i < tablinks.length; i++) {
+				tablinks[i].className = tablinks[i].className.replace(" active", "");
+			}
+			try {
+				document.getElementById(cityName).style.display = "block";
+				if (evt.currentTarget.classList.contains("tablinks")) {
+					evt.currentTarget.className += " active";
+					prevCityBtn = evt.currentTarget;
+				} else if (prevCityBtn) {
+					prevCityBtn.className += " active"
+				}
+			} catch (e) { }
+
+		}
+
+		document.getElementById("defaultOpen").click();
+
+
+		const activeFilters = new Set();
+		document.querySelectorAll('#themenavsel button').forEach(button => {
+			button.addEventListener('click', () => {
+				const filter = button.getAttribute('data-filter');
+				activeFilters.clear();
+				document.querySelectorAll('#themenavsel button').forEach(btn => btn.classList.remove('active-filter'));
+				if (filter != 'all') {
+					activeFilters.add(filter);
+				}
+				button.classList.add('active-filter');
+				loadThemes();
+			});
+		});
+
+		document.querySelectorAll('#myappssel button').forEach(btn => {
+			btn.addEventListener('click', () => {
+				document.querySelectorAll('#myappssel button').forEach(b => b.classList.remove('active-filter'));
+				btn.classList.add('active-filter');
+				document.querySelectorAll('.applistwrap').forEach(wrap => wrap.style.display = 'none');
+				document.getElementById(btn.dataset.filter + 'wrap').style.display = 'block';
+			});
+		});
+		document.getElementById('installedappslistwrap').style.display = 'block';
+
+
+		var networkretries = 0;
+		function loadThemes() {
+			const container = document.getElementById("themeslist");
+
+			fetch('../Lair-Store/db/themes.json')
+				.then(response => response.json())
+				.then(data => {
+					container.innerHTML = '';
+
+					Object.entries(data).forEach(([themeName, themeData]) => {
+						const themeContainer = document.createElement('div');
+						themeContainer.classList.add("themesing");
+						themeContainer.style.outline = `1px solid ${themeData.colors["--col-bg3"]}`;
+
+						themeContainer.style.background = `linear-gradient(to bottom right, 
+								${themeData.colors["--col-bg1"]} 0%, 
+								${themeData.colors["--col-bg3"]} 25%, 
+								${themeData.colors["--col-bg2"]} 75%, 
+								${themeData.colors["--col-bgh"]}) 100%`;
+						themeContainer.style.color = themeData.colors["--col-txt1"];
+
+						const colorsSvg = document.createElement('div');
+						colorsSvg.style.background = themeData.wallpaper
+							? `url("${themeData.wallpaper}")`
+							: themeData.colors["--col-bg1"];
+
+						colorsSvg.classList.add('themecolors');
+						const svgNS = "http://www.w3.org/2000/svg";
+
+						const colorsubbg = themeData.colors["--col-bg3"] || "#080808";
+						const colorsectionbg = themeData.colors["--col-bg2"] || "#090909";
+						const colorhighlight = themeData.colors["--col-bgh"] || "#512DA8";
+						const colorwhite = themeData.colors["--col-txth"] || "#FFFFFF";
+						const colortext = themeData.colors["--col-txt1"] || "#FFFFFF";
+						const colorgood = themeData.colors["--col-good"] || "#49AC49";
+						const colorbad = themeData.colors["--col-bad"] || "#AC4949";
+
+						const svg = document.createElementNS(svgNS, 'svg');
+						svg.setAttribute('version', '1.1');
+						svg.setAttribute('xmlns', svgNS);
+						svg.setAttribute('width', '186.92934');
+						svg.setAttribute('height', '127.61522');
+						svg.setAttribute('viewBox', '0 0 186.92934 127.61522');
+
+						const g1 = document.createElementNS(svgNS, 'g');
+						g1.setAttribute('transform', 'translate(-146.53533,-116.19239)');
+
+						const g2 = document.createElementNS(svgNS, 'g');
+						g2.setAttribute('stroke', 'none');
+						g2.setAttribute('stroke-width', 'none');
+						g2.setAttribute('stroke-miterlimit', '10');
+
+						const paths = [
+							{ d: "M153.33273,232.60246v-110.0906h50v110.0906z", fill: colorsectionbg }, // card section
+							{ d: "M153.33273,232.60246v-110.0906h117.15993v110.0906z", fill: colorsectionbg },
+							{ d: "M165.64709,197.15912v-13.89422h54.10463v13.89422z", fill: colorhighlight }, // button
+							{ d: "M165.75792,153.04796v-16.07118h38.50194v16.07118z", fill: colortext },
+							{ d: "M165.44056,166.29708v-8.03559h92.94427v8.03559z", fill: colortext },
+							{ d: "M165.44056,176.68927v-8.03559h74.55944v8.03559z", fill: colortext },
+							{ d: "M173.17094,193.3994v-6.37479h39.05692v6.37479z", fill: colorgood },
+							{ d: "M173.17094,193.3994v-6.37479h39.05692v6.37479z", fill: colorwhite }
+						];
+
+						paths.forEach(({ d, fill }) => {
+							const path = document.createElementNS(svgNS, 'path');
+							path.setAttribute('d', d);
+							path.setAttribute('fill', fill);
+							path.setAttribute('rx', '10');
+							g2.appendChild(path);
+						});
+
+						g1.appendChild(g2);
+						svg.appendChild(g1);
+						colorsSvg.appendChild(svg);
+
+						const by = themeData.by || 'LairOS';
+						const name = themeName.toLowerCase();
+
+						let showTheme = true;
+
+						if (activeFilters.size > 0) {
+							showTheme = true;
+							if (activeFilters.has('Lair') && (by != "LairOS")) {
+								showTheme = false;
+							}
+							if (activeFilters.has('Accelerator') && by !== 'un4ya.1024') {
+								showTheme = false;
+							}
+							if (activeFilters.has('Dark') && themeData.type !== 'dark') {
+								showTheme = false;
+							}
+							if (activeFilters.has('Light') && themeData.type !== 'bright') {
+								showTheme = false;
+							}
+						}
+
+
+						if (!showTheme) return;
+
+						const themedetdiv = document.createElement('div');
+						themedetdiv.classList.add('themedetdiv');
+
+						const infoDiv = document.createElement('div');
+						infoDiv.classList.add('themeinfodiv');
+
+
+						const nameDiv = document.createElement('div');
+						nameDiv.classList.add("themename")
+						nameDiv.innerText = themeName;
+						infoDiv.appendChild(nameDiv);
+
+						themeData.by = themeData.by || 'LairOS';
+						const authdiv = document.createElement('div');
+						authdiv.classList.add("themeauth")
+						authdiv.innerText = themeData.by;
+						infoDiv.appendChild(authdiv);
+
+						themedetdiv.appendChild(infoDiv);
+
+						const instdiv = document.createElement('button');
+						instdiv.style.background = themeData.colors["--col-bgh"];
+						instdiv.style.color = themeData.colors["--col-txth"];
+						instdiv.style.border = `1px solid ${themeData.colors["--col-bg3"]}`; instdiv.style.borderRadius = themeData.colors["--siz-radius1"]
+						instdiv.innerHTML = `<i
+						class="material-symbols-rounded">format_paint</i>`;
+						themedetdiv.appendChild(instdiv);
+
+						themeContainer.appendChild(colorsSvg);
+						themeContainer.appendChild(themedetdiv);
+
+						themeContainer.addEventListener('click', async () => {
+							await window.parent.applyThemeNonVisual(themeData, document);
+							ntxSession.send("sysUI.toast", `Theme pack "${themeName}" applied.`)
+						});
+						container.appendChild(themeContainer);
+					});
+
+
+				})
+				.catch((error) => {
+					networkretries++;
+					console.error('Error loading themes:', error);
+					if (networkretries > 2) {
+						displayErrorMessage("<p>Failed to fetch data. Please try opening the app again.</p><code>", error);
+					} else {
+						loadThemes();
+					}
+
+				});
+		}
+
+
+		function displayErrorMessage(message, error) {
+			let ele = document.createElement("div");
+			if (!message) {
+				message = "<p>Failed to fetch data. Please try again.</p><code>" + error + "</code> <button class='glitchbtn' onclick='greenflag()'>Retry</button>";
+			}
+			console.log("err")
+			ele.id = "offlinesug";
+			ele.innerHTML = message;
+			document.body.appendChild(ele);
+		}
+
+		function getAppNameFromUrl(url) {
+			let hostname = new URL(url).hostname;
+			hostname = hostname.replace(/^www\./, '');
+			let parts = hostname.split('.');
+			return parts[0].charAt(0).toUpperCase() + parts[0].slice(1);
+		}
+
+		async function installapp(x, appName, obj, method = "icononly") {
+			// Build absolute fetch URL using LAIR_HOST (injected by kernel)
+			let fetchUrl = x.src;
+			if (!x.src.startsWith("http")) {
+				const host = window.LAIR_HOST || location.origin;
+				fetchUrl = host + (x.src.startsWith("/") ? x.src : "/" + x.src);
+			}
+			try {
+				if (obj) {
+					if (method == "icononly") obj.innerText = "hourglass_top";
+					else obj.innerHTML = `<div class='loader22'></div>`;
+				}
+				try {
+					const response = await fetch(fetchUrl);
+					if (!response.ok) throw new Error(`HTTP ${response.status}`);
+					const content = await response.text();
+					const tempid = await window.parent.createFile("Apps", appName, "app", content);
+					ntxSession.send("settings.set", "versionsData", { [getAppTag(x)]: { id: tempid, ver: x.ver, updated: Date.now() } }, "thirdpartyApps.json");
+
+					// Show success notification with options
+					if (method == "full") {
+						const userChoice = await window.parent.say(
+							`${appName} installed successfully!\n\nWhat would you like to do?`,
+							["Create Desktop Shortcut", "Open App", "Done"]
+						);
+						
+						if (userChoice === "Create Desktop Shortcut" || userChoice === 0) {
+							await window.parent.createShortcut(tempid);
+							window.parent.toaster("Desktop shortcut created!");
+						} else if (userChoice === "Open App" || userChoice === 1) {
+							await window.parent.openfile(tempid);
+						}
+					}
+
+				} catch { }
+				setTimeout(() => {
+					if (!obj) return;
+					if (method == "icononly") {
+						console.log("check");
+						obj.innerText = "check";
+						setTimeout(() => {
+							obj.innerText = "download";
+						}, 1000);
+					} else {
+						obj.innerText = "Installed";
+						setTimeout(() => {
+							obj.innerText = "Open";
+						}, 1500);
+					}
+				}, 1000);
+			} catch (err) {
+				console.log("err");
+				console.error("Error installing app:", err);
+				setTimeout(() => {
+					if (!obj) return;
+					if (method == "icononly") {
+						obj.innerText = "sentiment_dissatisfied";
+						setTimeout(() => {
+							obj.innerText = "download";
+						}, 1000);
+					} else {
+						obj.innerText = "Failed";
+						setTimeout(() => {
+							obj.innerText = "Retry";
+						}, 1000);
+					}
+				}, 1000);
+			}
+		}
+
+
+
+		async function renderapps() {
+			await fetchAppData().then(async (appData) => {
+				document.getElementById("offlinesug")?.remove();
+				document.body.classList.remove("initloadin");
+				await renderSections();
+				await populateApps(appData);
+			}).catch(error => {
+				displayErrorMessage(0, error);
+				console.error('Error:', error);
+				return;
+			});
+		}
+
+
+	async function fetchAppData() {
+		return await fetch('../Lair-Store/db/v2.json')
+			.then(response => {
+				if (!response.ok) throw new Error('Network response was not ok');
+				return response.json();
+			});
+	}		function renderSections() {
+			document.getElementById("sugapps").innerHTML = `
+        <div id="apps-section" class="section"></div>`;
+		}
+		function createFeaturedSection(data) {
+			const container = document.getElementById('featuredSection');
+			container.classList.add('featured-container');
+
+			const dotsNav = document.createElement('div');
+			dotsNav.className = 'dots-nav';
+
+			let currentIndex = 0;
+			let intervalId;
+
+			data.featured.forEach((item, index) => {
+				const panel = document.createElement('div');
+				panel.className = 'singular_ad panel';
+				if (index == 0) panel.style.opacity = '1'
+				else panel.style.opacity = '0';
+
+				const adLeft = document.createElement('div');
+				adLeft.className = 'ad_left';
+
+				const title = document.createElement('h1');
+				title.textContent = item.text;
+
+				const button = document.createElement('button');
+				button.className = 'transparentbtn';
+				button.onclick = () => {
+					openappinstr(item.appName, data.apps.find(app => app.name === item.appName))
+				}
+
+				const descSpan = document.createElement('span');
+				descSpan.className = 'desc';
+				descSpan.textContent = `View ${item.appName}`;
+
+				const iconSpan = document.createElement('span');
+				iconSpan.className = 'material-symbols-rounded';
+				iconSpan.textContent = 'arrow_forward';
+
+			button.appendChild(descSpan);
+			button.appendChild(iconSpan);
+			adLeft.appendChild(title);
+			adLeft.appendChild(button);
+
+			const img = document.createElement('img');
+			// Handle both single image and array of images
+			if (Array.isArray(item.img)) {
+				img.src = item.img[0];
+				// Rotate through images if array
+				let imgIndex = 0;
+				setInterval(() => {
+					imgIndex = (imgIndex + 1) % item.img.length;
+					img.src = item.img[imgIndex];
+				}, 3000);
+			} else {
+				img.src = item.img;
+			}
+			const color = data.apps.find(app => app.name === item.appName)?.th;
+			panel.style.background = `linear-gradient(-45deg, ${color}, ${color}33, ${color}33, ${color})`;
+			
+			panel.style.backgroundSize = "300% 300%";
+			panel.style.animation = "gradientFlow 15s ease infinite";
+
+			panel.appendChild(adLeft);
+			panel.appendChild(img);
+			container.appendChild(panel);				const dot = document.createElement('div');
+				dot.className = 'dot';
+				if (index === 0) dot.classList.add('active');
+				dot.addEventListener('click', () => {
+					clearInterval(intervalId);
+					showPanel(index);
+					startSlideshow();
+				});
+				dotsNav.appendChild(dot);
+			});
+
+			container.appendChild(dotsNav);
+
+			function showPanel(index) {
+				const panels = container.querySelectorAll('.panel');
+				const dots = dotsNav.querySelectorAll('.dot');
+
+				panels.forEach((panel, i) => {
+					panel.style.opacity = i === index ? '1' : '0';
+				});
+				dots.forEach((dot, i) => {
+					dot.classList.toggle('active', i === index);
+				});
+				currentIndex = index;
+			}
+
+			function startSlideshow() {
+				intervalId = setInterval(() => {
+					const nextIndex = (currentIndex + 1) % data.featured.length;
+					showPanel(nextIndex);
+				}, 5000);
+			}
+
+			startSlideshow();
+		}
+
+
+		async function populateApps(data) {
+			const vdevs = data.vdevs;
+			const featured = data.featured;
+			const categorySections = {};
+			const sugapps = document.getElementById("sugapps");
+			const nav = document.getElementById("categorynav");
+			nav.innerHTML = '';
+
+			function ensureCategory(cat) {
+				if (!categorySections[cat]) {
+					const section = document.createElement("div");
+					section.className = "catosection";
+					section.dataset.cat = cat;
+					section.style.display = cat === "Tools" ? "block" : "none";
+
+					const list = document.createElement("div");
+					list.className = "applist";
+
+					section.appendChild(list);
+					sugapps.appendChild(section);
+					categorySections[cat] = list;
+
+					const btn = document.createElement("button");
+					btn.dataset.filter = cat;
+					btn.innerText = cat;
+					nav.appendChild(btn);
+				}
+			}
+
+			createFeaturedSection(data);
+			const allApps = data.apps.filter(a => !a.disabled);
+			allApps.sort((a, b) => Object.keys(a)[0].localeCompare(Object.keys(b)[0]));
+
+			allApps.forEach(details => {
+				const name = details.name;
+				const cat = details.cat || "Others";
+				const appDiv = createAppDiv(name, details, vdevs, featured);
+				appDiv.setAttribute("data-tag", getAppTag(details));
+
+				if (featured.appName === name) {
+					document.getElementById("featuredappname").innerText = name;
+					document.getElementById("featuredappby").innerText = details.by;
+					document.getElementById("featuredappdesc").innerText = details.ldesc;
+					document.getElementById("featuredImg").src = featured.img;
+					document.getElementById("featured").setAttribute("onclick", `openappinstr('${name}', ${JSON.stringify(details)})`);
+					document.getElementById("featured").style.backgroundImage = `radial-gradient(circle at 0% 0%, ${details.th}, var(--col-bg2))`;
+				} else {
+					ensureCategory(cat);
+					categorySections[cat].appendChild(appDiv);
+				}
+			});
+
+			document.querySelectorAll('#categorynav button').forEach(btn => {
+				if (btn.dataset.filter == "tools")
+					btn.classList.add('active-filter');
+				btn.addEventListener('click', () => {
+					document.querySelectorAll('#categorynav button').forEach(b => b.classList.remove('active-filter'));
+					btn.classList.add('active-filter');
+					const filter = btn.dataset.filter;
+					document.querySelectorAll('.catosection').forEach(section => {
+						section.style.display = (section.dataset.cat === filter) ? 'block' : 'none';
+					});
+				});
+
+			});
+
+			document.querySelectorAll('.catosection').forEach(section => {
+				if (section.dataset.cat == 'tools')
+					section.style.display = 'block';
+			});
+		}
+
+		function createAppDiv(appName, appDetails, vdevs, featured) {
+			const appDiv = document.createElement('div');
+			appDiv.className = 'app';
+			appDiv.setAttribute("onclick", `openappinstr('${appName}', ${JSON.stringify(appDetails)})`);
+
+			const appfesDiv = document.createElement('div');
+			appfesDiv.className = 'appfes';
+			appfesDiv.id = "appfes-" + appName;
+
+			const appdetDiv = document.createElement('div');
+			appdetDiv.className = 'appdet';
+			const appGenIcon = document.createElement('div');
+			appGenIcon.className = 'appicon';
+			const bgColor = appDetails.th || "#7aff7a";
+			appGenIcon.style.backgroundColor = bgColor;
+			appGenIcon.classList.add("material-symbols-rounded");
+			appGenIcon.innerText = appDetails.symbol || 'rocket_launch';
+
+			const hexToLuminance = hex => {
+				const rgb = hex.replace('#', '').match(/.{2}/g).map(x => parseInt(x, 16) / 255);
+				const lum = rgb.map(c => c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
+				return 0.2126 * lum[0] + 0.7152 * lum[1] + 0.0722 * lum[2];
+			};
+
+			const luminance = hexToLuminance(bgColor);
+			appGenIcon.style.color = luminance > 0.5 ? 'black' : 'white';
+
+			appfesDiv.appendChild(appGenIcon);
+
+
+			const h3 = document.createElement('h3');
+			h3.textContent = appName;
+			appdetDiv.appendChild(h3);
+
+			const appInfoDiv = document.createElement('div');
+			appInfoDiv.innerHTML = `<div class="verifmark material-symbols-rounded">${vdevs && vdevs.includes(appInfoDiv.textContent) ? "verified " : ""}</div>` + appDetails.by;
+
+			appdetDiv.appendChild(appInfoDiv);
+
+			appfesDiv.appendChild(appdetDiv);
+
+			appDiv.appendChild(appfesDiv);
+
+			const p = document.createElement('p');
+			const appDescItem = appDetails.desc;
+			p.textContent = appDescItem ? appDescItem : 'Free LairOS application.';
+			appDiv.appendChild(p);
+
+			return appDiv;
+		}
+
+		function rotateHue(color, degrees) {
+			const dummyElement = document.createElement('div');
+			dummyElement.style.color = color;
+			dummyElement.style.filter = `hue-rotate(${degrees}deg)`;
+			document.body.appendChild(dummyElement);
+			const rotatedColor = window.getComputedStyle(dummyElement).color;
+			document.body.removeChild(dummyElement);
+			return rotatedColor;
+		}
+		async function openappinstr(appName, appDetails) {
+			const installButton = document.getElementById("installButton");
+			const openButton = document.getElementById("openbtn");
+			const updateButton = document.getElementById("updateButton");
+			const removeButton = document.getElementById("removeButton");
+
+			function setupButton(button, label, visible, color, action) {
+				button.style.display = visible ? "inline-block" : "none";
+				if (visible) {
+					button.innerText = label;
+					button.style.backgroundColor = color || "";
+					button.onclick = async () => {
+						await action();
+						renderButtons();
+					};
+				}
+			}
+
+			function resetButtons() {
+				[installButton, openButton, updateButton, removeButton].forEach(btn => {
+					btn.style.display = "none";
+					btn.onclick = null;
+				});
+			}
+
+			function renderButtons() {
+				resetButtons();
+				window.parent.getFileNamesByFolder("Apps").then(async (appald) => {
+					const existingApp = appald.find(app => app.name.split('.')[0] === appName);
+					if (existingApp) {
+						if (await hasUpdate(getAppTag(appDetails))) {
+							setupButton(updateButton, "Update", true, "", () => installapp(appDetails, appName, updateButton, "full"));
+							setupButton(removeButton, "Uninstall", true, "", () => safeUninstall(existingApp.id));
+						} else {
+							setupButton(openButton, "Open", true, "", () => window.parent.openfile(existingApp.id));
+							setupButton(removeButton, "Uninstall", true, "", () => safeUninstall(existingApp.id));
+						}
+					} else {
+						setupButton(installButton, "Install", true, "var(--col-good)", () => installapp(appDetails, appName, installButton, "full"));
+					}
+				});
+			}
+
+			installButton.className = 'insbtn';
+
+			window.parent.getFileNamesByFolder("Apps").then(async () => {
+				try {
+					document.getElementById("installerappname").textContent = appName;
+					document.getElementById("installerappby").textContent = appDetails.by;
+
+					const descContainer = document.getElementById("installerappdesc");
+					descContainer.innerHTML = "";
+
+					const descHeader = document.createElement("h4");
+					descHeader.textContent = "Summary";
+					const descContent = document.createElement("div");
+					descContent.textContent = appDetails?.desc || '';
+
+					const longDescHeader = document.createElement("h4");
+					longDescHeader.textContent = "Description";
+					const longDescContent = document.createElement("div");
+					longDescContent.textContent = appDetails?.ldesc || "Overview not available yet.";
+
+				const versionInfo = document.createElement("div");
+				versionInfo.innerHTML = `<span>Hosted on: ${appDetails.src.includes("Lair-Store") ? "Lair Store" : appDetails.src}</span><span>Version: ${appDetails.ver}</span><span>${appDetails.cat || 'Other'}</span>`;
+				versionInfo.className = "srca";					descContainer.appendChild(descHeader);
+					descContainer.appendChild(descContent);
+					descContainer.appendChild(longDescHeader);
+					descContainer.appendChild(longDescContent);
+					descContainer.appendChild(versionInfo);
+
+					const appthitem = appDetails?.th || '';
+					const appqtitem = appDetails?.qt || '';
+					const appcatitem = appDetails?.cat || '';
+
+					document.getElementById("apptheme").innerHTML = `<span class="material-symbols-rounded">${appDetails.symbol || 'rocket_launch'}</span>` + (appqtitem || appcatitem);
+					document.getElementById("apptheme").style.background = `linear-gradient(-45deg, ${appthitem}, ${appthitem}33, ${appthitem}33, ${appthitem})`;
+					document.getElementById("apptheme").style.backgroundSize = "300% 300%";
+					document.getElementById("apptheme").style.animation = "gradientFlow 15s ease infinite";
+
+					renderButtons();
+					openCity(event, 'installer');
+				} catch (error) {
+					console.error(error);
+				}
+			});
+		}
+
+		async function greenflag() {
+			const data = myWindow?.params?.data?.opener;
+
+			prepareAppData();
+			console.log("23", 34, myWindow?.params)
+			if (data == 'themes') {
+				loadThemes();
+				openCity(event, 'themes');
+				document.body.classList.remove("initloadin");
+				return;
+			} else
+				await renderapps();
+			if (data == "viewapp") {
+				try {
+					await loadLocalApps();
+					if (cachedLocalApps && cachedLocalApps.hasOwnProperty(myWindow.params.data.data)) {
+						window.parent.openfile(cachedLocalApps[myWindow.params.data.data].id);
+						myWindow.close();
+					}
+
+					const el = document.querySelector('[data-tag="' + myWindow?.params?.data.data + '"]');
+					el.click();
+
+				} catch {
+					setTimeout(ntxSession.send("sysUI.toast", `The app, ${myWindow?.params?.data.data} doesn't exist`), 2000)
+				}
+			} else if (data == "search") {
+				const input = document.getElementById("searchInput");
+				input.value = myWindow?.params?.data.data;
+				if (myWindow?.params?.data.data.length > 0) {
+					openCity(event, 'search');
+					searchApps(myWindow?.params?.data.data)
+				}
+			}
+		}
+
+
+		async function safeUninstall(appId) {
+			try {
+				await window.parent.remfile(appId);
+			} catch (error) {
+				console.error("Error uninstalling app:", error);
+			}
+		}
+		let cachedMetaData, cachedLocalApps;
+
+		async function hasUpdate(tag) {
+			if (!cachedLocalApps)
+				await loadLocalApps();
+			const appDetails = cachedMetaData.apps.find(app => getAppTag(app) === tag);
+			if (!appDetails) return false;
+			const localApp = cachedLocalApps[tag];
+			if (!localApp) return false;
+			return localApp.ver != appDetails.ver;
+		}
+		async function loadLocalApps() {
+			const localApps = await ntxSession.send("settings.get", "versionsData", "thirdpartyApps.json") || 0;
+			cachedLocalApps = localApps;
+			return localApps;
+		}
+
+		async function prepareAppData() {
+			const metaData = await fetchAppData();
+			cachedMetaData = metaData;
+
+			const localApps = await loadLocalApps();
+			const localKeys = Object.keys(localApps);
+			let count = 0;
+
+			for (const tag of localKeys) {
+				const appDetails = metaData.apps.find(app => getAppTag(app) === tag);
+				if (!appDetails) continue;
+				const localVer = localApps[tag].ver;
+				const onlineVer = appDetails?.ver;
+				if (localVer != onlineVer) count++;
+			}
+
+			let tbupcontr = document.getElementsByClassName("tobeupdatedcounter")[0];
+			if (count)
+				document.getElementById("tobeupdatedalert").innerText = count;
+			else
+				(tbupcontr) ? tbupcontr.remove() : false;
+		}
+
+		async function loadMyApps() {
+			const knowMuch = document.getElementById("knowmuchupdates");
+			const knowBar = document.getElementById("knowBar");
+			const appsList = document.getElementById("installedappslist");
+			const knowBarIcons = document.getElementById("knowbaricns");
+			let metaData = cachedMetaData;
+
+
+			appsList.innerHTML = "";
+			knowBarIcons.innerHTML = "";
+			document.getElementsByClassName("tobeupdatedcounter")[0]?.remove();
+
+			const localApps = await loadLocalApps();
+
+			if (!localApps) {
+				const appsList = document.getElementById("installedappslist");
+				appsList.innerHTML = `<center class='thisfolderisempty'><svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="74.20199" height="94.1023" viewBox="0,0,74.20199,94.1023"><g transform="translate(-224.61774,-142.87893)"><g data-paper-data="{&quot;isPaintingLayer&quot;:true}" fill-rule="nonzero" stroke="#ffffff" stroke-linejoin="miter" stroke-miterlimit="10" stroke-dasharray="" stroke-dashoffset="0" style="mix-blend-mode: normal"><path style="animation: headsad .5s 2;" d="M227.11774,158.26119c0,-7.11468 5.76758,-12.88226 12.88226,-12.88226c7.11468,0 12.88226,5.76758 12.88226,12.88226c0,7.11468 -5.76758,12.88226 -12.88226,12.88226c-7.11468,0 -12.88226,-5.76758 -12.88226,-12.88226z" fill="none" stroke-width="5" stroke-linecap="butt"/><path d="M244.56247,233.94447l9.12493,-32.20565l-8.58817,-28.98508" fill="none" stroke-width="5" stroke-linecap="round"/><path d="M253.6874,202.81234l17.71311,31.66888" fill="none" stroke-width="5" stroke-linecap="round"/><path d="M246.17275,178.6581l-7.51465,27.37481" fill="none" stroke-width="5" stroke-linecap="round"/><path d="M250.46684,179.73163l28.44833,-12.3455" fill="none" stroke-width="5" stroke-linecap="round"/><path d="M260.82196,192.96703l-1.81137,-23.54791l37.99776,-2.9229l1.81138,23.54791z" fill="#aa8b00" stroke-width="0" stroke-linecap="butt"/><path onclick="ntxSession.send("sysUI.say",'You found it :3')" d="M256.80524,189.29958l2.20535,-19.88046l37.99776,-2.9229l-2.20535,19.53118z" fill="#ffcf00" stroke-width="0" stroke-linecap="butt"/><path d="M279.06646,168.81576l-0.1513,-1.42964" fill="none" stroke-width="5" stroke-linecap="round"/></g></g></svg><br>You haven't installed apps</center>`;
+				knowBar.style.display = 'none';
+				return;
+			}
+			const localKeys = Object.keys(localApps);
+			const firstFour = localKeys.slice(0, 4);
+			const iconPromises = firstFour.map(key => window.parent.getAppIcon(0, localApps[key].id));
+			const icons = await Promise.all(iconPromises);
+			icons.forEach(icon => {
+				const iconSpan = document.createElement("div");
+				iconSpan.className = "knowbarrandicn";
+				window.parent.insertSVG(icon, iconSpan);
+				knowBarIcons.appendChild(iconSpan);
+			});
+			const appsWithMeta = [];
+			for (const tag of localKeys) {
+				const appDetails = metaData.apps.find(app => getAppTag(app) === tag);
+				if (!appDetails) continue;
+				const updated = localApps[tag].updated || 0;
+				appsWithMeta.push({ tag, updated, appDetails });
+			}
+			appsWithMeta.sort((a, b) => b.updated - a.updated);
+
+			const iconTasks = appsWithMeta.map(({ tag }) => window.parent.getAppIcon(0, localApps[tag].id));
+			const nameTasks = appsWithMeta.map(({ tag }) => window.parent.getFileNameByID(localApps[tag].id));
+			const resolvedIcons = await Promise.all(iconTasks);
+			const resolvedNames = await Promise.all(nameTasks);
+
+			let howManyOld = 0, oneApp = null;
+			let html = "";
+
+			for (let i = 0; i < appsWithMeta.length; i++) {
+				const { tag, appDetails, updated } = appsWithMeta[i];
+				if (await window.parent.getFileNameByID(localApps[tag].id) == null) {
+					safeUninstall(localApps[tag].id);
+					continue;
+				}
+				const local = localApps[tag].ver;
+				const online = appDetails?.ver;
+				const needsUpdate = local != online;
+				if (needsUpdate) {
+					howManyOld++;
+					oneApp = resolvedNames[i];
+				}
+
+				const optionsIcon = needsUpdate ? "download" : "check";
+				const optionsBg = needsUpdate ? "" : "transparent";
+
+				const timeStr = "v" + online + " | updated " + window.parent.timeAgo(updated);
+
+				html += `
+<div class="singular_app">
+	<div class="app_left" onclick="">
+		<div class="app_icon">${resolvedIcons[i]}</div>
+		<div class="app_detail">
+			<div class="app_name">${window.parent.basename(resolvedNames[i])}</div>
+			<div class="app_risk">${timeStr}</div>
+		</div>
+	</div>
+	<div class="app_options" style="background:${optionsBg}" data-tag="${tag}" onclick="handleUpdateClick(event)">
+		<span class="material-symbols-rounded installbtnicn">${optionsIcon}</span>
+	</div>
+</div>`;
+
+			}
+
+			appsList.innerHTML = html;
+			if (howManyOld > 0) {
+				knowBar.style.display = 'flex';
+				knowMuch.innerText = `${howManyOld === 1 ? window.parent.basename(oneApp) : `${howManyOld} apps `} has updates`;
+			} else {
+				knowBar.style.display = 'none';
+			}
+
+			document.getElementById("myappsupdateallbtn").onclick = async function () {
+				const btn = this;
+				const localApps = cachedLocalApps;
+
+				const metaData = cachedMetaData;
+				const localKeys = Object.keys(localApps);
+
+				const updatable = localKeys.filter(tag => {
+					const app = metaData.apps.find(app => getAppTag(app) === tag);
+					return app && localApps[tag].ver != app.ver;
+				});
+
+				let done = 0;
+				for (const tag of updatable) {
+					const appDetails = metaData.apps.find(app => getAppTag(app) === tag);
+					const appName = await window.parent.getFileNameByID(localApps[tag].id);
+					if (appDetails && appName) {
+						await installapp(appDetails, appName, null, "icononly");
+						done++;
+						btn.innerText = `Updating ${done}/${updatable.length}`;
+					}
+				}
+
+				btn.innerText = "Update All";
+				await loadMyApps();
+			};
+
+		}
+
+		async function handleUpdateClick(e) {
+			const btn = e.currentTarget;
+			const iconSpan = btn.querySelector(".installbtnicn");
+			if (!iconSpan) return;
+
+			const tag = btn.getAttribute("data-tag");
+			const localApp = cachedLocalApps[tag];
+			if (!localApp) return;
+
+			const appDetails = cachedMetaData.apps.find(app => getAppTag(app) === tag);
+			if (!appDetails) return;
+
+			const appName = await window.parent.getFileNameByID(localApp.id);
+			if (!appName) return;
+
+			await installapp(appDetails, appName, iconSpan, "icononly");
+			loadMyApps();
+		}
+		async function addDefaultApps(defaultApps) {
+			const iconTasks = [];
+			const nameTasks = [];
+			const ids = [];
+			document.getElementById("defaultappslist").innerHTML = '';
+
+			for (const tag of defaultApps) {
+				try {
+					// Look in appdata/ folder for default apps
+					const fileObj = await window.parent.getFileByPath("appdata/" + tag + ".html");
+					const id = fileObj.id;
+					ids.push(id);
+					iconTasks.push(window.parent.getAppIcon(0, id));
+					nameTasks.push(window.parent.getFileNameByID(id));
+				} catch (e) {
+					console.log(`Default app ${tag} not found in appdata/`);
+				}
+			}
+
+			const resolvedIcons = await Promise.all(iconTasks);
+			const resolvedNames = await Promise.all(nameTasks);
+
+			for (let i = 0; i < ids.length; i++) {
+				const tag = defaultApps[i];
+				const appName = resolvedNames[i] || tag;
+				const appIcon = resolvedIcons[i];
+				const appId = ids[i];
+
+				const appDiv = document.createElement("div");
+				appDiv.className = "singular_app";
+				appDiv.innerHTML = `
+			<div class="app_left" onclick="window.parent.openfile('${appId}')">
+				<div class="app_icon">${appIcon}</div>
+				<div class="app_detail">
+					<div class="app_name">${window.parent.basename(appName)}</div>
+					<div class="app_risk">System App</div>
+				</div>
+			</div>
+			<div class="app_options" data-id="${appId}" onclick="createDefaultAppShortcut('${appId}', '${appName}')">
+				<span class="material-symbols-rounded installbtnicn">add_to_home_screen</span>
+			</div>
+		`;
+				document.getElementById("defaultappslist").appendChild(appDiv);
+			}
+		}
+
+		async function createDefaultAppShortcut(appId, appName) {
+			await window.parent.createShortcut(appId);
+			window.parent.toaster(`${window.parent.basename(appName)} shortcut created on desktop!`);
+		}
+
+		async function upddefap(tag, el) {
+			const parent = el.closest(".singular_app");
+			const iconEl = el.querySelector(".installbtnicn");
+			iconEl.textContent = "hourglass_top";
+
+			let response;
+			const filePath = "appdata/" + tag + ".html";
+			try {
+				response = await window.parent.fetch(filePath);
+				if (!response.ok) {
+					iconEl.textContent = "error";
+					if (response.status === 404) throw new Error("File not found for " + tag);
+					else if (response.status === 403) throw new Error("Forbidden access for " + tag);
+					else throw new Error("Failed to fetch file for " + tag + ". Status: " + response.status);
+				}
+			} catch (error) {
+				if (error instanceof TypeError || error.name === 'FetchError') {
+					iconEl.textContent = "wifi_off";
+					console.error("Network error:", error.message);
+					return;
+				} else {
+					throw error;
+				}
+			}
+
+			const fileContent = await response.text();
+			await window.parent.createFile("Apps", window.parent.toTitleCase(tag), "app", fileContent);
+			iconEl.textContent = "check";
+			el.style.backgroundColor = "var(--col-bg2)"
+			console.log(tag + " updated successfully.");
+		}
+
+		function getAppTag(appDetails) {
+			const appName = appDetails.name;
+			const appVersion = appDetails.by;
+			return `${appName}@${appVersion}`;
+		}
+
+		async function onStartup() {
+			console.log("STORE ONSTARTUP")
+			const lastCheckData = await ntxSession.send("settings.get", "lastCheck", "thirdpartyApps.json");
+			const lastCheck = lastCheckData || 0;
+
+			if (Date.now() - lastCheck > 300000) {
+				ntxSession.send("settings.set", "lastCheck", Date.now(), "thirdpartyApps.json");
+				console.log("STORE CACHE SET")
+				await checkUpdatesHeadless();
+				console.log("ahfter")
+
+			} else {
+				console.log("fine")
+			}
+		}
+
+
+		async function checkUpdatesHeadless() {
+			const controller = new AbortController();
+			const timeout = setTimeout(() => controller.abort(), 3000);
+
+			try {
+				const localApps = await Promise.race([
+					ntxSession.send("settings.get", "versionsData", "thirdpartyApps.json"),
+					new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 3000))
+				]);
+
+				const metaData = await Promise.race([
+					fetchAppData(),
+					new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 3000))
+				]);
+
+				let count = 0;
+				for (const tag of Object.keys(localApps)) {
+					const appDetails = metaData.apps.find(app => getAppTag(app) === tag);
+					if (!appDetails) continue;
+					if (localApps[tag].ver != appDetails.ver) count++;
+				}
+
+				if (count > 0)
+					ntxSession.send("sysUI.notify", (count === 1 ? "An app needs update" : `${count} apps need updates`), "Click to update now");
+			} catch (e) { }
+			clearTimeout(timeout);
+
+		}
+
+		function updateButtonText() {
+			const input = document.getElementById("searchInput").value.trim();
+			const button = document.getElementById("actionButton");
+			const currentHtml = button.innerHTML;
+
+			let newHtml;
+
+			if (isValidUrl(input)) {
+				newHtml = ' download';
+			} else if (input.length > 0) {
+				newHtml = ' search';
+			} else {
+				newHtml = 'download';
+			}
+
+			if (currentHtml !== newHtml) {
+				button.innerHTML = newHtml;
+			}
+		}
+
+		function isValidUrl(string) {
+			try {
+				new URL(string);
+				return true;
+			} catch {
+				return false;
+			}
+		}
+
+		function handleEnterKey(event) {
+			if (event.key === "Enter") {
+				const input = document.getElementById("searchInput").value.trim();
+				if (input.length > 0) {
+					handleSearchOrInstall(document.getElementById("actionButton"));
+				}
+			}
+		}
+
+		async function handleSearchOrInstall(button) {
+			const input = document.getElementById("searchInput").value.trim();
+			if (isValidUrl(input)) {
+				await installapp({ "src": input }, getAppNameFromUrl(input), button);
+			} else {
+				searchApps(input);
+			}
+		}
+
+		function searchApps(query) {
+			const resultsDiv = document.getElementById("searchOutputList");
+			resultsDiv.style.display = 'grid';
+			resultsDiv.innerHTML = "<div class='loader'></div>";
+			fetch("../Lair-Store/db/v2.json")
+				.then(response => response.json())
+				.then(data => {
+					const threshold = 0.6;
+					const similarity = (a, b) => {
+						a = a.toLowerCase();
+						b = b.toLowerCase();
+						const longer = a.length > b.length ? a : b;
+						const shorter = a.length > b.length ? b : a;
+						const longerLength = longer.length;
+						if (longerLength === 0) return 1.0;
+						const editDist = (s1, s2) => {
+							const costs = [];
+							for (let i = 0; i <= s1.length; i++) {
+								let lastValue = i;
+								for (let j = 0; j <= s2.length; j++) {
+									if (i === 0) costs[j] = j;
+									else {
+										if (j > 0) {
+											let newValue = costs[j - 1];
+											if (s1.charAt(i - 1) !== s2.charAt(j - 1))
+												newValue = Math.min(Math.min(newValue, lastValue), costs[j]) + 1;
+											costs[j - 1] = lastValue;
+											lastValue = newValue;
+										}
+									}
+								}
+								if (i > 0) costs[s2.length] = lastValue;
+							}
+							return costs[s2.length];
+						};
+						return (longerLength - editDist(longer, shorter)) / parseFloat(longerLength);
+					};
+					const results = data.apps
+						.map(app => {
+							const scores = [
+								similarity(app.name, query),
+								similarity(app.desc || "", query),
+								similarity(app.ldesc || "", query)
+							];
+							const maxScore = Math.max(...scores);
+							const contains = app.name.toLowerCase().includes(query.toLowerCase()) ||
+								(app.desc || "").toLowerCase().includes(query.toLowerCase()) ||
+								(app.ldesc || "").toLowerCase().includes(query.toLowerCase());
+							return { app, score: contains ? 1 : maxScore };
+						})
+						.filter(item => item.score >= threshold)
+						.sort((a, b) => b.score - a.score)
+						.map(item => item.app);
+					displaySearchResults(results);
+				})
+				.catch(error => {
+					console.error("Error fetching app data:", error);
+					resultsDiv.innerHTML = "Error loading search results.";
+				});
+		}
+
+
+
+		function displaySearchResults(results) {
+			const resultsDiv = document.getElementById("searchOutputList");
+			resultsDiv.innerHTML = "";
+			if (results.length === 0) {
+				resultsDiv.innerHTML = "<p class='searchnores'>No results found.</p>";
+				return;
+			}
+			results.forEach(result => {
+				const appDiv = createAppDiv(result.name, result);
+				resultsDiv.appendChild(appDiv);
+			});
+			if (results.length === 1) {
+				openappinstr(results[0].name, results[0]);
+				return;
+			}
+		}
+
+	</script>
+</body>
+
+</html>

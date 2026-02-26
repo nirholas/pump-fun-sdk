@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="permissions" content="unsandboxed">
+    <meta name="lair-include" content="material-symbols-rounded lair.css">
+    <title>LocalStorage Data Manager</title>
+    <meta name="lair-icon"
+        content="<svg width='393' height='393' viewBox='0 0 393 393' fill='none' xmlns='http://www.w3.org/2000/svg'>
+<ellipse cx='218.29' cy='337.985' rx='85.5' ry='35' fill='#6C6C6C'/>
+<rect x='132.79' y='299.985' width='171' height='38' fill='#6C6C6C'/>
+<ellipse cx='218.29' cy='299.985' rx='85.5' ry='35' fill='#A1A1A1'/>
+<ellipse cx='218.29' cy='277.985' rx='85.5' ry='35' fill='#6C6C6C'/>
+<rect x='132.79' y='239.985' width='171' height='38' fill='#6C6C6C'/>
+<ellipse cx='218.29' cy='239.985' rx='85.5' ry='35' fill='#A1A1A1'/>
+<ellipse cx='236.07' cy='214.946' rx='85.5' ry='35' transform='rotate(3.67911 236.07 214.946)' fill='#6C6C6C'/>
+<rect x='153.185' y='171.538' width='171' height='38' transform='rotate(3.67911 153.185 171.538)' fill='#6C6C6C'/>
+<ellipse cx='238.509' cy='177.024' rx='85.5' ry='35' transform='rotate(3.67911 238.509 177.024)' fill='#A1A1A1'/>
+<ellipse cx='176.291' cy='123.218' rx='85.5' ry='35' transform='rotate(-24.9064 176.291 123.218)' fill='#6C6C6C'/>
+<rect x='82.7398' y='124.759' width='171' height='38' transform='rotate(-24.9064 82.7398 124.759)' fill='#6C6C6C'/>
+<ellipse cx='160.288' cy='88.7521' rx='85.5' ry='35' transform='rotate(-24.9064 160.288 88.7521)' fill='#A1A1A1'/>
+</svg>">
+    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        html,
+        body,
+        #main {
+            background: var(--col-bg1);
+    color: var(--col-txt1);
+        }
+
+body {
+    margin: 1em;
+}
+
+		.datamangernav {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			padding: 4px 10px;
+			background: var(--col-bg2);
+			color: var(--colors-text-section);
+			border-radius: var(--sizing-normal);
+		}
+
+		.datamangernav i {
+
+			font-size: var(--font-size-normal) !important;
+			transform: translateY(3px);
+		}
+
+		.lclstr {
+			border-bottom: 2px solid var(--col-bg3);
+			color: var(--colors-text-sub);
+			padding: 0.2rem var(--sizing-normal);
+			margin-top: 0.2rem;
+			display: flex;
+			flex-direction: row;
+			flex-wrap: nowrap;
+		}
+
+		.lclstr:hover {
+			background: #1f1f1f69;
+			transition: 0.3s;
+		}
+
+		.lclstr span {
+			width: 0;
+			word-break: break-all;
+		}
+
+		.lclstr .name {
+			flex: 1;
+			margin-right: 0.2rem;
+		}
+
+		.lclstr .value {
+			flex: 3;
+		}
+
+		.lclstr .material-symbols-rounded {
+			width: 20px;
+			font-size: var(--sizing-huge);
+			display: grid;
+			justify-items: center;
+			align-items: center;
+			opacity: 0.5;
+		}
+
+    </style>
+</head>
+
+<body>
+    <div class="datamangernav">
+        <span>LocalStorage</span>
+        <a onclick="lclstgsc()"><i class="material-symbols-rounded">restart_alt</i></a>
+    </div>
+    <div id="datalist">
+
+    </div>
+    <script>
+        async function lclstgsc() {
+            document.getElementById("datalist").innerHTML = "";
+            let items = {};
+            for (let i = 0; i < localStorage.length; i++) {
+                let key = localStorage.key(i);
+                if (key == "magicString") {
+                    continue;
+                }
+                items[key] = localStorage.getItem(key);
+                const elem = document.createElement("div");
+                elem.classList = "lclstr";
+                const elemname = document.createElement("span");
+                elemname.classList = "name";
+                elemname.innerText = key;
+                elem.appendChild(elemname);
+                const elemval = document.createElement("span");
+                elemval.classList = "value";
+                elemval.innerText = items[key];
+                elemval.addEventListener('click', async function () {
+                    let x = await ntxSession.send("sysUI.ask", "Set value for '" + key + "':", items[key]);
+                    localStorage.setItem(key, x)
+                });
+                elem.appendChild(elemval);
+                const delbtn = document.createElement("span");
+                delbtn.classList = "material-symbols-rounded";
+                delbtn.innerHTML = "delete_forever";
+                delbtn.addEventListener('click', async function () {
+                    localStorage.removeItem(key);
+                    lclstgsc();
+                });
+                elem.appendChild(delbtn);
+                document.getElementById("datalist").appendChild(elem)
+            }
+        }
+
+        lclstgsc()
+    </script>
+</body>
+
+</html>

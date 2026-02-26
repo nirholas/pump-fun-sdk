@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en" xml:lang="en" xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width">
+	<title>Download or import backups</title>
+	<link rel="icon" type="image/webp" href="n.png">
+	</script>
+
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Sono:wght@200..800&display=swap" rel="stylesheet">
+	<style>
+		html {
+			height: 100%;
+			width: 100%;
+		}
+
+		body {
+			display: flex;
+			height: 100%;
+			width: 100%;
+			margin: 0;
+			font-size: 1rem;
+			font-family: "Sono", serif;
+			background-color: #101010;
+			color: white;
+			align-items: center;
+			justify-content: center;
+		}
+
+		.form {
+			width: 400px;
+			background: #1f1f1f;
+			display: flex;
+			flex-direction: column;
+			align-items: stretch;
+			height: fit-content;
+			padding: 1em;
+			gap: .5em;
+			border-radius: 10px;
+		}
+
+		.inp {
+			display: flex;
+			flex-direction: row;
+			gap: .3em;
+			align-items: center;
+			margin-top: .3em;
+		}
+
+		input {
+			flex: 1;
+			background: #2f2f2f;
+			border: 1px solid #505050;
+			padding: .5em 1em;
+			color: white;
+			border-radius: 10px;
+			flex: 1;
+			outline: 0;
+			min-width: 0;
+		}
+
+		.inp button {
+			background: #2f2f2f;
+			border: 1px solid #505050;
+			padding: .5em 1em;
+			color: white;
+			border-radius: 10px;
+			flex: 1;
+			cursor: pointer;
+		}
+
+		.inp button:hover {
+			filter: brightness(120%);
+		}
+
+		input,
+		button {
+			font-size: inherit;
+			font-family: inherit;
+		}
+
+		button.high {
+			background: #153f5d;
+		}
+
+		canvas#confetti-canvas {
+			position: absolute;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			background: transparent;
+			display: none;
+		}
+
+		small {
+			display: block;
+			border-radius: .5em;
+			border: 1px solid rgb(63, 99, 63);
+			background-color: rgb(21, 56, 44);
+			padding: .5em;
+			margin-top: 1em;
+		}
+	</style>
+
+
+</head>
+
+<body>
+	<canvas id="confetti-canvas"></canvas>
+	<div class="form">
+		<div id="dwsec">
+			<div class="inp">
+				<label>Username: </label> <input id="inp-usrn" value="Admin" placeholder="Enter your username"
+					autocomplete="off">
+			</div>
+			<div class="inp">
+				<label>Password: </label> <input id="inp-pass" placeholder="Enter your password"
+					autocomplete="off">
+			</div>
+			<small>🔐 If you haven't set a password, the default password is 'lair'.</small>
+		</div>
+		<div id="imprsec">
+			<div class="inp"><input type="file" id="docpicker" accept=".zip" /></div>
+
+		</div>
+		<div class="inp">
+			<button id="dwbtn" class="high" onclick="download()">⬇️ Download</button>
+			<button id="impbtn" onclick="importDB()">💾 Import</button>
+		</div>
+	</div>
+
+	<script src="scripts/fflate.js"></script>
+	<script src="scripts/encdec.js"></script>
+	<script src="system32.js"></script>
+	<script src="scripts/readwrite.js"></script>
+	<script defer>
+		function switchHighlight(fromId, toId) {
+			document.getElementById(fromId).classList.remove('high');
+			document.getElementById(toId).classList.add('high');
+		}
+
+		function start() {
+			CurrentUsername = document.querySelector("#inp-usrn").value;
+			password = document.querySelector("#inp-pass").value;
+		}
+		async function download() {
+			start();
+			if (!dbCache) dbCache = await openDB(CurrentUsername, 1);
+			if (!cryptoKeyCache) cryptoKeyCache = await getKey(password);
+
+			const zipData = {};
+			const contentTx = dbCache.transaction('contentpool', 'readonly');
+			const contentStore = contentTx.objectStore('contentpool');
+			const contentRequest = contentStore.getAll();
+
+			const memoryTx = dbCache.transaction('memory', 'readonly');
+			const memoryStore = memoryTx.objectStore('memory');
+			const memoryRequest = memoryStore.get('memory');
+
+			const [contents, memoryResult] = await Promise.all([
+				new Promise((resolve, reject) => {
+					contentRequest.onsuccess = () => resolve(contentRequest.result);
+					contentRequest.onerror = () => reject(contentRequest.error);
+				}),
+				new Promise((resolve, reject) => {
+					memoryRequest.onsuccess = () => resolve(memoryRequest.result);
+					memoryRequest.onerror = () => reject(memoryRequest.error);
+				})
+			]);
+
+			contents.forEach(item => {
+				zipData[`content/${item.key}.json`] = fflate.strToU8(JSON.stringify(item));
+			});
+
+			if (memoryResult) {
+				zipData['memory.json'] = fflate.strToU8(JSON.stringify(memoryResult));
+			}
+
+			const zipped = fflate.zipSync(zipData, { level: 9 });
+
+			const blob = new Blob([zipped], { type: 'application/zip' });
+			const url = URL.createObjectURL(blob);
+			const a = document.createElement('a');
+			a.href = url;
+			a.download = `${CurrentUsername}_backup.zip`;
+			a.click();
+			URL.revokeObjectURL(url);
+			launchConfetti('confetti-canvas');
+		}
+
+		async function importDB() {
+			start();
+			const fileInput = document.querySelector("#docpicker");
+			file = fileInput.files[0];
+
+			if (!file) {
+				strtimp();
+				return;
+			}
+			if (!dbCache) dbCache = await openDB(CurrentUsername, 1);
+			if (!cryptoKeyCache) cryptoKeyCache = await getKey(password);
+
+			const arrayBuffer = await file.arrayBuffer();
+			const unzipped = fflate.unzipSync(new Uint8Array(arrayBuffer));
+
+			const memoryData = unzipped['memory.json'];
+			if (memoryData) {
+				const memoryJson = JSON.parse(fflate.strFromU8(memoryData));
+				const memoryTx = dbCache.transaction('memory', 'readwrite');
+				const memoryStore = memoryTx.objectStore('memory');
+				memoryStore.put(memoryJson);
+			}
+
+			const contentTx = dbCache.transaction('contentpool', 'readwrite');
+			const contentStore = contentTx.objectStore('contentpool');
+
+			for (const filename in unzipped) {
+				if (!filename.startsWith('content/') || !filename.endsWith('.json')) continue;
+
+				const contentJson = JSON.parse(fflate.strFromU8(unzipped[filename]));
+				contentStore.put(contentJson);
+			}
+			launchConfetti('confetti-canvas');
+		}
+
+		document.getElementById("dwsec").style.display = "block";
+		document.getElementById("imprsec").style.display = "none";
+		function strtimp() {
+			document.getElementById("dwsec").style.display = "none";
+			document.getElementById("imprsec").style.display = "block";
+			switchHighlight('dwbtn', 'impbtn');
+		}
+
+		function launchConfetti(canvasId) {
+			document.getElementById("confetti-canvas").style.display = "block";
+			const canvas = document.getElementById(canvasId);
+			const ctx = canvas.getContext('2d');
+			canvas.width = window.innerWidth;
+			canvas.height = window.innerHeight;
+
+			const confettiCount = 300;
+			const confetti = [];
+			const colors = ['#fce18a', '#ff726d', '#b48def', '#f4306d'];
+			let fadingOut = false;
+			let globalAlpha = 1;
+
+			for (let i = 0; i < confettiCount; i++) {
+				confetti.push(createConfetto());
+			}
+
+			function createConfetto() {
+				return {
+					x: Math.random() * canvas.width,
+					y: Math.random() * canvas.height - canvas.height,
+					r: Math.random() * 6 + 4,
+					d: Math.random() * confettiCount,
+					color: colors[Math.floor(Math.random() * colors.length)],
+					tilt: Math.floor(Math.random() * 10) - 10,
+					tiltAngle: 0,
+					tiltAngleIncrement: Math.random() * 0.07 + 0.05,
+					alpha: 1
+				};
+			}
+
+			function drawConfetti() {
+				ctx.clearRect(0, 0, canvas.width, canvas.height);
+				ctx.globalAlpha = globalAlpha;
+
+				confetti.forEach(c => {
+					ctx.beginPath();
+					ctx.lineWidth = c.r / 2;
+					ctx.strokeStyle = c.color;
+					ctx.moveTo(c.x + c.tilt + c.r / 2, c.y);
+					ctx.lineTo(c.x + c.tilt, c.y + c.tilt + c.r);
+					ctx.stroke();
+				});
+
+				updateConfetti();
+
+				if (fadingOut) {
+					globalAlpha -= 0.01;
+					if (globalAlpha <= 0) {
+						ctx.clearRect(0, 0, canvas.width, canvas.height);
+						return;
+					}
+				}
+
+				requestAnimationFrame(drawConfetti);
+			}
+
+			function updateConfetti() {
+				confetti.forEach(c => {
+					c.tiltAngle += c.tiltAngleIncrement;
+					c.y += (Math.cos(c.d) + 3 + c.r / 2) / 2;
+					c.x += Math.sin(c.d);
+					c.tilt = Math.sin(c.tiltAngle) * 15;
+
+					if (!fadingOut && c.y > canvas.height) {
+						c.y = -10;
+						c.x = Math.random() * canvas.width;
+					}
+				});
+			}
+
+			drawConfetti();
+
+			setTimeout(() => {
+				fadingOut = true;
+			}, 3000);
+		}
+
+	</script>
+</body>
+
+</html>

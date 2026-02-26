@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="lair-include" content="lair.css">
+    <meta name="lair-widget" content="true">
+    <meta name="lair-widget-size" content="1x4">
+    <meta name="lair-icon" content='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="24" height="24" fill="white"><path d="M240-160q-33 0-56.5-23.5T160-240v-480q0-33 23.5-56.5T240-800h480q33 0 56.5 23.5T800-720v480q0 33-23.5 56.5T720-160H240Zm0-80h480v-480H240v480Zm60-60h140v-140H300v140Zm200 0h140v-60H500v60Zm0-120h140v-60H500v60Zm-200-60h140v-140H300v140Z"/></svg>'>
+    <title>Quick Launch</title>
+    <style>
+        @font-face {
+            font-family: 'Material Symbols Rounded';
+            font-style: normal;
+            src: url("libs/MaterialSymbolsRounded.woff2") format('woff2');
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body {
+            height: 100%;
+            width: 100%;
+        }
+        body {
+            background: transparent;
+            color: var(--col-txt1, #fff);
+            font-family: 'Poppins', 'Segoe UI', system-ui, sans-serif;
+            overflow: hidden;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            padding-left: 6px;
+        }
+
+        /* ── Sidebar container ── */
+        .dock {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+            min-width: 46px;
+            padding: 4px;
+            background: rgba(10, 10, 10, 0.88);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 8px 22px rgba(0, 0, 0, 0.38);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 12px;
+            animation: sidebarIn 0.4s cubic-bezier(0.36, 0.38, 0, 0.94);
+        }
+
+        @keyframes sidebarIn {
+            0%   { opacity: 0; transform: translateX(-8px) scale(0.96); }
+            100% { opacity: 1; transform: translateX(0) scale(1); }
+        }
+
+        /* ── Each shortcut — matches NovaOS .adock ── */
+        .dock-item {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 39px;
+            height: 39px;
+            aspect-ratio: 1 / 1;
+            border-radius: 6px;
+            cursor: pointer;
+            background: transparent;
+            border: none;
+            padding: 0;
+            overflow: visible;
+            transition: background 0.2s, transform 0.15s;
+        }
+
+        .dock-item:hover {
+            background-color: #ffffff17;
+        }
+
+        .dock-item:focus-visible {
+            outline: 2px solid var(--colors-accent, rgb(97, 121, 255));
+            outline-offset: 1px;
+        }
+
+        .dock-item:active {
+            transform: scale(0.92);
+        }
+
+        /* ── Icons ── */
+        .dock-item svg {
+            width: 22px;
+            height: 22px;
+            fill: var(--col-txt1, #fff);
+            opacity: 0.85;
+            transition: opacity 0.15s;
+        }
+
+        .dock-item:hover svg {
+            opacity: 1;
+        }
+
+        /* ── Tooltip — matches NovaOS .adock .tooltiptext ── */
+        .dock-item .tip {
+            position: absolute;
+            left: calc(100% + 8px);
+            top: 50%;
+            transform: translateY(-50%) scale(0.9);
+            background-color: var(--col-bg2, #171717);
+            color: var(--col-txt1, #fff);
+            font-size: 0.7rem;
+            padding: 2px 8px;
+            border-radius: 0.3em;
+            white-space: nowrap;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.15s, transform 0.15s;
+        }
+
+        .dock-item:hover .tip {
+            opacity: 1;
+            transform: translateY(-50%) scale(1);
+        }
+
+        .dock-item::after {
+            content: '';
+            position: absolute;
+            right: -2px;
+            top: 50%;
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.5);
+            transform: translateY(-50%);
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+    <div class="dock" id="dock"></div>
+    <script>
+        const APPS = [
+            { name: 'Files',    key: 'files',    icon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960"><path d="M160-160q-33 0-56.5-23.5T80-240v-480q0-33 23.5-56.5T160-800h240l80 80h320q33 0 56.5 23.5T880-640v400q0 33-23.5 56.5T800-160H160Z"/></svg>' },
+            { name: 'Browser',  key: 'browser',  icon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960"><path d="M480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm-40-82v-78q-33 0-56.5-23.5T360-320v-40L168-552q-3 18-5.5 36t-2.5 36q0 121 79.5 212T440-162Zm276-102q26-36 43-77.5t23-87.5H660q-8 36-25.5 67T596-276l-36 36q32 12 66 12t90-36Z"/></svg>' },
+            { name: 'AI',       key: 'lairai',   icon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960"><path d="M160-400q0-29 16-52.5t42-34.5q-2-10-3-20t-1-21q0-80 56-136t136-56q53 0 97.5 27.5T571-618q29-8 55.5 6t39.5 42q28 7 46 30t18 52q0 33-23.5 56.5T650-408H320q-33 0-56.5-23.5T240-488q-36-11-58-41t-22-67v-4ZM80-160v-80h800v80H80Z"/></svg>' },
+            { name: 'DeFi',     key: 'lairdefi', icon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960"><path d="M120-120v-80l80-80v160h-80Zm160 0v-240l80-80v320h-80Zm160 0v-320l80 81v239h-80Zm160 0v-239l80-80v319h-80Zm160 0v-400l80-80v480h-80ZM120-327v-113l280-280 160 160 280-280v113L560-447 400-607 120-327Z"/></svg>' },
+            { name: 'Store',    key: 'store',    icon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960"><path d="M160-720v-80h640v80H160Zm0 560v-240h-40v-80l40-200h640l40 200v80h-40v240h-80v-240H560v240H160Zm80-80h240v-160H240v160Z"/></svg>' },
+            { name: 'Settings', key: 'settings', icon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960"><path d="m370-80-16-128q-13-5-24.5-12T307-235l-119 50L88-352l104-78q-1-7-1.5-14.5T190-460q0-8 .5-15t1.5-15L88-568l100-167 119 50q11-8 23-15t24-12l16-128h200l16 128q13 5 24.5 12t22.5 15l119-50 100 167-104 78q1 7 1.5 14.5t.5 15.5q0 8-.5 15t-1.5 15l104 78-100 167-119-50q-11 8-22.5 15T546-208L530-80H370Zm90-260q58 0 99-41t41-99q0-58-41-99t-99-41q-58 0-99 41t-41 99q0 58 41 99t99 41Z"/></svg>' },
+        ];
+
+        const dock = document.getElementById('dock');
+        APPS.forEach(app => {
+            const item = document.createElement('button');
+            item.className = 'dock-item';
+            item.type = 'button';
+            item.title = app.name;
+            item.innerHTML = app.icon + '<span class="tip">' + app.name + '</span>';
+            item.addEventListener('click', () => {
+                window.parent.postMessage({ type: 'widgetOpenApp', app: app.key }, '*');
+            });
+            dock.appendChild(item);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>On-Chain Analytics</title>
+    <meta name="lair-icon" content="link">
+    <meta name="lair-include" content="lair.css material-symbols-rounded">
+    <meta name="permissions" content="appStorage, network">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            height: 100vh; overflow: hidden;
+            background: var(--col-bg1, #101010);
+            color: var(--col-txt1, #fff);
+            font-family: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
+            display: flex; flex-direction: column;
+        }
+
+        .header {
+            display: flex; align-items: center; gap: 10px;
+            padding: 12px 16px;
+            background: var(--col-bg2, #171717);
+            border-bottom: 1px solid var(--col-bg3, #262626);
+            flex-shrink: 0; flex-wrap: wrap;
+        }
+        .header h2 { font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 6px; }
+        .tab-row { display: flex; gap: 2px; background: var(--col-bg1, #101010); border-radius: 6px; padding: 2px; }
+        .tab-btn {
+            background: transparent; border: none; color: #888; border-radius: 4px;
+            padding: 5px 12px; cursor: pointer; font-size: 11px; font-family: inherit;
+            transition: all 0.15s; display: flex; align-items: center; gap: 4px;
+        }
+        .tab-btn:hover { color: var(--col-txt1, #fff); }
+        .tab-btn.active { background: var(--colors-accent, #6179ff); color: #fff; }
+        .refresh-info { margin-left: auto; font-size: 10px; color: #555; }
+
+        .content { flex: 1; overflow-y: auto; padding: 16px; }
+        .content::-webkit-scrollbar { width: 6px; }
+        .content::-webkit-scrollbar-thumb { background: var(--col-bg3, #333); border-radius: 3px; }
+
+        .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; margin-bottom: 20px; }
+        .metric-card {
+            background: var(--col-bg2, #171717); border: 1px solid var(--col-bg3, #262626);
+            border-radius: 10px; padding: 16px; transition: border-color 0.2s;
+        }
+        .metric-card:hover { border-color: var(--colors-accent, #6179ff); }
+        .mc-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+        .mc-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+        .mc-label { font-size: 11px; color: #888; }
+        .mc-value { font-size: 22px; font-weight: 700; margin: 4px 0; }
+        .mc-change { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; font-weight: 600; padding: 2px 6px; border-radius: 4px; }
+        .mc-change.up { background: rgba(91,228,91,0.1); color: #5be45b; }
+        .mc-change.dn { background: rgba(239,68,68,0.1); color: #ef4444; }
+        .mc-sub { font-size: 10px; color: #555; margin-top: 6px; }
+        .mc-sparkline { margin-top: 10px; }
+        .mc-sparkline canvas { width: 100%; height: 40px; display: block; }
+        .up { color: #5be45b; } .dn { color: #ef4444; } .neutral { color: #f59e0b; }
+
+        .section-title {
+            font-size: 13px; font-weight: 700; color: #aaa; margin-bottom: 12px;
+            padding-bottom: 6px; border-bottom: 1px solid var(--col-bg3, #262626);
+            display: flex; align-items: center; gap: 6px;
+        }
+        .flow-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        .flow-table th { text-align: left; font-size: 10px; color: #888; text-transform: uppercase; padding: 8px 10px; border-bottom: 1px solid var(--col-bg3, #262626); }
+        .flow-table td { padding: 8px 10px; font-size: 12px; border-bottom: 1px solid rgba(255,255,255,0.02); }
+        .flow-bar { display: flex; align-items: center; gap: 6px; }
+        .flow-bar-bg { flex: 1; height: 6px; background: var(--col-bg3, #262626); border-radius: 3px; overflow: hidden; }
+        .flow-bar-fill { height: 100%; border-radius: 3px; }
+
+        .state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 48px; width: 100%; }
+        .spinner { width: 30px; height: 30px; border: 3px solid var(--col-bg3, #262626); border-top-color: var(--colors-accent, #6179ff); border-radius: 50%; animation: spin 0.7s linear infinite; margin-bottom: 14px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .state p { color: #666; font-size: 13px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h2><span class="material-symbols-rounded" style="font-size:18px;">link</span> On-Chain</h2>
+        <div class="tab-row">
+            <button class="tab-btn active" data-tab="btc" onclick="switchTab('btc')">
+                <span class="material-symbols-rounded" style="font-size:14px;">currency_bitcoin</span> Bitcoin
+            </button>
+            <button class="tab-btn" data-tab="eth" onclick="switchTab('eth')">
+                <span class="material-symbols-rounded" style="font-size:14px;">diamond</span> Ethereum
+            </button>
+            <button class="tab-btn" data-tab="network" onclick="switchTab('network')">
+                <span class="material-symbols-rounded" style="font-size:14px;">hub</span> Network
+            </button>
+        </div>
+        <div class="refresh-info" id="refreshInfo">—</div>
+    </div>
+
+    <div class="content" id="content">
+        <div class="state"><div class="spinner"></div><p>Loading on-chain data…</p></div>
+    </div>
+
+<script>
+let currentTab = 'btc';
+let btcData = null, ethData = null, networkData = null;
+const BLOCKCHAIN_API = 'https://blockchain.info';
+
+/* Delegate to kernel-injected cfetch (earlyScript), but wrap with
+   null-on-failure semantics that callers in this file depend on. */
+const _kcfetch = window.cfetch;
+async function cfetch(url) {
+    try { const r = await _kcfetch(url); return r?.ok ? r : null; } catch(_) { return null; }
+}
+
+function fmtNum(n) {
+    if (n >= 1e12) return (n/1e12).toFixed(2) + 'T';
+    if (n >= 1e9) return (n/1e9).toFixed(2) + 'B';
+    if (n >= 1e6) return (n/1e6).toFixed(2) + 'M';
+    if (n >= 1e3) return (n/1e3).toFixed(1) + 'K';
+    return n.toFixed(0);
+}
+
+function drawSparkline(canvas, data, color) {
+    const ctx = canvas.getContext('2d');
+    const w = canvas.width = canvas.offsetWidth * 2;
+    const h = canvas.height = 80;
+    ctx.clearRect(0, 0, w, h);
+    if (!data || data.length < 2) return;
+    const min = Math.min(...data), max = Math.max(...data), range = max - min || 1;
+    const step = w / (data.length - 1);
+    const grad = ctx.createLinearGradient(0, 0, 0, h);
+    grad.addColorStop(0, color + '33'); grad.addColorStop(1, color + '00');
+    ctx.beginPath();
+    ctx.moveTo(0, h - ((data[0] - min) / range) * h * 0.8 - h * 0.1);
+    data.forEach((v, i) => { ctx.lineTo(i * step, h - ((v - min) / range) * h * 0.8 - h * 0.1); });
+    ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.stroke();
+    ctx.lineTo(w, h); ctx.lineTo(0, h); ctx.closePath(); ctx.fillStyle = grad; ctx.fill();
+}
+
+async function fetchBtcData() {
+    if (btcData) return btcData;
+    const [statsR, poolsR] = await Promise.all([
+        cfetch(`${BLOCKCHAIN_API}/stats?format=json&cors=true`),
+        cfetch(`${BLOCKCHAIN_API}/pools?timespan=24hours&format=json`),
+    ]);
+    const stats = statsR ? await statsR.json() : null;
+    const pools = poolsR ? await poolsR.json() : null;
+
+    const chartKeys = ['hash-rate', 'n-transactions', 'mempool-size', 'difficulty', 'avg-block-size'];
+    const chartNames = ['hashrate', 'txcount', 'mempool', 'difficulty', 'blocksize'];
+    const chartSpans = ['30days', '30days', '7days', '1year', '30days'];
+    const charts = {};
+    for (let i = 0; i < chartKeys.length; i++) {
+        try {
+            const r = await cfetch(`${BLOCKCHAIN_API}/charts/${chartKeys[i]}?timespan=${chartSpans[i]}&format=json&cors=true`);
+            if (r) { const d = await r.json(); charts[chartNames[i]] = d.values ? d.values.map(v => v.y) : []; }
+        } catch(_) {}
+        if (i < chartKeys.length - 1) await new Promise(r => setTimeout(r, 300));
+    }
+    btcData = { stats, pools, charts };
+    return btcData;
+}
+
+async function fetchEthData() {
+    if (ethData) return ethData;
+    const r = await cfetch('https://api.coingecko.com/api/v3/coins/ethereum?localization=false&tickers=false&community_data=true&developer_data=true');
+    const coin = r ? await r.json() : null;
+    await new Promise(r => setTimeout(r, 1200));
+    const r3 = await cfetch('https://api.etherscan.io/api?module=gastracker&action=gasoracle');
+    const gas = r3 ? await r3.json() : null;
+    ethData = { coin, gas: gas?.result };
+    return ethData;
+}
+
+async function fetchNetworkData() {
+    if (networkData) return networkData;
+    const r = await cfetch('https://api.coingecko.com/api/v3/global');
+    const global = r ? await r.json() : null;
+    await new Promise(r => setTimeout(r, 1200));
+    const r2 = await cfetch('https://api.coingecko.com/api/v3/global/decentralized_finance_defi');
+    const defi = r2 ? await r2.json() : null;
+    networkData = { global: global?.data, defi: defi?.data };
+    return networkData;
+}
+
+function renderBtc(data) {
+    const s = data.stats;
+    if (!s) return '<div class="state"><p>Failed to load Bitcoin data</p></div>';
+    const hashrate = s.hash_rate ? (s.hash_rate / 1e6).toFixed(1) + ' EH/s' : '—';
+    const difficulty = s.difficulty ? fmtNum(s.difficulty) : '—';
+    const txCount = s.n_tx ? fmtNum(s.n_tx) : '—';
+    const blockHeight = s.n_blocks_total ? fmtNum(s.n_blocks_total) : '—';
+    const mempoolBytes = s.mempool_size ? (s.mempool_size / 1e6).toFixed(1) + ' MB' : '—';
+    const unconfirmed = s.unconfirmed_count ? fmtNum(s.unconfirmed_count) : '—';
+    const totalBtc = s.totalbc ? (s.totalbc / 1e8).toFixed(0) : '—';
+    const price = s.market_price_usd ? '$' + s.market_price_usd.toLocaleString(undefined, {maximumFractionDigits:0}) : '—';
+    const mktCap = s.market_price_usd && s.totalbc ? '$' + fmtNum(s.market_price_usd * s.totalbc / 1e8) : '—';
+
+    let html = `
+    <div class="section-title"><span class="material-symbols-rounded" style="font-size:16px;">monitoring</span> Network Metrics</div>
+    <div class="cards-grid">
+        <div class="metric-card"><div class="mc-header"><div class="mc-icon" style="background:rgba(247,147,26,0.15);">⛏️</div><div class="mc-label">Hash Rate</div></div><div class="mc-value" style="color:#f7931a;">${hashrate}</div><div class="mc-sub">Computational power securing the network</div><div class="mc-sparkline"><canvas data-spark="hashrate" data-color="#f7931a"></canvas></div></div>
+        <div class="metric-card"><div class="mc-header"><div class="mc-icon" style="background:rgba(97,121,255,0.15);">🔒</div><div class="mc-label">Difficulty</div></div><div class="mc-value">${difficulty}</div><div class="mc-sub">Mining difficulty adjustment</div><div class="mc-sparkline"><canvas data-spark="difficulty" data-color="#6179ff"></canvas></div></div>
+        <div class="metric-card"><div class="mc-header"><div class="mc-icon" style="background:rgba(91,228,91,0.15);">📊</div><div class="mc-label">Transactions (24h)</div></div><div class="mc-value up">${txCount}</div><div class="mc-sub">Confirmed transactions in last 24 hours</div><div class="mc-sparkline"><canvas data-spark="txcount" data-color="#5be45b"></canvas></div></div>
+        <div class="metric-card"><div class="mc-header"><div class="mc-icon" style="background:rgba(255,255,255,0.05);">📦</div><div class="mc-label">Block Height</div></div><div class="mc-value">${blockHeight}</div><div class="mc-sub">Total blocks mined since genesis</div></div>
+        <div class="metric-card"><div class="mc-header"><div class="mc-icon" style="background:rgba(245,158,11,0.15);">🕐</div><div class="mc-label">Mempool Size</div></div><div class="mc-value neutral">${mempoolBytes}</div><div class="mc-sub">${unconfirmed} unconfirmed transactions</div><div class="mc-sparkline"><canvas data-spark="mempool" data-color="#f59e0b"></canvas></div></div>
+        <div class="metric-card"><div class="mc-header"><div class="mc-icon" style="background:rgba(255,255,255,0.05);">📐</div><div class="mc-label">Avg Block Size</div></div><div class="mc-value">${s.blocks_size ? (s.blocks_size / s.n_blocks_mined / 1e6).toFixed(2) + ' MB' : '—'}</div><div class="mc-sub">${s.n_blocks_mined || '—'} blocks mined today</div><div class="mc-sparkline"><canvas data-spark="blocksize" data-color="#888"></canvas></div></div>
+    </div>
+    <div class="section-title"><span class="material-symbols-rounded" style="font-size:16px;">account_balance</span> Supply &amp; Market</div>
+    <div class="cards-grid">
+        <div class="metric-card"><div class="mc-header"><div class="mc-icon" style="background:rgba(247,147,26,0.15);">₿</div><div class="mc-label">Total Supply</div></div><div class="mc-value">${totalBtc} BTC</div><div class="mc-sub">${((s.totalbc / 1e8 / 21000000) * 100).toFixed(2)}% of max supply mined</div></div>
+        <div class="metric-card"><div class="mc-header"><div class="mc-icon" style="background:rgba(91,228,91,0.15);">💰</div><div class="mc-label">Price</div></div><div class="mc-value up">${price}</div><div class="mc-sub">Market cap: ${mktCap}</div></div>
+        <div class="metric-card"><div class="mc-header"><div class="mc-icon" style="background:rgba(97,121,255,0.15);">💸</div><div class="mc-label">Revenue per Block</div></div><div class="mc-value">$${s.market_price_usd ? fmtNum(s.estimated_btc_sent / s.n_blocks_mined / 1e8 * s.market_price_usd) : '—'}</div><div class="mc-sub">Avg value transacted per block</div></div>
+    </div>`;
+
+    if (data.pools) {
+        const poolEntries = Object.entries(data.pools).sort((a, b) => b[1] - a[1]);
+        const totalBlocks = poolEntries.reduce((s, [_, v]) => s + v, 0);
+        html += `<div class="section-title"><span class="material-symbols-rounded" style="font-size:16px;">build</span> Mining Pool Distribution (24h)</div>
+        <table class="flow-table"><thead><tr><th>Pool</th><th>Blocks</th><th>Share</th><th></th></tr></thead><tbody>`;
+        poolEntries.slice(0, 12).forEach(([name, blocks]) => {
+            const pct = (blocks / totalBlocks * 100).toFixed(1);
+            html += `<tr><td style="font-weight:600;">${name}</td><td>${blocks}</td><td>${pct}%</td><td><div class="flow-bar"><div class="flow-bar-bg"><div class="flow-bar-fill" style="width:${pct}%;background:#f7931a;"></div></div></div></td></tr>`;
+        });
+        html += '</tbody></table>';
+    }
+    return html;
+}
+
+function renderEth(data) {
+    const c = data.coin;
+    if (!c) return '<div class="state"><p>Failed to load Ethereum data</p></div>';
+    const md = c.market_data;
+    const price = md?.current_price?.usd ? '$' + md.current_price.usd.toLocaleString() : '—';
+    const mktCap = md?.market_cap?.usd ? '$' + fmtNum(md.market_cap.usd) : '—';
+    const supply = md?.circulating_supply ? fmtNum(md.circulating_supply) : '—';
+    const vol24 = md?.total_volume?.usd ? '$' + fmtNum(md.total_volume.usd) : '—';
+    const change24 = md?.price_change_percentage_24h?.toFixed(2) || '0';
+    const change7d = md?.price_change_percentage_7d?.toFixed(2) || '0';
+    const ath = md?.ath?.usd ? '$' + md.ath.usd.toLocaleString() : '—';
+    const athChange = md?.ath_change_percentage?.usd?.toFixed(1) || '0';
+    const gas = data.gas;
+    const gasLow = gas?.SafeGasPrice || '—';
+    const gasAvg = gas?.ProposeGasPrice || '—';
+    const gasHigh = gas?.FastGasPrice || '—';
+
+    return `
+    <div class="section-title"><span class="material-symbols-rounded" style="font-size:16px;">diamond</span> Ethereum Overview</div>
+    <div class="cards-grid">
+        <div class="metric-card"><div class="mc-header"><div class="mc-icon" style="background:rgba(98,126,234,0.15);">Ξ</div><div class="mc-label">ETH Price</div></div><div class="mc-value" style="color:#627eea;">${price}</div><div class="mc-change ${parseFloat(change24) >= 0 ? 'up' : 'dn'}"><span class="material-symbols-rounded" style="font-size:12px;">${parseFloat(change24) >= 0 ? 'trending_up' : 'trending_down'}</span>${change24}% (24h)</div></div>
+        <div class="metric-card"><div class="mc-header"><div class="mc-icon" style="background:rgba(91,228,91,0.15);">📈</div><div class="mc-label">Market Cap</div></div><div class="mc-value up">${mktCap}</div><div class="mc-sub">Volume (24h): ${vol24}</div></div>
+        <div class="metric-card"><div class="mc-header"><div class="mc-icon" style="background:rgba(255,255,255,0.05);">🔄</div><div class="mc-label">Circulating Supply</div></div><div class="mc-value">${supply} ETH</div><div class="mc-sub">7D change: <span class="${parseFloat(change7d) >= 0 ? 'up' : 'dn'}">${change7d}%</span></div></div>
+        <div class="metric-card"><div class="mc-header"><div class="mc-icon" style="background:rgba(239,68,68,0.15);">🏔️</div><div class="mc-label">All-Time High</div></div><div class="mc-value">${ath}</div><div class="mc-sub dn">${athChange}% from ATH</div></div>
+    </div>
+    <div class="section-title"><span class="material-symbols-rounded" style="font-size:16px;">local_gas_station</span> Gas Prices (Gwei)</div>
+    <div class="cards-grid">
+        <div class="metric-card"><div class="mc-header"><div class="mc-icon" style="background:rgba(91,228,91,0.15);">🐢</div><div class="mc-label">Low (Safe)</div></div><div class="mc-value up">${gasLow}</div><div class="mc-sub">~5+ minute confirmation</div></div>
+        <div class="metric-card"><div class="mc-header"><div class="mc-icon" style="background:rgba(245,158,11,0.15);">🚶</div><div class="mc-label">Average</div></div><div class="mc-value" style="color:#f59e0b;">${gasAvg}</div><div class="mc-sub">~3 minute confirmation</div></div>
+        <div class="metric-card"><div class="mc-header"><div class="mc-icon" style="background:rgba(239,68,68,0.15);">🚀</div><div class="mc-label">Fast</div></div><div class="mc-value dn">${gasHigh}</div><div class="mc-sub">~30 second confirmation</div></div>
+    </div>`;
+}
+
+function renderNetwork(data) {
+    const g = data.global;
+    const d = data.defi;
+    if (!g) return '<div class="state"><p>Failed to load network data</p></div>';
+    const totalMkt = g.total_market_cap?.usd ? '$' + fmtNum(g.total_market_cap.usd) : '—';
+    const totalVol = g.total_volume?.usd ? '$' + fmtNum(g.total_volume.usd) : '—';
+    const btcDom = g.market_cap_percentage?.btc?.toFixed(1) || '—';
+    const ethDom = g.market_cap_percentage?.eth?.toFixed(1) || '—';
+    const defiMktCap = d?.defi_market_cap ? '$' + fmtNum(parseFloat(d.defi_market_cap)) : '—';
+    const defiDom = d?.defi_dominance ? parseFloat(d.defi_dominance).toFixed(2) + '%' : '—';
+    const defiVol = d?.trading_volume_24h ? '$' + fmtNum(parseFloat(d.trading_volume_24h)) : '—';
+    const defiEth = d?.eth_market_cap ? '$' + fmtNum(parseFloat(d.eth_market_cap)) : '—';
+    const mktChange = g.market_cap_change_percentage_24h_usd?.toFixed(2) || '0';
+
+    const dominancePairs = Object.entries(g.market_cap_percentage || {}).sort((a, b) => b[1] - a[1]);
+    const colors = { btc: '#f7931a', eth: '#627eea', usdt: '#26a17b', bnb: '#f0b90b', sol: '#9945ff', usdc: '#2775ca', xrp: '#23292f' };
+
+    let html = `
+    <div class="section-title"><span class="material-symbols-rounded" style="font-size:16px;">public</span> Global Crypto Market</div>
+    <div class="cards-grid">
+        <div class="metric-card"><div class="mc-header"><div class="mc-icon" style="background:rgba(97,121,255,0.15);">🌍</div><div class="mc-label">Total Market Cap</div></div><div class="mc-value" style="color:var(--colors-accent,#6179ff);">${totalMkt}</div><div class="mc-change ${parseFloat(mktChange) >= 0 ? 'up' : 'dn'}">${mktChange}% (24h)</div></div>
+        <div class="metric-card"><div class="mc-header"><div class="mc-icon" style="background:rgba(91,228,91,0.15);">📊</div><div class="mc-label">24h Volume</div></div><div class="mc-value up">${totalVol}</div><div class="mc-sub">${g.active_cryptocurrencies?.toLocaleString() || '—'} active coins</div></div>
+        <div class="metric-card"><div class="mc-header"><div class="mc-icon" style="background:rgba(247,147,26,0.15);">₿</div><div class="mc-label">BTC Dominance</div></div><div class="mc-value" style="color:#f7931a;">${btcDom}%</div><div class="mc-sub">ETH: ${ethDom}%</div></div>
+        <div class="metric-card"><div class="mc-header"><div class="mc-icon" style="background:rgba(255,255,255,0.05);">🏦</div><div class="mc-label">Markets</div></div><div class="mc-value">${g.markets?.toLocaleString() || '—'}</div><div class="mc-sub">Active trading pairs</div></div>
+    </div>
+    <div class="section-title"><span class="material-symbols-rounded" style="font-size:16px;">account_tree</span> DeFi Overview</div>
+    <div class="cards-grid">
+        <div class="metric-card"><div class="mc-header"><div class="mc-icon" style="background:rgba(139,92,246,0.15);">🏗️</div><div class="mc-label">DeFi Market Cap</div></div><div class="mc-value" style="color:#8b5cf6;">${defiMktCap}</div><div class="mc-sub">DeFi Dominance: ${defiDom}</div></div>
+        <div class="metric-card"><div class="mc-header"><div class="mc-icon" style="background:rgba(139,92,246,0.15);">💱</div><div class="mc-label">DeFi Volume (24h)</div></div><div class="mc-value">${defiVol}</div><div class="mc-sub">ETH DeFi Market Cap: ${defiEth}</div></div>
+    </div>
+    <div class="section-title"><span class="material-symbols-rounded" style="font-size:16px;">pie_chart</span> Market Dominance</div>
+    <table class="flow-table"><thead><tr><th>Asset</th><th>Dominance</th><th></th></tr></thead><tbody>`;
+
+    dominancePairs.slice(0, 10).forEach(([sym, pct]) => {
+        const c = colors[sym] || 'var(--colors-accent, #6179ff)';
+        html += `<tr><td style="font-weight:600;text-transform:uppercase;">${sym}</td><td>${pct.toFixed(2)}%</td><td><div class="flow-bar"><div class="flow-bar-bg"><div class="flow-bar-fill" style="width:${pct}%;background:${c};"></div></div></div></td></tr>`;
+    });
+    html += '</tbody></table>';
+    return html;
+}
+
+async function switchTab(tab) {
+    currentTab = tab;
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+    const content = document.getElementById('content');
+    content.innerHTML = '<div class="state"><div class="spinner"></div><p>Loading on-chain data…</p></div>';
+    try {
+        let html = '';
+        if (tab === 'btc') { html = renderBtc(await fetchBtcData()); }
+        else if (tab === 'eth') { html = renderEth(await fetchEthData()); }
+        else { html = renderNetwork(await fetchNetworkData()); }
+        content.innerHTML = html;
+        requestAnimationFrame(() => {
+            document.querySelectorAll('canvas[data-spark]').forEach(c => {
+                const key = c.dataset.spark, color = c.dataset.color;
+                const chartData = tab === 'btc' ? btcData?.charts?.[key] : null;
+                if (chartData) drawSparkline(c, chartData, color);
+            });
+        });
+        document.getElementById('refreshInfo').textContent = 'Updated ' + new Date().toLocaleTimeString();
+    } catch (e) {
+        content.innerHTML = '<div class="state"><span class="material-symbols-rounded" style="font-size:40px;color:#333;">error</span><p>Failed to load data</p></div>';
+    }
+}
+
+async function greenflag() { await switchTab('btc'); }
+if (!window.myWindow) document.addEventListener('DOMContentLoaded', greenflag);
+</script>
+</body>
+</html>

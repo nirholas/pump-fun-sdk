@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="lair-include" content="lair.css">
+    <meta name="lair-widget" content="true">
+    <meta name="lair-widget-size" content="2x2">
+    <meta name="lair-icon" content="speed">
+    <meta name="capabilities" content="widget,fear_greed">
+    <meta name="lair-perms" content="network" />
+    <title>Fear & Greed</title>
+        <!--
+            Data source: Alternative.me Crypto Fear & Greed Index API
+            OSS references reviewed: https://github.com/vterron/fear-and-greed (MIT), https://github.com/edibez/feargreed
+        -->
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{
+            background:transparent;
+            color:var(--col-txt1,#A7C2F3);
+            font-family:'Segoe UI',system-ui,sans-serif;
+            display:flex;align-items:center;justify-content:center;
+            height:100vh;overflow:hidden;user-select:none;
+        }
+        .fng{
+            display:flex;flex-direction:column;align-items:center;
+            gap:2px;padding:6px 10px;width:100%;text-align:center;
+        }
+        .fng-title{
+            font-size:.55rem;text-transform:uppercase;letter-spacing:.1em;
+            opacity:.3;font-weight:700;
+        }
+        .gauge-wrap{position:relative;width:100%;max-width:140px;aspect-ratio:2/1.15}
+        .gauge-canvas{width:100%;height:100%;display:block}
+        .gauge-overlay{
+            position:absolute;inset:0;display:flex;flex-direction:column;
+            align-items:center;justify-content:center;pointer-events:none;
+            transform:translateY(8px);
+        }
+        .val-num{font-size:26px;font-weight:800;line-height:1;transition:color .4s ease}
+        .val-label{
+            font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;
+            margin-top:2px;transition:color .4s ease;
+        }
+        /* Comparison row */
+        .compare-row{
+            display:flex;gap:16px;margin-top:1px;
+        }
+        .cmp{
+            display:flex;flex-direction:column;align-items:center;gap:1px;
+        }
+        .cmp-label{
+            font-size:.5rem;opacity:.3;font-weight:600;
+            text-transform:uppercase;letter-spacing:.04em;
+        }
+        .cmp-val{
+            font-size:.85rem;font-weight:700;
+            font-variant-numeric:tabular-nums;
+            line-height:1;
+        }
+        .cmp-sent{
+            font-size:.45rem;font-weight:500;
+            text-transform:uppercase;letter-spacing:.03em;
+        }
+        /* Trend arrow */
+        .trend{font-size:.55rem;font-weight:700}
+        .trend.up{color:var(--col-good,#85FF85)}
+        .trend.down{color:var(--col-bad,#AC4949)}
+        .trend.flat{opacity:.3}
+        /* Loading & error */
+        .loading-state{
+            display:flex;flex-direction:column;align-items:center;
+            gap:6px;opacity:.4;
+        }
+        .loading-state .icon{font-size:1.4rem;opacity:.3}
+        .loading-state .text{font-size:.6rem}
+        .spin{
+            width:18px;height:18px;
+            border:2px solid rgba(255,255,255,.1);
+            border-top-color:var(--colors-accent,rgb(97,121,255));
+            border-radius:50%;
+            animation:sp .7s linear infinite;
+        }
+        @keyframes sp{to{transform:rotate(360deg)}}
+    </style>
+</head>
+<body>
+    <div class="fng" id="root">
+        <div class="loading-state">
+            <div class="spin"></div>
+            <div class="text">Loading index...</div>
+        </div>
+    </div>
+    <script>
+    (function(){
+        const fetchFn = window.cfetch || fetch;
+        const API = 'https://api.alternative.me/fng/?limit=7&format=json';
+        const CACHE_KEY = 'fng_widget_cache';
+        const CACHE_TTL = 5 * 60 * 1000;
+        const REFRESH = 10 * 60 * 1000;
+        const STALE_TTL = 24 * 60 * 60 * 1000;
+        const FETCH_TIMEOUT = 12000;
+        const RETRY_MIN = 30 * 1000;
+
+        let refreshTimer = null;
+        let consecutiveFailures = 0;
+        let lastRenderedValue = null;
+
+        const SENTIMENTS = [
+            { min:0,  max:24, label:'Extreme Fear',  color:'#FF0000' },
+            { min:25, max:44, label:'Fear',          color:'#FF6600' },
+            { min:45, max:55, label:'Neutral',       color:'#FFCC00' },
+            { min:56, max:74, label:'Greed',         color:'#88CC00' },
+            { min:75, max:100,label:'Extreme Greed', color:'#00CC00' }
+        ];
+
+        function getSentiment(v){
+            v=parseInt(v,10);
+            for(const s of SENTIMENTS) if(v>=s.min&&v<=s.max) return s;
+            return SENTIMENTS[2];
+        }
+
+        function getCache(maxAge){
+            try{
+                const raw = sessionStorage.getItem(CACHE_KEY);
+                if(!raw) return null;
+                const parsed = JSON.parse(raw);
+                if(!parsed || !parsed.ts || !parsed.data) return null;
+                if(Date.now() - parsed.ts > maxAge) return null;
+                return parsed;
+            }catch(_){
+                return null;
+            }
+        }
+
+        function writeCache(data){
+            try{
+                sessionStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data }));
+            }catch(_){
+                // no-op: storage can fail in sandboxed contexts
+            }
+        }
+
+        function fetchWithTimeout(url, timeoutMs){
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), timeoutMs);
+            return fetchFn(url, { signal: controller.signal })
+                .finally(() => clearTimeout(timeout));
+        }
+
+        function parseApiPayload(payload){
+            if(!payload || !Array.isArray(payload.data) || payload.data.length === 0) return null;
+            const parsedEntries = payload.data
+                .map((entry) => ({
+                    value: Number.parseInt(entry && entry.value, 10),
+                    timestamp: entry ? entry.timestamp : null,
+                }))
+                .filter((entry) => Number.isFinite(entry.value));
+            if(parsedEntries.length === 0) return null;
+            return parsedEntries;
+        }
+
+        function scheduleNextRefresh(){
+            if(refreshTimer){
+                clearTimeout(refreshTimer);
+                refreshTimer = null;
+            }
+
+            const retryDelay = Math.min(
+                REFRESH,
+                RETRY_MIN * Math.pow(2, Math.max(0, consecutiveFailures - 1))
+            );
+            const baseDelay = consecutiveFailures > 0 ? retryDelay : REFRESH;
+            const jitter = Math.floor(Math.random() * 3000);
+
+            refreshTimer = setTimeout(() => {
+                loadData({ forceNetwork: true });
+            }, baseDelay + jitter);
+        }
+
+        function drawGauge(canvas, value){
+            const ctx = canvas.getContext('2d');
+            const rect = canvas.getBoundingClientRect();
+            const dpr = Math.max(1, window.devicePixelRatio || 1);
+            canvas.width = Math.round(rect.width * dpr);
+            canvas.height = Math.round(rect.height * dpr);
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+            const width = rect.width;
+            const height = rect.height;
+            const centerX = width / 2;
+            const centerY = height * 0.84;
+            const radius = Math.min(width, height) * 0.62;
+
+            ctx.clearRect(0, 0, width, height);
+            ctx.lineWidth = 12;
+            ctx.lineCap = 'round';
+
+            const gradient = ctx.createConicGradient(Math.PI, centerX, centerY);
+            gradient.addColorStop(0, '#FF0000');
+            gradient.addColorStop(0.25, '#FF6600');
+            gradient.addColorStop(0.5, '#FFCC00');
+            gradient.addColorStop(0.75, '#88CC00');
+            gradient.addColorStop(1, '#00CC00');
+
+            ctx.strokeStyle = 'rgba(255,255,255,.08)';
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, Math.PI, 0);
+            ctx.stroke();
+
+            ctx.strokeStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, Math.PI, 0);
+            ctx.stroke();
+
+            for(let i=0;i<=100;i+=25){
+                const angle = Math.PI + (i / 100) * Math.PI;
+                const x1 = centerX + (radius + 4) * Math.cos(angle);
+                const y1 = centerY + (radius + 4) * Math.sin(angle);
+                const x2 = centerX + (radius + 9) * Math.cos(angle);
+                const y2 = centerY + (radius + 9) * Math.sin(angle);
+                ctx.strokeStyle = 'rgba(255,255,255,.2)';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.stroke();
+            }
+
+            const angle = Math.PI + (Math.max(0, Math.min(100, value)) / 100) * Math.PI;
+            const needleX = centerX + radius * 0.78 * Math.cos(angle);
+            const needleY = centerY + radius * 0.78 * Math.sin(angle);
+            ctx.strokeStyle = '#FFFFFF';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY);
+            ctx.lineTo(needleX, needleY);
+            ctx.stroke();
+
+            ctx.fillStyle = '#FFFFFF';
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, 3.5, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        function trendArrow(cur,prev){
+            const diff=cur-prev;
+            if(diff>0) return{cls:'up',txt:'▲'+diff};
+            if(diff<0) return{cls:'down',txt:'▼'+Math.abs(diff)};
+            return{cls:'flat',txt:'—'};
+        }
+
+        function render(entries){
+            if(!entries || !entries.length){
+                showError();
+                return;
+            }
+
+            const cur = entries[0].value;
+            const yest = entries[1] ? entries[1].value : null;
+            const week = entries[6] ? entries[6].value : null;
+            lastRenderedValue = cur;
+
+            const s=getSentiment(cur);
+            const root=document.getElementById('root');
+
+            /* Build comparison row */
+            let compareHTML='';
+            if(yest!==null){
+                const ys=getSentiment(yest);
+                const yt=trendArrow(cur,yest);
+                compareHTML+=`<div class="cmp">
+                    <div class="cmp-label">Yesterday</div>
+                    <div class="cmp-val" style="color:${ys.color}">${yest}</div>
+                    <div class="trend ${yt.cls}">${yt.txt}</div>
+                </div>`;
+            }
+            if(week!==null){
+                const ws=getSentiment(week);
+                const wt=trendArrow(cur,week);
+                compareHTML+=`<div class="cmp">
+                    <div class="cmp-label">Last Week</div>
+                    <div class="cmp-val" style="color:${ws.color}">${week}</div>
+                    <div class="trend ${wt.cls}">${wt.txt}</div>
+                </div>`;
+            }
+
+            root.innerHTML=`
+                <div class="fng-title">Fear & Greed</div>
+                <div class="gauge-wrap">
+                    <canvas id="gauge" class="gauge-canvas" aria-label="Fear and Greed gauge"></canvas>
+                    <div class="gauge-overlay">
+                        <div class="val-num" id="vnum" style="color:${s.color}">${cur}</div>
+                        <div class="val-label" id="vlabel" style="color:${s.color}">${s.label}</div>
+                    </div>
+                </div>
+                <div class="compare-row">${compareHTML}</div>
+            `;
+
+            const canvas = document.getElementById('gauge');
+            if(canvas) drawGauge(canvas, cur);
+        }
+
+        function showError(){
+            document.getElementById('root').innerHTML=`
+                <div class="loading-state">
+                    <div class="icon">⚠️</div>
+                    <div class="text">Unable to load</div>
+                </div>`;
+        }
+
+        function loadData(options){
+            const opts = options || {};
+            const useCache = !opts.forceNetwork;
+
+            if(useCache){
+                const fresh = getCache(CACHE_TTL);
+                if(fresh){
+                    const parsed = parseApiPayload(fresh.data);
+                    if(parsed){
+                        render(parsed);
+                        scheduleNextRefresh();
+                        return;
+                    }
+                }
+            }
+
+            fetchWithTimeout(API, FETCH_TIMEOUT)
+                .then((response) => {
+                    if(!response.ok) throw new Error(String(response.status));
+                    return response.json();
+                })
+                .then((payload) => {
+                    const parsed = parseApiPayload(payload);
+                    if(!parsed) throw new Error('invalid-payload');
+                    writeCache(payload);
+                    consecutiveFailures = 0;
+                    render(parsed);
+                })
+                .catch(() => {
+                    consecutiveFailures += 1;
+                    const stale = getCache(STALE_TTL);
+                    if(stale){
+                        const parsed = parseApiPayload(stale.data);
+                        if(parsed){
+                            render(parsed);
+                            scheduleNextRefresh();
+                            return;
+                        }
+                    }
+                    showError();
+                })
+                .finally(() => {
+                    scheduleNextRefresh();
+                });
+        }
+
+        window.addEventListener('online', () => loadData({ forceNetwork: true }));
+        document.addEventListener('visibilitychange', () => {
+            if(document.visibilityState === 'visible'){
+                loadData();
+            }
+        });
+        window.addEventListener('resize', () => {
+            if(lastRenderedValue === null) return;
+            const canvas = document.getElementById('gauge');
+            if(canvas) drawGauge(canvas, lastRenderedValue);
+        });
+
+        loadData();
+    })();
+    </script>
+</body>
+</html>

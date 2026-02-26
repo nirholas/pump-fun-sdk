@@ -1,0 +1,2520 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<title>Files app</title>
+	<meta name="description" content="Default Files app for LairOS">
+	<meta name="capabilities" content="file_manager">
+	<meta name="permissions" content="utility, fileGet, olp, fileSet, settings, unsandboxed">
+	<meta name="lair-include" content="lair.css material-symbols-rounded">
+	<meta name="lair-icon"
+		content="<svg width='232' height='232' viewBox='0 0 232 232' fill='none' xmlns='http://www.w3.org/2000/svg'> <g clip-path='url(#clip0_2_55)'> <path d='M0 22.8205C0 10.2171 8.9543 0 20 0H48C48 0 67 0 81 0C95 0 97.5 19.3974 106 19.3974C112.283 19.3974 178.121 19.3974 212.038 19.3974C223.084 19.3974 232 29.6145 232 42.2179V155.179C232 167.783 223.046 178 212 178H20C8.95431 178 0 167.783 0 155.179V22.8205Z' fill='#d19450'/> <path d='M200 39H32C20.9543 39 12 49.2908 12 61.9851V170.015C12 182.709 20.9543 193 32 193H200C211.046 193 220 182.709 220 170.015V61.9851C220 49.2908 211.046 39 200 39Z' fill='#ffffff'/> <path d='M212 72H20C8.9543 72 0 82.2335 0 94.8571V209.143C0 221.767 8.9543 232 20 232H212C223.046 232 232 221.767 232 209.143V94.8571C232 82.2335 223.046 72 212 72Z' fill='#ffc853'/> </g> <defs> <clipPath id='clip0_2_55'> <rect width='232' height='232' fill='white'/> </clipPath> </defs> </svg>">
+	<script src="https://cdn.jsdelivr.net/npm/jsmediatags@latest/dist/jsmediatags.min.js"></script>
+	<style>
+		html {
+			height: 100%;
+		}
+
+		body {
+			height: 100%;
+			margin: 0;
+			padding: 0;
+			user-select: none;
+		}
+
+		#flap-mot {
+			display: flex;
+			box-sizing: border-box;
+			overflow: hidden;
+			background-color: var(--col-bg1);
+			height: calc(100% - 5px);
+			flex-direction: column;
+		}
+
+		[flap-nav] y {
+			display: flex;
+			background-color: transparent;
+			width: 100%;
+			flex-direction: row;
+			flex-wrap: nowrap;
+			align-items: center;
+		}
+
+		[flap-nav] {
+			display: flex;
+			height: fit-content;
+			flex-direction: row;
+			flex-wrap: nowrap;
+			padding: 3px;
+			padding-bottom: 0;
+		}
+
+		.flappsearch {
+			flex-grow: 10 !important;
+			text-align: center !important;
+			color: var(--col-txt1);
+			align-items: center;
+			display: flex;
+			flex-direction: row;
+			flex-wrap: nowrap;
+			justify-content: flex-start;
+		}
+
+		div#filetools {
+			width: 100%;
+			overflow-x: auto;
+		}
+
+		.nowid {
+			width: fit-content;
+			text-align: center;
+			background-color: var(--col-bg2);
+			border: 1px solid #ffffff0c;
+			color: var(--colors-text-section);
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			overflow: hidden;
+			border-radius: var(--siz-radius1);
+			margin: 0.1rem;
+		}
+
+		.navbfobtns {
+			width: fit-content;
+			flex: 0;
+			margin: 1rem;
+		}
+
+		.navinfobtns:active {
+			transform: rotate(360deg);
+		}
+
+		[flap-sidenav] {
+			width: 0;
+			overflow-y: auto;
+			min-width: 120px;
+			background-color: var(--col-bg2);
+			border: 1px solid #ffffff0c;
+			color: var(--colors-text-section);
+			display: flex;
+			flex-direction: column;
+			transition: .3s;
+			border-radius: var(--siz-radius1);
+			overflow-x: hidden;
+			height: calc(100vh - 66px);
+		}
+
+		[flap-sidenav] small {
+			padding-left: 5px;
+			display: flex;
+			flex: 1;
+			align-items: center;
+		}
+
+		small.newfoldbtn {
+			flex: 0;
+			padding: 0;
+		}
+
+		.themainstuff {
+			margin: 3px 5px;
+			display: flex;
+			width: calc(100% - 5px);
+			height: 100%;
+			position: relative;
+		}
+
+		#flap-resizer {
+			width: 3px;
+			cursor: ew-resize;
+			border-radius: 0 5px 5px 0;
+			height: 90%;
+			margin-top: 0;
+			background: var(--col-bgh);
+			opacity: 0;
+			transition: .3s;
+
+			&:hover {
+				opacity: 1;
+				width: 7px;
+			}
+		}
+
+		[flap-fl-topnav] {
+			display: flex;
+			margin: 0rem 5px;
+			margin-bottom: 0.1rem;
+			opacity: 70%;
+			flex-direction: row;
+			background-color: var(--col-bg2);
+			border: 1px solid #ffffff0c;
+			color: var(--colors-text-section);
+			border-radius: var(--siz-radius1);
+			padding: 3px 0px;
+		}
+
+		[flap-files] {
+			overflow-y: auto;
+			flex-grow: 8;
+			padding-bottom: 50px !important;
+			padding: 5px;
+			width: calc(100% - 18px);
+			padding-top: 0;
+			height: 0;
+			margin-top: 5px;
+		}
+
+		[flap-files][flmode='grid'] {
+			display: grid;
+			grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+		}
+
+		.file {
+			background-color: var(--col-bg2);
+			border: 1px solid #ffffff0c;
+			color: var(--colors-text-section);
+			user-select: none;
+			border-radius: var(--siz-radius1);
+			transition: .2s ease-out;
+			animation: poprs .2s ease-out;
+		}
+
+		.file[list] {
+			display: flex;
+			padding: 0.1rem 0.5rem;
+			margin-bottom: 0.2rem;
+			flex-direction: row;
+			flex-wrap: nowrap;
+			align-items: center;
+			justify-content: flex-start;
+		}
+
+		.file[list] .flfrname {
+			display: inline-block;
+			overflow: hidden;
+			text-overflow: ellipsis;
+			flex: 1;
+		}
+
+		.file[grid] {
+			display: inline-block;
+			height: 87px;
+			min-width: 80px;
+			width: auto;
+			margin: 5px;
+			transition: .3s;
+			padding: 1rem;
+		}
+
+		.file[list] small {
+			width: auto;
+			transform: none;
+			font-family: monospace;
+			opacity: 0.3;
+		}
+
+		@keyframes poprs {
+			from {
+				opacity: 0;
+			}
+
+			to {
+				opacity: .7;
+			}
+		}
+
+		@keyframes headsad {
+			0% {
+				transform: translate(-2px, 0);
+			}
+
+			50% {
+				transform: translate(2px, 0);
+			}
+
+			100% {
+				transform: translate(-2px, 0);
+			}
+		}
+
+		.file:hover {
+			background: var(--col-bg3);
+		}
+
+		.file:active {
+			transform: scale(0.98);
+		}
+
+		.file small {
+			flex-basis: max-content;
+			display: inline-block;
+			transform: translate(-3px, 4px);
+			opacity: 0.5;
+			width: 0;
+			overflow: hidden;
+			text-overflow: ellipsis;
+			text-align: end;
+			margin-left: 0.2rem;
+		}
+
+		@keyframes rotate {
+			from {
+				transform: rotate(0deg);
+			}
+
+			to {
+				transform: rotate(360deg);
+			}
+		}
+
+		/* Apply the rotation animation */
+		.rotating {
+			animation: rotate 1s linear infinite;
+		}
+
+		/* Transition effect for slowing down */
+		.stopping {
+			animation: none;
+			transition: transform 2s ease-out;
+		}
+
+		.file[grid]>[flname] {
+			display: flex;
+			overflow: hidden;
+			white-space: nowrap;
+			text-overflow: ellipsis;
+			margin: 0;
+			position: relative;
+			width: 100%;
+			background: var(--col-bg3);
+			color: var(--colors-text-sub);
+			padding: 10px;
+			border-radius: 5px;
+			transform: translate(-10px, 10px);
+			transition: 0.2s;
+			flex-direction: row;
+			flex-wrap: nowrap;
+			justify-content: flex-start;
+		}
+
+		.file[grid]>[flname] [flfrname] {
+			width: 0;
+			display: inline-block;
+			overflow: hidden;
+			text-overflow: ellipsis;
+			flex-grow: 8;
+			margin-right: 10px;
+		}
+
+		.file[list]>[flname] {
+			display: flex;
+			width: 0;
+			flex: 1;
+			overflow: hidden;
+			white-space: nowrap;
+			text-overflow: ellipsis;
+			margin: 0;
+			align-items: center;
+		}
+
+		.file span .material-symbols-rounded {
+			color: #7193ff;
+			text-shadow: 0 0 1rem inherit;
+		}
+
+		.file[list] span .material-symbols-rounded {
+			width: fit-content;
+			margin-left: 0;
+			transform: translate(-1px, 0px) scale(0.8);
+		}
+
+		.file[list] span {
+			width: 22px;
+			overflow: hidden;
+			display: grid;
+			margin-right: 3px;
+			align-items: center;
+			justify-items: center;
+		}
+
+		.file[grid] span .material-symbols-rounded {
+			font-size: 41px;
+			display: block;
+		}
+
+		#slfile,
+		.multisel {
+			background: var(--col-bg3);
+			color: var(--colors-text-sub);
+			cursor: pointer;
+		}
+
+		#slfile[grid] [flname] {
+			background: var(--col-bgh);
+		}
+
+		[bottomnav] {
+			width: 100%;
+			text-align: left;
+			border: 1px solid;
+			padding: 3px 5px;
+		}
+
+		[flap-fl-bottomnav] {
+			padding: 5px 7px;
+			background-color: var(--col-bg2);
+			border: var(--box-crisp);
+			color: var(--colors-text-section);
+			border-radius: var(--siz-radius1);
+			transition: .3s ease-out;
+			margin: 0.3em;
+		}
+
+		.upload-box {
+			border: 2px dashed #ffffff30;
+			background: var(--col-bg3);
+			padding: 40px;
+			text-align: center;
+			width: auto;
+			cursor: pointer;
+			position: relative;
+			border-radius: var(--siz-radius1);
+		}
+
+		.upload-box a {
+			color: var(--col-txth);
+			background: var(--col-bgh);
+			cursor: pointer;
+			padding: .3em .5em;
+			border-radius: var(--siz-radius1);
+		}
+
+		input[type="file"] {
+			display: none;
+		}
+
+		button {
+			border-radius: 5px;
+			border: none;
+			padding: 7px 15px;
+			background: var(--col-bgh);
+			color: var(--col-txth);
+			font-family: inherit;
+			cursor: pointer;
+
+			&:hover {
+				filter: brightness(115%);
+			}
+		}
+
+		dialog::backdrop {
+			background: #000000b8;
+			animation: pop .3s ease-out;
+		}
+
+		dialog {
+			animation: pop .2s;
+		}
+
+		#upmod {
+			background: var(--col-bg2);
+			color: white;
+			border-radius: 10px;
+			padding: 25px;
+			text-align: center;
+			border: 1px solid #ffffff0c;
+		}
+
+		#upmod [cv] {
+			display: block;
+			padding: 5px 10px;
+			background: var(--col-bg3);
+			width: fit-content;
+			border-radius: 10px;
+			opacity: 0.5;
+			margin: 5px auto;
+			margin-bottom: 10px;
+		}
+
+		@keyframes pop {
+			0% {
+				opacity: 0;
+				transform: translateY(10px);
+			}
+
+			100% {
+				transform: none;
+				opacity: 1;
+			}
+		}
+
+		#upmod svg {
+			height: 69px;
+			margin-bottom: 13px;
+		}
+
+		.custom-loader {
+			width: 40px;
+			height: 40px;
+			border-radius: 50%;
+			background: #92D8F4;
+			clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+			animation: sh1 2s infinite cubic-bezier(0.3, 1, 0, 1);
+		}
+
+		@keyframes sh1 {
+			33% {
+				border-radius: 0;
+				background: #ED8850;
+				clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%)
+			}
+
+			66% {
+				border-radius: 0;
+				background: #89CB91;
+				clip-path: polygon(50% 0, 50% 0, 100% 100%, 0 100%)
+			}
+		}
+
+		/* Dropup Button */
+		.dropbtn {
+			background-color: #2d2d2d;
+			color: white;
+			padding: 2px 10px;
+			margin-right: 10px;
+			border: none;
+		}
+
+		.dropbtn {
+			background-color: #2d2d2d;
+			color: white;
+			padding: 2px 10px;
+			margin-right: 10px;
+			border: none;
+		}
+
+		.notdropbtn {
+			background-color: #2d2d2d;
+			color: white;
+			border: none;
+			padding: 5px;
+			transform: translate(-5px, 2px);
+		}
+
+		.notdropbtn span {
+			font-size: 14px !important;
+		}
+
+		/* The container <div> - needed to position the dropup content */
+		.dropup {
+			position: relative;
+			display: inline-block;
+		}
+
+		.dropup-content {
+			display: flex;
+			flex-direction: row;
+			align-items: flex-start;
+			border-radius: 5px;
+			overflow: auto;
+			justify-content: flex-start;
+		}
+
+		a.dropdownerthebob {
+			color: var(--col-txt1);
+			text-decoration: none;
+			display: flex;
+			flex-direction: column;
+			cursor: pointer;
+			animation: poprs .2s ease-out;
+			white-space: nowrap;
+			text-overflow: ellipsis;
+			align-items: center;
+			opacity: 0.7;
+			font-size: 11px;
+			padding: 0.3rem .5rem;
+			flex: 1;
+			max-width: 70px;
+		}
+
+		a.dropdownerthebob.disabled {
+			opacity: 0.3;
+		}
+
+		a.dropdownerthebob b {
+			font-weight: normal;
+		}
+
+		a.dropdownerthebob span {
+			font-size: 20px !important;
+			opacity: 0.7;
+			color: var(--colors-text-section);
+		}
+
+		a.dropdownerthebob:hover {
+			opacity: 1;
+			color: var(--colors-text-section);
+			background-color: var(--col-bg3);
+		}
+
+		[flap-fl-topnav] div {
+			display: inline-block;
+			transform: translate(-5px, -2px);
+		}
+
+		.flarrbtn {
+			padding: 1px 2px;
+			height: 15px;
+		}
+
+		.nvbtns {
+			float: right;
+		}
+
+		.nvbtns span {
+			font-size: 13px;
+		}
+
+		.newfoldbtn {
+			float: right;
+			margin: 0px;
+			font-size: 13px;
+			cursor: pointer;
+			display: grid;
+			align-items: center;
+			justify-items: center;
+			justify-content: center;
+			align-content: center;
+			text-align: right;
+			transition: .3s ease-out;
+		}
+
+		.newfoldbtn span {
+			font-size: 1rem;
+			margin: 4px;
+		}
+
+		.drivenav {
+			padding: 0px;
+			border-bottom: 1px solid #2b2b2b;
+			margin: 4px;
+			cursor: pointer;
+			padding-bottom: 3px;
+			display: flex;
+			flex-direction: row;
+			gap: .3em;
+			align-items: center;
+			justify-content: center;
+		}
+
+		.im {
+			font-size: 10px !important;
+			margin-right: 5px;
+			transform: scale(1.2) translate(1px, 1px);
+		}
+
+		[flap-files] .file svg {
+			object-fit: contain;
+			aspect-ratio: 1/1;
+			width: 100%;
+			height: 100%;
+			max-width: 2rem;
+		}
+
+		#jstree {
+			display: inline-block;
+			height: 100%;
+			padding: 0 3px;
+			overflow-x: auto;
+			width: calc(100% - 9px);
+		}
+
+		.subdir {
+			padding: 5px .5em;
+			background: var(--col-bg2);
+			margin-bottom: 1px;
+			min-width: 6em;
+			display: flex;
+			flex-direction: row;
+			align-items: center;
+			flex-wrap: nowrap;
+			gap: 5px;
+			border-radius: 5px;
+
+			&.current {
+				background-color: var(--col-bg3);
+			}
+
+			button.toggle {
+				color: inherit;
+				background-color: transparent;
+				padding: 0;
+				border: 0;
+				border-radius: 0;
+				opacity: .5;
+				font-size: 15px;
+			}
+
+			&>.material-symbols-rounded {
+				opacity: .5;
+				font-size: 20px;
+			}
+
+			&:hover {
+				background-color: #ffffff1b;
+			}
+		}
+
+		#pathdisp {
+			flex: 1;
+			overflow-x: hidden;
+			text-overflow: ellipsis;
+			margin: 0 0.5rem;
+			display: flex;
+			user-select: text;
+			-moz-user-select: text;
+		}
+
+		#pathdisp span {
+			display: inline-block;
+			opacity: 0.7;
+		}
+
+		#pathdisp span:hover {
+			opacity: 1;
+		}
+
+		.thisfolderisempty {
+			margin: 2em auto;
+			opacity: .5;
+			font-size: small;
+			width: 8em;
+
+			&>svg {
+				width: 3em;
+				height: 3em;
+			}
+		}
+
+		.extraFunctionUI {
+			display: flex;
+			margin: 0.3rem;
+			gap: 3px;
+			border-radius: var(--siz-radius1);
+			overflow: hidden;
+			border: var(--box-crisp);
+			margin-top: 0;
+
+			&>input {
+				flex: 1;
+				padding: 0.5em;
+				font-size: 1em;
+				font-family: inherit;
+				color: white;
+				border-radius: 0;
+				background-color: var(--col-bg2);
+				border: 1px solid #ffffff0c;
+				color: var(--colors-text-section);
+				border: none;
+				width: 0;
+				border: none;
+
+			}
+
+			&>button {
+				padding: 0.5em;
+				font-size: inherit;
+				font-family: inherit;
+				color: var(--colors-text-sub);
+				border-radius: 0;
+				background: var(--col-bg3);
+				border: none;
+				width: fit-content;
+			}
+		}
+
+		div#moretoolsdropdwn {
+			position: absolute;
+			top: 50px;
+			display: flex;
+			flex-direction: column;
+			background: var(--col-bg2);
+			border-radius: var(--siz-radius1);
+			right: 60px;
+			z-index: 99;
+			box-shadow: 0 3px 10px #0000008a;
+			border: 1px solid #ffffff0c;
+			overflow: hidden;
+			visibility: hidden;
+		}
+
+		div#moretoolsdropdwn a.dropdownerthebob {
+			flex-direction: row;
+			gap: .5em;
+			padding: .5em .8em;
+			max-width: none;
+			width: fit-content;
+		}
+
+		#file-info {
+			margin-top: 10px;
+			font-size: small;
+			opacity: 0.5;
+		}
+
+		.visible {
+			visibility: visible !important;
+		}
+	</style>
+	<script src="https://unpkg.com/interactjs/dist/interact.min.js"></script>
+</head>
+
+<body>
+	<dialog id="ld">
+		<div class="custom-loader"></div>
+	</dialog>
+	<dialog id="upmod">
+		<div>
+			<svg style="height: 50px;" version="1.1" xmlns="http://www.w3.org/2000/svg"
+				xmlns:xlink="http://www.w3.org/1999/xlink" width="209.43806" height="162.25"
+				viewBox="0,0,209.43806,162.25">
+				<g transform="translate(-140.68755,-116.25)">
+					<g data-paper-data="{&quot;isPaintingLayer&quot;:true}" fill-rule="nonzero" stroke-linejoin="miter"
+						stroke-miterlimit="10" stroke-dasharray="" stroke-dashoffset="0" style="mix-blend-mode: normal">
+						<path
+							d="M159.5,198c0,-44.45892 36.04108,-80.5 80.5,-80.5c44.45893,0 80.5,36.04108 80.5,80.5c0,44.45892 -36.04107,80.5 -80.5,80.5c-44.45892,0 -80.5,-36.04108 -80.5,-80.5z"
+							fill-opacity="0.20784" fill="#66bfff" stroke="none" stroke-width="0"
+							stroke-linecap="butt" />
+						<g fill="none" stroke="none" stroke-width="1" stroke-linecap="butt" font-family="sans-serif"
+							font-weight="normal" font-size="12" text-anchor="start" />
+						<g fill="#b5e0ff" stroke="none" stroke-width="0" stroke-linecap="butt">
+							<path
+								d="M283.87771,241.79302c-4.02173,-8.33081 -0.52853,-18.34453 7.80228,-22.36626c8.33081,-4.02173 18.34453,-0.52853 22.36626,7.80228c4.02173,8.33081 0.52853,18.34453 -7.80228,22.36625c-8.33081,4.02173 -18.34453,0.52853 -22.36626,-7.80228z" />
+							<path
+								d="M273.25718,259.24412c-4.98215,-10.32026 -0.65475,-22.72531 9.66551,-27.70745c10.32026,-4.98215 22.72531,-0.65475 27.70745,9.66551c4.98215,10.32026 0.65475,22.7253 -9.66551,27.70745c-10.32026,4.98215 -22.72531,0.65475 -27.70745,-9.66551z" />
+							<path
+								d="M321.85231,245.54072c-3.57143,-7.39803 -0.46935,-16.29055 6.92869,-19.86197c7.39803,-3.57143 16.29054,-0.46935 19.86197,6.92868c3.57143,7.39803 0.46935,16.29055 -6.92868,19.86198c-7.39803,3.57143 -16.29055,0.46935 -19.86198,-6.92869z" />
+							<path
+								d="M303.83054,248.09589c-3.57143,-7.39803 -0.46936,-16.29055 6.92868,-19.86198c7.39803,-3.57143 16.29055,-0.46935 19.86198,6.92869c3.57143,7.39803 0.46935,16.29055 -6.92868,19.86198c-7.39803,3.57143 -16.29055,0.46936 -19.86198,-6.92868z" />
+							<path
+								d="M306.87771,258.29302c-4.02173,-8.33081 -0.52853,-18.34453 7.80228,-22.36626c8.33081,-4.02173 18.34453,-0.52853 22.36626,7.80228c4.02173,8.33081 0.52853,18.34453 -7.80228,22.36625c-8.33081,4.02173 -18.34453,0.52853 -22.36626,-7.80228z" />
+						</g>
+						<g fill="#b5e0ff" stroke="none" stroke-width="0" stroke-linecap="butt">
+							<path
+								d="M140.68756,140c0,-9.25077 7.49923,-16.75 16.75,-16.75c9.25077,0 16.75,7.49923 16.75,16.75c0,9.25077 -7.49923,16.75 -16.75,16.75c-9.25077,0 -16.75,-7.49923 -16.75,-16.75z" />
+							<path
+								d="M184.063,149c0,-8.21499 6.65957,-14.87455 14.87456,-14.87455c8.21499,0 14.87455,6.65956 14.87455,14.87455c0,8.21499 -6.65956,14.87455 -14.87455,14.87455c-8.21499,0 -14.87456,-6.65956 -14.87456,-14.87455z" />
+							<path
+								d="M162.313,148c0,-8.21499 6.65957,-14.87455 14.87456,-14.87455c8.21499,0 14.87455,6.65956 14.87455,14.87455c0,8.21499 -6.65956,14.87455 -14.87455,14.87455c-8.21499,0 -14.87456,-6.65956 -14.87456,-14.87455z" />
+							<path
+								d="M156.43756,137c0,-11.45991 9.29009,-20.75 20.75,-20.75c11.45991,0 20.75,9.29009 20.75,20.75c0,11.45991 -9.29009,20.75 -20.75,20.75c-11.45991,0 -20.75,-9.29009 -20.75,-20.75z" />
+						</g>
+						<g fill="none" stroke="#56b8ff" stroke-width="10" stroke-linecap="round">
+							<path d="M239.21771,168.1191v74.73533" />
+							<path d="M211.45887,188.04852l27.40295,-27.40295l28.82648,28.82648" />
+						</g>
+					</g>
+				</g>
+			</svg><br>
+			<span style="display: block;
+			opacity: 0.7;
+			margin-bottom: 13px;
+		">Import your files</span>
+			<small cv><span class="material-symbols-rounded im">lock</span>Files won't leave your device.</small>
+			<div class="upload-box" id="drop-area">
+				Drop files or <a id="file-select">Select them</a>
+				<div id="file-info"></div>
+				<input type="file" id="filupin" multiple>
+			</div>
+
+			<script>
+				const dropArea = document.getElementById('drop-area');
+				const fileInput = document.getElementById('filupin');
+				const fileSelect = document.getElementById('file-select');
+
+				fileSelect.addEventListener('click', () => {
+					fileInput.click();
+				});
+
+				dropArea.addEventListener('dragover', (e) => {
+					e.preventDefault();
+					dropArea.style.borderColor = '#007bff';
+				});
+
+				dropArea.addEventListener('dragleave', () => {
+					dropArea.style.borderColor = '#999';
+				});
+
+				dropArea.addEventListener('drop', (e) => {
+					e.preventDefault();
+					dropArea.style.borderColor = '#999';
+
+					if (e.dataTransfer.files.length > 0) {
+						const dataTransfer = new DataTransfer();
+						for (const file of e.dataTransfer.files) {
+							dataTransfer.items.add(file);
+						}
+						fileInput.files = dataTransfer.files;
+						handleFiles(fileInput.files);
+					}
+				});
+
+				fileInput.addEventListener('change', () => {
+					handleFiles(fileInput.files);
+				});
+
+				const info = document.getElementById('file-info');
+				function handleFiles(files) {
+					if (files.length === 1) {
+						info.textContent = `${files[0].name}`;
+					} else if (files.length > 1) {
+						info.textContent = `${files.length} files`;
+					} else {
+						info.textContent = 'None selected';
+					}
+				}
+				info.textContent = 'None selected';
+			</script>
+			<div class="btncont">
+				<button onclick="document.getElementById('upmod').close()" class="cancel">Close</button>
+				<button onclick="fupit()" id="fupibu">
+					Import
+				</button>
+			</div>
+		</div>
+		<script>
+			async function fupit() {
+				document.getElementById("fupibu").innerHTML = "Importing...";
+				const fileInput = document.getElementById('filupin');
+				const files = fileInput.files;
+				if (files.length === 0) return;
+
+				for (let i = 0; i < files.length; i++) {
+					const file = files[i];
+					const fileType = await ntxSession.send("utility.getBaseFileType", file.name);
+
+					let content = await readFileAsBase64(file);
+					await window.parent.createFile('Downloads/', file.name, '', content, { via: "imported" });
+				}
+				upmd();
+				handleFiles(fileInput.files);
+				document.getElementById("fupibu").innerHTML = "File(s) Saved";
+			}
+
+			function readFileAsBase64(file) {
+				return new Promise((resolve, reject) => {
+					const reader = new FileReader();
+					reader.onload = () => resolve(reader.result);
+					reader.onerror = reject;
+					reader.readAsDataURL(file);
+				});
+			}
+
+			async function makefolderhuh() {
+				let x = await ntxSession.send("sysUI.ask", "Enter your Folder Name:", currentPath);
+				window.parent.createFolder(x);
+			}
+		</script>
+	</dialog>
+
+	<div id="flap-mot">
+		<div flap-nav>
+			<div class="nowid" onclick="refresh()">
+				<a class="dropdownerthebob"><span class="material-symbols-rounded " id="ogrefreshbtn">refresh</span>
+					Refresh</a>
+			</div>
+			<div class="nowid flappsearch" id="fileapptitledis">
+				<div id="filetools">
+
+				</div>
+				<div id="moretoolsdropdwn"></div>
+			</div>
+			<div class="nowid" onclick="upmd()">
+				<a class="dropdownerthebob"><span class="material-symbols-rounded " id="ogrefreshbtn">download</span>
+					Import</a>
+			</div>
+		</div>
+		<div style="flex: 1;">
+			<div class="themainstuff">
+				<div flap-sidenav id="flap-sidenav">
+					<div class="drivenav">
+						<small onclick="listFiles('/')" id="dirviewbtn"></small>
+						<small class="newfoldbtn" onclick="toggletree()"><span class="material-symbols-rounded "
+								id="treeviewchevron">chevron_left</span>
+						</small>
+					</div>
+					<div id="folders">
+
+						<div id="jstree"></div>
+					</div>
+					<div flap-sidenav-mems>
+
+					</div>
+				</div>
+				<div id="flap-resizer"></div>
+				<script>const sidenav = document.getElementById("flap-sidenav");
+					const resizer = document.getElementById("flap-resizer");
+					let isResizing = false;
+					resizer.addEventListener("mousedown", () => { isResizing = true; document.body.style.cursor = "ew-resize"; });
+					document.addEventListener("mousemove", e => {
+						if (!isResizing) return;
+						let newWidth = e.clientX;
+						if (newWidth < 50) newWidth = 50; sidenav.style.width = newWidth + "px"; resizer.style.left = newWidth + "px";
+					});
+					document.addEventListener("mouseup", () => { isResizing = false; document.body.style.cursor = "default"; });
+				</script>
+				<div flap-mains style="flex-grow: 3;
+		display: flex;
+		flex-direction: column;
+		height: 100%;width: 0;">
+					<div flap-fl-topnav><span id="pathdisp">
+							/
+						</span>
+					</div>
+					<div flap-files id="filelist">
+
+					</div>
+					<div flap-fl-bottomnav id="fileinfobn">Click on a file to select it.
+					</div>
+					<div id="choosefile" class="extraFunctionUI">
+						<input placeholder="Double click to choose File" id="choosefileinp" disabled>
+						<button onclick="choosefile()">Open</button>
+					</div>
+					<div id="saveas" class="extraFunctionUI">
+						<input placeholder="Enter a file Name..." id="saveasFileNameInp">
+						<button onclick="saveFileAs()">Save</button>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<style>
+		inpg {
+			display: block;
+			width: 100%;
+			margin: 0;
+		}
+
+		.classydialog {
+			max-width: 80%;
+			min-height: 50px;
+			max-height: 80vh;
+			min-width: 300px;
+			width: 40%;
+			padding: 1rem 0rem;
+			padding-top: 0.7rem;
+			border: none;
+			background-color: var(--col-bg2);
+			border: 1px solid #ffffff0c;
+			color: var(--colors-text-section);
+			border-radius: var(--siz-radius1);
+			box-shadow: 0 0 10px #00000057;
+			padding: 1rem;
+		}
+
+		.classydialog input,
+		.classydialog textarea {
+			display: block;
+			width: 100%;
+			background: var(--col-bg1);
+			color: white;
+			padding: 7px 10px;
+			border-radius: 5px;
+			border: none;
+			resize: none;
+			width: calc(100% - 20px);
+		}
+
+		.classydialog label {
+			font-weight: normal;
+			opacity: 0.8;
+			margin-bottom: 0.3rem;
+			display: block;
+		}
+
+		.makefilediv {
+			width: 100%;
+			height: 100%;
+		}
+
+		.makefilediv h1 {
+			text-align: center;
+			margin-bottom: 4px;
+		}
+
+		.makefilediv p {
+			text-align: center;
+			opacity: 0.5;
+			margin: auto;
+			width: 70%;
+		}
+
+		.btncont {
+			display: flex;
+			flex-direction: row;
+			gap: 0.5rem;
+			margin-top: 0.5rem;
+		}
+
+		.btncont button {
+			flex: 1;
+			margin: auto;
+			display: block;
+			background: var(--col-bgh);
+		}
+
+		.btncont button.cancel {
+			background: var(--col-bg3);
+			color: inherit;
+		}
+
+		#makefiledivno {
+			color: var(--col-bad);
+			opacity: 1;
+			font-size: 0.8rem;
+			line-height: 1.2rem;
+			display: block;
+			margin: 0.5rem 0rem;
+		}
+
+		#makefiledivno .material-symbols-rounded {
+			font-size: 10px;
+			transform: translate(4px, 1px) scale(1.5);
+			margin-right: 7px;
+		}
+
+		.loader33 {
+			width: 5px;
+			height: 3px;
+			border-radius: 1rem;
+			display: block;
+			margin: 15px auto;
+			position: relative;
+			color: #ffffff;
+			left: -100px;
+			box-sizing: border-box;
+			animation: shadowRolling 2s linear infinite;
+			opacity: 0.5;
+		}
+
+		@keyframes shadowRolling {
+			0% {
+				box-shadow: 0px 0 rgba(255, 255, 255, 0), 0px 0 rgba(255, 255, 255, 0), 0px 0 rgba(255, 255, 255, 0), 0px 0 rgba(255, 255, 255, 0);
+			}
+
+			12% {
+				box-shadow: 100px 0 white, 0px 0 rgba(255, 255, 255, 0), 0px 0 rgba(255, 255, 255, 0), 0px 0 rgba(255, 255, 255, 0);
+			}
+
+			25% {
+				box-shadow: 110px 0 white, 100px 0 white, 0px 0 rgba(255, 255, 255, 0), 0px 0 rgba(255, 255, 255, 0);
+			}
+
+			36% {
+				box-shadow: 120px 0 white, 110px 0 white, 100px 0 white, 0px 0 rgba(255, 255, 255, 0);
+			}
+
+			50% {
+				box-shadow: 130px 0 white, 120px 0 white, 110px 0 white, 100px 0 white;
+			}
+
+			62% {
+				box-shadow: 200px 0 rgba(255, 255, 255, 0), 130px 0 white, 120px 0 white, 110px 0 white;
+			}
+
+			75% {
+				box-shadow: 200px 0 rgba(255, 255, 255, 0), 200px 0 rgba(255, 255, 255, 0), 130px 0 white, 120px 0 white;
+			}
+
+			87% {
+				box-shadow: 200px 0 rgba(255, 255, 255, 0), 200px 0 rgba(255, 255, 255, 0), 200px 0 rgba(255, 255, 255, 0), 130px 0 white;
+			}
+
+			100% {
+				box-shadow: 200px 0 rgba(255, 255, 255, 0), 200px 0 rgba(255, 255, 255, 0), 200px 0 rgba(255, 255, 255, 0), 200px 0 rgba(255, 255, 255, 0);
+			}
+		}
+	</style>
+	<dialog id="makefiledia" class="classydialog">
+		<div class="makefilediv">
+			<inpg>
+				<label>New File: </label>
+				<input id="makflname" value="" placeholder="File Name">
+				<span id="makefiledivno"></span>
+			</inpg>
+			<div class="btncont">
+				<button onclick="document.getElementById('makefiledia').close()" class="cancel">Cancel</button>
+				<button onclick="createit()">Create</button>
+			</div>
+		</div>
+	</dialog>
+	<dialog id="makefoldia" class="classydialog">
+		<div class="makefilediv">
+			<inpg>
+				<label>New Folder at <span id="make_fold_pre_path"></span>: </label>
+				<input id="makfolname" value="" placeholder="Folder path">
+			</inpg>
+			<div class="btncont">
+				<button onclick="document.getElementById('makefoldia').close()" class="cancel">Cancel</button>
+				<button onclick="createfol()">Create</button>
+			</div>
+		</div>
+	</dialog>
+	<script>
+		function liststuff() {
+			const container = document.getElementById('jstree');
+			const expanded = new Set(
+				[...container.querySelectorAll('.subtree')]
+					.filter(el => el.style.display !== 'none')
+					.map(el => el.previousSibling?.getAttribute('data-path'))
+					.filter(Boolean)
+			);
+			container.innerHTML = '';
+			const tree = memoryToDivTree(window.parent.memory.root, '', 0, expanded);
+			container.appendChild(tree);
+			addClickListeners();
+			addDragAndDropListeners();
+		}
+
+		function memoryToDivTree(memory, parentPath = '', level = 0, expanded = new Set()) {
+			const wrapper = document.createElement('div');
+			for (let key in memory) {
+				if (memory.hasOwnProperty(key) && key.endsWith('/')) {
+					const currentPath = parentPath ? `${parentPath}${key}` : key;
+					const folderDiv = document.createElement('div');
+					folderDiv.classList.add('subdir');
+					folderDiv.setAttribute('data-path', currentPath);
+					folderDiv.style.marginLeft = `${level * 10}px`;
+
+					let hasSubtree = Object.keys(memory[key]).some(k => k.endsWith('/'));
+					let toggleBtn;
+					if (hasSubtree) {
+						toggleBtn = document.createElement('button');
+						toggleBtn.classList.add('toggle', 'material-symbols-rounded');
+						toggleBtn.textContent = 'chevron_forward';
+						toggleBtn.style.transition = 'transform 0.2s';
+						toggleBtn.style.transform = expanded.has(currentPath) ? 'rotate(90deg)' : 'rotate(0deg)';
+						toggleBtn.onclick = e => {
+							e.stopPropagation();
+							const next = folderDiv.nextSibling;
+							if (next && next.classList.contains('subtree')) {
+								if (next.style.display === 'none') {
+									next.style.display = '';
+									toggleBtn.style.transform = 'rotate(90deg)';
+								} else {
+									next.style.display = 'none';
+									toggleBtn.style.transform = 'rotate(0deg)';
+								}
+							}
+						};
+						folderDiv.appendChild(toggleBtn);
+					}
+
+					const dirIcDiv = document.createElement("div");
+					dirIcDiv.classList.add("material-symbols-rounded");
+					dirIcDiv.textContent = getfolicon(key);
+
+					const dirNameDiv = document.createElement("div");
+					dirNameDiv.textContent = removeEndSlash(key);
+
+					folderDiv.appendChild(dirIcDiv);
+					folderDiv.appendChild(dirNameDiv);
+					wrapper.appendChild(folderDiv);
+
+					folderDiv.addEventListener('click', e => {
+						if (e.target.classList.contains('toggle')) return;
+						document.querySelectorAll('.subdir.current').forEach(el => el.classList.remove('current'));
+						folderDiv.classList.add('current');
+					});
+
+					if (Object.keys(memory[key]).length > 0) {
+						const subtree = memoryToDivTree(memory[key], currentPath, level + 1, expanded);
+						subtree.classList.add('subtree');
+						subtree.style.display = expanded.has(currentPath) ? '' : 'none';
+						wrapper.appendChild(subtree);
+					}
+				}
+			}
+			return wrapper;
+		}
+
+
+
+		function addClickListeners() {
+			document.querySelectorAll('.subdir').forEach(element => {
+				element.addEventListener('click', async e => {
+					if (e.target.classList.contains('toggle')) return;
+					e.stopPropagation();
+					const selectedPath = element.getAttribute('data-path');
+					if (selectedPath) {
+						listFiles(selectedPath);
+						if (!await ntxSession.send("settings.get", "filesSidenavSize")) {
+							fitsizesidenav();
+						}
+					}
+				});
+			});
+		}
+
+		function addDragAndDropListeners() {
+			document.querySelectorAll('.subdir').forEach(element => {
+				const targetPath = element.getAttribute('data-path');
+				element.addEventListener('dragover', e => {
+					Allowdrop(e, element);
+				});
+				element.addEventListener('drop', e => {
+					dropfl(e, targetPath);
+				});
+			});
+		}
+
+
+		function getLastSegment(path) {
+			const segments = path.replace(/\/$/, '').split('/');
+			return segments[segments.length - 1];
+		}
+
+		async function createit() {
+			let fname = document.getElementById("makflname").value;
+
+			if (fname.length < 2 || window.parent.mtpetxt(fname) == "" || !window.parent.mtpetxt(fname)) {
+				document.getElementById("makefiledivno").innerHTML = `<span class="material-symbols-rounded">
+									error
+								</span> File names should end with extensions (eg: .txt, .png etc.)`
+				return;
+			}
+
+			await window.parent.createFile(currentPath, window.parent.basename(fname), window.parent.mtpetxt(fname), "")
+				.then(function () {
+					document.getElementById('makefiledia').close();
+					window.parent.notify("Created file", "File " + fname + " created at " + currentPath, "Files");
+				});
+		}
+
+		async function createfol() {
+			let fname = document.getElementById("makfolname").value;
+			if (fname.length > 1) {
+				await window.parent.createFolder(currentPath + fname);
+				document.getElementById('makefoldia').close();
+				window.parent.toast("Folder created!");
+			} else {
+				window.parent.toast("Folder names can't be that short.");
+			}
+		}
+
+		var currentPath = 'Downloads/', nowfile, flmode = 'grid', onlyshow = false, fileToSelect = null, currentProc = null, slfileID = null;
+		var fllist = document.getElementById("filelist");
+		var fdlist;
+		var binmode = false;
+		var sessiontype = "normal", sessionreturnreqid = null;
+
+		function fitsizesidenav() {
+			document.getElementById("flap-sidenav").style.width = `165px`
+		}
+		async function initializeFilesApp(defaultopenfold = false, method = undefined) {
+			var dropZone = document.getElementById("flap-mot");
+			dropZone.addEventListener('dragover', (event) => {
+				event.preventDefault();
+			});
+
+			dropZone.addEventListener('drop', (event) => {
+				event.preventDefault();
+
+				const files = event.dataTransfer.files;
+				let data = event.dataTransfer?.getData("Text");
+				if (data) {
+					return;
+				}
+				const fileInput = document.getElementById('filupin');
+
+				const dataTransfer = new DataTransfer();
+
+				for (let i = 0; i < files.length; i++) {
+					dataTransfer.items.add(files[i]);
+				}
+				upmd();
+				fileInput.files = dataTransfer.files;
+			});
+
+			dropZone.addEventListener('dragend', (event) => {
+				event.preventDefault();
+			});
+
+			try {
+				if (method == "showFile") {
+					currentPath = (await ntxSession.send("fileGet.byId", defaultopenfold)).path;
+					fileToSelect = defaultopenfold;
+				} else if (method == "showDir") {
+					currentPath = defaultopenfold;
+				} else if (defaultopenfold) {
+					currentPath = defaultopenfold;
+				}
+
+				if (await ntxSession.send("settings.get", "filesSidenavSize")) {
+					document.getElementById("flap-sidenav").style.width = await ntxSession.send("settings.get", "filesSidenavSize");
+				} else {
+					fitsizesidenav();
+				}
+
+				if (window.innerWidth <= 500) {
+					toggletree();
+
+				}
+				$("#flap-sidenav").resizable({
+					handles: 'e',
+					stop: async function (event, ui) {
+						const newWidth = ui.size.width;
+						await ntxSession.send("settings.set", "filesSidenavSize", newWidth + 'px');
+					}
+				});
+
+			} catch (e) { }
+
+			liststuff();
+			fdlist = document.getElementById("folders");
+
+			try {
+				if (await ntxSession.send("settings.get", 'defFileLayout')) {
+					changeview(await ntxSession.send("settings.get", 'defFileLayout'))
+				}
+			} catch (error) {
+				console.error(error)
+			}
+
+			window.parent.updateMemoryData();
+			const backdrop = document.getElementById('upmod');
+
+			backdrop.addEventListener('click', (event) => {
+				if (event.target === backdrop) {
+					backdrop.close();
+				}
+			});
+
+		}
+
+		function Allowdrop(ev, obj) {
+			ev.preventDefault();
+			obj.style.transform = "scale(1.1)";
+			setTimeout(function () {
+				obj.style.transform = "";
+			}, 500)
+		}
+
+		function dropfl(ev, dat) {
+			let data = ev.dataTransfer.getData("Text");
+			moveFileToFolder(data, dat)
+		}
+
+
+		function fillDropup(folderPath, silly = false) {
+			const dropupDiv = document.getElementById("filetools");
+			dropupDiv.innerHTML = "";
+
+			const dropupContentDiv = document.createElement("div");
+			dropupContentDiv.className = "dropup-content";
+
+			const moreToolsDiv = document.getElementById("moretoolsdropdwn");
+			moreToolsDiv.innerHTML = "";
+
+			const pathSegments = folderPath.split('/').filter(Boolean);
+			const isSystemFolder = folderPath === "System/" || folderPath === "";
+			const isRootLevel = pathSegments.length <= 1;
+
+			const actions = [
+				{
+					id: "search",
+					title: "Search files",
+					onclick: window.parent.opensearchpanel,
+					innerHTML: `<span class="material-symbols-rounded">search</span> <b>Search</b>`,
+				},
+				{
+					id: "deleteFolder",
+					title: "Delete folder",
+					onclick: isSystemFolder ? (e) => e.preventDefault() : remfold,
+					innerHTML: `<span class="material-symbols-rounded">delete</span> <b>Delete</b>`,
+					disabled: isSystemFolder
+				},
+				{
+					id: "createFolder",
+					title: "Create folder",
+					onclick: () => {
+						document.getElementById("make_fold_pre_path").innerText = folderPath;
+						document.getElementById('makefoldia').showModal()
+					},
+					innerHTML: `<span class="material-symbols-rounded">add</span> <b>Folder</b>`
+				},
+				{
+					id: "createFile",
+					title: "Create File",
+					onclick: () => document.getElementById('makefiledia').showModal(),
+					innerHTML: `<span class="material-symbols-rounded">add</span> <b>New File</b>`
+				},
+				{
+					id: "parentFolder",
+					title: "Parent folder",
+					onclick: () => {
+						if (!isRootLevel) {
+							const parentPath = folderPath.substring(0, folderPath.lastIndexOf('/', folderPath.lastIndexOf('/') - 1) + 1);
+							listFiles(parentPath);
+						}
+					},
+					innerHTML: `<span class="material-symbols-rounded">keyboard_return</span> <b>Parent</b>`,
+					disabled: isRootLevel
+				},
+				{
+					id: "toggleView",
+					title: flmode === 'grid' ? 'List view' : 'Grid view',
+					onclick: function () {
+						flmode = flmode === 'grid' ? 'list' : 'grid';
+						changeview(flmode);
+						this.title = flmode === 'grid' ? 'List view' : 'Grid view';
+						this.innerHTML = flmode === 'grid'
+							? `<span class="material-symbols-rounded">view_list</span> <b>List View</b>`
+							: `<span class="material-symbols-rounded">grid_view</span> <b>Grid View</b>`;
+					},
+					innerHTML: flmode === 'grid'
+						? `<span class="material-symbols-rounded">view_list</span> <b>List View</b>`
+						: `<span class="material-symbols-rounded">grid_view</span> <b>Grid View</b>`
+				}
+			];
+
+			const actionLinks = [];
+
+			actions.forEach(({ id, title, onclick, innerHTML, disabled }) => {
+				const link = document.createElement("a");
+				link.classList.add("dropdownerthebob");
+				link.title = title;
+				link.onclick = onclick;
+				link.innerHTML = innerHTML;
+				link.id = `topbarAction-${id}`;
+				if (disabled) link.classList.add("disabled");
+				actionLinks.push(link);
+				dropupContentDiv.appendChild(link);
+			});
+
+			dropupDiv.appendChild(dropupContentDiv);
+
+			requestAnimationFrame(() => {
+				let overflowStarted = false;
+
+				while (dropupDiv.scrollHeight > dropupDiv.clientHeight && actionLinks.length > 0) {
+					const linkToMove = actionLinks.pop();
+					dropupContentDiv.removeChild(linkToMove);
+					moreToolsDiv.appendChild(linkToMove);
+					overflowStarted = true;
+				}
+
+				if (overflowStarted) {
+					const moreToggle = document.createElement("a");
+					moreToggle.classList.add("dropdownerthebob");
+					moreToggle.title = "More Tools";
+					moreToggle.innerHTML = `<span class="material-symbols-rounded">more_vert</span> <b>More</b>`;
+					moreToggle.onclick = () => {
+						moreToolsDiv.classList.toggle("visible");
+					};
+					dropupContentDiv.appendChild(moreToggle);
+				}
+			});
+
+			if (!silly) {
+				currentPath = folderPath;
+				updpth();
+			}
+		}
+		async function refresh() {
+			window.parent.updateMemoryData();
+			const refreshButton = document.getElementById('ogrefreshbtn');
+
+			refreshButton.classList.add('rotating');
+
+			try {
+				await window.parent.getdb().then((result) => {
+					refreshButton.classList.remove('rotating');
+					refreshButton.classList.add('stopping');
+				});
+				liststuff();
+				listFiles(currentPath);
+			} finally { }
+		}
+
+
+		function dragfl(ev, obj) {
+			ev.dataTransfer.setData("Text", obj.getAttribute('unid'));
+		}
+
+		let cachedFiles = {};
+		var PrevPath = "Downloads";
+
+		async function listFiles(folderName = currentPath, gen) {
+			if (sessiontype != "opener" && sessiontype != "saveas") {
+				myWindow.setTitle(removeEndSlash(folderName) + " - Files");
+			}
+
+			if (sessiontype == "directory") {
+				return;
+			}
+			const startTime = performance.now();
+			if (currentPath == folderName && gen) {
+				const previousFiles = cachedFiles[currentPath] || [];
+				const currentFiles = await window.parent.getFileNamesByFolder(folderName);
+
+				if (JSON.stringify(previousFiles) === JSON.stringify(currentFiles)) {
+					return;
+				}
+			}
+			fllist.innerHTML = ``;
+			await window.parent.updateMemoryData();
+
+			function findFolder(path, obj) {
+				let parts = path.split('/').filter(p => p !== '');
+				for (let i = 0; i < parts.length; i++) {
+					let key = parts[i] + '/';
+					if (obj[key]) {
+						obj = obj[key];
+					} else {
+						return null;
+					}
+				}
+				return obj;
+			}
+
+			const folder = findFolder(folderName, window.parent.memory.root);
+			if (folder) {
+				PrevPath = folder;
+				fillDropup(folderName);
+
+				const filesInFolder = await window.parent.getAllItemsInFolder(folderName);
+				if (filesInFolder) {
+					if (filesInFolder.length > 0) {
+						document.getElementById("fileinfobn").innerHTML = filesInFolder.length + " items";
+						if (!gen) {
+							const previousFiles = cachedFiles[currentPath] || [];
+							const currentFileNames = new Set(filesInFolder.map(file => file.name));
+
+							const removedFiles = previousFiles.filter(file => !currentFileNames.has(file.name));
+							const addedFiles = filesInFolder.filter(file => !previousFiles.some(prev => prev.name === file.name));
+
+							removedFiles.forEach(removedFile => {
+								const fileElement = document.querySelector(`[title^="${removedFile.name}"]`);
+								fileElement?.remove();
+							});
+
+							for (const newFile of addedFiles) {
+								await createFileElement(newFile);
+							}
+
+						} else {
+							cachedFiles[currentPath] = filesInFolder;
+						}
+					} else {
+						fllist.innerHTML = `<center class='thisfolderisempty'><svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="74.20199" height="94.1023" viewBox="0,0,74.20199,94.1023"><g transform="translate(-224.61774,-142.87893)"><g data-paper-data="{&quot;isPaintingLayer&quot;:true}" fill-rule="nonzero" stroke="#ffffff" stroke-linejoin="miter" stroke-miterlimit="10" stroke-dasharray="" stroke-dashoffset="0" style="mix-blend-mode: normal"><path style="animation: headsad .5s 2;" d="M227.11774,158.26119c0,-7.11468 5.76758,-12.88226 12.88226,-12.88226c7.11468,0 12.88226,5.76758 12.88226,12.88226c0,7.11468 -5.76758,12.88226 -12.88226,12.88226c-7.11468,0 -12.88226,-5.76758 -12.88226,-12.88226z" fill="none" stroke-width="5" stroke-linecap="butt"/><path d="M244.56247,233.94447l9.12493,-32.20565l-8.58817,-28.98508" fill="none" stroke-width="5" stroke-linecap="round"/><path d="M253.6874,202.81234l17.71311,31.66888" fill="none" stroke-width="5" stroke-linecap="round"/><path d="M246.17275,178.6581l-7.51465,27.37481" fill="none" stroke-width="5" stroke-linecap="round"/><path d="M250.46684,179.73163l28.44833,-12.3455" fill="none" stroke-width="5" stroke-linecap="round"/><path d="M260.82196,192.96703l-1.81137,-23.54791l37.99776,-2.9229l1.81138,23.54791z" fill="#aa8b00" stroke-width="0" stroke-linecap="butt"/><path onclick="ntxSession.send("sysUI.say",'You found it :3')" d="M256.80524,189.29958l2.20535,-19.88046l37.99776,-2.9229l-2.20535,19.53118z" fill="#ffcf00" stroke-width="0" stroke-linecap="butt"/><path d="M279.06646,168.81576l-0.1513,-1.42964" fill="none" stroke-width="5" stroke-linecap="round"/></g></g></svg><br>This folder is empty.</center>`;
+					}
+				}
+
+				(document.getElementById("listfilesloader")) ? document.getElementById("listfilesloader").remove() : null;
+			} else {
+				console.error("No such path.")
+				listFiles(PrevPath);
+			}
+		}
+		async function createFileElement(file) {
+			const fileElement = document.createElement('div');
+			fileElement.classList.add('file');
+			fileElement.setAttribute(flmode, '');
+			if (file.id) fileElement.setAttribute("unid", file.id);
+
+			const isFolder = file.type === 'folder';
+			fileElement.setAttribute('draggable', !isFolder);
+			fileElement.setAttribute("path", file.path);
+
+			fileElement.addEventListener("click", e => slfile(fileElement, '', e));
+
+			if (!isFolder && file.id == fileToSelect) {
+				setTimeout(() => {
+					slfile(fileElement, '');
+				}, 300);
+				fileToSelect = null;
+			}
+
+			if (!isFolder) {
+				fileElement.setAttribute('ondragstart', 'dragfl(event, this)');
+			}
+
+			const icon = await geticon(getFileExtension(file.name), file.id);
+
+			const iconSpan = document.createElement('span');
+			iconSpan.className = 'fileicons';
+			iconSpan.innerHTML = icon;
+
+			const filenameSpan = document.createElement('span');
+			filenameSpan.className = 'flfrname';
+			filenameSpan.textContent = file.name;
+
+			const timeSmall = document.createElement('small');
+			if (isFolder) {
+				fileElement.classList.add('folder');
+				timeSmall.textContent = '>';
+				timeSmall.title = 'Open folder';
+			} else {
+				timeSmall.textContent = window.parent.timeAgo(file?.metadata.datetime);
+				timeSmall.title = 'File';
+			}
+
+			const flnameSpan = document.createElement('span');
+			flnameSpan.setAttribute('flname', '');
+			flnameSpan.appendChild(filenameSpan);
+			flnameSpan.appendChild(timeSmall);
+
+			fileElement.appendChild(iconSpan);
+			fileElement.appendChild(flnameSpan);
+			fileElement.setAttribute('title', `${file.name}\n${isFolder ? 'Folder' : 'File'}`);
+
+			fllist.appendChild(fileElement);
+		}
+
+		function updpth(currentPath2 = currentPath) {
+			const pathDisp = document.getElementById("pathdisp");
+			pathDisp.innerHTML = "/";
+
+			if (currentPath2 == "") {
+				return
+			}
+			const parts = currentPath2.split('/').filter(Boolean);
+			let accumulatedPath = "";
+
+			parts.forEach((part, index) => {
+				const currentPart = part + "/";
+				accumulatedPath += currentPart;
+
+				const span = document.createElement("span");
+				span.textContent = currentPart;
+
+				if (index < parts.length - 1) {
+					const pathToCall = accumulatedPath;
+					span.style.cursor = "pointer";
+					span.addEventListener("click", () => listFiles(pathToCall));
+				}
+
+				pathDisp.appendChild(span);
+			});
+		}
+
+		var treeviewopen = true;
+		function toggletree() {
+			if (treeviewopen) {
+				document.getElementById("flap-sidenav").style.width = '28px';
+				document.getElementById("flap-sidenav").style.minWidth = '28px';
+				document.getElementById("dirviewbtn").style.display = 'none';
+				document.getElementById("treeviewchevron").style.transform = 'rotate(180deg)';
+				document.getElementById("folders").style.display = 'none';
+				treeviewopen = false;
+			} else {
+				document.getElementById("flap-sidenav").style.width = '';
+				document.getElementById("flap-sidenav").style.minWidth = '';
+				document.getElementById("dirviewbtn").style.display = '';
+				document.getElementById("treeviewchevron").style.transform = 'none';
+				document.getElementById("folders").style.display = '';
+				treeviewopen = true;
+			}
+		}
+		let selectedFiles = [];
+		let lastSelectedIndex = null;
+
+		async function slfile(element, param, event) {
+			element.scrollIntoView({ behavior: "smooth", block: "nearest" });
+			const uniqueId = element.getAttribute("unid");
+			const isFolder = element.classList.contains("folder");
+			if (!uniqueId && !isFolder) return;
+
+			const files = Array.from(document.querySelectorAll(".file[unid]"));
+			const idx = files.indexOf(element);
+
+			if (isFolder) {
+				const isAlreadySelected = element.id === "slfile";
+
+				selectedFiles = [];
+				lastSelectedIndex = null;
+				document.querySelectorAll(".multisel").forEach(el => el.classList.remove("multisel"));
+
+				if (isAlreadySelected) {
+					listFiles(element.getAttribute("path"));
+					return;
+				}
+
+				updateSelectedFileElement(element, uniqueId);
+				showFolderInfo(element);
+				document.getElementById("fileinfobn").innerHTML = "Folder";
+				return;
+			}
+
+			if (event?.shiftKey && lastSelectedIndex !== null) {
+				const [start, end] = [lastSelectedIndex, idx].sort((a, b) => a - b);
+				selectedFiles = files.slice(start, end + 1).map(el => el.getAttribute("unid"));
+			} else if (event?.ctrlKey || event?.metaKey) {
+				if (selectedFiles.includes(uniqueId)) {
+					selectedFiles = selectedFiles.filter(id => id !== uniqueId);
+				} else {
+					selectedFiles.push(uniqueId);
+				}
+				lastSelectedIndex = idx;
+			} else {
+				selectedFiles = [uniqueId];
+				lastSelectedIndex = idx;
+			}
+
+			files.forEach(el => el.classList.toggle("multisel", selectedFiles.includes(el.getAttribute("unid"))));
+			if (!param) param = uniqueId;
+
+			const isSelected = element.id === "slfile";
+			if (isSelected) {
+				if (sessiontype === "opener") choosefile(); else openfile(param);
+				return;
+			}
+
+			updateSelectedFileElement(element, uniqueId);
+			await handleFileSelection(uniqueId);
+		}
+
+
+		function updateSelectedFileElement(element, uniqueId) {
+			if (document.getElementById("slfile")) {
+				document.getElementById("slfile").id = null;
+			}
+
+			nowfile = element;
+			slfileID = uniqueId;
+			element.id = "slfile";
+
+			if (sessiontype === "opener") {
+				document.getElementById("choosefileinp").value = uniqueId;
+			}
+		}
+
+		function showFolderInfo(element) {
+			fillDropup(element.getAttribute("path"), 1);
+			updpth(element.getAttribute("path"));
+		}
+
+		async function handleFileSelection(uniqueId) {
+			let fileData, fileSize = 0;
+
+			try {
+				fileData = await ntxSession.send("fileGet.byId", uniqueId);
+				if (fileData?.content) {
+					fileSize = new TextEncoder().encode(fileData.content).length;
+				} else {
+					console.error("Safe Error: Unable to retrieve file content.");
+				}
+			} catch (error) {
+				console.error("Safe Error:", error);
+			}
+
+			const readableSize = formatFileSize(fileSize);
+			document.getElementById("fileinfobn").style.opacity = 1;
+			document.getElementById("fileinfobn").innerHTML = readableSize;
+
+			try {
+				await populateFileActions(fileData);
+				updpth();
+			} catch (error) {
+				document.getElementById("fileinfobn").innerHTML += "Safe Error 0006";
+				await ntxSession.send(
+					"sysUI.say",
+					`<h1>File Error: 0006</h1><p>LairOS Files couldn't handle that file.</p>`,
+					"warning"
+				);
+				refresh();
+				console.error("An error occurred:", error);
+			}
+		}
+
+		function formatFileSize(size) {
+			if (!size) return "0 Bytes";
+
+			const units = ["Bytes", "KB", "MB", "GB", "TB"];
+			let index = 0;
+
+			while (size > 1024 && index < units.length - 1) {
+				size /= 1024;
+				index++;
+			}
+
+			return `${size.toFixed(2)} ${units[index]}`;
+		}
+
+		async function populateFileActions(fileData) {
+			if (sessiontype === "opener") return;
+			const toolsContainer = document.getElementById("filetools");
+			const moreToolsContainer = document.getElementById("moretoolsdropdwn");
+			toolsContainer.innerHTML = "";
+			moreToolsContainer.innerHTML = "";
+
+			const contentDiv = document.createElement("div");
+			contentDiv.className = "dropup-content";
+			toolsContainer.appendChild(contentDiv);
+
+			if (selectedFiles.length > 1) {
+				const deleteAll = document.createElement("a");
+				deleteAll.className = "dropdownerthebob";
+				deleteAll.innerHTML = `<span class="material-symbols-rounded">delete</span> <b>Delete All</b>`;
+				deleteAll.onclick = () => deleteFiles(selectedFiles);
+				contentDiv.appendChild(deleteAll);
+				document.getElementById("fileinfobn").innerHTML = "Selected " + selectedFiles.length + " files";
+				return;
+			}
+
+			const visibleOptions = [];
+			for (const action of Object.values(fileActions)) {
+				if (await action.condition(fileData)) {
+					const option = document.createElement("a");
+					option.classList.add("dropdownerthebob");
+					option.title = action.label;
+					option.onclick = () => action.action(fileData.id);
+					option.innerHTML = `<span class="material-symbols-rounded" style="color: ${action.color}">${action.icon}</span> <b>${action.label}</b>`;
+					visibleOptions.push(option);
+					contentDiv.appendChild(option);
+				}
+			}
+
+			const moreToggle = document.createElement("a");
+			moreToggle.classList.add("dropdownerthebob");
+			moreToggle.title = "More Tools";
+			moreToggle.innerHTML = `<span class="material-symbols-rounded">more_vert</span> <b>More</b>`;
+			moreToggle.onclick = () => moreToolsContainer.classList.toggle("visible");
+			moreToggle.style.visibility = "hidden";
+			contentDiv.appendChild(moreToggle);
+
+			requestAnimationFrame(() => {
+				let overflow = false;
+				while (visibleOptions.length > 0) {
+					if (contentDiv.scrollWidth <= contentDiv.clientWidth) break;
+					const last = visibleOptions.pop();
+					contentDiv.removeChild(last);
+					moreToolsContainer.appendChild(last);
+					overflow = true;
+				}
+				if (overflow) moreToggle.style.visibility = "visible"; else contentDiv.removeChild(moreToggle);
+			});
+		}
+
+		var isitBulkRemfile = false;
+		async function remfile(ID) {
+			try {
+
+				window.parent.remfile(ID);
+				if (isitBulkRemfile) {
+					document.querySelector(`[unid="${ID}"]`).style.opacity = 0.2;
+					return
+				}
+				await window.parent.updateMemoryData().then(() => {
+					window.parent.toast("Removed " + ID);
+				});
+			} catch (error) {
+				console.error("Safe Error fetching or updating data:", error);
+			}
+		}
+
+		async function deleteFiles(ids) {
+			if (!ids?.length) return;
+			isitBulkRemfile = true;
+			for (const id of ids) {
+				await remfile(id);
+			}
+			selectedFiles = [];
+			document.querySelectorAll(".multisel").forEach(el => el.classList.remove("multisel"));
+			isitBulkRemfile = false;
+			populateFileActions();
+		}
+
+		async function openfile(x, all) {
+			if (sessiontype == "opener") {
+				choosefile()
+				return;
+			}
+
+			if (all == 'any') {
+				let appIdToOpen = await ntxSession.send("olp.useHandler", "file_manager", { "opener": "app", "dir": "Apps/" });
+				await ntxSession.send("olp.launch", appIdToOpen, x);
+				return;
+			} else if (all == 'text') {
+				await ntxSession.send("olp.useHandler", "text_editor", slfileID);
+				return;
+			}
+
+			window.parent.openfile(x);
+		}
+
+		function choosefile() {
+			if (sessiontype == "opener") {
+				window.parent.OLPreturn(nowfile.getAttribute("unid"), sessionreturnreqid)
+				myWindow.close()
+				return;
+			}
+		}
+
+		async function renamef(x) {
+			try {
+				const fileId = x.getAttribute("unid");
+
+				let file = await ntxSession.send("fileGet.byId", fileId);
+
+				file.fileName = await ntxSession.send("sysUI.ask", "New Name:", file.fileName);
+				await window.parent.updateFile(currentPath, fileId, file);
+
+				window.parent.toast("File was renamed");
+			} catch (error) {
+				console.error("Safe Error renaming file:", error);
+				window.parent.toast("Can't rename file")
+			}
+		}
+
+		async function addShortcut(flid) {
+
+			let selectedFolder = await window.parent.addShortcut(flid);
+
+			if (selectedFolder) {
+				await liststuff();
+				listFiles(selectedFolder)
+				window.parent.toast("Shortcut created at " + selectedFolder);
+			}
+		}
+
+		async function moveFileToFolder(flid, dest) {
+			await window.parent.moveFileToFolder(flid, dest);
+			window.parent.toast("It was moved to " + dest);
+		}
+
+		async function movefile(flid) {
+			const getFolderNames = (memory, parentPath = '', level = 0) => {
+				let folders = [];
+				Object.keys(memory).forEach(key => {
+					const fullPath = parentPath + key;
+					if (fullPath.endsWith('/')) {
+						const indent = '-'.repeat(level * 2); folders.push({ label: fullPath, value: fullPath });
+
+						folders = folders.concat(getFolderNames(memory[key], fullPath, level + 1));
+					}
+				});
+				return folders;
+			};
+
+			let folders = getFolderNames(window.parent.memory.root);
+			folders = folders.filter(folder => folder.value.trim() !== currentPath);
+
+			let selected = await window.parent.showDropdownModal("Select a folder", "Move to", folders.map(f => f.label));
+
+			let selectedFolder = selected !== null ? folders.find(f => f.label === selected)?.value : null;
+
+			if (selectedFolder !== null) {
+				await moveFileToFolder(flid, selectedFolder);
+				await liststuff();
+				listFiles(selectedFolder);
+			}
+
+		}
+
+		async function geticon(extension, id = false) {
+			let iconName = "insert_drive_file";
+			let color = "#BDBDBD";
+
+			if (extension) {
+				if (extension === "txt") {
+					iconName = "description";
+					color = "#42A5F5";
+				} else if (extension === "app") {
+					const iconFromRegistry = await window.parent.getAppIcon(0, id);
+					if (iconFromRegistry) {
+						iconName = iconFromRegistry;
+						color = "#ffffff";
+					}
+				} else if (extension === "json") {
+					iconName = "data_object";
+					color = "red";
+				} else if (extension === "lnk") {
+					iconName = "reply";
+					color = "green";
+				} else {
+					const baseType = await ntxSession.send("utility.getBaseFileType", extension);
+
+					switch (baseType) {
+						case "image":
+							iconName = "image";
+							color = "#FFEE58";
+							break;
+						case "music":
+							iconName = "graphic_eq";
+							color = "violet";
+							break;
+						case "video":
+							iconName = "videocam";
+							color = "lightblue";
+							break;
+						case "code":
+							iconName = "developer_board";
+							color = "#8E24AA";
+							break;
+					}
+				}
+			} else if (!id) {
+				iconName = "folder";
+				color = "#FDD835";
+			}
+
+			return `<span class="material-symbols-rounded" style="color: ${color}">${iconName}</span>`;
+		}
+
+		function getfolicon(x) {
+			const iconMap = {
+				"Downloads": "download",
+				"Desktop": "computer",
+				"Apps": "apps",
+				"System": "settings",
+				"Dock": "rocket",
+				"Media": "play_circle",
+				"Documents": "folder",
+				"Favorites": "favorite"
+			};
+
+			for (const key in iconMap) {
+				if (x.startsWith(key)) {
+					return iconMap[key];
+				}
+			}
+			return "folder";
+		}
+
+		function upmd() {
+			document.getElementById("fupibu").innerHTML = "Import";
+
+			document.getElementById("fupibu").onclick = fupit;
+			document.getElementById("upmod").showModal();
+		}
+
+		function changeview(how) {
+			flmode = how;
+			fllist.setAttribute("flmode", how)
+			listFiles(currentPath)
+		}
+
+		async function remfold() {
+			if (currentPath == "System") {
+				await ntxSession.send("sysUI.say", "You cannot remove system folder through files app.");
+				return;
+			}
+			let x = await ntxSession.send("sysUI.confirm", "Remove folder?", "Remove '" + currentPath + "' permanently from your device?")
+			if (x) {
+				await window.parent.remfolder(currentPath).then(function () {
+					window.parent.toast("Removed " + currentPath);
+				})
+				listFiles('', true)
+				liststuff()
+			}
+		}
+
+		function getFileExtension(str) {
+			try {
+				const parts = str.split('.');
+				return parts.length > 1 ? parts.pop() : '';
+			} catch (err) {
+			}
+		}
+		function removeEndSlash(str) {
+			return str.endsWith('/') ? str.slice(0, -1) : str;
+		}
+
+		var currentreqID;
+
+		window.addEventListener('message', async (event) => {
+			if (event.data.action === 'loadlocalfile') {
+				if (event.data.id === myWindow.windowID) {
+					window.parent.openlaunchprotocol(event.data.returned, nowfile.getAttribute("unid"));
+				}
+			}
+		});
+
+		async function directorySelector() {
+			document.body.style.display = 'none';
+			const getFolderNames = (memory, parentPath = '', level = 0) => {
+				let folders = [];
+				Object.keys(memory).forEach(key => {
+					const fullPath = parentPath + key;
+					if (fullPath.endsWith('/')) {
+						const indent = '-'.repeat(level * 2);
+						folders.push(indent + fullPath);
+						folders = folders.concat(getFolderNames(memory[key], fullPath, level + 1));
+					}
+				});
+				return folders;
+			};
+
+			let folders = getFolderNames(window.parent.memory.root);
+
+			let selectedFolder = await window.parent.showDropdownModal("Choose a folder", "to continue your action", folders);
+			window.parent.OLPreturn(selectedFolder, sessionreturnreqid);
+			myWindow.close();
+		}
+
+		function greenflag() {
+			const data = myWindow?.params?.data;
+			document.getElementById("dirviewbtn").innerText = window.parent.CurrentUsername;
+
+			document.getElementById("choosefile").style.display = "none";
+			document.getElementById("saveas").style.display = "none";
+			if (data?.opener) {
+				sessionreturnreqid = myWindow.params.trid;
+				sessiontype = data.opener === 'showFile' ? 'showFile' : 'opener';
+				switch (data.opener) {
+					case "showFile":
+						sessiontype = "showFile"
+						break;
+					case "showDir":
+						sessiontype = "showDir"
+						break;
+					case "opener":
+						sessiontype = "opener"
+						break;
+					case "saveas":
+						sessiontype = "saveas"
+						break;
+					case "directory":
+						directorySelector();
+						return;
+						break;
+				}
+				document.getElementById("choosefile").style.display = (sessiontype == 'opener') ? "flex" : "none";
+				document.getElementById("saveas").style.display = "none";
+
+				if (data.opener === 'showFile') {
+					initializeFilesApp(data.id ?? false, "showFile");
+				} else if (data.opener === 'showDir') {
+					initializeFilesApp(data.path ?? false, "showDir");
+				} else if (data.opener === 'saveas') {
+					initializeFilesApp();
+					myWindow.setTitle("Save file as");
+					document.getElementById("saveas").style.display = "flex";
+					document.getElementById("saveasFileNameInp").focus();
+					if (data.value) { document.getElementById("saveasFileNameInp").value = data.value }
+				} else {
+					initializeFilesApp(data.dir ?? false);
+				}
+
+				onlyshow = data.opener === 'onlyshow' ? data.opener : false;
+				if (onlyshow) {
+					myWindow.setTitle("Choose " + onlyshow + " files");
+				}
+			} else {
+				document.getElementById("choosefile").style.display = "none";
+				initializeFilesApp(false);
+			}
+
+			document.addEventListener('keydown', function (e) {
+				if (e.ctrlKey && e.key === 'c') {
+					const slfile = document.getElementById('slfile');
+					if (slfile) {
+						currentProc = 'copied';
+						slfileID = slfile.getAttribute('unid');
+					}
+				}
+
+				if (e.ctrlKey && e.key === 'v') {
+					currentProc = null;
+					pastefile();
+				}
+			});
+
+			eventBus.listen({
+				type: 'memory',
+				event: '*',
+				callback: msg => {
+					if (msg.event == "update" && msg.key == currentPath) {
+						listFiles();
+					}
+				}
+			});
+
+		}
+
+		async function pastefile() {
+			let file = await ntxSession.send("fileGet.byId", slfileID);
+			await window.parent.createFile(currentPath, file.fileName, false, file.content, file.metadata || {});
+
+		}
+
+		window.fileActions = {
+			unselect: {
+				icon: 'remove_selection',
+				label: 'Unselect',
+				action: (itemuid) => refresh(),
+				condition: (file) => true,
+			},
+			open: {
+				icon: 'open_in_new',
+				label: 'Open',
+				action: (itemuid) => openfile(itemuid),
+				condition: (file) => true,
+			},
+			delete: {
+				icon: 'delete',
+				label: 'Delete',
+				action: (itemuid) => remfile(itemuid),
+				condition: (file) => true,
+			},
+			rename: {
+				icon: 'save_as',
+				label: 'Rename',
+				action: async (itemuid) => {
+					let file = await ntxSession.send("fileGet.byId", itemuid);
+					file.fileName = await ntxSession.send("sysUI.ask", "New Name:", file.fileName);
+					await window.parent.updateFile(false, itemuid, file);
+				},
+				condition: (file) => true,
+			},
+			reinstall: {
+				icon: 'download',
+				label: 'Reinstall',
+				action: (itemuid) => window.parent.extractAndRegisterCapabilities(itemuid),
+				condition: (file) => getFileExtension(file.fileName) === 'app',
+			},
+			setWallpaper: {
+				icon: 'wallpaper',
+				label: 'Set As Wallpaper',
+				action: (itemuid) => window.parent.makewall(itemuid),
+				condition: async (file) => (await ntxSession.send("utility.getBaseFileType", getFileExtension(file.fileName))) === 'image',
+			},
+			move: {
+				icon: 'drive_file_move',
+				label: 'Move',
+				action: (itemuid) => movefile(itemuid),
+				condition: (file) => true,
+			},
+			copyId: {
+				icon: 'content_copy',
+				label: 'Copy ID',
+				action: (itemuid) => {
+					window.parent.navigator.clipboard.writeText(itemuid)
+				},
+				condition: (file) => true,
+			},
+			createShortcut: {
+				icon: 'add',
+				label: 'Shortcut',
+				action: (itemuid) => addShortcut(itemuid),
+				condition: (file) => true,
+			},
+			openWith: {
+				icon: 'open_with',
+				label: 'Open With',
+				action: (itemuid) => openfile(itemuid, 'any'),
+				condition: (file) => true,
+			},
+			openAsText: {
+				icon: 'article_shortcut',
+				label: 'Open as text',
+				action: (itemuid) => openfile(itemuid, 'text'),
+				condition: (file) => true,
+			},
+		};
+		async function getMenuItems(target) {
+			if (selectedFiles.length > 1) {
+				return [{ label: "Delete All", action: () => deleteFiles(selectedFiles) }];
+			}
+			if (target && target.classList && target.classList.contains('file')) {
+				const itemuid = target.getAttribute("unid");
+				slfileID = itemuid;
+				const file = { unid: itemuid, type: 'app', fileName: await window.parent.getFileNameByID(itemuid) };
+				const actions = Object.values(window.fileActions);
+				const conditions = await Promise.all(actions.map(async (action) => await action.condition(file)));
+				const filteredActions = actions.filter((_, index) => conditions[index]);
+				return filteredActions.map(action => ({
+					icon: action.icon,
+					color: action.color,
+					label: action.label,
+					action: () => action.action(itemuid),
+				}));
+			}
+			return [{ label: 'Inspect', action: () => console.log('Inspect clicked') }];
+		}
+
+		var contextMenu;
+
+		function createContextMenu(event) {
+			if (!contextMenu) {
+				contextMenu = document.createElement('div');
+				contextMenu.style.position = 'absolute';
+				contextMenu.style.display = 'none';
+				contextMenu.classList.add("contextmenu");
+			}
+
+			const dialog = event.target.closest('dialog');
+
+			if (dialog && contextMenu.parentNode !== dialog) {
+				dialog.appendChild(contextMenu);
+			} else if (!dialog && contextMenu.parentNode !== document.body) {
+				document.body.appendChild(contextMenu);
+			}
+
+			return contextMenu;
+		}
+
+		function createDropdownMenu(items) {
+			const dropdownMenu = document.createElement('div');
+			dropdownMenu.classList.add('contextmenu');
+			dropdownMenu.style.position = 'absolute';
+			dropdownMenu.style.display = 'none';
+			dropdownMenu.style.zIndex = '1000';
+
+			items.forEach(item => {
+				const menuItem = document.createElement('div');
+				menuItem.innerHTML = `<span class="material-symbols-rounded">${item.icon || ""}</span>
+        <span>${item.label}</span>`;
+				menuItem.classList.add('ctxmenuitem');
+				menuItem.style.padding = '5px 10px';
+				menuItem.style.cursor = 'pointer';
+				menuItem.addEventListener('click', () => {
+					item.action();
+					dropdownMenu.style.display = 'none';
+				});
+				dropdownMenu.appendChild(menuItem);
+			});
+
+			return dropdownMenu;
+		}
+
+		function adjustPositionToFitViewport(x, y, menu, dialogRect = null) {
+			menu.style.display = 'block';
+			const menuRect = menu.getBoundingClientRect();
+			menu.style.display = 'none';
+
+			const viewportWidth = dialogRect ? dialogRect.width : window.innerWidth;
+			const viewportHeight = dialogRect ? dialogRect.height : window.innerHeight;
+			const bottomMargin = 55;
+
+			x = Math.max(0, Math.min(x, viewportWidth - menuRect.width));
+			y = Math.max(0, Math.min(y, viewportHeight - menuRect.height - bottomMargin));
+
+			return { x, y };
+		}
+
+		function adjustDropdownPositionRelativeToTrigger(triggerElement, dropdownMenu) {
+			const triggerRect = triggerElement.getBoundingClientRect();
+			const dialog = triggerElement.closest('dialog');
+			const dialogRect = dialog ? dialog.getBoundingClientRect() : null;
+
+			if (dialog && dropdownMenu.parentNode !== dialog) {
+				dialog.appendChild(dropdownMenu);
+			} else if (!dialog && dropdownMenu.parentNode !== document.body) {
+				document.body.appendChild(dropdownMenu);
+			}
+
+			dropdownMenu.style.display = 'block';
+			const menuRect = dropdownMenu.getBoundingClientRect();
+			dropdownMenu.style.display = 'none';
+
+			const initialLeft = dialogRect
+				? triggerRect.right - dialogRect.left + menuRect.width > dialogRect.width
+					? triggerRect.left - dialogRect.left - menuRect.width
+					: triggerRect.right - dialogRect.left
+				: triggerRect.right + menuRect.width > window.innerWidth
+					? triggerRect.left - menuRect.width
+					: triggerRect.right;
+
+			const initialTop = dialogRect
+				? triggerRect.bottom - dialogRect.top + menuRect.height > dialogRect.height
+					? dialogRect.height - menuRect.height - 5
+					: triggerRect.bottom - dialogRect.top
+				: triggerRect.bottom + menuRect.height > window.innerHeight
+					? window.innerHeight - menuRect.height - 5
+					: triggerRect.bottom;
+
+			const { x, y } = adjustPositionToFitViewport(initialLeft, initialTop, dropdownMenu, dialogRect);
+
+			dropdownMenu.style.left = `${x}px`;
+			dropdownMenu.style.top = `${y}px`;
+			dropdownMenu.style.display = 'block';
+		}
+
+		document.addEventListener('contextmenu', async (event) => {
+			event.preventDefault();
+
+			contextMenu = createContextMenu(event);
+			contextMenu.innerHTML = '';
+			const targetElement = event.target.closest('.file');
+			const menuItems = await getMenuItems(targetElement);
+
+			menuItems.slice(0, 6).forEach(item => {
+				const menuItem = document.createElement('div');
+				menuItem.innerHTML = `<span class="material-symbols-rounded">${item.icon || ""}</span>
+        <span>${item.label}</span>`;
+				menuItem.classList.add('ctxmenuitem');
+				menuItem.style.padding = '5px 10px';
+				menuItem.style.cursor = 'pointer';
+				menuItem.addEventListener('click', () => {
+					item.action(targetElement.getAttribute("unid"));
+					contextMenu.style.display = 'none';
+				});
+				contextMenu.appendChild(menuItem);
+			});
+
+			if (menuItems.length > 6) {
+				const moreButton = document.createElement('div');
+				moreButton.innerHTML = `<span class="material-symbols-rounded">more_vert</span>
+        <span>More</span>`;
+				moreButton.classList.add('ctxmenuitem');
+				moreButton.style.padding = '5px 10px';
+				moreButton.style.cursor = 'pointer';
+
+				const dropdownMenu = createDropdownMenu(menuItems.slice(6));
+				contextMenu.appendChild(moreButton);
+				document.body.appendChild(dropdownMenu);
+
+				moreButton.addEventListener('mouseenter', () => {
+					adjustDropdownPositionRelativeToTrigger(moreButton, dropdownMenu);
+				});
+
+				moreButton.addEventListener('mouseleave', () => {
+					dropdownMenu.style.display = 'none';
+				});
+
+				dropdownMenu.addEventListener('mouseenter', () => {
+					dropdownMenu.style.display = 'block';
+				});
+
+				dropdownMenu.addEventListener('mouseleave', () => {
+					dropdownMenu.style.display = 'none';
+				});
+			}
+
+			const dialog = event.target.closest('dialog');
+			const dialogRect = dialog ? dialog.getBoundingClientRect() : null;
+			const cursorX = dialogRect ? event.clientX - dialogRect.left : event.clientX;
+			const cursorY = dialogRect ? event.clientY - dialogRect.top : event.clientY;
+
+			const { x, y } = adjustPositionToFitViewport(cursorX, cursorY, contextMenu, dialogRect);
+			contextMenu.style.left = `${x}px`;
+			contextMenu.style.top = `${y}px`;
+			contextMenu.style.display = 'block';
+		});
+
+		document.addEventListener('click', () => {
+			if (contextMenu) contextMenu.style.display = 'none';
+			const dropdownMenus = document.querySelectorAll('.dropdown-menu');
+			dropdownMenus.forEach(menu => menu.remove());
+		});
+
+		document.addEventListener('keydown', (event) => {
+			if (event.key === 'Escape' && contextMenu) {
+				contextMenu.style.display = 'none';
+			}
+		});
+
+		async function saveFileAs() {
+			window.parent.OLPreturn({
+				"path": currentPath, "name":
+					document.getElementById("saveasFileNameInp").value
+			}, sessionreturnreqid)
+		}
+	</script>
+</body>
+
+</html>

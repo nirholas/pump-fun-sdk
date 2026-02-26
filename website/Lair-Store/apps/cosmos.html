@@ -1,0 +1,1297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="lair-include" content="lair.css material-symbols-rounded">
+    <meta name="lair-icon" content='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white"><circle cx="12" cy="12" r="3" opacity=".9"/><circle cx="4" cy="6" r="1.2" opacity=".5"/><circle cx="20" cy="4" r="1.5" opacity=".4"/><circle cx="18" cy="18" r="1" opacity=".6"/><circle cx="6" cy="19" r="1.3" opacity=".35"/><circle cx="14" cy="5" r=".8" opacity=".3"/><circle cx="3" cy="14" r=".7" opacity=".25"/><circle cx="21" cy="11" r=".9" opacity=".45"/><ellipse cx="12" cy="12" rx="10" ry="4.5" fill="none" stroke="white" stroke-width=".4" opacity=".15" transform="rotate(-20 12 12)"/></svg>'>
+    <meta name="permissions" content="network">
+    <meta name="capabilities" content="crypto_cosmos_galaxy_visualization">
+    <meta name="lair-category" content="analytics">
+    <title>Lair Cosmos</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body {
+            width: 100%; height: 100%;
+            overflow: hidden;
+            background: #020108;
+            color: #fff;
+            font-family: 'SF Pro Text', -apple-system, system-ui, sans-serif;
+            cursor: crosshair;
+        }
+
+        canvas#cosmos {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 0;
+        }
+
+        /* ─── HUD overlay ─── */
+        .hud {
+            position: fixed;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        .hud-top {
+            top: 14px; left: 14px; right: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .hud-title {
+            font-size: 11px;
+            letter-spacing: 0.35em;
+            text-transform: uppercase;
+            opacity: 0.4;
+            font-weight: 600;
+        }
+
+        .hud-stats {
+            display: flex;
+            gap: 16px;
+            font-size: 10px;
+            opacity: 0.35;
+            letter-spacing: 0.08em;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .hud-bottom {
+            bottom: 14px; left: 14px; right: 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+
+        .hud-controls {
+            display: flex;
+            gap: 6px;
+            pointer-events: auto;
+        }
+
+        .hud-btn {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            color: rgba(255,255,255,0.5);
+            border-radius: 8px;
+            padding: 6px 10px;
+            font-size: 10px;
+            cursor: pointer;
+            letter-spacing: 0.05em;
+            transition: all 0.2s;
+            font-family: inherit;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .hud-btn:hover {
+            background: rgba(255,255,255,0.08);
+            color: rgba(255,255,255,0.8);
+            border-color: rgba(255,255,255,0.15);
+        }
+
+        .hud-btn.active {
+            background: rgba(97,121,255,0.15);
+            border-color: rgba(97,121,255,0.4);
+            color: #8fa4ff;
+        }
+
+        .hud-btn .material-symbols-rounded {
+            font-size: 14px;
+        }
+
+        .hud-legend {
+            font-size: 9px;
+            opacity: 0.3;
+            line-height: 1.6;
+            text-align: right;
+        }
+
+        /* ─── Token tooltip ─── */
+        #tooltip {
+            position: fixed;
+            z-index: 20;
+            display: none;
+            pointer-events: none;
+            min-width: 200px;
+            max-width: 280px;
+            background: rgba(8,8,20,0.92);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 14px;
+            box-shadow: 0 8px 40px rgba(0,0,0,0.6);
+        }
+
+        .tt-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .tt-symbol {
+            font-weight: 700;
+            font-size: 14px;
+        }
+
+        .tt-name {
+            font-size: 11px;
+            opacity: 0.45;
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .tt-rank {
+            font-size: 9px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: rgba(255,255,255,0.06);
+            opacity: 0.6;
+        }
+
+        .tt-price {
+            font-size: 20px;
+            font-weight: 300;
+            letter-spacing: -0.5px;
+            margin-bottom: 6px;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .tt-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4px 12px;
+            font-size: 10px;
+        }
+
+        .tt-label {
+            opacity: 0.35;
+        }
+
+        .tt-val {
+            text-align: right;
+            font-weight: 500;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .tt-green { color: #5aff8a; }
+        .tt-red { color: #ff5a5a; }
+
+        .tt-sparkline {
+            margin-top: 8px;
+            height: 32px;
+            opacity: 0.6;
+        }
+
+        /* ─── Search overlay ─── */
+        #search-overlay {
+            position: fixed;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 30;
+            display: none;
+            width: 320px;
+        }
+
+        #search-overlay.open { display: block; }
+
+        #search-input {
+            width: 100%;
+            background: rgba(8,8,20,0.9);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 12px 16px;
+            color: #fff;
+            font-size: 14px;
+            font-family: inherit;
+            outline: none;
+            letter-spacing: 0.02em;
+        }
+
+        #search-input::placeholder {
+            color: rgba(255,255,255,0.25);
+        }
+
+        #search-results {
+            margin-top: 6px;
+            background: rgba(8,8,20,0.92);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 10px;
+            overflow: hidden;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .search-item {
+            padding: 8px 14px;
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: background 0.15s;
+        }
+
+        .search-item:hover {
+            background: rgba(255,255,255,0.06);
+        }
+
+        .search-item .si-sym {
+            font-weight: 700;
+            min-width: 50px;
+        }
+
+        .search-item .si-name {
+            opacity: 0.4;
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* ─── Ambient glow ─── */
+        .ambient-glow {
+            position: fixed;
+            width: 600px;
+            height: 600px;
+            border-radius: 50%;
+            filter: blur(200px);
+            opacity: 0.06;
+            pointer-events: none;
+            z-index: -1;
+            transition: all 3s ease;
+        }
+
+        .glow-1 { top: -200px; left: -100px; background: #6179ff; }
+        .glow-2 { bottom: -200px; right: -100px; background: #ff61d4; }
+
+        /* ─── Loading state ─── */
+        .loading-screen {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: 100;
+            background: #020108;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            transition: opacity 0.8s ease;
+        }
+
+        .loading-screen.fade-out {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .loading-text {
+            font-size: 11px;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            opacity: 0.35;
+        }
+
+        .loading-bar {
+            width: 120px;
+            height: 2px;
+            background: rgba(255,255,255,0.06);
+            border-radius: 1px;
+            overflow: hidden;
+        }
+
+        .loading-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #6179ff, #a78bfa, #ff61d4);
+            width: 0%;
+            transition: width 0.4s ease;
+            border-radius: 1px;
+        }
+
+        /* ─── Shooting star / whale tx ─── */
+        @keyframes shootingStar {
+            0% {
+                opacity: 0;
+                transform: translateX(0) translateY(0);
+            }
+            10% { opacity: 1; }
+            90% { opacity: 0.8; }
+            100% {
+                opacity: 0;
+                transform: translateX(var(--dx)) translateY(var(--dy));
+            }
+        }
+
+        .shooting-star {
+            position: fixed;
+            width: 3px;
+            height: 3px;
+            background: #fff;
+            border-radius: 50%;
+            box-shadow: 0 0 8px 2px rgba(255,255,255,0.5), 0 0 20px 4px rgba(97,121,255,0.3);
+            z-index: 5;
+            pointer-events: none;
+            animation: shootingStar var(--dur) linear forwards;
+        }
+
+        .shooting-star::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 60px;
+            height: 1px;
+            background: linear-gradient(90deg, rgba(255,255,255,0.5), transparent);
+            transform-origin: left center;
+            transform: rotate(var(--angle));
+        }
+
+        /* ─── Nebula pulse on major event ─── */
+        @keyframes nebulaPulse {
+            0% { transform: scale(0.3); opacity: 0.3; }
+            50% { opacity: 0.15; }
+            100% { transform: scale(2.5); opacity: 0; }
+        }
+
+        .nebula-pulse {
+            position: fixed;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 3;
+            animation: nebulaPulse 2s ease-out forwards;
+        }
+    </style>
+</head>
+<body>
+
+<div class="loading-screen" id="loading">
+    <div class="loading-text">Mapping the Cosmos</div>
+    <div class="loading-bar"><div class="loading-bar-fill" id="loading-fill"></div></div>
+</div>
+
+<canvas id="cosmos"></canvas>
+
+<div class="ambient-glow glow-1"></div>
+<div class="ambient-glow glow-2"></div>
+
+<div class="hud hud-top">
+    <div class="hud-title">Lair Cosmos</div>
+    <div class="hud-stats">
+        <span id="hud-tokens">0 stars</span>
+        <span id="hud-mcap">$0</span>
+        <span id="hud-vol">Vol $0</span>
+    </div>
+</div>
+
+<div class="hud hud-bottom">
+    <div class="hud-controls">
+        <button class="hud-btn" onclick="toggleAudio()" id="audio-btn">
+            <span class="material-symbols-rounded">music_note</span>
+            <span>Sonify</span>
+        </button>
+        <button class="hud-btn" onclick="toggleSearch()">
+            <span class="material-symbols-rounded">search</span>
+            <span>Find</span>
+        </button>
+        <button class="hud-btn" id="cluster-btn" onclick="toggleClusters()">
+            <span class="material-symbols-rounded">hub</span>
+            <span>Cluster</span>
+        </button>
+        <button class="hud-btn" onclick="resetView()">
+            <span class="material-symbols-rounded">center_focus_strong</span>
+        </button>
+    </div>
+    <div class="hud-legend">
+        <div>Star size = Market Cap</div>
+        <div>Brightness = Volume</div>
+        <div>Color = 24h Change</div>
+        <div>Scroll to zoom · Drag to pan</div>
+    </div>
+</div>
+
+<div id="tooltip">
+    <div class="tt-header">
+        <span class="tt-symbol" id="tt-sym"></span>
+        <span class="tt-name" id="tt-name"></span>
+        <span class="tt-rank" id="tt-rank"></span>
+    </div>
+    <div class="tt-price" id="tt-price"></div>
+    <div class="tt-grid">
+        <span class="tt-label">24h</span>
+        <span class="tt-val" id="tt-24h"></span>
+        <span class="tt-label">7d</span>
+        <span class="tt-val" id="tt-7d"></span>
+        <span class="tt-label">Market Cap</span>
+        <span class="tt-val" id="tt-mcap"></span>
+        <span class="tt-label">Volume</span>
+        <span class="tt-val" id="tt-vol"></span>
+    </div>
+    <canvas class="tt-sparkline" id="tt-spark" width="252" height="32"></canvas>
+</div>
+
+<div id="search-overlay">
+    <input id="search-input" type="text" placeholder="Search token (BTC, Ethereum...)" autocomplete="off">
+    <div id="search-results"></div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════════════════════════
+// LAIR COSMOS — A living galaxy of cryptocurrency
+// Every token is a star. You fly through the universe of money.
+// ══════════════════════════════════════════════════════════════════════════════
+
+const canvas = document.getElementById('cosmos');
+const ctx = canvas.getContext('2d');
+let W, H, dpr;
+
+// ─── State ───────────────────────────────────────────────────────────────────
+let stars = [];          // token stars
+let bgStars = [];        // decorative background stars
+let camera = { x: 0, y: 0, zoom: 1, targetZoom: 1, targetX: 0, targetY: 0 };
+let mouse = { x: 0, y: 0, worldX: 0, worldY: 0 };
+let dragging = false;
+let dragStart = { x: 0, y: 0, camX: 0, camY: 0 };
+let hoveredStar = null;
+let selectedStar = null;
+let audioOn = false;
+let clusterMode = false;
+let searchOpen = false;
+let animFrame = 0;
+let totalMcap = 0;
+let totalVol = 0;
+let lastFetch = 0;
+let audioCtx = null;
+
+// ─── Constants ───────────────────────────────────────────────────────────────
+const API_URL = 'https://api.coingecko.com/api/v3/coins/markets';
+const _f = window.cfetch || fetch;
+const PAGES = 3;         // 3 pages × 100 = 300 tokens
+const REFRESH_MS = 120000; // 2 min
+
+// ─── Color palette ───────────────────────────────────────────────────────────
+function changeColor(pct) {
+    if (pct > 15) return { r: 70, g: 255, b: 130, a: 1 };     // bright green
+    if (pct > 5)  return { r: 90, g: 255, b: 160, a: 0.9 };
+    if (pct > 0)  return { r: 120, g: 200, b: 140, a: 0.75 };
+    if (pct > -5) return { r: 200, g: 130, b: 130, a: 0.75 };
+    if (pct > -15) return { r: 255, g: 90, b: 90, a: 0.9 };
+    return { r: 255, g: 60, b: 80, a: 1 };                    // bright red
+}
+
+// ─── Resize ──────────────────────────────────────────────────────────────────
+function resize() {
+    dpr = window.devicePixelRatio || 1;
+    W = window.innerWidth;
+    H = window.innerHeight;
+    canvas.width = W * dpr;
+    canvas.height = H * dpr;
+    canvas.style.width = W + 'px';
+    canvas.style.height = H + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+window.addEventListener('resize', resize);
+resize();
+
+// ─── Background stars (decorative) ──────────────────────────────────────────
+function generateBgStars() {
+    bgStars = [];
+    for (let i = 0; i < 800; i++) {
+        bgStars.push({
+            x: (Math.random() - 0.5) * 8000,
+            y: (Math.random() - 0.5) * 8000,
+            r: Math.random() * 1.2 + 0.2,
+            brightness: Math.random(),
+            twinkleSpeed: Math.random() * 0.02 + 0.005,
+            twinklePhase: Math.random() * Math.PI * 2,
+        });
+    }
+}
+generateBgStars();
+
+// ─── Galaxy spiral layout ────────────────────────────────────────────────────
+function layoutStars() {
+    if (stars.length === 0) return;
+
+    const sorted = [...stars].sort((a, b) => b.mcap - a.mcap);
+
+    // Golden angle spiral — creates stunning galaxy arms
+    const goldenAngle = Math.PI * (3 - Math.sqrt(5));
+    const spread = 18;
+
+    sorted.forEach((star, i) => {
+        const rank = i + 1;
+        const angle = goldenAngle * i;
+        const r = spread * Math.sqrt(i + 1);
+
+        star.targetX = Math.cos(angle) * r;
+        star.targetY = Math.sin(angle) * r;
+        star.rank = rank;
+
+        // Size: market cap logarithmic scale
+        const mcapLog = Math.log10(Math.max(star.mcap, 1));
+        star.radius = Math.max(1.5, Math.min(22, (mcapLog - 5) * 2.5));
+
+        // Brightness from 24h volume relative to mcap
+        const volRatio = star.vol / Math.max(star.mcap, 1);
+        star.brightness = Math.min(1, 0.3 + volRatio * 10);
+
+        // Color from price change
+        const c = changeColor(star.change24h);
+        star.color = c;
+    });
+}
+
+// ─── Cluster layout (by category) ───────────────────────────────────────────
+function layoutClusters() {
+    const categories = {};
+    stars.forEach(s => {
+        const cat = inferCluster(s);
+        (categories[cat] = categories[cat] || []).push(s);
+    });
+
+    const catNames = Object.keys(categories);
+    const angleStep = (Math.PI * 2) / catNames.length;
+    const clusterRadius = 200;
+
+    catNames.forEach((name, ci) => {
+        const cx = Math.cos(angleStep * ci) * clusterRadius;
+        const cy = Math.sin(angleStep * ci) * clusterRadius;
+        const items = categories[name];
+
+        items.forEach((star, si) => {
+            const a = (Math.PI * 2 * si) / items.length;
+            const r = 15 + Math.sqrt(si) * 8;
+            star.targetX = cx + Math.cos(a) * r;
+            star.targetY = cy + Math.sin(a) * r;
+        });
+    });
+}
+
+function inferCluster(star) {
+    const n = (star.name + ' ' + star.symbol).toLowerCase();
+    if (['btc','bitcoin'].some(k => n.includes(k))) return 'Bitcoin';
+    if (['eth','ethereum','polygon','matic','arb','arbitrum','op','optimism','base','l2','zk','starknet','scroll'].some(k => n.includes(k))) return 'L1/L2';
+    if (['usdt','usdc','dai','busd','tusd','frax','usdd','ust','stable'].some(k => n.includes(k))) return 'Stablecoins';
+    if (['doge','shib','pepe','floki','bonk','wif','meme','frog','cat','dog','inu','moon','elon','brett','popcat','neiro'].some(k => n.includes(k))) return 'Meme';
+    if (['uni','aave','curve','comp','sushi','lido','maker','dydx','gmx','pendle','1inch','jupiter','raydium'].some(k => n.includes(k))) return 'DeFi';
+    if (['sol','solana','avax','avalanche','near','apt','aptos','sui','ton','sei','cosmos','atom','dot','polkadot','ada','cardano'].some(k => n.includes(k))) return 'L1/L2';
+    if (['link','chainlink','oracle','pyth','api3','band'].some(k => n.includes(k))) return 'Infrastructure';
+    if (['bnb','okb','ftt','cro','leo','exchange','binance','kcs','mx','gt'].some(k => n.includes(k))) return 'Exchange';
+    if (['render','ai','fetch','ocean','theta','gpu','singularity','worldcoin','tau','neural'].some(k => n.includes(k))) return 'AI / Compute';
+    return 'Other';
+}
+
+// ─── Fetch market data ───────────────────────────────────────────────────────
+async function fetchData() {
+    const fill = document.getElementById('loading-fill');
+
+    try {
+        const results = [];
+        for (let page = 1; page <= PAGES; page++) {
+            if (fill) fill.style.width = ((page / PAGES) * 80) + '%';
+            const res = await _f(
+                `${API_URL}?vs_currency=usd&order=market_cap_desc&per_page=100&page=${page}&sparkline=true&price_change_percentage=24h,7d`
+            );
+            if (!res.ok) throw new Error('API ' + res.status);
+            const data = await res.json();
+            results.push(...data);
+            // Rate limit grace
+            if (page < PAGES) await new Promise(r => setTimeout(r, 1200));
+        }
+
+        if (fill) fill.style.width = '100%';
+
+        totalMcap = 0;
+        totalVol = 0;
+
+        const existing = new Map(stars.map(s => [s.id, s]));
+
+        stars = results.map(coin => {
+            const prev = existing.get(coin.id);
+            totalMcap += coin.market_cap || 0;
+            totalVol += coin.total_volume || 0;
+
+            return {
+                id: coin.id,
+                symbol: (coin.symbol || '').toUpperCase(),
+                name: coin.name || '',
+                mcap: coin.market_cap || 0,
+                vol: coin.total_volume || 0,
+                price: coin.current_price || 0,
+                change24h: coin.price_change_percentage_24h || 0,
+                change7d: coin.price_change_percentage_7d_in_currency || 0,
+                sparkline: coin.sparkline_in_7d?.price || [],
+                rank: coin.market_cap_rank || 999,
+                image: coin.image || '',
+                // Position: keep existing or set to random
+                x: prev ? prev.x : (Math.random() - 0.5) * 500,
+                y: prev ? prev.y : (Math.random() - 0.5) * 500,
+                targetX: prev ? prev.targetX : 0,
+                targetY: prev ? prev.targetY : 0,
+                radius: prev ? prev.radius : 3,
+                brightness: prev ? prev.brightness : 0.5,
+                color: prev ? prev.color : { r: 180, g: 180, b: 200, a: 0.6 },
+                pulsePhase: Math.random() * Math.PI * 2,
+                pulseSpeed: 0.01 + Math.random() * 0.02,
+                orbitAngle: Math.random() * Math.PI * 2,
+                orbitSpeed: (Math.random() - 0.5) * 0.0003,
+                // Track previous price for whale events
+                prevPrice: prev ? prev.price : coin.current_price,
+            };
+        });
+
+        if (clusterMode) layoutClusters();
+        else layoutStars();
+
+        updateHud();
+        lastFetch = Date.now();
+
+        // Fire whale events for big movers
+        stars.forEach(s => {
+            if (s.prevPrice && Math.abs(s.change24h) > 10) {
+                spawnShootingStar(s);
+            }
+        });
+
+        // Hide loading
+        setTimeout(() => {
+            const loading = document.getElementById('loading');
+            if (loading) {
+                loading.classList.add('fade-out');
+                setTimeout(() => loading.remove(), 900);
+            }
+        }, 400);
+
+    } catch (err) {
+        console.error('[Cosmos] Fetch error:', err);
+        // Retry after 10s
+        setTimeout(fetchData, 10000);
+    }
+}
+
+function updateHud() {
+    document.getElementById('hud-tokens').textContent = stars.length + ' stars';
+    document.getElementById('hud-mcap').textContent = '$' + formatLargeNumber(totalMcap);
+    document.getElementById('hud-vol').textContent = 'Vol $' + formatLargeNumber(totalVol);
+}
+
+function formatLargeNumber(n) {
+    if (n >= 1e12) return (n / 1e12).toFixed(2) + 'T';
+    if (n >= 1e9)  return (n / 1e9).toFixed(2) + 'B';
+    if (n >= 1e6)  return (n / 1e6).toFixed(1) + 'M';
+    if (n >= 1e3)  return (n / 1e3).toFixed(0) + 'K';
+    return n.toFixed(0);
+}
+
+function formatPrice(p) {
+    if (p >= 1000) return '$' + p.toLocaleString('en-US', { maximumFractionDigits: 0 });
+    if (p >= 1) return '$' + p.toFixed(2);
+    if (p >= 0.01) return '$' + p.toFixed(4);
+    if (p >= 0.0001) return '$' + p.toFixed(6);
+    return '$' + p.toExponential(2);
+}
+
+// ─── Shooting stars (whale tx visual) ────────────────────────────────────────
+function spawnShootingStar(star) {
+    const el = document.createElement('div');
+    el.className = 'shooting-star';
+    const screenPos = worldToScreen(star.x, star.y);
+    const angle = Math.random() * Math.PI * 2;
+    const dist = 200 + Math.random() * 300;
+    const dx = Math.cos(angle) * dist;
+    const dy = Math.sin(angle) * dist;
+    const dur = 0.8 + Math.random() * 1.2;
+
+    el.style.left = screenPos.x + 'px';
+    el.style.top = screenPos.y + 'px';
+    el.style.setProperty('--dx', dx + 'px');
+    el.style.setProperty('--dy', dy + 'px');
+    el.style.setProperty('--dur', dur + 's');
+    el.style.setProperty('--angle', Math.atan2(dy, dx) + 'rad');
+    el.style.background = star.change24h > 0 ? '#5aff8a' : '#ff5a5a';
+
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), dur * 1000 + 100);
+}
+
+function spawnNebulaPulse(x, y, color) {
+    const el = document.createElement('div');
+    el.className = 'nebula-pulse';
+    el.style.left = x - 50 + 'px';
+    el.style.top = y - 50 + 'px';
+    el.style.width = '100px';
+    el.style.height = '100px';
+    el.style.background = color;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 2100);
+}
+
+// ─── Camera ──────────────────────────────────────────────────────────────────
+function worldToScreen(wx, wy) {
+    return {
+        x: (wx - camera.x) * camera.zoom + W / 2,
+        y: (wy - camera.y) * camera.zoom + H / 2,
+    };
+}
+
+function screenToWorld(sx, sy) {
+    return {
+        x: (sx - W / 2) / camera.zoom + camera.x,
+        y: (sy - H / 2) / camera.zoom + camera.y,
+    };
+}
+
+// ─── Input ───────────────────────────────────────────────────────────────────
+canvas.addEventListener('mousedown', (e) => {
+    if (searchOpen) return;
+    dragging = true;
+    dragStart = { x: e.clientX, y: e.clientY, camX: camera.x, camY: camera.y };
+    canvas.style.cursor = 'grabbing';
+});
+
+window.addEventListener('mousemove', (e) => {
+    mouse.x = e.clientX;
+    mouse.y = e.clientY;
+    const w = screenToWorld(e.clientX, e.clientY);
+    mouse.worldX = w.x;
+    mouse.worldY = w.y;
+
+    if (dragging) {
+        const dx = (e.clientX - dragStart.x) / camera.zoom;
+        const dy = (e.clientY - dragStart.y) / camera.zoom;
+        camera.targetX = dragStart.camX - dx;
+        camera.targetY = dragStart.camY - dy;
+    }
+});
+
+window.addEventListener('mouseup', () => {
+    dragging = false;
+    canvas.style.cursor = 'crosshair';
+});
+
+canvas.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const factor = e.deltaY > 0 ? 0.9 : 1.1;
+    camera.targetZoom = Math.max(0.15, Math.min(12, camera.targetZoom * factor));
+}, { passive: false });
+
+canvas.addEventListener('dblclick', (e) => {
+    const w = screenToWorld(e.clientX, e.clientY);
+    const closest = findClosestStar(w.x, w.y, 40 / camera.zoom);
+    if (closest) {
+        flyTo(closest);
+    }
+});
+
+// ─── Touch support ───────────────────────────────────────────────────────────
+let touchStart = null;
+let pinchDist = null;
+
+canvas.addEventListener('touchstart', (e) => {
+    if (e.touches.length === 1) {
+        touchStart = { x: e.touches[0].clientX, y: e.touches[0].clientY, camX: camera.x, camY: camera.y };
+    } else if (e.touches.length === 2) {
+        pinchDist = Math.hypot(
+            e.touches[1].clientX - e.touches[0].clientX,
+            e.touches[1].clientY - e.touches[0].clientY
+        );
+    }
+}, { passive: true });
+
+canvas.addEventListener('touchmove', (e) => {
+    e.preventDefault();
+    if (e.touches.length === 1 && touchStart) {
+        const dx = (e.touches[0].clientX - touchStart.x) / camera.zoom;
+        const dy = (e.touches[0].clientY - touchStart.y) / camera.zoom;
+        camera.targetX = touchStart.camX - dx;
+        camera.targetY = touchStart.camY - dy;
+    } else if (e.touches.length === 2 && pinchDist !== null) {
+        const newDist = Math.hypot(
+            e.touches[1].clientX - e.touches[0].clientX,
+            e.touches[1].clientY - e.touches[0].clientY
+        );
+        const factor = newDist / pinchDist;
+        camera.targetZoom = Math.max(0.15, Math.min(12, camera.targetZoom * factor));
+        pinchDist = newDist;
+    }
+}, { passive: false });
+
+canvas.addEventListener('touchend', () => {
+    touchStart = null;
+    pinchDist = null;
+});
+
+// ─── Find star under cursor ──────────────────────────────────────────────────
+function findClosestStar(wx, wy, maxDist) {
+    let best = null;
+    let bestD = maxDist * maxDist;
+    for (const s of stars) {
+        const dx = s.x - wx;
+        const dy = s.y - wy;
+        const d = dx * dx + dy * dy;
+        const hitR = Math.max(s.radius + 3, 8) / camera.zoom;
+        if (d < hitR * hitR && d < bestD) {
+            bestD = d;
+            best = s;
+        }
+    }
+    return best;
+}
+
+// ─── Fly camera to star ──────────────────────────────────────────────────────
+function flyTo(star) {
+    selectedStar = star;
+    camera.targetX = star.x;
+    camera.targetY = star.y;
+    camera.targetZoom = Math.max(3, camera.targetZoom);
+    if (audioOn) playNote(star);
+    spawnNebulaPulse(
+        worldToScreen(star.x, star.y).x,
+        worldToScreen(star.x, star.y).y,
+        `rgba(${star.color.r},${star.color.g},${star.color.b},0.4)`
+    );
+}
+
+function resetView() {
+    camera.targetX = 0;
+    camera.targetY = 0;
+    camera.targetZoom = 1;
+    selectedStar = null;
+}
+
+// ─── Tooltip ─────────────────────────────────────────────────────────────────
+function showTooltip(star) {
+    const tt = document.getElementById('tooltip');
+    document.getElementById('tt-sym').textContent = star.symbol;
+    document.getElementById('tt-name').textContent = star.name;
+    document.getElementById('tt-rank').textContent = '#' + star.rank;
+    document.getElementById('tt-price').textContent = formatPrice(star.price);
+
+    const e24 = document.getElementById('tt-24h');
+    e24.textContent = (star.change24h >= 0 ? '+' : '') + star.change24h.toFixed(2) + '%';
+    e24.className = 'tt-val ' + (star.change24h >= 0 ? 'tt-green' : 'tt-red');
+
+    const e7d = document.getElementById('tt-7d');
+    e7d.textContent = (star.change7d >= 0 ? '+' : '') + (star.change7d || 0).toFixed(2) + '%';
+    e7d.className = 'tt-val ' + ((star.change7d || 0) >= 0 ? 'tt-green' : 'tt-red');
+
+    document.getElementById('tt-mcap').textContent = '$' + formatLargeNumber(star.mcap);
+    document.getElementById('tt-vol').textContent = '$' + formatLargeNumber(star.vol);
+
+    // Sparkline
+    drawSparkline(star);
+
+    // Position tooltip
+    const sp = worldToScreen(star.x, star.y);
+    let tx = sp.x + 20;
+    let ty = sp.y - 30;
+    if (tx + 280 > W) tx = sp.x - 280;
+    if (ty + 180 > H) ty = H - 190;
+    if (ty < 10) ty = 10;
+
+    tt.style.left = tx + 'px';
+    tt.style.top = ty + 'px';
+    tt.style.display = 'block';
+}
+
+function hideTooltip() {
+    document.getElementById('tooltip').style.display = 'none';
+}
+
+function drawSparkline(star) {
+    const c = document.getElementById('tt-spark');
+    const sc = c.getContext('2d');
+    const data = star.sparkline;
+    if (!data || data.length < 2) return;
+
+    c.width = 252; c.height = 32;
+    sc.clearRect(0, 0, 252, 32);
+
+    const min = Math.min(...data);
+    const max = Math.max(...data);
+    const range = max - min || 1;
+
+    sc.beginPath();
+    data.forEach((v, i) => {
+        const x = (i / (data.length - 1)) * 252;
+        const y = 32 - ((v - min) / range) * 28 - 2;
+        i === 0 ? sc.moveTo(x, y) : sc.lineTo(x, y);
+    });
+
+    const isUp = data[data.length - 1] >= data[0];
+    sc.strokeStyle = isUp ? 'rgba(90,255,138,0.7)' : 'rgba(255,90,90,0.7)';
+    sc.lineWidth = 1.5;
+    sc.stroke();
+
+    // Fill gradient
+    const lastX = 252;
+    const lastY = 32 - ((data[data.length - 1] - min) / range) * 28 - 2;
+    sc.lineTo(lastX, 32);
+    sc.lineTo(0, 32);
+    sc.closePath();
+    const grad = sc.createLinearGradient(0, 0, 0, 32);
+    grad.addColorStop(0, isUp ? 'rgba(90,255,138,0.12)' : 'rgba(255,90,90,0.12)');
+    grad.addColorStop(1, 'transparent');
+    sc.fillStyle = grad;
+    sc.fill();
+}
+
+// ─── Audio: sonify the market ────────────────────────────────────────────────
+function initAudio() {
+    if (audioCtx) return;
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+}
+
+function playNote(star) {
+    if (!audioCtx) return;
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+
+    // Map price rank to note frequency (pentatonic scale for beauty)
+    const pentatonic = [261.6, 293.7, 329.6, 392.0, 440.0, 523.3, 587.3, 659.3, 784.0, 880.0];
+    const idx = Math.min(star.rank - 1, pentatonic.length - 1);
+    const freq = pentatonic[Math.max(0, idx)];
+
+    // Detune by change (positive = higher)
+    const detune = star.change24h * 5;
+
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    const filter = audioCtx.createBiquadFilter();
+
+    osc.type = 'sine';
+    osc.frequency.value = freq;
+    osc.detune.value = detune;
+
+    filter.type = 'lowpass';
+    filter.frequency.value = 2000;
+    filter.Q.value = 2;
+
+    const vol = 0.08 * star.brightness;
+    gain.gain.setValueAtTime(0, audioCtx.currentTime);
+    gain.gain.linearRampToValueAtTime(vol, audioCtx.currentTime + 0.05);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1.5);
+
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(audioCtx.destination);
+
+    osc.start(audioCtx.currentTime);
+    osc.stop(audioCtx.currentTime + 1.6);
+}
+
+// Ambient drone: low bass that pulsates with total market
+let ambientOsc = null;
+let ambientGain = null;
+
+function startAmbient() {
+    if (!audioCtx) initAudio();
+    if (ambientOsc) return;
+
+    ambientOsc = audioCtx.createOscillator();
+    ambientGain = audioCtx.createGain();
+    const filter = audioCtx.createBiquadFilter();
+
+    ambientOsc.type = 'sine';
+    ambientOsc.frequency.value = 55; // Low A
+
+    filter.type = 'lowpass';
+    filter.frequency.value = 200;
+
+    ambientGain.gain.value = 0;
+    ambientGain.gain.linearRampToValueAtTime(0.03, audioCtx.currentTime + 2);
+
+    ambientOsc.connect(filter);
+    filter.connect(ambientGain);
+    ambientGain.connect(audioCtx.destination);
+    ambientOsc.start();
+}
+
+function stopAmbient() {
+    if (ambientGain) {
+        ambientGain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 1);
+        setTimeout(() => {
+            try { ambientOsc.stop(); } catch {}
+            ambientOsc = null;
+            ambientGain = null;
+        }, 1100);
+    }
+}
+
+function toggleAudio() {
+    initAudio();
+    audioOn = !audioOn;
+    document.getElementById('audio-btn').classList.toggle('active', audioOn);
+    if (audioOn) {
+        startAmbient();
+        // Play a welcome chord
+        setTimeout(() => { if (stars[0]) playNote(stars[0]); }, 100);
+        setTimeout(() => { if (stars[1]) playNote(stars[1]); }, 250);
+        setTimeout(() => { if (stars[2]) playNote(stars[2]); }, 400);
+    } else {
+        stopAmbient();
+    }
+}
+
+// Random ambient notes from top movers
+function ambientTick() {
+    if (!audioOn || stars.length === 0) return;
+
+    // Occasionally play a note from a random active token
+    if (Math.random() < 0.02) {
+        const active = stars.filter(s => Math.abs(s.change24h) > 3);
+        if (active.length > 0) {
+            const pick = active[Math.floor(Math.random() * active.length)];
+            playNote(pick);
+        }
+    }
+}
+
+// ─── Search ──────────────────────────────────────────────────────────────────
+function toggleSearch() {
+    searchOpen = !searchOpen;
+    const overlay = document.getElementById('search-overlay');
+    overlay.classList.toggle('open', searchOpen);
+    if (searchOpen) {
+        const inp = document.getElementById('search-input');
+        inp.value = '';
+        inp.focus();
+        document.getElementById('search-results').innerHTML = '';
+    }
+}
+
+document.addEventListener('keydown', (e) => {
+    if (e.key === '/' && !searchOpen) {
+        e.preventDefault();
+        toggleSearch();
+    }
+    if (e.key === 'Escape' && searchOpen) {
+        toggleSearch();
+    }
+});
+
+const searchInput = document.getElementById('search-input');
+searchInput.addEventListener('input', () => {
+    const q = searchInput.value.toLowerCase().trim();
+    const results = document.getElementById('search-results');
+    if (!q) { results.innerHTML = ''; return; }
+
+    const matches = stars.filter(s =>
+        s.symbol.toLowerCase().includes(q) ||
+        s.name.toLowerCase().includes(q)
+    ).slice(0, 8);
+
+    results.innerHTML = matches.map(s => `
+        <div class="search-item" data-id="${s.id}">
+            <span class="si-sym">${s.symbol}</span>
+            <span class="si-name">${s.name}</span>
+            <span style="opacity:0.3">#${s.rank}</span>
+        </div>
+    `).join('');
+
+    results.querySelectorAll('.search-item').forEach(el => {
+        el.addEventListener('click', () => {
+            const star = stars.find(s => s.id === el.dataset.id);
+            if (star) flyTo(star);
+            toggleSearch();
+        });
+    });
+});
+
+// ─── Cluster toggle ──────────────────────────────────────────────────────────
+function toggleClusters() {
+    clusterMode = !clusterMode;
+    document.getElementById('cluster-btn').classList.toggle('active', clusterMode);
+    if (clusterMode) layoutClusters();
+    else layoutStars();
+}
+
+// ─── Render loop ─────────────────────────────────────────────────────────────
+function render() {
+    animFrame++;
+    requestAnimationFrame(render);
+
+    // Smooth camera
+    camera.x += (camera.targetX - camera.x) * 0.08;
+    camera.y += (camera.targetY - camera.y) * 0.08;
+    camera.zoom += (camera.targetZoom - camera.zoom) * 0.08;
+
+    ctx.clearRect(0, 0, W, H);
+
+    // ── Deep space background ──
+    const bgGrad = ctx.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, Math.max(W, H));
+    bgGrad.addColorStop(0, '#060318');
+    bgGrad.addColorStop(0.5, '#030110');
+    bgGrad.addColorStop(1, '#010008');
+    ctx.fillStyle = bgGrad;
+    ctx.fillRect(0, 0, W, H);
+
+    // ── Background stars (parallax) ──
+    const parallax = 0.15;
+    ctx.save();
+    for (const bs of bgStars) {
+        const sx = (bs.x - camera.x * parallax) * camera.zoom * 0.3 + W / 2;
+        const sy = (bs.y - camera.y * parallax) * camera.zoom * 0.3 + H / 2;
+        if (sx < -10 || sx > W + 10 || sy < -10 || sy > H + 10) continue;
+
+        const twinkle = 0.3 + 0.7 * (0.5 + 0.5 * Math.sin(animFrame * bs.twinkleSpeed + bs.twinklePhase));
+        ctx.globalAlpha = twinkle * 0.5;
+        ctx.fillStyle = '#ccd';
+        ctx.beginPath();
+        ctx.arc(sx, sy, bs.r, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.restore();
+
+    // ── Nebula dust (subtle gas clouds) ──
+    if (camera.zoom < 3) {
+        ctx.save();
+        const nebulaColors = [
+            { x: -100, y: -80, r: 250, color: 'rgba(97,121,255,0.015)' },
+            { x: 120, y: 60, r: 200, color: 'rgba(255,97,212,0.01)' },
+            { x: -50, y: 100, r: 180, color: 'rgba(120,255,180,0.008)' },
+        ];
+        for (const n of nebulaColors) {
+            const sp = worldToScreen(n.x, n.y);
+            const nr = n.r * camera.zoom;
+            if (sp.x + nr < -100 || sp.x - nr > W + 100 || sp.y + nr < -100 || sp.y - nr > H + 100) continue;
+            const g = ctx.createRadialGradient(sp.x, sp.y, 0, sp.x, sp.y, nr);
+            g.addColorStop(0, n.color);
+            g.addColorStop(1, 'transparent');
+            ctx.fillStyle = g;
+            ctx.fillRect(sp.x - nr, sp.y - nr, nr * 2, nr * 2);
+        }
+        ctx.restore();
+    }
+
+    // ── Token stars ──
+    hoveredStar = null;
+    const hoverDist = 20 / camera.zoom;
+
+    for (const star of stars) {
+        // Smooth position interpolation
+        star.x += (star.targetX - star.x) * 0.04;
+        star.y += (star.targetY - star.y) * 0.04;
+
+        // Micro-orbit
+        star.orbitAngle += star.orbitSpeed;
+        const ox = Math.cos(star.orbitAngle) * 0.5;
+        const oy = Math.sin(star.orbitAngle) * 0.3;
+
+        const sp = worldToScreen(star.x + ox, star.y + oy);
+        const screenR = star.radius * camera.zoom;
+
+        // Frustum cull
+        if (sp.x + screenR * 3 < 0 || sp.x - screenR * 3 > W ||
+            sp.y + screenR * 3 < 0 || sp.y - screenR * 3 > H) continue;
+
+        // Pulse
+        star.pulsePhase += star.pulseSpeed;
+        const pulse = 1 + 0.08 * Math.sin(star.pulsePhase);
+        const r = screenR * pulse;
+
+        const { color } = star;
+
+        // Glow (outer)
+        if (r > 2) {
+            const glowR = r * 3;
+            const glow = ctx.createRadialGradient(sp.x, sp.y, r * 0.5, sp.x, sp.y, glowR);
+            glow.addColorStop(0, `rgba(${color.r},${color.g},${color.b},${0.15 * star.brightness})`);
+            glow.addColorStop(1, 'transparent');
+            ctx.fillStyle = glow;
+            ctx.beginPath();
+            ctx.arc(sp.x, sp.y, glowR, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        // Core
+        ctx.beginPath();
+        ctx.arc(sp.x, sp.y, Math.max(r, 0.8), 0, Math.PI * 2);
+        const coreAlpha = 0.5 + 0.5 * star.brightness;
+        ctx.fillStyle = `rgba(${color.r},${color.g},${color.b},${coreAlpha})`;
+        ctx.fill();
+
+        // Bright center (white hot)
+        if (r > 3) {
+            ctx.beginPath();
+            ctx.arc(sp.x, sp.y, r * 0.35, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(255,255,255,${0.3 * star.brightness})`;
+            ctx.fill();
+        }
+
+        // Label (show symbol for larger/closer stars)
+        if (screenR > 6 || (camera.zoom > 2 && screenR > 3)) {
+            ctx.save();
+            ctx.font = `${Math.max(8, Math.min(12, screenR * 0.8))}px -apple-system, system-ui, sans-serif`;
+            ctx.fillStyle = `rgba(255,255,255,${Math.min(0.8, screenR / 15)})`;
+            ctx.textAlign = 'center';
+            ctx.fillText(star.symbol, sp.x, sp.y + r + 12);
+            ctx.restore();
+        }
+
+        // Hover detection
+        const dx = mouse.worldX - (star.x + ox);
+        const dy = mouse.worldY - (star.y + oy);
+        if (dx * dx + dy * dy < (star.radius + hoverDist) * (star.radius + hoverDist)) {
+            if (!hoveredStar || star.radius > hoveredStar.radius || star.mcap > hoveredStar.mcap) {
+                hoveredStar = star;
+            }
+        }
+    }
+
+    // ── Cluster labels ──
+    if (clusterMode && camera.zoom < 2.5) {
+        const seen = new Set();
+        for (const star of stars) {
+            const cat = inferCluster(star);
+            if (seen.has(cat)) continue;
+            seen.add(cat);
+            // find centroid
+            const catStars = stars.filter(s => inferCluster(s) === cat);
+            const cx = catStars.reduce((a, s) => a + s.targetX, 0) / catStars.length;
+            const cy = catStars.reduce((a, s) => a + s.targetY, 0) / catStars.length;
+            const sp = worldToScreen(cx, cy - 30 / camera.zoom);
+            ctx.save();
+            ctx.font = '600 10px -apple-system, system-ui, sans-serif';
+            ctx.fillStyle = 'rgba(255,255,255,0.18)';
+            ctx.textAlign = 'center';
+            ctx.letterSpacing = '0.15em';
+            ctx.fillText(cat.toUpperCase(), sp.x, sp.y);
+            ctx.restore();
+        }
+    }
+
+    // ── Tooltip ──
+    if (hoveredStar) {
+        showTooltip(hoveredStar);
+        canvas.style.cursor = 'pointer';
+        // Play note on hover if audio is on
+        if (audioOn && hoveredStar !== selectedStar) {
+            if (animFrame % 30 === 0) playNote(hoveredStar);
+        }
+    } else if (!dragging) {
+        hideTooltip();
+        canvas.style.cursor = 'crosshair';
+    }
+
+    // ── Ambient audio tick ──
+    ambientTick();
+
+    // ── Refresh data ──
+    if (Date.now() - lastFetch > REFRESH_MS && lastFetch > 0) {
+        fetchData();
+    }
+}
+
+// ─── Start ───────────────────────────────────────────────────────────────────
+fetchData();
+render();
+</script>
+</body>
+</html>

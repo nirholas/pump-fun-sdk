@@ -1,0 +1,1429 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width">
+	<title>Music app</title>
+	<meta name="permissions" content="unsandboxed">
+	<meta name="aspect-ratio" content="1/1">
+	<meta name="capabilities" content=".mp3,.flac,.m4a,.wav,.ogg, music_player">
+	<meta name="lair-include" content="material-symbols-rounded lair.css">
+	<meta name="lair-icon"
+		content="<svg version='1.1' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' width='51' height='49.50242' viewBox='0,0,51,49.50242'><g transform='translate(-214.5,-154.75988)'><g data-paper-data='{&quot;isPaintingLayer&quot;:true}' fill-rule='nonzero' stroke-linejoin='miter' stroke-miterlimit='10' stroke-dasharray='' stroke-dashoffset='0' style='mix-blend-mode: normal'><path d='M214.5,177.00988c0,-14.08326 4.66674,-22.25 18.75,-22.25c14.08326,0 32.25,14.16674 32.25,28.25c0,14.08326 -11.89966,17.91973 -23.5,20.5c-20.43901,4.54627 -27.5,-12.41674 -27.5,-26.5z' fill='#6179ff' stroke='none' stroke-width='0' stroke-linecap='butt'/><path d='M235.26333,186.05913l-2.26753,-13.83446l11.61789,0.96088l2.46892,13.36372' fill='none' stroke='#ffffff' stroke-width='3.5' stroke-linecap='round'/><path d='M227.30363,185.33244c0.21528,-2.60295 2.4999,-4.53854 5.10285,-4.32326c2.60295,0.21528 4.53854,2.49991 4.32326,5.10286c-0.21528,2.60295 -2.49991,4.53853 -5.10286,4.32325c-2.60295,-0.21528 -4.53853,-2.4999 -4.32325,-5.10285z' fill='#ffffff' stroke='none' stroke-width='0' stroke-linecap='butt'/><path d='M239.88904,186.49159c0.20118,-2.43237 2.33609,-4.24111 4.76846,-4.03994c2.43237,0.20118 4.24111,2.33608 4.03994,4.76845c-0.20118,2.43237 -2.33608,4.24112 -4.76845,4.03995c-2.43237,-0.20118 -4.24112,-2.33609 -4.03995,-4.76846z' fill='#ffffff' stroke='none' stroke-width='0' stroke-linecap='butt'/></g></g></svg>">
+	<style>
+		html {
+			height: 100%;
+			width: 100%;
+		}
+
+		body {
+			height: calc(100%);
+			font-family: "Poppins", sans-serif;
+			margin: 0;
+			background: var(--col-bg1);
+			color: var(--col-txt1);
+			overflow: hidden;
+		}
+
+		.mainUI {
+			height: 100%;
+			width: 100%;
+			display: flex;
+			flex-direction: column;
+		}
+
+		.pagebody {
+			display: relative;
+		}
+
+		.material-symbols-rounded {
+			opacity: .7;
+			font-weight: 200 !important;
+		}
+
+		.main-flex-container {
+			display: flex;
+			flex-direction: row;
+			height: calc(100% - 2em);
+			width: calc(100% - 2em);
+			position: absolute;
+			top: 0;
+			z-index: 2;
+			left: 0;
+			padding: 1em;
+			justify-content: center;
+			align-items: stretch;
+		}
+
+		#particleCanvas {
+			height: 100%;
+			width: 100%;
+			z-index: 1;
+			display: flex;
+			transition: opacity .3s;
+		}
+
+		#queue {
+			padding: 1em;
+			flex: 1;
+			display: flex;
+			flex-direction: column;
+			padding-bottom: 0 !important;
+			gap: .5em;
+			transition: .5s cubic-bezier(0.36, 0.38, 0, 0.94);
+			overflow-y: hidden;
+			width: 0;
+		}
+
+		.plrTools {
+			display: flex;
+			flex-direction: row;
+			align-items: center;
+			border-bottom: 1px solid #ffffff1f;
+			gap: .5em;
+			padding-bottom: .5em;
+		}
+
+		div#player {
+			padding: 1em;
+			background-color: var(--col-bg2);
+			display: flex;
+			gap: .5em;
+			flex-direction: column;
+			z-index: 99;
+		}
+
+		.player_actions {
+			display: flex;
+			flex-direction: row;
+			align-items: center;
+			justify-content: space-evenly;
+			gap: .5em;
+
+			&>#baseimg {
+				height: 50px;
+				width: 50px;
+				max-width: 150px;
+				border-radius: var(--siz-radius1);
+				object-fit: cover;
+			}
+
+			&>.details {
+				display: flex;
+				flex-direction: column;
+				justify-content: center;
+				flex-wrap: nowrap;
+				width: 0;
+				flex: 1;
+
+
+				&>.track-name {
+					font-size: 1em;
+					white-space: nowrap;
+					overflow: hidden;
+					text-overflow: ellipsis;
+					margin: 0;
+				}
+
+				&>.ArtistName {
+					opacity: 0.5;
+					font-size: 0.8rem;
+				}
+			}
+		}
+
+		.now-playing {
+			font-size: 12px;
+		}
+
+		.track-artist {
+			font-size: 1rem;
+			opacity: 0.5;
+		}
+
+		.buttons {
+
+			display: flex;
+			flex-direction: row;
+			align-items: center;
+			width: fit-content;
+			justify-content: space-evenly;
+			background: #ffffff1f;
+			border: 1px solid #ffffff1f;
+			border-radius: var(--siz-radius1);
+			overflow: hidden;
+			gap: 1px;
+
+			&>span {
+				background-color: var(--col-bg2);
+				padding: 0.5rem;
+				font-size: 1.5em;
+			}
+		}
+
+		.playpause-track,
+		.prev-track,
+		.next-track {
+			opacity: 0.8;
+			transition: .2s;
+			cursor: pointer;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+		}
+
+		.playpause-track:hover,
+		.prev-track:hover,
+		.next-track:hover {
+			opacity: 1.0;
+			filter: brightness(120%);
+		}
+
+		div#visualizer {
+			width: 0;
+			flex: 0;
+			align-items: center;
+			justify-content: center;
+		}
+
+		.slider_container {
+			width: calc(100% - 0em);
+			display: flex;
+			justify-content: space-around;
+			align-items: center;
+			margin: auto;
+			gap: .5em;
+		}
+
+		.seek_slider,
+		.volume_slider {
+			-webkit-appearance: none;
+			-moz-appearance: none;
+			appearance: none;
+			height: 2px;
+			border-radius: 1rem;
+			background: #272727;
+			opacity: 0.7;
+			-webkit-transition: .2s;
+			transition: .2s;
+			width: 100%;
+			cursor: pointer;
+		}
+
+		.seek_slider::-webkit-slider-thumb,
+		.volume_slider::-webkit-slider-thumb {
+			-webkit-appearance: none;
+			-moz-appearance: none;
+			appearance: none;
+			width: 15px;
+			height: 15px;
+			cursor: grab;
+			background: #ffffff;
+			border-radius: 10px;
+
+			&:active {
+				cursor: grabbing;
+			}
+		}
+
+		@keyframes pop {
+			0% {
+				opacity: 0;
+			}
+
+			100% {
+				opacity: 1;
+			}
+
+		}
+
+		.seek_slider:hover,
+		.volume_slider:hover {
+			opacity: 1.0;
+		}
+
+		.current-time,
+		.total-duration {
+			font-size: 0.8rem;
+			opacity: 0.5;
+			font-family: 'Courier New', Courier, monospace;
+		}
+
+		i.fa-volume-down,
+		i.fa-volume-up {
+			padding: 10px;
+		}
+
+		i.fa-play-circle,
+		i.fa-pause-circle,
+		i.fa-step-forward,
+		i.fa-step-backward {
+			cursor: pointer;
+		}
+
+		.show {
+			display: flex !important;
+		}
+
+		.queuewinnav {
+			display: flex;
+			width: 100%;
+			flex-direction: row;
+			align-items: center;
+			justify-content: space-between;
+			border-bottom: 1px solid #80808054;
+			padding-bottom: 0.5rem;
+		}
+
+		.queuewinnav .buttonside button:hover {
+			background: #1f1f1f;
+		}
+
+		.queuenavtit {
+			font-size: 1.5rem;
+		}
+
+		.trackwid {
+			display: flex;
+			flex-direction: row;
+			flex-wrap: nowrap;
+			justify-content: space-between;
+			align-items: center;
+			padding: 0.3rem 0.4rem;
+			background: var(--col-bg2);
+			margin: 0.3rem 0;
+			border-radius: var(--siz-radius1);
+			border: 1px solid #ffffff1f;
+		}
+
+		.detailswid {
+			overflow: hidden;
+			text-overflow: ellipsis;
+
+			&>b {
+				font-weight: normal;
+			}
+		}
+
+		.buttonside {
+			display: flex;
+			flex-wrap: wrap;
+			justify-content: flex-end;
+		}
+
+		.detailswid * {
+			display: block;
+			white-space: nowrap;
+			overflow: hidden;
+			text-overflow: ellipsis;
+		}
+
+		.trackwid .icon {
+			padding: 0.5rem;
+			background: var(--col-bg1);
+			margin-right: 0.5rem;
+			border-radius: 0.3rem;
+			aspect-ratio: 1 / 1;
+			display: grid;
+			align-items: center;
+			justify-items: center;
+			text-shadow: 0 0 1rem black;
+		}
+
+		div#tracklist {
+			flex: 1;
+			overflow: hidden;
+			overflow-y: auto;
+			padding-bottom: 50px;
+			padding-right: 5px;
+		}
+
+		.rmtrfrqu {
+			display: none;
+			cursor: pointer;
+		}
+
+		.trackwid:hover .rmtrfrqu {
+			display: block;
+		}
+
+		.createtrackbtn {
+			position: absolute;
+			bottom: 1rem;
+			border-radius: 50%;
+			aspect-ratio: 1 / 1;
+			padding: .7em;
+			line-height: 0;
+			right: 1rem;
+			background: #262626;
+			box-shadow: 0 3px 10px #0000008c;
+			color: white;
+			cursor: pointer;
+			border: 1px solid #ffffff1f;
+		}
+
+		.iconanddatdiv {
+			display: flex;
+			flex-direction: row;
+			overflow: hidden;
+		}
+
+		#primaryalert {
+			border: 0;
+			height: 100%;
+			width: 100%;
+			margin: 0;
+			display: grid;
+			justify-content: center;
+			justify-items: center;
+			align-items: center;
+			align-content: center;
+			background: #101010;
+			color: white;
+		}
+
+		#primaryalert p {
+			max-width: 216px;
+			text-align: center;
+			opacity: 0.5;
+			font-size: 0.8rem;
+		}
+
+		#primaryalert button {
+			display: grid;
+			padding: 1rem;
+			background: #141414;
+			border-radius: 50%;
+			border: 0;
+			cursor: pointer;
+			color: white;
+			margin-top: 1rem;
+			animation: skibidibtn 10s infinite;
+		}
+
+		.screen {
+			display: flex;
+			flex-direction: row;
+			flex: 1;
+			align-items: stretch;
+			height: 0;
+
+			&>.single_scrn {
+				flex: 1;
+				display: flex;
+				flex-direction: column;
+				overflow: hidden;
+				position: relative;
+			}
+		}
+
+		@keyframes skibidibtn {
+			0% {
+				box-shadow: 5px 5px 1rem red inset, -5px -5px 1rem #ffe000 inset;
+			}
+
+			25% {
+				box-shadow: 5px 0px 1rem #ffde4d inset, -5px 0px 1rem #ff41e6 inset;
+			}
+
+			75% {
+				box-shadow: 0px 5px 1rem #68c1ff inset, -0px -5px 1rem #3cff6f inset;
+			}
+
+			100% {
+				box-shadow: 5px 5px 1rem red inset, -5px -5px 1rem #ffe000 inset;
+			}
+		}
+
+		#primaryalert button span {
+			color: #b3b3b3;
+			font-size: 3rem;
+			font-weight: lighter;
+		}
+
+		#primaryalert a {
+			margin-top: 2rem;
+			font-size: 0.7rem;
+			background: #181818;
+			padding: 0.3rem 0.7rem;
+			border-radius: 2rem;
+			color: #afafaf;
+			cursor: pointer;
+		}
+
+		button#queuebtn {
+			display: flex;
+			border: 0;
+			padding: .5em;
+			font-size: inherit;
+			color: inherit;
+		}
+
+		.buttonscont {
+			display: flex;
+			flex-direction: row;
+			align-items: center;
+			gap: .5em;
+			cursor: pointer;
+
+			& .audiefbtn {
+				display: flex;
+				padding: .5rem;
+				gap: 0;
+
+				&:hover {
+					filter: brightness(110%);
+				}
+			}
+		}
+
+		.divider_vert {
+			height: 10px;
+			background-color: #89898987;
+			width: 1px;
+		}
+
+		.volume_slider_container {
+			display: flex;
+			flex-direction: row;
+			width: fit-content;
+			gap: 0;
+			justify-content: space-between;
+
+			&>input {
+				width: 0;
+				flex: 0;
+				min-width: none;
+				transition: .5s cubic-bezier(0.36, 0.38, 0, 0.94);
+				overflow: hidden;
+			}
+
+			&:hover {
+				gap: .5em;
+			}
+
+			&:hover>input {
+				width: 200px;
+				flex: 1;
+				overflow: visible;
+				animation: pop .3s;
+			}
+		}
+
+		#lyrics {
+			position: absolute;
+			z-index: 99;
+			text-shadow: 0 0 10px var(--col-bg1);
+		}
+	</style>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/color-thief/2.3.0/color-thief.umd.js"></script>
+
+</head>
+
+<body>
+
+	<input type="file" id="lrc_input" accept=".lrc" style="display: none;" />
+	<div class="mainUI">
+		<div class="screen">
+			<div id="queue" class="single_scrn">
+				<div class="queuewinnav">
+					<span class="queuenavtit">Queue
+						<div class="now-playing">Playing 1 / 1</div>
+					</span>
+					<div class="buttonside">
+						<div class="buttons">
+							<span class="material-symbols-rounded" onclick="openfromfiles()">
+								add
+							</span>
+							<span onclick="shuffle()" class="material-symbols-rounded">
+								shuffle
+							</span>
+						</div>
+
+					</div>
+				</div>
+				<div id="tracklist">
+					<div class="trackwid">
+						<div class="icon">
+							<span class="material-symbols-rounded">
+								music_note
+							</span>
+						</div>
+						<div class="detailswid">
+							<b class="TrackName">Track Name</b>
+							<span class="ArtistName">Artist Name</span>
+						</div>
+						<span class="material-symbols-rounded rmtrfrqu">
+							close
+						</span>
+					</div>
+				</div>
+			</div>
+
+			<div class="single_scrn" id="visualizer">
+				<canvas id="particleCanvas"></canvas>
+				<div id="lyrics"></div>
+			</div>
+		</div>
+		<div id="player">
+			<div class="plrTools">
+				<div class="slider_container">
+					<div class="current-time">00:00</div>
+					<input type="range" min="1" max="100" value="0" class="seek_slider" onchange="seekTo()">
+					<div class="total-duration">00:00</div>
+				</div>
+				<div class="divider_vert"></div>
+				<span class="material-symbols-rounded" id="lyribtn">
+					lyrics
+				</span>
+				<span class="material-symbols-rounded" onclick="vizchange()">
+					equalizer
+				</span>
+				<div class="divider_vert"></div>
+				<div class="slider_container volume_slider_container">
+					<input type="range" min="1" max="100" value="99" class="volume_slider" onchange="setVolume()">
+					<span class="material-symbols-rounded" id="volume_status_icon">
+						volume_up
+					</span>
+				</div>
+			</div>
+			<div class="player_actions">
+				<img id="baseimg" src="">
+				<div class="details">
+					<div class="track-name">Track Name</div>
+					<div class="track-artist">Track Artist</div>
+				</div>
+				<div class="buttons">
+					<span class="prev-track material-symbols-rounded" onclick="prevTrack()">
+						skip_previous
+					</span>
+					<span class="playpause-track material-symbols-rounded" onclick="playpauseTrack()">
+						play_circle
+					</span>
+					<span class="next-track material-symbols-rounded" onclick="nextTrack()">
+						skip_next
+					</span>
+				</div>
+				<div class="buttons">
+					<span id="viztogglebtn" class="audiefbtn material-symbols-rounded" onclick="toggleQueue()">
+						arrow_drop_up
+					</span>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<dialog id="primaryalert">
+		<p>You don't have any songs in your queue! Click here to open some:</p>
+		<button onclick="openfromfiles()"><span class="material-symbols-rounded">
+				add
+			</span></button>
+		<a onclick="theskibidiscan()">Scan everything for music</a>
+	</dialog>
+
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jsmediatags/3.9.5/jsmediatags.min.js"></script>
+
+	<canvas id="blobCanvas" width="512" height="512" style="display:none;"></canvas>
+	<script>
+
+
+		let now_playing = document.querySelector(".now-playing");
+		let primaryalert = document.querySelector("#primaryalert");
+
+		let track_name = document.querySelector(".track-name");
+		let track_artist = document.querySelector(".track-artist");
+		let baseimg = document.querySelector("#baseimg");
+
+		let playpause_btn = document.querySelector(".playpause-track");
+		let next_btn = document.querySelector(".next-track");
+		let prev_btn = document.querySelector(".prev-track");
+
+		let seek_slider = document.querySelector(".seek_slider");
+		let volume_slider = document.querySelector(".volume_slider");
+		let curr_time = document.querySelector(".current-time");
+		let total_duration = document.querySelector(".total-duration");
+
+		let track_index = 0;
+		let isPlaying = false;
+		let updateTimer;
+
+
+		var curr_track = document.createElement('audio');
+
+		let track_list = {};
+
+		primaryalert.showModal();
+
+		function generateGradientBlob(trackName) {
+			const canvas = document.getElementById('blobCanvas');
+			const ctx = canvas.getContext('2d');
+			canvas.width = 32;
+			canvas.height = 32;
+			const width = 32;
+			const height = 32;
+
+			const baseColorRGB = window.parent.stringToPastelColor(trackName);
+			const hsl = rgbStringToHSL(baseColorRGB);
+
+			const gradient = ctx.createRadialGradient(width / 2, height / 2, 4, width / 2, height / 2, width / 2);
+			gradient.addColorStop(0, `hsl(${(hsl.h + 15) % 360}, ${hsl.s}%, ${hsl.l}%)`);
+			gradient.addColorStop(1, `hsl(${(hsl.h - 15 + 360) % 360}, ${hsl.s}%, ${hsl.l}%)`);
+
+			ctx.fillStyle = gradient;
+			ctx.fillRect(0, 0, width, height);
+
+			const baseImage = ctx.getImageData(0, 0, width, height);
+			const noise = generatePerlinNoise(width, height);
+			const data = baseImage.data;
+
+			for (let i = 0; i < noise.length; i++) {
+				const val = (noise[i] + 1) / 2;
+				const pixelIndex = i * 4;
+				data[pixelIndex] = data[pixelIndex] * val;
+				data[pixelIndex + 1] = data[pixelIndex + 1] * val;
+				data[pixelIndex + 2] = data[pixelIndex + 2] * val;
+				data[pixelIndex + 3] = 255;
+			}
+
+			ctx.putImageData(baseImage, 0, 0);
+			const baseimg = document.getElementById('baseimg');
+			baseimg.src = canvas.toDataURL();
+
+			function rgbStringToHSL(rgbStr) {
+				const match = rgbStr.match(/\d+/g);
+				const r = parseInt(match[0]) / 255;
+				const g = parseInt(match[1]) / 255;
+				const b = parseInt(match[2]) / 255;
+
+				const max = Math.max(r, g, b), min = Math.min(r, g, b);
+				let h, s, l = (max + min) / 2;
+
+				if (max === min) {
+					h = s = 0;
+				} else {
+					const d = max - min;
+					s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+					switch (max) {
+						case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+						case g: h = (b - r) / d + 2; break;
+						case b: h = (r - g) / d + 4; break;
+					}
+					h *= 60;
+				}
+
+				return {
+					h: Math.round(h),
+					s: Math.round(s * 100),
+					l: Math.round(l * 100)
+				};
+			}
+
+			function generatePerlinNoise(w, h) {
+				const noise = [];
+				const grad = [];
+
+				for (let i = 0; i < (w + 1) * (h + 1); i++) {
+					grad.push(Math.random() * 2 - 1, Math.random() * 2 - 1);
+				}
+
+				function dotGrid(ix, iy, x, y) {
+					const dx = x - ix;
+					const dy = y - iy;
+					const index = (iy * (w + 1) + ix) * 2;
+					const gx = grad[index];
+					const gy = grad[index + 1];
+					return dx * gx + dy * gy;
+				}
+
+				function fade(t) {
+					return t * t * t * (t * (t * 6 - 15) + 10);
+				}
+
+				for (let y = 0; y < h; y++) {
+					for (let x = 0; x < w; x++) {
+						const xf = x / w * 5;
+						const yf = y / h * 5;
+
+						const x0 = Math.floor(xf);
+						const x1 = x0 + 1;
+						const y0 = Math.floor(yf);
+						const y1 = y0 + 1;
+
+						const sx = fade(xf - x0);
+						const sy = fade(yf - y0);
+
+						const n0 = dotGrid(x0, y0, xf, yf);
+						const n1 = dotGrid(x1, y0, xf, yf);
+						const ix0 = n0 + sx * (n1 - n0);
+
+						const n2 = dotGrid(x0, y1, xf, yf);
+						const n3 = dotGrid(x1, y1, xf, yf);
+						const ix1 = n2 + sx * (n3 - n2);
+
+						const value = ix0 + sy * (ix1 - ix0);
+						noise.push(value);
+					}
+				}
+
+				return noise;
+			}
+		}
+
+		function renderQueue() {
+
+			document.querySelectorAll('.trackwid').forEach(e => e.remove());
+
+			for (let trackName in track_list) {
+				if (track_list.hasOwnProperty(trackName)) {
+					const track = track_list[trackName];
+
+					const trackWid = document.createElement('div');
+					trackWid.className = 'trackwid';
+					trackWid.onclick = function () {
+						loadTrack(trackName)
+					}
+
+					const iconanddatdiv = document.createElement('div');
+					iconanddatdiv.classList += "iconanddatdiv"
+
+					const iconDiv = document.createElement('div');
+					iconDiv.className = 'icon';
+
+					const musicNoteSpan = document.createElement('span');
+					musicNoteSpan.className = 'material-symbols-rounded';
+					musicNoteSpan.textContent = 'music_note';
+					iconDiv.appendChild(musicNoteSpan);
+
+					const detailsWid = document.createElement('div');
+					detailsWid.className = 'detailswid';
+					const trackNameElement = document.createElement('b');
+					trackNameElement.className = 'TrackName';
+
+					let artistText = track.artist;
+					let trackName2 = trackName;
+					if ((!artistText || artistText.toLowerCase() === 'unknown' || artistText.toLowerCase() === 'unknown artist') && trackName.includes('-')) {
+						const parts = trackName.split('-');
+						const possibleArtist = parts[0].trim();
+						if (possibleArtist.split(/\s+/).length < 3) {
+							artistText = possibleArtist;
+							trackName2 = parts.slice(1).join('-').trim();
+						}
+					}
+
+					trackNameElement.textContent = trackName2 || trackName;
+
+					const artistName = document.createElement('span');
+					artistName.className = 'ArtistName';
+					artistName.textContent = artistText;
+
+
+					detailsWid.appendChild(trackNameElement);
+					detailsWid.appendChild(artistName);
+
+					const closeSpan = document.createElement('span');
+					closeSpan.className = 'material-symbols-rounded rmtrfrqu';
+					closeSpan.textContent = 'close';
+					closeSpan.addEventListener('click', function () {
+						delete track_list[trackName];
+						trackWid.remove();
+					});
+
+					iconanddatdiv.appendChild(iconDiv);
+					iconanddatdiv.appendChild(detailsWid);
+					trackWid.appendChild(iconanddatdiv);
+					trackWid.appendChild(closeSpan);
+
+					document.getElementById("tracklist").appendChild(trackWid);
+				}
+			}
+		}
+
+		renderQueue()
+
+		function loadTrack(trackName) {
+
+
+			if (!track_list.hasOwnProperty(trackName)) {
+				console.error("Track not found in the track list");
+				return;
+			}
+
+			const track = track_list[trackName];
+
+
+			if (curr_track) {
+				curr_track.src = '';
+				curr_track.load();
+			}
+			clearInterval(updateTimer);
+			resetValues();
+
+			console.log(track.fileRef)
+
+			const base64String = track.fileRef.content.split(',')[1];
+			const binaryString = atob(base64String);
+			const bytes = new Uint8Array(binaryString.length);
+			for (let i = 0; i < binaryString.length; i++) {
+				bytes[i] = binaryString.charCodeAt(i);
+			}
+			const blob = new Blob([bytes.buffer], { type: 'audio/mpeg' });
+
+
+			try {
+				jsmediatags.read(blob, {
+					onSuccess: function (tag) {
+						const metadata = tag.tags;
+						if ((!metadata.artist || metadata.artist.toLowerCase() === 'unknown') && trackName.includes('-')) {
+							const parts = trackName.split('-');
+							const possibleArtist = parts[0].trim();
+							if (possibleArtist.split(/\s+/).length < 3) {
+								metadata.artist = possibleArtist;
+								trackName = parts.slice(1).join('-').trim();
+							}
+						}
+
+						track_name.textContent = trackName;
+						track_artist.textContent = metadata.artist || 'Unknown Artist';
+
+						now_playing.textContent = "Playing " + (Object.keys(track_list).indexOf(trackName) + 1) + " of " + Object.keys(track_list).length;
+
+						if (metadata.picture && metadata.picture.data) {
+							const base64String = arrayBufferToBase64(metadata.picture.data);
+							baseimg.src = `data:${metadata.picture.format};base64,${base64String}`;
+						} else {
+							generateGradientBlob(trackName);
+						}
+						curr_track.src = URL.createObjectURL(blob);
+
+						curr_track.addEventListener("canplaythrough", () => {
+							playTrack();
+						}, { once: true });
+						updateTimer = setInterval(seekUpdate, 1000);
+						curr_track.addEventListener("ended", nextTrack);
+					},
+					onError: function (error) {
+						console.error("Error reading metadata: ", error);
+						baseimg.src = '';
+						baseimg.style.boxShadow = "";
+					}
+				});
+			} catch (e) {
+				track_name.textContent = trackName;
+				track_artist.textContent = 'Unknown Artist';
+				now_playing.textContent = "Playing " + (Object.keys(track_list).indexOf(trackName) + 1) + " of " + Object.keys(track_list).length;
+
+				curr_track.src = URL.createObjectURL(blob);
+
+				curr_track.addEventListener("canplaythrough", () => {
+					playTrack();
+				}, { once: true });
+				updateTimer = setInterval(seekUpdate, 1000);
+				curr_track.addEventListener("ended", nextTrack);
+			}
+		}
+
+
+		function arrayBufferToBase64(buffer) {
+			let binary = '';
+			const bytes = new Uint8Array(buffer);
+			const len = bytes.byteLength;
+			for (let i = 0; i < len; i++) {
+				binary += String.fromCharCode(bytes[i]);
+			}
+			return window.btoa(binary);
+		}
+
+
+		function sliderbgupt() {
+			let slider = seek_slider;
+			const value = (slider.value - slider.min) / (slider.max - slider.min) * 100;
+			slider.style.background = `linear-gradient(to right, #ffffff ${value}%, #272727 ${value}%)`;
+		}
+
+		function resetValues() {
+			curr_time.textContent = "00:00";
+			total_duration.textContent = "00:00";
+			seek_slider.value = 0;
+			sliderbgupt()
+		}
+
+		function playFirstTrack() {
+			const firstTrackName = Object.keys(track_list)[0];
+			if (firstTrackName) {
+				loadTrack(firstTrackName);
+			} else {
+				console.error("No tracks available in the track list");
+			}
+		}
+
+		async function openfromfiles() {
+			const fileID = await ntxSession.send("olp.useHandler", "file_manager", { "opener": 'any', "dir": "Downloads/" });
+			const file = await ntxSession.send("fileGet.byId", fileID);
+			readthefile(file, file.fileName);
+		}
+
+		function readthefile(filethings, fileName = 'Unknown Title') {
+			if (primaryalert.open) {
+				primaryalert.style.display = "none";
+				primaryalert.close();
+			}
+			const base64String = filethings.content.split(',')[1];
+			const binaryString = atob(base64String);
+			const bytes = new Uint8Array(binaryString.length);
+
+			for (let i = 0; i < binaryString.length; i++) {
+				bytes[i] = binaryString.charCodeAt(i);
+			}
+
+
+			const blob = new Blob([bytes.buffer], { type: 'application/octet-binary' });
+
+			try {
+				jsmediatags.read(blob, {
+					onSuccess: function (tag) {
+						const metadata = tag.tags;
+						const trackName = metadata.title || fileName;
+						const artistName = metadata.artist || 'Unknown Artist';
+						const albumName = metadata.album || 'Unknown Album';
+
+
+						track_list[trackName] = {
+							artist: artistName,
+							fileRef: filethings
+						};
+
+
+						renderQueue();
+						if (Object.keys(track_list).length === 1) {
+							playFirstTrack();
+						}
+					},
+					onError: function (error) {
+						console.error("Error reading metadata: ", error);
+					}
+				});
+			} catch (e) {
+				const trackName = fileName;
+				const artistName = 'Unknown Artist';
+				const albumName = 'Unknown Album';
+
+				track_list[trackName] = {
+					artist: artistName,
+					fileRef: filethings
+				};
+
+				renderQueue();
+			}
+		}
+
+		function playpauseTrack() {
+			if (!isPlaying) playTrack();
+			else pauseTrack();
+		}
+
+
+		function pauseTrack() {
+			curr_track.pause();
+			isPlaying = false;
+			playpause_btn.innerHTML = `play_circle`
+		}
+
+		function nextTrack() {
+			console.log("next track")
+			if (track_index < (Object.keys(track_list).length - 1))
+				track_index += 1;
+			else track_index = 0;
+			loadTrack(loadTrack(Object.keys(track_list)[track_index]));
+			playTrack();
+		}
+
+		function prevTrack() {
+			if (track_index > 0)
+				track_index -= 1;
+			else track_index = (Object.keys(track_list).length - 1);
+
+			loadTrack(loadTrack(Object.keys(track_list)[track_index]));
+			playTrack();
+		}
+
+		function seekTo() {
+			let seekto = curr_track.duration * (seek_slider.value / 100);
+			curr_track.currentTime = seekto;
+			sliderbgupt()
+		}
+
+		function setVolume() {
+			curr_track.volume = volume_slider.value / 100;
+		}
+
+		function seekUpdate() {
+			let seekPosition = 0;
+
+			if (!isNaN(curr_track.duration)) {
+				seekPosition = curr_track.currentTime * (100 / curr_track.duration);
+
+				seek_slider.value = seekPosition;
+				sliderbgupt()
+
+				let currentMinutes = Math.floor(curr_track.currentTime / 60);
+				let currentSeconds = Math.floor(curr_track.currentTime - currentMinutes * 60);
+				let durationMinutes = Math.floor(curr_track.duration / 60);
+				let durationSeconds = Math.floor(curr_track.duration - durationMinutes * 60);
+
+				if (currentSeconds < 10) { currentSeconds = "0" + currentSeconds; }
+				if (durationSeconds < 10) { durationSeconds = "0" + durationSeconds; }
+				if (currentMinutes < 10) { currentMinutes = "0" + currentMinutes; }
+				if (durationMinutes < 10) { durationMinutes = "0" + durationMinutes; }
+
+				curr_time.textContent = currentMinutes + ":" + currentSeconds;
+				total_duration.textContent = durationMinutes + ":" + durationSeconds;
+			}
+		}
+
+		function shuffle() {
+			const trackNames = Object.keys(track_list);
+			for (let i = trackNames.length - 1; i > 0; i--) {
+				const j = Math.floor(Math.random() * (i + 1));
+				[trackNames[i], trackNames[j]] = [trackNames[j], trackNames[i]];
+			}
+
+			const shuffledTrackList = {};
+			trackNames.forEach((trackName, index) => {
+				shuffledTrackList[trackName] = track_list[trackName];
+			});
+
+			track_list = shuffledTrackList;
+			renderQueue()
+		}
+
+
+		async function theskibidiscan() {
+			var skibiditracks = 0;
+			const musicExtensions = ['mp3', 'wav', 'flac', 'mpeg'];
+
+			const scanFolders = async (folder, basePath = '') => {
+				const isMusicFile = (fileName) => {
+					const extension = fileName.split('.').pop().toLowerCase();
+					return musicExtensions.includes(extension);
+				};
+
+				const getBase64Url = (content) => {
+					return `data:audio/*;base64,${btoa(content)}`;
+				};
+
+				const base64ToArrayBuffer = (base64) => {
+					base64 = base64.replace(/[^A-Za-z0-9+/=]/g, "");
+					const binaryString = atob(base64);
+					const len = binaryString.length;
+					const bytes = new Uint8Array(len);
+					for (let i = 0; i < len; i++) {
+						bytes[i] = binaryString.charCodeAt(i);
+					}
+					return bytes.buffer;
+				};
+
+				const processFile = async (fileContent, fileInfo, filename) => {
+					skibiditracks++
+					await readthefile(fileContent, filename);
+				};
+
+				const processFolder = async (folder, basePath = '') => {
+					const filePromises = [];
+					for (const key in folder) {
+						if (key.endsWith('/')) {
+							filePromises.push(processFolder(folder[key], `${basePath}${key}`));
+						} else if (isMusicFile(key)) {
+							console.log(key, folder[key])
+							let fileContentSave = await window.parent.getFileById(folder[key].id);
+							filePromises.push(processFile(fileContentSave, folder[key], key), folder[key], key);
+						}
+					}
+					await Promise.all(filePromises);
+				};
+
+				await processFolder(folder, basePath);
+			};
+
+			await scanFolders(window.parent.memory.root);
+
+			if (skibiditracks == 0) {
+				window.parent.say("There aren't any readable audio files in your files. Try again.", "failed");
+			} else {
+				primaryalert.close();
+				primaryalert.style.display = "none";
+			}
+		}
+
+		const canvas = document.getElementById('particleCanvas');
+		const ctx = canvas.getContext('2d');
+
+		canvas.width = window.innerWidth;
+		canvas.height = window.innerHeight;
+
+		function playTrack() {
+			if (curr_track.readyState >= 2) {
+				curr_track.play()
+					.then(() => {
+						initAudioAnalyser();
+						animate();
+						isPlaying = true;
+						playpause_btn.innerHTML = `pause_circle`;
+						console.log('Playback started successfully.');
+					})
+					.catch(error => {
+						console.error('Error playing track:', error);
+					});
+			} else {
+				console.error('curr_track is not defined or is invalid.');
+			}
+		}
+
+		let context = new (window.AudioContext || window.webkitAudioContext)();
+		let analyser = context.createAnalyser();
+
+		let sourceNode = context.createMediaElementSource(curr_track);
+
+		let masterGain = context.createGain();
+		let dryGain = context.createGain();
+		let wetGain = context.createGain();
+
+		dryGain.gain.value = 1;
+		wetGain.gain.value = 0;
+
+		sourceNode.connect(dryGain).connect(masterGain);
+		sourceNode.connect(wetGain);
+
+		masterGain.connect(analyser);
+		analyser.connect(context.destination);
+
+		let bufferLength;
+		let dataArray;
+
+		let currentVisualizer = null;
+		let visualizerModule = null;
+
+		function initAudioAnalyser() {
+			analyser.fftSize = 256;
+			bufferLength = analyser.frequencyBinCount;
+			dataArray = new Uint8Array(bufferLength);
+		}
+
+		async function vizchange() {
+			let fetched = await fetch("https://lair2.vercel.app/plr/visualizerDB.json");
+			let items = await fetched.json();
+			items.push("Custom URL");
+			const url = await window.parent.showDropdownModal("Choose a visualizer", "Click on custom URL to use a custom visualizer.", items);
+			if (url != "Custom URL") {
+				loadVisualizerFromURL(`https://lair2.vercel.app/plr/visualizers/${url}.js`);
+			} else {
+				const customUrl = await window.parent.ask("Custom Visualizer URL");
+				if (customUrl) {
+					loadVisualizerFromURL(customUrl);
+				} else {
+					window.parent.toast("No custom URL provided");
+				}
+			}
+		}
+
+		async function loadVisualizerFromURL(url) {
+			try {
+				const module = await import(/* @vite-ignore */ url);
+				if (!module.default) throw new Error("Module has no default export");
+				if (currentVisualizer?.destroy) currentVisualizer.destroy();
+
+				currentVisualizer = new module.default(canvas, analyser, getAudioData);
+				visualizerModule = module;
+
+				console.log(`Visualizer loaded from ${url}`);
+			} catch (e) {
+				console.error("Failed to load visualizer:", e);
+			}
+		}
+
+		function animate() {
+			ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+			if (currentVisualizer) {
+				currentVisualizer.update();
+				currentVisualizer.draw();
+			}
+
+			requestAnimationFrame(animate);
+		}
+
+		function getAudioData() {
+			analyser.getByteFrequencyData(dataArray);
+
+			const bassStart = 2;
+			const bassEnd = 20;
+			let bassEnergy = dataArray.slice(bassStart, bassEnd).reduce((sum, v) => sum + v, 0) / (bassEnd - bassStart);
+
+			const highStart = bufferLength - 20;
+			const highEnd = bufferLength;
+			let highEnergy = dataArray.slice(highStart, highEnd).reduce((sum, v) => sum + v, 0) / (highEnd - highStart);
+
+			let totalEnergy = dataArray.reduce((sum, value) => sum + value, 0) / bufferLength;
+
+			return { totalEnergy, bassEnergy, highEnergy };
+		}
+
+		function resizeupdate() {
+			document.getElementById("particleCanvas").style.opacity = "0";
+			setTimeout(() => {
+				canvas.width = canvas.clientWidth;
+				canvas.height = canvas.clientHeight;
+				document.getElementById("particleCanvas").style.opacity = "1";
+			}, 500)
+		}
+
+		window.addEventListener('resize', resizeupdate);
+
+		let e = 1;
+		var firstTime = 1;
+		function toggleQueue() {
+			if (e == 1) {
+				document.getElementById("viztogglebtn").style.transform = "rotate(270deg)";
+				const queue = document.getElementById("queue");
+				queue.style.display = "flex";
+				setTimeout(() => {
+					queue.style.opacity = "1";
+					queue.style.flex = "1";
+					document.getElementById("visualizer").style.flex = "0";
+				}, 10);
+				e = 0;
+			} else {
+				document.getElementById("viztogglebtn").style.transform = "rotate(90deg)";
+				const queue = document.getElementById("queue");
+				queue.style.flex = "0";
+				queue.style.opacity = "0";
+				setTimeout(() => {
+					document.getElementById("visualizer").style.flex = "1";
+				}, 250);
+				setTimeout(() => {
+					queue.style.display = "none";
+					console.log(firstTime)
+					if (firstTime == 1) {
+						loadVisualizerFromURL("http://127.0.0.1:3000/libs/plr.js");
+						firstTime = 0;
+					}
+				}, 500);
+				e = 1;
+			}
+			resizeupdate();
+		}
+		toggleQueue();
+		const lyricsDiv = document.getElementById('lyrics');
+		const loadLyricsButton = document.getElementById("lyribtn");
+		const lrcInput = document.getElementById('lrc_input');
+
+		loadLyricsButton.onclick = () => {
+
+			loadlyrica();
+			lrcInput.click()
+		};
+		function loadlyrica() {
+			let lyrics = [];
+			let currLine = -1;
+
+			lrcInput.onchange = () => {
+				const file = lrcInput.files[0];
+				if (!file) return;
+
+				const reader = new FileReader();
+				reader.onload = (e) => {
+					const text = e.target.result;
+					lyrics = parseLRC(text);
+					currLine = -1;
+					lyricsDiv.innerHTML = '';
+				};
+				reader.readAsText(file);
+			};
+
+			curr_track.ontimeupdate = () => {
+				if (!lyrics.length) return;
+
+				const currentTime = curr_track.currentTime;
+				for (let i = lyrics.length - 1; i >= 0; i--) {
+					if (currentTime >= lyrics[i].time) {
+						if (i !== currLine) {
+							currLine = i;
+							lyricsDiv.textContent = lyrics[i].text;
+						}
+						break;
+					}
+				}
+			};
+
+			curr_track.onloadeddata = () => {
+				lyrics = [];
+				currLine = -1;
+				lyricsDiv.innerHTML = '';
+			};
+
+			function parseLRC(text) {
+				const lines = text.split('\n');
+				const result = [];
+
+				for (const line of lines) {
+					const match = line.match(/\[(\d+):(\d+(?:\.\d+)?)\](.*)/);
+					if (match) {
+						const minutes = parseInt(match[1]);
+						const seconds = parseFloat(match[2]);
+						const time = minutes * 60 + seconds;
+						const text = match[3].trim();
+						result.push({ time, text });
+					}
+				}
+
+				result.sort((a, b) => a.time - b.time);
+				return result;
+			}
+		};
+
+		async function greenflag() {
+			firstTime = 1;
+
+			eventBus.listen({
+				type: 'musicplr',
+				event: 'newSession',
+				callback: async (msg) => {
+					const file = await ntxSession.send("fileGet.byId", msg.key);
+					readthefile(file, file.fileName);
+console.log(msg.key, file)
+					eventBus.deliver({
+						type: "musicplr",
+						event: "sessionKill",
+						key: msg.key,
+					});
+				}
+			});
+
+			try {
+				if (myWindow.params.data) {
+
+					eventBus.deliver({
+						type: "musicplr",
+						event: "newSession",
+						key: myWindow.params.data,
+					});
+					eventBus.listen({
+						type: 'musicplr',
+						event: 'sessionKill',
+						callback: (msg) => {
+							myWindow.close();
+						}
+					});
+					setTimeout(async () => {
+					const file = await ntxSession.send("fileGet.byId", myWindow.params.data);
+					readthefile(file, file.fileName);
+
+					}, 500)
+				}
+			} catch (error) {
+			}
+		}
+	</script>
+</body>
+
+</html>

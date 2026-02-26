@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="lair-include" content="lair.css">
+    <meta name="capabilities" content="dex_screener">
+    <meta name="lair-icon" content="swap_horiz">
+    <meta name="lair-perms" content="network" />
+    <title>DEX Screener</title>
+    <style>
+        :root{--bg1:#101010;--bg2:#171717;--bg3:#222;--t1:#fff;--t2:#999;--t3:#666;--acc:rgb(97,121,255);--gn:#5be45b;--rd:#d44343;--r1:6px;--r2:4px;--font:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
+        *{margin:0;padding:0;box-sizing:border-box}
+        body,html{width:100%;height:100%;overflow:hidden;font-family:var(--font);background:var(--bg1);color:var(--t1)}
+        .app{display:flex;flex-direction:column;height:100%}
+
+        /* ── Header ── */
+        .hdr{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--bg1);border-bottom:1px solid #1e1e1e;flex-shrink:0;overflow-x:auto;white-space:nowrap}
+        .hdr::-webkit-scrollbar{height:0}
+        .search-box{display:flex;align-items:center;gap:6px;background:var(--bg2);border:1px solid #333;border-radius:var(--r1);padding:4px 10px;min-width:180px;max-width:260px;flex:1;transition:border-color .15s}
+        .search-box:focus-within{border-color:var(--acc)}
+        .search-box svg{width:14px;height:14px;fill:var(--t3);flex-shrink:0}
+        .search-box input{background:none;border:none;outline:none;color:var(--t1);font-size:12px;width:100%;font-family:var(--font)}
+        .search-box input::placeholder{color:var(--t3)}
+        .sep{width:1px;height:20px;background:#262626;flex-shrink:0}
+        .pills{display:flex;gap:3px}
+        .pill{background:var(--bg2);color:var(--t2);border:1px solid #262626;border-radius:var(--r2);padding:3px 8px;font-size:10px;font-weight:600;cursor:pointer;transition:all .12s;font-family:var(--font)}
+        .pill:hover{border-color:#444;color:var(--t1)}
+        .pill.on{background:rgba(97,121,255,.12);border-color:var(--acc);color:var(--acc)}
+        .sort-sel{background:var(--bg2);color:var(--t2);border:1px solid #262626;border-radius:var(--r2);padding:3px 8px;font-size:10px;cursor:pointer;outline:none;font-family:var(--font)}
+        .sort-sel:hover{border-color:#444}
+        .spacer{flex:1;min-width:6px}
+        .count-badge{font-size:10px;color:var(--t3);white-space:nowrap}
+        .refresh-btn{background:none;border:1px solid #333;border-radius:var(--r2);color:var(--t2);padding:3px 8px;font-size:10px;cursor:pointer;transition:all .12s;font-family:var(--font)}
+        .refresh-btn:hover{border-color:#555;color:var(--t1)}
+
+        /* ── Table ── */
+        .table-wrap{flex:1;overflow:auto;padding:0}
+        .table-wrap::-webkit-scrollbar{width:4px;height:4px}
+        .table-wrap::-webkit-scrollbar-thumb{background:#333;border-radius:2px}
+        table{width:100%;border-collapse:collapse;font-size:11px;font-variant-numeric:tabular-nums;min-width:900px}
+        thead{position:sticky;top:0;z-index:2}
+        th{background:var(--bg2);color:var(--t3);font-weight:500;text-align:left;padding:6px 10px;border-bottom:1px solid #1e1e1e;cursor:pointer;user-select:none;font-size:10px;text-transform:uppercase;letter-spacing:.3px;white-space:nowrap}
+        th:hover{color:var(--t2)}
+        th.sorted{color:var(--acc)}
+        th .arr{font-size:8px;margin-left:2px}
+        td{padding:6px 10px;border-bottom:1px solid #141414;white-space:nowrap}
+        tr{transition:background .08s}
+        tr:hover{background:rgba(97,121,255,.04)}
+        .pair-cell{display:flex;align-items:center;gap:6px}
+        .pair-img{width:20px;height:20px;border-radius:50%;background:var(--bg3);flex-shrink:0}
+        .pair-tokens{display:flex;flex-direction:column;gap:1px}
+        .pair-base{font-weight:600;color:var(--t1);font-size:12px}
+        .pair-quote{font-size:9px;color:var(--t3)}
+        .chain-badge{font-size:9px;color:var(--t3);background:var(--bg3);padding:1px 5px;border-radius:3px;font-weight:500}
+        .up{color:var(--gn)}
+        .dn{color:var(--rd)}
+        .vol-bar{height:3px;border-radius:1px;background:rgba(97,121,255,.3);min-width:2px;max-width:80px}
+        .liq-dot{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:4px}
+        .liq-hi{background:var(--gn)}
+        .liq-mid{background:#f0b90b}
+        .liq-lo{background:var(--rd)}
+        .age{color:var(--t3);font-size:10px}
+        .link-btn{background:none;border:none;color:var(--acc);cursor:pointer;font-size:10px;text-decoration:none;font-family:var(--font);padding:2px 4px;border-radius:3px;transition:background .1s}
+        .link-btn:hover{background:rgba(97,121,255,.1)}
+
+        /* ── Overlays ── */
+        .ov{position:absolute;inset:0;z-index:10;display:flex;align-items:center;justify-content:center;background:rgba(16,16,16,.9);backdrop-filter:blur(4px)}
+        .ov.h{display:none}
+        .spin{width:24px;height:24px;border:3px solid #333;border-top-color:var(--acc);border-radius:50%;animation:sp .7s linear infinite;margin:0 auto 8px}
+        @keyframes sp{to{transform:rotate(360deg)}}
+        .ov-c{text-align:center;color:var(--t2);font-size:12px}
+        .err-btn{margin-top:8px;background:var(--acc);color:#fff;border:none;border-radius:var(--r1);padding:6px 14px;cursor:pointer;font-size:11px;font-family:var(--font)}
+        .empty-state{padding:40px;text-align:center;color:var(--t3);font-size:13px}
+
+        /* ── Pair detail slide ── */
+        .detail-panel{position:fixed;top:0;right:-360px;width:360px;height:100%;background:var(--bg2);border-left:1px solid #262626;z-index:20;transition:right .25s ease;display:flex;flex-direction:column;box-shadow:-4px 0 24px rgba(0,0,0,.4)}
+        .detail-panel.open{right:0}
+        .dp-hdr{display:flex;align-items:center;justify-content:space-between;padding:12px;border-bottom:1px solid #1e1e1e}
+        .dp-hdr h3{font-size:14px;font-weight:600}
+        .dp-close{background:none;border:none;color:var(--t2);cursor:pointer;font-size:18px;padding:4px;line-height:1}
+        .dp-body{flex:1;overflow-y:auto;padding:12px}
+        .dp-body::-webkit-scrollbar{width:4px}
+        .dp-body::-webkit-scrollbar-thumb{background:#333;border-radius:2px}
+        .dp-row{display:flex;justify-content:space-between;padding:6px 0;font-size:12px;border-bottom:1px solid #141414}
+        .dp-row .dp-l{color:var(--t3)}
+        .dp-row .dp-v{color:var(--t1);font-weight:500;font-variant-numeric:tabular-nums}
+        .dp-section{font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin:12px 0 6px;font-weight:500}
+        .dp-txns{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+        .dp-txn-card{background:var(--bg3);border-radius:var(--r1);padding:8px;text-align:center}
+        .dp-txn-card .dp-txn-label{font-size:9px;color:var(--t3);text-transform:uppercase;margin-bottom:4px}
+        .dp-txn-card .dp-txn-val{font-size:14px;font-weight:700}
+        .dp-link{display:block;text-align:center;margin-top:12px;color:var(--acc);text-decoration:none;font-size:12px;padding:8px;background:rgba(97,121,255,.08);border-radius:var(--r1);transition:background .15s}
+        .dp-link:hover{background:rgba(97,121,255,.15)}
+
+        @media(max-width:640px){
+            .hdr{padding:6px 8px;gap:6px}
+            .search-box{min-width:120px}
+            .detail-panel{width:100%;right:-100%}
+            table{min-width:700px}
+        }
+    </style>
+</head>
+<body>
+<div class="app">
+    <div class="hdr">
+        <div class="search-box">
+            <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+            <input type="text" id="q" placeholder="Search pairs or tokens…" autocomplete="off" spellcheck="false">
+        </div>
+        <div class="sep"></div>
+        <div class="pills" id="chains">
+            <button class="pill on" data-c="">All</button>
+            <button class="pill" data-c="ethereum">ETH</button>
+            <button class="pill" data-c="solana">SOL</button>
+            <button class="pill" data-c="base">Base</button>
+            <button class="pill" data-c="bsc">BSC</button>
+            <button class="pill" data-c="arbitrum">ARB</button>
+            <button class="pill" data-c="polygon">MATIC</button>
+            <button class="pill" data-c="avalanche">AVAX</button>
+            <button class="pill" data-c="sui">SUI</button>
+            <button class="pill" data-c="ton">TON</button>
+        </div>
+        <div class="sep"></div>
+        <select class="sort-sel" id="sort-sel">
+            <option value="vol-desc">Volume ↓</option>
+            <option value="vol-asc">Volume ↑</option>
+            <option value="liq-desc">Liquidity ↓</option>
+            <option value="chg-desc">24h Change ↓</option>
+            <option value="chg-asc">24h Change ↑</option>
+            <option value="age-asc">Newest first</option>
+            <option value="txns-desc">Transactions ↓</option>
+        </select>
+        <div class="spacer"></div>
+        <span class="count-badge" id="count">--</span>
+        <button class="refresh-btn" id="refr">Refresh</button>
+    </div>
+
+    <div class="table-wrap" style="position:relative">
+        <div class="ov h" id="ov-load"><div class="ov-c"><div class="spin"></div>Loading pairs…</div></div>
+        <div class="ov h" id="ov-err"><div class="ov-c"><div id="err-msg">Failed to load</div><button class="err-btn" onclick="window._load()">Retry</button></div></div>
+        <table>
+            <thead><tr>
+                <th style="width:30px">#</th>
+                <th>Pair</th>
+                <th>Chain</th>
+                <th>Price</th>
+                <th>5m</th>
+                <th>1h</th>
+                <th>6h</th>
+                <th>24h</th>
+                <th>Volume 24h</th>
+                <th>Liquidity</th>
+                <th>Txns 24h</th>
+                <th>Age</th>
+                <th></th>
+            </tr></thead>
+            <tbody id="tbody"></tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Detail panel -->
+<div class="detail-panel" id="dp">
+    <div class="dp-hdr"><h3 id="dp-title">--</h3><button class="dp-close" id="dp-close">&times;</button></div>
+    <div class="dp-body" id="dp-body"></div>
+</div>
+
+<script>
+(function(){
+'use strict';
+const F=window.cfetch||fetch;
+const API='https://api.dexscreener.com';
+
+let allPairs=[];
+let filtered=[];
+let chain='';
+let query='';
+let sortKey='vol-desc';
+let selectedPair=null;
+let searchDebounce=null;
+
+/* ── DOM ── */
+const tbody=document.getElementById('tbody');
+const ovLoad=document.getElementById('ov-load');
+const ovErr=document.getElementById('ov-err');
+const errMsg=document.getElementById('err-msg');
+const countEl=document.getElementById('count');
+const dp=document.getElementById('dp');
+const dpTitle=document.getElementById('dp-title');
+const dpBody=document.getElementById('dp-body');
+
+/* ── Format ── */
+function fp(v){
+    if(v==null)return'--';
+    if(v>=1)return'$'+v.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+    if(v>=0.01)return'$'+v.toFixed(4);
+    if(v>=0.0001)return'$'+v.toFixed(6);
+    return'$'+v.toFixed(10);
+}
+function fc(n){
+    if(n==null)return'--';
+    if(n>=1e9)return'$'+(n/1e9).toFixed(2)+'B';
+    if(n>=1e6)return'$'+(n/1e6).toFixed(2)+'M';
+    if(n>=1e3)return'$'+(n/1e3).toFixed(1)+'K';
+    return'$'+n.toFixed(0);
+}
+function fpc(v){
+    if(v==null)return'<span class="age">--</span>';
+    const cls=v>=0?'up':'dn';
+    return`<span class="${cls}">${v>=0?'+':''}${v.toFixed(2)}%</span>`;
+}
+function fAge(ts){
+    if(!ts)return'--';
+    const d=Date.now()-ts;
+    const hrs=d/3600000;
+    if(hrs<1)return Math.floor(d/60000)+'m';
+    if(hrs<24)return Math.floor(hrs)+'h';
+    if(hrs<720)return Math.floor(hrs/24)+'d';
+    return Math.floor(hrs/720)+'mo';
+}
+function liqClass(l){
+    if(l>=100000)return'liq-hi';
+    if(l>=10000)return'liq-mid';
+    return'liq-lo';
+}
+
+/* ── Fetch ── */
+async function fetchSearchPairs(q){
+    const r=await F(`${API}/latest/dex/search?q=${encodeURIComponent(q)}`);
+    if(!r.ok)throw new Error('Search API '+r.status);
+    const d=await r.json();
+    return d.pairs||[];
+}
+
+async function fetchTokenPairs(chain,addr){
+    const r=await F(`${API}/latest/dex/tokens/${addr}`);
+    if(!r.ok)throw new Error('Token API '+r.status);
+    const d=await r.json();
+    return d.pairs||[];
+}
+
+async function fetchBoostedTokens(){
+    // Use token-boosts as a proxy for "trending" — these are promoted pairs
+    const r=await F(`${API}/token-boosts/latest/v1`);
+    if(!r.ok)throw new Error('Boosts API '+r.status);
+    const d=await r.json();
+    // Each item has tokenAddress, chainId etc. We need to get pairs for these
+    return d||[];
+}
+
+async function fetchTrendingSearch(){
+    // Search for popular tokens to get trending pairs
+    const searches=['PEPE','WIF','BONK','TRUMP','AI','MEME','DOGE','SHIB','SOL','ETH'];
+    const pick=searches[Math.floor(Math.random()*searches.length)];
+    return fetchSearchPairs(pick);
+}
+
+/* ── Load data ── */
+async function loadData(){
+    ovLoad.classList.remove('h');ovErr.classList.add('h');
+    try{
+        let pairs;
+        if(query.length>=2){
+            pairs=await fetchSearchPairs(query);
+        }else{
+            // Load trending by searching for popular terms
+            const results=await Promise.all([
+                fetchSearchPairs('PEPE').catch(()=>[]),
+                fetchSearchPairs('SOL').catch(()=>[]),
+                fetchSearchPairs('ETH').catch(()=>[]),
+            ]);
+            pairs=[...results[0],...results[1],...results[2]];
+            // Deduplicate by pairAddress
+            const seen=new Set();
+            pairs=pairs.filter(p=>{
+                const k=p.pairAddress+p.chainId;
+                if(seen.has(k))return false;
+                seen.add(k);return true;
+            });
+        }
+        allPairs=pairs;
+        applyFilters();
+        ovLoad.classList.add('h');
+    }catch(e){
+        console.error(e);
+        ovLoad.classList.add('h');
+        errMsg.textContent=e.message||'Failed to load';
+        ovErr.classList.remove('h');
+    }
+}
+
+function applyFilters(){
+    filtered=allPairs.slice();
+
+    // Chain filter
+    if(chain){
+        filtered=filtered.filter(p=>p.chainId===chain);
+    }
+
+    // Sort
+    const[sk,sd]=sortKey.split('-');
+    filtered.sort((a,b)=>{
+        let va,vb;
+        switch(sk){
+            case'vol':va=a.volume?.h24||0;vb=b.volume?.h24||0;break;
+            case'liq':va=a.liquidity?.usd||0;vb=b.liquidity?.usd||0;break;
+            case'chg':va=a.priceChange?.h24||0;vb=b.priceChange?.h24||0;break;
+            case'age':va=a.pairCreatedAt||0;vb=b.pairCreatedAt||0;break;
+            case'txns':va=(a.txns?.h24?.buys||0)+(a.txns?.h24?.sells||0);vb=(b.txns?.h24?.buys||0)+(b.txns?.h24?.sells||0);break;
+            default:va=a.volume?.h24||0;vb=b.volume?.h24||0;
+        }
+        return sd==='asc'?va-vb:vb-va;
+    });
+
+    renderTable();
+}
+
+/* ── Render ── */
+function renderTable(){
+    const maxVol=Math.max(...filtered.map(p=>p.volume?.h24||0),1);
+    countEl.textContent=filtered.length+' pairs';
+
+    if(!filtered.length){
+        tbody.innerHTML='<tr><td colspan="13"><div class="empty-state">No pairs found. Try a different search or chain filter.</div></td></tr>';
+        return;
+    }
+
+    tbody.innerHTML=filtered.slice(0,100).map((p,i)=>{
+        const base=p.baseToken?.symbol||'?';
+        const quote=p.quoteToken?.symbol||'?';
+        const img=p.info?.imageUrl||'';
+        const vol=p.volume?.h24||0;
+        const liq=p.liquidity?.usd||0;
+        const txns=(p.txns?.h24?.buys||0)+(p.txns?.h24?.sells||0);
+        const volPct=Math.min(vol/maxVol*80,80);
+        const chainName=(p.chainId||'').replace(/-/g,' ');
+
+        return`<tr data-idx="${i}">
+            <td style="color:var(--t3)">${i+1}</td>
+            <td><div class="pair-cell">${img?`<img class="pair-img" src="${img}" onerror="this.style.display='none'" loading="lazy">`:'<div class="pair-img"></div>'}<div class="pair-tokens"><span class="pair-base">${base}</span><span class="pair-quote">/${quote}</span></div></div></td>
+            <td><span class="chain-badge">${chainName}</span></td>
+            <td>${fp(parseFloat(p.priceUsd)||0)}</td>
+            <td>${fpc(p.priceChange?.m5)}</td>
+            <td>${fpc(p.priceChange?.h1)}</td>
+            <td>${fpc(p.priceChange?.h6)}</td>
+            <td>${fpc(p.priceChange?.h24)}</td>
+            <td>${fc(vol)}<div class="vol-bar" style="width:${volPct}px"></div></td>
+            <td><span class="liq-dot ${liqClass(liq)}"></span>${fc(liq)}</td>
+            <td>${txns.toLocaleString()}</td>
+            <td class="age">${fAge(p.pairCreatedAt)}</td>
+            <td><a class="link-btn" href="${p.url||('#')}" target="_blank" rel="noopener" onclick="event.stopPropagation()">↗</a></td>
+        </tr>`;
+    }).join('');
+}
+
+/* ── Detail panel ── */
+tbody.addEventListener('click',e=>{
+    const row=e.target.closest('tr');
+    if(!row||!row.dataset.idx)return;
+    const p=filtered[+row.dataset.idx];
+    if(!p)return;
+    showDetail(p);
+});
+
+function showDetail(p){
+    selectedPair=p;
+    const base=p.baseToken?.symbol||'?';
+    const quote=p.quoteToken?.symbol||'?';
+    dpTitle.textContent=base+'/'+quote;
+
+    const buys24=p.txns?.h24?.buys||0;
+    const sells24=p.txns?.h24?.sells||0;
+    const buys6=p.txns?.h6?.buys||0;
+    const sells6=p.txns?.h6?.sells||0;
+
+    dpBody.innerHTML=`
+        <div class="dp-section">Price</div>
+        <div class="dp-row"><span class="dp-l">Price USD</span><span class="dp-v">${fp(parseFloat(p.priceUsd)||0)}</span></div>
+        <div class="dp-row"><span class="dp-l">Price Native</span><span class="dp-v">${p.priceNative||'--'}</span></div>
+
+        <div class="dp-section">Change</div>
+        <div class="dp-row"><span class="dp-l">5 min</span><span class="dp-v">${fpc(p.priceChange?.m5)}</span></div>
+        <div class="dp-row"><span class="dp-l">1 hour</span><span class="dp-v">${fpc(p.priceChange?.h1)}</span></div>
+        <div class="dp-row"><span class="dp-l">6 hours</span><span class="dp-v">${fpc(p.priceChange?.h6)}</span></div>
+        <div class="dp-row"><span class="dp-l">24 hours</span><span class="dp-v">${fpc(p.priceChange?.h24)}</span></div>
+
+        <div class="dp-section">Liquidity & Volume</div>
+        <div class="dp-row"><span class="dp-l">Liquidity</span><span class="dp-v">${fc(p.liquidity?.usd||0)}</span></div>
+        <div class="dp-row"><span class="dp-l">Volume 24h</span><span class="dp-v">${fc(p.volume?.h24||0)}</span></div>
+        <div class="dp-row"><span class="dp-l">Volume 6h</span><span class="dp-v">${fc(p.volume?.h6||0)}</span></div>
+        <div class="dp-row"><span class="dp-l">Volume 1h</span><span class="dp-v">${fc(p.volume?.h1||0)}</span></div>
+        <div class="dp-row"><span class="dp-l">FDV</span><span class="dp-v">${fc(p.fdv||0)}</span></div>
+
+        <div class="dp-section">Transactions (24h)</div>
+        <div class="dp-txns">
+            <div class="dp-txn-card"><div class="dp-txn-label">Buys</div><div class="dp-txn-val up">${buys24.toLocaleString()}</div></div>
+            <div class="dp-txn-card"><div class="dp-txn-label">Sells</div><div class="dp-txn-val dn">${sells24.toLocaleString()}</div></div>
+            <div class="dp-txn-card"><div class="dp-txn-label">Buys 6h</div><div class="dp-txn-val up">${buys6.toLocaleString()}</div></div>
+            <div class="dp-txn-card"><div class="dp-txn-label">Sells 6h</div><div class="dp-txn-val dn">${sells6.toLocaleString()}</div></div>
+        </div>
+
+        <div class="dp-section">Info</div>
+        <div class="dp-row"><span class="dp-l">Chain</span><span class="dp-v">${p.chainId||'--'}</span></div>
+        <div class="dp-row"><span class="dp-l">DEX</span><span class="dp-v">${p.dexId||'--'}</span></div>
+        <div class="dp-row"><span class="dp-l">Pair Age</span><span class="dp-v">${fAge(p.pairCreatedAt)}</span></div>
+        <div class="dp-row"><span class="dp-l">Pair Address</span><span class="dp-v" style="font-size:9px;word-break:break-all">${p.pairAddress||'--'}</span></div>
+
+        ${p.url?`<a class="dp-link" href="${p.url}" target="_blank" rel="noopener">View on DexScreener ↗</a>`:''}
+    `;
+    dp.classList.add('open');
+}
+
+document.getElementById('dp-close').addEventListener('click',()=>dp.classList.remove('open'));
+document.addEventListener('keydown',e=>{if(e.key==='Escape')dp.classList.remove('open')});
+
+/* ── Events ── */
+// Search
+document.getElementById('q').addEventListener('input',function(){
+    clearTimeout(searchDebounce);
+    query=this.value.trim();
+    searchDebounce=setTimeout(()=>{
+        if(query.length>=2||query.length===0)loadData();
+    },400);
+});
+
+// Chain filter
+document.getElementById('chains').addEventListener('click',e=>{
+    const pill=e.target.closest('.pill');
+    if(!pill)return;
+    document.querySelectorAll('#chains .pill').forEach(p=>p.classList.remove('on'));
+    pill.classList.add('on');
+    chain=pill.dataset.c;
+    applyFilters();
+});
+
+// Sort
+document.getElementById('sort-sel').addEventListener('change',function(){
+    sortKey=this.value;
+    applyFilters();
+});
+
+// Refresh
+document.getElementById('refr').addEventListener('click',()=>loadData());
+
+// Table header sort
+document.querySelectorAll('th').forEach(th=>{
+    th.addEventListener('click',()=>{
+        // Simple sort toggle by column index
+        const idx=th.cellIndex;
+        const map={4:'chg',5:'chg',6:'chg',7:'chg',8:'vol',9:'liq',10:'txns',11:'age'};
+        if(!map[idx])return;
+        const cur=sortKey.split('-')[0];
+        if(cur===map[idx]){
+            sortKey=map[idx]+'-'+(sortKey.endsWith('desc')?'asc':'desc');
+        }else{
+            sortKey=map[idx]+'-desc';
+        }
+        document.getElementById('sort-sel').value=sortKey;
+        applyFilters();
+    });
+});
+
+// Expose retry
+window._load=loadData;
+
+/* ── Init ── */
+loadData();
+
+// Auto-refresh every 30 seconds
+setInterval(()=>{if(!query)loadData()},30000);
+
+})();
+</script>
+</body>
+</html>

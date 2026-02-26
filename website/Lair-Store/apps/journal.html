@@ -1,0 +1,2183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="lair-include" content="lair.css material-symbols-rounded">
+    <meta name="permissions" content="appStorage">
+    <meta name="capabilities" content="portfolio">
+    <meta name="lair-icon" content="<svg width='232' height='232' viewBox='0 0 232 232' fill='none' xmlns='http://www.w3.org/2000/svg'><rect width='232' height='232' rx='40' fill='#3B82F6'/><text x='116' y='140' text-anchor='middle' fill='white' font-size='100' font-weight='bold'>💼</text></svg>">
+    <meta name="lair-perms" content="network" />
+    <title>Portfolio</title>
+    <style>
+        :root {
+            color-scheme: dark;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 14px;
+            font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            color: var(--col-txt1, #f6f8ff);
+            background: var(--col-bg1, #0f1115);
+            min-height: 100vh;
+        }
+
+        .app {
+            max-width: 1300px;
+            margin: 0 auto;
+            display: grid;
+            gap: 12px;
+        }
+
+        .card {
+            border: 1px solid var(--box-crisp-col, rgba(255, 255, 255, 0.09));
+            border-radius: var(--siz-radius1, 12px);
+            background: var(--col-bg2, #171b22);
+        }
+
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 12px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .title-wrap {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.1rem;
+        }
+
+        .muted {
+            color: var(--col-txt2, #acb2c2);
+            opacity: 0.9;
+            font-size: 0.84rem;
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        button,
+        select,
+        input,
+        textarea {
+            font: inherit;
+        }
+
+        .btn,
+        .pill {
+            border: 1px solid var(--box-crisp-col, rgba(255, 255, 255, 0.14));
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.03);
+            color: inherit;
+            padding: 8px 12px;
+            cursor: pointer;
+        }
+
+        .btn:hover,
+        .pill:hover {
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .btn.primary {
+            border-color: rgba(59, 130, 246, 0.7);
+            background: rgba(59, 130, 246, 0.2);
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(6, minmax(160px, 1fr));
+            gap: 8px;
+            padding: 10px;
+        }
+
+        .stat {
+            border: 1px solid var(--box-crisp-col, rgba(255, 255, 255, 0.09));
+            border-radius: 10px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.02);
+            min-height: 74px;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            opacity: 0.85;
+            margin-bottom: 6px;
+        }
+
+        .stat-value {
+            font-weight: 700;
+            font-size: 1.05rem;
+            line-height: 1.15;
+            word-break: break-word;
+        }
+
+        .stat-large {
+            font-size: 1.45rem;
+        }
+
+        .pos { color: #35d07f; }
+        .neg { color: #ff6b8b; }
+
+        .tabs {
+            display: flex;
+            gap: 4px;
+            border-bottom: 1px solid var(--box-crisp-col, rgba(255, 255, 255, 0.09));
+            padding: 8px 10px 0;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: none;
+            color: inherit;
+            opacity: 0.75;
+            border-bottom: 2px solid transparent;
+            padding: 8px 10px;
+            cursor: pointer;
+        }
+
+        .tab-btn.active {
+            opacity: 1;
+            border-bottom-color: #3b82f6;
+        }
+
+        .tab-panel {
+            display: none;
+            padding: 10px;
+        }
+
+        .tab-panel.active { display: block; }
+
+        .table-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        th,
+        td {
+            padding: 9px 8px;
+            border-bottom: 1px solid var(--box-crisp-col, rgba(255, 255, 255, 0.08));
+            text-align: left;
+            vertical-align: middle;
+        }
+
+        th button {
+            border: none;
+            background: none;
+            color: inherit;
+            font-weight: 600;
+            cursor: pointer;
+            padding: 0;
+            text-align: left;
+        }
+
+        tr.hover-delete .delete-btn { opacity: 1; }
+
+        .delete-btn {
+            border: 1px solid rgba(255, 107, 139, 0.5);
+            background: rgba(255, 107, 139, 0.12);
+            color: #ff87a0;
+            border-radius: 8px;
+            padding: 4px 8px;
+            opacity: 0;
+            transition: opacity .15s ease;
+            cursor: pointer;
+        }
+
+        .tag {
+            display: inline-flex;
+            align-items: center;
+            border: 1px solid rgba(255,255,255,.15);
+            padding: 2px 6px;
+            border-radius: 999px;
+            font-size: .75rem;
+            white-space: nowrap;
+        }
+
+        .asset-row {
+            cursor: pointer;
+        }
+
+        .sub-row {
+            background: rgba(255,255,255,.02);
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(260px, 1fr));
+            gap: 10px;
+        }
+
+        .chart-card {
+            padding: 10px;
+        }
+
+        .chart-title {
+            margin: 0 0 8px;
+            font-size: 0.9rem;
+        }
+
+        canvas {
+            width: 100%;
+            border: 1px solid var(--box-crisp-col, rgba(255,255,255,.08));
+            border-radius: 10px;
+            background: rgba(255,255,255,.015);
+        }
+
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 8px;
+            font-size: .78rem;
+        }
+
+        .legend-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .swatch {
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .split {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 10px;
+        }
+
+        .line-wrap {
+            padding: 10px;
+        }
+
+        .empty {
+            border: 1px dashed var(--box-crisp-col, rgba(255, 255, 255, 0.18));
+            border-radius: 10px;
+            padding: 26px 10px;
+            text-align: center;
+            color: var(--col-txt2, #acb2c2);
+        }
+
+        .modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,.55);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+            padding: 12px;
+        }
+
+        .modal.open { display: flex; }
+
+        .modal-card {
+            width: min(620px, 100%);
+            max-height: 90vh;
+            overflow: auto;
+            background: var(--col-bg2, #171b22);
+            border: 1px solid var(--box-crisp-col, rgba(255,255,255,.14));
+            border-radius: 12px;
+            padding: 12px;
+            position: relative;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 9px;
+        }
+
+        label {
+            font-size: .8rem;
+            display: block;
+            margin-bottom: 4px;
+            opacity: .9;
+        }
+
+        input,
+        select,
+        textarea {
+            width: 100%;
+            border: 1px solid var(--box-crisp-col, rgba(255,255,255,.16));
+            border-radius: 8px;
+            background: rgba(255,255,255,.02);
+            color: inherit;
+            padding: 8px;
+        }
+
+        textarea { min-height: 70px; resize: vertical; }
+
+        .actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .search-suggest {
+            position: absolute;
+            width: calc(100% - 24px);
+            max-height: 220px;
+            overflow: auto;
+            border: 1px solid var(--box-crisp-col, rgba(255,255,255,.16));
+            border-radius: 8px;
+            background: var(--col-bg2, #171b22);
+            display: none;
+            z-index: 2;
+        }
+
+        .suggest-item {
+            padding: 8px;
+            cursor: pointer;
+            border-bottom: 1px solid rgba(255,255,255,.06);
+        }
+
+        .suggest-item:hover { background: rgba(255,255,255,.05); }
+
+        .venue-list {
+            display: grid;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .venue-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            border: 1px solid var(--box-crisp-col, rgba(255,255,255,.12));
+            border-radius: 10px;
+            padding: 8px;
+        }
+
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 6px;
+        }
+
+        .small { font-size: .78rem; }
+        .right { text-align: right; }
+
+        .inline-edit {
+            border-bottom: 1px dashed rgba(255,255,255,.4);
+            cursor: pointer;
+            display: inline-block;
+            min-width: 32px;
+        }
+
+        .risk-metrics {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(160px, 1fr));
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .risk-metric {
+            border: 1px solid var(--box-crisp-col, rgba(255,255,255,.1));
+            border-radius: 10px;
+            padding: 10px;
+            background: rgba(255,255,255,.02);
+        }
+
+        .risk-label {
+            font-size: .75rem;
+            opacity: .8;
+            margin-bottom: 6px;
+        }
+
+        .risk-value {
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
+
+        .risk-grid {
+            display: grid;
+            grid-template-columns: 1.3fr 1fr;
+            gap: 10px;
+        }
+
+        .risk-note {
+            font-size: .8rem;
+            color: var(--col-txt2, #acb2c2);
+            margin-bottom: 8px;
+        }
+
+        .risk-badge {
+            display: inline-flex;
+            border: 1px solid rgba(255,255,255,.16);
+            border-radius: 999px;
+            padding: 2px 8px;
+            font-size: .75rem;
+        }
+
+        .stress-grid {
+            margin-top: 10px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .stress-controls {
+            display: grid;
+            gap: 10px;
+        }
+
+        .stress-row {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .stress-row input[type="range"] {
+            width: 100%;
+            padding: 0;
+        }
+
+        .stress-kpi {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(120px, 1fr));
+            gap: 8px;
+        }
+
+        .stress-card {
+            border: 1px solid var(--box-crisp-col, rgba(255,255,255,.1));
+            border-radius: 10px;
+            padding: 10px;
+            background: rgba(255,255,255,.02);
+        }
+
+        @media (max-width: 1100px) {
+            .stats { grid-template-columns: repeat(3, minmax(160px, 1fr)); }
+            .split { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 760px) {
+            body { padding: 10px; }
+            .stats { grid-template-columns: repeat(2, minmax(130px, 1fr)); }
+            .charts-grid { grid-template-columns: 1fr; }
+            .form-grid { grid-template-columns: 1fr; }
+            .risk-metrics { grid-template-columns: repeat(2, minmax(130px, 1fr)); }
+            .risk-grid { grid-template-columns: 1fr; }
+            .stress-grid { grid-template-columns: 1fr; }
+            th, td { font-size: .8rem; padding: 8px 6px; }
+        }
+    </style>
+</head>
+<body>
+<div class="app">
+    <section class="card toolbar">
+        <div class="title-wrap">
+            <h1>Multi-Exchange Portfolio Aggregator</h1>
+            <div class="muted">Manual tracking • local-only storage • CoinGecko live pricing (60s refresh)</div>
+        </div>
+        <div class="btn-row">
+            <button id="refresh-btn" class="btn">Refresh Prices</button>
+            <button id="venues-btn" class="btn">Venue Manager</button>
+            <button id="add-btn" class="btn primary">Add Holding</button>
+        </div>
+    </section>
+
+    <section class="card stats" id="stats-grid">
+        <div class="stat"><div class="stat-label">Total Portfolio Value</div><div id="stat-total" class="stat-value stat-large">$0.00</div></div>
+        <div class="stat"><div class="stat-label">24h Change</div><div id="stat-change24" class="stat-value">$0.00 (0.00%)</div></div>
+        <div class="stat"><div class="stat-label">Total Cost Basis</div><div id="stat-cost" class="stat-value">$0.00</div></div>
+        <div class="stat"><div class="stat-label">Unrealized PnL</div><div id="stat-pnl" class="stat-value">$0.00 (0.00%)</div></div>
+        <div class="stat"><div class="stat-label">Best Performer</div><div id="stat-best" class="stat-value">—</div></div>
+        <div class="stat"><div class="stat-label">Worst Performer</div><div id="stat-worst" class="stat-value">—</div></div>
+    </section>
+
+    <section class="card">
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="holdings">Holdings Table</button>
+            <button class="tab-btn" data-tab="allocation">Allocation Charts</button>
+            <button class="tab-btn" data-tab="performance">Performance</button>
+            <button class="tab-btn" data-tab="risk">Risk View</button>
+        </div>
+
+        <div id="tab-holdings" class="tab-panel active">
+            <div class="table-controls">
+                <div class="btn-row">
+                    <label class="small">Group by
+                        <select id="group-by" class="pill">
+                            <option value="none">None</option>
+                            <option value="asset">Asset</option>
+                            <option value="venue">Venue</option>
+                        </select>
+                    </label>
+                </div>
+                <div class="muted" id="holdings-meta">0 holdings</div>
+            </div>
+            <div style="overflow:auto;">
+                <table id="holdings-table">
+                    <thead>
+                    <tr>
+                        <th><button data-sort="asset">Asset</button></th>
+                        <th><button data-sort="amount">Amount</button></th>
+                        <th><button data-sort="price">Price</button></th>
+                        <th><button data-sort="value">Value</button></th>
+                        <th><button data-sort="change24h">24h%</button></th>
+                        <th><button data-sort="allocation">Allocation%</button></th>
+                        <th><button data-sort="pnl">PnL</button></th>
+                        <th><button data-sort="venue">Venue</button></th>
+                        <th class="right">Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody id="holdings-body"></tbody>
+                </table>
+            </div>
+            <div id="holdings-empty" class="empty" style="display:none;">Add your first holding to get started.</div>
+        </div>
+
+        <div id="tab-allocation" class="tab-panel">
+            <div class="charts-grid">
+                <article class="card chart-card">
+                    <h3 class="chart-title">By Asset</h3>
+                    <canvas id="asset-donut" width="380" height="250"></canvas>
+                    <div id="asset-legend" class="legend"></div>
+                </article>
+                <article class="card chart-card">
+                    <h3 class="chart-title">By Venue</h3>
+                    <canvas id="venue-donut" width="380" height="250"></canvas>
+                    <div id="venue-legend" class="legend"></div>
+                </article>
+                <article class="card chart-card">
+                    <h3 class="chart-title">By Venue Type</h3>
+                    <canvas id="venue-type-bar" width="380" height="250"></canvas>
+                    <div id="venue-type-legend" class="legend"></div>
+                </article>
+                <article class="card chart-card">
+                    <h3 class="chart-title">By Chain</h3>
+                    <div style="overflow:auto;">
+                        <table>
+                            <thead><tr><th>Chain</th><th>Value</th><th>Allocation</th></tr></thead>
+                            <tbody id="chain-body"></tbody>
+                        </table>
+                    </div>
+                </article>
+            </div>
+        </div>
+
+        <div id="tab-performance" class="tab-panel">
+            <div class="split">
+                <article class="card line-wrap">
+                    <h3 class="chart-title">Portfolio Value Over Time</h3>
+                    <canvas id="history-line" width="760" height="280"></canvas>
+                </article>
+                <article class="card line-wrap">
+                    <h3 class="chart-title">Daily Snapshot</h3>
+                    <div class="muted" id="snapshot-info">No snapshots yet.</div>
+                    <div class="actions" style="justify-content:flex-start;margin-top:12px;">
+                        <button class="btn" id="snapshot-btn">Save Snapshot Now</button>
+                    </div>
+                </article>
+            </div>
+            <article class="card" style="margin-top:10px;padding:10px;overflow:auto;">
+                <h3 class="chart-title">Asset Performance</h3>
+                <table>
+                    <thead><tr><th>Asset</th><th>Cost Basis</th><th>Current Value</th><th>Unrealized PnL</th><th>ROI%</th></tr></thead>
+                    <tbody id="performance-body"></tbody>
+                </table>
+            </article>
+        </div>
+
+        <div id="tab-risk" class="tab-panel">
+            <div class="risk-note" id="risk-updated">Risk engine uses live market pricing and DefiLlama chain/protocol TVL context.</div>
+            <div class="risk-metrics">
+                <div class="risk-metric"><div class="risk-label">Composite Risk</div><div id="risk-composite" class="risk-value">0 / 100</div></div>
+                <div class="risk-metric"><div class="risk-label">Concentration Risk</div><div id="risk-concentration" class="risk-value">0 / 100</div></div>
+                <div class="risk-metric"><div class="risk-label">Volatility Risk</div><div id="risk-volatility" class="risk-value">0 / 100</div></div>
+                <div class="risk-metric"><div class="risk-label">Custody Risk</div><div id="risk-custody" class="risk-value">0 / 100</div></div>
+            </div>
+
+            <div class="risk-grid">
+                <article class="card" style="padding:10px;overflow:auto;">
+                    <h3 class="chart-title">Chain Exposure Risk</h3>
+                    <table>
+                        <thead><tr><th>Chain</th><th>Exposure</th><th>Defi TVL</th><th>Risk</th><th>Status</th></tr></thead>
+                        <tbody id="risk-chain-body"></tbody>
+                    </table>
+                </article>
+                <article class="card" style="padding:10px;overflow:auto;">
+                    <h3 class="chart-title">Top Protocol Context</h3>
+                    <table>
+                        <thead><tr><th>Protocol</th><th>Chain</th><th>TVL</th></tr></thead>
+                        <tbody id="risk-protocol-body"></tbody>
+                    </table>
+                </article>
+            </div>
+
+            <div class="stress-grid">
+                <article class="card" style="padding:10px;">
+                    <h3 class="chart-title">Stress Test Simulator</h3>
+                    <div class="stress-controls">
+                        <div>
+                            <div class="stress-row">
+                                <label for="stress-market">Global Market Shock</label>
+                                <span id="stress-market-val" class="small">-15%</span>
+                            </div>
+                            <input id="stress-market" type="range" min="-50" max="20" step="1" value="-15">
+                        </div>
+                        <div>
+                            <div class="stress-row">
+                                <label for="stress-beta">Altcoin Beta Multiplier</label>
+                                <span id="stress-beta-val" class="small">1.4x</span>
+                            </div>
+                            <input id="stress-beta" type="range" min="1" max="3" step="0.1" value="1.4">
+                        </div>
+                        <div>
+                            <div class="stress-row">
+                                <label for="stress-stable">Stablecoin Depeg Shock</label>
+                                <span id="stress-stable-val" class="small">-8%</span>
+                            </div>
+                            <input id="stress-stable" type="range" min="-40" max="0" step="1" value="-8">
+                        </div>
+                    </div>
+                </article>
+                <article class="card" style="padding:10px;">
+                    <h3 class="chart-title">Scenario Output</h3>
+                    <div class="stress-kpi">
+                        <div class="stress-card">
+                            <div class="risk-label">Projected Value</div>
+                            <div id="stress-value" class="risk-value">$0.00</div>
+                        </div>
+                        <div class="stress-card">
+                            <div class="risk-label">Scenario PnL</div>
+                            <div id="stress-pnl" class="risk-value">$0.00</div>
+                        </div>
+                        <div class="stress-card">
+                            <div class="risk-label">Scenario Drawdown</div>
+                            <div id="stress-drawdown" class="risk-value">0.00%</div>
+                        </div>
+                        <div class="stress-card">
+                            <div class="risk-label">Tail Risk Alert</div>
+                            <div id="stress-alert" class="risk-value">Low</div>
+                        </div>
+                    </div>
+                </article>
+            </div>
+        </div>
+    </section>
+</div>
+
+<div class="modal" id="holding-modal" aria-hidden="true">
+    <div class="modal-card card">
+        <h2 style="margin-top:0;font-size:1rem;">Add Holding</h2>
+        <div class="form-grid">
+            <div style="position:relative;grid-column:1/-1;">
+                <label for="token-search">Token Search</label>
+                <input id="token-search" placeholder="Type coin name or symbol (e.g. bitcoin, BTC)">
+                <div class="search-suggest" id="token-suggest"></div>
+            </div>
+            <div>
+                <label for="amount-input">Amount</label>
+                <input id="amount-input" type="number" step="any" min="0" placeholder="0.0">
+            </div>
+            <div>
+                <label for="venue-select">Venue</label>
+                <select id="venue-select"></select>
+            </div>
+            <div>
+                <label for="entry-input">Average Entry Price (USD, optional)</label>
+                <input id="entry-input" type="number" step="any" min="0" placeholder="0">
+            </div>
+            <div>
+                <label for="venue-add-inline">Or Add New Venue</label>
+                <button id="venue-add-inline" class="btn" type="button">Open Venue Manager</button>
+            </div>
+            <div style="grid-column:1/-1;">
+                <label for="notes-input">Notes (optional)</label>
+                <textarea id="notes-input" placeholder="DCA, staking, LP, etc."></textarea>
+            </div>
+        </div>
+        <div class="actions">
+            <button class="btn" data-close-modal="holding-modal">Cancel</button>
+            <button class="btn primary" id="save-holding-btn">Save Holding</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="venues-modal" aria-hidden="true">
+    <div class="modal-card card">
+        <h2 style="margin-top:0;font-size:1rem;">Venue Manager</h2>
+        <div id="venue-list" class="venue-list"></div>
+        <h3 style="font-size:.9rem;margin:12px 0 8px;">Add Venue</h3>
+        <div class="form-grid">
+            <div>
+                <label for="new-venue-name">Name</label>
+                <input id="new-venue-name" placeholder="e.g. Kraken, Rabby (ETH)">
+            </div>
+            <div>
+                <label for="new-venue-type">Type</label>
+                <select id="new-venue-type">
+                    <option value="exchange">Exchange</option>
+                    <option value="wallet">Wallet</option>
+                    <option value="defi">DeFi</option>
+                </select>
+            </div>
+            <div>
+                <label for="new-venue-color">Color</label>
+                <input id="new-venue-color" type="color" value="#3b82f6">
+            </div>
+        </div>
+        <div class="actions">
+            <button class="btn" data-close-modal="venues-modal">Close</button>
+            <button class="btn primary" id="add-venue-btn">Add Venue</button>
+        </div>
+    </div>
+</div>
+
+<script>
+(() => {
+    const STORAGE_KEY = 'lair.portfolio.aggregator.v1';
+    const COIN_LIST_CACHE_KEY = 'lair.portfolio.coinlist.v1';
+    const DEFI_CACHE_KEY = 'lair.portfolio.defi.v1';
+    const COIN_LIST_TTL = 1000 * 60 * 60 * 24 * 7;
+    const DEFI_TTL = 1000 * 60 * 30;
+
+    const defaultData = {
+        holdings: [],
+        venues: [
+            { name: 'Binance', type: 'exchange', color: '#F3BA2F' },
+            { name: 'Coinbase', type: 'exchange', color: '#0052FF' },
+            { name: 'MetaMask (ETH)', type: 'wallet', color: '#E2761B' },
+            { name: 'Phantom (SOL)', type: 'wallet', color: '#AB9FF2' }
+        ],
+        snapshots: []
+    };
+
+    let state = loadState();
+    let prices = {};
+    let calculated = emptyCalc();
+    let expandedKeys = new Set();
+    let sortState = { key: 'value', dir: 'desc' };
+    let selectedCoin = null;
+    let coinList = [];
+    let defiFeed = loadDefiCache();
+    let riskModel = emptyRiskModel();
+    let stressConfig = { marketShock: -15, altBeta: 1.4, stableShock: -8 };
+    const fetchFn = window.cfetch || fetch;
+
+    const ui = {
+        tabs: document.querySelectorAll('.tab-btn'),
+        tabPanels: document.querySelectorAll('.tab-panel'),
+        groupBy: document.getElementById('group-by'),
+        holdingsBody: document.getElementById('holdings-body'),
+        holdingsEmpty: document.getElementById('holdings-empty'),
+        holdingsMeta: document.getElementById('holdings-meta'),
+        statTotal: document.getElementById('stat-total'),
+        statChange24: document.getElementById('stat-change24'),
+        statCost: document.getElementById('stat-cost'),
+        statPnl: document.getElementById('stat-pnl'),
+        statBest: document.getElementById('stat-best'),
+        statWorst: document.getElementById('stat-worst'),
+        addBtn: document.getElementById('add-btn'),
+        refreshBtn: document.getElementById('refresh-btn'),
+        venuesBtn: document.getElementById('venues-btn'),
+        holdingModal: document.getElementById('holding-modal'),
+        tokenSearch: document.getElementById('token-search'),
+        tokenSuggest: document.getElementById('token-suggest'),
+        amountInput: document.getElementById('amount-input'),
+        venueSelect: document.getElementById('venue-select'),
+        entryInput: document.getElementById('entry-input'),
+        notesInput: document.getElementById('notes-input'),
+        saveHoldingBtn: document.getElementById('save-holding-btn'),
+        venueInlineBtn: document.getElementById('venue-add-inline'),
+        venuesModal: document.getElementById('venues-modal'),
+        venueList: document.getElementById('venue-list'),
+        addVenueBtn: document.getElementById('add-venue-btn'),
+        newVenueName: document.getElementById('new-venue-name'),
+        newVenueType: document.getElementById('new-venue-type'),
+        newVenueColor: document.getElementById('new-venue-color'),
+        snapshotBtn: document.getElementById('snapshot-btn'),
+        snapshotInfo: document.getElementById('snapshot-info'),
+        performanceBody: document.getElementById('performance-body'),
+        chainBody: document.getElementById('chain-body'),
+        assetDonut: document.getElementById('asset-donut'),
+        venueDonut: document.getElementById('venue-donut'),
+        venueTypeBar: document.getElementById('venue-type-bar'),
+        historyLine: document.getElementById('history-line'),
+        assetLegend: document.getElementById('asset-legend'),
+        venueLegend: document.getElementById('venue-legend'),
+        venueTypeLegend: document.getElementById('venue-type-legend'),
+        riskUpdated: document.getElementById('risk-updated'),
+        riskComposite: document.getElementById('risk-composite'),
+        riskConcentration: document.getElementById('risk-concentration'),
+        riskVolatility: document.getElementById('risk-volatility'),
+        riskCustody: document.getElementById('risk-custody'),
+        riskChainBody: document.getElementById('risk-chain-body'),
+        riskProtocolBody: document.getElementById('risk-protocol-body'),
+        stressMarket: document.getElementById('stress-market'),
+        stressBeta: document.getElementById('stress-beta'),
+        stressStable: document.getElementById('stress-stable'),
+        stressMarketVal: document.getElementById('stress-market-val'),
+        stressBetaVal: document.getElementById('stress-beta-val'),
+        stressStableVal: document.getElementById('stress-stable-val'),
+        stressValue: document.getElementById('stress-value'),
+        stressPnl: document.getElementById('stress-pnl'),
+        stressDrawdown: document.getElementById('stress-drawdown'),
+        stressAlert: document.getElementById('stress-alert')
+    };
+
+    init();
+
+    async function init() {
+        bindEvents();
+        refreshVenueOptions();
+        hydrateCoinList();
+        await refreshData(true);
+        saveDailySnapshotIfNeeded();
+        setInterval(() => refreshData(false), 60000);
+    }
+
+    function bindEvents() {
+        ui.tabs.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tab = btn.dataset.tab;
+                ui.tabs.forEach(b => b.classList.toggle('active', b === btn));
+                ui.tabPanels.forEach(panel => panel.classList.toggle('active', panel.id === 'tab-' + tab));
+                if (tab === 'allocation') drawAllocation();
+                if (tab === 'performance') drawPerformance();
+                if (tab === 'risk') drawRisk();
+            });
+        });
+
+        ui.groupBy.addEventListener('change', renderHoldingsTable);
+        document.querySelectorAll('th button[data-sort]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const key = btn.dataset.sort;
+                if (sortState.key === key) {
+                    sortState.dir = sortState.dir === 'asc' ? 'desc' : 'asc';
+                } else {
+                    sortState.key = key;
+                    sortState.dir = 'desc';
+                }
+                renderHoldingsTable();
+            });
+        });
+
+        ui.addBtn.addEventListener('click', () => openModal('holding-modal'));
+        ui.venuesBtn.addEventListener('click', () => {
+            renderVenueManager();
+            openModal('venues-modal');
+        });
+        ui.refreshBtn.addEventListener('click', () => refreshData(true));
+        ui.saveHoldingBtn.addEventListener('click', saveHolding);
+        ui.venueInlineBtn.addEventListener('click', () => {
+            closeModal('holding-modal');
+            renderVenueManager();
+            openModal('venues-modal');
+        });
+        ui.addVenueBtn.addEventListener('click', addVenue);
+        ui.snapshotBtn.addEventListener('click', () => {
+            saveSnapshot(true);
+            drawPerformance();
+        });
+
+        [ui.stressMarket, ui.stressBeta, ui.stressStable].forEach((control) => {
+            control.addEventListener('input', () => {
+                stressConfig.marketShock = Number(ui.stressMarket.value);
+                stressConfig.altBeta = Number(ui.stressBeta.value);
+                stressConfig.stableShock = Number(ui.stressStable.value);
+                drawRisk();
+            });
+        });
+
+        document.body.addEventListener('click', (event) => {
+            const closeTarget = event.target.closest('[data-close-modal]');
+            if (closeTarget) closeModal(closeTarget.dataset.closeModal);
+            if (event.target.classList.contains('modal')) closeModal(event.target.id);
+        });
+
+        ui.tokenSearch.addEventListener('input', () => {
+            selectedCoin = null;
+            renderTokenSuggestions(ui.tokenSearch.value.trim());
+        });
+
+        document.addEventListener('click', (event) => {
+            if (!ui.tokenSuggest.contains(event.target) && event.target !== ui.tokenSearch) {
+                ui.tokenSuggest.style.display = 'none';
+            }
+        });
+    }
+
+    async function refreshData(showLoading) {
+        if (showLoading) {
+            ui.refreshBtn.disabled = true;
+            ui.refreshBtn.textContent = 'Refreshing...';
+        }
+
+        const ids = [...new Set(state.holdings.map(h => h.coinId).filter(Boolean))];
+        prices = ids.length ? await fetchPrices(ids) : {};
+        await ensureDefiFeed();
+        calculated = calculatePortfolio(state.holdings, prices);
+        riskModel = calculateRiskModel();
+        renderAll();
+
+        if (showLoading) {
+            ui.refreshBtn.disabled = false;
+            ui.refreshBtn.textContent = 'Refresh Prices';
+        }
+    }
+
+    function renderAll() {
+        renderStats();
+        renderHoldingsTable();
+        drawAllocation();
+        drawPerformance();
+        drawRisk();
+    }
+
+    function renderStats() {
+        const total = calculated.totalValue;
+        const totalCost = calculated.totalCost;
+        const pnl = calculated.pnl;
+        const pnlPct = totalCost > 0 ? (pnl / totalCost) * 100 : 0;
+
+        let total24hDelta = 0;
+        for (const asset of Object.values(calculated.byAsset)) {
+            total24hDelta += (asset.totalValue || 0) * ((asset.change24h || 0) / 100);
+        }
+        const total24hPct = total > 0 ? (total24hDelta / total) * 100 : 0;
+
+        const performers = Object.values(calculated.byAsset).sort((a, b) => (b.change24h || 0) - (a.change24h || 0));
+        const best = performers[0];
+        const worst = performers[performers.length - 1];
+
+        ui.statTotal.textContent = fmtUsd(total);
+        ui.statChange24.textContent = `${fmtSignedUsd(total24hDelta)} (${fmtSignedPct(total24hPct)})`;
+        ui.statCost.textContent = fmtUsd(totalCost);
+        ui.statPnl.textContent = `${fmtSignedUsd(pnl)} (${fmtSignedPct(pnlPct)})`;
+        ui.statBest.textContent = best ? `${best.symbol} ${fmtSignedPct(best.change24h || 0)}` : '—';
+        ui.statWorst.textContent = worst ? `${worst.symbol} ${fmtSignedPct(worst.change24h || 0)}` : '—';
+
+        applyPosNeg(ui.statChange24, total24hDelta);
+        applyPosNeg(ui.statPnl, pnl);
+        applyPosNeg(ui.statBest, best ? best.change24h : 0);
+        applyPosNeg(ui.statWorst, worst ? worst.change24h : 0);
+    }
+
+    function renderHoldingsTable() {
+        const groupBy = ui.groupBy.value;
+        const rows = buildTableRows(groupBy);
+        const sorted = sortRows(rows, sortState.key, sortState.dir);
+        ui.holdingsBody.innerHTML = '';
+
+        if (state.holdings.length === 0) {
+            ui.holdingsEmpty.style.display = '';
+            ui.holdingsMeta.textContent = '0 holdings';
+            return;
+        }
+
+        ui.holdingsEmpty.style.display = 'none';
+        ui.holdingsMeta.textContent = `${state.holdings.length} holdings • ${Object.keys(calculated.byAsset).length} assets • ${state.venues.length} venues`;
+
+        sorted.forEach(row => {
+            ui.holdingsBody.appendChild(renderRow(row, groupBy));
+            if (row.expandable && expandedKeys.has(row.expandKey)) {
+                row.children.forEach(child => ui.holdingsBody.appendChild(renderSubRow(child)));
+            }
+        });
+    }
+
+    function buildTableRows(groupBy) {
+        if (groupBy === 'none') {
+            return state.holdings.map(h => {
+                const p = prices[h.coinId] || {};
+                const price = Number(p.usd) || 0;
+                const value = h.amount * price;
+                const cost = h.amount * (h.avgEntryPrice || 0);
+                const pnl = value - cost;
+                const allocation = calculated.totalValue > 0 ? (value / calculated.totalValue) * 100 : 0;
+                return {
+                    type: 'holding',
+                    id: h.id,
+                    asset: `${h.symbol}`,
+                    amount: h.amount,
+                    price,
+                    value,
+                    change24h: Number(p.usd_24h_change) || 0,
+                    allocation,
+                    pnl,
+                    venue: h.venue,
+                    holding: h
+                };
+            });
+        }
+
+        if (groupBy === 'asset') {
+            return Object.entries(calculated.byAsset).map(([coinId, asset]) => {
+                const pnl = asset.totalValue - asset.totalCost;
+                const children = state.holdings
+                    .filter(h => h.coinId === coinId)
+                    .map(h => {
+                        const p = prices[h.coinId] || {};
+                        const price = Number(p.usd) || 0;
+                        const value = h.amount * price;
+                        return {
+                            asset: `${h.symbol} (${h.name})`,
+                            amount: h.amount,
+                            price,
+                            value,
+                            change24h: Number(p.usd_24h_change) || 0,
+                            allocation: calculated.totalValue > 0 ? (value / calculated.totalValue) * 100 : 0,
+                            pnl: value - (h.amount * (h.avgEntryPrice || 0)),
+                            venue: h.venue
+                        };
+                    });
+                return {
+                    type: 'asset-group',
+                    asset: `${asset.symbol}`,
+                    amount: asset.totalAmount,
+                    price: asset.price,
+                    value: asset.totalValue,
+                    change24h: asset.change24h,
+                    allocation: asset.allocation,
+                    pnl,
+                    venue: `${asset.venues.length} entries`,
+                    expandable: true,
+                    expandKey: `asset:${coinId}`,
+                    children
+                };
+            });
+        }
+
+        const venueMap = {};
+        state.holdings.forEach(h => {
+            if (!venueMap[h.venue]) {
+                venueMap[h.venue] = {
+                    type: 'venue-group',
+                    asset: h.venue,
+                    amount: 0,
+                    price: 0,
+                    value: 0,
+                    change24hNumerator: 0,
+                    allocation: 0,
+                    pnl: 0,
+                    venue: h.venue,
+                    expandable: true,
+                    expandKey: `venue:${h.venue}`,
+                    children: []
+                };
+            }
+            const p = prices[h.coinId] || {};
+            const price = Number(p.usd) || 0;
+            const value = h.amount * price;
+            const pnl = value - (h.amount * (h.avgEntryPrice || 0));
+            venueMap[h.venue].amount += h.amount;
+            venueMap[h.venue].value += value;
+            venueMap[h.venue].pnl += pnl;
+            venueMap[h.venue].change24hNumerator += value * ((Number(p.usd_24h_change) || 0) / 100);
+            venueMap[h.venue].children.push({
+                asset: `${h.symbol}`,
+                amount: h.amount,
+                price,
+                value,
+                change24h: Number(p.usd_24h_change) || 0,
+                allocation: calculated.totalValue > 0 ? (value / calculated.totalValue) * 100 : 0,
+                pnl,
+                venue: h.venue
+            });
+        });
+
+        return Object.values(venueMap).map(v => {
+            v.price = v.amount > 0 ? v.value / v.amount : 0;
+            v.change24h = v.value > 0 ? (v.change24hNumerator / v.value) * 100 : 0;
+            v.allocation = calculated.totalValue > 0 ? (v.value / calculated.totalValue) * 100 : 0;
+            delete v.change24hNumerator;
+            return v;
+        });
+    }
+
+    function renderRow(row, groupBy) {
+        const tr = document.createElement('tr');
+        tr.classList.toggle('asset-row', !!row.expandable);
+        if (row.type === 'holding') {
+            tr.addEventListener('mouseenter', () => tr.classList.add('hover-delete'));
+            tr.addEventListener('mouseleave', () => tr.classList.remove('hover-delete'));
+        }
+
+        if (row.expandable) {
+            tr.addEventListener('click', () => {
+                if (expandedKeys.has(row.expandKey)) expandedKeys.delete(row.expandKey);
+                else expandedKeys.add(row.expandKey);
+                renderHoldingsTable();
+            });
+        }
+
+        const amountCell = row.type === 'holding'
+            ? `<span class="inline-edit" data-edit-amount="${row.id}">${fmtNum(row.amount)}</span>`
+            : fmtNum(row.amount);
+
+        tr.innerHTML = `
+            <td>${row.expandable ? (expandedKeys.has(row.expandKey) ? '▾ ' : '▸ ') : ''}${escapeHtml(row.asset || '—')}</td>
+            <td>${amountCell}</td>
+            <td>${fmtUsd(row.price || 0)}</td>
+            <td>${fmtUsd(row.value || 0)}</td>
+            <td class="${(row.change24h || 0) >= 0 ? 'pos' : 'neg'}">${fmtSignedPct(row.change24h || 0)}</td>
+            <td>${fmtPct(row.allocation || 0)}</td>
+            <td class="${(row.pnl || 0) >= 0 ? 'pos' : 'neg'}">${fmtSignedUsd(row.pnl || 0)}</td>
+            <td>${escapeHtml(row.venue || '—')}</td>
+            <td class="right">${row.type === 'holding' ? `<button class="delete-btn" data-delete="${row.id}">Delete</button>` : ''}</td>
+        `;
+
+        tr.querySelectorAll('[data-edit-amount]').forEach(el => {
+            el.addEventListener('click', (event) => {
+                event.stopPropagation();
+                const id = el.dataset.editAmount;
+                const holding = state.holdings.find(h => h.id === id);
+                if (!holding) return;
+                const next = prompt('Update amount', String(holding.amount));
+                if (next == null) return;
+                const amount = Number(next);
+                if (!Number.isFinite(amount) || amount < 0) return;
+                holding.amount = amount;
+                persistState();
+                refreshData(false);
+            });
+        });
+
+        tr.querySelectorAll('[data-delete]').forEach(btn => {
+            btn.addEventListener('click', (event) => {
+                event.stopPropagation();
+                const id = btn.dataset.delete;
+                deleteHolding(id);
+            });
+        });
+
+        return tr;
+    }
+
+    function renderSubRow(child) {
+        const tr = document.createElement('tr');
+        tr.className = 'sub-row';
+        tr.innerHTML = `
+            <td style="padding-left:24px;">${escapeHtml(child.asset)}</td>
+            <td>${fmtNum(child.amount)}</td>
+            <td>${fmtUsd(child.price)}</td>
+            <td>${fmtUsd(child.value)}</td>
+            <td class="${child.change24h >= 0 ? 'pos':'neg'}">${fmtSignedPct(child.change24h)}</td>
+            <td>${fmtPct(child.allocation)}</td>
+            <td class="${child.pnl >= 0 ? 'pos':'neg'}">${fmtSignedUsd(child.pnl)}</td>
+            <td>${escapeHtml(child.venue)}</td>
+            <td></td>
+        `;
+        return tr;
+    }
+
+    function drawAllocation() {
+        const byAsset = Object.values(calculated.byAsset)
+            .filter(a => a.totalValue > 0)
+            .sort((a, b) => b.totalValue - a.totalValue);
+
+        const assetSegments = byAsset.map((asset, i) => ({
+            label: asset.symbol,
+            pct: asset.allocation,
+            color: chartColor(i),
+            value: asset.totalValue
+        }));
+
+        const byVenue = calcByVenue();
+        const venueSegments = Object.values(byVenue)
+            .sort((a, b) => b.value - a.value)
+            .map((v, i) => ({
+                label: v.name,
+                pct: calculated.totalValue > 0 ? (v.value / calculated.totalValue) * 100 : 0,
+                color: v.color || chartColor(i),
+                value: v.value
+            }));
+
+        const byType = calcByVenueType();
+        const typeSegments = Object.entries(byType).map(([type, value], i) => ({
+            label: type,
+            value,
+            pct: calculated.totalValue > 0 ? (value / calculated.totalValue) * 100 : 0,
+            color: chartColor(i)
+        }));
+
+        drawDonutChart(ui.assetDonut, assetSegments);
+        drawLegend(ui.assetLegend, assetSegments);
+
+        drawDonutChart(ui.venueDonut, venueSegments);
+        drawLegend(ui.venueLegend, venueSegments);
+
+        drawBarChart(ui.venueTypeBar, typeSegments);
+        drawLegend(ui.venueTypeLegend, typeSegments);
+
+        drawChainBreakdown();
+    }
+
+    function drawPerformance() {
+        const snapshots = (state.snapshots || []).slice().sort((a, b) => a.date.localeCompare(b.date));
+        drawLineChart(ui.historyLine, snapshots);
+
+        const last = snapshots[snapshots.length - 1];
+        ui.snapshotInfo.textContent = last
+            ? `Last snapshot: ${last.date} • ${fmtUsd(last.totalValue)} • Total snapshots: ${snapshots.length}`
+            : 'No snapshots yet.';
+
+        const rows = Object.values(calculated.byAsset)
+            .sort((a, b) => b.totalValue - a.totalValue)
+            .map(asset => {
+                const pnl = asset.totalValue - asset.totalCost;
+                const roi = asset.totalCost > 0 ? (pnl / asset.totalCost) * 100 : 0;
+                return `
+                    <tr>
+                        <td>${escapeHtml(asset.symbol)} <span class="muted">${escapeHtml(asset.name)}</span></td>
+                        <td>${fmtUsd(asset.totalCost)}</td>
+                        <td>${fmtUsd(asset.totalValue)}</td>
+                        <td class="${pnl >= 0 ? 'pos':'neg'}">${fmtSignedUsd(pnl)}</td>
+                        <td class="${roi >= 0 ? 'pos':'neg'}">${fmtSignedPct(roi)}</td>
+                    </tr>
+                `;
+            });
+
+        ui.performanceBody.innerHTML = rows.join('') || '<tr><td colspan="5" class="muted">No asset data.</td></tr>';
+    }
+
+    function drawRisk() {
+        ui.stressMarketVal.textContent = `${fmtSignedPct(stressConfig.marketShock).replace('+', '')}`;
+        ui.stressBetaVal.textContent = `${stressConfig.altBeta.toFixed(1)}x`;
+        ui.stressStableVal.textContent = `${fmtSignedPct(stressConfig.stableShock).replace('+', '')}`;
+
+        ui.riskComposite.textContent = `${riskModel.composite.toFixed(1)} / 100`;
+        ui.riskConcentration.textContent = `${riskModel.concentration.toFixed(1)} / 100`;
+        ui.riskVolatility.textContent = `${riskModel.volatility.toFixed(1)} / 100`;
+        ui.riskCustody.textContent = `${riskModel.custody.toFixed(1)} / 100`;
+
+        applyPosNegInverse(ui.riskComposite, riskModel.composite);
+        applyPosNegInverse(ui.riskConcentration, riskModel.concentration);
+        applyPosNegInverse(ui.riskVolatility, riskModel.volatility);
+        applyPosNegInverse(ui.riskCustody, riskModel.custody);
+
+        const updated = defiFeed.updatedAt ? new Date(defiFeed.updatedAt).toLocaleString() : 'unavailable';
+        ui.riskUpdated.textContent = `Risk engine uses live market pricing + DefiLlama TVL context. Last DeFi refresh: ${updated}.`;
+
+        const chainRows = riskModel.chainRows.map((row) => {
+            return `
+                <tr>
+                    <td>${escapeHtml(row.chain)}</td>
+                    <td>${fmtUsd(row.exposure)} <span class="muted">(${fmtPct(row.exposurePct)})</span></td>
+                    <td>${row.defiTvl > 0 ? fmtUsd(row.defiTvl) : '<span class="muted">n/a</span>'}</td>
+                    <td>${row.risk.toFixed(1)}</td>
+                    <td><span class="risk-badge">${escapeHtml(riskBucket(row.risk))}</span></td>
+                </tr>
+            `;
+        });
+        ui.riskChainBody.innerHTML = chainRows.join('') || '<tr><td colspan="5" class="muted">No chain exposure yet.</td></tr>';
+
+        const protocolRows = riskModel.protocolRows.map((row) => {
+            return `
+                <tr>
+                    <td>${escapeHtml(row.name)}</td>
+                    <td>${escapeHtml(row.chain)}</td>
+                    <td>${fmtUsd(row.tvl)}</td>
+                </tr>
+            `;
+        });
+        ui.riskProtocolBody.innerHTML = protocolRows.join('') || '<tr><td colspan="3" class="muted">No protocol context for current chains.</td></tr>';
+
+        const scenario = calculateStressScenario(stressConfig);
+        ui.stressValue.textContent = fmtUsd(scenario.projectedValue);
+        ui.stressPnl.textContent = fmtSignedUsd(scenario.deltaValue);
+        ui.stressDrawdown.textContent = fmtSignedPct(scenario.drawdownPct).replace('+', '');
+        ui.stressAlert.textContent = scenario.alert;
+
+        applyPosNeg(ui.stressPnl, scenario.deltaValue);
+        applyPosNeg(ui.stressDrawdown, scenario.drawdownPct);
+        applyPosNegInverse(ui.stressAlert, scenario.riskScore);
+    }
+
+    function drawChainBreakdown() {
+        const chainMap = {};
+        for (const holding of state.holdings) {
+            const chain = extractChain(holding.venue);
+            const p = prices[holding.coinId] || {};
+            const value = holding.amount * (Number(p.usd) || 0);
+            chainMap[chain] = (chainMap[chain] || 0) + value;
+        }
+
+        const rows = Object.entries(chainMap)
+            .sort((a, b) => b[1] - a[1])
+            .map(([chain, value]) => `
+                <tr>
+                    <td>${escapeHtml(chain)}</td>
+                    <td>${fmtUsd(value)}</td>
+                    <td>${fmtPct(calculated.totalValue > 0 ? (value / calculated.totalValue) * 100 : 0)}</td>
+                </tr>
+            `);
+
+        ui.chainBody.innerHTML = rows.join('') || '<tr><td colspan="3" class="muted">No chain allocations yet.</td></tr>';
+    }
+
+    function renderVenueManager() {
+        const rows = state.venues.map(v => {
+            const inUse = state.holdings.some(h => h.venue === v.name);
+            return `
+                <div class="venue-row">
+                    <div>
+                        <span class="dot" style="background:${escapeHtml(v.color)}"></span>
+                        <strong>${escapeHtml(v.name)}</strong>
+                        <span class="tag">${escapeHtml(v.type)}</span>
+                    </div>
+                    <div>
+                        <button class="btn small" data-delete-venue="${escapeHtml(v.name)}">Delete</button>
+                        ${inUse ? '<span class="small muted">(has holdings)</span>' : ''}
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        ui.venueList.innerHTML = rows || '<div class="muted">No venues yet.</div>';
+        ui.venueList.querySelectorAll('[data-delete-venue]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const name = btn.dataset.deleteVenue;
+                deleteVenue(name);
+            });
+        });
+    }
+
+    function refreshVenueOptions() {
+        ui.venueSelect.innerHTML = state.venues.map(v => {
+            return `<option value="${escapeHtml(v.name)}">${escapeHtml(v.name)} (${escapeHtml(v.type)})</option>`;
+        }).join('');
+    }
+
+    async function hydrateCoinList() {
+        const cached = loadCoinListCache();
+        if (cached.length) coinList = cached;
+
+        try {
+            const res = await fetchFn('https://api.coingecko.com/api/v3/coins/list');
+            if (!res.ok) throw new Error('coin list fetch failed');
+            const list = await res.json();
+            coinList = Array.isArray(list) ? list : [];
+            saveCoinListCache(coinList);
+        } catch (error) {
+            if (!coinList.length) {
+                console.warn('Coin list unavailable', error);
+            }
+        }
+    }
+
+    async function fetchPrices(ids) {
+        const unique = [...new Set(ids)].slice(0, 250);
+        if (!unique.length) return {};
+        try {
+            const endpoint = `https://api.coingecko.com/api/v3/simple/price?ids=${encodeURIComponent(unique.join(','))}&vs_currencies=usd&include_24hr_change=true`;
+            const res = await fetchFn(endpoint);
+            if (!res.ok) throw new Error('prices fetch failed');
+            return await res.json();
+        } catch (error) {
+            console.warn('Price refresh failed', error);
+            return prices || {};
+        }
+    }
+
+    async function ensureDefiFeed() {
+        const isFresh = defiFeed.updatedAt && (Date.now() - defiFeed.updatedAt < DEFI_TTL);
+        if (isFresh) return;
+
+        try {
+            const [chainsRes, protocolsRes] = await Promise.all([
+                fetchFn('https://api.llama.fi/v2/chains'),
+                fetchFn('https://api.llama.fi/protocols')
+            ]);
+
+            if (!chainsRes.ok || !protocolsRes.ok) throw new Error('DefiLlama response not ok');
+
+            const chainsData = await chainsRes.json();
+            const protocolsData = await protocolsRes.json();
+
+            defiFeed = {
+                updatedAt: Date.now(),
+                chains: Array.isArray(chainsData) ? chainsData : [],
+                protocols: Array.isArray(protocolsData) ? protocolsData : []
+            };
+            saveDefiCache(defiFeed);
+        } catch (error) {
+            console.warn('Defi feed refresh failed', error);
+        }
+    }
+
+    function renderTokenSuggestions(query) {
+        if (!query) {
+            ui.tokenSuggest.style.display = 'none';
+            ui.tokenSuggest.innerHTML = '';
+            return;
+        }
+
+        const q = query.toLowerCase();
+        const localMatches = coinList
+            .filter(c => (c.name && c.name.toLowerCase().includes(q)) || (c.symbol && c.symbol.toLowerCase().includes(q)) || (c.id && c.id.toLowerCase().includes(q)))
+            .slice(0, 12);
+
+        ui.tokenSuggest.innerHTML = localMatches.map(c => {
+            return `<div class="suggest-item" data-coin-id="${escapeHtml(c.id)}" data-coin-symbol="${escapeHtml((c.symbol || '').toUpperCase())}" data-coin-name="${escapeHtml(c.name || '')}">${escapeHtml(c.name || '')} (${escapeHtml((c.symbol || '').toUpperCase())}) <span class="muted">${escapeHtml(c.id)}</span></div>`;
+        }).join('');
+
+        if (!localMatches.length) {
+            ui.tokenSuggest.innerHTML = '<div class="suggest-item muted">No local matches. Keep typing...</div>';
+        }
+
+        ui.tokenSuggest.style.display = '';
+
+        ui.tokenSuggest.querySelectorAll('[data-coin-id]').forEach(item => {
+            item.addEventListener('click', () => {
+                selectedCoin = {
+                    id: item.dataset.coinId,
+                    symbol: item.dataset.coinSymbol,
+                    name: item.dataset.coinName
+                };
+                ui.tokenSearch.value = `${selectedCoin.name} (${selectedCoin.symbol})`;
+                ui.tokenSuggest.style.display = 'none';
+            });
+        });
+
+        if (!localMatches.length) {
+            fetchRemoteSearch(query);
+        }
+    }
+
+    async function fetchRemoteSearch(query) {
+        try {
+            const res = await fetchFn(`https://api.coingecko.com/api/v3/search?query=${encodeURIComponent(query)}`);
+            if (!res.ok) return;
+            const data = await res.json();
+            const coins = (data.coins || []).slice(0, 10);
+            if (!coins.length) return;
+            ui.tokenSuggest.innerHTML = coins.map(c => {
+                return `<div class="suggest-item" data-coin-id="${escapeHtml(c.id)}" data-coin-symbol="${escapeHtml((c.symbol || '').toUpperCase())}" data-coin-name="${escapeHtml(c.name || '')}">${escapeHtml(c.name || '')} (${escapeHtml((c.symbol || '').toUpperCase())}) <span class="muted">${escapeHtml(c.id)}</span></div>`;
+            }).join('');
+            ui.tokenSuggest.querySelectorAll('[data-coin-id]').forEach(item => {
+                item.addEventListener('click', () => {
+                    selectedCoin = {
+                        id: item.dataset.coinId,
+                        symbol: item.dataset.coinSymbol,
+                        name: item.dataset.coinName
+                    };
+                    ui.tokenSearch.value = `${selectedCoin.name} (${selectedCoin.symbol})`;
+                    ui.tokenSuggest.style.display = 'none';
+                });
+            });
+        } catch (error) {
+            console.warn('remote search failed', error);
+        }
+    }
+
+    function saveHolding() {
+        if (!selectedCoin?.id) {
+            alert('Select a token from autocomplete results.');
+            return;
+        }
+
+        const amount = Number(ui.amountInput.value);
+        const venue = ui.venueSelect.value;
+        const entry = ui.entryInput.value.trim() ? Number(ui.entryInput.value) : null;
+
+        if (!Number.isFinite(amount) || amount <= 0) {
+            alert('Amount must be greater than 0.');
+            return;
+        }
+
+        if (!venue) {
+            alert('Select a venue.');
+            return;
+        }
+
+        if (entry != null && (!Number.isFinite(entry) || entry < 0)) {
+            alert('Entry price must be a positive number.');
+            return;
+        }
+
+        state.holdings.push({
+            id: safeUuid(),
+            coinId: selectedCoin.id,
+            symbol: selectedCoin.symbol,
+            name: selectedCoin.name,
+            amount,
+            venue,
+            venueType: (state.venues.find(v => v.name === venue) || {}).type || 'wallet',
+            avgEntryPrice: entry,
+            notes: ui.notesInput.value.trim()
+        });
+
+        persistState();
+        closeModal('holding-modal');
+        resetHoldingForm();
+        refreshData(false);
+    }
+
+    function addVenue() {
+        const name = ui.newVenueName.value.trim();
+        const type = ui.newVenueType.value;
+        const color = ui.newVenueColor.value;
+
+        if (!name) {
+            alert('Venue name is required.');
+            return;
+        }
+
+        if (state.venues.some(v => v.name.toLowerCase() === name.toLowerCase())) {
+            alert('Venue already exists.');
+            return;
+        }
+
+        state.venues.push({ name, type, color });
+        persistState();
+        refreshVenueOptions();
+        renderVenueManager();
+
+        ui.newVenueName.value = '';
+        ui.newVenueColor.value = '#3b82f6';
+    }
+
+    function deleteVenue(name) {
+        const usedCount = state.holdings.filter(h => h.venue === name).length;
+        if (usedCount > 0) {
+            const ok = confirm(`This venue is used by ${usedCount} holdings. Delete anyway? Holdings will stay but venue tag will remain as text.`);
+            if (!ok) return;
+        }
+        state.venues = state.venues.filter(v => v.name !== name);
+        persistState();
+        refreshVenueOptions();
+        renderVenueManager();
+        renderHoldingsTable();
+    }
+
+    function deleteHolding(id) {
+        const ok = confirm('Delete this holding?');
+        if (!ok) return;
+        state.holdings = state.holdings.filter(h => h.id !== id);
+        persistState();
+        refreshData(false);
+    }
+
+    function saveDailySnapshotIfNeeded() {
+        const today = todayKey();
+        const hasToday = state.snapshots.some(s => s.date === today);
+        if (!hasToday) {
+            saveSnapshot(false);
+        }
+    }
+
+    function saveSnapshot(force) {
+        const today = todayKey();
+        const hasToday = state.snapshots.some(s => s.date === today);
+        if (!force && hasToday) return;
+
+        state.snapshots = state.snapshots.filter(s => s.date !== today);
+        state.snapshots.push({ date: today, totalValue: Number(calculated.totalValue.toFixed(2)) });
+        state.snapshots = state.snapshots
+            .sort((a, b) => a.date.localeCompare(b.date))
+            .slice(-365);
+
+        persistState();
+    }
+
+    function calculatePortfolio(holdings, pricesMap) {
+        const byAsset = {};
+        let totalValue = 0;
+        let totalCost = 0;
+
+        holdings.forEach(h => {
+            const price = pricesMap[h.coinId]?.usd || 0;
+            const change24h = pricesMap[h.coinId]?.usd_24h_change || 0;
+            const value = h.amount * price;
+            const cost = h.amount * (h.avgEntryPrice || 0);
+            totalValue += value;
+            totalCost += cost;
+
+            if (!byAsset[h.coinId]) {
+                byAsset[h.coinId] = { symbol: h.symbol, name: h.name, totalAmount: 0, totalValue: 0, totalCost: 0, price, change24h, venues: [] };
+            }
+            byAsset[h.coinId].totalAmount += h.amount;
+            byAsset[h.coinId].totalValue += value;
+            byAsset[h.coinId].totalCost += cost;
+            byAsset[h.coinId].venues.push({ venue: h.venue, amount: h.amount, value });
+        });
+
+        Object.values(byAsset).forEach(a => {
+            a.allocation = totalValue > 0 ? ((a.totalValue / totalValue) * 100) : 0;
+        });
+
+        return { byAsset, totalValue, totalCost, pnl: totalValue - totalCost };
+    }
+
+    function calculateRiskModel() {
+        const total = calculated.totalValue || 0;
+        if (total <= 0) return emptyRiskModel();
+
+        const byAssetList = Object.values(calculated.byAsset);
+        const allocations = byAssetList.map((asset) => (asset.totalValue / total));
+        const hhi = allocations.reduce((sum, weight) => sum + (weight * weight), 0);
+        const concentration = clamp((hhi * 100), 0, 100);
+
+        const volatility = clamp(byAssetList.reduce((sum, asset) => {
+            const weight = asset.totalValue / total;
+            return sum + (Math.abs(asset.change24h || 0) * weight);
+        }, 0) * 2.4, 0, 100);
+
+        const custodyWeightByType = { exchange: 78, wallet: 32, defi: 60 };
+        const byVenue = calcByVenue();
+        const custody = clamp(Object.values(byVenue).reduce((sum, venue) => {
+            const venueMeta = state.venues.find(v => v.name === venue.name);
+            const type = venueMeta?.type || 'wallet';
+            const baseRisk = custodyWeightByType[type] ?? 50;
+            const weight = venue.value / total;
+            return sum + (baseRisk * weight);
+        }, 0), 0, 100);
+
+        const chainExposure = buildChainExposure();
+        const chainRows = Object.entries(chainExposure)
+            .map(([chain, exposure]) => {
+                const exposurePct = total > 0 ? (exposure / total) * 100 : 0;
+                const chainDefi = findChainDefi(chain);
+                const defiTvl = Number(chainDefi?.tvl) || 0;
+                const liquidityPenalty = defiTvl > 0
+                    ? clamp(110 - ((Math.log10(defiTvl) - 6) * 18), 8, 95)
+                    : 85;
+                const risk = clamp((exposurePct * 0.7) + (liquidityPenalty * 0.3), 0, 100);
+                return {
+                    chain,
+                    exposure,
+                    exposurePct,
+                    defiTvl,
+                    risk
+                };
+            })
+            .sort((a, b) => b.exposure - a.exposure);
+
+        const chainLiquidity = chainRows.reduce((sum, row) => {
+            return sum + (row.risk * (row.exposure / total));
+        }, 0);
+
+        const composite = clamp(
+            (concentration * 0.35) +
+            (volatility * 0.30) +
+            (custody * 0.20) +
+            (chainLiquidity * 0.15),
+            0,
+            100
+        );
+
+        const protocolRows = getProtocolContext(chainRows.map(r => r.chain));
+
+        return {
+            composite,
+            concentration,
+            volatility,
+            custody,
+            chainRows,
+            protocolRows
+        };
+    }
+
+    function calculateStressScenario(config) {
+        const total = calculated.totalValue || 0;
+        if (!total) {
+            return { projectedValue: 0, deltaValue: 0, drawdownPct: 0, riskScore: 0, alert: 'Low' };
+        }
+
+        let projected = 0;
+        for (const holding of state.holdings) {
+            const p = prices[holding.coinId] || {};
+            const basePrice = Number(p.usd) || 0;
+            const value = holding.amount * basePrice;
+            const symbol = String(holding.symbol || '').toUpperCase();
+            const marketShock = config.marketShock / 100;
+            const stableShock = config.stableShock / 100;
+
+            let appliedShock = marketShock;
+            if (isStablecoin(symbol, holding.coinId)) {
+                appliedShock = Math.min(marketShock, stableShock);
+            } else if (!isMajors(symbol, holding.coinId)) {
+                appliedShock = marketShock * config.altBeta;
+            }
+
+            const shockedValue = value * Math.max(0, 1 + appliedShock);
+            projected += shockedValue;
+        }
+
+        const deltaValue = projected - total;
+        const drawdownPct = total > 0 ? (deltaValue / total) * 100 : 0;
+        const riskScore = clamp(Math.abs(drawdownPct) * 1.7, 0, 100);
+
+        return {
+            projectedValue: projected,
+            deltaValue,
+            drawdownPct,
+            riskScore,
+            alert: riskBucket(riskScore)
+        };
+    }
+
+    function drawDonutChart(canvas, segments) {
+        const ctx = canvas.getContext('2d');
+        const width = canvas.width;
+        const height = canvas.height;
+        ctx.clearRect(0, 0, width, height);
+        const cx = width / 2;
+        const cy = height / 2;
+        const outerR = Math.min(cx, cy) * 0.85;
+        const innerR = outerR * 0.55;
+
+        if (!segments.length) {
+            drawNoData(ctx, width, height);
+            return;
+        }
+
+        let startAngle = -Math.PI / 2;
+        segments.forEach(seg => {
+            const sliceAngle = (seg.pct / 100) * Math.PI * 2;
+            ctx.beginPath();
+            ctx.arc(cx, cy, outerR, startAngle, startAngle + sliceAngle);
+            ctx.arc(cx, cy, innerR, startAngle + sliceAngle, startAngle, true);
+            ctx.closePath();
+            ctx.fillStyle = seg.color;
+            ctx.fill();
+            startAngle += sliceAngle;
+        });
+
+        ctx.fillStyle = 'rgba(255,255,255,0.75)';
+        ctx.font = '600 13px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('Allocation', cx, cy + 4);
+    }
+
+    function drawBarChart(canvas, segments) {
+        const ctx = canvas.getContext('2d');
+        const w = canvas.width;
+        const h = canvas.height;
+        ctx.clearRect(0, 0, w, h);
+
+        if (!segments.length) {
+            drawNoData(ctx, w, h);
+            return;
+        }
+
+        const pad = 30;
+        const barAreaW = w - pad * 2;
+        const barAreaH = h - pad * 2;
+        const max = Math.max(...segments.map(s => s.value), 1);
+        const barW = barAreaW / segments.length * 0.62;
+
+        segments.forEach((seg, i) => {
+            const x = pad + (i + 0.2) * (barAreaW / segments.length);
+            const bh = (seg.value / max) * (barAreaH - 18);
+            const y = h - pad - bh;
+            ctx.fillStyle = seg.color;
+            ctx.fillRect(x, y, barW, bh);
+            ctx.fillStyle = 'rgba(255,255,255,.75)';
+            ctx.font = '11px Inter, sans-serif';
+            ctx.fillText(seg.label, x, h - 11);
+        });
+    }
+
+    function drawLineChart(canvas, snapshots) {
+        const ctx = canvas.getContext('2d');
+        const w = canvas.width;
+        const h = canvas.height;
+        ctx.clearRect(0, 0, w, h);
+
+        if (!snapshots.length) {
+            drawNoData(ctx, w, h);
+            return;
+        }
+
+        const values = snapshots.map(s => Number(s.totalValue) || 0);
+        const min = Math.min(...values);
+        const max = Math.max(...values);
+        const range = Math.max(max - min, 1);
+
+        const padL = 46;
+        const padR = 16;
+        const padT = 16;
+        const padB = 28;
+        const chartW = w - padL - padR;
+        const chartH = h - padT - padB;
+
+        ctx.strokeStyle = 'rgba(255,255,255,.14)';
+        ctx.lineWidth = 1;
+        for (let i = 0; i < 4; i++) {
+            const y = padT + (chartH / 3) * i;
+            ctx.beginPath();
+            ctx.moveTo(padL, y);
+            ctx.lineTo(w - padR, y);
+            ctx.stroke();
+        }
+
+        ctx.strokeStyle = '#4f8dff';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+
+        snapshots.forEach((snap, i) => {
+            const x = padL + (chartW * (snapshots.length === 1 ? 0.5 : i / (snapshots.length - 1)));
+            const y = padT + chartH - (((snap.totalValue - min) / range) * chartH);
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+        });
+        ctx.stroke();
+
+        ctx.fillStyle = 'rgba(255,255,255,.75)';
+        ctx.font = '11px Inter, sans-serif';
+        ctx.fillText(fmtUsd(max), 6, padT + 8);
+        ctx.fillText(fmtUsd(min), 6, padT + chartH);
+
+        const first = snapshots[0];
+        const last = snapshots[snapshots.length - 1];
+        ctx.fillText(first.date, padL, h - 8);
+        const lastLabelW = ctx.measureText(last.date).width;
+        ctx.fillText(last.date, w - padR - lastLabelW, h - 8);
+    }
+
+    function drawLegend(container, segments) {
+        container.innerHTML = segments.slice(0, 10).map(seg => {
+            return `<span class="legend-item"><span class="swatch" style="background:${escapeHtml(seg.color)}"></span>${escapeHtml(seg.label)} ${fmtPct(seg.pct)}</span>`;
+        }).join('') || '<span class="muted">No data.</span>';
+    }
+
+    function drawNoData(ctx, w, h) {
+        ctx.fillStyle = 'rgba(255,255,255,.35)';
+        ctx.font = '12px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('No data', w / 2, h / 2);
+    }
+
+    function calcByVenue() {
+        const map = {};
+        for (const h of state.holdings) {
+            const p = prices[h.coinId] || {};
+            const value = h.amount * (Number(p.usd) || 0);
+            if (!map[h.venue]) {
+                const venue = state.venues.find(v => v.name === h.venue);
+                map[h.venue] = { name: h.venue, value: 0, color: venue?.color || chartColor(Object.keys(map).length) };
+            }
+            map[h.venue].value += value;
+        }
+        return map;
+    }
+
+    function calcByVenueType() {
+        const byVenue = calcByVenue();
+        const typeMap = { exchange: 0, wallet: 0, defi: 0 };
+        for (const venueName of Object.keys(byVenue)) {
+            const venue = state.venues.find(v => v.name === venueName);
+            const type = venue?.type || 'wallet';
+            typeMap[type] = (typeMap[type] || 0) + byVenue[venueName].value;
+        }
+        return typeMap;
+    }
+
+    function buildChainExposure() {
+        const chainMap = {};
+        for (const holding of state.holdings) {
+            const chain = extractChain(holding.venue);
+            const p = prices[holding.coinId] || {};
+            const value = holding.amount * (Number(p.usd) || 0);
+            chainMap[chain] = (chainMap[chain] || 0) + value;
+        }
+        return chainMap;
+    }
+
+    function findChainDefi(chain) {
+        const target = normalizeChain(chain);
+        return (defiFeed.chains || []).find((item) => normalizeChain(item?.name) === target);
+    }
+
+    function getProtocolContext(chains) {
+        if (!chains.length || !Array.isArray(defiFeed.protocols)) return [];
+        const chainSet = new Set(chains.map(c => normalizeChain(c)));
+
+        const rows = [];
+        for (const protocol of defiFeed.protocols) {
+            if (!protocol || !Array.isArray(protocol.chains) || !Number.isFinite(protocol.tvl)) continue;
+
+            const matchedChain = protocol.chains.find((chain) => chainSet.has(normalizeChain(chain)));
+            if (!matchedChain) continue;
+
+            rows.push({
+                name: protocol.name,
+                chain: matchedChain,
+                tvl: protocol.tvl
+            });
+        }
+
+        return rows.sort((a, b) => b.tvl - a.tvl).slice(0, 12);
+    }
+
+    function sortRows(rows, key, dir) {
+        const m = dir === 'asc' ? 1 : -1;
+        return rows.slice().sort((a, b) => {
+            const av = normalizedSortValue(a[key], key);
+            const bv = normalizedSortValue(b[key], key);
+            if (av < bv) return -1 * m;
+            if (av > bv) return 1 * m;
+            return 0;
+        });
+    }
+
+    function normalizedSortValue(value, key) {
+        if (key === 'asset' || key === 'venue') return String(value || '').toLowerCase();
+        return Number(value) || 0;
+    }
+
+    function openModal(id) {
+        const modal = document.getElementById(id);
+        if (!modal) return;
+        modal.classList.add('open');
+        modal.setAttribute('aria-hidden', 'false');
+    }
+
+    function closeModal(id) {
+        const modal = document.getElementById(id);
+        if (!modal) return;
+        modal.classList.remove('open');
+        modal.setAttribute('aria-hidden', 'true');
+    }
+
+    function resetHoldingForm() {
+        selectedCoin = null;
+        ui.tokenSearch.value = '';
+        ui.amountInput.value = '';
+        ui.entryInput.value = '';
+        ui.notesInput.value = '';
+        ui.tokenSuggest.innerHTML = '';
+        ui.tokenSuggest.style.display = 'none';
+    }
+
+    function persistState() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+
+    function loadState() {
+        try {
+            const raw = localStorage.getItem(STORAGE_KEY);
+            if (!raw) return structuredClone(defaultData);
+            const parsed = JSON.parse(raw);
+            return {
+                holdings: Array.isArray(parsed.holdings) ? parsed.holdings : [],
+                venues: Array.isArray(parsed.venues) && parsed.venues.length ? parsed.venues : structuredClone(defaultData.venues),
+                snapshots: Array.isArray(parsed.snapshots) ? parsed.snapshots : []
+            };
+        } catch {
+            return structuredClone(defaultData);
+        }
+    }
+
+    function loadCoinListCache() {
+        try {
+            const raw = localStorage.getItem(COIN_LIST_CACHE_KEY);
+            if (!raw) return [];
+            const cached = JSON.parse(raw);
+            if (!cached.ts || !Array.isArray(cached.data)) return [];
+            if (Date.now() - cached.ts > COIN_LIST_TTL) return [];
+            return cached.data;
+        } catch {
+            return [];
+        }
+    }
+
+    function loadDefiCache() {
+        try {
+            const raw = localStorage.getItem(DEFI_CACHE_KEY);
+            if (!raw) return { updatedAt: 0, chains: [], protocols: [] };
+            const parsed = JSON.parse(raw);
+            if (!parsed.updatedAt || (Date.now() - parsed.updatedAt > DEFI_TTL)) {
+                return { updatedAt: 0, chains: [], protocols: [] };
+            }
+            return {
+                updatedAt: Number(parsed.updatedAt) || 0,
+                chains: Array.isArray(parsed.chains) ? parsed.chains : [],
+                protocols: Array.isArray(parsed.protocols) ? parsed.protocols : []
+            };
+        } catch {
+            return { updatedAt: 0, chains: [], protocols: [] };
+        }
+    }
+
+    function saveDefiCache(data) {
+        try {
+            localStorage.setItem(DEFI_CACHE_KEY, JSON.stringify(data));
+        } catch (error) {
+            console.warn('Unable to cache DeFi data', error);
+        }
+    }
+
+    function saveCoinListCache(data) {
+        try {
+            localStorage.setItem(COIN_LIST_CACHE_KEY, JSON.stringify({ ts: Date.now(), data }));
+        } catch (error) {
+            console.warn('Unable to cache coin list', error);
+        }
+    }
+
+    function safeUuid() {
+        if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') return crypto.randomUUID();
+        return `id-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    }
+
+    function extractChain(venueName) {
+        const m = String(venueName || '').match(/\(([^)]+)\)/);
+        if (m && m[1]) return m[1].toUpperCase();
+        if (/sol|phantom/i.test(venueName)) return 'SOL';
+        if (/eth|metamask|rabby/i.test(venueName)) return 'ETH';
+        if (/bnb|binance/i.test(venueName)) return 'BNB';
+        if (/arb|arbitrum/i.test(venueName)) return 'Arbitrum';
+        if (/optimism|op\b/i.test(venueName)) return 'Optimism';
+        if (/base/i.test(venueName)) return 'Base';
+        if (/avax|avalanche/i.test(venueName)) return 'Avalanche';
+        return 'Unknown';
+    }
+
+    function normalizeChain(chain) {
+        const key = String(chain || '').trim().toLowerCase();
+        const aliases = {
+            eth: 'ethereum',
+            ethereum: 'ethereum',
+            sol: 'solana',
+            solana: 'solana',
+            bnb: 'binance',
+            'binance smart chain': 'binance',
+            binance: 'binance',
+            arb: 'arbitrum',
+            arbitrum: 'arbitrum',
+            op: 'optimism',
+            optimism: 'optimism',
+            avax: 'avalanche',
+            avalanche: 'avalanche',
+            polygon: 'polygon',
+            matic: 'polygon',
+            base: 'base'
+        };
+        return aliases[key] || key;
+    }
+
+    function isStablecoin(symbol, coinId) {
+        const key = `${String(symbol || '').toLowerCase()} ${String(coinId || '').toLowerCase()}`;
+        return /(usdt|usdc|dai|tusd|fdusd|usde|susd|usdd|frax)/.test(key);
+    }
+
+    function isMajors(symbol, coinId) {
+        const key = `${String(symbol || '').toLowerCase()} ${String(coinId || '').toLowerCase()}`;
+        return /(btc|bitcoin|eth|ethereum)/.test(key);
+    }
+
+    function chartColor(index) {
+        const palette = ['#3B82F6', '#22C55E', '#F97316', '#A855F7', '#F43F5E', '#06B6D4', '#EAB308', '#8B5CF6', '#14B8A6', '#FB7185'];
+        return palette[index % palette.length];
+    }
+
+    function todayKey() {
+        return new Date().toISOString().slice(0, 10);
+    }
+
+    function fmtUsd(n) {
+        return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 }).format(Number(n) || 0);
+    }
+
+    function fmtSignedUsd(n) {
+        const val = Number(n) || 0;
+        const abs = fmtUsd(Math.abs(val));
+        return `${val >= 0 ? '+' : '-'}${abs.replace('$', '$')}`;
+    }
+
+    function fmtPct(n) {
+        return `${(Number(n) || 0).toFixed(2)}%`;
+    }
+
+    function fmtSignedPct(n) {
+        const val = Number(n) || 0;
+        return `${val >= 0 ? '+' : ''}${val.toFixed(2)}%`;
+    }
+
+    function fmtNum(n) {
+        return Number(n).toLocaleString('en-US', { maximumFractionDigits: 8 });
+    }
+
+    function applyPosNeg(el, n) {
+        el.classList.remove('pos', 'neg');
+        if ((Number(n) || 0) >= 0) el.classList.add('pos');
+        else el.classList.add('neg');
+    }
+
+    function applyPosNegInverse(el, riskValue) {
+        el.classList.remove('pos', 'neg');
+        const value = Number(riskValue) || 0;
+        if (value <= 45) el.classList.add('pos');
+        else if (value >= 65) el.classList.add('neg');
+    }
+
+    function emptyCalc() {
+        return { byAsset: {}, totalValue: 0, totalCost: 0, pnl: 0 };
+    }
+
+    function emptyRiskModel() {
+        return {
+            composite: 0,
+            concentration: 0,
+            volatility: 0,
+            custody: 0,
+            chainRows: [],
+            protocolRows: []
+        };
+    }
+
+    function clamp(value, min, max) {
+        return Math.min(max, Math.max(min, Number(value) || 0));
+    }
+
+    function riskBucket(score) {
+        if (score >= 70) return 'High';
+        if (score >= 45) return 'Moderate';
+        return 'Low';
+    }
+
+    function escapeHtml(str) {
+        return String(str || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+})();
+</script>
+</body>
+</html>

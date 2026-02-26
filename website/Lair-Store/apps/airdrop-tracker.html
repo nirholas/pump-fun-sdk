@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="lair-include" content="lair.css">
+    <meta name="lair-icon" content='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="24" height="24" fill="white"><path d="M160-400q0-100 50.5-180.5T350-710v84q-60 36-95 97t-35 129h-60Zm280 280q-100 0-180.5-50.5T130-310h84q36 60 97 95t129 35v60Zm40-180q-58 0-99-41t-41-99q0-58 41-99t99-41q58 0 99 41t41 99q0 58-41 99t-99 41Zm200-100q0-62-35-123t-95-97v-84q89 49 139.5 129.5T740-400h-60Zm-200 340v-60q62 0 123-35t97-95h84q-49 89-129.5 139.5T480-60Z"/></svg>'>
+    <meta name="capabilities" content="airdrop_tracker">
+    <meta name="lair-perms" content="network" />
+    <title>Airdrop Tracker</title>
+    <style>
+        :root { --col-bg1:#080A19; --col-bg2:#0C0F27; --col-bg3:#15183E; --col-txt1:#A7C2F3; --colors-accent:rgb(97,121,255); --col-good:#85FF85; --col-bad:#AC4949; }
+        * { box-sizing: border-box; }
+        html, body { margin:0; height:100%; background:var(--col-bg1); color:var(--col-txt1); font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+        .app { height:100%; display:grid; grid-template-rows:auto auto 1fr; }
+        .top { padding:10px 14px; border-bottom:1px solid rgba(167,194,243,.1); display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap; }
+        .title { font-size:14px; font-weight:700; }
+        .tabs { display:flex; gap:6px; padding:8px 14px; border-bottom:1px solid rgba(167,194,243,.08); }
+        .tab, button, input, textarea, select { background:var(--col-bg3); color:var(--col-txt1); border:1px solid rgba(167,194,243,.16); border-radius:6px; padding:6px 9px; font-size:12px; }
+        .tab, button { cursor:pointer; }
+        .tab.active { background:var(--colors-accent); color:#fff; border-color:transparent; }
+        .content { padding:10px 14px; overflow:auto; }
+        .row { display:grid; grid-template-columns:1.2fr 1fr 1fr 1fr auto; gap:8px; align-items:center; padding:8px; border-bottom:1px solid rgba(167,194,243,.08); }
+        .hdr { font-size:10px; text-transform:uppercase; opacity:.7; }
+        .chip { font-size:10px; border-radius:999px; padding:2px 6px; }
+        .live { background:rgba(34,197,94,.2); color:var(--col-good); }
+        .est { background:rgba(245,158,11,.2); color:#f59e0b; }
+        .ended { background:rgba(239,68,68,.2); color:var(--col-bad); }
+        .card { background:var(--col-bg2); border:1px solid rgba(167,194,243,.12); border-radius:8px; padding:10px; margin-bottom:10px; }
+        .grid { display:grid; gap:8px; grid-template-columns: repeat(2, minmax(180px, 1fr)); }
+        .k { font-size:10px; opacity:.7; text-transform:uppercase; }
+        .v { font-size:16px; font-weight:700; margin-top:4px; }
+        .empty { font-size:12px; opacity:.75; padding:14px 0; }
+        .small { font-size:11px; opacity:.8; }
+        @media (max-width:900px) { .row { grid-template-columns:1fr; } .grid { grid-template-columns:1fr; } }
+    </style>
+</head>
+<body>
+<div class="app">
+    <div class="top">
+        <div class="title">Airdrop Tracker</div>
+        <div style="display:flex; gap:6px; flex-wrap:wrap;">
+            <button id="addActive">Add Active Airdrop</button>
+            <button id="addClaim">Add Claimed</button>
+            <button id="refreshPotential">Refresh Potential</button>
+        </div>
+    </div>
+    <div class="tabs" id="tabs"></div>
+    <div class="content">
+        <div id="summary" class="grid"></div>
+        <div id="view"></div>
+    </div>
+</div>
+<script>
+(function () {
+    const fetchFn = window.cfetch || fetch;
+    let activeTab = 'active';
+    const keyActive = 'lair.airdrops.active';
+    const keyClaimed = 'lair.airdrops.claimed';
+    let activeDrops = JSON.parse(localStorage.getItem(keyActive) || '[]');
+    let claimedDrops = JSON.parse(localStorage.getItem(keyClaimed) || '[]');
+    let potential = [];
+
+    function save() {
+        localStorage.setItem(keyActive, JSON.stringify(activeDrops));
+        localStorage.setItem(keyClaimed, JSON.stringify(claimedDrops));
+    }
+    function fmtUsd(v) {
+        if (!Number.isFinite(v)) return '—';
+        if (v >= 1e9) return '$' + (v / 1e9).toFixed(2) + 'B';
+        if (v >= 1e6) return '$' + (v / 1e6).toFixed(2) + 'M';
+        if (v >= 1e3) return '$' + (v / 1e3).toFixed(1) + 'K';
+        return '$' + v.toFixed(2);
+    }
+    function statusChip(status) {
+        const cls = status === 'live' ? 'live' : status === 'ended' ? 'ended' : 'est';
+        return '<span class="chip ' + cls + '">' + status.toUpperCase() + '</span>';
+    }
+    function renderTabs() {
+        const el = document.getElementById('tabs');
+        el.innerHTML = tabs.map(t => '<button class="tab' + (t === activeTab ? ' active' : '') + '" data-tab="' + t + '">' + t[0].toUpperCase() + t.slice(1) + '</button>').join('');
+        el.querySelectorAll('.tab').forEach(btn => btn.addEventListener('click', () => { activeTab = btn.dataset.tab; render(); }));
+    }
+    function renderSummary() {
+        const totalClaimed = claimedDrops.reduce((sum, x) => sum + (Number(x.valueUSD) || 0), 0);
+        const doneChecks = potential.reduce((sum, p) => sum + (p.score || 0), 0);
+        const maxChecks = potential.reduce((sum, p) => sum + (p.maxScore || 0), 0);
+        document.getElementById('summary').innerHTML =
+            '<div class="card"><div class="k">Active Airdrops</div><div class="v">' + activeDrops.length + '</div></div>' +
+            '<div class="card"><div class="k">Potential Targets</div><div class="v">' + potential.length + '</div></div>' +
+            '<div class="card"><div class="k">Claimed Value</div><div class="v">' + fmtUsd(totalClaimed) + '</div></div>' +
+            '<div class="card"><div class="k">Farming Score</div><div class="v">' + (maxChecks ? Math.round((doneChecks / maxChecks) * 100) : 0) + '%</div></div>';
+    }
+
+    function renderActive() {
+        if (!activeDrops.length) return '<div class="empty">No active entries yet. Add one with “Add Active Airdrop”.</div>';
+        return '<div class="row hdr"><div>Project</div><div>Chain</div><div>Est. Value</div><div>Deadline</div><div>Status</div></div>' +
+            activeDrops.map((a, i) =>
+                '<div class="row">' +
+                    '<div><strong>' + a.name + '</strong><div class="small">' + (a.requirements || '') + '</div></div>' +
+                    '<div>' + (a.chain || '—') + '</div>' +
+                    '<div>' + (a.estimatedValue || '—') + '</div>' +
+                    '<div>' + (a.deadline || 'TBA') + '</div>' +
+                    '<div>' + statusChip(a.status || 'estimated') + ' <button data-del="' + i + '" style="margin-left:6px;">x</button></div>' +
+                '</div>'
+            ).join('');
+    }
+
+    function renderPotential() {
+        if (!potential.length) return '<div class="empty">Loading potential targets from DeFiLlama...</div>';
+        return '<div class="row hdr"><div>Protocol</div><div>Chain</div><div>TVL</div><div>Funding/Category</div><div>Farming</div></div>' +
+            potential.map((p, i) =>
+                '<div class="row">' +
+                    '<div><strong>' + p.name + '</strong><div class="small">No token listed • high-probability candidate</div></div>' +
+                    '<div>' + (p.chain || 'Multi-Chain') + '</div>' +
+                    '<div>' + fmtUsd(p.tvl || 0) + '</div>' +
+                    '<div>' + (p.category || 'DeFi') + '</div>' +
+                    '<div><button data-score="' + i + '">+' + p.score + '/' + p.maxScore + '</button></div>' +
+                '</div>'
+            ).join('');
+    }
+
+    function renderClaimed() {
+        if (!claimedDrops.length) return '<div class="empty">No claimed history yet.</div>';
+        return '<div class="row hdr"><div>Project</div><div>Date</div><div>Amount</div><div>Claim Value</div><div>Current Value</div></div>' +
+            claimedDrops.map((c, i) =>
+                '<div class="row">' +
+                    '<div><strong>' + c.name + '</strong></div>' +
+                    '<div>' + c.date + '</div>' +
+                    '<div>' + (c.amount || '—') + '</div>' +
+                    '<div>' + fmtUsd(Number(c.valueUSD) || 0) + '</div>' +
+                    '<div>' + fmtUsd(Number(c.currentUSD) || 0) + ' <button data-cdel="' + i + '" style="margin-left:6px;">x</button></div>' +
+                '</div>'
+            ).join('');
+    }
+
+    function bindActions() {
+        const view = document.getElementById('view');
+        view.querySelectorAll('button[data-del]').forEach(btn => btn.addEventListener('click', () => {
+            activeDrops.splice(Number(btn.dataset.del), 1); save(); render();
+        }));
+        view.querySelectorAll('button[data-cdel]').forEach(btn => btn.addEventListener('click', () => {
+            claimedDrops.splice(Number(btn.dataset.cdel), 1); save(); render();
+        }));
+        view.querySelectorAll('button[data-score]').forEach(btn => btn.addEventListener('click', () => {
+            const idx = Number(btn.dataset.score);
+            potential[idx].score = Math.min(potential[idx].maxScore, potential[idx].score + 1);
+            localStorage.setItem('lair.airdrops.potential-score', JSON.stringify(potential.map(p => p.score)));
+            render();
+        }));
+    }
+
+    function render() {
+        renderTabs();
+        renderSummary();
+        const view = document.getElementById('view');
+        view.innerHTML = activeTab === 'active' ? renderActive() : activeTab === 'potential' ? renderPotential() : renderClaimed();
+        bindActions();
+    }
+
+    async function loadPotential() {
+        try {
+            const res = await fetchFn('https://api.llama.fi/protocols');
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            const protocols = await res.json();
+            const scored = JSON.parse(localStorage.getItem('lair.airdrops.potential-score') || '[]');
+            potential = protocols
+                .filter(p => !p.symbol && (p.tvl || 0) > 5000000)
+                .sort((a, b) => (b.tvl || 0) - (a.tvl || 0))
+                .slice(0, 60)
+                .map((p, i) => ({ name: p.name, chain: p.chain, tvl: p.tvl, category: p.category, maxScore: 6, score: scored[i] || 0 }));
+        } catch (_) {
+            potential = [];
+        }
+        render();
+    }
+
+    document.getElementById('addActive').addEventListener('click', () => {
+        const name = prompt('Project name'); if (!name) return;
+        const chain = prompt('Chain', 'Multi-Chain') || 'Multi-Chain';
+        const estimatedValue = prompt('Estimated value', '$500-$5000') || 'TBA';
+        const deadline = prompt('Deadline (YYYY-MM-DD or TBA)', 'TBA') || 'TBA';
+        const requirements = prompt('Requirements checklist', 'Bridge, swap, LP, governance vote') || '';
+        const status = (prompt('Status: live / estimated / ended', 'estimated') || 'estimated').toLowerCase();
+        activeDrops.unshift({ name, chain, estimatedValue, deadline, requirements, status });
+        save(); render();
+    });
+
+    document.getElementById('addClaim').addEventListener('click', () => {
+        const name = prompt('Project name'); if (!name) return;
+        const date = prompt('Claim date (YYYY-MM-DD)', new Date().toISOString().slice(0, 10)) || '';
+        const amount = prompt('Token amount', '1000') || '';
+        const valueUSD = Number(prompt('Value at claim (USD)', '0') || 0);
+        const currentUSD = Number(prompt('Current value (USD)', String(valueUSD)) || 0);
+        claimedDrops.unshift({ name, date, amount, valueUSD, currentUSD });
+        save(); render();
+    });
+
+    document.getElementById('refreshPotential').addEventListener('click', loadPotential);
+
+    renderTabs();
+    loadPotential();
+})();
+</script>
+</body>
+</html>

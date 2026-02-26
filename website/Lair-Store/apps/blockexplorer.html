@@ -1,0 +1,1182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="lair-include" content="lair.css">
+    <meta name="capabilities" content="block_explorer">
+    <meta name="lair-icon" content="search">
+    <meta name="lair-perms" content="network" />
+    <title>Block Explorer</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            padding: 1rem;
+            height: 100%;
+            background: var(--col-bg1, #101010);
+            color: var(--col-txt1, #fff);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            overflow-y: auto;
+        }
+
+        .app-container {
+            max-width: 960px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .header h1 {
+            font-size: 1.3rem;
+            font-weight: 700;
+        }
+
+        .chain-selector {
+            display: flex;
+            gap: 4px;
+        }
+
+        .chain-pill {
+            background: var(--col-bg2, #171717);
+            border: 1px solid var(--col-bg3, #262626);
+            color: var(--col-txt1, #fff);
+            padding: 0.35rem 0.75rem;
+            border-radius: 999px;
+            font-size: 0.78rem;
+            cursor: pointer;
+            transition: background 0.15s, border-color 0.15s;
+        }
+
+        .chain-pill:hover {
+            border-color: #555;
+        }
+
+        .chain-pill.active {
+            background: var(--colors-accent, rgb(97, 121, 255));
+            border-color: var(--colors-accent, rgb(97, 121, 255));
+            color: #fff;
+        }
+
+        /* Search */
+        .search-wrapper {
+            margin-bottom: 1rem;
+            position: relative;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 0.75rem 1rem 0.75rem 2.5rem;
+            background: var(--col-bg2, #171717);
+            border: 1px solid var(--col-bg3, #262626);
+            border-radius: 0.75rem;
+            color: var(--col-txt1, #fff);
+            font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+            font-size: 0.9rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .search-input::placeholder {
+            color: #666;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        .search-input:focus {
+            border-color: var(--colors-accent, rgb(97, 121, 255));
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 0.85rem;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1rem;
+            opacity: 0.4;
+            pointer-events: none;
+        }
+
+        .search-hint {
+            font-size: 0.72rem;
+            opacity: 0.4;
+            margin-top: 0.35rem;
+            padding-left: 0.25rem;
+        }
+
+        /* Recent searches */
+        .recent-searches {
+            display: flex;
+            gap: 0.4rem;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+        }
+
+        .recent-chip {
+            background: var(--col-bg2, #171717);
+            border: 1px solid var(--col-bg3, #262626);
+            color: var(--col-txt1, #fff);
+            font-family: monospace;
+            font-size: 0.72rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.4rem;
+            cursor: pointer;
+            transition: background 0.15s;
+            max-width: 180px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .recent-chip:hover {
+            background: var(--col-bg3, #262626);
+        }
+
+        .recent-label {
+            font-size: 0.72rem;
+            opacity: 0.5;
+            margin-bottom: 0.4rem;
+        }
+
+        /* Layout */
+        .main-layout {
+            display: grid;
+            grid-template-columns: 1fr 280px;
+            gap: 1rem;
+        }
+
+        @media (max-width: 700px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+            }
+            .sidebar { order: -1; }
+        }
+
+        /* Cards */
+        .card {
+            background: var(--col-bg2, #171717);
+            border: 1px solid var(--col-bg3, #262626);
+            border-radius: 0.75rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .card-title {
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            opacity: 0.5;
+            margin-bottom: 0.75rem;
+        }
+
+        /* Address view */
+        .addr-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .addr-hash {
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            font-size: 0.85rem;
+            word-break: break-all;
+        }
+
+        .copy-btn {
+            background: var(--col-bg3, #262626);
+            border: none;
+            color: var(--col-txt1, #fff);
+            padding: 0.2rem 0.5rem;
+            border-radius: 0.3rem;
+            font-size: 0.72rem;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background 0.15s;
+        }
+
+        .copy-btn:hover {
+            background: #444;
+        }
+
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .stat-item {
+            background: var(--col-bg1, #101010);
+            border-radius: 0.5rem;
+            padding: 0.75rem;
+        }
+
+        .stat-label {
+            font-size: 0.72rem;
+            opacity: 0.5;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-value {
+            font-size: 1.1rem;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* Transaction table */
+        .tx-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.8rem;
+        }
+
+        .tx-table th {
+            text-align: left;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            opacity: 0.5;
+            padding: 0.5rem 0.4rem;
+            border-bottom: 1px solid var(--col-bg3, #262626);
+            white-space: nowrap;
+        }
+
+        .tx-table td {
+            padding: 0.5rem 0.4rem;
+            border-bottom: 1px solid #ffffff08;
+            vertical-align: middle;
+        }
+
+        .tx-table tr:nth-child(even) {
+            background: rgba(255,255,255,0.015);
+        }
+
+        .tx-table tr:hover {
+            background: rgba(255,255,255,0.03);
+        }
+
+        .mono {
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            font-size: 0.78rem;
+        }
+
+        .truncate {
+            max-width: 110px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            display: inline-block;
+            vertical-align: middle;
+        }
+
+        .clickable {
+            color: var(--colors-accent, rgb(97, 121, 255));
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .clickable:hover {
+            text-decoration: underline;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 0.15rem 0.4rem;
+            border-radius: 0.3rem;
+            font-size: 0.68rem;
+            font-weight: 600;
+        }
+
+        .status-success {
+            color: var(--col-good, #5be45b);
+            background: rgba(91, 228, 91, 0.1);
+        }
+
+        .status-fail {
+            color: var(--col-bad, #d44343);
+            background: rgba(212, 67, 67, 0.1);
+        }
+
+        .eth-value {
+            color: var(--col-txt1, #fff);
+            font-weight: 600;
+        }
+
+        .usd-value {
+            opacity: 0.5;
+            font-size: 0.72rem;
+        }
+
+        /* Block view */
+        .block-info-grid {
+            display: grid;
+            grid-template-columns: 120px 1fr;
+            gap: 0.4rem 1rem;
+            font-size: 0.85rem;
+        }
+
+        .block-info-grid .label {
+            opacity: 0.5;
+            font-size: 0.78rem;
+        }
+
+        .block-info-grid .value {
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            font-size: 0.82rem;
+            word-break: break-all;
+        }
+
+        /* Sidebar */
+        .sidebar .card {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .block-list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #ffffff08;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: background 0.1s;
+        }
+
+        .block-list-item:hover {
+            background: rgba(255,255,255,0.03);
+        }
+
+        .block-list-item:last-child {
+            border-bottom: none;
+        }
+
+        .block-num {
+            color: var(--colors-accent, rgb(97, 121, 255));
+            font-weight: 600;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .block-meta {
+            text-align: right;
+            opacity: 0.5;
+            font-size: 0.72rem;
+        }
+
+        /* Loading / Error / Empty */
+        .loading-overlay {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 3rem;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .spinner {
+            width: 32px;
+            height: 32px;
+            border: 3px solid var(--col-bg3, #262626);
+            border-top-color: var(--colors-accent, rgb(97, 121, 255));
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            font-size: 0.82rem;
+            opacity: 0.5;
+        }
+
+        .error-msg {
+            background: rgba(212, 67, 67, 0.1);
+            border: 1px solid rgba(212, 67, 67, 0.25);
+            color: var(--col-bad, #d44343);
+            border-radius: 0.5rem;
+            padding: 0.75rem 1rem;
+            font-size: 0.85rem;
+            margin-bottom: 1rem;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1rem;
+            opacity: 0.4;
+        }
+
+        .empty-state .icon {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .empty-state p {
+            font-size: 0.9rem;
+        }
+
+        /* Back button */
+        .back-btn {
+            background: none;
+            border: none;
+            color: var(--colors-accent, rgb(97, 121, 255));
+            font-size: 0.82rem;
+            cursor: pointer;
+            padding: 0.3rem 0;
+            margin-bottom: 0.75rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .back-btn:hover {
+            text-decoration: underline;
+        }
+
+        /* Tx detail */
+        .tx-detail-grid {
+            display: grid;
+            grid-template-columns: 130px 1fr;
+            gap: 0.6rem 1rem;
+            font-size: 0.85rem;
+        }
+
+        .tx-detail-grid .label {
+            opacity: 0.5;
+            font-size: 0.78rem;
+        }
+
+        .tx-detail-grid .value {
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            font-size: 0.82rem;
+            word-break: break-all;
+        }
+
+        /* Nav breadcrumb */
+        .breadcrumb {
+            font-size: 0.75rem;
+            opacity: 0.5;
+            margin-bottom: 0.5rem;
+        }
+
+        .breadcrumb span {
+            cursor: pointer;
+        }
+
+        .breadcrumb span:hover {
+            opacity: 1;
+            color: var(--colors-accent, rgb(97, 121, 255));
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="header">
+            <h1>🔍 Block Explorer</h1>
+            <div class="chain-selector" id="chainSelector">
+                <button class="chain-pill active" data-chain="ethereum">Ethereum</button>
+                <button class="chain-pill" data-chain="base">Base</button>
+                <button class="chain-pill" data-chain="arbitrum">Arbitrum</button>
+                <button class="chain-pill" data-chain="polygon">Polygon</button>
+            </div>
+        </div>
+
+        <div class="search-wrapper">
+            <span class="search-icon">🔎</span>
+            <input class="search-input" id="searchInput" type="text"
+                placeholder="Search address, tx hash, or block number..." autocomplete="off" spellcheck="false">
+            <div class="search-hint">Address (0x...40 hex) · Tx Hash (0x...64 hex) · Block Number</div>
+        </div>
+
+        <div id="recentContainer" style="display:none;">
+            <div class="recent-label">Recent Searches</div>
+            <div class="recent-searches" id="recentSearches"></div>
+        </div>
+
+        <div id="errorContainer" style="display:none;"></div>
+
+        <div class="main-layout">
+            <div class="content" id="mainContent">
+                <div class="empty-state" id="emptyState">
+                    <div class="icon">🧭</div>
+                    <p>Enter an address, transaction hash, or block number to explore</p>
+                </div>
+            </div>
+            <div class="sidebar" id="sidebar">
+                <div class="card">
+                    <div class="card-title">Latest Blocks</div>
+                    <div id="latestBlocks">
+                        <div class="loading-overlay">
+                            <div class="spinner"></div>
+                            <div class="loading-text">Loading blocks...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    (function() {
+        'use strict';
+        const fetchFn = window.cfetch || fetch;
+
+        // ── Chain Config ──
+        const CHAINS = {
+            ethereum: {
+                name: 'Ethereum',
+                symbol: 'ETH',
+                blockchair: 'ethereum',
+                decimals: 18,
+                rpc: 'https://eth.llamarpc.com',
+                blockTime: 12
+            },
+            base: {
+                name: 'Base',
+                symbol: 'ETH',
+                blockchair: 'base',
+                decimals: 18,
+                rpc: 'https://base.llamarpc.com',
+                blockTime: 2
+            },
+            arbitrum: {
+                name: 'Arbitrum',
+                symbol: 'ETH',
+                blockchair: 'arbitrum',
+                decimals: 18,
+                rpc: 'https://arbitrum.llamarpc.com',
+                blockTime: 0.25
+            },
+            polygon: {
+                name: 'Polygon',
+                symbol: 'POL',
+                blockchair: 'polygon',
+                decimals: 18,
+                rpc: 'https://polygon.llamarpc.com',
+                blockTime: 2
+            }
+        };
+
+        let currentChain = 'ethereum';
+        let ethPrice = 0;
+        let polPrice = 0;
+        let abortController = null;
+        let latestBlocksInterval = null;
+
+        // ── DOM refs ──
+        const searchInput = document.getElementById('searchInput');
+        const mainContent = document.getElementById('mainContent');
+        const errorContainer = document.getElementById('errorContainer');
+        const recentContainer = document.getElementById('recentContainer');
+        const recentSearches = document.getElementById('recentSearches');
+        const latestBlocksEl = document.getElementById('latestBlocks');
+        const chainSelector = document.getElementById('chainSelector');
+
+        // ── Utility ──
+        function weiToEth(wei) {
+            if (typeof wei === 'string' && wei.startsWith('0x')) {
+                wei = parseInt(wei, 16);
+            }
+            return Number(wei) / 1e18;
+        }
+
+        function formatEth(val, decimals = 6) {
+            const n = typeof val === 'number' ? val : Number(val);
+            if (isNaN(n)) return '0';
+            if (n === 0) return '0';
+            if (n < 0.000001) return '< 0.000001';
+            return n.toFixed(decimals).replace(/\.?0+$/, '');
+        }
+
+        function formatUsd(val) {
+            return '$' + Number(val).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        function formatNumber(n) {
+            return Number(n).toLocaleString('en-US');
+        }
+
+        function truncateHash(hash, len = 8) {
+            if (!hash || hash.length <= len * 2 + 2) return hash;
+            return hash.slice(0, len + 2) + '...' + hash.slice(-len);
+        }
+
+        function timeAgo(timestamp) {
+            const now = Math.floor(Date.now() / 1000);
+            const diff = now - timestamp;
+            if (diff < 60) return diff + 's ago';
+            if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+            if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+            return Math.floor(diff / 86400) + 'd ago';
+        }
+
+        function getNativePrice() {
+            return currentChain === 'polygon' ? polPrice : ethPrice;
+        }
+
+        function getNativeSymbol() {
+            return CHAINS[currentChain].symbol;
+        }
+
+        // ── Input Detection ──
+        function detectInputType(input) {
+            const trimmed = input.trim();
+            if (/^0x[0-9a-fA-F]{64}$/.test(trimmed)) return 'tx';
+            if (/^0x[0-9a-fA-F]{40}$/.test(trimmed)) return 'address';
+            if (/^\d+$/.test(trimmed)) return 'block';
+            return null;
+        }
+
+        // ── Local Storage (Recent Searches) ──
+        function getRecentSearches() {
+            try {
+                return JSON.parse(localStorage.getItem('lair_blockexplorer_recent') || '[]');
+            } catch { return []; }
+        }
+
+        function addRecentSearch(query) {
+            let recent = getRecentSearches();
+            recent = recent.filter(r => r.query !== query);
+            recent.unshift({ query, chain: currentChain, time: Date.now() });
+            if (recent.length > 10) recent = recent.slice(0, 10);
+            localStorage.setItem('lair_blockexplorer_recent', JSON.stringify(recent));
+            renderRecentSearches();
+        }
+
+        function renderRecentSearches() {
+            const recent = getRecentSearches();
+            if (recent.length === 0) {
+                recentContainer.style.display = 'none';
+                return;
+            }
+            recentContainer.style.display = 'block';
+            recentSearches.innerHTML = recent.map(r =>
+                `<span class="recent-chip" data-query="${r.query}" data-chain="${r.chain}" title="${r.query}">${truncateHash(r.query, 6)}</span>`
+            ).join('');
+        }
+
+        // ── RPC Calls ──
+        async function rpcCall(method, params) {
+            const chain = CHAINS[currentChain];
+            const res = await fetchFn(chain.rpc, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
+                signal: abortController ? abortController.signal : undefined
+            });
+            const data = await res.json();
+            if (data.error) throw new Error(data.error.message || 'RPC error');
+            return data.result;
+        }
+
+        // ── Fetch ETH/POL price ──
+        async function fetchPrices() {
+            try {
+                const res = await fetchFn('https://api.coingecko.com/api/v3/simple/price?ids=ethereum,matic-network&vs_currencies=usd');
+                const data = await res.json();
+                ethPrice = data.ethereum?.usd || 0;
+                polPrice = data['matic-network']?.usd || 0;
+            } catch { /* silent */ }
+        }
+
+        // ── Show Error ──
+        function showError(msg) {
+            errorContainer.style.display = 'block';
+            errorContainer.innerHTML = `<div class="error-msg">${msg}</div>`;
+        }
+
+        function clearError() {
+            errorContainer.style.display = 'none';
+            errorContainer.innerHTML = '';
+        }
+
+        // ── Show Loading ──
+        function showLoading(text = 'Loading...') {
+            mainContent.innerHTML = `
+                <div class="loading-overlay">
+                    <div class="spinner"></div>
+                    <div class="loading-text">${text}</div>
+                </div>`;
+        }
+
+        // ── Copy to clipboard ──
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                // Brief visual feedback
+            }).catch(() => {});
+        }
+
+        // ── Search Handler ──
+        async function handleSearch(query) {
+            if (!query || !query.trim()) return;
+            query = query.trim();
+
+            clearError();
+
+            const type = detectInputType(query);
+            if (!type) {
+                showError('Invalid input. Enter an address (0x + 40 hex), tx hash (0x + 64 hex), or block number.');
+                return;
+            }
+
+            if (abortController) abortController.abort();
+            abortController = new AbortController();
+
+            addRecentSearch(query);
+
+            try {
+                if (type === 'address') {
+                    showLoading('Fetching address data...');
+                    await showAddress(query);
+                } else if (type === 'tx') {
+                    showLoading('Fetching transaction...');
+                    await showTransaction(query);
+                } else if (type === 'block') {
+                    showLoading('Fetching block...');
+                    await showBlock(parseInt(query));
+                }
+            } catch (err) {
+                if (err.name === 'AbortError') return;
+                showError('Error: ' + (err.message || 'Failed to fetch data'));
+                mainContent.innerHTML = '';
+            }
+        }
+
+        // ── Address View ──
+        async function showAddress(addr) {
+            const [balance, txCount] = await Promise.all([
+                rpcCall('eth_getBalance', [addr, 'latest']),
+                rpcCall('eth_getTransactionCount', [addr, 'latest'])
+            ]);
+
+            const ethBal = weiToEth(balance);
+            const nonce = parseInt(txCount, 16);
+            const nativePrice = getNativePrice();
+            const symbol = getNativeSymbol();
+            const usdVal = ethBal * nativePrice;
+
+            // Try to get latest transactions via blocks (limited approach with RPC)
+            // We'll get the latest block and scan backwards for this address's txs
+            let recentTxs = [];
+            try {
+                recentTxs = await fetchRecentTxsForAddress(addr);
+            } catch { /* silent */ }
+
+            mainContent.innerHTML = `
+                <button class="back-btn" onclick="resetView()">← Back to search</button>
+                <div class="card">
+                    <div class="card-title">Address</div>
+                    <div class="addr-header">
+                        <span class="addr-hash">${addr}</span>
+                        <button class="copy-btn" onclick="copyToClipboard('${addr}')">📋 Copy</button>
+                    </div>
+                    <div class="stat-grid">
+                        <div class="stat-item">
+                            <div class="stat-label">Balance</div>
+                            <div class="stat-value">${formatEth(ethBal)} ${symbol}</div>
+                            ${nativePrice ? `<div class="usd-value">${formatUsd(usdVal)}</div>` : ''}
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Transactions</div>
+                            <div class="stat-value">${formatNumber(nonce)}</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Chain</div>
+                            <div class="stat-value">${CHAINS[currentChain].name}</div>
+                        </div>
+                    </div>
+                </div>
+                ${recentTxs.length > 0 ? `
+                <div class="card">
+                    <div class="card-title">Recent Transactions</div>
+                    <div style="overflow-x:auto;">
+                        <table class="tx-table">
+                            <thead>
+                                <tr>
+                                    <th>Hash</th>
+                                    <th>From</th>
+                                    <th>To</th>
+                                    <th>Value</th>
+                                    <th>Block</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${recentTxs.map(tx => `
+                                    <tr>
+                                        <td><span class="mono truncate clickable" onclick="handleSearch('${tx.hash}')">${truncateHash(tx.hash, 6)}</span></td>
+                                        <td><span class="mono truncate clickable" onclick="handleSearch('${tx.from}')" title="${tx.from}">${tx.from.toLowerCase() === addr.toLowerCase() ? '<b>→</b> ' : ''}${truncateHash(tx.from, 4)}</span></td>
+                                        <td><span class="mono truncate clickable" onclick="${tx.to ? "handleSearch('" + tx.to + "')" : ''}" title="${tx.to || 'Contract Creation'}">${tx.to ? truncateHash(tx.to, 4) : '📄 Create'}</span></td>
+                                        <td><span class="eth-value">${formatEth(weiToEth(tx.value))} ${symbol}</span></td>
+                                        <td><span class="clickable" onclick="handleSearch('${parseInt(tx.blockNumber, 16)}')">${formatNumber(parseInt(tx.blockNumber, 16))}</span></td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>` : `
+                <div class="card">
+                    <div class="card-title">Recent Transactions</div>
+                    <div style="padding:1rem; opacity:0.4; text-align:center; font-size:0.85rem;">
+                        No recent transactions found in the last few blocks.<br>
+                        Nonce indicates ${formatNumber(nonce)} total transactions.
+                    </div>
+                </div>`}
+            `;
+        }
+
+        async function fetchRecentTxsForAddress(addr) {
+            const latestBlock = await rpcCall('eth_blockNumber', []);
+            const latest = parseInt(latestBlock, 16);
+            const txs = [];
+            const blocksToCheck = 10;
+
+            for (let i = 0; i < blocksToCheck && txs.length < 10; i++) {
+                try {
+                    const block = await rpcCall('eth_getBlockByNumber', ['0x' + (latest - i).toString(16), true]);
+                    if (block && block.transactions) {
+                        for (const tx of block.transactions) {
+                            if (tx.from && tx.from.toLowerCase() === addr.toLowerCase() ||
+                                tx.to && tx.to.toLowerCase() === addr.toLowerCase()) {
+                                txs.push(tx);
+                                if (txs.length >= 10) break;
+                            }
+                        }
+                    }
+                } catch { break; }
+            }
+            return txs;
+        }
+
+        // ── Transaction View ──
+        async function showTransaction(hash) {
+            const [tx, receipt] = await Promise.all([
+                rpcCall('eth_getTransactionByHash', [hash]),
+                rpcCall('eth_getTransactionReceipt', [hash])
+            ]);
+
+            if (!tx) {
+                showError('Transaction not found on ' + CHAINS[currentChain].name);
+                mainContent.innerHTML = '';
+                return;
+            }
+
+            const ethVal = weiToEth(tx.value);
+            const nativePrice = getNativePrice();
+            const symbol = getNativeSymbol();
+            const gasUsed = receipt ? parseInt(receipt.gasUsed, 16) : null;
+            const gasPrice = tx.gasPrice ? parseInt(tx.gasPrice, 16) : null;
+            const gasCostWei = gasUsed && gasPrice ? gasUsed * gasPrice : null;
+            const gasCostEth = gasCostWei ? gasCostWei / 1e18 : null;
+            const blockNum = tx.blockNumber ? parseInt(tx.blockNumber, 16) : null;
+            const status = receipt ? (receipt.status === '0x1' ? 'success' : 'fail') : 'pending';
+
+            mainContent.innerHTML = `
+                <button class="back-btn" onclick="resetView()">← Back to search</button>
+                <div class="card">
+                    <div class="card-title">Transaction Details</div>
+                    <div class="tx-detail-grid">
+                        <div class="label">Tx Hash</div>
+                        <div class="value" style="display:flex;align-items:center;gap:0.4rem;flex-wrap:wrap;">
+                            ${truncateHash(hash, 16)}
+                            <button class="copy-btn" onclick="copyToClipboard('${hash}')">📋</button>
+                        </div>
+
+                        <div class="label">Status</div>
+                        <div class="value">
+                            <span class="status-badge ${status === 'success' ? 'status-success' : status === 'fail' ? 'status-fail' : ''}">${status === 'success' ? '✓ Success' : status === 'fail' ? '✗ Failed' : '⏳ Pending'}</span>
+                        </div>
+
+                        ${blockNum !== null ? `
+                        <div class="label">Block</div>
+                        <div class="value"><span class="clickable" onclick="handleSearch('${blockNum}')">${formatNumber(blockNum)}</span></div>
+                        ` : ''}
+
+                        <div class="label">From</div>
+                        <div class="value">
+                            <span class="clickable" onclick="handleSearch('${tx.from}')">${tx.from}</span>
+                            <button class="copy-btn" onclick="copyToClipboard('${tx.from}')">📋</button>
+                        </div>
+
+                        <div class="label">To</div>
+                        <div class="value">
+                            ${tx.to
+                                ? `<span class="clickable" onclick="handleSearch('${tx.to}')">${tx.to}</span>
+                                   <button class="copy-btn" onclick="copyToClipboard('${tx.to}')">📋</button>`
+                                : '<span style="opacity:0.5;">📄 Contract Creation</span>'}
+                        </div>
+
+                        <div class="label">Value</div>
+                        <div class="value">
+                            <span class="eth-value">${formatEth(ethVal)} ${symbol}</span>
+                            ${nativePrice ? `<span class="usd-value" style="margin-left:0.5rem;">(${formatUsd(ethVal * nativePrice)})</span>` : ''}
+                        </div>
+
+                        ${gasPrice ? `
+                        <div class="label">Gas Price</div>
+                        <div class="value">${(gasPrice / 1e9).toFixed(2)} Gwei</div>
+                        ` : ''}
+
+                        ${gasUsed ? `
+                        <div class="label">Gas Used</div>
+                        <div class="value">${formatNumber(gasUsed)}</div>
+                        ` : ''}
+
+                        ${gasCostEth ? `
+                        <div class="label">Tx Fee</div>
+                        <div class="value">
+                            <span class="eth-value">${formatEth(gasCostEth)} ${symbol}</span>
+                            ${nativePrice ? `<span class="usd-value" style="margin-left:0.5rem;">(${formatUsd(gasCostEth * nativePrice)})</span>` : ''}
+                        </div>
+                        ` : ''}
+
+                        <div class="label">Nonce</div>
+                        <div class="value">${parseInt(tx.nonce, 16)}</div>
+
+                        ${tx.input && tx.input !== '0x' ? `
+                        <div class="label">Input Data</div>
+                        <div class="value" style="font-size:0.72rem;opacity:0.5;max-height:60px;overflow:hidden;">${truncateHash(tx.input, 32)}</div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        // ── Block View ──
+        async function showBlock(blockNum) {
+            const hexNum = '0x' + blockNum.toString(16);
+            const block = await rpcCall('eth_getBlockByNumber', [hexNum, true]);
+
+            if (!block) {
+                showError('Block ' + formatNumber(blockNum) + ' not found on ' + CHAINS[currentChain].name);
+                mainContent.innerHTML = '';
+                return;
+            }
+
+            const timestamp = parseInt(block.timestamp, 16);
+            const gasUsed = parseInt(block.gasUsed, 16);
+            const gasLimit = parseInt(block.gasLimit, 16);
+            const gasPercent = ((gasUsed / gasLimit) * 100).toFixed(1);
+            const baseFee = block.baseFeePerGas ? (parseInt(block.baseFeePerGas, 16) / 1e9).toFixed(2) : null;
+            const txCount = block.transactions ? block.transactions.length : 0;
+            const date = new Date(timestamp * 1000);
+
+            const txRows = (block.transactions || []).slice(0, 20).map(tx => {
+                const isObj = typeof tx === 'object';
+                if (!isObj) {
+                    return `<tr>
+                        <td><span class="mono truncate clickable" onclick="handleSearch('${tx}')">${truncateHash(tx, 6)}</span></td>
+                        <td colspan="3" style="opacity:0.4;">—</td>
+                    </tr>`;
+                }
+                const ethVal = weiToEth(tx.value);
+                const symbol = getNativeSymbol();
+                return `<tr>
+                    <td><span class="mono truncate clickable" onclick="handleSearch('${tx.hash}')">${truncateHash(tx.hash, 6)}</span></td>
+                    <td><span class="mono truncate clickable" onclick="handleSearch('${tx.from}')" title="${tx.from}">${truncateHash(tx.from, 4)}</span></td>
+                    <td><span class="mono truncate clickable" onclick="${tx.to ? "handleSearch('" + tx.to + "')" : ''}" title="${tx.to || 'Contract Creation'}">${tx.to ? truncateHash(tx.to, 4) : '📄'}</span></td>
+                    <td><span class="eth-value">${formatEth(ethVal)} ${symbol}</span></td>
+                </tr>`;
+            });
+
+            mainContent.innerHTML = `
+                <button class="back-btn" onclick="resetView()">← Back to search</button>
+                <div class="card">
+                    <div class="card-title">Block #${formatNumber(blockNum)}</div>
+                    <div class="block-info-grid">
+                        <div class="label">Block Number</div>
+                        <div class="value">${formatNumber(blockNum)}</div>
+
+                        <div class="label">Timestamp</div>
+                        <div class="value">${date.toLocaleString()} (${timeAgo(timestamp)})</div>
+
+                        <div class="label">Transactions</div>
+                        <div class="value">${formatNumber(txCount)}</div>
+
+                        <div class="label">Gas Used</div>
+                        <div class="value">${formatNumber(gasUsed)} / ${formatNumber(gasLimit)} (${gasPercent}%)</div>
+
+                        ${baseFee ? `
+                        <div class="label">Base Fee</div>
+                        <div class="value">${baseFee} Gwei</div>
+                        ` : ''}
+
+                        <div class="label">Hash</div>
+                        <div class="value" style="display:flex;align-items:center;gap:0.4rem;flex-wrap:wrap;">
+                            ${truncateHash(block.hash, 16)}
+                            <button class="copy-btn" onclick="copyToClipboard('${block.hash}')">📋</button>
+                        </div>
+
+                        <div class="label">Parent Hash</div>
+                        <div class="value">
+                            <span class="clickable" onclick="handleSearch('${blockNum - 1}')">${truncateHash(block.parentHash, 12)}</span>
+                        </div>
+
+                        <div class="label">Miner</div>
+                        <div class="value">
+                            <span class="clickable" onclick="handleSearch('${block.miner}')">${truncateHash(block.miner, 8)}</span>
+                        </div>
+
+                        <div class="label">Size</div>
+                        <div class="value">${formatNumber(parseInt(block.size, 16))} bytes</div>
+                    </div>
+                </div>
+                ${txCount > 0 ? `
+                <div class="card">
+                    <div class="card-title">Transactions${txCount > 20 ? ` (showing 20 of ${formatNumber(txCount)})` : ''}</div>
+                    <div style="overflow-x:auto;">
+                        <table class="tx-table">
+                            <thead>
+                                <tr>
+                                    <th>Hash</th>
+                                    <th>From</th>
+                                    <th>To</th>
+                                    <th>Value</th>
+                                </tr>
+                            </thead>
+                            <tbody>${txRows.join('')}</tbody>
+                        </table>
+                    </div>
+                </div>` : ''}
+            `;
+        }
+
+        // ── Latest Blocks Sidebar ──
+        async function fetchLatestBlocks() {
+            try {
+                const blockHex = await rpcCall('eth_blockNumber', []);
+                const latest = parseInt(blockHex, 16);
+                const blocks = [];
+
+                // Fetch last 8 blocks in parallel
+                const promises = [];
+                for (let i = 0; i < 8; i++) {
+                    promises.push(rpcCall('eth_getBlockByNumber', ['0x' + (latest - i).toString(16), false]));
+                }
+                const results = await Promise.all(promises);
+
+                for (const block of results) {
+                    if (block) {
+                        blocks.push({
+                            number: parseInt(block.number, 16),
+                            timestamp: parseInt(block.timestamp, 16),
+                            txCount: block.transactions ? block.transactions.length : 0,
+                            gasUsed: parseInt(block.gasUsed, 16),
+                            gasLimit: parseInt(block.gasLimit, 16)
+                        });
+                    }
+                }
+
+                renderLatestBlocks(blocks);
+            } catch (err) {
+                latestBlocksEl.innerHTML = `<div style="padding:0.5rem; opacity:0.4; font-size:0.78rem;">Failed to load blocks</div>`;
+            }
+        }
+
+        function renderLatestBlocks(blocks) {
+            if (blocks.length === 0) {
+                latestBlocksEl.innerHTML = `<div style="padding:0.5rem; opacity:0.4; font-size:0.78rem;">No blocks found</div>`;
+                return;
+            }
+
+            latestBlocksEl.innerHTML = blocks.map(b => `
+                <div class="block-list-item" onclick="handleSearch('${b.number}')">
+                    <div>
+                        <div class="block-num">#${formatNumber(b.number)}</div>
+                        <div style="font-size:0.7rem; opacity:0.4;">${b.txCount} txs</div>
+                    </div>
+                    <div class="block-meta">
+                        <div>${timeAgo(b.timestamp)}</div>
+                        <div>${((b.gasUsed / b.gasLimit) * 100).toFixed(0)}% gas</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // ── Reset View ──
+        window.resetView = function() {
+            clearError();
+            searchInput.value = '';
+            mainContent.innerHTML = `
+                <div class="empty-state" id="emptyState">
+                    <div class="icon">🧭</div>
+                    <p>Enter an address, transaction hash, or block number to explore</p>
+                </div>`;
+        };
+
+        // ── Expose functions to inline handlers ──
+        window.handleSearch = handleSearch;
+        window.copyToClipboard = copyToClipboard;
+
+        // ── Event Listeners ──
+        searchInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                handleSearch(this.value);
+            }
+        });
+
+        // Chain switcher
+        chainSelector.addEventListener('click', function(e) {
+            const pill = e.target.closest('.chain-pill');
+            if (!pill) return;
+            const chain = pill.dataset.chain;
+            if (chain === currentChain) return;
+
+            currentChain = chain;
+            chainSelector.querySelectorAll('.chain-pill').forEach(p => p.classList.remove('active'));
+            pill.classList.add('active');
+
+            // Reset and reload sidebar
+            resetView();
+            fetchLatestBlocks();
+
+            // Restart auto-refresh
+            if (latestBlocksInterval) clearInterval(latestBlocksInterval);
+            latestBlocksInterval = setInterval(fetchLatestBlocks, CHAINS[currentChain].blockTime > 5 ? 15000 : 8000);
+        });
+
+        // Recent search clicks
+        recentSearches.addEventListener('click', function(e) {
+            const chip = e.target.closest('.recent-chip');
+            if (!chip) return;
+            const query = chip.dataset.query;
+            const chain = chip.dataset.chain;
+            if (chain && CHAINS[chain]) {
+                currentChain = chain;
+                chainSelector.querySelectorAll('.chain-pill').forEach(p => p.classList.remove('active'));
+                chainSelector.querySelector(`[data-chain="${chain}"]`).classList.add('active');
+            }
+            searchInput.value = query;
+            handleSearch(query);
+        });
+
+        // ── Init ──
+        function init() {
+            fetchPrices();
+            renderRecentSearches();
+            fetchLatestBlocks();
+
+            // Auto refresh latest blocks
+            latestBlocksInterval = setInterval(fetchLatestBlocks, 15000);
+
+            // Refresh prices every 2 min
+            setInterval(fetchPrices, 120000);
+        }
+
+        init();
+    })();
+    </script>
+</body>
+</html>

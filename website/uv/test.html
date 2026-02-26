@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>UV Proxy Test - LairOS</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; background: #1a1a2e; color: #fff; }
+        input { width: 400px; padding: 10px; font-size: 16px; }
+        button { padding: 10px 20px; font-size: 16px; cursor: pointer; }
+        iframe { width: 100%; height: 600px; border: 1px solid #333; margin-top: 20px; }
+        .status { margin: 10px 0; padding: 10px; border-radius: 4px; }
+        .success { background: #1e5128; }
+        .error { background: #5c1a1a; }
+        .info { background: #1a3a5c; }
+    </style>
+</head>
+<body>
+    <h1>🌐 UV Proxy Test</h1>
+    
+    <div id="status" class="status info">Initializing...</div>
+    
+    <div style="margin: 20px 0;">
+        <input type="text" id="url" placeholder="Enter URL (e.g., https://example.com)" value="https://example.com">
+        <button onclick="navigate()">Go</button>
+    </div>
+    
+    <iframe id="frame" src="about:blank"></iframe>
+
+    <!-- STEP 1: Load bare-mux (provides BareMux.BareMuxConnection) -->
+    <script src="/uv/baremux.js"></script>
+    
+    <!-- STEP 2: Load UV bundle (provides Ultraviolet codecs) -->
+    <script src="/uv/uv.bundle.js"></script>
+    
+    <!-- STEP 3: Load UV config -->
+    <script src="/uv/uv.config.js"></script>
+    
+    <script>
+    // Configuration
+    const BARE_SERVER = 'https://uv.holyubofficial.net/';
+    const WORKER_PATH = '/uv/baremux.worker.js';
+    const TRANSPORT_PATH = '/uv/bare.transport.mjs';
+    const SW_PATH = '/uv/sw.js';
+    
+    let connection = null;
+    let ready = false;
+    
+    function setStatus(message, type = 'info') {
+        const el = document.getElementById('status');
+        el.textContent = message;
+        el.className = 'status ' + type;
+    }
+    
+    async function init() {
+        try {
+            // STEP 4: Create bare-mux connection with SharedWorker
+            setStatus('Creating BareMux connection...');
+            connection = new BareMux.BareMuxConnection(WORKER_PATH);
+            console.log('BareMux connection created');
+            
+            // STEP 5: Set the transport (MUST happen BEFORE service worker uses proxy)
+            setStatus('Setting transport...');
+            await connection.setTransport(TRANSPORT_PATH, [BARE_SERVER]);
+            console.log('Transport set to:', BARE_SERVER);
+            
+            // STEP 6: Register service worker
+            setStatus('Registering service worker...');
+            if ('serviceWorker' in navigator) {
+                const registration = await navigator.serviceWorker.register(SW_PATH, {
+                    scope: self.__uv$config.prefix
+                });
+                console.log('Service worker registered:', registration.scope);
+            }
+            
+            // Verify transport
+            const transport = await connection.getTransport();
+            console.log('Current transport:', transport);
+            
+            ready = true;
+            setStatus('✓ Ready! Transport: ' + transport, 'success');
+            
+        } catch (error) {
+            console.error('Init failed:', error);
+            setStatus('✗ Error: ' + error.message, 'error');
+        }
+    }
+    
+    function navigate() {
+        if (!ready) {
+            alert('Not ready yet!');
+            return;
+        }
+        
+        const url = document.getElementById('url').value;
+        if (!url) return;
+        
+        // Encode URL through UV
+        const encoded = self.__uv$config.prefix + self.__uv$config.encodeUrl(url);
+        console.log('Navigating to:', url, '→', encoded);
+        
+        document.getElementById('frame').src = encoded;
+    }
+    
+    // Initialize on load
+    init();
+    </script>
+</body>
+</html>

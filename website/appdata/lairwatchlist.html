@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Watchlist</title>
+    <meta name="lair-icon" content="<svg width='232' height='232' viewBox='0 0 232 232' fill='none' xmlns='http://www.w3.org/2000/svg'><rect width='232' height='232' rx='40' fill='#14b8a6'/><path d='M116 60c-60 0-90 56-90 56s30 56 90 56 90-56 90-56-30-56-90-56z' fill='white' opacity='0.2'/><path d='M116 75c-45 0-70 41-70 41s25 41 70 41 70-41 70-41-25-41-70-41z' fill='white' opacity='0.9'/><circle cx='116' cy='116' r='30' fill='#14b8a6'/><circle cx='116' cy='116' r='14' fill='white'/><circle cx='124' cy='108' r='6' fill='#14b8a6' opacity='0.5'/></svg>">
+    <meta name="lair-include" content="lair.css material-symbols-rounded">
+    <meta name="permissions" content="appStorage, network">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            height: 100vh; overflow: hidden;
+            background: var(--col-bg1, #101010);
+            color: var(--col-txt1, #fff);
+            font-family: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
+            display: flex; flex-direction: column;
+        }
+
+        /* ── Header ── */
+        .header {
+            display: flex; align-items: center; gap: 10px;
+            padding: 12px 16px;
+            background: var(--col-bg2, #171717);
+            border-bottom: 1px solid var(--col-bg3, #262626);
+            flex-shrink: 0;
+        }
+        .header h2 { font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 6px; flex: 1; }
+        .header h2 .material-symbols-rounded { font-size: 18px; color: var(--colors-accent, #6179ff); }
+        .add-btn {
+            background: var(--colors-accent, #6179ff); border: none; color: #fff;
+            border-radius: 6px; padding: 5px 12px; cursor: pointer;
+            font-size: 11px; font-family: inherit; font-weight: 600;
+            display: flex; align-items: center; gap: 4px; transition: opacity 0.15s;
+        }
+        .add-btn:hover { opacity: 0.85; }
+        .add-btn .material-symbols-rounded { font-size: 14px; }
+        .sort-btn {
+            background: var(--col-bg1, #101010); border: 1px solid var(--col-bg3, #262626);
+            color: #888; border-radius: 4px; padding: 4px 10px; cursor: pointer;
+            font-size: 11px; font-family: inherit; transition: all 0.15s;
+        }
+        .sort-btn:hover { color: var(--col-txt1, #fff); }
+        .sort-btn.active { background: var(--colors-accent, #6179ff); color: #fff; border-color: var(--colors-accent, #6179ff); }
+
+        /* ── Summary bar ── */
+        .summary {
+            display: flex; gap: 16px; padding: 8px 16px;
+            background: var(--col-bg2, #171717);
+            border-bottom: 1px solid var(--col-bg3, #262626);
+            font-size: 11px; flex-shrink: 0;
+        }
+        .summary .sl { color: #666; }
+        .summary .up { color: #22c55e; }
+        .summary .dn { color: #ef4444; }
+
+        /* ── Search modal ── */
+        .modal-overlay {
+            display: none; position: fixed; inset: 0; z-index: 100;
+            background: rgba(0,0,0,0.7); align-items: center; justify-content: center;
+        }
+        .modal-overlay.show { display: flex; }
+        .modal {
+            background: var(--col-bg2, #171717); border: 1px solid var(--col-bg3, #262626);
+            border-radius: 12px; width: 90%; max-width: 420px; max-height: 70vh;
+            display: flex; flex-direction: column; overflow: hidden;
+        }
+        .modal-header {
+            display: flex; align-items: center; gap: 8px; padding: 12px 16px;
+            border-bottom: 1px solid var(--col-bg3, #262626);
+        }
+        .modal-header input {
+            flex: 1; background: var(--col-bg1, #101010); border: 1px solid var(--col-bg3, #262626);
+            color: var(--col-txt1, #fff); border-radius: 6px; padding: 8px 12px;
+            font-size: 13px; font-family: inherit; outline: none;
+        }
+        .modal-header input:focus { border-color: var(--colors-accent, #6179ff); }
+        .modal-close {
+            background: none; border: none; color: #888; cursor: pointer; padding: 4px;
+            display: flex; align-items: center;
+        }
+        .modal-close:hover { color: #fff; }
+        .modal-results { flex: 1; overflow-y: auto; padding: 8px; }
+        .modal-results::-webkit-scrollbar { width: 4px; }
+        .modal-results::-webkit-scrollbar-thumb { background: var(--col-bg3, #333); border-radius: 2px; }
+        .search-item {
+            display: flex; align-items: center; gap: 10px; padding: 8px 10px;
+            border-radius: 8px; cursor: pointer; transition: background 0.15s;
+        }
+        .search-item:hover { background: var(--col-bg1, #101010); }
+        .search-item img { width: 28px; height: 28px; border-radius: 50%; background: #222; }
+        .search-item .info { flex: 1; }
+        .search-item .name { font-size: 13px; font-weight: 600; }
+        .search-item .sym { font-size: 11px; color: #888; text-transform: uppercase; }
+        .search-item .rank { font-size: 10px; color: #555; }
+
+        /* ── Watchlist table ── */
+        .list-container { flex: 1; overflow-y: auto; }
+        .list-container::-webkit-scrollbar { width: 4px; }
+        .list-container::-webkit-scrollbar-thumb { background: var(--col-bg3, #333); border-radius: 2px; }
+        table { width: 100%; border-collapse: collapse; }
+        thead th {
+            position: sticky; top: 0; z-index: 2;
+            background: var(--col-bg2, #171717);
+            padding: 8px 12px; font-size: 10px; color: #666;
+            text-transform: uppercase; text-align: left; font-weight: 600;
+            border-bottom: 1px solid var(--col-bg3, #262626);
+            cursor: pointer; user-select: none; white-space: nowrap;
+        }
+        thead th:hover { color: #aaa; }
+        thead th.sorted { color: var(--colors-accent, #6179ff); }
+        thead th .arrow { font-size: 10px; margin-left: 2px; }
+        tbody tr {
+            border-bottom: 1px solid rgba(255,255,255,0.03);
+            transition: background 0.1s; cursor: pointer;
+        }
+        tbody tr:hover { background: rgba(255,255,255,0.03); }
+        td { padding: 10px 12px; font-size: 12px; white-space: nowrap; }
+        .coin-cell { display: flex; align-items: center; gap: 8px; }
+        .coin-cell img { width: 24px; height: 24px; border-radius: 50%; background: #222; }
+        .coin-name { font-weight: 600; font-size: 12px; }
+        .coin-sym { color: #888; font-size: 10px; text-transform: uppercase; }
+        .up { color: #22c55e; }
+        .dn { color: #ef4444; }
+        .sparkline-cell { width: 80px; }
+        .sparkline-cell canvas { width: 80px; height: 28px; }
+        .remove-btn {
+            background: none; border: none; color: #555; cursor: pointer;
+            padding: 2px; display: flex; transition: color 0.15s;
+        }
+        .remove-btn:hover { color: #ef4444; }
+        .remove-btn .material-symbols-rounded { font-size: 16px; }
+        td.right, th.right { text-align: right; }
+
+        /* ── Empty state ── */
+        .empty {
+            flex: 1; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; gap: 12px;
+            color: #555; text-align: center; padding: 40px;
+        }
+        .empty .material-symbols-rounded { font-size: 48px; opacity: 0.3; }
+        .empty p { font-size: 13px; }
+        .empty .add-cta {
+            background: var(--colors-accent, #6179ff); color: #fff; border: none;
+            border-radius: 8px; padding: 8px 20px; cursor: pointer;
+            font-size: 12px; font-family: inherit; font-weight: 600;
+        }
+
+        /* ── Loading ── */
+        .loading { display: flex; align-items: center; justify-content: center; padding: 40px; color: #666; font-size: 12px; }
+        .spin { animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ── Toast ── */
+        .toast {
+            position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
+            background: var(--col-bg2, #171717); border: 1px solid var(--col-bg3, #262626);
+            border-radius: 8px; padding: 8px 16px; font-size: 12px;
+            z-index: 200; opacity: 0; transition: opacity 0.3s; pointer-events: none;
+        }
+        .toast.show { opacity: 1; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h2><span class="material-symbols-rounded">visibility</span> Watchlist</h2>
+        <button class="sort-btn" id="sortMcap" onclick="setSort('mcap')">Market Cap</button>
+        <button class="sort-btn" id="sort24h" onclick="setSort('24h')">24h %</button>
+        <button class="sort-btn" id="sort7d" onclick="setSort('7d')">7d %</button>
+        <button class="add-btn" onclick="openSearch()">
+            <span class="material-symbols-rounded">add</span> Add Coin
+        </button>
+    </div>
+
+    <div class="summary" id="summary"></div>
+
+    <div class="list-container" id="listContainer">
+        <div class="loading" id="loadingState">
+            <span class="material-symbols-rounded spin">progress_activity</span>&nbsp; Loading watchlist...
+        </div>
+    </div>
+
+    <div class="empty" id="emptyState" style="display:none">
+        <span class="material-symbols-rounded">visibility_off</span>
+        <p>Your watchlist is empty.<br>Add coins to track their prices in real time.</p>
+        <button class="add-cta" onclick="openSearch()">Add Your First Coin</button>
+    </div>
+
+    <div class="modal-overlay" id="searchModal">
+        <div class="modal">
+            <div class="modal-header">
+                <input type="text" id="searchInput" placeholder="Search coins (e.g. Bitcoin, ETH, Solana...)" autofocus>
+                <button class="modal-close" onclick="closeSearch()">
+                    <span class="material-symbols-rounded">close</span>
+                </button>
+            </div>
+            <div class="modal-results" id="searchResults">
+                <div class="loading">Type to search...</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+<script>
+/* ── State ── */
+const STORAGE_KEY = 'lair_watchlist';
+const DEFAULT_COINS = ['bitcoin','ethereum','solana','dogecoin','cardano','avalanche-2','chainlink','polkadot','uniswap','aave'];
+let watchlist = [];
+let coinData = {};
+let sparklines = {};
+let sortField = 'mcap';
+let sortDir = 'desc';
+let refreshTimer = null;
+let searchDebounce = null;
+let allCoinsCache = null;
+
+/* ── CORS-safe fetch ── */
+async function cf(url) {
+    if (typeof cfetch === 'function') return cfetch(url);
+    const base = (window.location.ancestorOrigins?.[0] || window.location.origin).replace(/\/$/, '');
+    try { const r = await fetch(`${base}/api/proxy?url=${encodeURIComponent(url)}`); if (r.ok) return r; } catch(_){}
+    return fetch('https://api.allorigins.win/raw?url=' + encodeURIComponent(url));
+}
+
+/* ── Persistence ── */
+function loadWatchlist() {
+    try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+            watchlist = JSON.parse(saved);
+            if (watchlist.length > 0) return;
+        }
+    } catch(_){}
+    watchlist = [...DEFAULT_COINS];
+    saveWatchlist();
+}
+
+function saveWatchlist() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(watchlist));
+}
+
+/* ── Data fetching ── */
+async function fetchPrices() {
+    if (watchlist.length === 0) { showEmpty(); return; }
+    const ids = watchlist.join(',');
+    try {
+        const url = `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${ids}&order=market_cap_desc&sparkline=true&price_change_percentage=1h,24h,7d,30d`;
+        const res = await cf(url);
+        const data = await res.json();
+        coinData = {};
+        data.forEach(c => {
+            coinData[c.id] = c;
+            sparklines[c.id] = c.sparkline_in_7d?.price || [];
+        });
+        render();
+    } catch(e) {
+        console.error('Fetch error:', e);
+        document.getElementById('loadingState').innerHTML = `<span style="color:#ef4444">Failed to load data. <span style="cursor:pointer;color:var(--colors-accent,#6179ff)" onclick="fetchPrices()">Retry</span></span>`;
+    }
+}
+
+/* ── Search ── */
+async function searchCoins(query) {
+    const results = document.getElementById('searchResults');
+    if (!query || query.length < 2) {
+        results.innerHTML = '<div class="loading">Type at least 2 characters...</div>';
+        return;
+    }
+    results.innerHTML = '<div class="loading"><span class="material-symbols-rounded spin">progress_activity</span>&nbsp; Searching...</div>';
+    try {
+        const res = await cf(`https://api.coingecko.com/api/v3/search?query=${encodeURIComponent(query)}`);
+        const data = await res.json();
+        const coins = (data.coins || []).slice(0, 20);
+        if (coins.length === 0) {
+            results.innerHTML = '<div class="loading">No results found</div>';
+            return;
+        }
+        results.innerHTML = coins.map(c => {
+            const added = watchlist.includes(c.id);
+            return `<div class="search-item ${added ? 'added' : ''}" onclick="${added ? `removeCoin('${c.id}')` : `addCoin('${c.id}')`}">
+                <img src="${c.thumb}" alt="" onerror="this.style.display='none'">
+                <div class="info">
+                    <div class="name">${esc(c.name)}</div>
+                    <div class="sym">${esc(c.symbol)}${c.market_cap_rank ? ` · #${c.market_cap_rank}` : ''}</div>
+                </div>
+                <span style="font-size:11px;color:${added ? '#ef4444' : '#22c55e'}">${added ? '✕ Remove' : '+ Add'}</span>
+            </div>`;
+        }).join('');
+    } catch(e) {
+        results.innerHTML = '<div class="loading" style="color:#ef4444">Search failed. Try again.</div>';
+    }
+}
+
+function openSearch() {
+    document.getElementById('searchModal').classList.add('show');
+    const input = document.getElementById('searchInput');
+    input.value = '';
+    input.focus();
+    document.getElementById('searchResults').innerHTML = '<div class="loading">Type to search...</div>';
+}
+
+function closeSearch() {
+    document.getElementById('searchModal').classList.remove('show');
+}
+
+function addCoin(id) {
+    if (watchlist.includes(id)) return;
+    watchlist.push(id);
+    saveWatchlist();
+    showToast(`Added to watchlist`);
+    fetchPrices();
+    // Re-run search to update button states
+    const q = document.getElementById('searchInput').value;
+    if (q) searchCoins(q);
+}
+
+function removeCoin(id) {
+    watchlist = watchlist.filter(c => c !== id);
+    saveWatchlist();
+    showToast(`Removed from watchlist`);
+    fetchPrices();
+    const q = document.getElementById('searchInput').value;
+    if (q) searchCoins(q);
+}
+
+/* ── Sorting ── */
+function setSort(field) {
+    if (sortField === field) { sortDir = sortDir === 'desc' ? 'asc' : 'desc'; }
+    else { sortField = field; sortDir = 'desc'; }
+    document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
+    const btn = document.getElementById('sort' + (field === 'mcap' ? 'Mcap' : field === '24h' ? '24h' : '7d'));
+    if (btn) btn.classList.add('active');
+    render();
+}
+
+function getSortValue(c) {
+    if (sortField === '24h') return c.price_change_percentage_24h_in_currency || 0;
+    if (sortField === '7d') return c.price_change_percentage_7d_in_currency || 0;
+    return c.market_cap || 0;
+}
+
+/* ── Rendering ── */
+function render() {
+    const container = document.getElementById('listContainer');
+    const empty = document.getElementById('emptyState');
+    const loading = document.getElementById('loadingState');
+
+    if (watchlist.length === 0) { showEmpty(); return; }
+    empty.style.display = 'none';
+
+    const sorted = watchlist
+        .map(id => coinData[id])
+        .filter(Boolean)
+        .sort((a, b) => sortDir === 'desc' ? getSortValue(b) - getSortValue(a) : getSortValue(a) - getSortValue(b));
+
+    if (sorted.length === 0) {
+        if (loading) loading.style.display = 'flex';
+        return;
+    }
+
+    // Summary
+    const up = sorted.filter(c => (c.price_change_percentage_24h || 0) >= 0).length;
+    const dn = sorted.length - up;
+    const avgChange = sorted.reduce((s, c) => s + (c.price_change_percentage_24h || 0), 0) / sorted.length;
+    document.getElementById('summary').innerHTML = `
+        <span><span class="sl">Coins:</span> ${sorted.length}</span>
+        <span><span class="sl">Gainers:</span> <span class="up">${up}</span></span>
+        <span><span class="sl">Losers:</span> <span class="dn">${dn}</span></span>
+        <span><span class="sl">Avg 24h:</span> <span class="${avgChange >= 0 ? 'up' : 'dn'}">${avgChange >= 0 ? '+' : ''}${avgChange.toFixed(2)}%</span></span>
+    `;
+
+    container.innerHTML = `<table>
+        <thead><tr>
+            <th style="width:32px">#</th>
+            <th>Coin</th>
+            <th class="right" onclick="setSort('mcap')">Mkt Cap ${sortField === 'mcap' ? (sortDir === 'desc' ? '↓' : '↑') : ''}</th>
+            <th class="right">Price</th>
+            <th class="right" onclick="setSort('24h')">24h ${sortField === '24h' ? (sortDir === 'desc' ? '↓' : '↑') : ''}</th>
+            <th class="right" onclick="setSort('7d')">7d ${sortField === '7d' ? (sortDir === 'desc' ? '↓' : '↑') : ''}</th>
+            <th>7d Chart</th>
+            <th style="width:30px"></th>
+        </tr></thead>
+        <tbody>${sorted.map((c, i) => {
+            const p24 = c.price_change_percentage_24h_in_currency || c.price_change_percentage_24h || 0;
+            const p7d = c.price_change_percentage_7d_in_currency || 0;
+            return `<tr>
+                <td style="color:#555">${i + 1}</td>
+                <td><div class="coin-cell">
+                    <img src="${c.image}" alt="" onerror="this.style.display='none'">
+                    <div><div class="coin-name">${esc(c.name)}</div><div class="coin-sym">${esc(c.symbol)}</div></div>
+                </div></td>
+                <td class="right">${fmtMcap(c.market_cap)}</td>
+                <td class="right" style="font-weight:600">${fmtPrice(c.current_price)}</td>
+                <td class="right ${p24 >= 0 ? 'up' : 'dn'}">${p24 >= 0 ? '+' : ''}${p24.toFixed(2)}%</td>
+                <td class="right ${p7d >= 0 ? 'up' : 'dn'}">${p7d >= 0 ? '+' : ''}${p7d.toFixed(2)}%</td>
+                <td class="sparkline-cell"><canvas id="sp_${c.id}" width="80" height="28"></canvas></td>
+                <td><button class="remove-btn" onclick="event.stopPropagation();removeCoin('${c.id}')"><span class="material-symbols-rounded">close</span></button></td>
+            </tr>`;
+        }).join('')}</tbody>
+    </table>`;
+
+    // Draw sparklines
+    sorted.forEach(c => {
+        const canvas = document.getElementById('sp_' + c.id);
+        if (canvas && sparklines[c.id]?.length > 1) drawSparkline(canvas, sparklines[c.id], c.price_change_percentage_7d_in_currency >= 0);
+    });
+}
+
+function drawSparkline(canvas, data, isUp) {
+    const ctx = canvas.getContext('2d');
+    const w = canvas.width, h = canvas.height;
+    ctx.clearRect(0, 0, w, h);
+    const min = Math.min(...data), max = Math.max(...data);
+    const range = max - min || 1;
+    const step = w / (data.length - 1);
+
+    ctx.beginPath();
+    data.forEach((v, i) => {
+        const x = i * step, y = h - ((v - min) / range) * (h - 4) - 2;
+        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.strokeStyle = isUp ? '#22c55e' : '#ef4444';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // Gradient fill
+    const last = data[data.length - 1];
+    ctx.lineTo(w, h);
+    ctx.lineTo(0, h);
+    ctx.closePath();
+    const grad = ctx.createLinearGradient(0, 0, 0, h);
+    grad.addColorStop(0, isUp ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)');
+    grad.addColorStop(1, 'transparent');
+    ctx.fillStyle = grad;
+    ctx.fill();
+}
+
+function showEmpty() {
+    document.getElementById('listContainer').innerHTML = '';
+    document.getElementById('emptyState').style.display = 'flex';
+    document.getElementById('summary').innerHTML = '';
+}
+
+/* ── Helpers ── */
+function fmtPrice(n) {
+    if (n == null) return '-';
+    if (n >= 1) return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    if (n >= 0.01) return '$' + n.toFixed(4);
+    return '$' + n.toPrecision(4);
+}
+
+function fmtMcap(n) {
+    if (!n) return '-';
+    if (n >= 1e12) return '$' + (n / 1e12).toFixed(2) + 'T';
+    if (n >= 1e9) return '$' + (n / 1e9).toFixed(2) + 'B';
+    if (n >= 1e6) return '$' + (n / 1e6).toFixed(1) + 'M';
+    return '$' + n.toLocaleString();
+}
+
+function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+/* ── Init ── */
+function greenflag() {
+    loadWatchlist();
+    document.getElementById('sortMcap').classList.add('active');
+    fetchPrices();
+    refreshTimer = setInterval(fetchPrices, 60000);
+
+    // Search input handler
+    document.getElementById('searchInput').addEventListener('input', e => {
+        clearTimeout(searchDebounce);
+        searchDebounce = setTimeout(() => searchCoins(e.target.value.trim()), 400);
+    });
+
+    // Close modal on overlay click
+    document.getElementById('searchModal').addEventListener('click', e => {
+        if (e.target === document.getElementById('searchModal')) closeSearch();
+    });
+
+    // ESC to close
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape') closeSearch();
+    });
+}
+</script>
+</body>
+</html>
