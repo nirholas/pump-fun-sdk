@@ -126,3 +126,4 @@ Balance = total lamports - rent exemption minimum.
 - Creator fees are zero for tokens without a set creator, even if `creatorFeeBps > 0` in the config
 - `getMinimumDistributableFee` requires transaction simulation — it cannot be computed offline
 - The `transferCreatorFeesToPump` instruction is only needed for graduated tokens — including it for non-graduated tokens will fail
+
