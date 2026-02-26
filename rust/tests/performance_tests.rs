@@ -243,3 +243,4 @@ fn test_memory_efficiency() {
 
     // If we get here without OOM, memory management is reasonable
 }
+
