@@ -265,3 +265,4 @@ export async function* createVanityGenerator(
     yield await generator.generate();
   }
 }
+
