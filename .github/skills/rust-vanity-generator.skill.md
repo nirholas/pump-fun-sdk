@@ -154,3 +154,4 @@ panic = "abort"      # No unwinding overhead
 - Performance tests: `rust/tests/performance_tests.rs`
 - Benchmarks: `cargo bench` (Criterion framework)
 - Orchestrated by `scripts/test-rust.sh` which runs all test categories with 10 iterations each
+
