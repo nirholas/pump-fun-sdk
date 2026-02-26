@@ -62,3 +62,4 @@ The Pump SDK (`@pump-fun/pump-sdk`) is a TypeScript SDK for the Pump protocol on
 - Do not reuse foreground shell sessions — stale sessions block future terminal operations in Codespaces
 - In GitHub Codespaces, agent-spawned terminals may be hidden — they still work. Do not assume a terminal is broken if you cannot see it
 - If a terminal appears unresponsive, kill it and create a new one rather than retrying in the same terminal
+
