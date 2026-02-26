@@ -648,3 +648,4 @@ The trenches needed this. Now they have it.
 ---
 
 *pump-fun-sdk is maintained by [@nichxbt](https://x.com/nichxbt) and the open-source community. Star the repo, fork it, build with it. Let's go.*
+
