@@ -13,7 +13,19 @@ export interface ServerCapabilities {
     };
     sampling?: Record<string, never>;
 }
-export declare const ToolInputSchema: any;
+export declare const ToolInputSchema: z.ZodObject<{
+    type: z.ZodLiteral<"object">;
+    properties: z.ZodRecord<z.ZodString, z.ZodAny>;
+    required: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+}, "strip", z.ZodTypeAny, {
+    type: "object";
+    properties: Record<string, any>;
+    required?: string[] | undefined;
+}, {
+    type: "object";
+    properties: Record<string, any>;
+    required?: string[] | undefined;
+}>;
 export interface ToolDefinition {
     name: string;
     description: string;
