@@ -323,6 +323,146 @@ export function formatMonitorStatus(state: TokenLaunchMonitorState, activeSubscr
 }
 
 // ============================================================================
+// Graduation Notification
+// ============================================================================
+
+/** Rich HTML notification for a token graduating from bonding curve to AMM. */
+export function formatGraduationNotification(event: GraduationEvent): string {
+    const mint = shortAddr(event.mintAddress);
+    const user = shortAddr(event.user);
+    const timeStr = formatTime(event.timestamp);
+
+    const solscanTx = `https://solscan.io/tx/${event.txSignature}`;
+    const solscanMint = `https://solscan.io/token/${event.mintAddress}`;
+    const pumpfun = `https://pump.fun/coin/${event.mintAddress}`;
+
+    let details = '';
+    if (event.isMigration) {
+        details =
+            `💰 <b>SOL Migrated:</b> ${event.solAmount?.toFixed(2) ?? '?'} SOL\n` +
+            `🏊 <b>Migration Fee:</b> ${event.poolMigrationFee?.toFixed(4) ?? '?'} SOL\n` +
+            (event.poolAddress
+                ? `🔗 <b>AMM Pool:</b> <code>${shortAddr(event.poolAddress)}</code>\n`
+                : '');
+    }
+
+    return (
+        `🎓 <b>Token Graduated!</b>\n\n` +
+        `🔗 <b>Mint:</b> <a href="${solscanMint}"><code>${mint}</code></a>\n` +
+        `👤 <b>Triggered by:</b> <code>${user}</code>\n` +
+        `📈 <b>Type:</b> ${event.isMigration ? 'AMM Migration' : 'Bonding Curve Complete'}\n` +
+        details +
+        `🕐 <b>Time:</b> ${timeStr}\n\n` +
+        `🔗 <a href="${solscanTx}">View TX</a> · ` +
+        `<a href="${solscanMint}">Solscan</a> · ` +
+        `<a href="${pumpfun}">pump.fun</a>`
+    );
+}
+
+// ============================================================================
+// Trade Alert (Whale) Notification
+// ============================================================================
+
+/** Rich HTML notification for a large trade (whale alert). */
+export function formatTradeAlertNotification(event: TradeAlertEvent): string {
+    const emoji = event.isBuy ? '🟢' : '🔴';
+    const action = event.isBuy ? 'BUY' : 'SELL';
+    const mint = shortAddr(event.mintAddress);
+    const trader = shortAddr(event.user);
+    const timeStr = formatTime(event.timestamp);
+
+    const solscanTx = `https://solscan.io/tx/${event.txSignature}`;
+    const solscanMint = `https://solscan.io/token/${event.mintAddress}`;
+    const solscanTrader = `https://solscan.io/account/${event.user}`;
+    const pumpfun = `https://pump.fun/coin/${event.mintAddress}`;
+
+    // Progress bar visualization (10 blocks)
+    const filled = Math.round(event.bondingCurveProgress / 10);
+    const progressBar = '█'.repeat(filled) + '░'.repeat(10 - filled);
+
+    let mayhemLine = '';
+    if (event.mayhemMode) {
+        mayhemLine = `⚡ <b>Mayhem Mode:</b> Active\n`;
+    }
+
+    return (
+        `🐋 <b>Whale ${action}!</b>\n\n` +
+        `${emoji} <b>Amount:</b> ${event.solAmount.toFixed(2)} SOL\n` +
+        `🪙 <b>Token:</b> <a href="${solscanMint}"><code>${mint}</code></a>\n` +
+        `👤 <b>Trader:</b> <a href="${solscanTrader}"><code>${trader}</code></a>\n` +
+        `💹 <b>Market Cap:</b> ~${event.marketCapSol.toFixed(1)} SOL\n` +
+        `📊 <b>Graduation:</b> [${progressBar}] ${event.bondingCurveProgress.toFixed(1)}%\n` +
+        `💰 <b>Fee:</b> ${event.fee.toFixed(4)} SOL | <b>Creator Fee:</b> ${event.creatorFee.toFixed(4)} SOL\n` +
+        mayhemLine +
+        `🕐 <b>Time:</b> ${timeStr}\n\n` +
+        `🔗 <a href="${solscanTx}">View TX</a> · ` +
+        `<a href="${solscanMint}">Solscan</a> · ` +
+        `<a href="${pumpfun}">pump.fun</a>`
+    );
+}
+
+// ============================================================================
+// Fee Distribution Notification
+// ============================================================================
+
+/** Rich HTML notification for a creator fee distribution to shareholders. */
+export function formatFeeDistributionNotification(event: FeeDistributionEvent): string {
+    const mint = shortAddr(event.mintAddress);
+    const admin = shortAddr(event.admin);
+    const timeStr = formatTime(event.timestamp);
+
+    const solscanTx = `https://solscan.io/tx/${event.txSignature}`;
+    const solscanMint = `https://solscan.io/token/${event.mintAddress}`;
+    const pumpfun = `https://pump.fun/coin/${event.mintAddress}`;
+
+    const shareholderLines = event.shareholders
+        .slice(0, 5)
+        .map((s) => {
+            const pct = (s.shareBps / 100).toFixed(1);
+            return `  • <code>${shortAddr(s.address)}</code> — ${pct}%`;
+        })
+        .join('\n');
+
+    const truncated = event.shareholders.length > 5
+        ? `\n  <i>... and ${event.shareholders.length - 5} more</i>`
+        : '';
+
+    return (
+        `💎 <b>Creator Fees Distributed!</b>\n\n` +
+        `🪙 <b>Token:</b> <a href="${solscanMint}"><code>${mint}</code></a>\n` +
+        `💰 <b>Distributed:</b> ${event.distributedSol.toFixed(4)} SOL\n` +
+        `👤 <b>Admin:</b> <code>${admin}</code>\n` +
+        `👥 <b>Shareholders (${event.shareholders.length}):</b>\n` +
+        shareholderLines + truncated +
+        `\n\n🕐 <b>Time:</b> ${timeStr}\n\n` +
+        `🔗 <a href="${solscanTx}">View TX</a> · ` +
+        `<a href="${solscanMint}">Solscan</a> · ` +
+        `<a href="${pumpfun}">pump.fun</a>`
+    );
+}
+
+// ============================================================================
+// Pump Event Monitor Status
+// ============================================================================
+
+/** Stats display for the pump event monitor. */
+export function formatEventMonitorStatus(state: PumpEventMonitorState): string {
+    const uptime = state.startedAt
+        ? formatDuration(Date.now() - state.startedAt)
+        : 'not started';
+
+    return (
+        `📡 <b>Event Monitor</b>\n` +
+        `⚡ <b>Running:</b> ${state.isRunning ? '✅ Yes' : '❌ No'}\n` +
+        `🔌 <b>Mode:</b> ${state.mode}\n` +
+        `🎓 <b>Graduations:</b> ${state.graduationsDetected}\n` +
+        `🐋 <b>Whale Trades:</b> ${state.whaleTradesDetected}\n` +
+        `💎 <b>Fee Distributions:</b> ${state.feeDistributionsDetected}\n` +
+        `⏱️ <b>Uptime:</b> ${uptime}`
+    );
+}
+
+// ============================================================================
 // Utilities
 // ============================================================================
 
