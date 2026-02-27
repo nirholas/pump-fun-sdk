@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
+<title>PumpFun Live Trades — Real-Time Analytics Dashboard</title>
+<meta name="description" content="Real-time Solana PumpFun trade analytics. Monitor buys, sells, token launches, migrations, and whale activity via WebSocket.">
+<style>
+  :root {
+    --bg: #0a0a0a; --bg2: #111; --bg3: #1a1a1a; --border: #222;
+    --green: #00ff41; --red: #ff4141; --yellow: #ffcc00; --blue: #4a9eff;
+    --orange: #ff9900; --purple: #b366ff; --cyan: #00e5ff; --dim: #555; --text: #ccc;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--green); font-family: 'Courier New', monospace; font-size: 13px; line-height: 1.5; overflow-x: hidden; }
+
+  /* ── Layout ─────────────────────────────────────────── */
+  #app { display: grid; grid-template-rows: auto auto 1fr; height: 100vh; }
+
+  /* ── Header ─────────────────────────────────────────── */
+  #header {
+    background: var(--bg2); border-bottom: 1px solid var(--border);
+    padding: 10px 20px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+    position: sticky; top: 0; z-index: 10;
+  }
+  #header h1 { font-size: 16px; white-space: nowrap; }
+  .status { font-size: 12px; color: var(--dim); }
+  .status.ok { color: var(--green); }
+  .status.err { color: var(--red); }
+  .controls { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+  button {
+    background: var(--bg3); border: 1px solid #333; color: var(--green);
+    padding: 5px 12px; cursor: pointer; font-family: inherit; font-size: 12px; border-radius: 3px;
+  }
+  button:hover { background: #252525; border-color: var(--green); }
+  button.active { background: #002200; border-color: var(--green); }
+  button.danger { color: var(--red); }
+  button.danger:hover { border-color: var(--red); }
+  select {
+    background: var(--bg3); border: 1px solid #333; color: var(--text);
+    padding: 5px 8px; font-family: inherit; font-size: 12px; border-radius: 3px;
+  }
+  input[type="text"] {
+    background: var(--bg3); border: 1px solid #333; color: var(--text);
+    padding: 5px 10px; font-family: inherit; font-size: 12px; border-radius: 3px; width: 200px;
+  }
+  input:focus, select:focus { outline: none; border-color: var(--green); }
+
+  /* ── Stats ──────────────────────────────────────────── */
+  #stats {
+    background: #0d0d0d; border-bottom: 1px solid #1a1a1a;
+    padding: 6px 20px; font-size: 11px; color: var(--dim);
+    display: flex; gap: 20px; flex-wrap: wrap; align-items: center;
+  }
+  .val { color: var(--green); font-weight: bold; }
+  .val.red { color: var(--red); }
+  .val.yellow { color: var(--yellow); }
+  .val.blue { color: var(--blue); }
+
+  /* ── Main Grid ─────────────────────────────────────── */
+  #main {
+    display: grid; grid-template-columns: 1fr 320px;
+    overflow: hidden;
+  }
+  @media (max-width: 900px) { #main { grid-template-columns: 1fr; } #sidebar { display: none; } }
+
+  /* ── Feed ───────────────────────────────────────────── */
+  #feed { overflow-y: auto; padding: 0; }
+  .trade {
+    display: grid; grid-template-columns: 70px 50px 1fr 110px 100px 100px;
+    gap: 8px; padding: 6px 20px; border-bottom: 1px solid #111; align-items: center;
+    animation: fadeIn 0.2s ease; font-size: 12px;
+  }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(-3px); } to { opacity: 1; } }
+  .trade.buy { border-left: 2px solid var(--green); }
+  .trade.sell { border-left: 2px solid var(--red); }
+  .trade.create { border-left: 2px solid var(--yellow); }
+  .trade.migrate { border-left: 2px solid var(--purple); }
+  .trade.whale { background: rgba(255, 204, 0, 0.05); }
+  .trade .time { color: #444; font-size: 11px; }
+  .trade .type { font-weight: bold; text-transform: uppercase; font-size: 11px; }
+  .trade .type.buy { color: var(--green); }
+  .trade .type.sell { color: var(--red); }
+  .trade .type.create { color: var(--yellow); }
+  .trade .type.migrate { color: var(--purple); }
+  .trade .token { color: var(--yellow); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .trade .amount { text-align: right; color: var(--text); }
+  .trade .sol { text-align: right; }
+  .trade .sol.pos { color: var(--green); }
+  .trade .sol.neg { color: var(--red); }
+  .trade .link { text-align: right; }
+  .trade a { color: var(--blue); text-decoration: none; font-size: 11px; }
+  .trade a:hover { text-decoration: underline; }
+  .whale-tag { color: var(--yellow); font-size: 10px; margin-left: 4px; }
+
+  /* ── Sidebar ───────────────────────────────────────── */
+  #sidebar {
+    background: var(--bg2); border-left: 1px solid var(--border);
+    overflow-y: auto; padding: 12px;
+  }
+  .panel { margin-bottom: 16px; }
+  .panel h3 { font-size: 12px; color: var(--dim); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; border-bottom: 1px solid #222; padding-bottom: 4px; }
+  .panel .row { display: flex; justify-content: space-between; padding: 3px 0; font-size: 12px; }
+  .panel .row .label { color: #888; }
+
+  /* ── Volume Chart ──────────────────────────────────── */
+  #chart-container { height: 100px; padding: 8px 0; }
+  .bar-chart { display: flex; align-items: flex-end; gap: 2px; height: 80px; }
+  .bar-chart .bar { flex: 1; min-width: 4px; border-radius: 1px 1px 0 0; transition: height 0.3s ease; position: relative; }
+  .bar-chart .bar.buy { background: var(--green); }
+  .bar-chart .bar.sell { background: var(--red); }
+  .bar-chart .bar:hover { opacity: 0.7; }
+  .chart-labels { display: flex; justify-content: space-between; font-size: 9px; color: #444; margin-top: 2px; }
+
+  /* ── Top Tokens ────────────────────────────────────── */
+  .top-token { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #1a1a1a; font-size: 12px; }
+  .top-token .name { color: var(--yellow); max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .top-token .trades { color: var(--text); }
+
+  /* ── Whale Alerts ──────────────────────────────────── */
+  .whale-alert {
+    background: rgba(255, 204, 0, 0.08); border: 1px solid rgba(255, 204, 0, 0.2);
+    border-radius: 4px; padding: 6px 8px; margin-bottom: 6px; font-size: 11px;
+    animation: pulse 0.5s ease;
+  }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+  .whale-alert .whale-sol { color: var(--yellow); font-weight: bold; }
+
+  /* ── System log line ───────────────────────────────── */
+  .sys { color: var(--dim); padding: 4px 20px; font-size: 11px; }
+  .sys.error { color: var(--red); }
+  .sys.warn { color: var(--yellow); }
+
+  /* ── Scrollbar ─────────────────────────────────────── */
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: #222; border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <div id="header">
+    <h1>📊 PumpFun Live Trades</h1>
+    <div class="status" id="status">● Disconnected</div>
+    <div class="controls">
+      <select id="filter">
+        <option value="all">All Events</option>
+        <option value="buy">Buys Only</option>
+        <option value="sell">Sells Only</option>
+        <option value="create">Creates Only</option>
+        <option value="whale">Whales Only (≥1 SOL)</option>
+      </select>
+      <input type="text" id="search" placeholder="Filter by mint or token..." />
+      <button id="btn-pause">Pause</button>
+      <button id="btn-sound">🔇</button>
+      <button id="btn-clear" class="danger">Clear</button>
+    </div>
+  </div>
+
+  <div id="stats">
+    <div>Events: <span class="val" id="s-total">0</span></div>
+    <div>Buys: <span class="val" id="s-buys">0</span></div>
+    <div>Sells: <span class="val red" id="s-sells">0</span></div>
+    <div>Creates: <span class="val yellow" id="s-creates">0</span></div>
+    <div>Whales: <span class="val yellow" id="s-whales">0</span></div>
+    <div>Vol: <span class="val blue" id="s-volume">0</span> SOL</div>
+    <div>Events/s: <span class="val" id="s-rate">0</span></div>
+    <div>Uptime: <span class="val" id="s-uptime">0s</span></div>
+  </div>
+
+  <div id="main">
+    <div id="feed">
+      <!-- Column headers -->
+      <div style="display:grid; grid-template-columns: 70px 50px 1fr 110px 100px 100px; gap:8px; padding:6px 20px; border-bottom:1px solid #333; font-size:11px; color:#555; text-transform:uppercase; letter-spacing:0.5px; position:sticky; top:0; background:var(--bg); z-index:1;">
+        <span>Time</span><span>Type</span><span>Token</span><span style="text-align:right">Amount</span><span style="text-align:right">SOL</span><span style="text-align:right">Tx</span>
+      </div>
+    </div>
+
+    <div id="sidebar">
+      <!-- Volume Chart -->
+      <div class="panel">
+        <h3>📈 Volume (30s windows)</h3>
+        <div id="chart-container">
+          <div class="bar-chart" id="chart"></div>
+          <div class="chart-labels"><span>-5m</span><span>now</span></div>
+        </div>
+      </div>
+
+      <!-- Buy/Sell Ratio -->
+      <div class="panel">
+        <h3>⚖️ Buy/Sell Ratio</h3>
+        <div id="ratio-bar" style="display:flex; height:8px; border-radius:4px; overflow:hidden; margin-bottom:6px;">
+          <div id="ratio-buy" style="background:var(--green); width:50%; transition: width 0.5s;"></div>
+          <div id="ratio-sell" style="background:var(--red); width:50%; transition: width 0.5s;"></div>
+        </div>
+        <div class="row"><span class="label">Buy %</span><span class="val" id="ratio-buy-pct">50%</span></div>
+        <div class="row"><span class="label">Sell %</span><span class="val red" id="ratio-sell-pct">50%</span></div>
+      </div>
+
+      <!-- Top Tokens -->
+      <div class="panel">
+        <h3>🔥 Top Tokens (by trades)</h3>
+        <div id="top-tokens"></div>
+      </div>
+
+      <!-- Whale Alerts -->
+      <div class="panel">
+        <h3>🐋 Whale Alerts</h3>
+        <div id="whale-alerts"><div style="color:#444; font-size:11px;">Waiting for whales...</div></div>
+      </div>
+
+      <!-- Connection Info -->
+      <div class="panel">
+        <h3>🔗 Connection</h3>
+        <div class="row"><span class="label">Program</span><span style="color:var(--blue); font-size:10px;">6EF8...F6P</span></div>
+        <div class="row"><span class="label">Network</span><span style="color:var(--text);">Mainnet</span></div>
+        <div class="row"><span class="label">Commitment</span><span style="color:var(--text);">confirmed</span></div>
+        <div class="row"><span class="label">Sub ID</span><span id="sub-id" style="color:var(--text);">—</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Whale alert sound (web audio) -->
+<script>
+// ════════════════════════════════════════════════════════════════════
+// PumpFun Live Trade Feed & Analytics Dashboard
+// Real-time buy/sell/create/migrate detection via Solana RPC WebSocket
+//
+// Built with the Pump SDK (https://github.com/nirholas/pump-fun-sdk)
+// Uses logsSubscribe to monitor the Pump program and parse events.
+// ════════════════════════════════════════════════════════════════════
+
+const PUMP_PROGRAM = '6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P';
+const PUMP_AMM_PROGRAM = 'pAMMBay6oceH9fJKBRHGP5D4bD4sWpmSwMn52FMfXEA';
+const MAX_ENTRIES = 500;
+const WHALE_THRESHOLD_LAMPORTS = 1_000_000_000; // 1 SOL
+const CHART_BUCKETS = 10;  // 10 x 30s = 5 min
+const BUCKET_MS = 30_000;
+
+// ── State ───────────────────────────────────────────────────────────
+let ws = null;
+let subId = null;
+let paused = false;
+let soundEnabled = false;
+let startTime = 0;
+let reconnectDelay = 1000;
+let reconnectTimer = null;
+let manualDisconnect = false;
+let rateInterval = null;
+
+const stats = {
+  total: 0, buys: 0, sells: 0, creates: 0, migrates: 0, whales: 0,
+  volumeLamports: 0, logsReceived: 0,
+};
+
+// Token activity tracking
+const tokenMap = new Map(); // mint -> { name, symbol, buys, sells, volume }
+
+// Volume chart: each bucket tracks { buys, sells, buyVol, sellVol, ts }
+const chartData = Array.from({ length: CHART_BUCKETS }, (_, i) => ({
+  buys: 0, sells: 0, buyVol: 0, sellVol: 0, ts: Date.now() - (CHART_BUCKETS - 1 - i) * BUCKET_MS,
+}));
+
+// Whale alerts (last 20)
+const whaleAlerts = [];
+
+// ── DOM ─────────────────────────────────────────────────────────────
+const $feed = document.getElementById('feed');
+const $status = document.getElementById('status');
+const $filter = document.getElementById('filter');
+const $search = document.getElementById('search');
+const $btnPause = document.getElementById('btn-pause');
+const $btnSound = document.getElementById('btn-sound');
+const $btnClear = document.getElementById('btn-clear');
+
+// ── Audio context (whale sound) ─────────────────────────────────────
+let audioCtx = null;
+function playWhaleSound() {
+  if (!soundEnabled) return;
+  try {
+    if (!audioCtx) audioCtx = new AudioContext();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.type = 'sine'; osc.frequency.value = 440;
+    gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
+    osc.start(); osc.stop(audioCtx.currentTime + 0.5);
+  } catch {}
+}
+
+// ── Buttons ─────────────────────────────────────────────────────────
+$btnPause.onclick = () => {
+  paused = !paused;
+  $btnPause.textContent = paused ? 'Resume' : 'Pause';
+  $btnPause.classList.toggle('active', paused);
+};
+$btnSound.onclick = () => {
+  soundEnabled = !soundEnabled;
+  $btnSound.textContent = soundEnabled ? '🔊' : '🔇';
+  if (soundEnabled && !audioCtx) audioCtx = new AudioContext();
+};
+$btnClear.onclick = () => {
+  // Keep header row, remove everything else
+  while ($feed.children.length > 1) $feed.removeChild($feed.lastChild);
+};
+
+// ── WebSocket Connection ────────────────────────────────────────────
+function connect() {
+  const url = 'wss://api.mainnet-beta.solana.com';
+  manualDisconnect = false;
+  setStatus('Connecting...', '');
+  sysLog(`Connecting to Solana mainnet WebSocket...`);
+
+  ws = new WebSocket(url);
+
+  ws.onopen = () => {
+    reconnectDelay = 1000;
+    setStatus('● Subscribing...', 'ok');
+    if (!startTime) startTime = Date.now();
+    startRateCounter();
+
+    // Subscribe to ALL Pump program logs (buys, sells, creates, migrations)
+    ws.send(JSON.stringify({
+      jsonrpc: '2.0', id: 1,
+      method: 'logsSubscribe',
+      params: [{ mentions: [PUMP_PROGRAM] }, { commitment: 'confirmed' }],
+    }));
+  };
+
+  ws.onmessage = (evt) => {
+    let msg;
+    try { msg = JSON.parse(evt.data); } catch { return; }
+
+    if (msg.id === 1 && msg.result !== undefined) {
+      subId = msg.result;
+      setStatus(`● Live — sub:${subId}`, 'ok');
+      document.getElementById('sub-id').textContent = subId;
+      sysLog(`Subscribed (id=${subId}). Monitoring all Pump trades...`);
+      return;
+    }
+
+    if (msg.method === 'logsNotify' && msg.params?.result) {
+      stats.logsReceived++;
+      processNotification(msg.params.result);
+    }
+  };
+
+  ws.onerror = () => {
+    setStatus('● Error', 'err');
+    sysLog('WebSocket error', 'error');
+  };
+
+  ws.onclose = (evt) => {
+    ws = null; subId = null;
+    document.getElementById('sub-id').textContent = '—';
+    if (!manualDisconnect) {
+      setStatus(`● Reconnecting ${reconnectDelay / 1000}s...`, 'err');
+      sysLog(`Disconnected (${evt.code}). Reconnecting...`, 'warn');
+      reconnectTimer = setTimeout(connect, reconnectDelay);
+      reconnectDelay = Math.min(reconnectDelay * 2, 30000);
+    } else {
+      setStatus('● Disconnected', '');
+      stopRateCounter();
+    }
+  };
+}
+
+// ── Process a log notification ──────────────────────────────────────
+function processNotification(result) {
+  const { value } = result;
+  if (!value || value.err) return;
+  const { signature, logs } = value;
+  if (!logs?.length) return;
+
+  const logsText = logs.join('\n');
+  const event = classifyEvent(logsText, logs, signature);
+  if (!event) return;
+
+  stats.total++;
+
+  // Update type counters
+  if (event.type === 'buy') stats.buys++;
+  else if (event.type === 'sell') stats.sells++;
+  else if (event.type === 'create') stats.creates++;
+  else if (event.type === 'migrate') stats.migrates++;
+
+  // Volume tracking
+  if (event.solLamports > 0) {
+    stats.volumeLamports += event.solLamports;
+  }
+
+  // Whale detection
+  const isWhale = event.solLamports >= WHALE_THRESHOLD_LAMPORTS;
+  if (isWhale) {
+    stats.whales++;
+    addWhaleAlert(event);
+    playWhaleSound();
+  }
+
+  // Token tracking
+  trackToken(event);
+
+  // Chart data
+  updateChart(event);
+
+  // Apply filters
+  const filterVal = $filter.value;
+  const searchVal = $search.value.toLowerCase();
+  let show = true;
+  if (filterVal === 'buy' && event.type !== 'buy') show = false;
+  if (filterVal === 'sell' && event.type !== 'sell') show = false;
+  if (filterVal === 'create' && event.type !== 'create') show = false;
+  if (filterVal === 'whale' && !isWhale) show = false;
+  if (searchVal && !event.mint?.toLowerCase().includes(searchVal) &&
+      !event.tokenName?.toLowerCase().includes(searchVal)) show = false;
+
+  if (!paused && show) renderTrade(event, isWhale);
+  updateAllStats();
+}
+
+// ── Classify event type from program logs ───────────────────────────
+function classifyEvent(logsText, logs, signature) {
+  let type = null;
+  let solLamports = 0;
+  let tokenAmount = 0;
+  let mint = null;
+  let trader = null;
+  let tokenName = null;
+  let tokenSymbol = null;
+
+  // Determine event type from instruction logs
+  if (logsText.includes('Instruction: Sell')) {
+    type = 'sell';
+  } else if (logsText.includes('Instruction: Buy')) {
+    type = 'buy';
+  } else if (logsText.includes('Instruction: Create')) {
+    type = 'create';
+  } else if (logsText.includes('Instruction: Migrate')) {
+    type = 'migrate';
+  } else {
+    return null; // Not a trade event
+  }
+
+  // Parse program data for amounts
+  for (const line of logs) {
+    // Try to extract base64 event data
+    if (line.startsWith('Program data: ')) {
+      try {
+        const b64 = line.slice('Program data: '.length);
+        const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+
+        // Anchor events: first 8 bytes are discriminator
+        // TradeEvent layout after disc: mint(32), sol_amount(8), token_amount(8), is_buy(1), user(32), ...
+        if (bytes.length >= 81) {
+          // Read mint (32 bytes at offset 8)
+          const mintBytes = bytes.slice(8, 40);
+          const possibleMint = bytesToBase58(mintBytes);
+          if (possibleMint && possibleMint.length >= 32) {
+            mint = possibleMint;
+          }
+
+          // Read sol_amount (u64 LE at offset 40)
+          const solView = new DataView(bytes.buffer, bytes.byteOffset + 40, 8);
+          solLamports = Number(solView.getBigUint64(0, true));
+          if (solLamports > 1e18) solLamports = 0; // sanity check
+
+          // Read token_amount (u64 LE at offset 48)
+          const tokView = new DataView(bytes.buffer, bytes.byteOffset + 48, 8);
+          tokenAmount = Number(tokView.getBigUint64(0, true));
+          if (tokenAmount > 1e30) tokenAmount = 0;
+        }
+
+        // Try to read strings (for create events)
+        if (type === 'create') {
+          const decoded = new TextDecoder('ascii', { fatal: false }).decode(bytes);
+          const readable = decoded.replace(/[^\x20-\x7E]/g, ' ');
+          const urlMatch = readable.match(/(https?:\/\/[^\s]+)/);
+          if (urlMatch) {
+            fetchTokenMeta(urlMatch[1], signature, mint);
+          }
+        }
+      } catch {}
+    }
+
+    // Fallback: look for log messages with amounts
+    if (line.includes('Program log: mint:')) {
+      const m = line.match(/mint:\s*(\w{32,})/);
+      if (m) mint = m[1];
+    }
+  }
+
+  return {
+    type,
+    signature,
+    time: new Date().toLocaleTimeString(),
+    mint: mint || 'unknown',
+    solLamports,
+    tokenAmount,
+    trader,
+    tokenName,
+    tokenSymbol,
+  };
+}
+
+// ── Base58 encoder (minimal, for display) ───────────────────────────
+const B58_ALPHA = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+function bytesToBase58(bytes) {
+  // Simple base58 for 32-byte keys
+  let num = BigInt(0);
+  for (const b of bytes) num = num * 256n + BigInt(b);
+  if (num === 0n) return '1';
+  let str = '';
+  while (num > 0n) {
+    str = B58_ALPHA[Number(num % 58n)] + str;
+    num = num / 58n;
+  }
+  // Leading zeros
+  for (const b of bytes) { if (b === 0) str = '1' + str; else break; }
+  return str;
+}
+
+// ── Fetch token metadata (best-effort) ──────────────────────────────
+async function fetchTokenMeta(uri, signature, mint) {
+  try {
+    let url = uri;
+    if (url.startsWith('ipfs://')) url = 'https://cf-ipfs.com/ipfs/' + url.slice(7);
+    const resp = await fetch(url, { signal: AbortSignal.timeout(5000) });
+    if (!resp.ok) return;
+    const meta = await resp.json();
+    if (meta.name && mint) {
+      // Update token map
+      const t = tokenMap.get(mint);
+      if (t) { t.name = meta.name; t.symbol = meta.symbol || ''; }
+      // Update visible entry
+      const el = document.getElementById('tx-' + signature.slice(0, 16));
+      if (el) {
+        const nameEl = el.querySelector('.token');
+        if (nameEl) nameEl.textContent = `${meta.name} ${meta.symbol ? '(' + meta.symbol + ')' : ''}`;
+      }
+    }
+  } catch {}
+}
+
+// ── Track token activity ────────────────────────────────────────────
+function trackToken(event) {
+  const key = event.mint;
+  if (key === 'unknown') return;
+  if (!tokenMap.has(key)) {
+    tokenMap.set(key, { name: event.tokenName || key.slice(0, 8) + '...', symbol: '', buys: 0, sells: 0, volume: 0, lastSeen: Date.now() });
+  }
+  const t = tokenMap.get(key);
+  if (event.type === 'buy') t.buys++;
+  if (event.type === 'sell') t.sells++;
+  t.volume += event.solLamports;
+  t.lastSeen = Date.now();
+}
+
+// ── Update volume chart ─────────────────────────────────────────────
+function updateChart(event) {
+  const now = Date.now();
+  const bucket = chartData[chartData.length - 1];
+
+  // Roll buckets if needed
+  if (now - bucket.ts > BUCKET_MS) {
+    chartData.shift();
+    chartData.push({ buys: 0, sells: 0, buyVol: 0, sellVol: 0, ts: now });
+  }
+
+  const cur = chartData[chartData.length - 1];
+  if (event.type === 'buy') { cur.buys++; cur.buyVol += event.solLamports; }
+  if (event.type === 'sell') { cur.sells++; cur.sellVol += event.solLamports; }
+
+  renderChart();
+}
+
+// ── Render chart ────────────────────────────────────────────────────
+function renderChart() {
+  const $chart = document.getElementById('chart');
+  const maxCount = Math.max(1, ...chartData.map(b => Math.max(b.buys, b.sells)));
+  $chart.innerHTML = chartData.map(b => {
+    const buyH = Math.max(1, (b.buys / maxCount) * 70);
+    const sellH = Math.max(1, (b.sells / maxCount) * 70);
+    return `<div style="display:flex; flex-direction:column; gap:1px; flex:1; align-items:stretch; justify-content:flex-end; height:80px;">
+      <div class="bar buy" style="height:${buyH}px;" title="Buys: ${b.buys}"></div>
+      <div class="bar sell" style="height:${sellH}px;" title="Sells: ${b.sells}"></div>
+    </div>`;
+  }).join('');
+}
+
+// ── Add whale alert ─────────────────────────────────────────────────
+function addWhaleAlert(event) {
+  const sol = (event.solLamports / 1e9).toFixed(2);
+  const alert = { type: event.type, sol, mint: event.mint, time: event.time, sig: event.signature };
+  whaleAlerts.unshift(alert);
+  if (whaleAlerts.length > 10) whaleAlerts.pop();
+  renderWhaleAlerts();
+}
+
+function renderWhaleAlerts() {
+  const $el = document.getElementById('whale-alerts');
+  $el.innerHTML = whaleAlerts.map(a => {
+    const emoji = a.type === 'buy' ? '🟢' : a.type === 'sell' ? '🔴' : '🟡';
+    const shortMint = a.mint.slice(0, 6) + '...' + a.mint.slice(-4);
+    return `<div class="whale-alert">
+      ${emoji} <span class="whale-sol">${a.sol} SOL</span> ${a.type.toUpperCase()}
+      <span style="color:#888">${shortMint}</span>
+      <a href="https://solscan.io/tx/${a.sig}" target="_blank" style="color:var(--blue); text-decoration:none; font-size:10px; float:right;">view tx</a>
+    </div>`;
+  }).join('');
+}
+
+// ── Render a trade row ──────────────────────────────────────────────
+function renderTrade(event, isWhale) {
+  const sol = event.solLamports > 0 ? (event.solLamports / 1e9).toFixed(4) : '—';
+  const tokens = event.tokenAmount > 0 ? formatTokenAmount(event.tokenAmount) : '—';
+  const shortSig = event.signature.slice(0, 6) + '...' + event.signature.slice(-4);
+  const shortMint = event.mint !== 'unknown' ? event.mint.slice(0, 6) + '...' + event.mint.slice(-4) : '—';
+
+  const div = document.createElement('div');
+  div.className = `trade ${event.type}${isWhale ? ' whale' : ''}`;
+  div.id = 'tx-' + event.signature.slice(0, 16);
+
+  const solClass = event.type === 'buy' ? 'pos' : event.type === 'sell' ? 'neg' : '';
+
+  div.innerHTML =
+    `<span class="time">${event.time}</span>` +
+    `<span class="type ${event.type}">${event.type}${isWhale ? '<span class="whale-tag">🐋</span>' : ''}</span>` +
+    `<span class="token" title="${event.mint}">${event.tokenName || shortMint}</span>` +
+    `<span class="amount">${tokens}</span>` +
+    `<span class="sol ${solClass}">${event.type === 'sell' ? '-' : ''}${sol}</span>` +
+    `<span class="link"><a href="https://solscan.io/tx/${event.signature}" target="_blank">${shortSig}</a></span>`;
+
+  // Insert after header row
+  if ($feed.children.length > 1) {
+    $feed.insertBefore(div, $feed.children[1]);
+  } else {
+    $feed.appendChild(div);
+  }
+
+  // Limit entries
+  while ($feed.children.length > MAX_ENTRIES + 1) {
+    $feed.removeChild($feed.lastChild);
+  }
+}
+
+function formatTokenAmount(raw) {
+  if (raw >= 1e12) return (raw / 1e12).toFixed(1) + 'T';
+  if (raw >= 1e9) return (raw / 1e9).toFixed(1) + 'B';
+  if (raw >= 1e6) return (raw / 1e6).toFixed(1) + 'M';
+  if (raw >= 1e3) return (raw / 1e3).toFixed(1) + 'K';
+  return raw.toString();
+}
+
+// ── Update all stats & sidebar ──────────────────────────────────────
+function updateAllStats() {
+  document.getElementById('s-total').textContent = stats.total;
+  document.getElementById('s-buys').textContent = stats.buys;
+  document.getElementById('s-sells').textContent = stats.sells;
+  document.getElementById('s-creates').textContent = stats.creates;
+  document.getElementById('s-whales').textContent = stats.whales;
+  document.getElementById('s-volume').textContent = (stats.volumeLamports / 1e9).toFixed(2);
+
+  // Buy/sell ratio
+  const total = stats.buys + stats.sells || 1;
+  const buyPct = Math.round((stats.buys / total) * 100);
+  const sellPct = 100 - buyPct;
+  document.getElementById('ratio-buy').style.width = buyPct + '%';
+  document.getElementById('ratio-sell').style.width = sellPct + '%';
+  document.getElementById('ratio-buy-pct').textContent = buyPct + '%';
+  document.getElementById('ratio-sell-pct').textContent = sellPct + '%';
+
+  // Top tokens (by trade count, top 8)
+  updateTopTokens();
+}
+
+function updateTopTokens() {
+  const sorted = [...tokenMap.entries()]
+    .map(([mint, t]) => ({ mint, ...t, total: t.buys + t.sells }))
+    .sort((a, b) => b.total - a.total)
+    .slice(0, 8);
+
+  document.getElementById('top-tokens').innerHTML = sorted.length === 0
+    ? '<div style="color:#444; font-size:11px;">Waiting for trades...</div>'
+    : sorted.map(t => {
+        const shortMint = t.mint.slice(0, 6) + '...' + t.mint.slice(-4);
+        const vol = (t.volume / 1e9).toFixed(2);
+        return `<div class="top-token">
+          <span class="name" title="${t.mint}">${t.name || shortMint}</span>
+          <span class="trades">${t.total} trades · ${vol} SOL</span>
+        </div>`;
+      }).join('');
+}
+
+// ── System log ──────────────────────────────────────────────────────
+function sysLog(msg, level = '') {
+  const div = document.createElement('div');
+  div.className = 'sys' + (level ? ' ' + level : '');
+  div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+  if ($feed.children.length > 1) {
+    $feed.insertBefore(div, $feed.children[1]);
+  } else {
+    $feed.appendChild(div);
+  }
+}
+
+// ── Rate counter / uptime ───────────────────────────────────────────
+function startRateCounter() {
+  let prev = 0;
+  rateInterval = setInterval(() => {
+    const rate = stats.logsReceived - prev;
+    prev = stats.logsReceived;
+    document.getElementById('s-rate').textContent = rate;
+
+    if (startTime) {
+      const sec = Math.floor((Date.now() - startTime) / 1000);
+      const h = Math.floor(sec / 3600);
+      const m = Math.floor((sec % 3600) / 60);
+      const s = sec % 60;
+      document.getElementById('s-uptime').textContent =
+        h > 0 ? `${h}h ${m}m` : m > 0 ? `${m}m ${s}s` : `${s}s`;
+    }
+
+    // Roll chart buckets periodically
+    const bucket = chartData[chartData.length - 1];
+    if (Date.now() - bucket.ts > BUCKET_MS) {
+      chartData.shift();
+      chartData.push({ buys: 0, sells: 0, buyVol: 0, sellVol: 0, ts: Date.now() });
+      renderChart();
+    }
+  }, 1000);
+}
+
+function stopRateCounter() {
+  if (rateInterval) { clearInterval(rateInterval); rateInterval = null; }
+}
+
+// ── Helpers ─────────────────────────────────────────────────────────
+function setStatus(text, cls) {
+  $status.textContent = text;
+  $status.className = 'status' + (cls ? ' ' + cls : '');
+}
+
+// ── Init ────────────────────────────────────────────────────────────
+renderChart();
+sysLog('PumpFun Live Trades — Real-time analytics dashboard');
+sysLog(`Monitoring Pump program: ${PUMP_PROGRAM}`);
+sysLog('Tracking: buys, sells, creates, migrations, whale alerts (≥1 SOL)');
+connect();
+</script>
+</body>
+</html>

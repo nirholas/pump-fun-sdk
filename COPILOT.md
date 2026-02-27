@@ -15,7 +15,7 @@
 | `tests/` | Cross-language test suites |
 | `docs/` | API reference, architecture, guides |
 | `security/` | Security audits and checklists |
-| `website/` | Next.js documentation site |
+| `website/` | PumpOS web desktop (static HTML/CSS/JS) |
 | `x402/` | x402 payment protocol integration |
 | `tutorials/` | 19 hands-on tutorial guides |
 | `telegram-bot/` | PumpFun fee claim monitoring bot |

@@ -9,6 +9,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Analytics module** (`src/analytics.ts`) — price impact, graduation progress, token price, bonding curve summary
+- **Telegram bot REST API** — scalable HTTP API with auth, rate limiting, SSE streaming, webhooks
+  - `GET /api/v1/health` — health check (no auth)
+  - `GET /api/v1/openapi` — OpenAPI 3.0 spec (no auth)
+  - `GET /api/v1/status` — detailed monitor/watch/claim stats
+  - `GET /api/v1/claims` — paginated claim history with filtering
+  - `GET /api/v1/claims/stream` — real-time SSE claim stream
+  - `CRUD /api/v1/watches` — per-client watch management
+- **Telegram bot token launch monitor** — real-time detection of new PumpFun token launches with `/monitor` and `/stopmonitor` commands
+- **CTO (creator takeover) alerts** — detect creator fee redirection events
+- **HMAC-SHA256 webhook signatures** — `X-PumpFun-Signature` header for webhook payload verification
+- **Request logging** — method, path, status, duration for all API requests
+- **Security headers** — `X-Content-Type-Options`, `X-Frame-Options`, `X-Request-Id` on all API responses
+- **Graceful API shutdown** — connection draining with 10s force-close timeout
+- **Docker HEALTHCHECK** — `wget`-based health probe against `/api/v1/health`
+- **PumpOS web desktop** — static HTML/CSS/JS website with app launcher, widgets, and wallet connect
+- **Solana wallet app** — in-browser wallet management in PumpOS Store
+- **`tsup` build config** — CJS + ESM dual builds with sourcemaps and `.d.ts`
 - ROADMAP.md — public roadmap with quarterly milestones
 - VISION.md — project vision and principles
 - GOVERNANCE.md — BDFL governance model
@@ -30,6 +48,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Comprehensive CONTRIBUTING.md with code style, commit conventions, testing guide
 - Upgraded SECURITY.md with full security policy
 - Upgraded PR template with detailed checklist
+
+### Changed
+
+- Telegram bot version bumped to 1.1.0
+- `TELEGRAM_BOT_TOKEN` now optional in API-only mode
+- Railway `healthcheckPath` set to `/api/v1/health`
+- Dockerfile: added OCI labels, `EXPOSE 3000`, `HEALTHCHECK`, `API_PORT` env
+
+### Fixed
+
+- Fixed missing `errorsEncountered` in token launch monitor state initialization
+- Fixed missing `description` field in `TokenLaunchEvent` construction
+- Fixed `.well-known/agent.json` PumpFees program ID mismatch
+- Fixed all docs incorrectly describing website as "Next.js" (it's static HTML/CSS/JS)
 
 ## [1.0.0] - 2026-02-11
 

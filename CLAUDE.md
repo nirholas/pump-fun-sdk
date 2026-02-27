@@ -29,7 +29,7 @@ The Pump SDK (`@pump-fun/pump-sdk`) is a TypeScript SDK for the Pump protocol on
 | `scripts/` | Bash scripts (generate, verify, batch) |
 | `docs/` | API reference, architecture, guides |
 | `tests/` | Cross-language test suites |
-| `website/` | Next.js documentation site |
+| `website/` | PumpOS web desktop (static HTML/CSS/JS) |
 | `.github/skills/` | 28 detailed agent skill documents |
 | `.well-known/` | AI plugin, agent config, skills registry, security.txt |
 

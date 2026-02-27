@@ -14,7 +14,7 @@ The repository also includes:
 - **x402 payment protocol** — HTTP 402 micropayments with Solana USDC
 - **Shell scripts** — production Bash wrappers for solana-keygen
 - **Tutorials** — 19 hands-on guides covering the full SDK
-- **Documentation site** — Next.js website
+- **Documentation site** — PumpOS web desktop
 
 ## Architecture
 
@@ -30,7 +30,7 @@ The repository also includes:
 | Shell scripts | `scripts/` | Bash |
 | Test suites | `tests/` | Mixed |
 | Documentation | `docs/` | Markdown |
-| Website | `website/` | Next.js |
+| Website | `website/` | HTML/CSS/JS |
 | Security audits | `security/` | Markdown |
 | Agent prompts | `prompts/` | Markdown |
 | Audit & verification tools | `tools/` | Mixed |

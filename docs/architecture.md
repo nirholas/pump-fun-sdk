@@ -18,7 +18,7 @@ Beyond the core SDK (`src/`), the repository includes several companion componen
 | `scripts/` | Production Bash scripts wrapping solana-keygen |
 | `tests/` | Cross-language test suites |
 | `docs/` | API reference, architecture, guides |
-| `website/` | Next.js documentation site |
+| `website/` | PumpOS web desktop (static HTML/CSS/JS) |
 
 ## Core SDK Module Map
 
