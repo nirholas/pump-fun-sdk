@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="lair-include" content="lair.css">
+    <meta name="lair-icon" content="picture_as_pdf">
+    <title>PDF Viewer</title>
+    <meta name="capabilities" content=".pdf">
+    <meta name="permissions" content="utility, fileGet, olp, fileSet">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        html,
+        body {
+            margin: 0;
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+            background: white;
+            color: black;
+        }
+
+        #canvasContainer {
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            text-align: center;
+        }
+
+        canvas {
+            display: block;
+            margin: auto;
+        }
+
+        #nomedia {
+            display: flex;
+            text-align: center;
+            height: 100vh;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.6.347/pdf.min.js"></script>
+</head>
+
+<body>
+    <div id="nomedia">
+        <h1>Please open a PDF file.</h1>
+        <p>PumpOS PDF Viewer uses PDF.js to display PDF files.</p>
+    </div>
+    <div id="canvasContainer"></div>
+
+    <script>
+        async function greenflag() {
+            try {
+                if (myWindow.params.data) {
+                    openfile(myWindow.params.data);
+                } else {
+                    document.getElementById("nomedia").style.display = "flex";
+                }
+            } catch {
+                document.getElementById("nomedia").style.display = "flex";
+            }
+        }
+
+        async function openfile(fileID) {
+            document.getElementById("nomedia").style.display = 'none';
+            const file = await ntxSession.send("fileGet.byId", fileID);
+            if (!file?.content) return;
+
+            const base64 = file.content.split(',')[1];
+            const pdfData = new Uint8Array(atob(base64).split('').map(c => c.charCodeAt(0)));
+
+            const pdf = await pdfjsLib.getDocument({ data: pdfData }).promise;
+            const container = document.getElementById("canvasContainer");
+            container.innerHTML = '';
+
+            for (let i = 1; i <= pdf.numPages; i++) {
+                const page = await pdf.getPage(i);
+                const viewport = page.getViewport({ scale: 1.5 });
+                const canvas = document.createElement("canvas");
+                const context = canvas.getContext("2d");
+                canvas.width = viewport.width;
+                canvas.height = viewport.height;
+                container.appendChild(canvas);
+
+                await page.render({ canvasContext: context, viewport }).promise;
+            }
+        }
+    </script>
+</body>
+
+</html>

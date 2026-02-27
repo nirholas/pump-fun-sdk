@@ -11,7 +11,7 @@ const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..');
 const DIRS = [
-  path.join(ROOT, 'Lair-Store', 'apps'),
+  path.join(ROOT, 'Pump-Store', 'apps'),
   path.join(ROOT, 'appdata'),
 ];
 

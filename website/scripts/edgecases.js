@@ -2,7 +2,7 @@ var cantusetext, caniuse2;
 
 function edgecases() {
 	var issues = ``
-	cantusetext = `<h1>LairOS won't work here.</h1>
+	cantusetext = `<h1>PumpOS won't work here.</h1>
 		<p>And that's nothing to worry about!<br>Update your browser, or just move to a better browser. </p>
 		<p>Try these options:</p>
 		<ul>
@@ -84,7 +84,7 @@ function edgecases() {
 	}
 
 	if (typeof localStorage == 'undefined') {
-		issues = `<li><b>LocalStorage Not supported: </b> LairOS cannot function without it.</li>`
+		issues = `<li><b>LocalStorage Not supported: </b> PumpOS cannot function without it.</li>`
 		say(cantusetext + issues + caniuse2, "failed");
 		badlaunch = true;
 	}

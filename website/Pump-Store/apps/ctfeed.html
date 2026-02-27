@@ -1,0 +1,1202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="lair-include" content="lair.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="lair-perms" content="network" />
+    <title>Crypto News</title>
+    <meta name="lair-icon" content="<svg width='232' height='232' viewBox='0 0 232 232' fill='none' xmlns='http://www.w3.org/2000/svg'><rect width='232' height='232' rx='40' fill='#1a1a2e'/><rect x='30' y='50' width='172' height='20' rx='4' fill='#00d4aa'/><rect x='30' y='85' width='140' height='12' rx='3' fill='#ffffff' opacity='0.7'/><rect x='30' y='105' width='160' height='12' rx='3' fill='#ffffff' opacity='0.5'/><rect x='30' y='130' width='172' height='20' rx='4' fill='#ff6b6b'/><rect x='30' y='165' width='120' height='12' rx='3' fill='#ffffff' opacity='0.7'/><rect x='30' y='185' width='150' height='12' rx='3' fill='#ffffff' opacity='0.5'/></svg>">
+    <meta name="lair-description" content="Real-time crypto news aggregator - Bitcoin, Ethereum, DeFi, and more from 7+ sources">
+    <style>
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --bg-card: #1a1a25;
+            --bg-hover: #252535;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0b0;
+            --text-muted: #606070;
+            --accent: #00d4aa;
+            --accent-hover: #00f5c4;
+            --red: #ff6b6b;
+            --green: #00d4aa;
+            --yellow: #ffd93d;
+            --border: #2a2a3a;
+            --radius: 12px;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+        }
+        
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+        
+        /* Header */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+        
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .logo {
+            font-size: 24px;
+        }
+        
+        .header-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .header-subtitle {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .search-box {
+            display: flex;
+            align-items: center;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 8px 12px;
+            gap: 8px;
+        }
+        
+        .search-box input {
+            background: transparent;
+            border: none;
+            outline: none;
+            color: var(--text-primary);
+            font-size: 14px;
+            width: 200px;
+        }
+        
+        .search-box input::placeholder {
+            color: var(--text-muted);
+        }
+        
+        .refresh-btn {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 8px 12px;
+            color: var(--text-primary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        
+        .refresh-btn:hover {
+            background: var(--bg-hover);
+            border-color: var(--accent);
+        }
+        
+        .refresh-btn.loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+        
+        .refresh-btn.loading .refresh-icon {
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Tabs */
+        .tabs-container {
+            display: flex;
+            gap: 8px;
+            padding: 12px 20px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            overflow-x: auto;
+            flex-shrink: 0;
+        }
+        
+        .tab {
+            padding: 8px 16px;
+            border-radius: 20px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+        
+        .tab:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+        
+        .tab.active {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #000;
+        }
+        
+        /* Main Content */
+        .main-content {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        /* News Feed */
+        .news-feed {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        
+        .news-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .news-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .news-card:hover {
+            background: var(--bg-hover);
+            border-color: var(--accent);
+            transform: translateY(-2px);
+        }
+        
+        .news-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        
+        .news-source {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .source-icon {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            background: var(--bg-hover);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+        }
+        
+        .source-name {
+            font-size: 12px;
+            color: var(--accent);
+            font-weight: 500;
+        }
+        
+        .news-time {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+        
+        .news-title {
+            font-size: 15px;
+            font-weight: 600;
+            line-height: 1.4;
+            margin-bottom: 8px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        
+        .news-description {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        
+        .news-tags {
+            display: flex;
+            gap: 6px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+        }
+        
+        .news-tag {
+            font-size: 10px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            background: var(--bg-hover);
+            color: var(--text-secondary);
+        }
+        
+        .news-tag.sentiment-bullish {
+            background: rgba(0, 212, 170, 0.15);
+            color: var(--green);
+        }
+        
+        .news-tag.sentiment-bearish {
+            background: rgba(255, 107, 107, 0.15);
+            color: var(--red);
+        }
+        
+        /* Sidebar - Trending */
+        .sidebar {
+            width: 300px;
+            background: var(--bg-secondary);
+            border-left: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .sidebar-section {
+            padding: 16px;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .sidebar-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .trending-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .trending-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 12px;
+            background: var(--bg-card);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .trending-item:hover {
+            background: var(--bg-hover);
+        }
+        
+        .trending-topic {
+            font-size: 13px;
+            font-weight: 500;
+        }
+        
+        .trending-count {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+        
+        .trending-sentiment {
+            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+        
+        .trending-sentiment.bullish {
+            background: rgba(0, 212, 170, 0.15);
+            color: var(--green);
+        }
+        
+        .trending-sentiment.bearish {
+            background: rgba(255, 107, 107, 0.15);
+            color: var(--red);
+        }
+        
+        .trending-sentiment.neutral {
+            background: rgba(255, 217, 61, 0.15);
+            color: var(--yellow);
+        }
+        
+        /* Stats Section */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+        
+        .stat-card {
+            background: var(--bg-card);
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--accent);
+        }
+        
+        .stat-label {
+            font-size: 10px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+        
+        /* Breaking News Banner */
+        .breaking-banner {
+            background: linear-gradient(90deg, var(--red), #ff8f8f);
+            padding: 10px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+        
+        .breaking-label {
+            background: #fff;
+            color: var(--red);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+        
+        .breaking-text {
+            font-size: 13px;
+            font-weight: 500;
+            white-space: nowrap;
+            animation: scroll 20s linear infinite;
+        }
+        
+        @keyframes scroll {
+            0% { transform: translateX(100%); }
+            100% { transform: translateX(-100%); }
+        }
+        
+        /* Loading State */
+        .loading-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 60px 20px;
+            color: var(--text-muted);
+        }
+        
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 16px;
+        }
+        
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-muted);
+        }
+        
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+
+        /* Article Reader Modal */
+        .article-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .article-modal.active {
+            display: flex;
+        }
+
+        .article-reader {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            width: 100%;
+            max-width: 700px;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .article-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 16px;
+        }
+
+        .article-header-left { flex: 1; }
+
+        .article-source-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            background: var(--bg-card);
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            margin-bottom: 12px;
+        }
+
+        .article-source-badge .source-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .article-modal-title {
+            font-size: 22px;
+            font-weight: 700;
+            line-height: 1.3;
+            margin-bottom: 8px;
+        }
+
+        .article-meta {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .close-article-btn {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: var(--text-secondary);
+            font-size: 18px;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+
+        .close-article-btn:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+
+        .article-body {
+            padding: 20px;
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .article-description {
+            font-size: 16px;
+            line-height: 1.7;
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+        }
+
+        .article-actions {
+            padding: 16px 20px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .article-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+        }
+
+        .article-btn-primary {
+            background: var(--accent);
+            color: #000;
+        }
+
+        .article-btn-primary:hover {
+            background: var(--accent-hover);
+        }
+
+        .article-btn-secondary {
+            background: var(--bg-card);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .article-btn-secondary:hover {
+            background: var(--bg-hover);
+            border-color: var(--accent);
+        }
+
+        .article-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 16px;
+        }
+
+        .article-tag {
+            padding: 6px 12px;
+            background: var(--bg-card);
+            border-radius: 6px;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                display: none;
+            }
+            
+            .search-box input {
+                width: 120px;
+            }
+            
+            .header-subtitle {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Breaking News Banner -->
+        <div class="breaking-banner" id="breakingBanner" style="display: none;">
+            <span class="breaking-label">🔴 BREAKING</span>
+            <span class="breaking-text" id="breakingText"></span>
+        </div>
+        
+        <!-- Header -->
+        <div class="header">
+            <div class="header-left">
+                <span class="logo">📰</span>
+                <div>
+                    <div class="header-title">Crypto News</div>
+                    <div class="header-subtitle">Real-time aggregator • 7+ sources</div>
+                </div>
+            </div>
+            <div class="header-right">
+                <div class="search-box">
+                    <span>🔍</span>
+                    <input type="text" id="searchInput" placeholder="Search news..." onkeyup="handleSearch(event)">
+                </div>
+                <button class="refresh-btn" onclick="refreshAll()">
+                    <span class="refresh-icon">↻</span>
+                    <span>Refresh</span>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Tabs -->
+        <div class="tabs-container">
+            <button class="tab active" data-endpoint="/api/news" onclick="switchTab(this)">📰 All News</button>
+            <button class="tab" data-endpoint="/api/breaking" onclick="switchTab(this)">🔴 Breaking</button>
+            <button class="tab" data-endpoint="/api/defi" onclick="switchTab(this)">🦄 DeFi</button>
+            <button class="tab" data-endpoint="/api/bitcoin" onclick="switchTab(this)">₿ Bitcoin</button>
+            <button class="tab" data-endpoint="/api/search?q=ethereum" onclick="switchTab(this)">◆ Ethereum</button>
+            <button class="tab" data-endpoint="/api/search?q=solana" onclick="switchTab(this)">◎ Solana</button>
+            <button class="tab" data-endpoint="/api/search?q=nft" onclick="switchTab(this)">🖼 NFTs</button>
+            <button class="tab" data-endpoint="/api/search?q=regulation" onclick="switchTab(this)">⚖️ Regulation</button>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- News Feed -->
+            <div class="news-feed">
+                <div class="news-grid" id="newsGrid">
+                    <div class="loading-container">
+                        <div class="loading-spinner"></div>
+                        <span>Loading latest news...</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Sidebar -->
+            <div class="sidebar">
+                <!-- Stats -->
+                <div class="sidebar-section">
+                    <div class="sidebar-title">📊 Today's Stats</div>
+                    <div class="stats-grid" id="statsGrid">
+                        <div class="stat-card">
+                            <div class="stat-value" id="statArticles">-</div>
+                            <div class="stat-label">Articles</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="statSources">7</div>
+                            <div class="stat-label">Sources</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="statBullish">-</div>
+                            <div class="stat-label">Bullish</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="statBearish">-</div>
+                            <div class="stat-label">Bearish</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Trending Topics -->
+                <div class="sidebar-section" style="flex: 1; overflow-y: auto;">
+                    <div class="sidebar-title">🔥 Trending Topics</div>
+                    <div class="trending-list" id="trendingList">
+                        <div class="loading-container" style="padding: 20px;">
+                            <div class="loading-spinner"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Sources -->
+                <div class="sidebar-section">
+                    <div class="sidebar-title">📡 Sources</div>
+                    <div id="sourcesList" style="font-size: 11px; color: var(--text-muted); line-height: 1.6;">
+                        CoinDesk • The Block • Decrypt • Cointelegraph • Bitcoin Magazine • Blockworks • The Defiant
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Article Reader Modal -->
+    <div class="article-modal" id="articleModal" onclick="closeArticle(event)">
+        <div class="article-reader" onclick="event.stopPropagation()">
+            <div class="article-header">
+                <div class="article-header-left">
+                    <div class="article-source-badge" id="modalSource">
+                        <span class="source-dot"></span>
+                        <span class="source-name">Source</span>
+                    </div>
+                    <h2 class="article-modal-title" id="modalTitle">Article Title</h2>
+                    <div class="article-meta">
+                        <span id="modalTime">2h ago</span>
+                        <span>•</span>
+                        <span id="modalCategory">News</span>
+                    </div>
+                </div>
+                <button class="close-article-btn" onclick="closeArticle()">✕</button>
+            </div>
+            <div class="article-body">
+                <p class="article-description" id="modalDescription">Article description goes here...</p>
+                <div class="article-tags" id="modalTags"></div>
+            </div>
+            <div class="article-actions">
+                <button class="article-btn article-btn-primary" id="readFullBtn" onclick="openFullArticle()">
+                    📖 Read Full Article
+                </button>
+                <button class="article-btn article-btn-secondary" id="openInBrowserBtn" onclick="openInBrowser()">
+                    🌐 Open in Browser
+                </button>
+                <button class="article-btn article-btn-secondary" onclick="copyLink()">
+                    📋 Copy Link
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const fetchFn = window.cfetch || fetch;
+        let currentEndpoint = '/api/news';
+        let currentArticle = null;
+        const COINGECKO_STATUS_URL = 'https://api.coingecko.com/api/v3/status_updates';
+        const RSS_PROXY_PREFIX = 'https://api.allorigins.win/raw?url=';
+        const NEWS_SOURCES = [
+            { source: 'CoinDesk', url: 'https://www.coindesk.com/arc/outboundfeeds/rss/', category: 'General' },
+            { source: 'Cointelegraph', url: 'https://cointelegraph.com/rss', category: 'General' },
+            { source: 'The Defiant', url: 'https://thedefiant.io/feed', category: 'DeFi' }
+        ];
+        
+        const sourceColors = {
+            'CoinDesk': '#0052ff',
+            'The Block': '#1a1a1a',
+            'Decrypt': '#00d084',
+            'Cointelegraph': '#ffd300',
+            'Bitcoin Magazine': '#f7931a',
+            'Blockworks': '#5c4dff',
+            'The Defiant': '#ff6b6b'
+        };
+
+        function stripHtml(input) {
+            if (!input) return '';
+            const parser = new DOMParser();
+            return (parser.parseFromString(input, 'text/html').body.textContent || '').trim();
+        }
+
+        function sentimentFromText(text) {
+            const lower = (text || '').toLowerCase();
+            const bullishTerms = ['surge', 'rally', 'gain', 'breakout', 'adoption', 'approval', 'bull'];
+            const bearishTerms = ['drop', 'crash', 'hack', 'exploit', 'lawsuit', 'ban', 'bear'];
+            const bullishScore = bullishTerms.reduce((sum, term) => sum + (lower.includes(term) ? 1 : 0), 0);
+            const bearishScore = bearishTerms.reduce((sum, term) => sum + (lower.includes(term) ? 1 : 0), 0);
+            if (bullishScore > bearishScore) return 'bullish';
+            if (bearishScore > bullishScore) return 'bearish';
+            return 'neutral';
+        }
+
+        function formatArticle(raw) {
+            const title = stripHtml(raw.title);
+            const description = stripHtml(raw.description || raw.descriptionSnippet || '');
+            const pubDate = raw.pubDate || raw.createdAt || new Date().toISOString();
+            return {
+                source: raw.source || 'News',
+                title,
+                description,
+                pubDate,
+                link: raw.link,
+                category: raw.category || 'News',
+                sentiment: sentimentFromText(`${title} ${description}`),
+                timeAgo: formatTime(pubDate)
+            };
+        }
+
+        async function fetchCoinGeckoStatusUpdates(limit = 25) {
+            const response = await fetchFn(`${COINGECKO_STATUS_URL}?category=general&project_type=coin&per_page=${limit}&page=1`);
+            if (!response.ok) {
+                throw new Error(`CoinGecko status ${response.status}`);
+            }
+            const data = await response.json();
+            const updates = Array.isArray(data?.status_updates) ? data.status_updates : [];
+            return updates.map((item) => formatArticle({
+                source: 'CoinGecko',
+                title: item.project?.name ? `${item.project.name}: ${item.title || 'Status update'}` : (item.title || 'Status update'),
+                description: item.description || item.text || '',
+                pubDate: item.created_at,
+                link: item.article_url || item.project?.links?.homepage?.[0] || 'https://www.coingecko.com/en/news',
+                category: item.category || 'Market'
+            }));
+        }
+
+        async function fetchRssFeed(sourceConfig, limit = 20) {
+            const response = await fetchFn(`${RSS_PROXY_PREFIX}${encodeURIComponent(sourceConfig.url)}`);
+            if (!response.ok) {
+                throw new Error(`${sourceConfig.source} RSS ${response.status}`);
+            }
+            const xml = await response.text();
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(xml, 'application/xml');
+            const parseError = xmlDoc.querySelector('parsererror');
+            if (parseError) {
+                throw new Error(`${sourceConfig.source} RSS parse error`);
+            }
+            const items = Array.from(xmlDoc.querySelectorAll('item')).slice(0, limit);
+            return items.map((item) => formatArticle({
+                source: sourceConfig.source,
+                title: item.querySelector('title')?.textContent || 'Untitled',
+                description: item.querySelector('description')?.textContent || '',
+                pubDate: item.querySelector('pubDate')?.textContent || new Date().toISOString(),
+                link: item.querySelector('link')?.textContent || '#',
+                category: item.querySelector('category')?.textContent || sourceConfig.category
+            }));
+        }
+
+        async function getAggregatedArticles(limit = 50) {
+            const tasks = [
+                fetchCoinGeckoStatusUpdates(Math.min(35, limit)).catch(() => []),
+                ...NEWS_SOURCES.map((source) => fetchRssFeed(source, Math.min(20, limit)).catch(() => []))
+            ];
+            const resultSets = await Promise.all(tasks);
+            const merged = resultSets.flat().filter((article) => article.title && article.link);
+            const deduped = [];
+            const seen = new Set();
+            for (const article of merged) {
+                const key = `${article.source}|${article.title}`.toLowerCase();
+                if (seen.has(key)) continue;
+                seen.add(key);
+                deduped.push(article);
+            }
+            deduped.sort((a, b) => new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime());
+            return deduped.slice(0, limit);
+        }
+
+        function filterArticlesForEndpoint(articles, endpoint) {
+            if (endpoint.startsWith('/api/search?q=')) {
+                const query = decodeURIComponent(endpoint.split('=')[1] || '').toLowerCase();
+                return articles.filter((article) => `${article.title} ${article.description} ${article.category}`.toLowerCase().includes(query));
+            }
+            if (endpoint === '/api/bitcoin') {
+                return articles.filter((article) => `${article.title} ${article.description}`.toLowerCase().includes('bitcoin'));
+            }
+            if (endpoint === '/api/defi') {
+                return articles.filter((article) => `${article.title} ${article.description} ${article.category}`.toLowerCase().includes('defi'));
+            }
+            if (endpoint === '/api/breaking') {
+                return articles
+                    .filter((article) => article.sentiment !== 'neutral' || article.source === 'CoinGecko')
+                    .slice(0, 10);
+            }
+            return articles;
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadNews(currentEndpoint);
+            loadTrending();
+            loadBreaking();
+            loadStats();
+            
+            // Auto-refresh every 2 minutes
+            setInterval(() => {
+                loadNews(currentEndpoint);
+                loadTrending();
+            }, 120000);
+
+            // Close modal on Escape
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') closeArticle();
+            });
+        });
+
+        // Open Article Modal
+        function openArticle(article) {
+            currentArticle = article;
+            const color = sourceColors[article.source] || '#666';
+            
+            document.getElementById('modalSource').innerHTML = `
+                <span class="source-dot" style="background: ${color};"></span>
+                <span style="color: ${color};">${article.source}</span>
+            `;
+            document.getElementById('modalTitle').textContent = article.title;
+            document.getElementById('modalTime').textContent = article.timeAgo || formatTime(article.pubDate);
+            document.getElementById('modalCategory').textContent = article.category || 'News';
+            document.getElementById('modalDescription').textContent = article.description || 'No description available. Click "Read Full Article" to view the complete story on the source website.';
+            
+            // Tags
+            const tagsContainer = document.getElementById('modalTags');
+            const tags = [article.source, article.category || 'News'];
+            if (article.author) tags.push(article.author);
+            tagsContainer.innerHTML = tags.map(tag => `<span class="article-tag">${tag}</span>`).join('');
+            
+            document.getElementById('articleModal').classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        // Close Article Modal
+        function closeArticle(event) {
+            if (event && event.target !== event.currentTarget) return;
+            document.getElementById('articleModal').classList.remove('active');
+            document.body.style.overflow = '';
+            currentArticle = null;
+        }
+
+        // Open Full Article
+        function openFullArticle() {
+            if (currentArticle?.link) {
+                window.open(currentArticle.link, '_blank');
+            }
+        }
+
+        // Open in PumpOS Browser
+        function openInBrowser() {
+            if (currentArticle?.link) {
+                // Try to open in parent's browser app if available
+                if (window.parent && window.parent.openAppWithUrl) {
+                    window.parent.openAppWithUrl('browser', currentArticle.link);
+                } else {
+                    window.open(currentArticle.link, '_blank');
+                }
+            }
+        }
+
+        // Copy Link
+        function copyLink() {
+            if (currentArticle?.link) {
+                navigator.clipboard.writeText(currentArticle.link).then(() => {
+                    const btn = event.target;
+                    const originalText = btn.innerHTML;
+                    btn.innerHTML = '✓ Copied!';
+                    setTimeout(() => btn.innerHTML = originalText, 2000);
+                });
+            }
+        }
+        
+        // Load News
+        async function loadNews(endpoint, limit = 30) {
+            const grid = document.getElementById('newsGrid');
+            grid.innerHTML = `
+                <div class="loading-container">
+                    <div class="loading-spinner"></div>
+                    <span>Loading news...</span>
+                </div>
+            `;
+            
+            try {
+                const allArticles = await getAggregatedArticles(Math.max(limit * 2, 40));
+                const filtered = filterArticlesForEndpoint(allArticles, endpoint).slice(0, limit);
+                if (filtered.length > 0) {
+                    grid.innerHTML = filtered.map(article => createNewsCard(article)).join('');
+                } else {
+                    grid.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📭</div>
+                            <div>No news found</div>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Failed to load news:', error);
+                grid.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">⚠️</div>
+                        <div>Failed to load news</div>
+                        <button class="refresh-btn" style="margin-top: 16px;" onclick="loadNews('${endpoint}')">Try Again</button>
+                    </div>
+                `;
+            }
+        }
+        
+        // Create News Card
+        function createNewsCard(article) {
+            const color = sourceColors[article.source] || '#666';
+            const articleData = encodeURIComponent(JSON.stringify(article));
+            
+            return `
+                <div class="news-card" onclick="openArticle(JSON.parse(decodeURIComponent('${articleData}')))">
+                    <div class="news-card-header">
+                        <div class="news-source">
+                            <div class="source-icon" style="background: ${color}; color: #fff;">
+                                ${article.source.charAt(0)}
+                            </div>
+                            <span class="source-name">${article.source}</span>
+                        </div>
+                        <span class="news-time">${article.timeAgo || formatTime(article.pubDate)}</span>
+                    </div>
+                    <div class="news-title">${escapeHtml(article.title)}</div>
+                    ${article.description ? `<div class="news-description">${escapeHtml(article.description)}</div>` : ''}
+                    <div class="news-tags">
+                        <span class="news-tag">${article.category || 'News'}</span>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Load Trending Topics
+        async function loadTrending() {
+            const list = document.getElementById('trendingList');
+            
+            try {
+                const articles = await getAggregatedArticles(70);
+                const terms = {};
+                const stopWords = new Set(['the', 'and', 'for', 'with', 'from', 'that', 'this', 'crypto', 'token', 'tokens']);
+                articles.forEach((article) => {
+                    const words = `${article.title} ${article.category}`.toLowerCase().match(/[a-z0-9]{3,}/g) || [];
+                    words.forEach((word) => {
+                        if (stopWords.has(word)) return;
+                        terms[word] = terms[word] || { topic: word.toUpperCase(), count: 0, score: 0 };
+                        terms[word].count += 1;
+                        if (article.sentiment === 'bullish') terms[word].score += 1;
+                        if (article.sentiment === 'bearish') terms[word].score -= 1;
+                    });
+                });
+                const topics = Object.values(terms)
+                    .filter((item) => item.count > 1)
+                    .sort((a, b) => b.count - a.count)
+                    .slice(0, 8)
+                    .map((item) => ({
+                        ...item,
+                        sentiment: item.score > 0 ? 'bullish' : item.score < 0 ? 'bearish' : 'neutral'
+                    }));
+
+                if (topics.length > 0) {
+                    list.innerHTML = topics.map(topic => `
+                        <div class="trending-item" onclick="searchTopic('${topic.topic}')">
+                            <div>
+                                <div class="trending-topic">${topic.topic}</div>
+                                <div class="trending-count">${topic.count} mentions</div>
+                            </div>
+                            <span class="trending-sentiment ${topic.sentiment}">${topic.sentiment}</span>
+                        </div>
+                    `).join('');
+                } else {
+                    list.innerHTML = '<div style="color: var(--text-muted); font-size: 12px; padding: 10px;">No trending data</div>';
+                }
+            } catch (error) {
+                console.error('Failed to load trending:', error);
+                list.innerHTML = '<div style="color: var(--text-muted); font-size: 12px; padding: 10px;">Unable to load trends</div>';
+            }
+        }
+        
+        // Load Breaking News
+        async function loadBreaking() {
+            try {
+                const allArticles = await getAggregatedArticles(30);
+                const data = filterArticlesForEndpoint(allArticles, '/api/breaking').slice(0, 3);
+                
+                if (data.length > 0) {
+                    const banner = document.getElementById('breakingBanner');
+                    const text = document.getElementById('breakingText');
+                    
+                    const headlines = data.map(a => a.title).join('  •  ');
+                    text.textContent = headlines;
+                    banner.style.display = 'flex';
+                }
+            } catch (error) {
+                console.error('Failed to load breaking news:', error);
+            }
+        }
+        
+        // Load Stats
+        async function loadStats() {
+            try {
+                const articles = await getAggregatedArticles(50);
+                const bullish = articles.filter((article) => article.sentiment === 'bullish').length;
+                const bearish = articles.filter((article) => article.sentiment === 'bearish').length;
+                document.getElementById('statArticles').textContent = articles.length || '-';
+                document.getElementById('statBullish').textContent = bullish;
+                document.getElementById('statBearish').textContent = bearish;
+            } catch (error) {
+                console.error('Failed to load stats:', error);
+            }
+        }
+        
+        // Switch Tab
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            
+            currentEndpoint = tab.dataset.endpoint;
+            loadNews(currentEndpoint);
+        }
+        
+        // Handle Search
+        function handleSearch(event) {
+            if (event.key === 'Enter') {
+                const query = event.target.value.trim();
+                if (query) {
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    loadNews(`/api/search?q=${encodeURIComponent(query)}`);
+                }
+            }
+        }
+        
+        // Search Topic
+        function searchTopic(topic) {
+            document.getElementById('searchInput').value = topic;
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            loadNews(`/api/search?q=${encodeURIComponent(topic)}`);
+        }
+        
+        // Refresh All
+        function refreshAll() {
+            const btn = document.querySelector('.refresh-btn');
+            btn.classList.add('loading');
+            
+            Promise.all([
+                loadNews(currentEndpoint),
+                loadTrending(),
+                loadBreaking(),
+                loadStats()
+            ]).finally(() => {
+                btn.classList.remove('loading');
+            });
+        }
+        
+        // Utility Functions
+        function formatTime(dateStr) {
+            const date = new Date(dateStr);
+            const now = new Date();
+            const diff = Math.floor((now - date) / 1000);
+            
+            if (diff < 60) return 'Just now';
+            if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+            if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+            return `${Math.floor(diff / 86400)}d ago`;
+        }
+        
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>

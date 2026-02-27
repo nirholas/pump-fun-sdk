@@ -3,7 +3,7 @@
 
 <head>
 	<title>Files app</title>
-	<meta name="description" content="Default Files app for LairOS">
+	<meta name="description" content="Default Files app for PumpOS">
 	<meta name="capabilities" content="file_manager">
 	<meta name="permissions" content="utility, fileGet, olp, fileSet, settings, unsandboxed">
 	<meta name="lair-include" content="lair.css material-symbols-rounded">
@@ -1821,7 +1821,7 @@
 				document.getElementById("fileinfobn").innerHTML += "Safe Error 0006";
 				await ntxSession.send(
 					"sysUI.say",
-					`<h1>File Error: 0006</h1><p>LairOS Files couldn't handle that file.</p>`,
+					`<h1>File Error: 0006</h1><p>PumpOS Files couldn't handle that file.</p>`,
 					"warning"
 				);
 				refresh();

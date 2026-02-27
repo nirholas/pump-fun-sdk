@@ -68,7 +68,7 @@ const STATUS_DISPLAY = {
 
 /**
  * Transform a raw DB row (camelCase) into the snake_case contract
- * that all LairOS frontend apps expect.
+ * that all PumpOS frontend apps expect.
  *
  * Fields consumed by lairtrending.html, lairlaunch.html, lairdefi.html, laircoin.html:
  *   image_url, current_engagement, progress_percentage, launch_threshold,

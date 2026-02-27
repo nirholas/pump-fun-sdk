@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lair DeFi</title>
+    <title>Pump DeFi</title>
     <meta name="lair-icon" content="<svg width='232' height='232' viewBox='0 0 232 232' fill='none' xmlns='http://www.w3.org/2000/svg'><rect width='232' height='232' rx='40' fill='#0066ff'/><path d='M116 30L40 80v72l76 50 76-50V80L116 30z' fill='white' opacity='0.15'/><path d='M116 50L56 90v52l60 40 60-40V90L116 50z' fill='white' opacity='0.25'/><path d='M116 70L72 100v32l44 30 44-30V100L116 70z' fill='white' opacity='0.9'/><circle cx='116' cy='116' r='16' fill='#0066ff'/></svg>">
     <meta name="lair-include" content="lair.css material-symbols-rounded">
     <meta name="permissions" content="appStorage, network">
@@ -312,7 +312,7 @@
             cursor: pointer; font-size: 14px; font-family: 'Material Symbols Rounded';
         }
 
-        /* ── Lair Coin Detail overlay ── */
+        /* ── Pump Coin Detail overlay ── */
         .lcd-stats { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; margin: 16px 0; }
         .lcd-stat {
             background: var(--col-bg2, #171717); border: 1px solid var(--col-bg3, #262626);
@@ -964,7 +964,7 @@ async function showDet(id) {
 }
 function closeDet() { document.getElementById('det').classList.remove('show'); }
 
-/* ═══════════ Lair Launches ═══════════ */
+/* ═══════════ Pump Launches ═══════════ */
 async function loadLaunches() {
     if (lcLoaded) return;
     const el = document.getElementById('lcGrid');

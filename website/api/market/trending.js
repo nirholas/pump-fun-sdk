@@ -29,7 +29,7 @@ module.exports = async function handler(req, res) {
   try {
     // 1. Fetch trending coins from CoinGecko
     const trendingRes = await fetch(`${CG}/search/trending`, {
-      headers: { Accept: 'application/json', 'User-Agent': 'LairOS/1.0' },
+      headers: { Accept: 'application/json', 'User-Agent': 'PumpOS/1.0' },
       signal: AbortSignal.timeout(10000),
     });
 
@@ -61,7 +61,7 @@ module.exports = async function handler(req, res) {
         const marketsRes = await fetch(
           `${CG}/coins/markets?vs_currency=usd&ids=${encodeURIComponent(ids)}&sparkline=false&price_change_percentage=24h`,
           {
-            headers: { Accept: 'application/json', 'User-Agent': 'LairOS/1.0' },
+            headers: { Accept: 'application/json', 'User-Agent': 'PumpOS/1.0' },
             signal: AbortSignal.timeout(10000),
           }
         );

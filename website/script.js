@@ -252,8 +252,8 @@ async function startup() {
 
 			// Trigger onboarding for first-time users (after desktop is visible)
 			setTimeout(() => {
-				if (typeof LairOnboarding !== 'undefined' && typeof LairOnboarding.start === 'function') {
-					LairOnboarding.start();
+				if (typeof PumpOnboarding !== 'undefined' && typeof PumpOnboarding.start === 'function') {
+					PumpOnboarding.start();
 				}
 			}, 800);
 
@@ -299,7 +299,7 @@ async function startup() {
 			const end = performance.now();
 
 			rllog(
-				`You are using \n\n%cLairOS%c\n%cLairOS is the web system made for you.%c\n\nStartup: ${(end - start).toFixed(2)}ms\nUsername: ${CurrentUsername}\n12hr Time format: ${timetypecondition}`,
+				`You are using \n\n%cPumpOS%c\n%cPumpOS is the web system made for you.%c\n\nStartup: ${(end - start).toFixed(2)}ms\nUsername: ${CurrentUsername}\n12hr Time format: ${timetypecondition}`,
 				'color: white; background-color: #101010; font-size: 2rem; padding: 0.7rem 1rem; border-radius: 1rem;',
 				'',
 				'padding:5px 0; padding-top:1rem;',
@@ -319,10 +319,10 @@ async function startup() {
 				// onstartup apps
 				let allOnstarts = await getSetting('RunOnStartup');
 				if (!Array.isArray(allOnstarts)) allOnstarts = [];
-				const allowLairAiStartup = await getSetting('allowLairAiStartup') === true;
+				const allowPumpAiStartup = await getSetting('allowPumpAiStartup') === true;
 
 				allOnstarts.forEach(item => {
-					if (item === 'lairai' && !allowLairAiStartup) return;
+					if (item === 'lairai' && !allowPumpAiStartup) return;
 					openapp(0, item, {}, 1);
 				})
 			} catch (e) { }
@@ -357,8 +357,8 @@ async function openn() {
 		initmenuload = false;
 		gid("appdmod").close();
 		let choicetoreinst = await justConfirm(
-			`Re-initialize lairOS?`,
-			`Did the lairOS initialization fail? If yes, we can re-initialize your lairOS and install all the default apps. \n\nLairOS did not find any apps while the initial load of Lair Menu. \n\nRe-initializing your lairOS may delete your data.`
+			`Re-initialize PumpOS?`,
+			`Did the PumpOS initialization fail? If yes, we can re-initialize your PumpOS and install all the default apps. \n\nPumpOS did not find any apps while the initial load of Pump Menu. \n\nRe-initializing your PumpOS may delete your data.`
 		);
 		if (choicetoreinst) {
 			initializeOS();
@@ -874,9 +874,9 @@ async function extractAndRegisterCapabilities(appId, content) {
 		const appFileName = await getFileNameByID(appId);
 		const appNameLower = appFileName?.toLowerCase().replace('.app', '') || '';
 		const isBuiltInApp = defAppsList.some(defApp => appNameLower.includes(defApp.toLowerCase()));
-		const isLairApp = appNameLower.startsWith('lair');
-		if (isBuiltInApp || isLairApp) {
-			console.log("Built-in/Lair app detected, auto-approving permissions:", appFileName);
+		const isPumpApp = appNameLower.startsWith('lair');
+		if (isBuiltInApp || isPumpApp) {
+			console.log("Built-in/Pump app detected, auto-approving permissions:", appFileName);
 			onlyDefPerms = true;
 		}
 
@@ -982,7 +982,7 @@ async function registerApp(appId, capabilities) {
 	}
 
 	if (!initialization && !nonotif)
-		notify(await getFileNameByID(appId) + " installed", "Registered " + capabilities.toString(), "LairOS System");
+		notify(await getFileNameByID(appId) + " installed", "Registered " + capabilities.toString(), "PumpOS System");
 	return capabilities.toString();
 }
 
@@ -1382,8 +1382,8 @@ async function initializeOS() {
 	dbCache = null;
 	cryptoKeyCache = null;
 	// Modal removed - can be re-added for wallet connect or other prompts
-	// await say(`<h2>LairOS is open source.</h2>...`);
-	console.log("Setting Up LairOS\n\nUsername: " + CurrentUsername + "\nWith: Sample preset\nUsing host: " + location.href)
+	// await say(`<h2>PumpOS is open source.</h2>...`);
+	console.log("Setting Up PumpOS\n\nUsername: " + CurrentUsername + "\nWith: Sample preset\nUsing host: " + location.href)
 	initialization = true
 	memory = {
 		"root": {
@@ -1416,10 +1416,10 @@ async function initializeOS() {
 					initialization = false; 
 					nonotif = false;
 					// Launch onboarding instead of just a notification
-					if (typeof LairOnboarding !== 'undefined' && typeof LairOnboarding.start === 'function') {
-						LairOnboarding.start();
+					if (typeof PumpOnboarding !== 'undefined' && typeof PumpOnboarding.start === 'function') {
+						PumpOnboarding.start();
 					} else {
-						notify("Welcome to LairOS", "You are now ready to explore the Lair ecosystem.", "LairOS");
+						notify("Welcome to PumpOS", "You are now ready to explore the Pump ecosystem.", "PumpOS");
 					}
 				}, 2000);
 			})
@@ -1922,7 +1922,7 @@ function runAsOSL(content) {
 			border: none;
 		}
 	</style>`;
-	openwindow("Lair OSL Runner", cont);
+	openwindow("Pump OSL Runner", cont);
 }
 function runAsWasm(content) {
 	const wasmBytes = new Uint8Array(content);
@@ -1943,7 +1943,7 @@ function runAsWasm(content) {
 		}
 	`;
 	div.appendChild(script);
-	openwindow("Lair Wasm Runner", div.innerHTML);
+	openwindow("Pump Wasm Runner", div.innerHTML);
 }
 
 (async () => {
@@ -1970,14 +1970,14 @@ async function realgenTaskBar() {
 	// nav theme
 	try {
 
-		var LairNavCtrl = await getSetting("LairNavCtrl")
-		if (LairNavCtrl.bg) {
+		var PumpNavCtrl = await getSetting("PumpNavCtrl")
+		if (PumpNavCtrl.bg) {
 			gid("lairnav").style.backgroundColor = "transparent";
 		} else {
 			gid("lairnav").style.backgroundColor = "var(--col-bg1)";
 		}
 
-		gid("lairnav").style.justifyContent = LairNavCtrl.align;
+		gid("lairnav").style.justifyContent = PumpNavCtrl.align;
 	} catch (e) { }
 
 	var appbarelement = document.getElementById("dock");
@@ -2425,7 +2425,7 @@ document.addEventListener("DOMContentLoaded", async function () {
 		// Additional shortcuts (Ctrl+K palette, Ctrl+W/M/D/L, snapping, cycling) handled by commandpalette.js
 		document.addEventListener('keydown', function (event) {
 			// Skip if command palette is open
-			if (window.LairCommandPalette && window.LairCommandPalette.isOpen()) return;
+			if (window.PumpCommandPalette && window.PumpCommandPalette.isOpen()) return;
 			if (event.ctrlKey && (event.key === 'f' || event.keyCode === 70)) {
 				event.preventDefault();
 				openapp('files', 1);
@@ -2438,8 +2438,8 @@ document.addEventListener("DOMContentLoaded", async function () {
 		document.addEventListener('keydown', function (event) {
 			if (event.key === 'Escape') {
 				// Close command palette first if open
-				if (window.LairCommandPalette && window.LairCommandPalette.isOpen()) {
-					window.LairCommandPalette.close();
+				if (window.PumpCommandPalette && window.PumpCommandPalette.isOpen()) {
+					window.PumpCommandPalette.close();
 					return;
 				}
 				var appdmod = document.getElementById('appdmod');

@@ -1,8 +1,8 @@
 {
-  "name": "@nirholas/os",
+  "name": "@pump-fun/website",
   "version": "1.0.0",
   "private": true,
-  "description": "LairOS — web desktop environment and static frontend",
+  "description": "PumpOS — Web desktop for the Pump Fun SDK on Solana",
   "scripts": {
     "audit:icons": "node scripts/audit-app-icons.js"
   }

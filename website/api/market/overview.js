@@ -21,11 +21,11 @@ module.exports = async function handler(req, res) {
     // Fetch global market data from CoinGecko
     const [globalRes, defiRes] = await Promise.allSettled([
       fetch(`${CG}/global`, {
-        headers: { Accept: 'application/json', 'User-Agent': 'LairOS/1.0' },
+        headers: { Accept: 'application/json', 'User-Agent': 'PumpOS/1.0' },
         signal: AbortSignal.timeout(10000),
       }),
       fetch(`${CG}/global/decentralized_finance_defi`, {
-        headers: { Accept: 'application/json', 'User-Agent': 'LairOS/1.0' },
+        headers: { Accept: 'application/json', 'User-Agent': 'PumpOS/1.0' },
         signal: AbortSignal.timeout(10000),
       }),
     ]);

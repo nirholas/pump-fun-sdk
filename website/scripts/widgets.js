@@ -1,4 +1,4 @@
-/* ─── LairOS Desktop Widget Engine ─── */
+/* ─── PumpOS Desktop Widget Engine ─── */
 
 const WIDGET_GRID = 80;       // grid snap size in px
 const WIDGET_SNAP = WIDGET_GRID / 2; // half-grid snap for finer positioning
@@ -37,8 +37,8 @@ function clampWidgetPosition(x, y, widthPx, heightPx) {
 
 /* Static fallback — only used if computeDefaultWidgetPositions() somehow fails */
 const DEFAULT_WIDGETS = [
-    { id: 'w_clock',  src: '/Lair-Store/apps/widget-clock.html',       x: 40,  y: 40,  w: 2, h: 2, z: 10 },
-    { id: 'w_ticker', src: '/Lair-Store/apps/widget-ticker.html',      x: 240, y: 40,  w: 4, h: 1, z: 11 },
+    { id: 'w_clock',  src: '/Pump-Store/apps/widget-clock.html',       x: 40,  y: 40,  w: 2, h: 2, z: 10 },
+    { id: 'w_ticker', src: '/Pump-Store/apps/widget-ticker.html',      x: 240, y: 40,  w: 4, h: 1, z: 11 },
     // Quick Launch is now the permanent sidebar — no longer a draggable widget
 ];
 
@@ -68,11 +68,11 @@ function computeDefaultWidgetPositions() {
 
     return [
         // Top-left: Clock (2×2 = 160×160)
-        { id: 'w_clock',  src: '/Lair-Store/apps/widget-clock.html',
+        { id: 'w_clock',  src: '/Pump-Store/apps/widget-clock.html',
           x: leftCol, y: topY, w: 2, h: 2, z: 10 },
 
         // Top-right: Crypto Ticker (4×1 = 320×80)
-        { id: 'w_ticker', src: '/Lair-Store/apps/widget-ticker.html',
+        { id: 'w_ticker', src: '/Pump-Store/apps/widget-ticker.html',
           x: Math.round(rightCol), y: topY, w: 4, h: 1, z: 11 },
 
         // Quick Launch is now the permanent sidebar — no longer a draggable widget
@@ -81,17 +81,17 @@ function computeDefaultWidgetPositions() {
 
 /* Built-in widget catalog (always shown first in picker) */
 const BUILTIN_WIDGETS = [
-    { name: 'Clock',         src: '/Lair-Store/apps/widget-clock.html',       symbol: 'schedule',               cat: 'widget' },
-    { name: 'Crypto Ticker', src: '/Lair-Store/apps/widget-ticker.html',      symbol: 'monitoring',             cat: 'widget' },
-    { name: 'Quick Launch',  src: '/Lair-Store/apps/widget-quicklaunch.html', symbol: 'apps',                   cat: 'widget' },
-    { name: 'Weather',       src: '/Lair-Store/apps/widget-weather.html',     symbol: 'cloud',                  cat: 'widget' },
-    { name: 'Portfolio',     src: '/Lair-Store/apps/widget-portfolio.html',   symbol: 'account_balance_wallet', cat: 'widget' },
-    { name: 'PnL Tracker',  src: '/Lair-Store/apps/widget-pnl.html',         symbol: 'trending_up',            cat: 'widget' },
-    { name: 'Mini Chart',  src: '/Lair-Store/apps/widget-minichart.html',   symbol: 'show_chart',             cat: 'widget' },
-    { name: 'Gas Tracker', src: '/Lair-Store/apps/widget-gas.html',          symbol: 'local_gas_station',      cat: 'widget' },
-    { name: 'Fear & Greed', src: '/Lair-Store/apps/widget-feargreed.html',   symbol: 'speed',                  cat: 'widget' },
-    { name: 'Top Movers',  src: '/Lair-Store/apps/widget-topmovers.html',  symbol: 'swap_vert',              cat: 'widget' },
-    { name: 'Volume Leaders', src: '/Lair-Store/apps/widget-volume.html',  symbol: 'bar_chart',              cat: 'widget' },
+    { name: 'Clock',         src: '/Pump-Store/apps/widget-clock.html',       symbol: 'schedule',               cat: 'widget' },
+    { name: 'Crypto Ticker', src: '/Pump-Store/apps/widget-ticker.html',      symbol: 'monitoring',             cat: 'widget' },
+    { name: 'Quick Launch',  src: '/Pump-Store/apps/widget-quicklaunch.html', symbol: 'apps',                   cat: 'widget' },
+    { name: 'Weather',       src: '/Pump-Store/apps/widget-weather.html',     symbol: 'cloud',                  cat: 'widget' },
+    { name: 'Portfolio',     src: '/Pump-Store/apps/widget-portfolio.html',   symbol: 'account_balance_wallet', cat: 'widget' },
+    { name: 'PnL Tracker',  src: '/Pump-Store/apps/widget-pnl.html',         symbol: 'trending_up',            cat: 'widget' },
+    { name: 'Mini Chart',  src: '/Pump-Store/apps/widget-minichart.html',   symbol: 'show_chart',             cat: 'widget' },
+    { name: 'Gas Tracker', src: '/Pump-Store/apps/widget-gas.html',          symbol: 'local_gas_station',      cat: 'widget' },
+    { name: 'Fear & Greed', src: '/Pump-Store/apps/widget-feargreed.html',   symbol: 'speed',                  cat: 'widget' },
+    { name: 'Top Movers',  src: '/Pump-Store/apps/widget-topmovers.html',  symbol: 'swap_vert',              cat: 'widget' },
+    { name: 'Volume Leaders', src: '/Pump-Store/apps/widget-volume.html',  symbol: 'bar_chart',              cat: 'widget' },
 ];
 
 /* ── State ─────────────────────────────── */
@@ -652,7 +652,7 @@ async function openWidgetPicker() {
 
     // 2. Store apps
     try {
-        const storeResp = await fetch('/Lair-Store/db/v2.json');
+        const storeResp = await fetch('/Pump-Store/db/v2.json');
         const store = await storeResp.json();
         for (const app of store.apps || []) {
             if (app.src && !available.find(a => a.src === app.src)) {

@@ -1,7 +1,7 @@
 <html>
 
 <head>
-	<title>Lair New Tab</title>
+	<title>Pump New Tab</title>
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 	<style>
@@ -77,7 +77,7 @@
 			justify-items: center;
 		}
 
-		/* Lair Shortcuts Section */
+		/* Pump Shortcuts Section */
 		.shortcuts {
 			display: grid;
 			grid-template-columns: repeat(4, 1fr);
@@ -240,21 +240,21 @@
 	<div class="mains">
 		<h1 class="logo" id="titlet">Good afternoon!</h1>
 		
-		<!-- Lair Shortcuts -->
+		<!-- Pump Shortcuts -->
 		<div class="shortcuts">
-			<div class="shortcut" onclick="openLairApp('/Lair-Store/apps/lairdocs.html')">
+			<div class="shortcut" onclick="openPumpApp('/Pump-Store/apps/lairdocs.html')">
 				<span class="material-icons shortcut-icon">menu_book</span>
-				<div class="shortcut-name">LairOS Docs</div>
+				<div class="shortcut-name">PumpOS Docs</div>
 			</div>
-			<div class="shortcut" onclick="openLairApp('/Lair-Store/apps/lairdefi.html')">
+			<div class="shortcut" onclick="openPumpApp('/Pump-Store/apps/lairdefi.html')">
 				<span class="material-icons shortcut-icon">account_balance</span>
-				<div class="shortcut-name">Lair DeFi</div>
+				<div class="shortcut-name">Pump DeFi</div>
 			</div>
-			<div class="shortcut" onclick="openLairApp('/Lair-Store/apps/lairai.html')">
+			<div class="shortcut" onclick="openPumpApp('/Pump-Store/apps/lairai.html')">
 				<span class="material-icons shortcut-icon">psychology</span>
-				<div class="shortcut-name">Lair AI</div>
+				<div class="shortcut-name">Pump AI</div>
 			</div>
-			<div class="shortcut" onclick="openLairApp('/Lair-Store/apps/lairbot.html')">
+			<div class="shortcut" onclick="openPumpApp('/Pump-Store/apps/lairbot.html')">
 				<span class="material-icons shortcut-icon">smart_toy</span>
 				<div class="shortcut-name">Telegram Bot</div>
 			</div>
@@ -279,8 +279,8 @@
 	</div>
 	<script>
 
-		// Function to open Lair apps
-		function openLairApp(appPath) {
+		// Function to open Pump apps
+		function openPumpApp(appPath) {
 			// Navigate within the browser iframe
 			window.location.href = appPath;
 		}

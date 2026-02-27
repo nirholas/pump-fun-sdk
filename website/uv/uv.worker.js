@@ -1,5 +1,5 @@
 /*
- * Bare-mux SharedWorker for LairOS UV Proxy
+ * Bare-mux SharedWorker for PumpOS UV Proxy
  * This is a self-contained bare-mux worker with built-in transport
  */
 

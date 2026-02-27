@@ -1661,7 +1661,7 @@
 			</div>
 			<script>
 				async function openlink(x) {
-					let okay = await ntxSession.send("sysUI.confirm", "Are you sure?", "Open " + x + " outside of LairOS?");
+					let okay = await ntxSession.send("sysUI.confirm", "Are you sure?", "Open " + x + " outside of PumpOS?");
 					if (okay) {
 						window.open(x);
 					}
@@ -2063,8 +2063,8 @@
 			<segr>
 				<div class="single_setting">
 					<div class="settingName">
-						<b>Use LairOS offline</b>
-						<p>If enabled, LairOS will try to cache the os and save it offline.
+						<b>Use PumpOS offline</b>
+						<p>If enabled, PumpOS will try to cache the os and save it offline.
 					</p>
 					</div>
 					<input class="turnon_checkbox" type="checkbox" id="cbx-70">
@@ -2231,7 +2231,7 @@
 					document.getElementById("timefrmt").addEventListener("change", function () {
 						let newValue = document.getElementById("timefrmt").value;
 						ntxSession.send("settings.set", "timefrmt", newValue);
-						ntxSession.send("sysUI.toast", "Reload LairOS for the changes to take effect.");
+						ntxSession.send("sysUI.toast", "Reload PumpOS for the changes to take effect.");
 						console.log("timfired")
 					});						let selinp2 = document.getElementById("defSearchEngine");
 						if (await ntxSession.send("settings.get", "defSearchEngine")) {
@@ -2485,7 +2485,7 @@
 					}
 					if (await ntxSession.send("sysUI.confirm", "Are you sure?", "All your data will be lost if you forget this password. Re-encrypt all your files with this one?")) {
 						await window.parent.changePassword(window.parent.password, setpass);
-						await ntxSession.send("sysUI.say", "Click OK when you are ready to restart your lairOS.")
+						await ntxSession.send("sysUI.say", "Click OK when you are ready to restart your PumpOS.")
 						window.parent.location.reload()
 					} else {
 						return;
@@ -2594,15 +2594,15 @@
 				}</script>
 		</div>
 		<div id="about" class="tabcontent">
-			<h2 style="margin-bottom: 3px;">LairOS <span style="font-weight: normal;">Nich</span></h2>
+			<h2 style="margin-bottom: 3px;">PumpOS <span style="font-weight: normal;">Nich</span></h2>
 			<p style="margin-bottom: 1em;">Version 2.1</p>
 			<supportb>
-				<b>LairOS is Free.</b>
+				<b>PumpOS is Free.</b>
 				<p>Star the repo! It's Open Source:
 				</p>
 				<div class="supportbtns">
 					<a id="membershipsbtn"
-						onclick="window.open('https://github.com/nirholas/lairOS')">Star the repo</a>
+						onclick="window.open('https://github.com/nirholas/PumpOS')">Star the repo</a>
 				</div>
 
 				<script>
@@ -2627,7 +2627,7 @@
 			<segr>
 				<div class="single_setting">
 					<div class="settingName">
-						<b>LairOS Discord</b>
+						<b>PumpOS Discord</b>
 						<p>Join us for support, exclusive news and much more.</p>
 					</div>
 					<button onclick="window.open('https://discord.gg/nichxbt')">Join</button>
@@ -2679,7 +2679,7 @@
 					</g>
 				</svg>
 
-				<p>Our bug hunters and the community provided valuable feedback and raised issues, helping LairOS to progress. Thank you being a part!</p>
+				<p>Our bug hunters and the community provided valuable feedback and raised issues, helping PumpOS to progress. Thank you being a part!</p>
 			</small>
 		</div>
 
@@ -2958,7 +2958,7 @@
 					<b>Initialize rotur</b>
 					<button onclick="loginOnceRotur()">Start</button>
 				</div>
-				<small>RoturTW is a third party service, which offers APIs. LairOS supports it but isn't affiliated
+				<small>RoturTW is a third party service, which offers APIs. PumpOS supports it but isn't affiliated
 					or
 					endorsing. Visit rotur.dev for details.</small>
 			</segr>				<segr id="rtrsignedinsec" style="display:none;">

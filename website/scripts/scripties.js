@@ -89,7 +89,7 @@ async function checkAndRunFromURL() {
 	}
 
 	if (run === 'erdbsfull') {
-		let x = await justConfirm("Reset all your data?", "The link you opened LairOS had a param to erase your device. Do this only if its instructed to do so by LairOS developers.");
+		let x = await justConfirm("Reset all your data?", "The link you opened PumpOS had a param to erase your device. Do this only if its instructed to do so by PumpOS developers.");
 		if (x) {
 			erdbsfull();
 		}
@@ -98,7 +98,7 @@ async function checkAndRunFromURL() {
 	const filePath = params.get('path');
 
 	if (filePath) {
-		console.log(`Opening LairOS path: ${filePath}`);
+		console.log(`Opening PumpOS path: ${filePath}`);
 
 		onstartup.push(async () => {
 			let fileid = await getFileByPath(filePath);
@@ -142,7 +142,7 @@ async function getMimeType(extension) {
 }
 
 async function useLairOffline() {
-	if (await justConfirm("Turn on offline mode?", "Offline mode saves a copy of LairOS (~5MB) in your browser.")) {
+	if (await justConfirm("Turn on offline mode?", "Offline mode saves a copy of PumpOS (~5MB) in your browser.")) {
 
 		if ('serviceWorker' in navigator) {
 			navigator.serviceWorker.register('sw.js', { scope: '/' })

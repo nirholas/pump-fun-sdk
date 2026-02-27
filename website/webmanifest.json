@@ -1,14 +1,14 @@
 {
     "manifest_version": 3,
-    "name": "LairOS",
-    "short_name": "LairOS",
-    "description": "LairOS is a powerful web operating system built for everything. From daily tasks to endless fun, it has got you covered.",
+    "name": "PumpOS",
+    "short_name": "PumpOS",
+    "description": "PumpOS — Web desktop for the Pump Fun SDK. Token creation, bonding curves, DeFi tools, and wallet management on Solana.",
     "theme_color": "#fff",
     "background_color": "#fff",
     "display": "standalone",
     "protocol_handlers": [
     {
-      "protocol": "web+lair",
+      "protocol": "web+pump",
       "url": "/?path=%s"
     }
   ],

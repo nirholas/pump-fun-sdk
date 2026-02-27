@@ -1,5 +1,5 @@
 /**
- * LairOS Command Palette & Keyboard Shortcuts
+ * PumpOS Command Palette & Keyboard Shortcuts
  * Ctrl+K / Ctrl+Shift+P — fuzzy-search command palette
  */
 
@@ -107,7 +107,7 @@
         cmds.push(
             { id: 'setting.settings', label: 'Open Settings', icon: 'settings', category: 'Settings', action: () => openapp('settings', 1) },
             { id: 'setting.fullscreen', label: 'Toggle Fullscreen', icon: 'fullscreen', category: 'Settings', action: () => { if (!document.fullscreenElement) document.documentElement.requestFullscreen?.(); else document.exitFullscreen?.(); } },
-            { id: 'setting.onboarding', label: 'Show Onboarding Tour', icon: 'school', category: 'Settings', action: () => { if (typeof LairOnboarding !== 'undefined') LairOnboarding.forceStart(); } }
+            { id: 'setting.onboarding', label: 'Show Onboarding Tour', icon: 'school', category: 'Settings', action: () => { if (typeof PumpOnboarding !== 'undefined') PumpOnboarding.forceStart(); } }
         );
 
         // ── Window actions (only when windows exist) ──────────────
@@ -126,7 +126,7 @@
             { id: 'nav.trending', label: 'Open Trending', icon: 'trending_up', category: 'Quick Nav', action: () => openapp('lairtrending', 1) },
             { id: 'nav.heatmap', label: 'Open Heatmap', icon: 'grid_view', category: 'Quick Nav', action: () => openapp('lairheatmap', 1) },
             { id: 'nav.terminal', label: 'Open Terminal', icon: 'terminal', category: 'Quick Nav', action: () => openapp('lairterminal', 1) },
-            { id: 'nav.ai', label: 'Open Lair AI', icon: 'smart_toy', category: 'Quick Nav', action: () => openapp('lairai', 1) }
+            { id: 'nav.ai', label: 'Open Pump AI', icon: 'smart_toy', category: 'Quick Nav', action: () => openapp('lairai', 1) }
         );
 
         return cmds;
@@ -489,5 +489,5 @@
     }, true); // capture phase so we can intercept before other handlers
 
     // ── Expose for external use ───────────────────────────────────
-    window.LairCommandPalette = { open: openPalette, close: closePalette, isOpen: isPaletteOpen };
+    window.PumpCommandPalette = { open: openPalette, close: closePalette, isOpen: isPaletteOpen };
 })();

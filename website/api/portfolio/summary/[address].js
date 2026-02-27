@@ -56,7 +56,7 @@ module.exports = async function handler(req, res) {
     // Fetch multi-chain balances from Ankr
     const ankrRes = await fetch(ANKR_RPC, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'User-Agent': 'LairOS/1.0' },
+      headers: { 'Content-Type': 'application/json', 'User-Agent': 'PumpOS/1.0' },
       body: JSON.stringify({
         jsonrpc: '2.0',
         method: 'ankr_getAccountBalance',

@@ -1,18 +1,18 @@
 /**
- * LairOS Onboarding — Guided first-run experience
+ * PumpOS Onboarding — Guided first-run experience
  * Shows a multi-step tour when the user first enters the desktop.
  * Persists completion to settings so it only shows once.
  */
 
-const LairOnboarding = (() => {
+const PumpOnboarding = (() => {
   // ── Steps ──────────────────────────────────────────────
   const steps = [
     {
       id: 'welcome',
-      title: 'Welcome to LairOS',
+      title: 'Welcome to PumpOS',
       subtitle: 'Your Web3 operating system',
       body: `
-        <p class="ob-hero-text">LairOS is a desktop-style environment built for DeFi research, portfolio tracking, and crypto intelligence — all in your browser.</p>
+        <p class="ob-hero-text">PumpOS is a desktop-style environment built for DeFi research, portfolio tracking, and crypto intelligence — all in your browser.</p>
         <div class="ob-feature-pills">
           <span class="ob-pill"><span class="material-symbols-rounded">trending_up</span> Live Markets</span>
           <span class="ob-pill"><span class="material-symbols-rounded">smart_toy</span> AI Chat</span>
@@ -47,7 +47,7 @@ const LairOnboarding = (() => {
         <div class="ob-annotated">
           <div class="ob-anno-item"><span class="material-symbols-rounded">folder</span><div><b>Files</b> — Your documents &amp; downloads</div></div>
           <div class="ob-anno-item"><span class="material-symbols-rounded">language</span><div><b>Browser</b> — Built-in web browser</div></div>
-          <div class="ob-anno-item"><span class="material-symbols-rounded">cloud</span><div><b>AI</b> — Chat with Lair AI</div></div>
+          <div class="ob-anno-item"><span class="material-symbols-rounded">cloud</span><div><b>AI</b> — Chat with Pump AI</div></div>
           <div class="ob-anno-item"><span class="material-symbols-rounded">show_chart</span><div><b>DeFi</b> — DeFi dashboard &amp; data</div></div>
           <div class="ob-anno-item"><span class="material-symbols-rounded">storefront</span><div><b>Store</b> — Install more apps</div></div>
         </div>
@@ -88,7 +88,7 @@ const LairOnboarding = (() => {
           </button>
           <button class="ob-qs-card" data-app="lairai">
             <span class="material-symbols-rounded">smart_toy</span>
-            <span class="ob-qs-name">Lair AI</span>
+            <span class="ob-qs-name">Pump AI</span>
             <span class="ob-qs-desc">Chat-driven DeFi research</span>
           </button>
           <button class="ob-qs-card" data-app="lairheatmap">

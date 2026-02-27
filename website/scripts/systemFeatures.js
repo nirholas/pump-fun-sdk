@@ -1,5 +1,5 @@
 // ============================================
-// LairOS System Features
+// PumpOS System Features
 // Notification Center, System Sounds, Lock Screen,
 // Screenshot Tool, Clipboard History
 // ============================================
@@ -959,7 +959,7 @@ function initSystemFeatures() {
     document.getElementById('notification-history-panel')?.setAttribute('aria-hidden', 'true');
     document.getElementById('clipboard-history-panel')?.setAttribute('aria-hidden', 'true');
     
-    console.log('LairOS System Features initialized');
+    console.log('PumpOS System Features initialized');
 }
 
 // Auto-initialize when DOM is ready

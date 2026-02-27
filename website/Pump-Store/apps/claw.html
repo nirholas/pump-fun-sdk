@@ -1,0 +1,1402 @@
+<!DOCTYPE html>
+<html lang="en" xml:lang="en" xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width">
+    <title>Pump OS Claw</title>
+    <meta name="lair-include" content="lair.css material-symbols-rounded">
+	<meta name="permissions" content="unsandboxed">
+    <link rel="stylesheet" href="style.css">
+    <meta name="lair-icon"
+        content="<svg version='1.1' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' width='101.95947' height='96.90546' viewBox='0,0,101.95947,96.90546'><defs><linearGradient x1='240' y1='131.54727' x2='240' y2='228.45273' gradientUnits='userSpaceOnUse' id='color-dsfgsgsgsdgs'><stop offset='0' stop-color='#fff5c6'/><stop offset='1' stop-color='#ffd57e'/></linearGradient></defs><g transform='translate(-189.02026,-131.54727)'><g fill='url(#color-dsfgsgsgsdgs)' stroke='none' stroke-width='none' stroke-miterlimit='10'><path d='M189.02027,228.45273c0,0 11.43863,-109.70203 78.82693,-95.66469c15.91347,3.31486 27.61431,28.45432 21.46701,43.50216c-6.70161,16.40474 -16.55144,15.97346 -32.71778,14.27743c-30.58479,-3.2087 -67.57616,37.8851 -67.57616,37.8851z'/></g></g></svg>">
+    </script>
+    <style>
+        button,
+        input,
+        textarea {
+            outline: none;
+            font-family: inherit;
+            font-size: inherit;
+            color: inherit;
+        }
+
+        button {
+            cursor: pointer;
+        }
+
+        body {
+            padding: 0.3rem;
+            background-color: var(--col-bg1);
+            color: var(--col-txt1);
+            font-family: 'Poppins', sans-serif;
+            user-select: none;
+            height: calc(100% - 10px);
+        }
+
+        * {
+            text-overflow: ellipsis;
+        }
+
+        #main {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-around;
+            height: 100%;
+            gap: 0.5rem;
+        }
+
+        #main #feedsection,
+        #main #toolsection {
+            width: 0;
+            transition: .3s;
+        }
+
+        #main #feedsection {
+            flex: 3;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #main #toolsection {
+            flex: 1;
+            max-width: 500px;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .crtaccdisp {
+            display: flex;
+            flex-direction: row;
+            background: var(--col-bg2);
+            border: 1px solid #ffffff0f;
+            box-shadow: 0 3px 1rem #00000018;
+            border-radius: 0.5rem;
+            padding: 0.5rem;
+            gap: 0.3rem;
+        }
+
+        .crtaccdisp img {
+            aspect-ratio: 1 / 1;
+            height: 25px;
+            border-radius: 0.5rem;
+        }
+
+        .crtaccdisp span {
+            opacity: 0.5;
+            font-size: small;
+        }
+
+        .searchsection button {
+            background: transparent;
+            border: none;
+            padding: 0;
+            color: inherit;
+            opacity: 80%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .navtools {
+            background: var(--col-bg2);
+            border: 1px solid #ffffff0f;
+            box-shadow: 0 3px 1rem #00000018;
+            padding: 0.3rem;
+            border-radius: 0.5rem;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+        }
+
+        #feed,
+        #postReplies {
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            gap: 0.5rem;
+            flex: 1;
+            padding: 0.3rem;
+        }
+
+        #postReplies {
+            margin-bottom: 0.5rem;
+        }
+
+        .randompost,
+        #targetpost {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            background: var(--col-bg2);
+            border: 1px solid #ffffff0f;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            animation: pop .3s;
+            box-shadow: 0 3px 1rem #00000018;
+        }
+
+        .more {
+            opacity: 0;
+            transition: .3s;
+        }
+
+        .randompost:hover .more {
+            opacity: 0.7;
+        }
+
+        .postnav {
+            height: 45px;
+            width: fit-content;
+            max-width: 100%;
+            overflow: hidden;
+        }
+
+        .postuserdata {
+            display: flex;
+            flex-direction: row;
+            gap: 0.5rem;
+            transition: .3s ease-in-out;
+            z-index: 5;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .postuseravatar {
+            width: 40px;
+            height: 40px;
+            aspect-ratio: 1 / 1;
+            overflow: hidden;
+        }
+
+        .postuseravatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 1rem;
+        }
+
+        .postfooter {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+            width: 100%;
+            align-items: center;
+        }
+
+        .postfooter .likes ion-icon {
+            color: #ff9a9a;
+        }
+
+        .postfooter .replies ion-icon {
+            color: #9afcff;
+        }
+
+        .postcontent {
+            font-size: 110%;
+            margin: 0.7rem 0px;
+            overflow-x: auto;
+            text-overflow: unset;
+            width: 100%;
+        }
+
+        .more button {
+            border-radius: 10px;
+            padding: 4px 10px;
+            background: #161616;
+            border: none;
+            color: inherit;
+            font-size: 80%;
+        }
+
+        .likes,
+        .replies {
+            background: var(--col-bg3);
+            border: 1px solid #ffffff0f;
+            box-shadow: 0 3px 1rem #00000018;
+            display: flex;
+            padding: 5px 8px;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between;
+            gap: 5px;
+        }
+
+        .likes span,
+        .replies span {
+            font-size: 80%;
+        }
+
+        .posttimestamp {
+            font-size: 80%;
+            opacity: 70%;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        nav#nav {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+            opacity: 0.7;
+            padding: 0.3rem;
+            width: calc(100% - 20px);
+            overflow: hidden;
+        }
+
+        #postinput {
+            background-color: transparent;
+            border: none;
+            width: 100%;
+            min-width: 0;
+            max-height: 70vh;
+            font-size: 130%;
+            height: 150px;
+            resize: none;
+        }
+
+        .postmsgsection {
+            background: var(--col-bg2);
+            border: 1px solid #ffffff0f;
+            box-shadow: 0 3px 1rem #00000018;
+            display: flex;
+            padding: 0.5rem;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+            border-radius: 0.5rem;
+        }
+
+        button.postbtn {
+            background: #4e5fa7 !important;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 4px;
+            border: none;
+            padding: 3px 10px;
+            border-radius: 0.5rem;
+            padding-right: 5px;
+        }
+
+        @keyframes pop {
+            from {
+                opacity: 0;
+                transform: translateY(0.5rem);
+            }
+
+            to {
+                opacity: 1;
+                transform: none;
+            }
+        }
+
+        .profileseperator {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap;
+            align-items: stretch;
+            gap: 1rem;
+        }
+
+        img#pfpuserdet {
+            border-radius: 0.5rem;
+            height: 120px;
+            object-fit: cover;
+        }
+
+        .userdata {
+            display: flex;
+            gap: 0.5rem;
+            flex-direction: column;
+        }
+
+        .userdatatext {
+            display: flex;
+            flex-direction: column;
+        }
+
+        h2#undispusdat {
+            margin: 0;
+            font-weight: normal;
+            font-size: 2rem;
+        }
+
+        p#postsnoteaser {
+            margin: 0;
+            opacity: 0.5;
+            font-size: 1rem;
+        }
+
+        .userdatabtns {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .primebtn {
+            background-color: #2f2f2f;
+            padding: 0.3rem 0.8rem;
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            cursor: pointer;
+        }
+
+        .primebtn button {
+            background: transparent;
+            border: none;
+            padding: 0;
+            font-size: inherit;
+            font-family: inherit;
+        }
+
+        .primebtn span {
+            padding-left: 7px;
+            opacity: 0.7;
+            padding-top: 2px;
+            font-size: 0.7rem;
+            border-left: 1px solid lightblue;
+        }
+
+        .active.primebtn {
+            background: #4e5fa7;
+        }
+
+        .modalnav {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            background: #2f2f2f;
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            align-items: center;
+        }
+
+        .modalnav .navsubgrp {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .ion-icon {
+            font-size: 1rem;
+        }
+
+        .feedswitcher {
+            display: flex;
+            flex-direction: row;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .feedsnav {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: nowrap;
+        }
+
+        button.morebtn {
+            background: transparent;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-top: 2rem;
+        }
+
+        button.morebtn .loader {
+            height: 8px;
+            width: 20px;
+            border: 1px solid lightgrey;
+        }
+
+        img.postimg {
+            display: block;
+            width: fit-content;
+            height: 200px;
+            border: none;
+            border-radius: 0.5rem;
+            outline: none;
+            background: linear-gradient(325deg, #3e97826e, #5f7bff7a);
+            margin-top: 0.5rem;
+            object-fit: scale-down;
+        }
+
+        .feedsnav button {
+            background: transparent;
+            border: none;
+            padding: 0.2rem 0.5rem;
+            border-radius: 0.5rem;
+        }
+
+        .morepstclosebtn {
+            border: none;
+            padding: 0.2rem 0.5rem;
+            border-radius: 0.5rem;
+            background: var(--col-bg2);
+            border: 1px solid #ffffff0f;
+            box-shadow: 0 3px 1rem #00000018;
+            display: flex;
+            flex-direction: row;
+            gap: 0.3rem;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .feedsnav button.active {
+            background: var(--col-bg2);
+            border: 1px solid #ffffff0f;
+            box-shadow: 0 3px 1rem #00000018;
+        }
+
+        .postuserdata:hover && .postuserdata {
+            color: #4e5fa7;
+        }
+
+        .buttonlike {
+            animation: slidein .2s;
+        }
+
+        @keyframes slidein {
+            from {
+                transform: translateY(0.5rem);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .lairos {
+            background: linear-gradient(45deg, purple, lightblue);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-fill-color: transparent;
+        }
+
+        .likestatuses {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .wholikedhint {
+            opacity: 0.5;
+            font-size: smaller;
+            display: flex;
+            margin-left: 0.3rem;
+        }
+
+        .loader {
+            width: 60px;
+            height: 25px;
+            border: 2px solid;
+            box-sizing: border-box;
+            border-radius: 50%;
+            display: grid;
+            animation: l2 2s infinite linear;
+        }
+
+        .loader:before,
+        .loader:after {
+            content: "";
+            grid-area: 1/1;
+            border: inherit;
+            border-radius: 50%;
+            animation: inherit;
+            animation-duration: 3s;
+        }
+
+        .loader:after {
+            --s: -1;
+        }
+
+        @keyframes l2 {
+            100% {
+                transform: rotate(calc(var(--s, 1)*1turn))
+            }
+        }
+
+        div#loadingclaw {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 3rem;
+            background: var(--col-bg1);
+            z-index: 100;
+        }
+
+        dialog#moreOnPost {
+            width: 100%;
+            height: calc(100% - 1rem);
+            margin: 0;
+            padding: 20px;
+            padding-bottom: 1rem;
+            background: var(--col-bg1);
+            border: 0;
+            border-radius: 0;
+            color: white;
+        }
+
+        .replybox {
+            background: var(--col-bg2);
+            border: 1px solid #ffffff0f;
+            box-shadow: 0 3px 1rem #00000018;
+            border-radius: 0.5rem;
+            display: flex;
+            padding: 0.3rem;
+            flex-direction: row;
+            justify-content: space-between;
+        }
+
+        .replybox input {
+            flex: 1;
+            padding: 0.3rem;
+            background-color: transparent;
+            font-size: 1rem;
+            border: 0;
+        }
+
+        .replybox button {
+            background-color: #4e5fa7;
+            color: white;
+            border: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 0.5rem;
+            padding: 0.3rem 0.7rem;
+        }
+
+        h2 {
+            opacity: 0.5;
+            font-size: 1rem;
+            font-weight: normal;
+        }
+
+        .postsubfoot {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .postsubfoot button {
+            display: flex;
+            flex-direction: row;
+            background: #ffffff12;
+            align-items: center;
+            gap: 0.3rem;
+            border: 0;
+            border-radius: 11px;
+        }
+    </style>
+</head>
+
+<body>
+    <main id="main">
+        <dialog id="moreOnPost">
+            <button class="morepstclosebtn" onclick="document.getElementById('moreOnPost').close();">
+                <span class="material-symbols-rounded">
+                    chevron_backward
+                </span>
+                <span> Back</span>
+            </button>
+
+            <div id="targetpost">
+
+            </div>
+            <h2>Replies</h2>
+            <div id="postReplies">
+
+            </div>
+            <div class="replybox">
+                <input id="addAreplyInp" placeholder="Drop a reply" onkeydown="checkEnter(event)">
+                <button onclick="addreply()">
+                    <span class="material-symbols-rounded">
+                        send
+                    </span>
+                </button>
+            </div>
+        </dialog>
+        <div id="feedsection">
+            <nav id="nav">
+                <div class="feedswitcher">
+                    <span class="logo">
+                        PumpOS
+                    </span>
+                    <div class="feedsnav">
+                        <button class="active" id="clawfeedbtn" onclick="loadFeed('claw', this)">
+                            Claw
+                        </button>
+                        <button id="followingfeedbtn" onclick="loadFeed('following',this)">
+                            Following
+                        </button>
+                        <button id="topfeedbtn" onclick="loadFeed('top',this)">
+                            Top
+                        </button>
+                        <button id="otherfeed" style="display: none;" class="buttonlike">
+                            Other
+                        </button>
+                    </div>
+                </div>
+
+                <div class="navtools">
+                    <span class="material-symbols-rounded">
+                        refresh
+                    </span>
+                </div>
+            </nav>
+
+            <div id="loadingclaw">
+                <div class="loader"></div>
+
+                <small>Claw is loading...</small>
+            </div>
+            <div id="feed">
+            </div>
+        </div>
+        <div id="toolsection">
+            <div class="crtaccdisp" id="crtaccdisbtn">
+                <img src="https://avatars.rotur.dev/o" id="currentaccPfpdisp"> <b id="crtaccountname">Guest</b>
+            </div>
+            <div class="postmsgsection">
+                <textarea id="postinput" placeholder="What is going on!?"></textarea>
+                <div class="postsubfoot">
+                    <button onclick="attachthings(this)" id="attachbtn">
+                        <span>Attach</span>
+                        <span class="material-symbols-rounded">
+                            add_circle
+                        </span>
+                    </button>
+                    <button onclick="newpost()" class="postbtn buttonlike">
+                        <span>Post</span>
+                        <span class="material-symbols-rounded">
+                            send
+                        </span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        var feed = document.getElementById("feed");
+        async function attachthings(obj) {
+            attachments = "&attachment=" + await window.parent.ask('Enter a URL to your file:' || '')
+            obj.innerHTML = `
+                        <span>Re-attach</span>
+                        <span class="material-symbols-rounded">
+refresh
+</span>`
+        }
+        function matchSizeAndPosition() {
+            let loadingClaw = document.getElementById("loadingclaw");
+
+            if (feed && loadingClaw) {
+                let rect = feed.getBoundingClientRect();
+                loadingClaw.style.position = "absolute";
+                loadingClaw.style.top = rect.top + "px";
+                loadingClaw.style.left = rect.left + "px";
+                loadingClaw.style.width = rect.width + "px";
+                loadingClaw.style.height = rect.height + "px";
+            }
+        }
+
+        window.addEventListener("load", matchSizeAndPosition);
+        window.addEventListener("resize", matchSizeAndPosition);
+
+        const clawloader = {
+            show() {
+                const element = document.querySelector('#loadingclaw');
+                element.style.display = 'flex';
+                element.style.opacity = '0';
+                setTimeout(() => {
+                    element.style.transition = 'opacity 0.2s ease-out';
+                    element.style.opacity = '1';
+                }, 0);
+            },
+            hide() {
+                const element = document.querySelector('#loadingclaw');
+                element.style.transition = 'opacity 0.2s ease-out';
+                element.style.opacity = '0';
+                setTimeout(() => {
+                    element.style.display = 'none';
+                }, 200);
+            }
+        };
+
+
+        var selecteduser = "darkdot", postlimit = 10, lastrendereditem = null, currentOffset = 0, scrollPosition = 0, offsetParam, postReplies = {}, pfplib = {}, curTargetPost = null, curTargetPostliterally = null, attachments = '';
+
+        function arrayToString(arr) {
+            if (arr.length === 0) return "";
+            if (arr.length === 1) return arr[0];
+            if (arr.length === 2) return `${arr[0]} and ${arr[1]}`;
+
+            return `${arr[0]}, ${arr[1]} and ${arr.length - 2} more..`;
+        }
+
+        async function loadFeed(type = 'claw', obj, useOffset = false, torefresh = false) {
+            document.getElementById("otherfeed").style.display = "none";
+            (torefresh) ? null : document.getElementById('moreOnPost').close();
+            const activeElement = document.querySelector('.feedsnav .active');
+            if (activeElement) {
+                activeElement.classList.remove('active');
+            }
+
+            if (useOffset == false) {
+                scrollToTop();
+                clawloader.show();
+            }
+            const feedContainer = document.getElementById("feed");
+            var response, posts;
+            if (type == 'claw') {
+                offsetParam = useOffset ? "&offset=" + currentOffset : "";
+                document.getElementById("clawfeedbtn").classList.add('active');
+                response = await fetch("https://claw.rotur.dev/feed?limit=" + postlimit + offsetParam);
+                posts = await response.json();
+                if (!useOffset) document.getElementById("feed").innerHTML = "";
+            } else if (type == 'following') {
+                if (!checkifaccs()) return;
+                document.getElementById("followingfeedbtn").classList.add('active');
+                response = await fetch("https://claw.rotur.dev/following_feed?auth=" + window.parent.roturExtension.userToken + "&limit=" + postlimit + offsetParam);
+                posts = await response.json();
+                if (!useOffset) feedContainer.innerHTML = "";
+            } else if (type == 'top') {
+                if (!checkifaccs()) return;
+                document.getElementById("topfeedbtn").classList.add('active');
+                response = await fetch("https://social.rotur.dev/top_posts?time_period=168");
+                posts = await response.json();
+                if (!useOffset) feedContainer.innerHTML = "";
+            } else {
+                response = await fetch("https://claw.rotur.dev/profile?name=" + selecteduser + offsetParam);
+                posts = (await response.json()).posts;
+                if (!useOffset) {
+                    feedContainer.innerHTML = `<div class="profileseperator">
+                <div class="profilepic"><img src="" id="pfpuserdet"></div>
+                <div class="userdata">
+                    <div class="userdatatext"><h2 id="undispusdat">UserName</h2><p id="postsnoteaser">Created 2 months ago</p></div>
+                    <div class="userdatabtns">
+                        <div class="active primebtn buttonlike" id="followbtn"><button id="followbtntxt">Follow</button><span id="follownumbers">00</span></div>
+                        <div class="primebtn" onclick="moreinfo()">More info</div>
+                    </div>
+                </div>
+            </div>`;
+                    listprofilefeatures();
+                }
+            }
+
+            let lastUser = null;
+
+            posts.forEach(post => {
+                const postElement = document.createElement("div");
+                postElement.classList.add("randompost");
+                postElement.classList.add("realpost");
+                postElement.id = "postitem" + post.id;
+
+                lastrendereditem = "postitem" + post.id;
+
+                const postNav = document.createElement("div");
+                postNav.classList.add("postnav");
+
+                const postUserData = document.createElement("div");
+                postUserData.classList.add("postuserdata");
+                postUserData.onclick = () => {
+                    viewprofile(post.user);
+                };
+
+                const postUserAvatar = document.createElement("div");
+                postUserAvatar.classList.add("postuseravatar");
+
+                const userAvatarImg = document.createElement("img");
+                userAvatarImg.classList.add("postuseravatarsrc");
+                userAvatarImg.src = "https://avatars.rotur.dev/" + post.user;
+                pfplib[post.user] = userAvatarImg.src;
+
+                postUserAvatar.appendChild(userAvatarImg);
+
+                const postUserDynamics = document.createElement("div");
+                postUserDynamics.classList.add("postuserdynamics");
+
+                const postUsername = document.createElement("div");
+                postUsername.classList.add("postusername");
+                postUsername.textContent = post.user;
+
+                const postTimestamp = document.createElement("div");
+                postTimestamp.classList.add("posttimestamp");
+                if (post.os) {
+                    if (post.os === "novaOS") {
+                        postTimestamp.innerHTML = timeSince(post.timestamp) + " | Posted here";
+                    } else {
+                        postTimestamp.textContent = timeSince(post.timestamp) + " | Posted on " + post.os;
+                    }
+                } else {
+                    postTimestamp.textContent = timeSince(post.timestamp);
+                }
+
+                postUserDynamics.appendChild(postUsername);
+                postUserDynamics.appendChild(postTimestamp);
+
+                postUserData.appendChild(postUserAvatar);
+                postUserData.appendChild(postUserDynamics);
+
+                postNav.appendChild(postUserData);
+                postElement.appendChild(postNav);
+
+                const postContent = document.createElement("div");
+                postContent.classList.add("postcontent");
+                postContent.id = "postCont" + post.id;
+                postContent.textContent = post.content;
+                postContent.onclick = () => {
+                    loadreplies(post, postElement);
+                }
+
+                if (post.attachment) {
+                    const postImges = document.createElement("img");
+                    postImges.classList.add("postimg");
+                    postImges.src = post.attachment;
+                    postContent.appendChild(postImges);
+                }
+
+                postElement.appendChild(postContent);
+
+                try {
+                    const postFooter = document.createElement("div");
+                    postFooter.classList.add("postfooter");
+
+                    const likestatuses = document.createElement("div");
+                    likestatuses.classList.add("likestatuses");
+
+                    const likesDiv = document.createElement("div");
+                    likesDiv.classList.add("likes");
+                    likesDiv.onclick = function () {
+                        likepost(post.id);
+                    };
+
+
+                    const heartIcon = document.createElement("span");
+                    heartIcon.classList.add("material-symbols-rounded");
+                    heartIcon.innerText = "favorite";
+
+                    const likesNumber = document.createElement("span");
+                    likesNumber.classList.add("likesnumber");
+                    likesNumber.textContent = post.likes ? post.likes.length : 0;
+
+                    likesDiv.appendChild(heartIcon);
+                    likesDiv.appendChild(likesNumber);
+
+                    likestatuses.appendChild(likesDiv);
+
+
+                    if (post.replies && post.replies.length > 0) {
+                        post.replies.forEach(reply => {
+                            if (!postReplies[post.id]) {
+                                postReplies[post.id] = [];
+                            }
+                            postReplies[post.id].push(reply);
+                        });
+                        const repliesDiv = document.createElement("div");
+                        repliesDiv.classList.add("replies");
+                        repliesDiv.onclick = () => {
+                            loadreplies(post, postElement);
+                        }
+                        const msgIcon = document.createElement("span");
+                        msgIcon.classList.add("material-symbols-rounded");
+                        msgIcon.innerText = "chat";
+
+                        const repliesNumber = document.createElement("span");
+                        repliesNumber.classList.add("repliesnumber");
+                        repliesNumber.textContent = post.replies ? post.replies.length : 0;
+
+                        repliesDiv.appendChild(msgIcon);
+                        repliesDiv.appendChild(repliesNumber);
+                        likestatuses.appendChild(repliesDiv);
+                    }
+
+
+                    const wholiked = document.createElement("div");
+
+                    wholiked.classList.add("wholikedhint");
+                    if (post.likes && post.likes.length !== 0) {
+                        wholiked.innerText = "Liked by " + arrayToString(post.likes);
+                    } else {
+                        wholiked.innerText = "Be first to like this post."
+                    }
+                    likestatuses.appendChild(wholiked);
+
+                    const moreDiv = document.createElement("div");
+                    moreDiv.classList.add("more");
+
+                    const copyButton = document.createElement("button");
+                    copyButton.textContent = "Copy ID";
+                    copyButton.onclick = function () {
+                        copyId(post.id);
+                    };
+
+
+                    moreDiv.appendChild(copyButton);
+
+                    postFooter.appendChild(likestatuses);
+                    postFooter.appendChild(moreDiv);
+                    postElement.appendChild(postFooter);
+
+                    feedContainer.appendChild(postElement);
+                } catch (e) {
+                    console.error(e, post);
+                }
+            });
+
+
+            afterloadingtheposts()
+
+            function afterloadingtheposts() {
+
+                clawloader.hide();
+                if (type == 'claw' || type == 'following' || type == 'profile') {
+                    var moreButton = document.createElement("button");
+                    moreButton.classList.add("morebtn");
+                    moreButton.innerHTML = `
+                <div class="loader"></div> Loading more...`;
+                    let ouritem = lastrendereditem;
+                    let timer;
+
+                    async function loadmoreposts() {
+                        currentOffset += postlimit;
+                        scrollPosition = window.scrollY;
+                        await loadFeed(type, null, true);
+                        window.scrollTo(0, scrollPosition);
+                        setTimeout(() => {
+                            moreButton.remove();
+                        }, 200);
+                    }
+
+                    const observer = new IntersectionObserver((entries) => {
+                        if (entries[0].isIntersecting) {
+                            loadmoreposts();
+                        }
+                    }, { threshold: 1 });
+
+                    observer.observe(moreButton);
+                    document.getElementById("feed").appendChild(moreButton);
+                }
+
+            }
+        }
+
+        function timeSince(timestamp) {
+            const seconds = Math.floor((Date.now() - timestamp) / 1000);
+            const intervals = [
+                { label: 'year', seconds: 31536000 },
+                { label: 'month', seconds: 2592000 },
+                { label: 'day', seconds: 86400 },
+                { label: 'hour', seconds: 3600 },
+                { label: 'minute', seconds: 60 },
+            ];
+            for (const interval of intervals) {
+                const count = Math.floor(seconds / interval.seconds);
+                if (count >= 1) return `${count} ${interval.label}${count !== 1 ? 's' : ''} ago`;
+            }
+            return "Just now";
+        }
+
+        async function likepost(id) {
+            if (!checkifaccs()) { return }
+            await fetch("https://claw.rotur.dev/rate?id=" + id + "&auth=" +
+                window.parent.roturExtension.userToken + "&rating=1&os=novaOS");
+            loadFeed()
+        }
+
+        async function newpost() {
+            if (!checkifaccs()) { return }
+            let content = document.getElementById("postinput").value;
+
+            await fetch(`https://claw.rotur.dev/post?content=${content}&os=novaOS&auth=${window.parent.roturExtension.userToken}${attachments}`);
+
+            if (attachments) {
+                document.getElementById("attachbtn").innerHTML = `
+        <span>Attach</span>
+        <ion-icon name="link-outline"></ion-icon>`;
+            }
+
+            attachments = '';
+            loadFeed();
+        }
+
+
+        async function followuser() {
+            if (!checkifaccs()) { return }
+            let content = document.getElementById("postinput").value;
+            await fetch("https://claw.rotur.dev/post?content=" + content + "&os=novaOS&auth=" +
+                window.parent.roturExtension.userToken);
+        }
+
+        function copyId(id) {
+            navigator.clipboard.writeText(id);
+        }
+
+        function createReplyElement(reply) {
+            const replyElement = document.createElement("div");
+            replyElement.classList.add("randompost");
+            replyElement.id = "replyitem" + reply.id;
+
+            replyElement.onclick = () => {
+                document.getElementById("moreOnPost").showModal();
+                const replyPreview = document.createElement("div");
+                replyPreview.classList.add("randompost");
+                replyPreview.innerHTML = replyElement.innerHTML;
+                document.getElementById("targetpost").innerHTML = replyPreview.innerHTML;
+            };
+
+            const replyNav = document.createElement("div");
+            replyNav.classList.add("postnav");
+
+            const replyUserData = document.createElement("div");
+            replyUserData.classList.add("postuserdata");
+            replyUserData.onclick = () => {
+                viewprofile(reply.user);
+            };
+
+            const replyUserAvatar = document.createElement("div");
+            replyUserAvatar.classList.add("postuseravatar");
+
+            const replyUserAvatarImg = document.createElement("img");
+            replyUserAvatarImg.classList.add("postuseravatarsrc");
+            replyUserAvatarImg.src = reply.pfp || pfplib[reply.user];
+
+            replyUserAvatar.appendChild(replyUserAvatarImg);
+
+            const replyUserDynamics = document.createElement("div");
+            replyUserDynamics.classList.add("postuserdynamics");
+
+            const replyUsername = document.createElement("div");
+            replyUsername.classList.add("postusername");
+            replyUsername.textContent = reply.user;
+
+            const replyTimestamp = document.createElement("div");
+            replyTimestamp.classList.add("posttimestamp");
+            replyTimestamp.textContent = timeSince(reply.timestamp);
+
+            replyUserDynamics.appendChild(replyUsername);
+            replyUserDynamics.appendChild(replyTimestamp);
+
+            replyUserData.appendChild(replyUserAvatar);
+            replyUserData.appendChild(replyUserDynamics);
+
+            replyNav.appendChild(replyUserData);
+            replyElement.appendChild(replyNav);
+
+            const replyContent = document.createElement("div");
+            replyContent.classList.add("postcontent");
+            replyContent.textContent = reply.content;
+
+            replyElement.appendChild(replyContent);
+
+            const replyFooter = document.createElement("div");
+            replyFooter.classList.add("postfooter");
+
+            const likestatuses = document.createElement("div");
+            likestatuses.classList.add("likestatuses");
+
+            const likesDiv = document.createElement("div");
+            likesDiv.classList.add("likes");
+            likesDiv.onclick = function () {
+                likepost(reply.id);
+            };
+
+            const heartIcon = document.createElement("span");
+            heartIcon.classList.add("material-symbols-rounded");
+            heartIcon.innerText = "favorite";
+
+            const likesNumber = document.createElement("span");
+            likesNumber.classList.add("likesnumber");
+            likesNumber.textContent = reply.likes ? reply.likes.length : 0;
+
+            likesDiv.appendChild(heartIcon);
+            likesDiv.appendChild(likesNumber);
+
+            likestatuses.appendChild(likesDiv);
+
+            replyFooter.appendChild(likestatuses);
+            replyElement.appendChild(replyFooter);
+
+            return replyElement;
+        }
+
+        async function reloadCurrentFeed(post) {
+            const activeElement = document.querySelector('.feedsnav .active');
+            let type = 'claw'; // Default feed type is 'claw'
+
+            if (activeElement) {
+                if (activeElement.id === 'clawfeedbtn') {
+                    type = 'claw';
+                } else if (activeElement.id === 'followingfeedbtn') {
+                    type = 'following';
+                } else if (activeElement.id === 'topfeedbtn') {
+                    type = 'top';
+                } else if (activeElement.id === 'profilefeedbtn') {
+                    type = 'profile';
+                }
+            }
+
+            const useOffset = currentOffset !== 0;
+            await loadFeed(type, null, useOffset);
+
+            const allPosts = document.querySelectorAll(".randompost .realpost");
+
+            allPosts.forEach(postElement => {
+                const postId = postElement.id.replace("postitem", "");
+
+                if (post.replies && post.replies.length > 0) {
+                    renderReplies(postElement, post.replies);
+                }
+            });
+
+            setTimeout(document.getElementById("postCont" + post.id).click(), 2000)
+        }
+
+        function renderReplies(postElement, replies) {
+            console.log(postElement, replies)
+            const repliesContainer = postElement.querySelector("#postReplies");
+            if (repliesContainer) {
+                repliesContainer.innerHTML = '';
+            }
+
+            replies.forEach(reply => {
+                const replyElement = createReplyElement(reply);
+                repliesContainer.appendChild(replyElement);
+            });
+        }
+
+        async function listprofilefeatures(name = selecteduser) {
+            var profileitems = {
+                img: document.getElementById("pfpuserdet"),
+                name: document.getElementById("undispusdat"),
+                desc: document.getElementById("postsnoteaser"),
+                follows: document.getElementById("follownumbers"),
+                followbtn: document.getElementById("followbtn"),
+                followbtntxt: document.getElementById("followbtntxt"),
+            }
+
+            profileitems.name.innerHTML = name;
+
+            clawloader.show();
+
+            const response = await fetch("https://claw.rotur.dev/profile?name=" + name);
+            const userclouddat = await response.json();
+
+            profileitems.img.src = userclouddat?.pfp || "https://uxwing.com/wp-content/themes/uxwing/download/peoples-avatars/no-profile-picture-icon.png";
+            profileitems.desc.innerText = "Created " + timeSince(userclouddat.created);
+            profileitems.follows.innerText = userclouddat.followers;
+
+            const responsefol = await fetch("https://claw.rotur.dev/followers?username=" + name);
+            const userclouddatfol = await responsefol.json();
+            if (userclouddatfol.followers.includes(window.parent.roturExtension.user.username)) {
+                followbtntxt.innerHTML = "Unfollow";
+                followbtn.style.background = "#2f2f2f";
+                followbtn.onclick = async () => {
+                    await fetch("https://claw.rotur.dev/unfollow?username=" + name + "&os=novaOS&auth=" +
+                        window.parent.roturExtension.userToken);
+                }
+            } else {
+                followbtntxt.innerHTML = "Follow";
+                followbtn.style.background = "#4e5fa7";
+                followbtn.onclick = async () => {
+                    await fetch("https://claw.rotur.dev/follow?username=" + name + "&os=novaOS&auth=" +
+                        window.parent.roturExtension.userToken);
+                }
+            }
+
+            clawloader.hide();
+        }
+
+        async function viewprofile(name) {
+            document.getElementById('moreOnPost').close();
+            if (!checkifaccs()) { return }
+            selecteduser = name;
+            await loadFeed('user');
+        }
+
+        function checkifaccs() {
+            let signedinch = window.parent.roturExtension.loggedIn();
+            if (!signedinch) {
+                window.parent.toast("You don't have a rotur account linked.");
+                window.parent.useHandler('content_store', {'opener':'viewapp', 'data':'Rotur Dashboard@nirholas', 'run':'true'});
+                loadFeed()
+            }
+            return signedinch;
+        }
+
+        loadFeed();
+
+        function greenflag() {
+            document.getElementById('crtaccountname').innerText = window.parent.roturExtension.user.username || 'Guest';
+            document.getElementById('currentaccPfpdisp').src = "https://avatars.rotur.dev/" + window.parent.roturExtension.user.username || 'o';
+            document.getElementById("crtaccdisbtn").onclick = () => {
+                viewprofile(window.parent.roturExtension.user.username);
+            }
+        }
+
+        document.getElementById("postinput").addEventListener("focus", () => {
+            document.getElementById("toolsection").style.flex = "4";
+            document.getElementById("feedsection").style.opacity = "0.5";
+        });
+        document.getElementById("postinput").addEventListener("blur", () => {
+            document.getElementById("toolsection").style.flex = "1";
+            document.getElementById("feedsection").style.opacity = "1";
+        });
+
+        async function addreply() {
+            let content = document.getElementById("addAreplyInp").value;
+            let postId = curTargetPost;
+            if (content.trim() === "") return;
+
+            await fetch(`https://claw.rotur.dev/reply?auth=${window.parent.roturExtension.userToken}&id=${postId}&content=${encodeURIComponent(content)}`);
+            document.getElementById("addAreplyInp").value = "";
+            reloadCurrentFeed(curTargetPostliterally);
+        }
+
+        function checkEnter(event) {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                addreply();
+            }
+        }
+
+        function loadreplies(post, postElement) {
+            curTargetPost = post.id;
+            curTargetPostliterally = post;
+            document.getElementById("moreOnPost").showModal();
+            document.getElementById("targetpost").innerHTML = postElement.innerHTML;
+
+            const repliesContainer = document.getElementById("postReplies");
+            repliesContainer.innerHTML = '';
+
+            if (post.replies && post.replies.length > 0) {
+                post.replies.forEach(reply => {
+                    const replyElement = document.createElement("div");
+                    replyElement.classList.add("randompost");
+                    replyElement.id = "replyitem" + reply.id;
+
+                    replyElement.onclick = () => {
+                        document.getElementById("moreOnPost").showModal();
+                        const replyPreview = document.createElement("div");
+                        replyPreview.classList.add("randompost");
+                        replyPreview.innerHTML = replyElement.innerHTML;
+                        document.getElementById("targetpost").innerHTML = replyPreview.innerHTML;
+                    };
+
+                    const replyNav = document.createElement("div");
+                    replyNav.classList.add("postnav");
+
+                    const replyUserData = document.createElement("div");
+                    replyUserData.classList.add("postuserdata");
+                    replyUserData.onclick = () => {
+                        viewprofile(reply.user);
+                    };
+
+                    const replyUserAvatar = document.createElement("div");
+                    replyUserAvatar.classList.add("postuseravatar");
+
+                    const replyUserAvatarImg = document.createElement("img");
+                    replyUserAvatarImg.classList.add("postuseravatarsrc");
+                    replyUserAvatarImg.src = reply.pfp || pfplib[reply.user];
+
+                    replyUserAvatar.appendChild(replyUserAvatarImg);
+
+                    const replyUserDynamics = document.createElement("div");
+                    replyUserDynamics.classList.add("postuserdynamics");
+
+                    const replyUsername = document.createElement("div");
+                    replyUsername.classList.add("postusername");
+                    replyUsername.textContent = reply.user;
+
+                    const replyTimestamp = document.createElement("div");
+                    replyTimestamp.classList.add("posttimestamp");
+                    replyTimestamp.textContent = timeSince(reply.timestamp);
+
+                    replyUserDynamics.appendChild(replyUsername);
+                    replyUserDynamics.appendChild(replyTimestamp);
+
+                    replyUserData.appendChild(replyUserAvatar);
+                    replyUserData.appendChild(replyUserDynamics);
+
+                    replyNav.appendChild(replyUserData);
+                    replyElement.appendChild(replyNav);
+
+                    const replyContent = document.createElement("div");
+                    replyContent.classList.add("postcontent");
+                    replyContent.textContent = reply.content;
+
+                    replyElement.appendChild(replyContent);
+
+                    const replyFooter = document.createElement("div");
+                    replyFooter.classList.add("postfooter");
+
+                    const likestatuses = document.createElement("div");
+                    likestatuses.classList.add("likestatuses");
+
+                    const likesDiv = document.createElement("div");
+                    likesDiv.classList.add("likes");
+                    likesDiv.onclick = function () {
+                        likepost(reply.id);
+                    };
+
+                    const heartIcon = document.createElement("ion-icon");
+                    heartIcon.setAttribute("name", "heart-outline");
+
+                    const likesNumber = document.createElement("span");
+                    likesNumber.classList.add("likesnumber");
+                    likesNumber.textContent = reply.likes ? reply.likes.length : 0;
+
+                    likesDiv.appendChild(heartIcon);
+                    likesDiv.appendChild(likesNumber);
+
+                    likestatuses.appendChild(likesDiv);
+
+                    replyFooter.appendChild(likestatuses);
+                    replyElement.appendChild(replyFooter);
+
+                    repliesContainer.appendChild(replyElement);
+                });
+            };
+        }
+
+        function scrollToTop() {
+            feed.scrollTop = 0;
+        }
+
+        async function moreinfo() {
+            let resp1 = await fetch("https://claw.rotur.dev/followers?username=" + selecteduser);
+            let resp2 = await fetch("https://claw.rotur.dev/following?username=" + selecteduser);
+
+            let followers = await resp1.json();
+            let following = await resp2.json();
+
+            window.parent.say(`<p>Following: ${following.following.join(", ")}</p><p>Followers: ${followers.followers.join(", ")}</p>`);
+        }
+
+    </script>
+</body>
+
+</html>

@@ -1,5 +1,5 @@
 /*
- * Ultraviolet Service Worker Wrapper for LairOS
+ * Ultraviolet Service Worker Wrapper for PumpOS
  * This file imports the config and the main UV service worker
  * Compatible with bare-mux v2
  */

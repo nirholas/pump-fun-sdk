@@ -1,5 +1,5 @@
 /**
- * UV Proxy Initialization for LairOS
+ * UV Proxy Initialization for PumpOS
  * 
  * This script handles the proper initialization of Ultraviolet with bare-mux v2.
  * Include this AFTER loading baremux.js, uv.bundle.js, and uv.config.js

@@ -1,5 +1,5 @@
 /**
- * LairOS Wallet Connection Module
+ * PumpOS Wallet Connection Module
  * OS-level wallet management with postMessage bus for all iframed apps.
  * Supports MetaMask (injected), WalletConnect v2, and Coinbase Wallet.
  */
@@ -147,7 +147,7 @@
             if (extra.hasOwnProperty(k)) msg[k] = extra[k];
         }
 
-        // Use LairOS eventBus if available
+        // Use PumpOS eventBus if available
         if (typeof eventBusWorker !== 'undefined' && eventBusWorker.deliver) {
             eventBusWorker.deliver({ type: 'wallet', event: type, data: msg });
         }
@@ -287,7 +287,7 @@
     async function connectWalletConnect() {
         var projectId = getWCProjectId();
         if (!projectId) {
-            notify('WalletConnect', 'Project ID required. Go to cloud.walletconnect.com to get one, then set it in LairOS terminal: localStorage.setItem("lair_wc_project_id", "YOUR_ID")', 'warning');
+            notify('WalletConnect', 'Project ID required. Go to cloud.walletconnect.com to get one, then set it in PumpOS terminal: localStorage.setItem("lair_wc_project_id", "YOUR_ID")', 'warning');
             return false;
         }
 
@@ -306,8 +306,8 @@
                 optionalChains: SUPPORTED_CHAIN_IDS.filter(function (id) { return id !== 1; }),
                 showQrModal: true,
                 metadata: {
-                    name: 'LairOS',
-                    description: 'LairOS — Web3 Desktop Environment',
+                    name: 'PumpOS',
+                    description: 'PumpOS — Web3 Desktop Environment',
                     url: window.location.origin,
                     icons: [window.location.origin + '/n.png'],
                 },
@@ -362,7 +362,7 @@
             if (!CoinbaseWalletSDK) throw new Error('Coinbase SDK not found');
 
             var sdk = new CoinbaseWalletSDK({
-                appName: 'LairOS',
+                appName: 'PumpOS',
                 appLogoUrl: window.location.origin + '/n.png',
             });
 

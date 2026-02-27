@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="lair-include" content="lair.css material-symbols-rounded">
+    <meta name="permissions" content="appStorage">
+    <meta name="capabilities" content="hotkeys">
+    <meta name="lair-icon" content="<svg width='232' height='232' viewBox='0 0 232 232' fill='none' xmlns='http://www.w3.org/2000/svg'><rect width='232' height='232' rx='40' fill='#8B5CF6'/><text x='116' y='140' text-anchor='middle' fill='white' font-size='100' font-weight='bold'>⌨️</text></svg>">
+    <title>Hotkeys</title>
+    <style>
+        :root {
+            --col-bg1: #080A19;
+            --col-bg2: #0C0F27;
+            --col-bg3: #15183E;
+            --col-txt1: #A7C2F3;
+            --col-txt2: #6B7DB3;
+            --colors-accent: rgb(97, 121, 255);
+            --accent-glow: rgba(97, 121, 255, 0.25);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body {
+            height: 100%;
+            background: var(--col-bg1);
+            color: var(--col-txt1);
+            font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            overflow: hidden;
+        }
+        .app {
+            height: 100%;
+            display: grid;
+            grid-template-rows: auto 1fr;
+        }
+
+        /* ===== Header ===== */
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 16px;
+            background: rgba(12, 15, 39, 0.92);
+            border-bottom: 1px solid rgba(167, 194, 243, 0.1);
+            flex-wrap: wrap;
+        }
+        .header-title {
+            font-size: 15px;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+        .search-box {
+            flex: 1;
+            min-width: 160px;
+            max-width: 320px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--col-bg3);
+            border: 1px solid rgba(167, 194, 243, 0.16);
+            border-radius: 8px;
+            padding: 6px 10px;
+        }
+        .search-box .material-symbols-rounded { font-size: 18px; opacity: 0.5; }
+        .search-box input {
+            flex: 1;
+            background: none;
+            border: none;
+            color: var(--col-txt1);
+            font-size: 13px;
+            outline: none;
+        }
+        .search-box input::placeholder { color: var(--col-txt2); }
+        .header-actions { display: flex; gap: 6px; margin-left: auto; }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            background: var(--col-bg3);
+            color: var(--col-txt1);
+            border: 1px solid rgba(167, 194, 243, 0.16);
+            border-radius: 6px;
+            padding: 6px 10px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: background 0.15s, border-color 0.15s;
+            white-space: nowrap;
+        }
+        .btn:hover { background: rgba(97, 121, 255, 0.15); border-color: var(--colors-accent); }
+        .btn .material-symbols-rounded { font-size: 16px; }
+        .btn-accent { background: var(--colors-accent); border-color: transparent; color: #fff; }
+        .btn-accent:hover { background: rgb(120, 140, 255); }
+
+        /* ===== Main Scroll Area ===== */
+        .main { overflow-y: auto; padding: 12px 16px 24px; }
+
+        /* ===== Category Section ===== */
+        .category { margin-bottom: 20px; }
+        .category-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid rgba(167, 194, 243, 0.08);
+        }
+        .category-icon {
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+        .cat-system .category-icon { background: rgba(239, 68, 68, 0.15); color: #f87171; }
+        .cat-apps .category-icon { background: rgba(97, 121, 255, 0.15); color: var(--colors-accent); }
+        .cat-quick .category-icon { background: rgba(250, 204, 21, 0.15); color: #facc15; }
+        .category-name { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+        .category-count { font-size: 11px; opacity: 0.5; }
+
+        /* ===== Shortcut Row ===== */
+        .shortcut-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 10px;
+            border-radius: 8px;
+            transition: background 0.12s;
+        }
+        .shortcut-row:hover { background: rgba(167, 194, 243, 0.04); }
+        .shortcut-action {
+            flex: 1;
+            font-size: 13px;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .shortcut-keys {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            flex-shrink: 0;
+        }
+        .key-pill {
+            display: inline-flex;
+            align-items: center;
+            padding: 2px 8px;
+            border-radius: 4px;
+            background: var(--col-bg3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-bottom: 3px solid rgba(255, 255, 255, 0.05);
+            font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+            font-size: 0.78em;
+            color: var(--col-txt1);
+            min-width: 24px;
+            justify-content: center;
+            white-space: nowrap;
+            user-select: none;
+        }
+        .key-plus {
+            font-size: 10px;
+            opacity: 0.35;
+        }
+        .key-then {
+            font-size: 10px;
+            opacity: 0.5;
+            color: var(--colors-accent);
+            font-style: italic;
+        }
+        .shortcut-edit {
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            background: none;
+            border: 1px solid transparent;
+            color: var(--col-txt2);
+            cursor: pointer;
+            transition: all 0.12s;
+            flex-shrink: 0;
+        }
+        .shortcut-edit:hover { background: var(--col-bg3); border-color: rgba(167, 194, 243, 0.16); color: var(--col-txt1); }
+        .shortcut-edit .material-symbols-rounded { font-size: 16px; }
+        .shortcut-edit[disabled] { opacity: 0.2; cursor: default; pointer-events: none; }
+        .shortcut-readonly {
+            font-size: 10px;
+            padding: 1px 6px;
+            border-radius: 3px;
+            background: rgba(167, 194, 243, 0.06);
+            color: var(--col-txt2);
+            flex-shrink: 0;
+        }
+        .no-results {
+            text-align: center;
+            padding: 40px 20px;
+            opacity: 0.4;
+            font-size: 13px;
+        }
+
+        /* ===== Modal ===== */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.65);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal {
+            background: var(--col-bg2);
+            border: 1px solid rgba(167, 194, 243, 0.12);
+            border-radius: 12px;
+            padding: 20px;
+            width: 90%;
+            max-width: 420px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+        .modal-title {
+            font-size: 15px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+        .modal-subtitle {
+            font-size: 12px;
+            color: var(--col-txt2);
+            margin-bottom: 16px;
+        }
+        .capture-area {
+            background: var(--col-bg1);
+            border: 2px dashed rgba(167, 194, 243, 0.2);
+            border-radius: 10px;
+            padding: 24px;
+            text-align: center;
+            min-height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            flex-wrap: wrap;
+            transition: border-color 0.2s;
+            cursor: pointer;
+        }
+        .capture-area.listening {
+            border-color: var(--colors-accent);
+            box-shadow: 0 0 16px var(--accent-glow);
+        }
+        .capture-placeholder {
+            font-size: 13px;
+            color: var(--col-txt2);
+        }
+        .conflict-msg {
+            margin-top: 10px;
+            font-size: 12px;
+            color: #f59e0b;
+            display: none;
+        }
+        .conflict-msg.active { display: block; }
+        .modal-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+            margin-top: 16px;
+        }
+        .btn-danger { background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.3); color: #f87171; }
+        .btn-danger:hover { background: rgba(239, 68, 68, 0.25); }
+
+        /* ===== Cheat Sheet Overlay ===== */
+        .cheatsheet-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(8, 10, 25, 0.95);
+            display: none;
+            z-index: 2000;
+            overflow-y: auto;
+            padding: 24px;
+        }
+        .cheatsheet-overlay.active { display: block; }
+        .cheatsheet-close {
+            position: fixed;
+            top: 16px;
+            right: 16px;
+            z-index: 2001;
+        }
+        .cheatsheet-title {
+            text-align: center;
+            font-size: 22px;
+            font-weight: 800;
+            margin-bottom: 24px;
+        }
+        .cheatsheet-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 16px;
+            max-width: 960px;
+            margin: 0 auto;
+        }
+        .cheatsheet-card {
+            background: var(--col-bg2);
+            border: 1px solid rgba(167, 194, 243, 0.1);
+            border-radius: 10px;
+            padding: 14px;
+        }
+        .cheatsheet-card h3 {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 10px;
+            opacity: 0.7;
+        }
+        .cheatsheet-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 4px 0;
+        }
+        .cheatsheet-row .label { font-size: 12px; }
+        .cheatsheet-row .keys { display: flex; gap: 3px; align-items: center; }
+
+        @media print {
+            body { background: #fff; color: #111; }
+            .header, .cheatsheet-close { display: none; }
+            .key-pill { background: #eee; border-color: #ccc; color: #111; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <!-- Header -->
+        <div class="header">
+            <span class="header-title">⌨️ Keyboard Shortcuts</span>
+            <div class="search-box">
+                <span class="material-symbols-rounded">search</span>
+                <input type="text" id="searchInput" placeholder="Search shortcuts..." autocomplete="off">
+            </div>
+            <div class="header-actions">
+                <button class="btn" id="cheatsheetBtn" title="Cheat sheet">
+                    <span class="material-symbols-rounded">grid_view</span> Cheat Sheet
+                </button>
+                <button class="btn" id="resetBtn" title="Reset all to defaults">
+                    <span class="material-symbols-rounded">restart_alt</span> Reset
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main" id="mainContent"></div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div class="modal-overlay" id="editModal">
+        <div class="modal">
+            <div class="modal-title" id="modalTitle">Edit Shortcut</div>
+            <div class="modal-subtitle" id="modalSubtitle">Press your desired key combination</div>
+            <div class="capture-area" id="captureArea" tabindex="0">
+                <span class="capture-placeholder" id="capturePlaceholder">Click here, then press keys...</span>
+            </div>
+            <div class="conflict-msg" id="conflictMsg"></div>
+            <div class="modal-actions">
+                <button class="btn btn-danger" id="clearShortcutBtn">
+                    <span class="material-symbols-rounded">backspace</span> Clear
+                </button>
+                <div style="flex:1"></div>
+                <button class="btn" id="cancelBtn">Cancel</button>
+                <button class="btn btn-accent" id="saveBtn">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cheat Sheet Overlay -->
+    <div class="cheatsheet-overlay" id="cheatsheetOverlay">
+        <button class="btn cheatsheet-close" id="cheatsheetClose">
+            <span class="material-symbols-rounded">close</span> Close
+        </button>
+        <div class="cheatsheet-title">⌨️ PumpOS Keyboard Shortcuts</div>
+        <div class="cheatsheet-grid" id="cheatsheetGrid"></div>
+    </div>
+
+<script>
+(function() {
+    'use strict';
+
+    // ===== Default Shortcuts =====
+    const SYSTEM_SHORTCUTS = [
+        { id: 'sys-palette', combo: 'ctrl+k',     label: 'Command Palette',             type: 'system', fn: 'commandPalette' },
+        { id: 'sys-close',   combo: 'ctrl+w',     label: 'Close focused window',        type: 'system', fn: 'closeCurrentWindow' },
+        { id: 'sys-minim',   combo: 'ctrl+m',     label: 'Minimize focused window',     type: 'system', fn: 'minimizeWindow' },
+        { id: 'sys-maxim',   combo: 'ctrl+arrowup', label: 'Maximize focused window',   type: 'system', fn: 'maximizeWindow' },
+        { id: 'sys-desktop', combo: 'ctrl+d',     label: 'Show desktop (minimize all)', type: 'system', fn: 'toggleShowDesktop' },
+        { id: 'sys-lock',    combo: 'ctrl+l',     label: 'Lock screen',                 type: 'system', fn: 'lockScreen' },
+        { id: 'sys-search',  combo: 'ctrl+k',     label: 'Open search / command palette', type: 'system', fn: 'commandPalette' },
+        { id: 'sys-fs',      combo: 'f11',        label: 'Toggle fullscreen',           type: 'system', fn: 'toggleFullscreen' },
+        { id: 'sys-cycle',   combo: 'ctrl+tab',   label: 'Cycle windows',               type: 'system', fn: 'cycleWindows' },
+        { id: 'sys-snap-l',  combo: 'ctrl+arrowleft',  label: 'Snap window left',       type: 'system', fn: 'snapLeft' },
+        { id: 'sys-snap-r',  combo: 'ctrl+arrowright', label: 'Snap window right',      type: 'system', fn: 'snapRight' },
+        { id: 'sys-taskbar', combo: 'alt+1…9',    label: 'Focus taskbar item 1…9',  type: 'system', fn: 'taskbarItem' }
+    ];
+
+    const DEFAULT_APP_SHORTCUTS = [
+        { id: 'app-charts',    combo: 'ctrl+shift+c', label: 'Crypto Charts',            type: 'openApp', appId: 'cryptocharts' },
+        { id: 'app-portfolio', combo: 'ctrl+shift+p', label: 'Portfolio Tracker',         type: 'openApp', appId: 'portfolio-tracker' },
+        { id: 'app-gas',       combo: 'ctrl+shift+g', label: 'Gas Tracker',              type: 'openApp', appId: 'gastracker' },
+        { id: 'app-news',      combo: 'ctrl+shift+n', label: 'Crypto News',              type: 'openApp', appId: 'cryptonews' },
+        { id: 'app-watchlist', combo: 'ctrl+shift+w', label: 'Watchlist',                type: 'openApp', appId: 'watchlist' },
+        { id: 'app-scanner',   combo: 'ctrl+shift+t', label: 'Token Scanner',            type: 'openApp', appId: 'tokenscanner' },
+        { id: 'app-ai',        combo: 'ctrl+shift+a', label: 'Pump AI',                  type: 'openApp', appId: 'lairai' }
+    ];
+
+    const DEFAULT_QUICK_SHORTCUTS = [
+        { id: 'quick-1', combo: 'ctrl+shift+1', label: 'Layout Preset 1', type: 'quickAction', actionId: 'layout-1' },
+        { id: 'quick-2', combo: 'ctrl+shift+2', label: 'Layout Preset 2', type: 'quickAction', actionId: 'layout-2' },
+        { id: 'quick-3', combo: 'ctrl+shift+3', label: 'Layout Preset 3', type: 'quickAction', actionId: 'layout-3' }
+    ];
+
+    const STORAGE_KEY = 'lair-hotkeys';
+
+    // ===== State =====
+    let appShortcuts = [];
+    let quickShortcuts = [];
+    let editingShortcut = null;
+    let capturedCombo = '';
+    let isCapturing = false;
+    let registeredHandler = null;
+
+    // ===== Init =====
+    function init() {
+        loadShortcuts();
+        render();
+        registerGlobalHandler();
+        bindUI();
+    }
+
+    // ===== Storage =====
+    function loadShortcuts() {
+        try {
+            const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+            if (saved && saved.apps && saved.quick) {
+                appShortcuts = mergeWithDefaults(saved.apps, DEFAULT_APP_SHORTCUTS);
+                quickShortcuts = mergeWithDefaults(saved.quick, DEFAULT_QUICK_SHORTCUTS);
+            } else {
+                appShortcuts = JSON.parse(JSON.stringify(DEFAULT_APP_SHORTCUTS));
+                quickShortcuts = JSON.parse(JSON.stringify(DEFAULT_QUICK_SHORTCUTS));
+            }
+        } catch (e) {
+            appShortcuts = JSON.parse(JSON.stringify(DEFAULT_APP_SHORTCUTS));
+            quickShortcuts = JSON.parse(JSON.stringify(DEFAULT_QUICK_SHORTCUTS));
+        }
+    }
+
+    function mergeWithDefaults(saved, defaults) {
+        return defaults.map(def => {
+            const found = saved.find(s => s.id === def.id);
+            return found ? { ...def, combo: found.combo } : { ...def };
+        });
+    }
+
+    function saveShortcuts() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+            apps: appShortcuts.map(s => ({ id: s.id, combo: s.combo })),
+            quick: quickShortcuts.map(s => ({ id: s.id, combo: s.combo }))
+        }));
+        registerGlobalHandler();
+    }
+
+    // ===== Build combo string from KeyboardEvent =====
+    function buildCombo(e) {
+        const parts = [];
+        if (e.ctrlKey || e.metaKey) parts.push('ctrl');
+        if (e.altKey) parts.push('alt');
+        if (e.shiftKey) parts.push('shift');
+        const key = e.key.toLowerCase();
+        const ignore = ['control', 'meta', 'alt', 'shift'];
+        if (!ignore.includes(key)) {
+            if (key === ' ') parts.push('space');
+            else if (key === 'tab') parts.push('tab');
+            else parts.push(key);
+        }
+        return parts.join('+');
+    }
+
+    // ===== Register Global Handler on Parent =====
+    function registerGlobalHandler() {
+        const doc = getParentDoc();
+        if (!doc) return;
+
+        if (registeredHandler) {
+            doc.removeEventListener('keydown', registeredHandler, true);
+        }
+
+        const allShortcuts = getAllEditableShortcuts();
+        const comboMap = {};
+        allShortcuts.forEach(s => {
+            if (s.combo) comboMap[s.combo] = s;
+        });
+
+        registeredHandler = function(e) {
+            const combo = buildCombo(e);
+            if (!combo) return;
+
+            // System shortcuts
+            const sys = SYSTEM_SHORTCUTS.find(s => s.combo === combo);
+            if (sys) {
+                e.preventDefault();
+                e.stopPropagation();
+                executeSystem(sys.fn);
+                return;
+            }
+
+            // User shortcuts
+            const action = comboMap[combo];
+            if (action) {
+                e.preventDefault();
+                e.stopPropagation();
+                executeAction(action);
+            }
+        };
+
+        doc.addEventListener('keydown', registeredHandler, true);
+    }
+
+    function getParentDoc() {
+        try { return parent.document; } catch (e) { return document; }
+    }
+
+    function executeSystem(fn) {
+        try {
+            switch (fn) {
+                case 'toggleShowDesktop':
+                    if (typeof parent.toggleShowDesktop === 'function') parent.toggleShowDesktop();
+                    break;
+                case 'lockScreen':
+                    if (typeof parent.lockScreen === 'function') parent.lockScreen();
+                    break;
+                case 'cycleWindows':
+                    // Handled by commandpalette.js — listed here for reference
+                    break;
+                case 'commandPalette':
+                    if (parent.PumpCommandPalette && typeof parent.PumpCommandPalette.open === 'function') {
+                        parent.PumpCommandPalette.open();
+                    }
+                    break;
+                case 'minimizeWindow':
+                    // Handled by commandpalette.js
+                    break;
+                case 'maximizeWindow':
+                    // Handled by commandpalette.js
+                    break;
+                case 'snapLeft':
+                    // Handled by commandpalette.js
+                    break;
+                case 'snapRight':
+                    // Handled by commandpalette.js
+                    break;
+                case 'taskbarItem':
+                    // Handled by commandpalette.js (Alt+1-9)
+                    break;
+                case 'closeCurrentWindow':
+                    try {
+                        if (typeof parent.clwin === 'function') {
+                            /* Use the OS's own close-focused-window logic */
+                            const keys = Object.keys(parent.winds || {});
+                            if (keys.length) {
+                                let topKey = keys[0], topZ = -Infinity;
+                                keys.forEach(k => {
+                                    const z = Number((parent.winds[k] || {}).zIndex) || 0;
+                                    const el = parent.document.getElementById('window' + k);
+                                    if (z > topZ && el && el.style.display !== 'none') { topZ = z; topKey = k; }
+                                });
+                                parent.clwin(topKey);
+                            }
+                        }
+                    } catch (e) {}
+                    break;
+                case 'toggleFullscreen':
+                    try {
+                        if (parent.document.fullscreenElement) parent.document.exitFullscreen();
+                        else parent.document.documentElement.requestFullscreen();
+                    } catch (e) {}
+                    break;
+            }
+        } catch (e) {
+            console.warn('Hotkeys: system action failed', fn, e);
+        }
+    }
+
+    function executeAction(action) {
+        try {
+            if (action.type === 'openApp') {
+                if (typeof parent.openapp === 'function') {
+                    parent.openapp(action.appId, 1);
+                }
+            } else if (action.type === 'quickAction') {
+                // Quick actions — attempt to load layout presets via parent settings
+                const presetNum = action.actionId.replace('layout-', '');
+                try {
+                    if (typeof parent.loadLayoutPreset === 'function') {
+                        parent.loadLayoutPreset(parseInt(presetNum));
+                    }
+                } catch (e) {}
+            }
+        } catch (e) {
+            console.warn('Hotkeys: action failed', action, e);
+        }
+    }
+
+    // ===== Helpers =====
+    function getAllEditableShortcuts() {
+        return [...appShortcuts, ...quickShortcuts];
+    }
+
+    function getAllShortcuts() {
+        return [...SYSTEM_SHORTCUTS, ...appShortcuts, ...quickShortcuts];
+    }
+
+    function findConflict(combo, excludeId) {
+        if (!combo) return null;
+        const all = getAllShortcuts();
+        return all.find(s => s.combo === combo && s.id !== excludeId) || null;
+    }
+
+    function comboToKeys(combo) {
+        if (!combo) return [];
+        return combo.split('+').map(k => {
+            const map = { ctrl: 'Ctrl', alt: 'Alt', shift: 'Shift', space: 'Space', tab: 'Tab', f11: 'F11' };
+            return map[k] || k.charAt(0).toUpperCase() + k.slice(1);
+        });
+    }
+
+    function renderKeyPills(combo) {
+        if (!combo) return '<span class="capture-placeholder">None</span>';
+        const keys = comboToKeys(combo);
+        return keys.map((k, i) => {
+            const pill = '<span class="key-pill">' + escHtml(k) + '</span>';
+            return i < keys.length - 1 ? pill + '<span class="key-plus">+</span>' : pill;
+        }).join('');
+    }
+
+    function escHtml(s) {
+        const d = document.createElement('div');
+        d.textContent = s;
+        return d.innerHTML;
+    }
+
+    // ===== Render Main List =====
+    function render() {
+        const main = document.getElementById('mainContent');
+        const query = (document.getElementById('searchInput').value || '').toLowerCase().trim();
+
+        const categories = [
+            { key: 'system', name: 'System', icon: 'settings', cls: 'cat-system', items: SYSTEM_SHORTCUTS, editable: false },
+            { key: 'apps',   name: 'App Shortcuts', icon: 'apps', cls: 'cat-apps', items: appShortcuts, editable: true },
+            { key: 'quick',  name: 'Quick Actions', icon: 'bolt', cls: 'cat-quick', items: quickShortcuts, editable: true }
+        ];
+
+        let html = '';
+        let totalVisible = 0;
+
+        categories.forEach(cat => {
+            const filtered = cat.items.filter(s => {
+                if (!query) return true;
+                return s.label.toLowerCase().includes(query) || (s.combo || '').toLowerCase().includes(query);
+            });
+            if (filtered.length === 0) return;
+            totalVisible += filtered.length;
+
+            html += '<div class="category ' + cat.cls + '">';
+            html += '<div class="category-header">';
+            html += '<div class="category-icon"><span class="material-symbols-rounded">' + cat.icon + '</span></div>';
+            html += '<span class="category-name">' + cat.name + '</span>';
+            html += '<span class="category-count">' + filtered.length + '</span>';
+            html += '</div>';
+
+            filtered.forEach(s => {
+                html += '<div class="shortcut-row" data-id="' + s.id + '">';
+                html += '<span class="shortcut-action">' + escHtml(s.label) + '</span>';
+                html += '<span class="shortcut-keys">' + renderKeyPills(s.combo) + '</span>';
+                if (cat.editable) {
+                    html += '<button class="shortcut-edit" data-edit="' + s.id + '" title="Edit shortcut">';
+                    html += '<span class="material-symbols-rounded">edit</span></button>';
+                } else {
+                    html += '<span class="shortcut-readonly">Built-in</span>';
+                }
+                html += '</div>';
+            });
+
+            html += '</div>';
+        });
+
+        if (totalVisible === 0) {
+            html = '<div class="no-results">No shortcuts match "' + escHtml(query) + '"</div>';
+        }
+
+        main.innerHTML = html;
+
+        // Bind edit buttons
+        main.querySelectorAll('[data-edit]').forEach(btn => {
+            btn.addEventListener('click', () => openEditModal(btn.dataset.edit));
+        });
+    }
+
+    // ===== Edit Modal =====
+    function openEditModal(shortcutId) {
+        const sc = getAllEditableShortcuts().find(s => s.id === shortcutId);
+        if (!sc) return;
+
+        editingShortcut = sc;
+        capturedCombo = sc.combo || '';
+        isCapturing = false;
+
+        document.getElementById('modalTitle').textContent = 'Edit: ' + sc.label;
+        document.getElementById('modalSubtitle').textContent = 'Click the capture area, then press your desired key combination';
+        updateCaptureDisplay();
+        document.getElementById('conflictMsg').classList.remove('active');
+        document.getElementById('editModal').classList.add('active');
+    }
+
+    function closeEditModal() {
+        document.getElementById('editModal').classList.remove('active');
+        editingShortcut = null;
+        capturedCombo = '';
+        isCapturing = false;
+    }
+
+    function updateCaptureDisplay() {
+        const area = document.getElementById('captureArea');
+        const placeholder = document.getElementById('capturePlaceholder');
+        if (!capturedCombo) {
+            area.innerHTML = '<span class="capture-placeholder" id="capturePlaceholder">Click here, then press keys...</span>';
+        } else {
+            area.innerHTML = renderKeyPills(capturedCombo);
+        }
+    }
+
+    function checkConflict() {
+        const conflict = findConflict(capturedCombo, editingShortcut ? editingShortcut.id : null);
+        const msg = document.getElementById('conflictMsg');
+        if (conflict) {
+            msg.textContent = '⚠ Already assigned to "' + conflict.label + '". Saving will override.';
+            msg.classList.add('active');
+        } else {
+            msg.classList.remove('active');
+        }
+    }
+
+    function saveEdit() {
+        if (!editingShortcut) return;
+
+        // If there's a conflict, clear the conflicting shortcut
+        const conflict = findConflict(capturedCombo, editingShortcut.id);
+        if (conflict && capturedCombo) {
+            const cAll = getAllEditableShortcuts();
+            const cItem = cAll.find(s => s.id === conflict.id);
+            if (cItem) cItem.combo = '';
+        }
+
+        // Apply the new combo
+        const all = getAllEditableShortcuts();
+        const target = all.find(s => s.id === editingShortcut.id);
+        if (target) target.combo = capturedCombo;
+
+        saveShortcuts();
+        closeEditModal();
+        render();
+    }
+
+    // ===== Cheat Sheet =====
+    function openCheatSheet() {
+        const grid = document.getElementById('cheatsheetGrid');
+        const categories = [
+            { name: 'System', items: SYSTEM_SHORTCUTS },
+            { name: 'App Shortcuts', items: appShortcuts },
+            { name: 'Quick Actions', items: quickShortcuts }
+        ];
+
+        grid.innerHTML = categories.map(cat => {
+            const rows = cat.items.filter(s => s.combo).map(s => {
+                return '<div class="cheatsheet-row">' +
+                    '<span class="label">' + escHtml(s.label) + '</span>' +
+                    '<span class="keys">' + renderKeyPills(s.combo) + '</span>' +
+                    '</div>';
+            }).join('');
+            return '<div class="cheatsheet-card"><h3>' + escHtml(cat.name) + '</h3>' + rows + '</div>';
+        }).join('');
+
+        document.getElementById('cheatsheetOverlay').classList.add('active');
+    }
+
+    function closeCheatSheet() {
+        document.getElementById('cheatsheetOverlay').classList.remove('active');
+    }
+
+    // ===== UI Bindings =====
+    function bindUI() {
+        // Search
+        document.getElementById('searchInput').addEventListener('input', () => render());
+
+        // Cheat sheet
+        document.getElementById('cheatsheetBtn').addEventListener('click', openCheatSheet);
+        document.getElementById('cheatsheetClose').addEventListener('click', closeCheatSheet);
+
+        // Reset
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            if (confirm('Reset all shortcuts to defaults?')) {
+                localStorage.removeItem(STORAGE_KEY);
+                loadShortcuts();
+                saveShortcuts();
+                render();
+            }
+        });
+
+        // Modal controls
+        document.getElementById('cancelBtn').addEventListener('click', closeEditModal);
+        document.getElementById('saveBtn').addEventListener('click', saveEdit);
+        document.getElementById('clearShortcutBtn').addEventListener('click', () => {
+            capturedCombo = '';
+            updateCaptureDisplay();
+            document.getElementById('conflictMsg').classList.remove('active');
+        });
+
+        // Click outside modal to close
+        document.getElementById('editModal').addEventListener('click', (e) => {
+            if (e.target.id === 'editModal') closeEditModal();
+        });
+
+        // Capture area
+        const captureArea = document.getElementById('captureArea');
+        captureArea.addEventListener('click', () => {
+            isCapturing = true;
+            captureArea.classList.add('listening');
+            captureArea.focus();
+        });
+
+        // Key capture on capture area
+        captureArea.addEventListener('keydown', (e) => {
+            if (!isCapturing) return;
+            e.preventDefault();
+            e.stopPropagation();
+
+            const combo = buildCombo(e);
+            if (!combo) return; // Only modifier keys pressed
+
+            capturedCombo = combo;
+            updateCaptureDisplay();
+            checkConflict();
+            isCapturing = false;
+            captureArea.classList.remove('listening');
+        });
+
+        // Also capture on the modal itself for better UX
+        document.getElementById('editModal').addEventListener('keydown', (e) => {
+            if (!isCapturing) return;
+            e.preventDefault();
+            e.stopPropagation();
+
+            const combo = buildCombo(e);
+            if (!combo) return;
+
+            capturedCombo = combo;
+            updateCaptureDisplay();
+            checkConflict();
+            isCapturing = false;
+            captureArea.classList.remove('listening');
+        });
+
+        // Escape to close overlays
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                if (document.getElementById('cheatsheetOverlay').classList.contains('active')) {
+                    closeCheatSheet();
+                    e.stopPropagation();
+                } else if (document.getElementById('editModal').classList.contains('active')) {
+                    if (isCapturing) {
+                        isCapturing = false;
+                        captureArea.classList.remove('listening');
+                    } else {
+                        closeEditModal();
+                    }
+                    e.stopPropagation();
+                }
+            }
+        });
+
+        // Close cheatsheet on click outside
+        document.getElementById('cheatsheetOverlay').addEventListener('click', (e) => {
+            if (e.target.id === 'cheatsheetOverlay') closeCheatSheet();
+        });
+    }
+
+    // ===== Boot =====
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+})();
+</script>
+</body>
+</html>

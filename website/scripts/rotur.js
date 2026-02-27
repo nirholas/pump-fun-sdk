@@ -51,7 +51,7 @@ class RoturExtension {
 
     this.callJson = {};
 
-    fetch("https://raw.githubusercontent.com/Mistium/Origin-lairOS/main/Resources/info.json")
+    fetch("https://raw.githubusercontent.com/Mistium/Origin-PumpOS/main/Resources/info.json")
       .then((response) => {
         if (response.ok) return response.json();
         else throw new Error('Network response was not ok');
@@ -1674,7 +1674,7 @@ async function attemptConnection() {
   } else if (!roturExtension) {
     roturExtension = new RoturExtension();
   }
-  roturExtension.connectToServer({ DESIGNATION: "nva", SYSTEM: "lairOS", VERSION: "2" });
+  roturExtension.connectToServer({ DESIGNATION: "nva", SYSTEM: "PumpOS", VERSION: "2" });
 }
 
 async function logoutofrtr() {

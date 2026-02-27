@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 
 const osDir = path.join(__dirname, '..');
-const db = JSON.parse(fs.readFileSync(path.join(osDir, 'Lair-Store/db/v2.json'), 'utf8'));
+const db = JSON.parse(fs.readFileSync(path.join(osDir, 'Pump-Store/db/v2.json'), 'utf8'));
 const apps = db.apps;
 
 // Check all app.src references point to existing files
@@ -20,7 +20,7 @@ console.log('Missing files:', missing.length);
 missing.forEach(m => console.log('  MISSING:', m));
 
 // Check for apps on disk not in DB
-const diskApps = fs.readdirSync(path.join(osDir, 'Lair-Store/apps'))
+const diskApps = fs.readdirSync(path.join(osDir, 'Pump-Store/apps'))
   .filter(f => f.endsWith('.html'))
   .map(f => f.replace('.html', ''));
 const dbIds = new Set(apps.map(a => a.id));

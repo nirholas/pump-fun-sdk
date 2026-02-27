@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // packages/os/tools/validate-apps.js
-// LairOS App Validator & Linter — read-only validation of all apps
+// PumpOS App Validator & Linter — read-only validation of all apps
 // Uses only Node.js built-ins (fs, path, https, http, url)
 
 const fs = require('fs');
@@ -12,7 +12,7 @@ const { URL } = require('url');
 // ─── Config ──────────────────────────────────────────────────────────────────
 
 const APP_DIRS = [
-    path.join(__dirname, '../Lair-Store/apps'),
+    path.join(__dirname, '../Pump-Store/apps'),
     path.join(__dirname, '../appdata'),
 ];
 
@@ -406,7 +406,7 @@ async function main() {
     const verbose = process.argv.includes('--verbose');
     const fix = process.argv.includes('--fix');
 
-    console.log('🔍 LairOS App Validator');
+    console.log('🔍 PumpOS App Validator');
     console.log('========================\n');
 
     const files = collectHtmlFiles(APP_DIRS);

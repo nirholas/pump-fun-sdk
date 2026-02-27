@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="lair-include" content="lair.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="lair-icon"
+      content="<svg version='1.1' xmlns='http://www.w3.org/2000/svg' width='72.63792' height='72.89678' viewBox='0,0,72.63792,72.89678'><defs><linearGradient x1='236.77944' y1='195.83445' x2='262.0072' y2='195.83445' gradientUnits='userSpaceOnUse' id='color-1'><stop offset='0' stop-color='#007c30'/><stop offset='1' stop-color='#b1d900'/></linearGradient><linearGradient x1='225.81025' y1='163.6288' x2='225.81025' y2='196.37121' gradientUnits='userSpaceOnUse' id='color-2'><stop offset='0' stop-color='#89ff8f'/><stop offset='1' stop-color='#007c30'/></linearGradient></defs><g transform='translate(-203.73251,-143.3707)'><path d='M203.73252,216.26749v-72.53497h72.53497v72.53497z' fill='#0b0f0d'/><path d='M236.77944,195.83445h25.22776' fill='none' stroke='url(#color-1)' stroke-width='5' stroke-linecap='round'/><path d='M203.88843,186.60104v-43.23034h72.48201v7.2482c0,0 -15.14542,18.20653 -36.92222,27.32654c-15.1326,6.33745 -35.55979,8.65561 -35.55979,8.65561z' fill='#1b2320'/><path d='M217.99281,163.6288l15.63488,16.5811l-15.63488,16.16132' fill='none' stroke='url(#color-2)' stroke-width='5' stroke-linecap='round'/></g></svg>"
+    />
+    <title>PumpOS Terminal</title>
+    <style>
+      :root {
+        --term-bg: #040704;
+        --term-panel: #0a120d;
+        --term-text: #afffb7;
+        --term-accent: #35ff78;
+        --term-muted: #7fc989;
+        --term-border: #13351f;
+        --term-error: #ff7474;
+      }
+
+      html,
+      body {
+        margin: 0;
+        width: 100%;
+        height: 100%;
+      }
+
+      body {
+        padding: 12px;
+        background: radial-gradient(circle at top, #0e1912 0%, var(--term-bg) 65%);
+        color: var(--term-text);
+        font-family: "Space Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      }
+
+      .terminal {
+        width: 100%;
+        height: calc(100vh - 24px);
+        border: 1px solid var(--term-border);
+        border-radius: 10px;
+        display: flex;
+        flex-direction: column;
+        background: linear-gradient(180deg, #08120c, #050a07);
+        overflow: hidden;
+      }
+
+      .terminal-output {
+        flex: 1;
+        overflow-y: auto;
+        padding: 14px;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+
+      .line {
+        margin-bottom: 10px;
+      }
+
+      .line.command {
+        color: var(--term-muted);
+      }
+
+      .line.error {
+        color: var(--term-error);
+      }
+
+      .line pre {
+        margin: 0;
+        font: inherit;
+        white-space: pre-wrap;
+      }
+
+      .prompt-row {
+        display: flex;
+        align-items: center;
+        border-top: 1px solid var(--term-border);
+        background: var(--term-panel);
+        padding: 10px 12px;
+        gap: 10px;
+      }
+
+      .prompt {
+        color: var(--term-accent);
+        font-weight: 700;
+      }
+
+      #cli-input {
+        flex: 1;
+        border: none;
+        background: transparent;
+        color: var(--term-text);
+        font: inherit;
+        outline: none;
+      }
+
+      @media (max-width: 640px) {
+        body {
+          padding: 8px;
+        }
+
+        .terminal {
+          height: calc(100vh - 16px);
+        }
+      }
+    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <div class="terminal">
+      <div id="terminal-output" class="terminal-output"></div>
+      <div class="prompt-row">
+        <span class="prompt">lair&gt;</span>
+        <input id="cli-input" type="text" autocomplete="off" spellcheck="false" placeholder="type 'help'" />
+      </div>
+    </div>
+
+    <script>
+      const output = document.getElementById("terminal-output");
+      const input = document.getElementById("cli-input");
+
+      const ETHERSCAN_API_KEY_STORAGE = "lair_cli_etherscan_key";
+      const DEFAULT_ETHERSCAN_KEY = "YourApiKeyToken";
+
+      const commandNames = [
+        "price",
+        "trending",
+        "gas",
+        "whale",
+        "scan",
+        "defi",
+        "fear",
+        "portfolio",
+        "alert",
+        "set",
+        "clear",
+        "help",
+      ];
+
+      const priceSymbolMap = {
+        btc: "bitcoin",
+        eth: "ethereum",
+        sol: "solana",
+        usdt: "tether",
+        usdc: "usd-coin",
+        bnb: "binancecoin",
+        xrp: "ripple",
+        ada: "cardano",
+        doge: "dogecoin",
+        pepe: "pepe",
+        wif: "dogwifcoin",
+        link: "chainlink",
+        arb: "arbitrum",
+        op: "optimism",
+      };
+
+      const chainIdMap = {
+        ethereum: "1",
+        base: "8453",
+        arbitrum: "42161",
+      };
+
+      const history = [];
+      let historyIndex = -1;
+      const alerts = [];
+
+      function printLine(text, type = "output") {
+        const line = document.createElement("div");
+        line.className = `line ${type}`;
+        const pre = document.createElement("pre");
+        pre.textContent = text;
+        line.appendChild(pre);
+        output.appendChild(line);
+        output.scrollTop = output.scrollHeight;
+      }
+
+      function printCommand(command) {
+        printLine(`lair> ${command}`, "command");
+      }
+
+      function formatNumber(value, max = 2) {
+        if (!Number.isFinite(Number(value))) {
+          return "N/A";
+        }
+        return Number(value).toLocaleString(undefined, {
+          maximumFractionDigits: max,
+        });
+      }
+
+      function formatUSD(value, max = 2) {
+        if (!Number.isFinite(Number(value))) {
+          return "N/A";
+        }
+        return Number(value).toLocaleString(undefined, {
+          style: "currency",
+          currency: "USD",
+          maximumFractionDigits: max,
+        });
+      }
+
+      function pad(value, size) {
+        return String(value).padEnd(size, " ");
+      }
+
+      function parseCompactNumber(raw) {
+        if (!raw) {
+          return 0;
+        }
+        const text = String(raw).trim().toLowerCase();
+        const suffix = text.slice(-1);
+        const number = Number.parseFloat(text);
+        if (!Number.isFinite(number)) {
+          return 0;
+        }
+        if (suffix === "k") return number * 1_000;
+        if (suffix === "m") return number * 1_000_000;
+        if (suffix === "b") return number * 1_000_000_000;
+        return number;
+      }
+
+      function getEtherscanApiKey() {
+        return localStorage.getItem(ETHERSCAN_API_KEY_STORAGE) || DEFAULT_ETHERSCAN_KEY;
+      }
+
+      const _f = window.cfetch || fetch;
+      async function fetchJson(url, timeoutMs = 15000) {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), timeoutMs);
+        try {
+          const response = await _f(url, { signal: controller.signal });
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+          }
+          return await response.json();
+        } finally {
+          clearTimeout(timer);
+        }
+      }
+
+      async function resolveCoinIds(symbols) {
+        const normalized = [...new Set(symbols.map((symbol) => symbol.toLowerCase()))];
+        const unresolved = normalized.filter((symbol) => !priceSymbolMap[symbol]);
+
+        if (unresolved.length > 0) {
+          await Promise.all(
+            unresolved.map(async (symbol) => {
+              try {
+                const data = await fetchJson(`https://api.coingecko.com/api/v3/search?query=${encodeURIComponent(symbol)}`);
+                const match = (data.coins || []).find((coin) => coin.symbol?.toLowerCase() === symbol) || data.coins?.[0];
+                if (match?.id) {
+                  priceSymbolMap[symbol] = match.id;
+                }
+              } catch (error) {
+                console.error(`Failed to resolve symbol ${symbol}`, error);
+              }
+            })
+          );
+        }
+
+        return normalized.map((symbol) => ({ symbol, id: priceSymbolMap[symbol] })).filter((item) => item.id);
+      }
+
+      async function handlePrice(args) {
+        if (!args.length) {
+          return "Usage: price <symbol...>\nExample: price btc eth sol";
+        }
+
+        const resolved = await resolveCoinIds(args);
+        if (!resolved.length) {
+          return "No valid symbols resolved. Try common symbols like btc, eth, sol.";
+        }
+
+        const ids = resolved.map((entry) => entry.id).join(",");
+        const data = await fetchJson(
+          `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${encodeURIComponent(ids)}&price_change_percentage=24h`
+        );
+
+        const byId = new Map(data.map((coin) => [coin.id, coin]));
+        const chunks = resolved.map(({ symbol, id }) => {
+          const coin = byId.get(id);
+          if (!coin) {
+            return `${symbol.toUpperCase()}: N/A`;
+          }
+          const pct = Number(coin.price_change_percentage_24h || 0);
+          const direction = pct >= 0 ? "+" : "";
+          return `${symbol.toUpperCase()}: ${formatUSD(coin.current_price, coin.current_price < 1 ? 6 : 2)} (${direction}${pct.toFixed(2)}%)`;
+        });
+
+        return chunks.join("  ");
+      }
+
+      async function handleTrending() {
+        const trending = await fetchJson("https://api.coingecko.com/api/v3/search/trending");
+        const coins = (trending.coins || []).slice(0, 10).map((entry) => entry.item);
+        const ids = coins.map((coin) => coin.id).join(",");
+        const markets = ids
+          ? await fetchJson(
+              `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${encodeURIComponent(ids)}&price_change_percentage=24h`
+            )
+          : [];
+
+        const marketById = new Map(markets.map((coin) => [coin.id, coin]));
+        const header = `${pad("#", 3)}${pad("Token", 14)}${pad("Price", 14)}${pad("24h", 10)}${pad("MCap", 14)}`;
+        const rows = coins.map((coin, index) => {
+          const market = marketById.get(coin.id);
+          const pct = Number(market?.price_change_percentage_24h || 0);
+          const pctText = `${pct >= 0 ? "+" : ""}${pct.toFixed(2)}%`;
+          return `${pad(index + 1, 3)}${pad(coin.symbol.toUpperCase(), 14)}${pad(formatUSD(market?.current_price, market?.current_price < 1 ? 6 : 2), 14)}${pad(pctText, 10)}${pad(formatUSD(market?.market_cap || 0, 0), 14)}`;
+        });
+
+        return [header, ...rows].join("\n");
+      }
+
+      async function getGasForChain(chainName) {
+        const chainId = chainIdMap[chainName];
+        const key = getEtherscanApiKey();
+        const url = `https://api.etherscan.io/v2/api?chainid=${chainId}&module=gastracker&action=gasoracle&apikey=${encodeURIComponent(key)}`;
+        const data = await fetchJson(url);
+        if (!data.result) {
+          throw new Error(data.message || "No gas data");
+        }
+        return data.result;
+      }
+
+      async function handleGas() {
+        const [eth, base, arb] = await Promise.all([
+          getGasForChain("ethereum"),
+          getGasForChain("base"),
+          getGasForChain("arbitrum"),
+        ]);
+
+        const header = `${pad("Chain", 12)}${pad("Safe", 12)}${pad("Standard", 12)}${pad("Fast", 12)}`;
+        const rows = [
+          `${pad("Ethereum", 12)}${pad(eth.SafeGasPrice, 12)}${pad(eth.ProposeGasPrice, 12)}${pad(eth.FastGasPrice, 12)}`,
+          `${pad("Base", 12)}${pad(base.SafeGasPrice, 12)}${pad(base.ProposeGasPrice, 12)}${pad(base.FastGasPrice, 12)}`,
+          `${pad("Arbitrum", 12)}${pad(arb.SafeGasPrice, 12)}${pad(arb.ProposeGasPrice, 12)}${pad(arb.FastGasPrice, 12)}`,
+        ];
+
+        return [header, ...rows].join("\n");
+      }
+
+      async function handleFear() {
+        const data = await fetchJson("https://api.alternative.me/fng/?limit=1");
+        const item = data.data?.[0];
+        if (!item) {
+          throw new Error("Fear & Greed data unavailable");
+        }
+        const value = Number(item.value);
+        const blocks = Math.round((value / 100) * 20);
+        const bar = `${"█".repeat(blocks)}${"░".repeat(20 - blocks)}`;
+        return `Fear & Greed Index: ${value} (${item.value_classification}) ${bar}`;
+      }
+
+      async function handleWhale(args) {
+        const windowArg = args[0] || "1h";
+        const hourMatch = windowArg.match(/^(\d+)h$/i);
+        const hours = hourMatch ? Number(hourMatch[1]) : 1;
+        const thresholdUsd = 1_000_000;
+        const key = getEtherscanApiKey();
+        const now = Math.floor(Date.now() / 1000);
+        const minTimestamp = now - hours * 3600;
+
+        const usdt = "0xdAC17F958D2ee523a2206206994597C13D831ec7";
+        const url = `https://api.etherscan.io/v2/api?chainid=1&module=account&action=tokentx&contractaddress=${usdt}&page=1&offset=100&sort=desc&apikey=${encodeURIComponent(key)}`;
+        const data = await fetchJson(url);
+        const txs = Array.isArray(data.result) ? data.result : [];
+
+        const filtered = txs
+          .filter((tx) => Number(tx.timeStamp) >= minTimestamp)
+          .map((tx) => {
+            const amount = Number(tx.value) / 10 ** Number(tx.tokenDecimal || 6);
+            const usdValue = amount;
+            return {
+              symbol: tx.tokenSymbol || "TOKEN",
+              usdValue,
+              from: tx.from,
+              to: tx.to,
+            };
+          })
+          .filter((tx) => tx.usdValue >= thresholdUsd)
+          .sort((a, b) => b.usdValue - a.usdValue)
+          .slice(0, 8);
+
+        if (!filtered.length) {
+          return `No transfers above ${formatUSD(thresholdUsd, 0)} found in the last ${hours}h.`;
+        }
+
+        return filtered
+          .map((tx) => `${formatUSD(tx.usdValue, 0)} ${tx.symbol}  ${tx.from.slice(0, 8)}… → ${tx.to.slice(0, 8)}…`)
+          .join("\n");
+      }
+
+      async function getTokenTransfers24h(chainId, contractAddress) {
+        const key = getEtherscanApiKey();
+        const url = `https://api.etherscan.io/v2/api?chainid=${chainId}&module=account&action=tokentx&contractaddress=${contractAddress}&page=1&offset=200&sort=desc&apikey=${encodeURIComponent(key)}`;
+        const data = await fetchJson(url);
+        const txs = Array.isArray(data.result) ? data.result : [];
+        const cutoff = Math.floor(Date.now() / 1000) - 24 * 3600;
+        return txs.filter((tx) => Number(tx.timeStamp) >= cutoff).length;
+      }
+
+      async function handleScan(args) {
+        const address = args[0];
+        if (!address || !/^0x[a-fA-F0-9]{40}$/.test(address)) {
+          return "Usage: scan <token_contract_address>";
+        }
+
+        const [security, tokenMeta, transferCount] = await Promise.all([
+          fetchJson(`https://api.gopluslabs.io/api/v1/token_security/1?contract_addresses=${address}`),
+          fetchJson(`https://api.coingecko.com/api/v3/coins/ethereum/contract/${address}`),
+          getTokenTransfers24h("1", address).catch(() => null),
+        ]);
+
+        const sec = security.result?.[address.toLowerCase()] || {};
+        const topHolderPercent = sec.owner_percent ? `${(Number(sec.owner_percent) * 100).toFixed(2)}%` : "N/A";
+        const honeypot = sec.is_honeypot === "1" ? "Yes" : "No";
+        const goplusSafe = sec.is_open_source === "1" && sec.is_proxy !== "1" ? "✅ Safe" : "⚠️ Review";
+
+        const lines = [
+          `${tokenMeta.symbol?.toUpperCase() || "TOKEN"} (${tokenMeta.name || "Unknown"}) — Ethereum`,
+          `  Holders: ${formatNumber(sec.holder_count || 0, 0)} | Transfers 24h: ${transferCount ?? "N/A"} | Honeypot: ${honeypot}`,
+          `  Top Holder: ${topHolderPercent}`,
+          `  GoPlus: ${goplusSafe}`,
+        ];
+
+        return lines.join("\n");
+      }
+
+      async function handleDefi(args) {
+        const stableOnly = args.includes("--stable");
+        const tvlIndex = args.indexOf("--min-tvl");
+        const minTvl = tvlIndex !== -1 ? parseCompactNumber(args[tvlIndex + 1]) : 0;
+
+        const data = await fetchJson("https://yields.llama.fi/pools");
+        const pools = (data.data || [])
+          .filter((pool) => Number(pool.tvlUsd) >= minTvl)
+          .filter((pool) => (stableOnly ? Boolean(pool.stablecoin) : true))
+          .sort((a, b) => Number(b.apy || 0) - Number(a.apy || 0))
+          .slice(0, 12);
+
+        if (!pools.length) {
+          return "No pools matched your filters.";
+        }
+
+        const header = `${pad("Protocol", 18)}${pad("Pool", 20)}${pad("APY", 10)}${pad("TVL", 14)}`;
+        const rows = pools.map((pool) => {
+          const poolName = (pool.symbol || pool.pool || "-").slice(0, 18);
+          return `${pad(pool.project || "-", 18)}${pad(poolName, 20)}${pad(`${Number(pool.apy || 0).toFixed(2)}%`, 10)}${pad(formatUSD(pool.tvlUsd || 0, 0), 14)}`;
+        });
+
+        return [header, ...rows].join("\n");
+      }
+
+      async function handlePortfolio(args) {
+        if (!args.length) {
+          return "Usage: portfolio <symbol:amount ...>\nExample: portfolio btc:0.4 eth:2 sol:30";
+        }
+
+        const holdings = args
+          .map((item) => item.split(":"))
+          .filter(([symbol, amount]) => symbol && Number.isFinite(Number(amount)) && Number(amount) > 0)
+          .map(([symbol, amount]) => ({ symbol: symbol.toLowerCase(), amount: Number(amount) }));
+
+        if (!holdings.length) {
+          return "No valid holdings found. Use format symbol:amount";
+        }
+
+        const resolved = await resolveCoinIds(holdings.map((holding) => holding.symbol));
+        const ids = resolved.map((item) => item.id).join(",");
+        const marketData = await fetchJson(
+          `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${encodeURIComponent(ids)}&price_change_percentage=24h`
+        );
+        const byId = new Map(marketData.map((coin) => [coin.id, coin]));
+        const idBySymbol = new Map(resolved.map((entry) => [entry.symbol, entry.id]));
+
+        const rows = holdings.map((holding) => {
+          const id = idBySymbol.get(holding.symbol);
+          const coin = id ? byId.get(id) : null;
+          const price = Number(coin?.current_price || 0);
+          const value = price * holding.amount;
+          return {
+            symbol: holding.symbol.toUpperCase(),
+            amount: holding.amount,
+            price,
+            value,
+          };
+        });
+
+        const total = rows.reduce((sum, row) => sum + row.value, 0);
+        const header = `${pad("Asset", 10)}${pad("Amount", 12)}${pad("Price", 14)}${pad("Value", 14)}`;
+        const body = rows.map(
+          (row) => `${pad(row.symbol, 10)}${pad(formatNumber(row.amount, 6), 12)}${pad(formatUSD(row.price, row.price < 1 ? 6 : 2), 14)}${pad(formatUSD(row.value, 2), 14)}`
+        );
+
+        return [`Total Value: ${formatUSD(total, 2)}`, header, ...body].join("\n");
+      }
+
+      function handleAlert(args) {
+        const [symbol, condition, priceRaw] = args;
+        const target = Number(priceRaw);
+        if (!symbol || !["above", "below"].includes(condition) || !Number.isFinite(target)) {
+          return "Usage: alert <symbol> <above|below> <price>\nExample: alert btc above 100000";
+        }
+
+        alerts.push({ symbol: symbol.toLowerCase(), condition, target });
+        return `Alert set: ${symbol.toUpperCase()} ${condition} ${formatUSD(target, 2)}`;
+      }
+
+      function handleSet(args) {
+        if (args[0] === "etherscan" && args[1]) {
+          localStorage.setItem(ETHERSCAN_API_KEY_STORAGE, args[1]);
+          return "Saved Etherscan API key for gas/whale/scan commands.";
+        }
+        return "Usage: set etherscan <api_key>";
+      }
+
+      function handleHelp() {
+        return "Available commands: price, trending, gas, whale, scan, defi, fear, portfolio, alert, set, clear, help";
+      }
+
+      async function checkAlerts() {
+        if (!alerts.length) {
+          return;
+        }
+        const symbols = [...new Set(alerts.map((alert) => alert.symbol))];
+        const resolved = await resolveCoinIds(symbols);
+        if (!resolved.length) {
+          return;
+        }
+        const ids = resolved.map((entry) => entry.id).join(",");
+        const marketData = await fetchJson(
+          `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${encodeURIComponent(ids)}`
+        );
+        const idBySymbol = new Map(resolved.map((entry) => [entry.symbol, entry.id]));
+        const byId = new Map(marketData.map((coin) => [coin.id, coin]));
+
+        for (const alert of alerts) {
+          const id = idBySymbol.get(alert.symbol);
+          const price = Number(byId.get(id)?.current_price || 0);
+          const hit = alert.condition === "above" ? price >= alert.target : price <= alert.target;
+          if (hit) {
+            printLine(
+              `ALERT: ${alert.symbol.toUpperCase()} is ${formatUSD(price, 2)} (${alert.condition} ${formatUSD(alert.target, 2)})`,
+              "output"
+            );
+          }
+        }
+      }
+
+      async function executeCommand(rawCommand) {
+        const trimmed = rawCommand.trim();
+        if (!trimmed) {
+          return;
+        }
+
+        printCommand(trimmed);
+        const [command, ...args] = trimmed.split(/\s+/);
+        const cmd = command.toLowerCase();
+
+        try {
+          if (cmd === "clear") {
+            output.innerHTML = "";
+            return;
+          }
+
+          let result = "";
+          switch (cmd) {
+            case "help":
+              result = handleHelp();
+              break;
+            case "price":
+              result = await handlePrice(args);
+              break;
+            case "trending":
+              result = await handleTrending();
+              break;
+            case "gas":
+              result = await handleGas();
+              break;
+            case "whale":
+              result = await handleWhale(args);
+              break;
+            case "scan":
+              result = await handleScan(args);
+              break;
+            case "defi":
+              result = await handleDefi(args);
+              break;
+            case "fear":
+              result = await handleFear();
+              break;
+            case "portfolio":
+              result = await handlePortfolio(args);
+              break;
+            case "alert":
+              result = handleAlert(args);
+              break;
+            case "set":
+              result = handleSet(args);
+              break;
+            default:
+              result = `Unknown command: ${cmd}\nType 'help' for available commands.`;
+              printLine(result, "error");
+              return;
+          }
+
+          printLine(result || "Done.");
+          await checkAlerts();
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          printLine(`Command failed: ${message}`, "error");
+        }
+      }
+
+      function applyTabCompletion() {
+        const value = input.value.trimStart();
+        const [head] = value.split(/\s+/);
+        if (!head) {
+          return;
+        }
+        const matches = commandNames.filter((name) => name.startsWith(head.toLowerCase()));
+        if (matches.length === 1) {
+          input.value = value.replace(head, matches[0]);
+          if (!input.value.includes(" ")) {
+            input.value += " ";
+          }
+          return;
+        }
+        if (matches.length > 1) {
+          printLine(matches.join("  "));
+        }
+      }
+
+      function init() {
+        const logo = [
+          " _      _    ___ ____   ___  ____  ",
+          "| |    / \\  |_ _|  _ \\ / _ \\/ ___| ",
+          "| |   / _ \\  | || |_) | | | \\___ \\",
+          "| |__ / ___ \\ | ||  _ <| |_| |___) |",
+          "|_____/_/   \\_\\___|_| \\_\\___/|____/ ",
+          "PumpOS Terminal • live crypto CLI",
+        ].join("\n");
+
+        printLine(logo);
+        printLine("Type 'help' to see available commands.");
+        input.focus();
+
+        input.addEventListener("keydown", async (event) => {
+          if (event.key === "Enter") {
+            const command = input.value;
+            if (command.trim()) {
+              history.push(command);
+              historyIndex = history.length;
+            }
+            input.value = "";
+            await executeCommand(command);
+          } else if (event.key === "ArrowUp") {
+            if (!history.length) return;
+            historyIndex = Math.max(0, historyIndex - 1);
+            input.value = history[historyIndex] || "";
+            event.preventDefault();
+          } else if (event.key === "ArrowDown") {
+            if (!history.length) return;
+            historyIndex = Math.min(history.length, historyIndex + 1);
+            input.value = history[historyIndex] || "";
+            event.preventDefault();
+          } else if (event.key === "Tab") {
+            event.preventDefault();
+            applyTabCompletion();
+          }
+        });
+      }
+
+      init();
+    </script>
+  </body>
+</html>

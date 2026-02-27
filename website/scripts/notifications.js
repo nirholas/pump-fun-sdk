@@ -1,5 +1,5 @@
 // ============================================
-// LairOS Unified Notification Center
+// PumpOS Unified Notification Center
 // Toast notifications, history panel, preferences,
 // debouncing, browser notifications, Lair.notify() bridge
 // ============================================
@@ -528,7 +528,7 @@ const NotificationCenter = (() => {
                 ${make('source.whaleAlert', 'Whale Alerts')}
                 ${make('source.gasTracker', 'Gas Tracker')}
                 ${make('source.cryptoNews', 'Crypto News')}
-                ${make('source.lairLaunch', 'Lair Launch')}
+                ${make('source.lairLaunch', 'Pump Launch')}
                 ${make('source.portfolio', 'Portfolio')}
                 ${make('source.system', 'System')}
             </div>

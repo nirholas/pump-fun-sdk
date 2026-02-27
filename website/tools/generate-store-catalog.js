@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 // packages/os/tools/generate-store-catalog.js
 //
-// Scans all app HTML files in Lair-Store/apps/ and appdata/ and
-// auto-generates the Lair-Store/db/v2.json store catalog.
+// Scans all app HTML files in Pump-Store/apps/ and appdata/ and
+// auto-generates the Pump-Store/db/v2.json store catalog.
 //
 // Usage:  cd packages/os && node tools/generate-store-catalog.js
 // Or:     pnpm catalog:os   (from repo root)
@@ -14,9 +14,9 @@ const path = require('path');
 
 // ── Directories ──────────────────────────────────────────────────────────────
 const OS_ROOT = path.resolve(__dirname, '..');
-const STORE_APPS_DIR = path.join(OS_ROOT, 'Lair-Store', 'apps');
+const STORE_APPS_DIR = path.join(OS_ROOT, 'Pump-Store', 'apps');
 const APPDATA_DIR = path.join(OS_ROOT, 'appdata');
-const OUTPUT_FILE = path.join(OS_ROOT, 'Lair-Store', 'db', 'v2.json');
+const OUTPUT_FILE = path.join(OS_ROOT, 'Pump-Store', 'db', 'v2.json');
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -185,7 +185,7 @@ function parseAppFile(filePath, srcPrefix) {
         id,
         name: title,
         src,
-        by: author || 'LairOS',
+        by: author || 'PumpOS',
         desc: description || '',
         cat: category || inferCategory(filename, html),
         ver: version || '1.0',
@@ -323,7 +323,7 @@ function cleanEntry(entry) {
 // ── Main ─────────────────────────────────────────────────────────────────────
 
 function main() {
-    console.log('🏪 LairOS Store Catalog Generator');
+    console.log('🏪 PumpOS Store Catalog Generator');
     console.log('==================================\n');
 
     // 1. Load existing v2.json for merge
@@ -338,11 +338,11 @@ function main() {
 
     // 2. Scan app directories
     const dirs = [
-        { dir: STORE_APPS_DIR, prefix: '/Lair-Store/apps' },
+        { dir: STORE_APPS_DIR, prefix: '/Pump-Store/apps' },
         { dir: APPDATA_DIR, prefix: '/appdata' },
     ];
 
-    // Apps where appdata/ has the real implementation and Lair-Store/ is a stub
+    // Apps where appdata/ has the real implementation and Pump-Store/ is a stub
     const PREFER_APPDATA = new Set([
         'lairai', 'lairbot', 'lairdefi', 'lairdocs', 'dashboard',
     ]);
@@ -418,7 +418,7 @@ function main() {
         for (const app of existing.apps) {
             if (app.src && !seenSrcs.has(app.src)) {
                 // Check if the file exists on disk
-                const localPath = (app.src.startsWith('/Lair-Store/') || app.src.startsWith('/appdata/'))
+                const localPath = (app.src.startsWith('/Pump-Store/') || app.src.startsWith('/appdata/'))
                     ? path.join(OS_ROOT, app.src)
                     : null;
                 if (localPath && !fs.existsSync(localPath)) {
@@ -489,7 +489,7 @@ function main() {
     if (existing && existing.apps) {
         const missingFiles = [];
         for (const app of existing.apps) {
-            if (app.src && (app.src.startsWith('/Lair-Store/apps/') || app.src.startsWith('/appdata/'))) {
+            if (app.src && (app.src.startsWith('/Pump-Store/apps/') || app.src.startsWith('/appdata/'))) {
                 const fullPath = path.join(OS_ROOT, app.src);
                 if (!fs.existsSync(fullPath)) {
                     missingFiles.push(app);

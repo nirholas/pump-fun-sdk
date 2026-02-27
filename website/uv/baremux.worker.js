@@ -1,4 +1,4 @@
-// Bare-mux SharedWorker for LairOS
+// Bare-mux SharedWorker for PumpOS
 // This handles transport requests from the main page and service worker
 
 let currentTransport = null;

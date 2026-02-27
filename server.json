@@ -25,31 +25,6 @@
       "type": "svg"
     }
   ],
-  "packages": [
-    {
-      "registryType": "npm",
-      "identifier": "@nirholas/pump-fun-sdk",
-      "version": "1.0.0",
-      "runtimeHint": "npx",
-      "transport": {
-        "type": "stdio"
-      },
-      "environmentVariables": [
-        {
-          "name": "SOLANA_RPC_URL",
-          "description": "Solana RPC endpoint URL",
-          "required": false,
-          "secret": false
-        },
-        {
-          "name": "SOLANA_PRIVATE_KEY",
-          "description": "Solana wallet private key (base58)",
-          "required": false,
-          "secret": true
-        }
-      ]
-    }
-  ],
   "_meta": {
     "io.modelcontextprotocol.registry/publisher-provided": {
       "keywords": [

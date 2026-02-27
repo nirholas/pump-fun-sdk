@@ -1,5 +1,5 @@
 /*
- * Ultraviolet Config for LairOS
+ * Ultraviolet Config for PumpOS
  * Using public bare servers from the Titanium Network community
  */
 

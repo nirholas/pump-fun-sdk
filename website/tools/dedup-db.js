@@ -3,7 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const dbPath = path.join(__dirname, '..', 'Lair-Store', 'db', 'v2.json');
+const dbPath = path.join(__dirname, '..', 'Pump-Store', 'db', 'v2.json');
 const db = JSON.parse(fs.readFileSync(dbPath, 'utf8'));
 
 const toDelete = new Set([

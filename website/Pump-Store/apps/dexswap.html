@@ -1,0 +1,1201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="lair-include" content="lair.css">
+    <meta name="capabilities" content="dex_swap">
+    <meta name="aspect-ratio" content="3/4">
+    <meta name="lair-icon" content="swap_calls">
+    <meta name="lair-perms" content="network" />
+    <title>Swap</title>
+    <style>
+        :root {
+            --col-bg1: #101010;
+            --col-bg2: #171717;
+            --col-bg3: #222222;
+            --col-txt1: white;
+            --col-txt2: #aaa;
+            --colors-accent: rgb(97, 121, 255);
+            --col-good: #5be45b;
+            --col-bad: #d44343;
+            --siz-radius1: 0.5em;
+            --siz-radius2: 0.375em;
+            --font-size-small: 0.75em;
+            --swap-pink: #ff007a;
+            --swap-pink-hover: #ff3399;
+        }
+
+        html { height: 100%; }
+
+        body {
+            margin: 0;
+            height: 100%;
+            background: var(--col-bg1);
+            color: var(--col-txt1);
+            font-family: inherit;
+            overflow-y: auto;
+        }
+
+        * { box-sizing: border-box; }
+
+        .app {
+            max-width: 420px;
+            margin: 2rem auto;
+            padding: 0 0.75em;
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.75em;
+        }
+
+        .header h1 {
+            font-size: 1.1em;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .settings-btn {
+            background: none;
+            border: none;
+            color: var(--col-txt2);
+            font-size: 1.2em;
+            cursor: pointer;
+            padding: 0.25em;
+            border-radius: 50%;
+            transition: color 0.2s, background 0.2s;
+            line-height: 1;
+        }
+
+        .settings-btn:hover {
+            color: var(--col-txt1);
+            background: var(--col-bg3);
+        }
+
+        /* Settings Panel */
+        .settings-panel {
+            display: none;
+            background: var(--col-bg2);
+            border: 1px solid var(--col-bg3);
+            border-radius: var(--siz-radius1);
+            padding: 0.75em;
+            margin-bottom: 0.5em;
+        }
+
+        .settings-panel.open { display: block; }
+
+        .settings-label {
+            font-size: var(--font-size-small);
+            color: var(--col-txt2);
+            margin-bottom: 0.4em;
+            font-weight: 500;
+        }
+
+        .slippage-options {
+            display: flex;
+            gap: 0.35em;
+        }
+
+        .slippage-btn {
+            flex: 1;
+            padding: 0.4em 0.5em;
+            border-radius: var(--siz-radius2);
+            border: 1px solid var(--col-bg3);
+            background: var(--col-bg3);
+            color: var(--col-txt2);
+            font-size: 0.8em;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.15s;
+        }
+
+        .slippage-btn.active {
+            background: var(--colors-accent);
+            border-color: var(--colors-accent);
+            color: var(--col-txt1);
+            font-weight: 600;
+        }
+
+        .slippage-btn:hover:not(.active) {
+            border-color: var(--col-txt2);
+            color: var(--col-txt1);
+        }
+
+        .custom-slip {
+            width: 64px;
+            padding: 0.4em 0.4em;
+            border-radius: var(--siz-radius2);
+            border: 1px solid var(--col-bg3);
+            background: var(--col-bg3);
+            color: var(--col-txt1);
+            font-size: 0.8em;
+            text-align: center;
+            outline: none;
+        }
+
+        .custom-slip::placeholder { color: var(--col-txt2); }
+        .custom-slip:focus { border-color: var(--colors-accent); }
+
+        /* Swap Card */
+        .swap-card {
+            background: var(--col-bg2);
+            border: 1px solid var(--col-bg3);
+            border-radius: var(--siz-radius1);
+            padding: 0;
+            position: relative;
+        }
+
+        /* Token Input Field */
+        .token-field {
+            padding: 0.75em;
+            position: relative;
+        }
+
+        .token-field-label {
+            font-size: var(--font-size-small);
+            color: var(--col-txt2);
+            margin-bottom: 0.4em;
+        }
+
+        .token-row {
+            display: flex;
+            align-items: center;
+            gap: 0.5em;
+        }
+
+        .amount-input {
+            flex: 1;
+            background: none;
+            border: none;
+            color: var(--col-txt1);
+            font-size: 1.6em;
+            font-weight: 500;
+            outline: none;
+            min-width: 0;
+            font-family: inherit;
+        }
+
+        .amount-input::placeholder { color: #444; }
+
+        .amount-input.receive {
+            color: var(--col-txt2);
+        }
+
+        .token-selector {
+            display: flex;
+            align-items: center;
+            gap: 0.35em;
+            padding: 0.35em 0.6em;
+            background: var(--col-bg3);
+            border: none;
+            border-radius: 1em;
+            color: var(--col-txt1);
+            font-size: 0.9em;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background 0.15s;
+            font-family: inherit;
+        }
+
+        .token-selector:hover { background: #333; }
+
+        .token-icon {
+            font-size: 1.1em;
+            line-height: 1;
+        }
+
+        .token-arrow { font-size: 0.65em; color: var(--col-txt2); }
+
+        .balance-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: var(--font-size-small);
+            color: var(--col-txt2);
+            margin-top: 0.3em;
+        }
+
+        /* Swap direction button */
+        .swap-direction {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 2;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: 3px solid var(--col-bg1);
+            background: var(--col-bg3);
+            color: var(--col-txt1);
+            font-size: 1em;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.3s, background 0.15s;
+        }
+
+        .swap-direction:hover {
+            background: var(--col-bg2);
+            transform: translate(-50%, -50%) rotate(180deg);
+        }
+
+        .swap-divider {
+            position: relative;
+            height: 1px;
+            background: var(--col-bg3);
+        }
+
+        /* Rate Info */
+        .rate-info {
+            padding: 0.5em 0.75em;
+            display: flex;
+            flex-direction: column;
+            gap: 0.25em;
+        }
+
+        .rate-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: var(--font-size-small);
+            color: var(--col-txt2);
+        }
+
+        .rate-row .value { color: var(--col-txt1); font-weight: 500; }
+        .rate-row .value.good { color: var(--col-good); }
+        .rate-row .value.warn { color: #f0a030; }
+        .rate-row .value.bad { color: var(--col-bad); }
+
+        /* Connect Button */
+        .swap-btn {
+            width: 100%;
+            padding: 0.9em;
+            margin-top: 0.5em;
+            border: none;
+            border-radius: var(--siz-radius1);
+            background: var(--colors-accent);
+            color: white;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.15s, opacity 0.15s;
+            font-family: inherit;
+        }
+
+        .swap-btn:hover { filter: brightness(1.1); }
+
+        .swap-btn.loading {
+            opacity: 0.7;
+            cursor: default;
+        }
+
+        .swap-btn.disabled {
+            background: var(--col-bg3);
+            color: var(--col-txt2);
+            cursor: default;
+        }
+
+        /* Token Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 100;
+            justify-content: center;
+            align-items: flex-start;
+            padding-top: 10vh;
+        }
+
+        .modal-overlay.open { display: flex; }
+
+        .modal {
+            background: var(--col-bg2);
+            border: 1px solid var(--col-bg3);
+            border-radius: var(--siz-radius1);
+            width: 90%;
+            max-width: 380px;
+            max-height: 70vh;
+            display: flex;
+            flex-direction: column;
+            animation: modalIn 0.2s ease;
+        }
+
+        @keyframes modalIn {
+            from { transform: translateY(-10px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75em;
+            border-bottom: 1px solid var(--col-bg3);
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            font-size: 1em;
+            font-weight: 600;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--col-txt2);
+            font-size: 1.2em;
+            cursor: pointer;
+            padding: 0.2em;
+            line-height: 1;
+        }
+
+        .modal-close:hover { color: var(--col-txt1); }
+
+        .modal-search {
+            margin: 0.5em 0.75em;
+            padding: 0.5em 0.75em;
+            background: var(--col-bg3);
+            border: 1px solid transparent;
+            border-radius: var(--siz-radius1);
+            color: var(--col-txt1);
+            font-size: 0.85em;
+            outline: none;
+            font-family: inherit;
+        }
+
+        .modal-search::placeholder { color: var(--col-txt2); }
+        .modal-search:focus { border-color: var(--colors-accent); }
+
+        .token-list {
+            overflow-y: auto;
+            padding: 0.25em 0;
+        }
+
+        .token-item {
+            display: flex;
+            align-items: center;
+            gap: 0.6em;
+            padding: 0.6em 0.75em;
+            cursor: pointer;
+            transition: background 0.1s;
+        }
+
+        .token-item:hover { background: var(--col-bg3); }
+
+        .token-item.disabled {
+            opacity: 0.35;
+            cursor: default;
+        }
+
+        .token-item .icon {
+            font-size: 1.5em;
+            width: 1.5em;
+            text-align: center;
+            line-height: 1;
+        }
+
+        .token-item-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .token-item-name {
+            font-weight: 600;
+            font-size: 0.9em;
+        }
+
+        .token-item-full {
+            font-size: var(--font-size-small);
+            color: var(--col-txt2);
+        }
+
+        .token-item-price {
+            margin-left: auto;
+            font-size: 0.8em;
+            color: var(--col-txt2);
+        }
+
+        /* Status dot */
+        .status-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 0.3em;
+        }
+
+        .status-dot.live { background: var(--col-good); }
+        .status-dot.error { background: var(--col-bad); }
+        .status-dot.loading { background: #f0a030; }
+
+        .status-text {
+            font-size: var(--font-size-small);
+            color: var(--col-txt2);
+            display: flex;
+            align-items: center;
+        }
+
+        /* Loading shimmer */
+        @keyframes shimmer {
+            0% { opacity: 0.5; }
+            50% { opacity: 1; }
+            100% { opacity: 0.5; }
+        }
+
+        .loading-text {
+            animation: shimmer 1.5s infinite;
+            color: var(--col-txt2);
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <!-- Header -->
+        <div class="header">
+            <h1>Swap</h1>
+            <div style="display:flex;align-items:center;gap:0.5em;">
+                <span class="status-text"><span class="status-dot loading" id="statusDot"></span><span id="statusLabel">Loading...</span></span>
+                <button class="settings-btn" id="settingsToggle" title="Settings">⚙</button>
+            </div>
+        </div>
+
+        <!-- Settings Panel -->
+        <div class="settings-panel" id="settingsPanel">
+            <div class="settings-label">Slippage Tolerance</div>
+            <div class="slippage-options">
+                <button class="slippage-btn" data-slip="0.1">0.1%</button>
+                <button class="slippage-btn active" data-slip="0.5">0.5%</button>
+                <button class="slippage-btn" data-slip="1">1%</button>
+                <input type="text" class="custom-slip" id="customSlip" placeholder="Custom" maxlength="5">
+            </div>
+        </div>
+
+        <!-- Swap Card -->
+        <div class="swap-card">
+            <!-- You Pay -->
+            <div class="token-field" id="payField">
+                <div class="token-field-label">You Pay</div>
+                <div class="token-row">
+                    <input type="text" class="amount-input" id="payAmount" placeholder="0" inputmode="decimal" autocomplete="off">
+                    <button class="token-selector" id="paySelector">
+                        <span class="token-icon" id="payIcon">Ξ</span>
+                        <span id="paySymbol">ETH</span>
+                        <span class="token-arrow">▼</span>
+                    </button>
+                </div>
+                <div class="balance-row">
+                    <span id="payUsd"></span>
+                    <span></span>
+                </div>
+            </div>
+
+            <!-- Divider + Swap Button -->
+            <div class="swap-divider">
+                <button class="swap-direction" id="swapDir" title="Switch tokens">↓</button>
+            </div>
+
+            <!-- You Receive -->
+            <div class="token-field" id="receiveField">
+                <div class="token-field-label">You Receive</div>
+                <div class="token-row">
+                    <input type="text" class="amount-input receive" id="receiveAmount" placeholder="0" readonly>
+                    <button class="token-selector" id="receiveSelector">
+                        <span class="token-icon" id="receiveIcon">◈</span>
+                        <span id="receiveSymbol">USDC</span>
+                        <span class="token-arrow">▼</span>
+                    </button>
+                </div>
+                <div class="balance-row">
+                    <span id="receiveUsd"></span>
+                    <span></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Rate Info -->
+        <div class="rate-info" id="rateInfo" style="display:none;">
+            <div class="rate-row">
+                <span>Rate</span>
+                <span class="value" id="rateDisplay">—</span>
+            </div>
+            <div class="rate-row">
+                <span>Price Impact</span>
+                <span class="value" id="impactDisplay">—</span>
+            </div>
+            <div class="rate-row">
+                <span>Est. Gas</span>
+                <span class="value" id="gasDisplay">~$2.50</span>
+            </div>
+            <div class="rate-row">
+                <span>Slippage</span>
+                <span class="value" id="slipDisplay">0.5%</span>
+            </div>
+        </div>
+
+        <!-- Action Button -->
+        <button class="swap-btn" id="actionBtn" onclick="handleAction()">Connect Wallet</button>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div class="modal-overlay" id="confirmOverlay">
+        <div class="modal" style="max-width:380px">
+            <div class="modal-header">
+                <h2>Review Swap</h2>
+                <button class="modal-close" onclick="closeConfirm()">✕</button>
+            </div>
+            <div style="padding:0.75em;display:flex;flex-direction:column;gap:0.5em;">
+                <div class="rate-row" style="font-size:0.9em;padding:0.5em 0;border-bottom:1px solid var(--col-bg3)">
+                    <span>You Pay</span>
+                    <span class="value" id="cfmPay">—</span>
+                </div>
+                <div class="rate-row" style="font-size:0.9em;padding:0.5em 0;border-bottom:1px solid var(--col-bg3)">
+                    <span>You Receive (est.)</span>
+                    <span class="value" id="cfmReceive">—</span>
+                </div>
+                <div class="rate-row" style="font-size:0.85em;padding:0.3em 0;">
+                    <span>Rate</span><span class="value" id="cfmRate">—</span>
+                </div>
+                <div class="rate-row" style="font-size:0.85em;padding:0.3em 0;">
+                    <span>Price Impact</span><span class="value" id="cfmImpact">—</span>
+                </div>
+                <div class="rate-row" style="font-size:0.85em;padding:0.3em 0;">
+                    <span>Min. Received</span><span class="value" id="cfmMin">—</span>
+                </div>
+                <div class="rate-row" style="font-size:0.85em;padding:0.3em 0;">
+                    <span>Est. Gas</span><span class="value" id="cfmGas">—</span>
+                </div>
+                <div class="rate-row" style="font-size:0.85em;padding:0.3em 0;">
+                    <span>Slippage</span><span class="value" id="cfmSlip">—</span>
+                </div>
+                <div id="cfmRoute" style="font-size:0.75em;color:var(--col-txt2);padding:0.4em 0;border-top:1px solid var(--col-bg3);margin-top:0.3em;"></div>
+                <button class="swap-btn" style="margin-top:0.5em;background:var(--swap-pink,#ff007a)" id="cfmSwapBtn" onclick="executeSwap()">Confirm Swap</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Token Selector Modal -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Select Token</h2>
+                <button class="modal-close" id="modalClose">✕</button>
+            </div>
+            <input type="text" class="modal-search" id="modalSearch" placeholder="Search by name or symbol...">
+            <div class="token-list" id="tokenList"></div>
+        </div>
+    </div>
+
+    <script>
+        const fetchFn = window.cfetch || fetch;
+        // --- Token Config ---
+        const TOKENS = [
+            { symbol: 'ETH',  name: 'Ethereum',  icon: 'Ξ',  cgId: 'ethereum', address: '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE', decimals: 18 },
+            { symbol: 'USDC', name: 'USD Coin',   icon: '◈',  cgId: 'usd-coin', address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', decimals: 6 },
+            { symbol: 'USDT', name: 'Tether',     icon: '₮',  cgId: 'tether', address: '0xdAC17F958D2ee523a2206206994597C13D831ec7', decimals: 6 },
+            { symbol: 'DAI',  name: 'Dai',        icon: '◆',  cgId: 'dai', address: '0x6B175474E89094C44Da98b954EedeAC495271d0F', decimals: 18 },
+            { symbol: 'WBTC', name: 'Wrapped BTC',icon: '₿',  cgId: 'wrapped-bitcoin', address: '0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599', decimals: 8 },
+            { symbol: 'LINK', name: 'Chainlink',  icon: '⬡',  cgId: 'chainlink', address: '0x514910771AF9Ca656af840dff83E8264EcF986CA', decimals: 18 },
+            { symbol: 'UNI',  name: 'Uniswap',    icon: '🦄', cgId: 'uniswap', address: '0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984', decimals: 18 },
+            { symbol: 'AAVE', name: 'Aave',       icon: '👻', cgId: 'aave', address: '0x7Fc66500c84A76Ad7e9c93437bFc5Ac33E2DDaE9', decimals: 18 },
+        ];
+
+        // --- State ---
+        let prices = {};
+        let payToken = null;
+        let receiveToken = null;
+        let slippage = 0.5;
+        let selectingFor = 'pay'; // 'pay' or 'receive'
+        let priceStatus = 'loading'; // 'live', 'error', 'loading'
+        let walletAddress = null;
+        let lastQuote = null; // Store last fetched quote
+
+        // --- DOM refs ---
+        const $payAmount = document.getElementById('payAmount');
+        const $receiveAmount = document.getElementById('receiveAmount');
+        const $payIcon = document.getElementById('payIcon');
+        const $paySymbol = document.getElementById('paySymbol');
+        const $receiveIcon = document.getElementById('receiveIcon');
+        const $receiveSymbol = document.getElementById('receiveSymbol');
+        const $payUsd = document.getElementById('payUsd');
+        const $receiveUsd = document.getElementById('receiveUsd');
+        const $rateInfo = document.getElementById('rateInfo');
+        const $rateDisplay = document.getElementById('rateDisplay');
+        const $impactDisplay = document.getElementById('impactDisplay');
+        const $gasDisplay = document.getElementById('gasDisplay');
+        const $slipDisplay = document.getElementById('slipDisplay');
+        const $actionBtn = document.getElementById('actionBtn');
+        const $statusDot = document.getElementById('statusDot');
+        const $statusLabel = document.getElementById('statusLabel');
+        const $modalOverlay = document.getElementById('modalOverlay');
+        const $modalSearch = document.getElementById('modalSearch');
+        const $tokenList = document.getElementById('tokenList');
+        const $settingsPanel = document.getElementById('settingsPanel');
+        const $customSlip = document.getElementById('customSlip');
+
+        // --- Init ---
+        function init() {
+            loadSavedPair();
+            updateTokenDisplay();
+            fetchPrices();
+            detectWallet();
+            setInterval(fetchPrices, 30000);
+
+            $payAmount.addEventListener('input', onPayInput);
+            document.getElementById('paySelector').addEventListener('click', () => openModal('pay'));
+            document.getElementById('receiveSelector').addEventListener('click', () => openModal('receive'));
+            document.getElementById('swapDir').addEventListener('click', swapTokens);
+            document.getElementById('settingsToggle').addEventListener('click', toggleSettings);
+            document.getElementById('modalClose').addEventListener('click', closeModal);
+            $modalOverlay.addEventListener('click', e => { if (e.target === $modalOverlay) closeModal(); });
+            $modalSearch.addEventListener('input', renderTokenList);
+
+            // Listen for wallet connection messages from parent OS
+            window.addEventListener('message', function(e) {
+                if (e.data && e.data.type === 'WALLET_CONNECTED' && e.data.address) {
+                    walletAddress = e.data.address;
+                    updateActionBtn(parseFloat($payAmount.value));
+                }
+                if (e.data && e.data.type === 'WALLET_DISCONNECTED') {
+                    walletAddress = null;
+                    updateActionBtn(parseFloat($payAmount.value));
+                }
+                if (e.data && e.data.type === 'TRANSACTION_RESULT') {
+                    handleTransactionResult(e.data);
+                }
+            });
+
+            // Slippage buttons
+            document.querySelectorAll('.slippage-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const val = parseFloat(btn.dataset.slip);
+                    setSlippage(val);
+                    $customSlip.value = '';
+                });
+            });
+
+            $customSlip.addEventListener('input', () => {
+                const val = parseFloat($customSlip.value);
+                if (!isNaN(val) && val > 0 && val <= 50) {
+                    setSlippage(val);
+                    document.querySelectorAll('.slippage-btn').forEach(b => b.classList.remove('active'));
+                }
+            });
+
+            // Only allow numbers and decimals in pay input
+            $payAmount.addEventListener('keydown', e => {
+                if (e.key.length === 1 && !/[\d.]/.test(e.key) && !e.metaKey && !e.ctrlKey) {
+                    e.preventDefault();
+                }
+                if (e.key === '.' && $payAmount.value.includes('.')) {
+                    e.preventDefault();
+                }
+            });
+        }
+
+        // --- Wallet Detection ---
+        function detectWallet() {
+            // Check localStorage for OS wallet
+            try {
+                const saved = localStorage.getItem('lair_wallet');
+                if (saved) {
+                    const data = JSON.parse(saved);
+                    if (data.address) walletAddress = data.address;
+                }
+            } catch(_) {}
+
+            // Check injected provider
+            if (!walletAddress && typeof window.ethereum !== 'undefined') {
+                window.ethereum.request({ method: 'eth_accounts' }).then(accts => {
+                    if (accts && accts.length > 0) {
+                        walletAddress = accts[0];
+                        updateActionBtn(parseFloat($payAmount.value));
+                    }
+                }).catch(() => {});
+            }
+
+            updateActionBtn(parseFloat($payAmount.value));
+        }
+
+        // --- Price Fetching ---
+        async function fetchPrices() {
+            setStatus('loading');
+            const ids = TOKENS.map(t => t.cgId).join(',');
+            try {
+                const resp = await fetchFn(`https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd`);
+                if (!resp.ok) throw new Error('API error');
+                const data = await resp.json();
+                for (const t of TOKENS) {
+                    if (data[t.cgId] && data[t.cgId].usd) {
+                        prices[t.symbol] = data[t.cgId].usd;
+                    }
+                }
+                setStatus('live');
+            } catch (e) {
+                // Fallback prices
+                if (Object.keys(prices).length === 0) {
+                    prices = {
+                        ETH: 3450, USDC: 1, USDT: 1, DAI: 1,
+                        WBTC: 97500, LINK: 18.50, UNI: 12.30,
+                        AAVE: 285
+                    };
+                }
+                setStatus('error');
+            }
+            recalculate();
+        }
+
+        function setStatus(s) {
+            priceStatus = s;
+            $statusDot.className = 'status-dot ' + s;
+            if (s === 'live') $statusLabel.textContent = 'Live';
+            else if (s === 'error') $statusLabel.textContent = 'Cached';
+            else $statusLabel.textContent = 'Loading...';
+        }
+
+        // --- Pair persistence ---
+        function loadSavedPair() {
+            try {
+                const saved = JSON.parse(localStorage.getItem('lair_swap_pair'));
+                if (saved) {
+                    payToken = TOKENS.find(t => t.symbol === saved.pay) || TOKENS[0];
+                    receiveToken = TOKENS.find(t => t.symbol === saved.receive) || TOKENS[1];
+                    if (payToken === receiveToken) receiveToken = TOKENS[payToken === TOKENS[0] ? 1 : 0];
+                    return;
+                }
+            } catch(e) {}
+            payToken = TOKENS[0];
+            receiveToken = TOKENS[1];
+        }
+
+        function savePair() {
+            try {
+                localStorage.setItem('lair_swap_pair', JSON.stringify({
+                    pay: payToken.symbol,
+                    receive: receiveToken.symbol
+                }));
+            } catch(e) {}
+        }
+
+        // --- Token Display ---
+        function updateTokenDisplay() {
+            $payIcon.textContent = payToken.icon;
+            $paySymbol.textContent = payToken.symbol;
+            $receiveIcon.textContent = receiveToken.icon;
+            $receiveSymbol.textContent = receiveToken.symbol;
+        }
+
+        // --- Calculation with real quote fetching ---
+        let quoteTimer = null;
+        function recalculate() {
+            const raw = $payAmount.value.trim();
+            const payVal = parseFloat(raw);
+
+            // USD value for pay field
+            if (!isNaN(payVal) && payVal > 0 && prices[payToken.symbol]) {
+                const payUsdVal = payVal * prices[payToken.symbol];
+                $payUsd.textContent = '$' + formatUsd(payUsdVal);
+            } else {
+                $payUsd.textContent = '';
+            }
+
+            if (isNaN(payVal) || payVal <= 0 || !prices[payToken.symbol] || !prices[receiveToken.symbol]) {
+                $receiveAmount.value = '';
+                $receiveUsd.textContent = '';
+                $rateInfo.style.display = 'none';
+                lastQuote = null;
+                updateActionBtn(payVal);
+                return;
+            }
+
+            // Immediate estimate from CoinGecko prices while fetching real quote
+            const payPrice = prices[payToken.symbol];
+            const recPrice = prices[receiveToken.symbol];
+            const rate = payPrice / recPrice;
+            const receiveVal = payVal * rate;
+
+            $receiveAmount.value = formatAmount(receiveVal, recPrice);
+            $receiveUsd.textContent = '$' + formatUsd(receiveVal * recPrice);
+            $rateDisplay.textContent = `1 ${payToken.symbol} = ${formatAmount(rate, recPrice)} ${receiveToken.symbol}`;
+            $slipDisplay.textContent = slippage + '%';
+            $rateInfo.style.display = 'flex';
+
+            // Show loading state for impact/gas while fetching
+            $impactDisplay.textContent = '...';
+            $impactDisplay.className = 'value';
+            $gasDisplay.textContent = '...';
+
+            // Debounced real quote fetch
+            clearTimeout(quoteTimer);
+            quoteTimer = setTimeout(() => fetchRealQuote(payVal), 500);
+
+            updateActionBtn(payVal);
+        }
+
+        // --- Fetch real swap quote from DEX aggregator ---
+        async function fetchRealQuote(payVal) {
+            if (!payToken || !receiveToken || !payVal || payVal <= 0) return;
+
+            const sellAmount = BigInt(Math.floor(payVal * (10 ** payToken.decimals))).toString();
+
+            // Try 0x API for swap quote
+            try {
+                const params = new URLSearchParams({
+                    sellToken: payToken.address,
+                    buyToken: receiveToken.address,
+                    sellAmount: sellAmount,
+                });
+                const quoteUrl = `https://api.0x.org/swap/v1/price?${params}`;
+                const resp = await fetchFn(quoteUrl);
+                if (resp.ok) {
+                    const data = await resp.json();
+                    if (data.buyAmount) {
+                        const buyAmt = Number(data.buyAmount) / (10 ** receiveToken.decimals);
+                        const recPrice = prices[receiveToken.symbol] || 1;
+
+                        $receiveAmount.value = formatAmount(buyAmt, recPrice);
+                        $receiveUsd.textContent = '$' + formatUsd(buyAmt * recPrice);
+
+                        // Real rate
+                        const realRate = buyAmt / payVal;
+                        $rateDisplay.textContent = `1 ${payToken.symbol} = ${formatAmount(realRate, recPrice)} ${receiveToken.symbol}`;
+
+                        // Real estimated price impact
+                        const idealRate = (prices[payToken.symbol] || 1) / (prices[receiveToken.symbol] || 1);
+                        const impact = Math.abs((1 - realRate / idealRate) * 100);
+                        $impactDisplay.textContent = impact.toFixed(2) + '%';
+                        $impactDisplay.className = 'value' + (impact < 0.1 ? ' good' : impact < 1 ? ' warn' : ' bad');
+
+                        // Real gas estimate
+                        const gasPrice = data.gasPrice ? Number(data.gasPrice) : 25e9;
+                        const estimatedGas = data.estimatedGas ? Number(data.estimatedGas) : 150000;
+                        const gasCostEth = (gasPrice * estimatedGas) / 1e18;
+                        const gasCostUsd = gasCostEth * (prices['ETH'] || 3000);
+                        $gasDisplay.textContent = '~$' + gasCostUsd.toFixed(2);
+
+                        // Route info
+                        const sources = data.sources?.filter(s => parseFloat(s.proportion) > 0) || [];
+                        const routeStr = sources.length > 0
+                            ? sources.map(s => `${s.name} ${(parseFloat(s.proportion) * 100).toFixed(0)}%`).join(' → ')
+                            : 'Best route';
+
+                        // Store quote for confirmation
+                        lastQuote = {
+                            buyAmount: buyAmt,
+                            sellAmount: payVal,
+                            paySymbol: payToken.symbol,
+                            receiveSymbol: receiveToken.symbol,
+                            rate: realRate,
+                            impact: impact,
+                            gasCostUsd: gasCostUsd,
+                            minReceived: buyAmt * (1 - slippage / 100),
+                            route: routeStr,
+                            data: data
+                        };
+                        return;
+                    }
+                }
+            } catch(_) { /* fall through to estimate */ }
+
+            // Fallback: estimate from CoinGecko prices
+            const payPrice = prices[payToken.symbol] || 1;
+            const recPrice = prices[receiveToken.symbol] || 1;
+            const estImpact = payVal * payPrice > 100000 ? 0.5 : 0.05;
+            $impactDisplay.textContent = '~' + estImpact.toFixed(2) + '%';
+            $impactDisplay.className = 'value' + (estImpact < 0.1 ? ' good' : ' warn');
+
+            // Estimate gas from Etherscan
+            try {
+                const gasResp = await fetchFn('https://api.etherscan.io/api?module=gastracker&action=gasoracle');
+                const gasData = await gasResp.json();
+                if (gasData.status === '1' && gasData.result) {
+                    const gweiPrice = parseFloat(gasData.result.ProposeGasPrice) || 25;
+                    const gasCostEth = (gweiPrice * 1e9 * 150000) / 1e18;
+                    const gasCostUsd = gasCostEth * (prices['ETH'] || 3000);
+                    $gasDisplay.textContent = '~$' + gasCostUsd.toFixed(2);
+                } else {
+                    $gasDisplay.textContent = '~$3-8';
+                }
+            } catch(_) {
+                $gasDisplay.textContent = '~$3-8';
+            }
+
+            // Store estimate quote
+            const rate = payPrice / recPrice;
+            const receiveVal = payVal * rate;
+            lastQuote = {
+                buyAmount: receiveVal,
+                sellAmount: payVal,
+                paySymbol: payToken.symbol,
+                receiveSymbol: receiveToken.symbol,
+                rate: rate,
+                impact: estImpact,
+                gasCostUsd: 5,
+                minReceived: receiveVal * (1 - slippage / 100),
+                route: 'Estimated (CoinGecko)',
+                data: null
+            };
+        }
+
+        function updateActionBtn(payVal) {
+            if (!payVal || isNaN(payVal) || payVal <= 0) {
+                $actionBtn.textContent = 'Enter Amount';
+                $actionBtn.className = 'swap-btn disabled';
+            } else if (!walletAddress) {
+                $actionBtn.textContent = 'Connect Wallet';
+                $actionBtn.className = 'swap-btn';
+            } else {
+                $actionBtn.textContent = 'Review Swap';
+                $actionBtn.className = 'swap-btn';
+                $actionBtn.style.background = 'var(--swap-pink, #ff007a)';
+            }
+        }
+
+        // --- Action handler ---
+        function handleAction() {
+            const payVal = parseFloat($payAmount.value);
+            if (!payVal || isNaN(payVal) || payVal <= 0) return;
+
+            if (!walletAddress) {
+                // Try to request wallet connection
+                if (typeof window.ethereum !== 'undefined') {
+                    window.ethereum.request({ method: 'eth_requestAccounts' }).then(accts => {
+                        if (accts && accts.length > 0) {
+                            walletAddress = accts[0];
+                            updateActionBtn(payVal);
+                        }
+                    }).catch(() => {
+                        // Request OS wallet connection via message bus
+                        if (window.parent !== window) {
+                            window.parent.postMessage({ type: 'WALLET_CONNECT_REQUEST', source: 'dexswap' }, '*');
+                        } else {
+                            alert('Connect wallet in PumpOS to swap');
+                        }
+                    });
+                } else {
+                    // No injected wallet, ask parent OS
+                    if (window.parent !== window) {
+                        window.parent.postMessage({ type: 'WALLET_CONNECT_REQUEST', source: 'dexswap' }, '*');
+                    } else {
+                        alert('Connect wallet in PumpOS to swap');
+                    }
+                }
+                return;
+            }
+
+            // Show confirmation modal
+            openConfirmModal();
+        }
+
+        function openConfirmModal() {
+            if (!lastQuote) return;
+            const q = lastQuote;
+            document.getElementById('cfmPay').textContent = `${q.sellAmount} ${q.paySymbol}`;
+            document.getElementById('cfmReceive').textContent = `${formatAmount(q.buyAmount, prices[q.receiveSymbol] || 1)} ${q.receiveSymbol}`;
+            document.getElementById('cfmRate').textContent = `1 ${q.paySymbol} = ${formatAmount(q.rate, prices[q.receiveSymbol] || 1)} ${q.receiveSymbol}`;
+            document.getElementById('cfmImpact').textContent = q.impact.toFixed(2) + '%';
+            document.getElementById('cfmImpact').className = 'value' + (q.impact < 0.1 ? ' good' : q.impact < 1 ? ' warn' : ' bad');
+            document.getElementById('cfmMin').textContent = `${formatAmount(q.minReceived, prices[q.receiveSymbol] || 1)} ${q.receiveSymbol}`;
+            document.getElementById('cfmGas').textContent = '~$' + q.gasCostUsd.toFixed(2);
+            document.getElementById('cfmSlip').textContent = slippage + '%';
+            document.getElementById('cfmRoute').textContent = 'Route: ' + q.route;
+            document.getElementById('confirmOverlay').classList.add('open');
+        }
+
+        function closeConfirm() {
+            document.getElementById('confirmOverlay').classList.remove('open');
+        }
+
+        function executeSwap() {
+            if (!walletAddress || !lastQuote) return;
+            const btn = document.getElementById('cfmSwapBtn');
+            btn.textContent = 'Sending...';
+            btn.style.opacity = '0.6';
+
+            // Send transaction request via OS message bus
+            const txRequest = {
+                type: 'TRANSACTION_REQUEST',
+                source: 'dexswap',
+                payload: {
+                    from: walletAddress,
+                    to: lastQuote.data?.to || null,
+                    data: lastQuote.data?.data || null,
+                    value: lastQuote.data?.value || '0',
+                    gas: lastQuote.data?.gas || lastQuote.data?.estimatedGas || '150000',
+                    description: `Swap ${lastQuote.sellAmount} ${lastQuote.paySymbol} for ~${formatAmount(lastQuote.buyAmount, prices[lastQuote.receiveSymbol] || 1)} ${lastQuote.receiveSymbol}`
+                }
+            };
+
+            if (window.parent !== window) {
+                window.parent.postMessage(txRequest, '*');
+            } else if (typeof window.ethereum !== 'undefined' && lastQuote.data) {
+                // Direct wallet interaction if no parent OS
+                window.ethereum.request({
+                    method: 'eth_sendTransaction',
+                    params: [{
+                        from: walletAddress,
+                        to: lastQuote.data.to,
+                        data: lastQuote.data.data,
+                        value: lastQuote.data.value && lastQuote.data.value !== '0' ? '0x' + BigInt(lastQuote.data.value).toString(16) : '0x0',
+                        gas: lastQuote.data.gas ? '0x' + parseInt(lastQuote.data.gas).toString(16) : undefined,
+                    }]
+                }).then(txHash => {
+                    handleTransactionResult({ success: true, hash: txHash });
+                }).catch(err => {
+                    handleTransactionResult({ success: false, error: err.message });
+                });
+            } else {
+                alert('Unable to execute: no wallet provider available');
+                btn.textContent = 'Confirm Swap';
+                btn.style.opacity = '1';
+            }
+        }
+
+        function handleTransactionResult(result) {
+            const btn = document.getElementById('cfmSwapBtn');
+            if (result.success) {
+                btn.textContent = '✓ Submitted!';
+                btn.style.background = 'var(--col-good, #22c55e)';
+                setTimeout(() => {
+                    closeConfirm();
+                    btn.textContent = 'Confirm Swap';
+                    btn.style.background = '';
+                    btn.style.opacity = '1';
+                    $payAmount.value = '';
+                    $receiveAmount.value = '';
+                    lastQuote = null;
+                    recalculate();
+                }, 3000);
+            } else {
+                btn.textContent = 'Failed — Retry';
+                btn.style.background = 'var(--col-bad, #ef4444)';
+                btn.style.opacity = '1';
+                setTimeout(() => {
+                    btn.textContent = 'Confirm Swap';
+                    btn.style.background = '';
+                }, 3000);
+            }
+        }
+
+        function formatAmount(val, unitPrice) {
+            if (unitPrice >= 1000) return val.toFixed(6);
+            if (unitPrice >= 1) return val.toFixed(4);
+            if (unitPrice >= 0.01) return val.toFixed(2);
+            return val.toFixed(8);
+        }
+
+        function formatUsd(val) {
+            if (val >= 1e9) return (val / 1e9).toFixed(2) + 'B';
+            if (val >= 1e6) return (val / 1e6).toFixed(2) + 'M';
+            if (val >= 1000) return val.toLocaleString('en', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            return val.toFixed(2);
+        }
+
+        // --- Input handling ---
+        function onPayInput() {
+            recalculate();
+        }
+
+        // --- Swap Direction ---
+        function swapTokens() {
+            const tmp = payToken;
+            payToken = receiveToken;
+            receiveToken = tmp;
+
+            // Move receive amount to pay amount
+            const recVal = $receiveAmount.value;
+            $payAmount.value = recVal;
+            $receiveAmount.value = '';
+
+            updateTokenDisplay();
+            savePair();
+            recalculate();
+        }
+
+        // --- Token Modal ---
+        function openModal(forField) {
+            selectingFor = forField;
+            $modalSearch.value = '';
+            renderTokenList();
+            $modalOverlay.classList.add('open');
+            setTimeout(() => $modalSearch.focus(), 100);
+        }
+
+        function closeModal() {
+            $modalOverlay.classList.remove('open');
+        }
+
+        function renderTokenList() {
+            const q = $modalSearch.value.toLowerCase().trim();
+            const otherToken = selectingFor === 'pay' ? receiveToken : payToken;
+            const currentToken = selectingFor === 'pay' ? payToken : receiveToken;
+
+            let html = '';
+            for (const t of TOKENS) {
+                const match = !q || t.symbol.toLowerCase().includes(q) || t.name.toLowerCase().includes(q);
+                if (!match) continue;
+
+                const isDisabled = t.symbol === otherToken.symbol;
+                const isActive = t.symbol === currentToken.symbol;
+                const price = prices[t.symbol];
+                const priceStr = price ? '$' + (price >= 1 ? price.toLocaleString('en', { maximumFractionDigits: 2 }) : price.toFixed(4)) : '';
+
+                html += `<div class="token-item${isDisabled ? ' disabled' : ''}" ${isDisabled ? '' : `onclick="selectToken('${t.symbol}')"`}>
+                    <span class="icon">${t.icon}</span>
+                    <div class="token-item-info">
+                        <span class="token-item-name">${t.symbol}${isActive ? ' ✓' : ''}</span>
+                        <span class="token-item-full">${t.name}</span>
+                    </div>
+                    <span class="token-item-price">${priceStr}</span>
+                </div>`;
+            }
+
+            if (!html) {
+                html = '<div style="padding:1em;text-align:center;color:var(--col-txt2)">No tokens found</div>';
+            }
+
+            $tokenList.innerHTML = html;
+        }
+
+        function selectToken(symbol) {
+            const token = TOKENS.find(t => t.symbol === symbol);
+            if (!token) return;
+
+            if (selectingFor === 'pay') {
+                payToken = token;
+            } else {
+                receiveToken = token;
+            }
+
+            updateTokenDisplay();
+            savePair();
+            closeModal();
+            recalculate();
+        }
+
+        // --- Settings ---
+        function toggleSettings() {
+            $settingsPanel.classList.toggle('open');
+        }
+
+        function setSlippage(val) {
+            slippage = val;
+            document.querySelectorAll('.slippage-btn').forEach(b => {
+                b.classList.toggle('active', parseFloat(b.dataset.slip) === val);
+            });
+            $slipDisplay.textContent = val + '%';
+        }
+
+        // --- Boot ---
+        init();
+    </script>
+</body>
+</html>

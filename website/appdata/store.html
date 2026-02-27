@@ -1001,7 +1001,7 @@
 				<button data-filter="all" class="active-filter">All</button>
 				<button data-filter="Dark">Dark</button>
 				<button data-filter="Light">Light</button>
-				<button data-filter="Lair">Lair</button>
+				<button data-filter="Pump">Pump</button>
 				<button data-filter="Accelerator">Accelerator</button>
 			</div>
 			<div id="themeslist" class="applist"></div>
@@ -1122,7 +1122,7 @@
 		function loadThemes() {
 			const container = document.getElementById("themeslist");
 
-			fetch('../Lair-Store/db/themes.json')
+			fetch('../Pump-Store/db/themes.json')
 				.then(response => response.json())
 				.then(data => {
 					container.innerHTML = '';
@@ -1193,14 +1193,14 @@
 						svg.appendChild(g1);
 						colorsSvg.appendChild(svg);
 
-						const by = themeData.by || 'LairOS';
+						const by = themeData.by || 'PumpOS';
 						const name = themeName.toLowerCase();
 
 						let showTheme = true;
 
 						if (activeFilters.size > 0) {
 							showTheme = true;
-							if (activeFilters.has('Lair') && (by != "LairOS")) {
+							if (activeFilters.has('Pump') && (by != "PumpOS")) {
 								showTheme = false;
 							}
 							if (activeFilters.has('Accelerator') && by !== 'un4ya.1024') {
@@ -1229,7 +1229,7 @@
 						nameDiv.innerText = themeName;
 						infoDiv.appendChild(nameDiv);
 
-						themeData.by = themeData.by || 'LairOS';
+						themeData.by = themeData.by || 'PumpOS';
 						const authdiv = document.createElement('div');
 						authdiv.classList.add("themeauth")
 						authdiv.innerText = themeData.by;
@@ -1375,7 +1375,7 @@
 
 
 	async function fetchAppData() {
-		return await fetch('../Lair-Store/db/v2.json')
+		return await fetch('../Pump-Store/db/v2.json')
 			.then(response => {
 				if (!response.ok) throw new Error('Network response was not ok');
 				return response.json();
@@ -1600,7 +1600,7 @@
 
 			const p = document.createElement('p');
 			const appDescItem = appDetails.desc;
-			p.textContent = appDescItem ? appDescItem : 'Free LairOS application.';
+			p.textContent = appDescItem ? appDescItem : 'Free PumpOS application.';
 			appDiv.appendChild(p);
 
 			return appDiv;
@@ -1679,7 +1679,7 @@
 					longDescContent.textContent = appDetails?.ldesc || "Overview not available yet.";
 
 				const versionInfo = document.createElement("div");
-				versionInfo.innerHTML = `<span>Hosted on: ${appDetails.src.includes("Lair-Store") ? "Lair Store" : appDetails.src}</span><span>Version: ${appDetails.ver}</span><span>${appDetails.cat || 'Other'}</span>`;
+				versionInfo.innerHTML = `<span>Hosted on: ${appDetails.src.includes("Pump-Store") ? "Pump Store" : appDetails.src}</span><span>Version: ${appDetails.ver}</span><span>${appDetails.cat || 'Other'}</span>`;
 				versionInfo.className = "srca";					descContainer.appendChild(descHeader);
 					descContainer.appendChild(descContent);
 					descContainer.appendChild(longDescHeader);
@@ -2110,7 +2110,7 @@
 			const resultsDiv = document.getElementById("searchOutputList");
 			resultsDiv.style.display = 'grid';
 			resultsDiv.innerHTML = "<div class='loader'></div>";
-			fetch("../Lair-Store/db/v2.json")
+			fetch("../Pump-Store/db/v2.json")
 				.then(response => response.json())
 				.then(data => {
 					const threshold = 0.6;

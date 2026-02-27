@@ -25,7 +25,7 @@ module.exports = async function handler(req, res) {
 
   try {
     const cgRes = await fetch(`${CG}/global`, {
-      headers: { Accept: 'application/json', 'User-Agent': 'LairOS/1.0' },
+      headers: { Accept: 'application/json', 'User-Agent': 'PumpOS/1.0' },
       signal: AbortSignal.timeout(10000),
     });
 

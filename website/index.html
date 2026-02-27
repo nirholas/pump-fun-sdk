@@ -7,13 +7,13 @@
 	<meta name="mobile-web-app-capable" content="yes">
 	<meta name="apple-mobile-web-app-capable" content="yes">
 	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-	<title>LairOS</title>
+	<title>PumpOS</title>
 	<script src="scripts/readwrite.js" defer></script>
 	<script src="system32.js" defer></script>
 	<link rel="stylesheet" href="lair.css">
 	<link rel="stylesheet" href="style.css">
 	<link rel="icon" type="image/webp" href="n.png">
-	<!--LairOS scripts-->
+	<!--PumpOS scripts-->
 	<script src="scripts/featureflags.js"></script>
 	<script src="scripts/utility.js"></script>
 	<script src="scripts/notifications.js" defer></script>
@@ -132,7 +132,7 @@
 				<div class="login-footer">
 					<div class="login-branding">
 						<span class="login-logo">◆</span>
-						<span class="login-brand-text">Lair</span>
+						<span class="login-brand-text">Pump</span>
 					</div>
 				</div>
 				<div class="logincard">
@@ -165,11 +165,11 @@
 			</dialog>
 			<dialog id="edison">
 				<div class="edisonrl">
-					<img src="n.png" alt="LairOS Logo">
+					<img src="n.png" alt="PumpOS Logo">
 					<div class="progress-container">
 						<div class="progress-bar" id="progress-bar"></div>
 					</div>
-					<div id="startupterms" role="status" aria-live="polite">Loading LairOS scripts</div>
+					<div id="startupterms" role="status" aria-live="polite">Loading PumpOS scripts</div>
 
 					<small class="built-by-nich">built by nich</small>
 				</div>
@@ -188,7 +188,7 @@
 				<h1>I can't even know what time is it now.<br>Blame your browser for it.</h1>
 				<p>Well your browser seems to be messing around saying you turned off JS. Javascript is required for the functioning of the modern web. </p>
 				<b>If you have set JS to be disabled:</b>
-				<p>LairOS requires JS to run.
+				<p>PumpOS requires JS to run.
 				<li>You can always <b><a href="https://www.larimer.gov/it/enable-javascript" style="color:white;"> turn JS back on</a>.</b>
 				</li>
 				<li>Or try a different browser.
@@ -460,7 +460,7 @@
 							</span>
 						</button>
 						<button class="tooltip " onclick="launchbios()">
-							<span class="tooltiptext">Lair Setup</span>
+							<span class="tooltiptext">Pump Setup</span>
 							<span class="material-symbols-rounded">
 								power
 							</span>
@@ -501,7 +501,7 @@
 				<span class="material-symbols-rounded closebtn" onclick="gid('bios').close()">
 					close
 				</span>
-				<small>Welcome to LairOS Setup,</small>
+				<small>Welcome to PumpOS Setup,</small>
 				<h1 id="lairsetupusernamedisplay"></h1>
 			<div class="buttongroup-grid">
 				<button onclick="gid('terminal').showModal();gid('bios').close();">
@@ -544,7 +544,7 @@
 					<span class="material-symbols-rounded">
 						restart_alt
 					</span>
-					Reset LairOS
+					Reset PumpOS
 				</button>
 			</div>
 		</dialog>
@@ -663,7 +663,7 @@
 
 	<dialog id="nich">
 		<h1 id="nich-title">Nich</h1>
-		<span>LairOS is being installed...</span>
+		<span>PumpOS is being installed...</span>
 	</dialog>
 
 	<dialog id="widgetPickerDialog" class="onramcloseable">

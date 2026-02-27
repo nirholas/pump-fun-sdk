@@ -1,5 +1,5 @@
 /**
- * LairOS System Tray — live crypto data, network status, volume, quick actions
+ * PumpOS System Tray — live crypto data, network status, volume, quick actions
  */
 (function () {
 	'use strict';

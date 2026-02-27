@@ -1302,7 +1302,7 @@ async function crashScreen(err) {
     closeallwindows();
     await say(`
         <h1>Your System is curropt.</h1>
-        <p>Reload your lairOS to continue.<p>
+        <p>Reload your PumpOS to continue.<p>
         <code>${err}</code>
         `, "failed");
     if (badlaunch) { return }

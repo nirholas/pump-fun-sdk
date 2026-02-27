@@ -1,5 +1,5 @@
 /**
- * Health check endpoint for LairOS.
+ * Health check endpoint for PumpOS.
  * Returns 200 OK so iframe apps (e.g. Lairbot) can verify the host is reachable.
  *
  * GET /api/health → { status: "ok", ts: <unix ms> }

@@ -35,6 +35,6 @@
     }
   ],
   "rewrites": [
-    { "source": "/((?!api|libs|Lair-Store|assets|scripts|appdata|uv|bare-server|workers|screens|whatis|docs).*)", "destination": "/index.html" }
+    { "source": "/((?!api|libs|Pump-Store|assets|scripts|appdata|uv|bare-server|workers|screens|whatis|docs).*)", "destination": "/index.html" }
   ]
 }

@@ -1,5 +1,5 @@
 /**
- * CORS proxy for LairOS iframe apps that can't directly call external APIs
+ * CORS proxy for PumpOS iframe apps that can't directly call external APIs
  * (CoinGecko, DeFi Llama, etc.) due to sandboxed iframe origin restrictions.
  *
  * GET  /api/proxy?url=https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd
@@ -201,7 +201,7 @@ module.exports = async function handler(req, res) {
 
     const fetchOpts = {
       method: isPost ? 'POST' : 'GET',
-      headers: { 'Accept': 'application/json', 'User-Agent': 'LairOS/1.0' },
+      headers: { 'Accept': 'application/json', 'User-Agent': 'PumpOS/1.0' },
       signal: AbortSignal.timeout(10000),
     };
 

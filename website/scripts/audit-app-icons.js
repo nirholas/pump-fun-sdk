@@ -5,10 +5,10 @@ const rootDir = path.resolve(__dirname, '..');
 
 const htmlTargets = [
   path.join(rootDir, 'appdata'),
-  path.join(rootDir, 'Lair-Store', 'apps'),
+  path.join(rootDir, 'Pump-Store', 'apps'),
 ];
 
-const storeDbPath = path.join(rootDir, 'Lair-Store', 'db', 'v2.json');
+const storeDbPath = path.join(rootDir, 'Pump-Store', 'db', 'v2.json');
 
 function readHtmlFiles(dir) {
   if (!fs.existsSync(dir)) {
@@ -44,14 +44,14 @@ function auditHtmlIcons() {
 
 function auditStoreSymbols() {
   if (!fs.existsSync(storeDbPath)) {
-    return ['Lair-Store/db/v2.json (missing file)'];
+    return ['Pump-Store/db/v2.json (missing file)'];
   }
 
   const db = JSON.parse(fs.readFileSync(storeDbPath, 'utf8'));
   const apps = Array.isArray(db.apps) ? db.apps : [];
   return apps
     .filter((app) => !String(app.symbol ?? '').trim())
-    .map((app) => `Lair-Store/db/v2.json: ${app.name ?? '<unnamed app>'}`);
+    .map((app) => `Pump-Store/db/v2.json: ${app.name ?? '<unnamed app>'}`);
 }
 
 const missingHtmlIcons = auditHtmlIcons();

@@ -1,5 +1,5 @@
 /**
- * LairOS Feature Flags
+ * PumpOS Feature Flags
  * Lightweight feature flag system for client-side control
  * 
  * Usage:
@@ -428,7 +428,7 @@ const FeatureFlags = {
             </style>
             <div class="container">
                 <div class="logo">🚀</div>
-                <h1>LairOS Beta</h1>
+                <h1>PumpOS Beta</h1>
                 <p>Enter your beta access code to continue</p>
                 <form id="beta-form">
                     <input type="text" id="beta-code" placeholder="BETA CODE" maxlength="20" autocomplete="off" autofocus>
