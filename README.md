@@ -10,10 +10,10 @@
 </pre>
 
 <p>
-  <img src=".github/banner.svg" alt="Pump SDK — Official Community PumpFun SDK" width="720">
+  <img src=".github/banner.svg" alt="Pump SDK — A Community Solana SDK for the Pump Protocol" width="720">
 </p>
 
-<h3>The official community TypeScript SDK for the <a href="https://pump.fun">Pump</a> protocol on Solana</h3>
+<h3>A community TypeScript SDK for the <a href="https://pump.fun">Pump</a> protocol on Solana</h3>
 
 <p>
 Token Creation &nbsp;·&nbsp; Bonding Curves &nbsp;·&nbsp; AMM Pools &nbsp;·&nbsp; Fee Sharing &nbsp;·&nbsp; Volume Rewards<br>
@@ -21,17 +21,17 @@ Token Creation &nbsp;·&nbsp; Bonding Curves &nbsp;·&nbsp; AMM Pools &nbsp;·&n
 </p>
 
 <p>
-  <a href="https://www.npmjs.com/package/@pump-fun/pump-sdk"><img src="https://img.shields.io/npm/v/@pump-fun/pump-sdk.svg?style=flat-square&color=00e87b&labelColor=ffffff&label=npm" alt="npm version"></a>&nbsp;
-  <a href="https://www.npmjs.com/package/@pump-fun/pump-sdk"><img src="https://img.shields.io/npm/dm/@pump-fun/pump-sdk.svg?style=flat-square&color=00e87b&labelColor=ffffff&label=downloads" alt="npm downloads"></a>&nbsp;
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-00e87b?style=flat-square&labelColor=ffffff" alt="MIT License"></a>&nbsp;
-  <a href="https://github.com/nirholas/pump-fun-sdk"><img src="https://img.shields.io/github/stars/nirholas/pump-fun-sdk?style=flat-square&color=00e87b&labelColor=ffffff&label=stars" alt="Stars"></a>
+  <a href="https://www.npmjs.com/package/@pump-fun/pump-sdk"><img src="https://img.shields.io/npm/v/@pump-fun/pump-sdk.svg?style=flat-square&color=cb3837&label=npm" alt="npm version"></a>&nbsp;
+  <a href="https://www.npmjs.com/package/@pump-fun/pump-sdk"><img src="https://img.shields.io/npm/dm/@pump-fun/pump-sdk.svg?style=flat-square&color=cb3837&label=downloads" alt="npm downloads"></a>&nbsp;
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" alt="MIT License"></a>&nbsp;
+  <a href="https://github.com/pump-fun/pump-sdk"><img src="https://img.shields.io/github/stars/pump-fun/pump-sdk?style=flat-square&color=f5c542&label=stars" alt="Stars"></a>
 </p>
 
 <p>
-  <a href="https://solana.com"><img src="https://img.shields.io/badge/Solana-mainnet-00e87b?style=flat-square&labelColor=ffffff&logo=data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHZpZXdCb3g9IjAgMCAyMCAyMCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMyAxNUw2IDEyTDE3IDEyTDE0IDE1WiIgZmlsbD0id2hpdGUiLz48L3N2Zz4=&logoColor=00e87b" alt="Solana"></a>&nbsp;
-  <a href="src/"><img src="https://img.shields.io/badge/TypeScript-types_included-00e87b?style=flat-square&labelColor=ffffff&logo=typescript&logoColor=00e87b" alt="TypeScript"></a>&nbsp;
-  <a href="mcp-server/"><img src="https://img.shields.io/badge/MCP_Server-included-00e87b?style=flat-square&labelColor=ffffff" alt="MCP Server"></a>&nbsp;
-  <a href="rust/"><img src="https://img.shields.io/badge/Rust-CLI-00e87b?style=flat-square&labelColor=ffffff&logo=rust&logoColor=00e87b" alt="Rust CLI"></a>
+  <a href="https://solana.com"><img src="https://img.shields.io/badge/Solana-mainnet-9945FF?style=flat-square&logo=data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHZpZXdCb3g9IjAgMCAyMCAyMCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMyAxNUw2IDEyTDE3IDEyTDE0IDE1WiIgZmlsbD0id2hpdGUiLz48L3N2Zz4=&logoColor=white" alt="Solana"></a>&nbsp;
+  <a href="src/"><img src="https://img.shields.io/badge/TypeScript-types_included-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript"></a>&nbsp;
+  <a href="mcp-server/"><img src="https://img.shields.io/badge/MCP_Server-included-8B5CF6?style=flat-square" alt="MCP Server"></a>&nbsp;
+  <a href="rust/"><img src="https://img.shields.io/badge/Rust-CLI-E8590C?style=flat-square&logo=rust&logoColor=white" alt="Rust CLI"></a>
 </p>
 
 <br>
@@ -250,11 +250,15 @@ console.log("Created & bought:", sig);
 
 ## 🔄 Token Lifecycle
 
-```mermaid
-flowchart LR
-  A["🔄 Bonding Curve\n(Pump Program)\n\n• createV2\n• buy / sell\n• Price discovery"]
-  B["💱 AMM Pool\n(PumpAMM Program)\n\n• Pool-based swap\n• LP fees\n• Graduated trading"]
-  A -- "graduation\ncomplete = true" --> B
+```
+┌─────────────────────────┐                          ┌───────────────────────┐
+│     Bonding Curve        │    graduation           │      AMM Pool         │
+│     (Pump Program)       │ ─────────────────────►  │      (PumpAMM Program │
+│                          │   complete = true       │                       │
+│  • createV2              │                         │  • Pool-based swap    │
+│  • buy / sell            │                         │  • LP fees            │
+│  • Price discovery       │                         │  • Graduated trading  │
+└─────────────────────────┘                          └───────────────────────┘
 ```
 
 <br>
@@ -453,14 +457,23 @@ const instructions = await sdk.claimTokenIncentivesBothPrograms(
 
 The SDK is split into two layers:
 
-```mermaid
-block-beta
-  columns 2
-  A["Your Application"]:2
-  B["PumpSdk — Offline\n• Build instructions\n• Decode accounts\n• Pure computation\n• No connection needed\n\nExport: PUMP_SDK singleton"]
-  C["OnlinePumpSdk — Online\n• Fetch on-chain state\n• Simulate transactions\n• BothPrograms variants\n• Wraps PumpSdk + Connection\n\nExport: OnlinePumpSdk class"]
-  D["bondingCurve.ts · fees.ts · pda.ts · state.ts · tokenIncentives.ts"]:2
-  E["Anchor IDLs: pump · pump_amm · pump_fees"]:2
+```
+┌──────────────────────────────────────────────────────────────────┐
+│                        Your Application                          │
+├──────────────────────────────┬───────────────────────────────────┤
+│      PumpSdk (Offline)       │      OnlinePumpSdk (Online)       │
+│                              │                                   │
+│  • Build instructions        │  • Fetch on-chain state           │
+│  • Decode accounts           │  • Simulate transactions          │
+│  • Pure computation          │  • *BothPrograms variants         │
+│  • No connection needed      │  • Wraps PumpSdk + Connection     │
+│                              │                                   │
+│  Export: PUMP_SDK singleton   │  Export: OnlinePumpSdk class      │
+├──────────────────────────────┴───────────────────────────────────┤
+│  bondingCurve.ts │ fees.ts │ pda.ts │ state.ts │ tokenIncentives │
+├──────────────────────────────────────────────────────────────────┤
+│             Anchor IDLs: pump │ pump_amm │ pump_fees              │
+└──────────────────────────────────────────────────────────────────┘
 ```
 
 <details>
@@ -518,17 +531,11 @@ See [mcp-server/README.md](mcp-server/README.md) for setup instructions.
 | Guide | Description |
 |-------|-------------|
 | [Getting Started](docs/getting-started.md) | Installation, setup, and first transaction |
-| [End-to-End Workflow](docs/end-to-end-workflow.md) | Full lifecycle: create → buy → graduate → migrate → fees → rewards |
 | [Architecture](docs/architecture.md) | SDK structure, lifecycle, and design patterns |
 | [API Reference](docs/api-reference.md) | Full class, function, and type documentation |
 | [Examples](docs/examples.md) | Practical code examples for common operations |
-| [Bonding Curve Math](docs/bonding-curve-math.md) | Virtual reserves, price formulas, and graduation |
 | [Fee Sharing](docs/fee-sharing.md) | Creator fee distribution to shareholders |
-| [Fee Tiers](docs/fee-tiers.md) | Market-cap-based fee tier mechanics |
 | [Token Incentives](docs/token-incentives.md) | Volume-based trading rewards |
-| [Mayhem Mode](docs/mayhem-mode.md) | Alternate routing mode and fee recipients |
-| [Security](docs/security.md) | Security model, key handling, and best practices |
-| [Testing](docs/testing.md) | Test suites, commands, and CI pipelines |
 | [CLI Guide](docs/cli-guide.md) | Vanity address generation with Solana CLI |
 
 ---
@@ -540,3 +547,4 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 ---
 
 [MIT](LICENSE)
+
