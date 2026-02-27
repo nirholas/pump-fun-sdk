@@ -38,6 +38,7 @@ declare -A SKILL_NAMES=(
   [pump-testing]="Pump Testing & Quality"
   [pump-build-release]="Pump Build & Release"
   [pump-website]="Pump Website"
+  [pump-claims-readonly]="Pump Claims Read-Only"
 )
 
 echo "=== ClawHub Publish ==="
