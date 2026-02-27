@@ -15,6 +15,12 @@ export interface TokenLaunchEvent {
   isV2: boolean;
   hasGithub: boolean;
   githubUrls: string[];
+  imageUri: string | null;
+  description: string | null;
+  marketCapSol: number | null;
+  website: string | null;
+  twitter: string | null;
+  telegram: string | null;
 }
 
 /** Server status broadcast */

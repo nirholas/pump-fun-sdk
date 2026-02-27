@@ -3,246 +3,437 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🟢</text></svg>">
-<title>PumpFun Live — New Token Launches</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
+<title>PumpFun Live Trades — Real-Time Analytics Dashboard</title>
+<meta name="description" content="Real-time Solana PumpFun trade analytics. Monitor buys, sells, token launches, migrations, and whale activity via WebSocket.">
 <style>
+  :root {
+    --bg: #0a0a0a; --bg2: #111; --bg3: #1a1a1a; --border: #222;
+    --green: #00ff41; --red: #ff4141; --yellow: #ffcc00; --blue: #4a9eff;
+    --orange: #ff9900; --purple: #b366ff; --cyan: #00e5ff; --dim: #555; --text: #ccc;
+  }
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body {
-    background: #0a0a0a;
-    color: #00ff41;
-    font-family: 'Courier New', monospace;
-    font-size: 13px;
-    line-height: 1.5;
-    padding: 0;
-  }
+  body { background: var(--bg); color: var(--green); font-family: 'Courier New', monospace; font-size: 13px; line-height: 1.5; overflow-x: hidden; }
 
-  /* ── Header ────────────────────────────────────────── */
+  /* ── Layout ─────────────────────────────────────────── */
+  #app { display: grid; grid-template-rows: auto auto 1fr; height: 100vh; }
+
+  /* ── Header ─────────────────────────────────────────── */
   #header {
-    background: #111;
-    border-bottom: 1px solid #222;
-    padding: 12px 20px;
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    flex-wrap: wrap;
-    position: sticky;
-    top: 0;
-    z-index: 10;
+    background: var(--bg2); border-bottom: 1px solid var(--border);
+    padding: 10px 20px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+    position: sticky; top: 0; z-index: 10;
   }
-  #header h1 {
-    font-size: 16px;
-    color: #00ff41;
-    white-space: nowrap;
+  #header h1 { font-size: 16px; white-space: nowrap; }
+  .status { font-size: 12px; color: var(--dim); }
+  .status.ok { color: var(--green); }
+  .status.err { color: var(--red); }
+  .controls { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+  button {
+    background: var(--bg3); border: 1px solid #333; color: var(--green);
+    padding: 5px 12px; cursor: pointer; font-family: inherit; font-size: 12px; border-radius: 3px;
   }
-  #header .status {
-    font-size: 12px;
-    color: #666;
-  }
-  #header .status.connected { color: #00ff41; }
-  #header .status.error { color: #ff4141; }
-  #header .controls {
-    margin-left: auto;
-    display: flex;
-    gap: 8px;
-    align-items: center;
+  button:hover { background: #252525; border-color: var(--green); }
+  button.active { background: #002200; border-color: var(--green); }
+  button.danger { color: var(--red); }
+  button.danger:hover { border-color: var(--red); }
+  select {
+    background: var(--bg3); border: 1px solid #333; color: var(--text);
+    padding: 5px 8px; font-family: inherit; font-size: 12px; border-radius: 3px;
   }
   input[type="text"] {
-    background: #1a1a1a;
-    border: 1px solid #333;
-    color: #ccc;
-    padding: 6px 10px;
-    font-family: inherit;
-    font-size: 12px;
-    width: 340px;
-    border-radius: 3px;
+    background: var(--bg3); border: 1px solid #333; color: var(--text);
+    padding: 5px 10px; font-family: inherit; font-size: 12px; border-radius: 3px; width: 200px;
   }
-  input[type="text"]:focus { outline: none; border-color: #00ff41; }
-  button {
-    background: #1a1a1a;
-    border: 1px solid #333;
-    color: #00ff41;
-    padding: 6px 14px;
-    cursor: pointer;
-    font-family: inherit;
-    font-size: 12px;
-    border-radius: 3px;
-  }
-  button:hover { background: #252525; border-color: #00ff41; }
-  button.active { background: #002200; border-color: #00ff41; }
+  input:focus, select:focus { outline: none; border-color: var(--green); }
 
-  /* ── Stats bar ─────────────────────────────────────── */
+  /* ── Stats ──────────────────────────────────────────── */
   #stats {
-    background: #0d0d0d;
-    border-bottom: 1px solid #1a1a1a;
-    padding: 6px 20px;
-    font-size: 11px;
-    color: #555;
-    display: flex;
-    gap: 24px;
+    background: #0d0d0d; border-bottom: 1px solid #1a1a1a;
+    padding: 6px 20px; font-size: 11px; color: var(--dim);
+    display: flex; gap: 20px; flex-wrap: wrap; align-items: center;
   }
-  #stats span { color: #888; }
-  #stats .val { color: #00ff41; }
+  .val { color: var(--green); font-weight: bold; }
+  .val.red { color: var(--red); }
+  .val.yellow { color: var(--yellow); }
+  .val.blue { color: var(--blue); }
 
-  /* ── Log area ──────────────────────────────────────── */
-  #log {
-    padding: 12px 20px;
-    max-height: calc(100vh - 110px);
-    overflow-y: auto;
+  /* ── Main Grid ─────────────────────────────────────── */
+  #main {
+    display: grid; grid-template-columns: 1fr 320px;
+    overflow: hidden;
   }
-  .entry {
-    border-bottom: 1px solid #111;
-    padding: 8px 0;
-    animation: fadeIn 0.3s ease;
-  }
-  @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(-4px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
+  @media (max-width: 900px) { #main { grid-template-columns: 1fr; } #sidebar { display: none; } }
 
-  .entry .time { color: #444; }
-  .entry .label { color: #888; }
-  .entry .name { color: #ffcc00; font-weight: bold; }
-  .entry .symbol { color: #ff9900; }
-  .entry .addr { color: #4a9eff; }
-  .entry .github { color: #00ff41; font-weight: bold; }
-  .entry .raw { color: #333; font-size: 11px; word-break: break-all; }
-  .entry a { color: #4a9eff; text-decoration: none; }
-  .entry a:hover { text-decoration: underline; }
+  /* ── Feed ───────────────────────────────────────────── */
+  #feed { overflow-y: auto; padding: 0; }
+  .trade {
+    display: grid; grid-template-columns: 70px 50px 1fr 110px 100px 100px;
+    gap: 8px; padding: 6px 20px; border-bottom: 1px solid #111; align-items: center;
+    animation: fadeIn 0.2s ease; font-size: 12px;
+  }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(-3px); } to { opacity: 1; } }
+  .trade.buy { border-left: 2px solid var(--green); }
+  .trade.sell { border-left: 2px solid var(--red); }
+  .trade.create { border-left: 2px solid var(--yellow); }
+  .trade.migrate { border-left: 2px solid var(--purple); }
+  .trade.whale { background: rgba(255, 204, 0, 0.05); }
+  .trade .time { color: #444; font-size: 11px; }
+  .trade .type { font-weight: bold; text-transform: uppercase; font-size: 11px; }
+  .trade .type.buy { color: var(--green); }
+  .trade .type.sell { color: var(--red); }
+  .trade .type.create { color: var(--yellow); }
+  .trade .type.migrate { color: var(--purple); }
+  .trade .token { color: var(--yellow); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .trade .amount { text-align: right; color: var(--text); }
+  .trade .sol { text-align: right; }
+  .trade .sol.pos { color: var(--green); }
+  .trade .sol.neg { color: var(--red); }
+  .trade .link { text-align: right; }
+  .trade a { color: var(--blue); text-decoration: none; font-size: 11px; }
+  .trade a:hover { text-decoration: underline; }
+  .whale-tag { color: var(--yellow); font-size: 10px; margin-left: 4px; }
 
-  .sys { color: #555; padding: 4px 0; }
-  .sys.error { color: #ff4141; }
-  .sys.warn { color: #ffcc00; }
+  /* ── Sidebar ───────────────────────────────────────── */
+  #sidebar {
+    background: var(--bg2); border-left: 1px solid var(--border);
+    overflow-y: auto; padding: 12px;
+  }
+  .panel { margin-bottom: 16px; }
+  .panel h3 { font-size: 12px; color: var(--dim); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; border-bottom: 1px solid #222; padding-bottom: 4px; }
+  .panel .row { display: flex; justify-content: space-between; padding: 3px 0; font-size: 12px; }
+  .panel .row .label { color: #888; }
+
+  /* ── Volume Chart ──────────────────────────────────── */
+  #chart-container { height: 100px; padding: 8px 0; }
+  .bar-chart { display: flex; align-items: flex-end; gap: 2px; height: 80px; }
+  .bar-chart .bar { flex: 1; min-width: 4px; border-radius: 1px 1px 0 0; transition: height 0.3s ease; position: relative; }
+  .bar-chart .bar.buy { background: var(--green); }
+  .bar-chart .bar.sell { background: var(--red); }
+  .bar-chart .bar:hover { opacity: 0.7; }
+  .chart-labels { display: flex; justify-content: space-between; font-size: 9px; color: #444; margin-top: 2px; }
+
+  /* ── Top Tokens ────────────────────────────────────── */
+  .top-token { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #1a1a1a; font-size: 12px; }
+  .top-token .name { color: var(--yellow); max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .top-token .trades { color: var(--text); }
+
+  /* ── Whale Alerts ──────────────────────────────────── */
+  .whale-alert {
+    background: rgba(255, 204, 0, 0.08); border: 1px solid rgba(255, 204, 0, 0.2);
+    border-radius: 4px; padding: 6px 8px; margin-bottom: 6px; font-size: 11px;
+    animation: pulse 0.5s ease;
+  }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+  .whale-alert .whale-sol { color: var(--yellow); font-weight: bold; }
+
+  /* ── System log line ───────────────────────────────── */
+  .sys { color: var(--dim); padding: 4px 20px; font-size: 11px; }
+  .sys.error { color: var(--red); }
+  .sys.warn { color: var(--yellow); }
 
   /* ── Scrollbar ─────────────────────────────────────── */
-  ::-webkit-scrollbar { width: 6px; }
-  ::-webkit-scrollbar-track { background: #0a0a0a; }
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
   ::-webkit-scrollbar-thumb { background: #222; border-radius: 3px; }
-  ::-webkit-scrollbar-thumb:hover { background: #333; }
-
-  /* ── Responsive ────────────────────────────────────── */
-  @media (max-width: 700px) {
-    input[type="text"] { width: 100%; }
-    #header { flex-direction: column; align-items: flex-start; }
-    #header .controls { margin-left: 0; width: 100%; flex-wrap: wrap; }
-  }
 </style>
 </head>
 <body>
 
-<div id="header">
-  <h1>⚡ PumpFun Live</h1>
-  <a href="/trades" style="color:#4a9eff; text-decoration:none; font-size:12px; border:1px solid #333; padding:4px 10px; border-radius:3px;">📊 Trades Dashboard</a>
-  <div class="status" id="status">● Disconnected</div>
-  <div class="controls">
-    <input type="text" id="rpc" value="wss://api.mainnet-beta.solana.com" style="display:none" />
-    <button id="btn-connect">Disconnect</button>
-    <button id="btn-pause">Pause</button>
-    <button id="btn-clear">Clear</button>
+<div id="app">
+  <div id="header">
+    <h1>📊 PumpFun Live Trades</h1>
+    <a href="/" style="color:#4a9eff; text-decoration:none; font-size:12px; border:1px solid #333; padding:4px 10px; border-radius:3px;">⚡ Token Launches</a>
+    <div class="status" id="status">● Disconnected</div>
+    <div class="controls">
+      <select id="filter">
+        <option value="all">All Events</option>
+        <option value="buy">Buys Only</option>
+        <option value="sell">Sells Only</option>
+        <option value="create">Creates Only</option>
+        <option value="whale">Whales Only (≥1 SOL)</option>
+      </select>
+      <input type="text" id="search" placeholder="Filter by mint or token..." />
+      <input type="text" id="rpc" placeholder="wss:// custom RPC endpoint" title="Paste your Helius / Quicknode / Triton WebSocket URL here" />
+      <button id="btn-pause">Pause</button>
+      <button id="btn-sound">🔇</button>
+      <button id="btn-demo" title="Simulate live trades for testing">Demo</button>
+      <button id="btn-clear" class="danger">Clear</button>
+    </div>
+  </div>
+
+  <div id="stats">
+    <div>Events: <span class="val" id="s-total">0</span></div>
+    <div>Buys: <span class="val" id="s-buys">0</span></div>
+    <div>Sells: <span class="val red" id="s-sells">0</span></div>
+    <div>Creates: <span class="val yellow" id="s-creates">0</span></div>
+    <div>Whales: <span class="val yellow" id="s-whales">0</span></div>
+    <div>Vol: <span class="val blue" id="s-volume">0</span> SOL</div>
+    <div>Events/s: <span class="val" id="s-rate">0</span></div>
+    <div>Uptime: <span class="val" id="s-uptime">0s</span></div>
+  </div>
+
+  <div id="main">
+    <div id="feed">
+      <!-- Column headers -->
+      <div style="display:grid; grid-template-columns: 70px 50px 1fr 110px 100px 100px; gap:8px; padding:6px 20px; border-bottom:1px solid #333; font-size:11px; color:#555; text-transform:uppercase; letter-spacing:0.5px; position:sticky; top:0; background:var(--bg); z-index:1;">
+        <span>Time</span><span>Type</span><span>Token</span><span style="text-align:right">Amount</span><span style="text-align:right">SOL</span><span style="text-align:right">Tx</span>
+      </div>
+    </div>
+
+    <div id="sidebar">
+      <!-- Volume Chart -->
+      <div class="panel">
+        <h3>📈 Volume (30s windows)</h3>
+        <div id="chart-container">
+          <div class="bar-chart" id="chart"></div>
+          <div class="chart-labels"><span>-5m</span><span>now</span></div>
+        </div>
+      </div>
+
+      <!-- Buy/Sell Ratio -->
+      <div class="panel">
+        <h3>⚖️ Buy/Sell Ratio</h3>
+        <div id="ratio-bar" style="display:flex; height:8px; border-radius:4px; overflow:hidden; margin-bottom:6px;">
+          <div id="ratio-buy" style="background:var(--green); width:50%; transition: width 0.5s;"></div>
+          <div id="ratio-sell" style="background:var(--red); width:50%; transition: width 0.5s;"></div>
+        </div>
+        <div class="row"><span class="label">Buy %</span><span class="val" id="ratio-buy-pct">50%</span></div>
+        <div class="row"><span class="label">Sell %</span><span class="val red" id="ratio-sell-pct">50%</span></div>
+      </div>
+
+      <!-- Top Tokens -->
+      <div class="panel">
+        <h3>🔥 Top Tokens (by trades)</h3>
+        <div id="top-tokens"></div>
+      </div>
+
+      <!-- Whale Alerts -->
+      <div class="panel">
+        <h3>🐋 Whale Alerts</h3>
+        <div id="whale-alerts"><div style="color:#444; font-size:11px;">Waiting for whales...</div></div>
+      </div>
+
+      <!-- Connection Info -->
+      <div class="panel">
+        <h3>🔗 Connection</h3>
+        <div class="row"><span class="label">Program</span><span style="color:var(--blue); font-size:10px;">6EF8...F6P</span></div>
+        <div class="row"><span class="label">Endpoint</span><span id="endpoint-display" style="color:var(--text); font-size:10px;">auto</span></div>
+        <div class="row"><span class="label">Protocol</span><span id="protocol-display" style="color:var(--text);">—</span></div>
+        <div class="row"><span class="label">Sub ID</span><span id="sub-id" style="color:var(--text);">—</span></div>
+      </div>
+    </div>
   </div>
 </div>
 
-<div id="stats">
-  <div>Tokens: <span class="val" id="s-total">0</span></div>
-  <div>With GitHub: <span class="val" id="s-github">0</span></div>
-  <div>Logs/sec: <span class="val" id="s-rate">0</span></div>
-  <div>Uptime: <span class="val" id="s-uptime">0s</span></div>
-</div>
-
-<div id="log"></div>
-
+<!-- Whale alert sound (web audio) -->
 <script>
 // ════════════════════════════════════════════════════════════════════
-// PumpFun Live Token Launch WebSocket Monitor
-// Connects to a Solana RPC WebSocket and subscribes to Pump program
-// logs. Detects createV2 token launches in real-time.
+// PumpFun Live Trade Feed & Analytics Dashboard
+// Real-time buy/sell/create/migrate detection via Solana RPC WebSocket
+//
+// Built with the Pump SDK (https://github.com/nirholas/pump-fun-sdk)
+// Uses logsSubscribe to monitor the Pump program and parse events.
 // ════════════════════════════════════════════════════════════════════
 
 const PUMP_PROGRAM = '6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P';
-const MAX_LOG_ENTRIES = 500;
+const PUMP_AMM_PROGRAM = 'pAMMBay6oceH9fJKBRHGP5D4bD4sWpmSwMn52FMfXEA';
+const MAX_ENTRIES = 500;
+const WHALE_THRESHOLD_LAMPORTS = 1_000_000_000; // 1 SOL
+const CHART_BUCKETS = 10;  // 10 x 30s = 5 min
+const BUCKET_MS = 30_000;
 
-// ── Endpoints (PumpPortal primary, Solana RPC fallback) ──────────
+// ── Endpoints (tried in order) ──────────────────────────────────────
+// PumpPortal is a free, purpose-built WebSocket API for Pump.fun trades.
+// The Railway relay server proxies Solana RPC logsSubscribe and re-
+// broadcasts parsed events, avoiding public RPC rate limits.
+// Public Solana RPCs reject logsSubscribe for high-traffic programs,
+// so they are only useful if the user enters a paid RPC URL.
 const RPC_ENDPOINTS = [
-  { url: 'wss://pumpportal.fun/api/data', protocol: 'pumpportal', label: 'PumpPortal' },
-  { url: 'wss://api.mainnet-beta.solana.com', protocol: 'solana-rpc', label: 'Solana Public' },
-  { url: 'wss://solana-rpc.publicnode.com', protocol: 'solana-rpc', label: 'PublicNode' },
+  { url: 'wss://pumpportal.fun/api/data',                          protocol: 'pumpportal', label: 'PumpPortal' },
+  { url: 'wss://pump-fun-websocket-production.up.railway.app/ws',  protocol: 'relay',      label: 'Relay Server' },
 ];
+const MAX_FULL_CYCLES = 2; // auto-demo after this many full rotations
 let rpcIndex = 0;
-let connectAttempts = 0;
-let currentProtocol = null;
 
 // ── State ───────────────────────────────────────────────────────────
 let ws = null;
 let subId = null;
 let paused = false;
+let soundEnabled = false;
 let startTime = 0;
-let stats = { total: 0, github: 0, logsReceived: 0, lastSecondLogs: 0 };
-let rateInterval = null;
-let reconnectDelay = 1000;  // starts at 1s, doubles up to 30s
+let reconnectDelay = 1000;
 let reconnectTimer = null;
 let manualDisconnect = false;
+let rateInterval = null;
+let connectAttempts = 0;
+let currentProtocol = null; // 'pumpportal' | 'solana-rpc'
+let demoMode = false;
+let demoInterval = null;
 
-// ── DOM refs ────────────────────────────────────────────────────────
-const $log = document.getElementById('log');
+const stats = {
+  total: 0, buys: 0, sells: 0, creates: 0, migrates: 0, whales: 0,
+  volumeLamports: 0, logsReceived: 0,
+};
+
+// Token activity tracking
+const tokenMap = new Map(); // mint -> { name, symbol, buys, sells, volume }
+
+// Volume chart: each bucket tracks { buys, sells, buyVol, sellVol, ts }
+const chartData = Array.from({ length: CHART_BUCKETS }, (_, i) => ({
+  buys: 0, sells: 0, buyVol: 0, sellVol: 0, ts: Date.now() - (CHART_BUCKETS - 1 - i) * BUCKET_MS,
+}));
+
+// Whale alerts (last 20)
+const whaleAlerts = [];
+
+// ── DOM ─────────────────────────────────────────────────────────────
+const $feed = document.getElementById('feed');
 const $status = document.getElementById('status');
-const $rpc = document.getElementById('rpc');
-const $btnConnect = document.getElementById('btn-connect');
+const $filter = document.getElementById('filter');
+const $search = document.getElementById('search');
 const $btnPause = document.getElementById('btn-pause');
+const $btnSound = document.getElementById('btn-sound');
 const $btnClear = document.getElementById('btn-clear');
+const $rpc = document.getElementById('rpc');
+
+// ── Audio context (whale sound) ─────────────────────────────────────
+let audioCtx = null;
+function playWhaleSound() {
+  if (!soundEnabled) return;
+  try {
+    if (!audioCtx) audioCtx = new AudioContext();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.type = 'sine'; osc.frequency.value = 440;
+    gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
+    osc.start(); osc.stop(audioCtx.currentTime + 0.5);
+  } catch {}
+}
 
 // ── Buttons ─────────────────────────────────────────────────────────
 $btnPause.onclick = () => {
   paused = !paused;
   $btnPause.textContent = paused ? 'Resume' : 'Pause';
   $btnPause.classList.toggle('active', paused);
-  sysLog(paused ? 'Paused — events still tracked, display frozen' : 'Resumed');
 };
-$btnConnect.onclick = () => {
-  if (ws) {
-    disconnect();
-    $btnConnect.textContent = 'Connect';
+$btnSound.onclick = () => {
+  soundEnabled = !soundEnabled;
+  $btnSound.textContent = soundEnabled ? '🔊' : '🔇';
+  if (soundEnabled && !audioCtx) audioCtx = new AudioContext();
+};
+$btnClear.onclick = () => {
+  // Keep header row, remove everything else
+  while ($feed.children.length > 1) $feed.removeChild($feed.lastChild);
+};
+
+// ── Demo Mode ───────────────────────────────────────────────────────
+const $btnDemo = document.getElementById('btn-demo');
+$btnDemo.onclick = () => {
+  demoMode = !demoMode;
+  $btnDemo.classList.toggle('active', demoMode);
+  $btnDemo.textContent = demoMode ? 'Demo ●' : 'Demo';
+  if (demoMode) {
+    // Disconnect real feed
+    manualDisconnect = true;
+    if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
+    if (ws) { try { ws.close(); } catch {} }
+    setStatus('● Demo Mode', 'ok');
+    document.getElementById('endpoint-display').textContent = 'simulated';
+    document.getElementById('protocol-display').textContent = 'demo';
+    sysLog('Demo mode ON — generating simulated Pump.fun trades');
+    if (!startTime) startTime = Date.now();
+    startRateCounter();
+    startDemo();
   } else {
+    stopDemo();
+    sysLog('Demo mode OFF — reconnecting...');
     manualDisconnect = false;
-    reconnectDelay = 1000;
-    connectAttempts = 0;
     connect();
   }
 };
-$btnClear.onclick = () => { $log.innerHTML = ''; };
 
-// ── Connect to WebSocket (PumpPortal or Solana RPC) ───────────────
+const DEMO_TOKENS = [
+  { name: 'MOONCAT', symbol: 'MOON', mint: '7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU' },
+  { name: 'SOLAPE', symbol: 'SAPE', mint: '9dFkba3aBZq4y2eRYBAmQszYvisWikJC3WAXjUZr8pumP' },
+  { name: 'DEGENWIF', symbol: 'DWIF', mint: '3mPz8jQ7GkNPhzA3mXQthVK7dBqpHDJmR69FQxhK7nGR' },
+  { name: 'FROGGY', symbol: 'FROG', mint: 'A1b2C3d4E5f6G7h8I9j0K1L2M3N4O5P6Q7R8S9T0U1V2' },
+  { name: 'PUMPIT', symbol: 'PUMP', mint: 'ZzYyXxWwVvUuTtSsRrQqPpOoNnMmLlKkJjIiHhGgFfEe' },
+  { name: 'BONKINU', symbol: 'BINU', mint: 'D4e5F6g7H8i9J0k1L2m3N4o5P6q7R8s9T0u1V2w3X4y5' },
+  { name: 'SOLTOSHI', symbol: 'STSH', mint: 'Q1w2E3r4T5y6U7i8O9p0A1s2D3f4G5h6J7k8L9z0X1c2' },
+  { name: 'AIDOG', symbol: 'ADOG', mint: 'M1n2B3v4C5x6Z7l8K9j0H1g2F3d4S5a6P7o8I9u0Y1t2' },
+];
+
+function startDemo() {
+  demoInterval = setInterval(() => {
+    const token = DEMO_TOKENS[Math.floor(Math.random() * DEMO_TOKENS.length)];
+    const isBuy = Math.random() > 0.4;
+    const isCreate = Math.random() < 0.05;
+    const isMigrate = !isCreate && Math.random() < 0.02;
+    const type = isCreate ? 'create' : isMigrate ? 'migrate' : isBuy ? 'buy' : 'sell';
+    const solLamports = Math.floor((Math.random() * 5 + 0.01) * 1e9);
+    const tokenAmount = Math.floor(Math.random() * 1e10);
+
+    const event = {
+      type,
+      signature: Array.from({ length: 88 }, () => 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz123456789'[Math.floor(Math.random() * 58)]).join(''),
+      time: new Date().toLocaleTimeString(),
+      mint: token.mint,
+      solLamports,
+      tokenAmount,
+      trader: null,
+      tokenName: token.name,
+      tokenSymbol: token.symbol,
+    };
+
+    ingestEvent(event);
+  }, 300 + Math.floor(Math.random() * 700));
+}
+
+function stopDemo() {
+  if (demoInterval) { clearInterval(demoInterval); demoInterval = null; }
+}
+
+// ── WebSocket Connection (PumpPortal primary, Solana RPC fallback) ───
 function getNextEndpoint() {
+  // If the user typed a custom URL, always use that
   const custom = $rpc.value.trim();
-  if (custom && custom.startsWith('wss://')) {
+  if (custom && (custom.startsWith('wss://') || custom.startsWith('ws://'))) {
     const proto = custom.includes('pumpportal') ? 'pumpportal' : 'solana-rpc';
     return { url: custom, protocol: proto, label: 'Custom' };
   }
+  // Otherwise rotate through built-in list
   const ep = RPC_ENDPOINTS[rpcIndex % RPC_ENDPOINTS.length];
   rpcIndex++;
   return ep;
 }
 
 function connect() {
+  if (demoMode) return;
   if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
   const ep = getNextEndpoint();
   const url = ep.url;
   currentProtocol = ep.protocol;
+  manualDisconnect = false;
+  connectAttempts++;
   const shortUrl = url.replace(/api-key=\w+/, 'api-key=***').slice(0, 60);
   setStatus('Connecting...', '');
-  $btnConnect.textContent = 'Disconnect';
-  connectAttempts++;
   sysLog(`Connecting to ${ep.label} (${shortUrl})...`);
 
   try {
     ws = new WebSocket(url);
   } catch (e) {
-    sysLog(`Invalid URL: ${e.message}`, 'error');
+    sysLog(`Invalid WebSocket URL: ${e.message}`, 'error');
     scheduleReconnect();
     return;
   }
 
+  // Timeout — if no open within 10s, try next endpoint
   const connectTimeout = setTimeout(() => {
     if (ws && ws.readyState !== WebSocket.OPEN) {
-      sysLog(`Timeout on ${ep.label}, trying next...`, 'warn');
+      sysLog(`Connection timeout for ${ep.label}, trying next...`, 'warn');
       try { ws.close(); } catch {}
     }
   }, 10000);
@@ -251,17 +442,26 @@ function connect() {
     clearTimeout(connectTimeout);
     reconnectDelay = 1000;
     connectAttempts = 0;
+    setStatus('● Subscribing...', 'ok');
+    document.getElementById('endpoint-display').textContent = ep.label;
+    document.getElementById('protocol-display').textContent = currentProtocol;
     if (!startTime) startTime = Date.now();
     startRateCounter();
 
     if (currentProtocol === 'pumpportal') {
-      // PumpPortal: subscribe to new token creates
+      // PumpPortal: subscribe to all new tokens + all token trades
       ws.send(JSON.stringify({ method: 'subscribeNewToken' }));
-      setStatus(`● Live — PumpPortal`, 'connected');
-      sysLog('Subscribed via PumpPortal — streaming new token launches');
+      ws.send(JSON.stringify({ method: 'subscribeTokenTrade', keys: ['all'] }));
+      setStatus('● Live — PumpPortal', 'ok');
+      document.getElementById('sub-id').textContent = 'stream';
+      sysLog('Subscribed via PumpPortal — streaming all trades + new tokens');
+    } else if (currentProtocol === 'relay') {
+      // Railway relay: already subscribed server-side, just listen
+      setStatus('● Live — Relay', 'ok');
+      document.getElementById('sub-id').textContent = 'relay';
+      sysLog('Connected to relay server — receiving proxied events');
     } else {
       // Solana RPC: subscribe to program logs
-      setStatus('● Connected — subscribing to Pump program...', 'connected');
       ws.send(JSON.stringify({
         jsonrpc: '2.0', id: 1,
         method: 'logsSubscribe',
@@ -275,268 +475,480 @@ function connect() {
     try { msg = JSON.parse(evt.data); } catch { return; }
 
     if (currentProtocol === 'pumpportal') {
-      // PumpPortal sends flat objects: { txType:'create', mint, name, symbol, uri, signature, ... }
-      if (msg && msg.mint) {
-        stats.logsReceived++;
-        const info = {
-          signature: msg.signature || '',
-          time: new Date().toLocaleTimeString(),
-          name: msg.name || null,
-          symbol: msg.symbol || null,
-          metadataUri: msg.uri || null,
-          mint: msg.mint,
-          creator: msg.traderPublicKey || null,
-          hasGithub: false,
-          githubUrls: [],
-          rawLogs: [`PumpPortal: ${msg.txType || 'create'} ${msg.name || msg.mint}`],
-          isV2: true,
-        };
-        stats.total++;
-        if (info.metadataUri && info.metadataUri.includes('github.com')) {
-          info.hasGithub = true;
-          stats.github++;
-        }
-        if (info.metadataUri) fetchMetadata(info.metadataUri, info.signature);
-        if (!paused) renderEntry(info);
-        updateStats();
-      }
+      handlePumpPortalMessage(msg);
       return;
     }
 
-    // ── Solana RPC protocol ──
+    if (currentProtocol === 'relay') {
+      handleRelayMessage(msg);
+      return;
+    }
+
+    // ── Solana RPC protocol ──────────────────────────────────────
     // Subscription confirmation
     if (msg.id === 1 && msg.result !== undefined) {
       subId = msg.result;
-      setStatus(`● Live — subscriptionId: ${subId}`, 'connected');
-      sysLog(`Subscribed to ${PUMP_PROGRAM} (sub=${subId}). Waiting for token launches...`);
+      setStatus(`● Live — sub:${subId}`, 'ok');
+      document.getElementById('sub-id').textContent = subId;
+      sysLog(`Subscribed (id=${subId}). Monitoring all Pump trades...`);
       return;
     }
 
-    // RPC error (rejected subscription)
+    // RPC error (some endpoints reject logsSubscribe)
     if (msg.id === 1 && msg.error) {
       sysLog(`RPC rejected logsSubscribe: ${msg.error.message || JSON.stringify(msg.error)}`, 'error');
-      sysLog('Tip: public RPCs rate-limit this. PumpPortal is recommended.', 'warn');
+      sysLog('Tip: public RPCs rate-limit logsSubscribe. Try PumpPortal or a paid RPC.', 'warn');
       try { ws.close(); } catch {}
       return;
     }
 
-    // Log notification
     if (msg.method === 'logsNotify' && msg.params?.result) {
       stats.logsReceived++;
-      handleLogNotification(msg.params.result);
+      processNotification(msg.params.result);
     }
   };
 
-  ws.onerror = (err) => {
+  ws.onerror = () => {
     clearTimeout(connectTimeout);
-    setStatus('● Error', 'error');
+    setStatus('● Error', 'err');
     sysLog(`WebSocket error on ${ep.label}`, 'error');
-    console.error('WS Error:', err);
   };
 
   ws.onclose = (evt) => {
     clearTimeout(connectTimeout);
-    ws = null;
-    subId = null;
-    currentProtocol = null;
+    ws = null; subId = null; currentProtocol = null;
+    document.getElementById('sub-id').textContent = '—';
+    document.getElementById('protocol-display').textContent = '—';
     if (!manualDisconnect) {
       scheduleReconnect();
     } else {
       setStatus('● Disconnected', '');
-      sysLog(`Disconnected (code=${evt.code}).`);
-      $btnConnect.textContent = 'Connect';
       stopRateCounter();
     }
   };
 }
 
 function scheduleReconnect() {
+  if (demoMode) return;
+
+  // After cycling all endpoints MAX_FULL_CYCLES times, auto-switch to demo
+  const fullCycles = Math.floor(connectAttempts / RPC_ENDPOINTS.length);
+  if (fullCycles >= MAX_FULL_CYCLES) {
+    sysLog('All endpoints unreachable — switching to Demo mode automatically', 'error');
+    sysLog('Tip: enter a paid Solana RPC URL (wss://…) and press Enter to reconnect', 'warn');
+    $btnDemo.click();
+    return;
+  }
+
   const delay = Math.min(reconnectDelay, 15000);
   const nextEp = RPC_ENDPOINTS[rpcIndex % RPC_ENDPOINTS.length];
-  setStatus(`● Retrying ${(delay / 1000).toFixed(0)}s → ${nextEp.label}`, 'error');
+  setStatus(`● Retrying ${(delay / 1000).toFixed(0)}s → ${nextEp.label}`, 'err');
   sysLog(`Trying ${nextEp.label} in ${(delay / 1000).toFixed(0)}s...`, 'warn');
   reconnectTimer = setTimeout(connect, delay);
+  // Increase delay after cycling all endpoints once
   if (connectAttempts >= RPC_ENDPOINTS.length) {
     reconnectDelay = Math.min(reconnectDelay * 1.5, 15000);
   }
 }
 
-function disconnect() {
-  manualDisconnect = true;
-  if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
-  if (ws) {
-    if (subId !== null) {
-      try { ws.send(JSON.stringify({ jsonrpc: '2.0', id: 2, method: 'logsUnsubscribe', params: [subId] })); } catch {}
-    }
-    ws.close();
-  }
-}
+// ── PumpPortal message handler ──────────────────────────────────────
+function handlePumpPortalMessage(msg) {
+  // PumpPortal sends flat JSON objects with txType, mint, solAmount, etc.
+  if (!msg || typeof msg !== 'object') return;
+  stats.logsReceived++;
 
-// ── Handle incoming log notifications ───────────────────────────────
-function handleLogNotification(result) {
-  const { value } = result;
-  if (!value || value.err) return;
+  // Determine event type
+  const txType = (msg.txType || '').toLowerCase();
+  let type = null;
+  if (txType === 'buy') type = 'buy';
+  else if (txType === 'sell') type = 'sell';
+  else if (txType === 'create') type = 'create';
+  else if (txType === 'migrate') type = 'migrate';
+  else if (msg.mint && msg.name && !msg.txType) type = 'create'; // subscribeNewToken events
+  else return; // Unknown message type
 
-  const { signature, logs } = value;
-  if (!logs || !Array.isArray(logs)) return;
-
-  const logsText = logs.join('\n');
-
-  // Detect token creation: look for Create or CreateV2 instruction
-  const isCreate = logsText.includes('Instruction: Create');
-  if (!isCreate) return;
-
-  // ── Parse what we can from the raw logs ─────────────────────────
-  const info = parseCreateLogs(logs, signature);
-  stats.total++;
-
-  // Check if we can find a GitHub reference in the logs (unlikely from
-  // raw logs, but metadata URI might be visible in Program data)
-  if (info.metadataUri && info.metadataUri.includes('github.com')) {
-    info.hasGithub = true;
-    stats.github++;
+  // Normalize amounts — PumpPortal may send solAmount in lamports or SOL
+  let solLamports = 0;
+  if (msg.solAmount !== undefined) {
+    solLamports = msg.solAmount > 1e6 ? Math.floor(msg.solAmount) : Math.floor(msg.solAmount * 1e9);
+  } else if (msg.vSolInBondingCurve !== undefined && type === 'create') {
+    solLamports = 0; // Creates don't have a trade amount
   }
 
-  // Try fetching metadata in background (best-effort)
-  if (info.metadataUri) {
-    fetchMetadata(info.metadataUri, signature);
+  let tokenAmount = 0;
+  if (msg.tokenAmount !== undefined) {
+    tokenAmount = Math.floor(msg.tokenAmount);
   }
 
-  if (!paused) renderEntry(info);
-  updateStats();
-}
-
-// ── Parse create instruction data from logs ─────────────────────────
-function parseCreateLogs(logs, signature) {
-  const info = {
-    signature,
+  const event = {
+    type,
+    signature: msg.signature || '',
     time: new Date().toLocaleTimeString(),
-    name: null,
-    symbol: null,
-    metadataUri: null,
-    mint: null,
-    creator: null,
-    hasGithub: false,
-    githubUrls: [],
-    rawLogs: logs,
-    isV2: false,
+    mint: msg.mint || 'unknown',
+    solLamports,
+    tokenAmount,
+    trader: msg.traderPublicKey || null,
+    tokenName: msg.name || null,
+    tokenSymbol: msg.symbol || null,
   };
 
-  for (const line of logs) {
-    // Detect version
-    if (line.includes('Instruction: CreateV2')) info.isV2 = true;
+  ingestEvent(event);
+}
 
-    // Some RPC providers show decoded instruction data in logs
-    // Look for Program data (base64 encoded event data)
+// ── Railway relay server message handler ────────────────────────────
+function handleRelayMessage(msg) {
+  if (!msg || typeof msg !== 'object') return;
+  // Skip heartbeat / status frames
+  if (msg.type === 'heartbeat' || msg.type === 'status') return;
+  // The relay emits TokenLaunchEvent objects with type='launch'
+  if (msg.type === 'launch' || msg.type === 'create' || msg.mint) {
+    stats.logsReceived++;
+    const event = {
+      type: 'create',
+      signature: msg.signature || '',
+      time: new Date().toLocaleTimeString(),
+      mint: msg.mint || 'unknown',
+      solLamports: 0,
+      tokenAmount: 0,
+      trader: msg.creator || null,
+      tokenName: msg.name || null,
+      tokenSymbol: msg.symbol || null,
+    };
+    ingestEvent(event);
+  }
+}
+
+// ── Process a Solana RPC log notification ───────────────────────────
+function processNotification(result) {
+  const { value } = result;
+  if (!value || value.err) return;
+  const { signature, logs } = value;
+  if (!logs?.length) return;
+
+  const logsText = logs.join('\n');
+  const event = classifyEvent(logsText, logs, signature);
+  if (!event) return;
+
+  ingestEvent(event);
+}
+
+// ── Common event ingestion (used by all sources) ────────────────────
+function ingestEvent(event) {
+  stats.total++;
+
+  // Update type counters
+  if (event.type === 'buy') stats.buys++;
+  else if (event.type === 'sell') stats.sells++;
+  else if (event.type === 'create') stats.creates++;
+  else if (event.type === 'migrate') stats.migrates++;
+
+  // Volume tracking
+  if (event.solLamports > 0) {
+    stats.volumeLamports += event.solLamports;
+  }
+
+  // Whale detection
+  const isWhale = event.solLamports >= WHALE_THRESHOLD_LAMPORTS;
+  if (isWhale) {
+    stats.whales++;
+    addWhaleAlert(event);
+    playWhaleSound();
+  }
+
+  // Token tracking
+  trackToken(event);
+
+  // Chart data
+  updateChart(event);
+
+  // Apply filters
+  const filterVal = $filter.value;
+  const searchVal = $search.value.toLowerCase();
+  let show = true;
+  if (filterVal === 'buy' && event.type !== 'buy') show = false;
+  if (filterVal === 'sell' && event.type !== 'sell') show = false;
+  if (filterVal === 'create' && event.type !== 'create') show = false;
+  if (filterVal === 'whale' && !isWhale) show = false;
+  if (searchVal && !event.mint?.toLowerCase().includes(searchVal) &&
+      !event.tokenName?.toLowerCase().includes(searchVal)) show = false;
+
+  if (!paused && show) renderTrade(event, isWhale);
+  updateAllStats();
+}
+
+// ── Classify event type from program logs ───────────────────────────
+function classifyEvent(logsText, logs, signature) {
+  let type = null;
+  let solLamports = 0;
+  let tokenAmount = 0;
+  let mint = null;
+  let trader = null;
+  let tokenName = null;
+  let tokenSymbol = null;
+
+  // Determine event type from instruction logs
+  if (logsText.includes('Instruction: Sell')) {
+    type = 'sell';
+  } else if (logsText.includes('Instruction: Buy')) {
+    type = 'buy';
+  } else if (logsText.includes('Instruction: Create')) {
+    type = 'create';
+  } else if (logsText.includes('Instruction: Migrate')) {
+    type = 'migrate';
+  } else {
+    return null; // Not a trade event
+  }
+
+  // Parse program data for amounts
+  for (const line of logs) {
+    // Try to extract base64 event data
     if (line.startsWith('Program data: ')) {
       try {
         const b64 = line.slice('Program data: '.length);
-        const decoded = atob(b64);
-        // Try to find readable strings (name, symbol, URI)
-        const readable = decoded.replace(/[^\x20-\x7E]/g, ' ').trim();
-        if (readable.includes('http')) {
-          const urlMatch = readable.match(/(https?:\/\/[^\s]+)/);
-          if (urlMatch) info.metadataUri = urlMatch[1];
+        const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+
+        // Anchor events: first 8 bytes are discriminator
+        // TradeEvent layout after disc: mint(32), sol_amount(8), token_amount(8), is_buy(1), user(32), ...
+        if (bytes.length >= 81) {
+          // Read mint (32 bytes at offset 8)
+          const mintBytes = bytes.slice(8, 40);
+          const possibleMint = bytesToBase58(mintBytes);
+          if (possibleMint && possibleMint.length >= 32) {
+            mint = possibleMint;
+          }
+
+          // Read sol_amount (u64 LE at offset 40)
+          const solView = new DataView(bytes.buffer, bytes.byteOffset + 40, 8);
+          solLamports = Number(solView.getBigUint64(0, true));
+          if (solLamports > 1e18) solLamports = 0; // sanity check
+
+          // Read token_amount (u64 LE at offset 48)
+          const tokView = new DataView(bytes.buffer, bytes.byteOffset + 48, 8);
+          tokenAmount = Number(tokView.getBigUint64(0, true));
+          if (tokenAmount > 1e30) tokenAmount = 0;
         }
-      } catch { /* ignore */ }
+
+        // Try to read strings (for create events)
+        if (type === 'create') {
+          const decoded = new TextDecoder('ascii', { fatal: false }).decode(bytes);
+          const readable = decoded.replace(/[^\x20-\x7E]/g, ' ');
+          const urlMatch = readable.match(/(https?:\/\/[^\s]+)/);
+          if (urlMatch) {
+            fetchTokenMeta(urlMatch[1], signature, mint);
+          }
+        }
+      } catch {}
     }
 
-    // Extract invoke log to find accounts
+    // Fallback: look for log messages with amounts
     if (line.includes('Program log: mint:')) {
       const m = line.match(/mint:\s*(\w{32,})/);
-      if (m) info.mint = m[1];
+      if (m) mint = m[1];
     }
   }
 
-  return info;
+  return {
+    type,
+    signature,
+    time: new Date().toLocaleTimeString(),
+    mint: mint || 'unknown',
+    solLamports,
+    tokenAmount,
+    trader,
+    tokenName,
+    tokenSymbol,
+  };
 }
 
-// ── Fetch token metadata (best-effort, non-blocking) ────────────────
-async function fetchMetadata(uri, signature) {
-  try {
-    // Normalize IPFS URIs
-    let url = uri;
-    if (url.startsWith('ipfs://')) {
-      url = 'https://cf-ipfs.com/ipfs/' + url.slice(7);
-    }
+// ── Base58 encoder (minimal, for display) ───────────────────────────
+const B58_ALPHA = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+function bytesToBase58(bytes) {
+  // Simple base58 for 32-byte keys
+  let num = BigInt(0);
+  for (const b of bytes) num = num * 256n + BigInt(b);
+  if (num === 0n) return '1';
+  let str = '';
+  while (num > 0n) {
+    str = B58_ALPHA[Number(num % 58n)] + str;
+    num = num / 58n;
+  }
+  // Leading zeros
+  for (const b of bytes) { if (b === 0) str = '1' + str; else break; }
+  return str;
+}
 
+// ── Fetch token metadata (best-effort) ──────────────────────────────
+async function fetchTokenMeta(uri, signature, mint) {
+  try {
+    let url = uri;
+    if (url.startsWith('ipfs://')) url = 'https://cf-ipfs.com/ipfs/' + url.slice(7);
     const resp = await fetch(url, { signal: AbortSignal.timeout(5000) });
     if (!resp.ok) return;
-
     const meta = await resp.json();
-    const githubUrls = extractGithubUrls(meta);
-
-    if (githubUrls.length > 0) {
-      stats.github++;
-      updateStats();
-
-      // Update the existing entry if visible
+    if (meta.name && mint) {
+      // Update token map
+      const t = tokenMap.get(mint);
+      if (t) { t.name = meta.name; t.symbol = meta.symbol || ''; }
+      // Update visible entry
       const el = document.getElementById('tx-' + signature.slice(0, 16));
       if (el) {
-        const githubDiv = document.createElement('div');
-        githubDiv.innerHTML = '🌐 <span class="github">GitHub: ' +
-          githubUrls.map(u => `<a href="${esc(u)}" target="_blank">${esc(u)}</a>`).join(', ') +
-          '</span>';
-        el.appendChild(githubDiv);
+        const nameEl = el.querySelector('.token');
+        if (nameEl) nameEl.textContent = `${meta.name} ${meta.symbol ? '(' + meta.symbol + ')' : ''}`;
       }
     }
-
-    // Update name/symbol if found
-    if (meta.name || meta.symbol) {
-      const el = document.getElementById('tx-' + signature.slice(0, 16));
-      if (el) {
-        const nameEl = el.querySelector('.name');
-        const symEl = el.querySelector('.symbol');
-        if (nameEl && meta.name) nameEl.textContent = meta.name;
-        if (symEl && meta.symbol) symEl.textContent = '(' + meta.symbol + ')';
-      }
-    }
-  } catch { /* metadata fetch is best-effort */ }
+  } catch {}
 }
 
-// ── Extract GitHub URLs from metadata ───────────────────────────────
-function extractGithubUrls(meta) {
-  const urls = new Set();
-  const ghPattern = /https?:\/\/(www\.)?github\.com\/[^\s"'<>]+/gi;
-
-  function scan(val) {
-    if (typeof val === 'string') {
-      const matches = val.match(ghPattern);
-      if (matches) matches.forEach(u => urls.add(u));
-    } else if (val && typeof val === 'object') {
-      Object.values(val).forEach(scan);
-    }
+// ── Track token activity ────────────────────────────────────────────
+function trackToken(event) {
+  const key = event.mint;
+  if (key === 'unknown') return;
+  if (!tokenMap.has(key)) {
+    tokenMap.set(key, { name: event.tokenName || key.slice(0, 8) + '...', symbol: event.tokenSymbol || '', buys: 0, sells: 0, volume: 0, lastSeen: Date.now() });
   }
-  scan(meta);
-  return [...urls];
+  const t = tokenMap.get(key);
+  if (event.tokenName && t.name.endsWith('...')) t.name = event.tokenName; // update if we got a real name
+  if (event.tokenSymbol && !t.symbol) t.symbol = event.tokenSymbol;
+  if (event.type === 'buy') t.buys++;
+  if (event.type === 'sell') t.sells++;
+  t.volume += event.solLamports;
+  t.lastSeen = Date.now();
 }
 
-// ── Render a token launch entry ─────────────────────────────────────
-function renderEntry(info) {
-  const div = document.createElement('div');
-  div.className = 'entry';
-  div.id = 'tx-' + info.signature.slice(0, 16);
+// ── Update volume chart ─────────────────────────────────────────────
+function updateChart(event) {
+  const now = Date.now();
+  const bucket = chartData[chartData.length - 1];
 
-  const shortSig = info.signature.slice(0, 8) + '...' + info.signature.slice(-6);
-  const version = info.isV2 ? 'CreateV2' : 'Create';
+  // Roll buckets if needed
+  if (now - bucket.ts > BUCKET_MS) {
+    chartData.shift();
+    chartData.push({ buys: 0, sells: 0, buyVol: 0, sellVol: 0, ts: now });
+  }
+
+  const cur = chartData[chartData.length - 1];
+  if (event.type === 'buy') { cur.buys++; cur.buyVol += event.solLamports; }
+  if (event.type === 'sell') { cur.sells++; cur.sellVol += event.solLamports; }
+
+  renderChart();
+}
+
+// ── Render chart ────────────────────────────────────────────────────
+function renderChart() {
+  const $chart = document.getElementById('chart');
+  const maxCount = Math.max(1, ...chartData.map(b => Math.max(b.buys, b.sells)));
+  $chart.innerHTML = chartData.map(b => {
+    const buyH = Math.max(1, (b.buys / maxCount) * 70);
+    const sellH = Math.max(1, (b.sells / maxCount) * 70);
+    return `<div style="display:flex; flex-direction:column; gap:1px; flex:1; align-items:stretch; justify-content:flex-end; height:80px;">
+      <div class="bar buy" style="height:${buyH}px;" title="Buys: ${b.buys}"></div>
+      <div class="bar sell" style="height:${sellH}px;" title="Sells: ${b.sells}"></div>
+    </div>`;
+  }).join('');
+}
+
+// ── Add whale alert ─────────────────────────────────────────────────
+function addWhaleAlert(event) {
+  const sol = (event.solLamports / 1e9).toFixed(2);
+  const alert = { type: event.type, sol, mint: event.mint, name: event.tokenName || null, time: event.time, sig: event.signature };
+  whaleAlerts.unshift(alert);
+  if (whaleAlerts.length > 10) whaleAlerts.pop();
+  renderWhaleAlerts();
+}
+
+function renderWhaleAlerts() {
+  const $el = document.getElementById('whale-alerts');
+  $el.innerHTML = whaleAlerts.map(a => {
+    const emoji = a.type === 'buy' ? '🟢' : a.type === 'sell' ? '🔴' : '🟡';
+    const display = a.name || (a.mint.slice(0, 6) + '...' + a.mint.slice(-4));
+    return `<div class="whale-alert">
+      ${emoji} <span class="whale-sol">${a.sol} SOL</span> ${a.type.toUpperCase()}
+      <span style="color:#888">${display}</span>
+      <a href="https://solscan.io/tx/${a.sig}" target="_blank" style="color:var(--blue); text-decoration:none; font-size:10px; float:right;">view tx</a>
+    </div>`;
+  }).join('');
+}
+
+// ── Render a trade row ──────────────────────────────────────────────
+function renderTrade(event, isWhale) {
+  const sol = event.solLamports > 0 ? (event.solLamports / 1e9).toFixed(4) : '—';
+  const tokens = event.tokenAmount > 0 ? formatTokenAmount(event.tokenAmount) : '—';
+  const shortSig = event.signature.slice(0, 6) + '...' + event.signature.slice(-4);
+  const shortMint = event.mint !== 'unknown' ? event.mint.slice(0, 6) + '...' + event.mint.slice(-4) : '—';
+
+  const div = document.createElement('div');
+  div.className = `trade ${event.type}${isWhale ? ' whale' : ''}`;
+  div.id = 'tx-' + event.signature.slice(0, 16);
+
+  const solClass = event.type === 'buy' ? 'pos' : event.type === 'sell' ? 'neg' : '';
 
   div.innerHTML =
-    `<span class="time">${info.time}</span> ` +
-    `🚀 <span class="name">${esc(info.name || 'Loading...')}</span> ` +
-    `<span class="symbol">${info.symbol ? '(' + esc(info.symbol) + ')' : ''}</span> ` +
-    `<span class="label">[${version}]</span>` +
-    (info.mint ? ` <span class="label">mint:</span><span class="addr">${info.mint.slice(0,6)}...${info.mint.slice(-4)}</span>` : '') +
-    ` <a href="https://solscan.io/tx/${info.signature}" target="_blank" class="addr">${shortSig}</a>` +
-    (info.hasGithub ? ` <span class="github">★ GitHub</span>` : '') +
-    `<div class="raw">${info.rawLogs.slice(0, 5).map(esc).join(' → ')}</div>`;
+    `<span class="time">${event.time}</span>` +
+    `<span class="type ${event.type}">${event.type}${isWhale ? '<span class="whale-tag">🐋</span>' : ''}</span>` +
+    `<span class="token" title="${event.mint}">${event.tokenName || shortMint}</span>` +
+    `<span class="amount">${tokens}</span>` +
+    `<span class="sol ${solClass}">${event.type === 'sell' ? '-' : ''}${sol}</span>` +
+    `<span class="link"><a href="https://solscan.io/tx/${event.signature}" target="_blank">${shortSig}</a></span>`;
 
-  // Prepend (newest first)
-  $log.prepend(div);
+  // Insert after header row
+  if ($feed.children.length > 1) {
+    $feed.insertBefore(div, $feed.children[1]);
+  } else {
+    $feed.appendChild(div);
+  }
 
   // Limit entries
-  while ($log.children.length > MAX_LOG_ENTRIES) {
-    $log.removeChild($log.lastChild);
+  while ($feed.children.length > MAX_ENTRIES + 1) {
+    $feed.removeChild($feed.lastChild);
   }
+}
+
+function formatTokenAmount(raw) {
+  if (raw >= 1e12) return (raw / 1e12).toFixed(1) + 'T';
+  if (raw >= 1e9) return (raw / 1e9).toFixed(1) + 'B';
+  if (raw >= 1e6) return (raw / 1e6).toFixed(1) + 'M';
+  if (raw >= 1e3) return (raw / 1e3).toFixed(1) + 'K';
+  return raw.toString();
+}
+
+// ── Update all stats & sidebar ──────────────────────────────────────
+function updateAllStats() {
+  document.getElementById('s-total').textContent = stats.total;
+  document.getElementById('s-buys').textContent = stats.buys;
+  document.getElementById('s-sells').textContent = stats.sells;
+  document.getElementById('s-creates').textContent = stats.creates;
+  document.getElementById('s-whales').textContent = stats.whales;
+  document.getElementById('s-volume').textContent = (stats.volumeLamports / 1e9).toFixed(2);
+
+  // Buy/sell ratio
+  const total = stats.buys + stats.sells || 1;
+  const buyPct = Math.round((stats.buys / total) * 100);
+  const sellPct = 100 - buyPct;
+  document.getElementById('ratio-buy').style.width = buyPct + '%';
+  document.getElementById('ratio-sell').style.width = sellPct + '%';
+  document.getElementById('ratio-buy-pct').textContent = buyPct + '%';
+  document.getElementById('ratio-sell-pct').textContent = sellPct + '%';
+
+  // Top tokens (by trade count, top 8)
+  updateTopTokens();
+}
+
+function updateTopTokens() {
+  const sorted = [...tokenMap.entries()]
+    .map(([mint, t]) => ({ mint, ...t, total: t.buys + t.sells }))
+    .sort((a, b) => b.total - a.total)
+    .slice(0, 8);
+
+  document.getElementById('top-tokens').innerHTML = sorted.length === 0
+    ? '<div style="color:#444; font-size:11px;">Waiting for trades...</div>'
+    : sorted.map(t => {
+        const shortMint = t.mint.slice(0, 6) + '...' + t.mint.slice(-4);
+        const vol = (t.volume / 1e9).toFixed(2);
+        return `<div class="top-token">
+          <span class="name" title="${t.mint}">${t.name || shortMint}</span>
+          <span class="trades">${t.total} trades · ${vol} SOL</span>
+        </div>`;
+      }).join('');
 }
 
 // ── System log ──────────────────────────────────────────────────────
@@ -544,15 +956,14 @@ function sysLog(msg, level = '') {
   const div = document.createElement('div');
   div.className = 'sys' + (level ? ' ' + level : '');
   div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
-  $log.prepend(div);
+  if ($feed.children.length > 1) {
+    $feed.insertBefore(div, $feed.children[1]);
+  } else {
+    $feed.appendChild(div);
+  }
 }
 
-// ── Stats ───────────────────────────────────────────────────────────
-function updateStats() {
-  document.getElementById('s-total').textContent = stats.total;
-  document.getElementById('s-github').textContent = stats.github;
-}
-
+// ── Rate counter / uptime ───────────────────────────────────────────
 function startRateCounter() {
   let prev = 0;
   rateInterval = setInterval(() => {
@@ -562,9 +973,19 @@ function startRateCounter() {
 
     if (startTime) {
       const sec = Math.floor((Date.now() - startTime) / 1000);
-      const m = Math.floor(sec / 60);
+      const h = Math.floor(sec / 3600);
+      const m = Math.floor((sec % 3600) / 60);
       const s = sec % 60;
-      document.getElementById('s-uptime').textContent = m > 0 ? `${m}m ${s}s` : `${s}s`;
+      document.getElementById('s-uptime').textContent =
+        h > 0 ? `${h}h ${m}m` : m > 0 ? `${m}m ${s}s` : `${s}s`;
+    }
+
+    // Roll chart buckets periodically
+    const bucket = chartData[chartData.length - 1];
+    if (Date.now() - bucket.ts > BUCKET_MS) {
+      chartData.shift();
+      chartData.push({ buys: 0, sells: 0, buyVol: 0, sellVol: 0, ts: Date.now() });
+      renderChart();
     }
   }, 1000);
 }
@@ -579,19 +1000,29 @@ function setStatus(text, cls) {
   $status.className = 'status' + (cls ? ' ' + cls : '');
 }
 
-function esc(s) {
-  const d = document.createElement('div');
-  d.textContent = s || '';
-  return d.innerHTML;
-}
-
 // ── Init ────────────────────────────────────────────────────────────
-sysLog('PumpFun Live Monitor — always-on, auto-reconnecting');
-sysLog(`Monitoring program: ${PUMP_PROGRAM}`);
-sysLog('Primary: PumpPortal API (pre-parsed, no RPC limits)');
-sysLog(`Fallback: ${RPC_ENDPOINTS.filter(e => e.protocol === 'solana-rpc').length} Solana RPC endpoints`);
+renderChart();
+sysLog('PumpFun Live Trades — Real-time analytics dashboard');
+sysLog(`Monitoring Pump program: ${PUMP_PROGRAM}`);
+sysLog(`Primary: PumpPortal API (pre-parsed trades, no RPC limits)`);
+sysLog(`Fallback: Relay server at Railway (proxied Solana events)`);
+sysLog(`Auto-demo after ${MAX_FULL_CYCLES} full endpoint cycles if all fail`);
+sysLog('Tracking: buys, sells, creates, migrations, whale alerts (≥1 SOL)');
+sysLog('Click "Demo" to simulate trades if all endpoints are unavailable');
 
-// Connect immediately on page load
+// Allow Enter in RPC input to force reconnect
+$rpc.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    if (demoMode) { $btnDemo.click(); } // exit demo mode
+    reconnectDelay = 1000;
+    connectAttempts = 0;
+    rpcIndex = 0;
+    if (ws) { manualDisconnect = true; try { ws.close(); } catch {} }
+    setTimeout(connect, 100);
+  }
+});
+
 connect();
 </script>
 </body>

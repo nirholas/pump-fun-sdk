@@ -101,13 +101,25 @@
 
   .entry .time { color: #444; }
   .entry .label { color: #888; }
-  .entry .name { color: #ffcc00; font-weight: bold; }
-  .entry .symbol { color: #ff9900; }
+  .entry .name { color: #ffcc00; font-weight: bold; font-size: 15px; }
+  .entry .symbol { color: #ff9900; font-weight: bold; }
   .entry .addr { color: #4a9eff; }
   .entry .github { color: #00ff41; font-weight: bold; }
-  .entry .raw { color: #333; font-size: 11px; word-break: break-all; }
+  .entry .raw { color: #333; font-size: 11px; word-break: break-all; display: none; }
   .entry a { color: #4a9eff; text-decoration: none; }
   .entry a:hover { text-decoration: underline; }
+
+  .entry .token-row { display: flex; align-items: center; gap: 10px; margin: 4px 0; }
+  .entry .token-img { width: 36px; height: 36px; border-radius: 50%; border: 1px solid #333; object-fit: cover; background: #111; }
+  .entry .token-details { flex: 1; min-width: 0; }
+  .entry .meta-row { display: flex; gap: 12px; flex-wrap: wrap; font-size: 11px; color: #666; margin-top: 3px; }
+  .entry .meta-row .key { color: #555; }
+  .entry .meta-row .val { color: #aaa; }
+  .entry .meta-row .val.green { color: #00ff41; }
+  .entry .meta-row .val.blue { color: #4a9eff; }
+  .entry .meta-row a { font-size: 11px; }
+  .entry .sol-val { color: #00e5ff; font-weight: bold; }
+  .entry .mcap { color: #b366ff; font-weight: bold; }
 
   .sys { color: #555; padding: 4px 0; }
   .sys.error { color: #ff4141; }
@@ -278,6 +290,13 @@ function connect() {
       // PumpPortal sends flat objects: { txType:'create', mint, name, symbol, uri, signature, ... }
       if (msg && msg.mint) {
         stats.logsReceived++;
+        const vSol = msg.vSolInBondingCurve || 0;
+        const vTok = msg.vTokensInBondingCurve || 0;
+        const supply = msg.tokenTotalSupply || (vTok > 0 ? 1e15 : 0);
+        let mcap = msg.marketCapSol || 0;
+        if (!mcap && vTok > 0 && vSol > 0) {
+          mcap = (vSol / vTok) * supply / 1e9;
+        }
         const info = {
           signature: msg.signature || '',
           time: new Date().toLocaleTimeString(),
@@ -285,11 +304,19 @@ function connect() {
           symbol: msg.symbol || null,
           metadataUri: msg.uri || null,
           mint: msg.mint,
+          bondingCurve: msg.bondingCurveKey || null,
           creator: msg.traderPublicKey || null,
+          user: msg.traderPublicKey || null,
           hasGithub: false,
           githubUrls: [],
-          rawLogs: [`PumpPortal: ${msg.txType || 'create'} ${msg.name || msg.mint}`],
+          rawLogs: [],
           isV2: true,
+          virtualTokenReserves: vTok,
+          virtualSolReserves: vSol,
+          realTokenReserves: 0,
+          tokenTotalSupply: supply,
+          marketCapSol: mcap,
+          imageUrl: null,
         };
         stats.total++;
         if (info.metadataUri && info.metadataUri.includes('github.com')) {
@@ -406,6 +433,45 @@ function handleLogNotification(result) {
   updateStats();
 }
 
+// ── Base58 encoder ──────────────────────────────────────────────────
+const B58 = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+function bytesToBase58(bytes) {
+  let num = BigInt(0);
+  for (const b of bytes) num = num * 256n + BigInt(b);
+  if (num === 0n) return '1';
+  let str = '';
+  while (num > 0n) { str = B58[Number(num % 58n)] + str; num /= 58n; }
+  for (const b of bytes) { if (b === 0) str = '1' + str; else break; }
+  return str;
+}
+
+// ── Borsh reader for Anchor CreateEvent ─────────────────────────────
+function readBorshString(buf, offset) {
+  if (offset + 4 > buf.length) return { val: '', end: offset };
+  const len = buf[offset] | (buf[offset+1] << 8) | (buf[offset+2] << 16) | (buf[offset+3] << 24);
+  offset += 4;
+  if (len <= 0 || len > 1000 || offset + len > buf.length) return { val: '', end: offset };
+  const val = new TextDecoder().decode(buf.slice(offset, offset + len));
+  return { val, end: offset + len };
+}
+
+function readPubkey(buf, offset) {
+  if (offset + 32 > buf.length) return { val: '', end: offset };
+  return { val: bytesToBase58(buf.slice(offset, offset + 32)), end: offset + 32 };
+}
+
+function readU64(buf, offset) {
+  if (offset + 8 > buf.length) return { val: 0, end: offset };
+  const view = new DataView(buf.buffer, buf.byteOffset + offset, 8);
+  return { val: Number(view.getBigUint64(0, true)), end: offset + 8 };
+}
+
+function readI64(buf, offset) {
+  if (offset + 8 > buf.length) return { val: 0, end: offset };
+  const view = new DataView(buf.buffer, buf.byteOffset + offset, 8);
+  return { val: Number(view.getBigInt64(0, true)), end: offset + 8 };
+}
+
 // ── Parse create instruction data from logs ─────────────────────────
 function parseCreateLogs(logs, signature) {
   const info = {
@@ -415,34 +481,92 @@ function parseCreateLogs(logs, signature) {
     symbol: null,
     metadataUri: null,
     mint: null,
+    bondingCurve: null,
     creator: null,
+    user: null,
     hasGithub: false,
     githubUrls: [],
     rawLogs: logs,
     isV2: false,
+    virtualTokenReserves: 0,
+    virtualSolReserves: 0,
+    realTokenReserves: 0,
+    tokenTotalSupply: 0,
+    marketCapSol: 0,
+    imageUrl: null,
   };
 
   for (const line of logs) {
-    // Detect version
     if (line.includes('Instruction: CreateV2')) info.isV2 = true;
+    else if (line.includes('Instruction: Create') && !info.isV2) info.isV2 = false;
 
-    // Some RPC providers show decoded instruction data in logs
-    // Look for Program data (base64 encoded event data)
+    // Decode Anchor CreateEvent from Program data
     if (line.startsWith('Program data: ')) {
       try {
-        const b64 = line.slice('Program data: '.length);
-        const decoded = atob(b64);
-        // Try to find readable strings (name, symbol, URI)
-        const readable = decoded.replace(/[^\x20-\x7E]/g, ' ').trim();
-        if (readable.includes('http')) {
-          const urlMatch = readable.match(/(https?:\/\/[^\s]+)/);
-          if (urlMatch) info.metadataUri = urlMatch[1];
+        const b64 = line.slice('Program data: '.length).trim();
+        const raw = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+
+        // Skip 8-byte Anchor event discriminator
+        let off = 8;
+        if (raw.length < 50) continue; // too short for CreateEvent
+
+        // Read strings: name, symbol, uri
+        const name = readBorshString(raw, off); off = name.end;
+        const symbol = readBorshString(raw, off); off = symbol.end;
+        const uri = readBorshString(raw, off); off = uri.end;
+
+        // Read pubkeys: mint, bondingCurve, user
+        const mint = readPubkey(raw, off); off = mint.end;
+        const bc = readPubkey(raw, off); off = bc.end;
+        const user = readPubkey(raw, off); off = user.end;
+
+        // Creator pubkey (only in newer events)
+        let creator = { val: '', end: off };
+        if (off + 32 <= raw.length) {
+          creator = readPubkey(raw, off); off = creator.end;
         }
-      } catch { /* ignore */ }
+
+        // Timestamp (i64)
+        let timestamp = { val: 0, end: off };
+        if (off + 8 <= raw.length) {
+          timestamp = readI64(raw, off); off = timestamp.end;
+        }
+
+        // virtualTokenReserves, virtualSolReserves, realTokenReserves, tokenTotalSupply
+        let vTok = { val: 0, end: off };
+        let vSol = { val: 0, end: off };
+        let rTok = { val: 0, end: off };
+        let supply = { val: 0, end: off };
+        if (off + 32 <= raw.length) {
+          vTok = readU64(raw, off); off = vTok.end;
+          vSol = readU64(raw, off); off = vSol.end;
+          rTok = readU64(raw, off); off = rTok.end;
+          supply = readU64(raw, off); off = supply.end;
+        }
+
+        // Populate info with decoded data
+        if (name.val) info.name = name.val;
+        if (symbol.val) info.symbol = symbol.val;
+        if (uri.val) info.metadataUri = uri.val;
+        if (mint.val && mint.val.length >= 32) info.mint = mint.val;
+        if (bc.val && bc.val.length >= 32) info.bondingCurve = bc.val;
+        if (user.val && user.val.length >= 32) info.user = user.val;
+        if (creator.val && creator.val.length >= 32) info.creator = creator.val;
+        info.virtualTokenReserves = vTok.val;
+        info.virtualSolReserves = vSol.val;
+        info.realTokenReserves = rTok.val;
+        info.tokenTotalSupply = supply.val;
+
+        // Calculate market cap in SOL: vSol * totalSupply / vToken / 1e9
+        if (vTok.val > 0 && vSol.val > 0 && supply.val > 0) {
+          const price = vSol.val / vTok.val;
+          info.marketCapSol = (price * supply.val) / 1e9;
+        }
+      } catch { /* ignore decode errors */ }
     }
 
-    // Extract invoke log to find accounts
-    if (line.includes('Program log: mint:')) {
+    // Fallback: mint from log line
+    if (line.includes('Program log: mint:') && !info.mint) {
       const m = line.match(/mint:\s*(\w{32,})/);
       if (m) info.mint = m[1];
     }
@@ -481,14 +605,30 @@ async function fetchMetadata(uri, signature) {
       }
     }
 
-    // Update name/symbol if found
-    if (meta.name || meta.symbol) {
-      const el = document.getElementById('tx-' + signature.slice(0, 16));
-      if (el) {
+    // Update name/symbol/image if found
+    const el = document.getElementById('tx-' + signature.slice(0, 16));
+    if (el) {
+      if (meta.name) {
         const nameEl = el.querySelector('.name');
+        if (nameEl) nameEl.textContent = meta.name;
+      }
+      if (meta.symbol) {
         const symEl = el.querySelector('.symbol');
-        if (nameEl && meta.name) nameEl.textContent = meta.name;
-        if (symEl && meta.symbol) symEl.textContent = '(' + meta.symbol + ')';
+        if (symEl) symEl.textContent = '$' + meta.symbol;
+      }
+      if (meta.image) {
+        let imgSrc = meta.image;
+        if (imgSrc.startsWith('ipfs://')) imgSrc = 'https://cf-ipfs.com/ipfs/' + imgSrc.slice(7);
+        const imgEl = el.querySelector('.token-img');
+        if (imgEl) { imgEl.src = imgSrc; imgEl.style.display = 'block'; }
+      }
+      if (meta.description) {
+        const descEl = el.querySelector('.token-desc');
+        if (descEl) {
+          const short = meta.description.length > 80 ? meta.description.slice(0, 80) + '…' : meta.description;
+          descEl.textContent = short;
+          descEl.style.display = 'block';
+        }
       }
     }
   } catch { /* metadata fetch is best-effort */ }
@@ -511,32 +651,73 @@ function extractGithubUrls(meta) {
   return [...urls];
 }
 
+// ── Format helpers ──────────────────────────────────────────────────
+function fmtSol(lamports) {
+  if (!lamports || lamports <= 0) return null;
+  const sol = lamports / 1e9;
+  if (sol >= 1000) return sol.toFixed(0) + ' SOL';
+  if (sol >= 1) return sol.toFixed(2) + ' SOL';
+  return sol.toFixed(4) + ' SOL';
+}
+function fmtMcap(sol) {
+  if (!sol || sol <= 0) return null;
+  if (sol >= 1000) return sol.toFixed(0) + ' SOL';
+  if (sol >= 1) return sol.toFixed(2) + ' SOL';
+  return sol.toFixed(4) + ' SOL';
+}
+function shortAddr(addr) {
+  if (!addr || addr.length < 10) return addr || '';
+  return addr.slice(0, 4) + '…' + addr.slice(-4);
+}
+
 // ── Render a token launch entry ─────────────────────────────────────
 function renderEntry(info) {
   const div = document.createElement('div');
   div.className = 'entry';
   div.id = 'tx-' + info.signature.slice(0, 16);
 
-  const shortSig = info.signature.slice(0, 8) + '...' + info.signature.slice(-6);
+  const shortSig = info.signature.slice(0, 6) + '…' + info.signature.slice(-4);
   const version = info.isV2 ? 'CreateV2' : 'Create';
+  const displayName = info.name || 'Unknown';
+  const displaySymbol = info.symbol ? '$' + info.symbol : '';
+  const mcap = info.marketCapSol ? fmtMcap(info.marketCapSol) : null;
+  const mintFull = info.mint || '';
+  const mintShort = mintFull ? shortAddr(mintFull) : '—';
+  const creatorAddr = info.creator || info.user || '';
+  const creatorShort = creatorAddr ? shortAddr(creatorAddr) : '';
 
-  div.innerHTML =
-    `<span class="time">${info.time}</span> ` +
-    `🚀 <span class="name">${esc(info.name || 'Loading...')}</span> ` +
-    `<span class="symbol">${info.symbol ? '(' + esc(info.symbol) + ')' : ''}</span> ` +
-    `<span class="label">[${version}]</span>` +
-    (info.mint ? ` <span class="label">mint:</span><span class="addr">${info.mint.slice(0,6)}...${info.mint.slice(-4)}</span>` : '') +
-    ` <a href="https://solscan.io/tx/${info.signature}" target="_blank" class="addr">${shortSig}</a>` +
-    (info.hasGithub ? ` <span class="github">★ GitHub</span>` : '') +
-    `<div class="raw">${info.rawLogs.slice(0, 5).map(esc).join(' → ')}</div>`;
+  let html = `<div class="token-row">`;
+  html += `<img class="token-img" src="" alt="" style="display:none" onerror="this.style.display='none'" />`;
+  html += `<div class="token-details">`;
+  html += `<div><span class="time">${info.time}</span> `;
+  html += `🚀 <span class="name">${esc(displayName)}</span> `;
+  html += `<span class="symbol">${esc(displaySymbol)}</span> `;
+  html += `<span class="label">[${version}]</span>`;
+  if (info.hasGithub) html += ` <span class="github">★ GitHub</span>`;
+  html += `</div>`;
 
-  // Prepend (newest first)
-  $log.prepend(div);
+  // Description placeholder
+  html += `<div class="token-desc" style="display:none; font-size:11px; color:#666; margin:2px 0;"></div>`;
 
-  // Limit entries
-  while ($log.children.length > MAX_LOG_ENTRIES) {
-    $log.removeChild($log.lastChild);
+  // Metadata row
+  html += `<div class="meta-row">`;
+  if (mintFull) html += `<span><span class="key">Mint:</span> <a href="https://pump.fun/coin/${mintFull}" target="_blank">${mintShort}</a></span>`;
+  if (creatorAddr) html += `<span><span class="key">Creator:</span> <a href="https://solscan.io/account/${creatorAddr}" target="_blank">${creatorShort}</a></span>`;
+  if (mcap) html += `<span><span class="key">MCap:</span> <span class="mcap">${mcap}</span></span>`;
+  if (info.virtualSolReserves > 0) html += `<span><span class="key">Pool:</span> <span class="sol-val">${fmtSol(info.virtualSolReserves)}</span></span>`;
+  html += `<span><a href="https://solscan.io/tx/${info.signature}" target="_blank">tx:${shortSig}</a></span>`;
+  if (info.metadataUri) {
+    const shortUri = info.metadataUri.length > 40 ? info.metadataUri.slice(0, 37) + '…' : info.metadataUri;
+    html += `<span><a href="${esc(info.metadataUri)}" target="_blank" title="${esc(info.metadataUri)}">${esc(shortUri)}</a></span>`;
   }
+  html += `</div>`;
+
+  html += `</div></div>`; // close token-details, token-row
+
+  div.innerHTML = html;
+
+  $log.prepend(div);
+  while ($log.children.length > MAX_LOG_ENTRIES) $log.removeChild($log.lastChild);
 }
 
 // ── System log ──────────────────────────────────────────────────────

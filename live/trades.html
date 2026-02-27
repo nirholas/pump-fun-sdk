@@ -243,15 +243,17 @@ const WHALE_THRESHOLD_LAMPORTS = 1_000_000_000; // 1 SOL
 const CHART_BUCKETS = 10;  // 10 x 30s = 5 min
 const BUCKET_MS = 30_000;
 
-// ── Endpoints (tried in order: PumpPortal first, then Solana RPC) ───
+// ── Endpoints (tried in order) ──────────────────────────────────────
 // PumpPortal is a free, purpose-built WebSocket API for Pump.fun trades.
-// Public Solana RPC endpoints rate-limit/reject logsSubscribe for high-
-// traffic programs, so they serve as fallbacks for users with paid keys.
+// The Railway relay server proxies Solana RPC logsSubscribe and re-
+// broadcasts parsed events, avoiding public RPC rate limits.
+// Public Solana RPCs reject logsSubscribe for high-traffic programs,
+// so they are only useful if the user enters a paid RPC URL.
 const RPC_ENDPOINTS = [
-  { url: 'wss://pumpportal.fun/api/data',       protocol: 'pumpportal', label: 'PumpPortal' },
-  { url: 'wss://api.mainnet-beta.solana.com',    protocol: 'solana-rpc', label: 'Solana Public' },
-  { url: 'wss://solana-rpc.publicnode.com',       protocol: 'solana-rpc', label: 'PublicNode' },
+  { url: 'wss://pumpportal.fun/api/data',                          protocol: 'pumpportal', label: 'PumpPortal' },
+  { url: 'wss://pump-fun-websocket-production.up.railway.app/ws',  protocol: 'relay',      label: 'Relay Server' },
 ];
+const MAX_FULL_CYCLES = 2; // auto-demo after this many full rotations
 let rpcIndex = 0;
 
 // ── State ───────────────────────────────────────────────────────────
@@ -398,8 +400,7 @@ function stopDemo() {
 function getNextEndpoint() {
   // If the user typed a custom URL, always use that
   const custom = $rpc.value.trim();
-  if (custom && custom.startsWith('wss://')) {
-    // Detect protocol from URL
+  if (custom && (custom.startsWith('wss://') || custom.startsWith('ws://'))) {
     const proto = custom.includes('pumpportal') ? 'pumpportal' : 'solana-rpc';
     return { url: custom, protocol: proto, label: 'Custom' };
   }
@@ -454,6 +455,11 @@ function connect() {
       setStatus('● Live — PumpPortal', 'ok');
       document.getElementById('sub-id').textContent = 'stream';
       sysLog('Subscribed via PumpPortal — streaming all trades + new tokens');
+    } else if (currentProtocol === 'relay') {
+      // Railway relay: already subscribed server-side, just listen
+      setStatus('● Live — Relay', 'ok');
+      document.getElementById('sub-id').textContent = 'relay';
+      sysLog('Connected to relay server — receiving proxied events');
     } else {
       // Solana RPC: subscribe to program logs
       ws.send(JSON.stringify({
@@ -470,6 +476,11 @@ function connect() {
 
     if (currentProtocol === 'pumpportal') {
       handlePumpPortalMessage(msg);
+      return;
+    }
+
+    if (currentProtocol === 'relay') {
+      handleRelayMessage(msg);
       return;
     }
 
@@ -519,6 +530,16 @@ function connect() {
 
 function scheduleReconnect() {
   if (demoMode) return;
+
+  // After cycling all endpoints MAX_FULL_CYCLES times, auto-switch to demo
+  const fullCycles = Math.floor(connectAttempts / RPC_ENDPOINTS.length);
+  if (fullCycles >= MAX_FULL_CYCLES) {
+    sysLog('All endpoints unreachable — switching to Demo mode automatically', 'error');
+    sysLog('Tip: enter a paid Solana RPC URL (wss://…) and press Enter to reconnect', 'warn');
+    $btnDemo.click();
+    return;
+  }
+
   const delay = Math.min(reconnectDelay, 15000);
   const nextEp = RPC_ENDPOINTS[rpcIndex % RPC_ENDPOINTS.length];
   setStatus(`● Retrying ${(delay / 1000).toFixed(0)}s → ${nextEp.label}`, 'err');
@@ -572,6 +593,29 @@ function handlePumpPortalMessage(msg) {
   };
 
   ingestEvent(event);
+}
+
+// ── Railway relay server message handler ────────────────────────────
+function handleRelayMessage(msg) {
+  if (!msg || typeof msg !== 'object') return;
+  // Skip heartbeat / status frames
+  if (msg.type === 'heartbeat' || msg.type === 'status') return;
+  // The relay emits TokenLaunchEvent objects with type='launch'
+  if (msg.type === 'launch' || msg.type === 'create' || msg.mint) {
+    stats.logsReceived++;
+    const event = {
+      type: 'create',
+      signature: msg.signature || '',
+      time: new Date().toLocaleTimeString(),
+      mint: msg.mint || 'unknown',
+      solLamports: 0,
+      tokenAmount: 0,
+      trader: msg.creator || null,
+      tokenName: msg.name || null,
+      tokenSymbol: msg.symbol || null,
+    };
+    ingestEvent(event);
+  }
 }
 
 // ── Process a Solana RPC log notification ───────────────────────────
@@ -632,6 +676,24 @@ function ingestEvent(event) {
   updateAllStats();
 }
 
+// ── Borsh readers for Anchor events ─────────────────────────────────
+function readBorshStr(buf, off) {
+  if (off + 4 > buf.length) return { v: '', e: off };
+  const len = buf[off] | (buf[off+1] << 8) | (buf[off+2] << 16) | (buf[off+3] << 24);
+  off += 4;
+  if (len <= 0 || len > 1000 || off + len > buf.length) return { v: '', e: off };
+  return { v: new TextDecoder().decode(buf.slice(off, off + len)), e: off + len };
+}
+function readPk(buf, off) {
+  if (off + 32 > buf.length) return { v: '', e: off };
+  return { v: bytesToBase58(buf.slice(off, off + 32)), e: off + 32 };
+}
+function readU64(buf, off) {
+  if (off + 8 > buf.length) return { v: 0, e: off };
+  const dv = new DataView(buf.buffer, buf.byteOffset + off, 8);
+  return { v: Number(dv.getBigUint64(0, true)), e: off + 8 };
+}
+
 // ── Classify event type from program logs ───────────────────────────
 function classifyEvent(logsText, logs, signature) {
   let type = null;
@@ -642,78 +704,58 @@ function classifyEvent(logsText, logs, signature) {
   let tokenName = null;
   let tokenSymbol = null;
 
-  // Determine event type from instruction logs
-  if (logsText.includes('Instruction: Sell')) {
-    type = 'sell';
-  } else if (logsText.includes('Instruction: Buy')) {
-    type = 'buy';
-  } else if (logsText.includes('Instruction: Create')) {
-    type = 'create';
-  } else if (logsText.includes('Instruction: Migrate')) {
-    type = 'migrate';
-  } else {
-    return null; // Not a trade event
-  }
+  if (logsText.includes('Instruction: Sell')) type = 'sell';
+  else if (logsText.includes('Instruction: Buy')) type = 'buy';
+  else if (logsText.includes('Instruction: Create')) type = 'create';
+  else if (logsText.includes('Instruction: Migrate')) type = 'migrate';
+  else return null;
 
-  // Parse program data for amounts
   for (const line of logs) {
-    // Try to extract base64 event data
-    if (line.startsWith('Program data: ')) {
-      try {
-        const b64 = line.slice('Program data: '.length);
-        const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
-
-        // Anchor events: first 8 bytes are discriminator
-        // TradeEvent layout after disc: mint(32), sol_amount(8), token_amount(8), is_buy(1), user(32), ...
-        if (bytes.length >= 81) {
-          // Read mint (32 bytes at offset 8)
-          const mintBytes = bytes.slice(8, 40);
-          const possibleMint = bytesToBase58(mintBytes);
-          if (possibleMint && possibleMint.length >= 32) {
-            mint = possibleMint;
-          }
-
-          // Read sol_amount (u64 LE at offset 40)
-          const solView = new DataView(bytes.buffer, bytes.byteOffset + 40, 8);
-          solLamports = Number(solView.getBigUint64(0, true));
-          if (solLamports > 1e18) solLamports = 0; // sanity check
-
-          // Read token_amount (u64 LE at offset 48)
-          const tokView = new DataView(bytes.buffer, bytes.byteOffset + 48, 8);
-          tokenAmount = Number(tokView.getBigUint64(0, true));
-          if (tokenAmount > 1e30) tokenAmount = 0;
-        }
-
-        // Try to read strings (for create events)
-        if (type === 'create') {
-          const decoded = new TextDecoder('ascii', { fatal: false }).decode(bytes);
-          const readable = decoded.replace(/[^\x20-\x7E]/g, ' ');
-          const urlMatch = readable.match(/(https?:\/\/[^\s]+)/);
-          if (urlMatch) {
-            fetchTokenMeta(urlMatch[1], signature, mint);
-          }
-        }
-      } catch {}
+    if (!line.startsWith('Program data: ')) {
+      if (line.includes('Program log: mint:') && !mint) {
+        const m = line.match(/mint:\s*(\w{32,})/);
+        if (m) mint = m[1];
+      }
+      continue;
     }
+    try {
+      const b64 = line.slice('Program data: '.length).trim();
+      const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
 
-    // Fallback: look for log messages with amounts
-    if (line.includes('Program log: mint:')) {
-      const m = line.match(/mint:\s*(\w{32,})/);
-      if (m) mint = m[1];
-    }
+      if (type === 'create' && bytes.length > 50) {
+        // CreateEvent: disc(8) + name(str) + symbol(str) + uri(str) + mint(32) + ...
+        let off = 8;
+        const name = readBorshStr(bytes, off); off = name.e;
+        const sym = readBorshStr(bytes, off); off = sym.e;
+        const uri = readBorshStr(bytes, off); off = uri.e;
+        const mk = readPk(bytes, off); off = mk.e;
+        const bc = readPk(bytes, off); off = bc.e;
+        const usr = readPk(bytes, off); off = usr.e;
+        if (name.v) tokenName = name.v;
+        if (sym.v) tokenSymbol = sym.v;
+        if (mk.v && mk.v.length >= 32) mint = mk.v;
+        if (usr.v && usr.v.length >= 32) trader = usr.v;
+        if (uri.v) fetchTokenMeta(uri.v, signature, mint);
+      } else if ((type === 'buy' || type === 'sell') && bytes.length >= 81) {
+        // TradeEvent: disc(8) + mint(32) + sol(8) + token(8) + is_buy(1) + user(32)
+        const mk = readPk(bytes, 8);
+        if (mk.v && mk.v.length >= 32) mint = mk.v;
+        const sol = readU64(bytes, 40); solLamports = sol.v > 1e18 ? 0 : sol.v;
+        const tok = readU64(bytes, 48); tokenAmount = tok.v > 1e30 ? 0 : tok.v;
+        const usr = readPk(bytes, 57);
+        if (usr.v && usr.v.length >= 32) trader = usr.v;
+        // Look up cached name
+        if (mint && tokenMap.has(mint)) {
+          const t = tokenMap.get(mint);
+          if (t.name) tokenName = t.name;
+          if (t.symbol) tokenSymbol = t.symbol;
+        }
+      }
+    } catch {}
   }
 
-  return {
-    type,
-    signature,
-    time: new Date().toLocaleTimeString(),
-    mint: mint || 'unknown',
-    solLamports,
-    tokenAmount,
-    trader,
-    tokenName,
-    tokenSymbol,
-  };
+  return { type, signature, time: new Date().toLocaleTimeString(),
+    mint: mint || 'unknown', solLamports, tokenAmount, trader, tokenName, tokenSymbol };
 }
 
 // ── Base58 encoder (minimal, for display) ───────────────────────────
@@ -741,15 +783,23 @@ async function fetchTokenMeta(uri, signature, mint) {
     const resp = await fetch(url, { signal: AbortSignal.timeout(5000) });
     if (!resp.ok) return;
     const meta = await resp.json();
-    if (meta.name && mint) {
-      // Update token map
+    if (mint) {
       const t = tokenMap.get(mint);
-      if (t) { t.name = meta.name; t.symbol = meta.symbol || ''; }
+      if (t) {
+        if (meta.name) t.name = meta.name;
+        if (meta.symbol) t.symbol = meta.symbol;
+      }
       // Update visible entry
       const el = document.getElementById('tx-' + signature.slice(0, 16));
       if (el) {
         const nameEl = el.querySelector('.token');
-        if (nameEl) nameEl.textContent = `${meta.name} ${meta.symbol ? '(' + meta.symbol + ')' : ''}`;
+        if (nameEl) {
+          let display = meta.name || '';
+          if (meta.symbol) display += ' $' + meta.symbol;
+          if (display) {
+            nameEl.innerHTML = `<a href="https://pump.fun/coin/${mint}" target="_blank" title="${mint}">${display}</a>`;
+          }
+        }
       }
     }
   } catch {}
@@ -829,31 +879,41 @@ function renderWhaleAlerts() {
 function renderTrade(event, isWhale) {
   const sol = event.solLamports > 0 ? (event.solLamports / 1e9).toFixed(4) : '—';
   const tokens = event.tokenAmount > 0 ? formatTokenAmount(event.tokenAmount) : '—';
-  const shortSig = event.signature.slice(0, 6) + '...' + event.signature.slice(-4);
-  const shortMint = event.mint !== 'unknown' ? event.mint.slice(0, 6) + '...' + event.mint.slice(-4) : '—';
+  const shortSig = event.signature.slice(0, 6) + '…' + event.signature.slice(-4);
+  const shortMint = event.mint !== 'unknown' ? event.mint.slice(0, 4) + '…' + event.mint.slice(-4) : '—';
+
+  // Build display name: "Name ($SYM)" or "Name" or shortened mint
+  let displayName = shortMint;
+  if (event.tokenName) {
+    displayName = event.tokenName;
+    if (event.tokenSymbol) displayName += ' $' + event.tokenSymbol;
+  } else if (event.tokenSymbol) {
+    displayName = '$' + event.tokenSymbol;
+  }
 
   const div = document.createElement('div');
   div.className = `trade ${event.type}${isWhale ? ' whale' : ''}`;
   div.id = 'tx-' + event.signature.slice(0, 16);
 
   const solClass = event.type === 'buy' ? 'pos' : event.type === 'sell' ? 'neg' : '';
+  const mintLink = event.mint !== 'unknown'
+    ? `<a href="https://pump.fun/coin/${event.mint}" target="_blank" title="${event.mint}">${displayName}</a>`
+    : displayName;
 
   div.innerHTML =
     `<span class="time">${event.time}</span>` +
     `<span class="type ${event.type}">${event.type}${isWhale ? '<span class="whale-tag">🐋</span>' : ''}</span>` +
-    `<span class="token" title="${event.mint}">${event.tokenName || shortMint}</span>` +
+    `<span class="token">${mintLink}</span>` +
     `<span class="amount">${tokens}</span>` +
     `<span class="sol ${solClass}">${event.type === 'sell' ? '-' : ''}${sol}</span>` +
     `<span class="link"><a href="https://solscan.io/tx/${event.signature}" target="_blank">${shortSig}</a></span>`;
 
-  // Insert after header row
   if ($feed.children.length > 1) {
     $feed.insertBefore(div, $feed.children[1]);
   } else {
     $feed.appendChild(div);
   }
 
-  // Limit entries
   while ($feed.children.length > MAX_ENTRIES + 1) {
     $feed.removeChild($feed.lastChild);
   }
@@ -961,7 +1021,8 @@ renderChart();
 sysLog('PumpFun Live Trades — Real-time analytics dashboard');
 sysLog(`Monitoring Pump program: ${PUMP_PROGRAM}`);
 sysLog(`Primary: PumpPortal API (pre-parsed trades, no RPC limits)`);
-sysLog(`Fallback: ${RPC_ENDPOINTS.filter(e => e.protocol === 'solana-rpc').length} Solana RPC endpoints with auto-failover`);
+sysLog(`Fallback: Relay server at Railway (proxied Solana events)`);
+sysLog(`Auto-demo after ${MAX_FULL_CYCLES} full endpoint cycles if all fail`);
 sysLog('Tracking: buys, sells, creates, migrations, whale alerts (≥1 SOL)');
 sysLog('Click "Demo" to simulate trades if all endpoints are unavailable');
 
