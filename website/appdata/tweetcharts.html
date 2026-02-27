@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tweet Charts</title>
-    <meta name="lair-icon" content="<svg width='232' height='232' viewBox='0 0 232 232' fill='none' xmlns='http://www.w3.org/2000/svg'><rect width='232' height='232' rx='40' fill='%231da1f2'/><path d='M40 170l30-40 30 20 30-60 30 30 30-50' stroke='white' stroke-width='8' stroke-linecap='round' stroke-linejoin='round'/><path d='M150 50c10-8 22-12 34-10-4 10-12 18-22 22 8-1 16-3 22-7-5 8-12 15-20 20v4c0 50-38 108-108 108-20 0-36-4-36-4s20-4 36-16c-14 0-26-10-28-24 4 1 10 0 10 0' stroke='white' stroke-width='4' fill='white' opacity='0.3'/></svg>">
-    <meta name="lair-include" content="lair.css material-symbols-rounded">
+    <meta name="pump-icon" content="<svg width='232' height='232' viewBox='0 0 232 232' fill='none' xmlns='http://www.w3.org/2000/svg'><rect width='232' height='232' rx='40' fill='%231da1f2'/><path d='M40 170l30-40 30 20 30-60 30 30 30-50' stroke='white' stroke-width='8' stroke-linecap='round' stroke-linejoin='round'/><path d='M150 50c10-8 22-12 34-10-4 10-12 18-22 22 8-1 16-3 22-7-5 8-12 15-20 20v4c0 50-38 108-108 108-20 0-36-4-36-4s20-4 36-16c-14 0-26-10-28-24 4 1 10 0 10 0' stroke='white' stroke-width='4' fill='white' opacity='0.3'/></svg>">
+    <meta name="pump-include" content="pump.css material-symbols-rounded">
     <meta name="permissions" content="appStorage, network">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -299,7 +299,7 @@ let dataSortAsc = false;
 
 /* ── CORS-safe fetch (uses injected cfetch from kernel, fallback to proxy) ── */
 const _fetch = (typeof cfetch === 'function') ? cfetch : async function(url, opts) {
-    const host = (window.LAIR_HOST || window.location.ancestorOrigins?.[0] || window.location.origin).replace(/\/$/, '');
+    const host = (window.PUMP_HOST || window.location.ancestorOrigins?.[0] || window.location.origin).replace(/\/$/, '');
     return fetch(host + '/api/proxy?url=' + encodeURIComponent(url), opts);
 };
 

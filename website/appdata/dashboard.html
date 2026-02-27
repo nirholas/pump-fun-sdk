@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="lair-include" content="lair.css">
-    <meta name="lair-icon" content="<svg width='232' height='232' viewBox='0 0 232 232' fill='none' xmlns='http://www.w3.org/2000/svg'><rect width='232' height='232' rx='40' fill='#6366f1'/><rect x='24' y='24' width='86' height='86' rx='14' fill='white' opacity='0.9'/><rect x='122' y='24' width='86' height='40' rx='14' fill='white' opacity='0.7'/><rect x='122' y='76' width='86' height='34' rx='14' fill='#00d4aa' opacity='0.8'/><rect x='24' y='122' width='40' height='86' rx='14' fill='white' opacity='0.7'/><rect x='76' y='122' width='34' height='86' rx='14' fill='#fbbf24' opacity='0.8'/><rect x='122' y='122' width='86' height='86' rx='14' fill='white' opacity='0.9'/></svg>">
+    <meta name="pump-include" content="pump.css">
+    <meta name="pump-icon" content="<svg width='232' height='232' viewBox='0 0 232 232' fill='none' xmlns='http://www.w3.org/2000/svg'><rect width='232' height='232' rx='40' fill='#6366f1'/><rect x='24' y='24' width='86' height='86' rx='14' fill='white' opacity='0.9'/><rect x='122' y='24' width='86' height='40' rx='14' fill='white' opacity='0.7'/><rect x='122' y='76' width='86' height='34' rx='14' fill='#00d4aa' opacity='0.8'/><rect x='24' y='122' width='40' height='86' rx='14' fill='white' opacity='0.7'/><rect x='76' y='122' width='34' height='86' rx='14' fill='#fbbf24' opacity='0.8'/><rect x='122' y='122' width='86' height='86' rx='14' fill='white' opacity='0.9'/></svg>">
     <title>Pump Dashboard</title>
-    <link rel="stylesheet" href="../libs/lair-components.css">
-    <script src="../libs/lair-components.js"></script>
+    <link rel="stylesheet" href="../libs/pump-components.css">
+    <script src="../libs/pump-components.js"></script>
     <style>
         :root {
             color-scheme: dark;
@@ -369,8 +369,8 @@
 
     <script>
         (function () {
-            if (typeof window.__lairDashboardCleanup === 'function') {
-                window.__lairDashboardCleanup();
+            if (typeof window.__pumpDashboardCleanup === 'function') {
+                window.__pumpDashboardCleanup();
             }
 
             const state = {
@@ -384,10 +384,10 @@
             ];
 
             const fetchFn = window.cfetch || window.fetch.bind(window);
-            const lairFetch = window.PumpFetch;
-            const lairUI = window.PumpUI;
-            const lairTheme = window.PumpTheme;
-            if (lairTheme) lairTheme.apply(document.body);
+            const pumpFetch = window.PumpFetch;
+            const pumpUI = window.PumpUI;
+            const pumpTheme = window.PumpTheme;
+            if (pumpTheme) pumpTheme.apply(document.body);
 
             function setUpdated(id) {
                 const now = new Date();
@@ -455,8 +455,8 @@
             }
 
             async function fetchJson(url, timeoutMs = 15000, options = {}) {
-                if (lairFetch && (!options.method || options.method === 'GET')) {
-                    return lairFetch.getJSON(url, {
+                if (pumpFetch && (!options.method || options.method === 'GET')) {
+                    return pumpFetch.getJSON(url, {
                         cache: true,
                         ttl: 30000,
                         retries: 2,
@@ -491,8 +491,8 @@
                 if (!node) {
                     return;
                 }
-                if (lairUI && typeof lairUI.spinner === 'function') {
-                    lairUI.spinner(node);
+                if (pumpUI && typeof pumpUI.spinner === 'function') {
+                    pumpUI.spinner(node);
                     return;
                 }
                 node.className = 'loading';
@@ -504,8 +504,8 @@
                 if (!node) {
                     return;
                 }
-                if (lairUI && typeof lairUI.error === 'function') {
-                    lairUI.error(node, `${label}: ${error instanceof Error ? error.message : String(error)}`);
+                if (pumpUI && typeof pumpUI.error === 'function') {
+                    pumpUI.error(node, `${label}: ${error instanceof Error ? error.message : String(error)}`);
                     return;
                 }
                 node.className = 'error';
@@ -524,7 +524,7 @@
             async function loadPortfolio() {
                 const contentId = 'portfolio-content';
                 try {
-                    const rawAddress = localStorage.getItem('lair_dash_wallet') || localStorage.getItem('lair_wallet_address') || '';
+                    const rawAddress = localStorage.getItem('pump_dash_wallet') || localStorage.getItem('pump_wallet_address') || '';
                     const address = /^0x[a-fA-F0-9]{40}$/.test(rawAddress) ? rawAddress : '';
 
                     if (address) {
@@ -573,7 +573,7 @@
                         const avgChange = dayPnlPct / entries.length;
                         render(contentId, `
                             <div class="value">${money(total)}</div>
-                            <div class="muted">Market basket snapshot (set localStorage.lair_dash_wallet for wallet mode)</div>
+                            <div class="muted">Market basket snapshot (set localStorage.pump_dash_wallet for wallet mode)</div>
                             <div class="pill-row">
                                 <span class="pill ${avgChange >= 0 ? 'positive' : 'negative'}">24h PnL ${pct(avgChange)}</span>
                                 <span class="pill">Holdings: BTC, ETH, SOL, BNB, LINK</span>
@@ -649,8 +649,8 @@
                         <div class="ticker-track">
                             ${merged.map((item) => {
                                 const change = Number(item.price_change_percentage_24h || 0);
-                                const renderedPrice = lairUI
-                                    ? lairUI.price(Number(item.current_price || 0), change, { symbol: '$', decimals: Number(item.current_price || 0) >= 1 ? 2 : 6 })
+                                const renderedPrice = pumpUI
+                                    ? pumpUI.price(Number(item.current_price || 0), change, { symbol: '$', decimals: Number(item.current_price || 0) >= 1 ? 2 : 6 })
                                     : money(item.current_price);
                                 return `
                                     <div class="ticker-item">
@@ -677,7 +677,7 @@
                         throw new Error('No trending results');
                     }
 
-                    if (lairUI && typeof lairUI.table === 'function') {
+                    if (pumpUI && typeof pumpUI.table === 'function') {
                         const ids = coins.map(({ item }) => item?.id).filter(Boolean);
                         const marketData = await fetchJson(`https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${encodeURIComponent(ids.join(','))}&order=market_cap_desc&sparkline=true&price_change_percentage=24h`);
                         const marketById = Array.isArray(marketData)
@@ -702,18 +702,18 @@
                         });
 
                         const node = document.getElementById(contentId);
-                        lairUI.table(node, {
+                        pumpUI.table(node, {
                             sortable: true,
                             columns: [
                                 {
                                     key: 'symbol',
                                     label: 'Token',
-                                    render: (_, row) => lairUI.tokenBadge(row.symbol, row.icon, 'cg')
+                                    render: (_, row) => pumpUI.tokenBadge(row.symbol, row.icon, 'cg')
                                 },
                                 {
                                     key: 'price',
                                     label: 'Price',
-                                    render: (value, row) => lairUI.price(value, row.change24h, { symbol: '$', decimals: value >= 1 ? 2 : 6 })
+                                    render: (value, row) => pumpUI.price(value, row.change24h, { symbol: '$', decimals: value >= 1 ? 2 : 6 })
                                 },
                                 { key: 'rank', label: 'Rank' },
                                 { key: 'score', label: 'Score' },
@@ -730,7 +730,7 @@
                         rows.forEach((row) => {
                             const sparkHost = document.getElementById(row.sparklineId);
                             if (sparkHost && Array.isArray(row.sparkline) && row.sparkline.length > 1) {
-                                lairUI.sparkline(sparkHost, row.sparkline, { width: 100, height: 24 });
+                                pumpUI.sparkline(sparkHost, row.sparkline, { width: 100, height: 24 });
                             }
                         });
                     } else {
@@ -969,7 +969,7 @@
                 state.intervals.length = 0;
             }
 
-            window.__lairDashboardCleanup = cleanup;
+            window.__pumpDashboardCleanup = cleanup;
             window.addEventListener('beforeunload', cleanup);
             window.addEventListener('pagehide', cleanup);
 

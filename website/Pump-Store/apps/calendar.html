@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="lair-include" content="lair.css">
-    <meta name="lair-icon" content='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="24" height="24" fill="white"><path d="M200-80q-33 0-56.5-23.5T120-160v-560q0-33 23.5-56.5T200-800h40v-80h80v80h320v-80h80v80h40q33 0 56.5 23.5T840-720v560q0 33-23.5 56.5T760-80H200Zm0-80h560v-400H200v400Zm0-480h560v-80H200v80Zm0 0v-80 80Z"/></svg>'>
+    <meta name="pump-include" content="pump.css">
+    <meta name="pump-icon" content='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="24" height="24" fill="white"><path d="M200-80q-33 0-56.5-23.5T120-160v-560q0-33 23.5-56.5T200-800h40v-80h80v80h320v-80h80v80h40q33 0 56.5 23.5T840-720v560q0 33-23.5 56.5T760-80H200Zm0-80h560v-400H200v400Zm0-480h560v-80H200v80Zm0 0v-80 80Z"/></svg>'>
     <meta name="capabilities" content="economic_calendar">
-    <meta name="lair-perms" content="network" />
+    <meta name="pump-perms" content="network" />
     <title>Economic Calendar</title>
     <style>
         :root {
@@ -120,7 +120,7 @@
     let viewDate = new Date();
     let selectedDate = formatDate(new Date());
     let events = [];
-    let customEvents = JSON.parse(localStorage.getItem('lair.calendar.custom') || '[]');
+    let customEvents = JSON.parse(localStorage.getItem('pump.calendar.custom') || '[]');
 
     function formatDate(d) { return d.toISOString().slice(0, 10); }
     function dateKey(y, m, d) { return new Date(Date.UTC(y, m, d)).toISOString().slice(0, 10); }
@@ -262,7 +262,7 @@
         const desc = prompt('Description', 'Custom user event') || '';
         if (!date || !name) return;
         customEvents.push({ date, name, type, impact, desc });
-        localStorage.setItem('lair.calendar.custom', JSON.stringify(customEvents));
+        localStorage.setItem('pump.calendar.custom', JSON.stringify(customEvents));
         buildEventSet();
     });
 
@@ -301,8 +301,8 @@
     return out;
   }
 
-  function saveCustom(list){localStorage.setItem('lair-calendar-custom',JSON.stringify(list));}
-  function loadCustom(){try{return JSON.parse(localStorage.getItem('lair-calendar-custom')||'[]')}catch{return []}}
+  function saveCustom(list){localStorage.setItem('pump-calendar-custom',JSON.stringify(list));}
+  function loadCustom(){try{return JSON.parse(localStorage.getItem('pump-calendar-custom')||'[]')}catch{return []}}
 
   async function loadUnlockEvents(){
     const r=await fetchFn('https://api.llama.fi/unlocks?limit=100');

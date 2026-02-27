@@ -4,29 +4,29 @@ icon: hammer
 
 # Data recovery
 
-In scenarios like where the LairOS files exists and are mis-formatted or saved in an undiscoverable location, there are still ways to 'recover' the data lost.
+In scenarios like where the PumpOS files exists and are mis-formatted or saved in an undiscoverable location, there are still ways to 'recover' the data lost.
 
 ## Directory search
 
-Using the LairOS smartsearch feature, you can simply search for the file name on the Lair Nav. This will search in all directories in your root.
+Using the PumpOS smartsearch feature, you can simply search for the file name on the Pump Nav. This will search in all directories in your root.
 
 ## Browsing the file system in text
 
-Head to [https://lair2.vercel.app/bios.html](https://lair2.vercel.app/bios.html), this page is a CLI interface for your LairOS system. It's able to access all your files and data **if your password is not set.**
+Head to [https://pump-fun-sdk.vercel.app/bios.html](https://pump-fun-sdk.vercel.app/bios.html), this page is a CLI interface for your PumpOS system. It's able to access all your files and data **if your password is not set.**
 
 {% hint style="warning" %}
 This only works with the account named 'Admin' with no password set.
 {% endhint %}
 
 {% hint style="success" %}
-You can either use the browser inspect window, or the terminal in the Lair Setup options menu to access the command interface of a select account with a password.
+You can either use the browser inspect window, or the terminal in the Pump Setup options menu to access the command interface of a select account with a password.
 
 Contact experts in our discord if you require better chances of recovery.
 {% endhint %}
 
-## LairOS file system: Cheat Sheet
+## PumpOS file system: Cheat Sheet
 
-* The LairOS file system or 'memory' is a JS Object with two keys, 'memory' and 'contentpool'.
+* The PumpOS file system or 'memory' is a JS Object with two keys, 'memory' and 'contentpool'.
 * The 'memory' key has a value with another nested object, 'root'.
 * 'root' has the structure of the entire filesystem, in which, subfolders are nested objects.
 * every key in root, and its child objects are called 'items'
@@ -37,7 +37,7 @@ Contact experts in our discord if you require better chances of recovery.
 * These file items have more keys in them, they are 'id', 'metadata'.
 * The ID, or the unique identifier string, is a random 12-character string used to tell files apart.
 * Metadata includes more keys that the creator or the editor of the file defines.
-* By default, LairOS saves a 'dateTime' metadata with a UNIX timestamp.
+* By default, PumpOS saves a 'dateTime' metadata with a UNIX timestamp.
 * The 'contentpool' object, stores the more vital, content data of the file items in the file system.
 * It contains keys that reference file IDs and values representing their content.
 * The values are a string with two parts, the MIME part and the content seperated by a comma symbol (,).

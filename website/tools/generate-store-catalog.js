@@ -26,8 +26,8 @@ const OUTPUT_FILE = path.join(OS_ROOT, 'Pump-Store', 'db', 'v2.json');
  */
 function getMeta(html, name) {
     // Match meta tags with the given name — content can use ' or "
-    // For lair-icon we need a more permissive pattern because SVG content contains quotes
-    if (name === 'lair-icon') {
+    // For pump-icon we need a more permissive pattern because SVG content contains quotes
+    if (name === 'pump-icon') {
         // Try content='...' first (common for SVG icons with double quotes inside)
         const singleQuoteRe = new RegExp(
             `<meta\\s+name=["']${name}["']\\s+content='([^']*(?:''[^']*)*)'`,
@@ -104,8 +104,8 @@ function inferCategory(filename, content) {
     if (f.includes('calc') || f.includes('convert') || f.includes('tool') || f.includes('note') ||
         f.includes('json') || f.includes('pdf') || f.includes('editor') || f.includes('timer') ||
         f.includes('unit') || f.includes('calendar') || f.includes('datamgr') || f.includes('cli') ||
-        f.includes('terminal') || f.includes('lairai') || f.includes('lairbot') ||
-        f.includes('lairdocs') || f.includes('lairterminal') || f.includes('copilot') ||
+        f.includes('terminal') || f.includes('pumpai') || f.includes('pumpbot') ||
+        f.includes('pumpdocs') || f.includes('pumpterminal') || f.includes('copilot') ||
         f.includes('liza') || f.includes('settings') || f.includes('files') ||
         f.includes('store') || f.includes('welcome') || f.includes('dashboard') ||
         f.includes('studio') || f.includes('browser') || f.includes('camera') ||
@@ -114,7 +114,7 @@ function inferCategory(filename, content) {
         f.includes('address-book') || f.includes('time')) return 'tools';
 
     // Crypto / DeFi specific apps
-    if (f.includes('laircoin') || f.includes('lairlaunch') || f.includes('risk')) return 'defi';
+    if (f.includes('pumpcoin') || f.includes('pumplaunch') || f.includes('risk')) return 'defi';
 
     // Fun / Games
     if (f.includes('game') || f.includes('tictactoe') || f.includes('duck') || f.includes('obama') ||
@@ -167,16 +167,16 @@ function parseAppFile(filePath, srcPrefix) {
     }
 
     const id = filenameToId(filename);
-    const icon = getMeta(html, 'lair-icon') || null;
+    const icon = getMeta(html, 'pump-icon') || null;
     const permissions = getMeta(html, 'permissions');
     const capabilities = getMeta(html, 'capabilities');
     const description = getMeta(html, 'description');
-    const category = getMeta(html, 'lair-category');
-    const author = getMeta(html, 'lair-author');
-    const version = getMeta(html, 'lair-version');
-    const isWidget = getMeta(html, 'lair-widget') === 'true';
-    const widgetSize = getMeta(html, 'lair-widget-size');
-    const lairInclude = getMeta(html, 'lair-include');
+    const category = getMeta(html, 'pump-category');
+    const author = getMeta(html, 'pump-author');
+    const version = getMeta(html, 'pump-version');
+    const isWidget = getMeta(html, 'pump-widget') === 'true';
+    const widgetSize = getMeta(html, 'pump-widget-size');
+    const pumpInclude = getMeta(html, 'pump-include');
 
     // Determine the src path relative to the OS root
     const src = srcPrefix + '/' + filename;
@@ -223,7 +223,7 @@ function parseAppFile(filePath, srcPrefix) {
     }
 
     entry.size = formatSize(stat.size);
-    entry.lairInclude = !!lairInclude;
+    entry.pumpInclude = !!pumpInclude;
 
     return { skipped: false, entry };
 }
@@ -304,7 +304,7 @@ function cleanEntry(entry) {
 
     // Remove internal fields
     delete clean._svgIcon;
-    delete clean.lairInclude;
+    delete clean.pumpInclude;
 
     // Remove null/empty fields for a cleaner JSON
     if (!clean.symbol) delete clean.symbol;
@@ -344,7 +344,7 @@ function main() {
 
     // Apps where appdata/ has the real implementation and Pump-Store/ is a stub
     const PREFER_APPDATA = new Set([
-        'lairai', 'lairbot', 'lairdefi', 'lairdocs', 'dashboard',
+        'pumpai', 'pumpbot', 'pumpdefi', 'pumpdocs', 'dashboard',
     ]);
 
     const allEntries = [];

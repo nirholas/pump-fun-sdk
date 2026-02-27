@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="lair-include" content="lair.css">
+    <meta name="pump-include" content="pump.css">
     <meta name="capabilities" content="trending_tokens">
-    <meta name="lair-icon" content="whatshot">
-    <meta name="lair-perms" content="network" />
+    <meta name="pump-icon" content="whatshot">
+    <meta name="pump-perms" content="network" />
     <title>Trending</title>
-    <link rel="stylesheet" href="../../libs/lair-components.css">
-    <script src="../../libs/lair-components.js"></script>
-    <script src="../../libs/lair-bus.js"></script>
+    <link rel="stylesheet" href="../../libs/pump-components.css">
+    <script src="../../libs/pump-components.js"></script>
+    <script src="../../libs/pump-bus.js"></script>
     <style>
         :root {
             --col-bg1: #101010;
@@ -419,17 +419,17 @@
     (function() {
         'use strict';
         const fetchFn = window.cfetch || fetch;
-        const lairFetch = window.PumpFetch;
-        const lairUI = window.PumpUI;
-        const lairTheme = window.PumpTheme;
-        const lairBus = window.PumpBus;
-        if (lairTheme) lairTheme.apply(document.body);
-        if (lairBus) lairBus.register('trending');
+        const pumpFetch = window.PumpFetch;
+        const pumpUI = window.PumpUI;
+        const pumpTheme = window.PumpTheme;
+        const pumpBus = window.PumpBus;
+        if (pumpTheme) pumpTheme.apply(document.body);
+        if (pumpBus) pumpBus.register('trending');
 
         const TRENDING_URL = 'https://api.coingecko.com/api/v3/search/trending';
         const MARKETS_URL = 'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=volume_desc&per_page=20&sparkline=true&price_change_percentage=1h,24h,7d';
-        const CACHE_KEY_TRENDING = 'lair_trending_cache';
-        const CACHE_KEY_MARKETS = 'lair_markets_cache';
+        const CACHE_KEY_TRENDING = 'pump_trending_cache';
+        const CACHE_KEY_MARKETS = 'pump_markets_cache';
         const CACHE_TTL = 120000; // 2 minutes
         const REFRESH_INTERVAL = 120; // seconds
 
@@ -489,8 +489,8 @@
                 const cached = getCached(CACHE_KEY_TRENDING);
                 if (cached) return cached;
             }
-            const data = lairFetch
-                ? await lairFetch.getJSON(TRENDING_URL, { cache: true, ttl: CACHE_TTL, retries: 2, fallback: true })
+            const data = pumpFetch
+                ? await pumpFetch.getJSON(TRENDING_URL, { cache: true, ttl: CACHE_TTL, retries: 2, fallback: true })
                 : await (await fetchFn(TRENDING_URL)).json();
             setCache(CACHE_KEY_TRENDING, data);
             return data;
@@ -501,8 +501,8 @@
                 const cached = getCached(CACHE_KEY_MARKETS);
                 if (cached) return cached;
             }
-            const data = lairFetch
-                ? await lairFetch.getJSON(MARKETS_URL, { cache: true, ttl: CACHE_TTL, retries: 2, fallback: true })
+            const data = pumpFetch
+                ? await pumpFetch.getJSON(MARKETS_URL, { cache: true, ttl: CACHE_TTL, retries: 2, fallback: true })
                 : await (await fetchFn(MARKETS_URL)).json();
             if (!Array.isArray(data)) throw new Error('Invalid markets response');
             setCache(CACHE_KEY_MARKETS, data);
@@ -581,8 +581,8 @@
         // Render trending tab
         function renderTrending() {
             if (!trendingData || !trendingData.coins || trendingData.coins.length === 0) {
-                if (lairUI) {
-                    lairUI.empty(contentEl, 'No trending data available.');
+                if (pumpUI) {
+                    pumpUI.empty(contentEl, 'No trending data available.');
                 } else {
                     contentEl.innerHTML = '<div class="empty-state">No trending data available.</div>';
                 }
@@ -608,7 +608,7 @@
                 html += `<div class="token-rank">${score}</div>`;
                 html += renderTokenIcon(coin.symbol, coin.large || coin.thumb);
                 html += `<div class="token-info">`;
-                const badge = lairUI ? lairUI.tokenBadge(coin.symbol, coin.thumb, 'cg') : `<span class="token-symbol">${esc(coin.symbol)}</span>`;
+                const badge = pumpUI ? pumpUI.tokenBadge(coin.symbol, coin.thumb, 'cg') : `<span class="token-symbol">${esc(coin.symbol)}</span>`;
                 html += `<div class="token-name-row"><span class="token-name">${esc(coin.name)}</span>${badge}</div>`;
                 html += `<div class="token-meta">Rank #${coin.market_cap_rank || '—'} · Trending Score ${score}</div>`;
                 html += `</div>`;
@@ -638,8 +638,8 @@
         // Render gainers/losers tab
         function renderGainersLosers(mode) {
             if (!marketsData || marketsData.length === 0) {
-                if (lairUI) {
-                    lairUI.empty(contentEl, 'No market data available.');
+                if (pumpUI) {
+                    pumpUI.empty(contentEl, 'No market data available.');
                 } else {
                     contentEl.innerHTML = '<div class="empty-state">No market data available.</div>';
                 }
@@ -771,18 +771,18 @@
         }
 
         function publishTokenSelection(cardId) {
-            if (!lairBus) return;
+            if (!pumpBus) return;
             const payload = getTokenPayloadByCardId(cardId);
             if (!payload) return;
 
-            lairBus.broadcast('token:select', payload);
-            lairBus.request('cryptocharts', 'token:chart', payload, 1500)
+            pumpBus.broadcast('token:select', payload);
+            pumpBus.request('cryptocharts', 'token:chart', payload, 1500)
                 .catch(() => {
-                    lairBus.send('cryptocharts', 'token:chart', payload);
+                    pumpBus.send('cryptocharts', 'token:chart', payload);
                 });
 
             if (payload.address) {
-                lairBus.send('tokenscanner', 'token:scan', {
+                pumpBus.send('tokenscanner', 'token:scan', {
                     address: payload.address,
                     chainId: payload.chainId,
                     symbol: payload.symbol
@@ -843,8 +843,8 @@
         }
 
         function drawSparkline(canvas, data) {
-            if (lairUI && typeof lairUI.sparkline === 'function') {
-                lairUI.sparkline(canvas, data, { width: canvas.width, height: canvas.height });
+            if (pumpUI && typeof pumpUI.sparkline === 'function') {
+                pumpUI.sparkline(canvas, data, { width: canvas.width, height: canvas.height });
                 return;
             }
 
@@ -925,8 +925,8 @@
 
         // Error/loading
         function renderError(msg) {
-            if (lairUI) {
-                lairUI.error(contentEl, msg, () => loadData(true));
+            if (pumpUI) {
+                pumpUI.error(contentEl, msg, () => loadData(true));
                 return;
             }
 

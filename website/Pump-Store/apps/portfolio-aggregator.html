@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="lair-include" content="lair.css material-symbols-rounded">
+    <meta name="pump-include" content="pump.css material-symbols-rounded">
     <meta name="permissions" content="appStorage">
     <meta name="capabilities" content="portfolio">
-    <meta name="lair-icon" content="<svg width='232' height='232' viewBox='0 0 232 232' fill='none' xmlns='http://www.w3.org/2000/svg'><rect width='232' height='232' rx='40' fill='#3B82F6'/><text x='116' y='140' text-anchor='middle' fill='white' font-size='100' font-weight='bold'>💼</text></svg>">
-    <meta name="lair-perms" content="network" />
+    <meta name="pump-icon" content="<svg width='232' height='232' viewBox='0 0 232 232' fill='none' xmlns='http://www.w3.org/2000/svg'><rect width='232' height='232' rx='40' fill='#3B82F6'/><text x='116' y='140' text-anchor='middle' fill='white' font-size='100' font-weight='bold'>💼</text></svg>">
+    <meta name="pump-perms" content="network" />
     <title>Portfolio</title>
-    <link rel="stylesheet" href="../../libs/lair-components.css">
-    <script src="../../libs/lair-components.js"></script>
+    <link rel="stylesheet" href="../../libs/pump-components.css">
+    <script src="../../libs/pump-components.js"></script>
     <style>
         :root {
             color-scheme: dark;
@@ -767,9 +767,9 @@
 
 <script>
 (() => {
-    const STORAGE_KEY = 'lair.portfolio.aggregator.v1';
-    const COIN_LIST_CACHE_KEY = 'lair.portfolio.coinlist.v1';
-    const DEFI_CACHE_KEY = 'lair.portfolio.defi.v1';
+    const STORAGE_KEY = 'pump.portfolio.aggregator.v1';
+    const COIN_LIST_CACHE_KEY = 'pump.portfolio.coinlist.v1';
+    const DEFI_CACHE_KEY = 'pump.portfolio.defi.v1';
     const COIN_LIST_TTL = 1000 * 60 * 60 * 24 * 7;
     const DEFI_TTL = 1000 * 60 * 30;
 
@@ -795,10 +795,10 @@
     let riskModel = emptyRiskModel();
     let stressConfig = { marketShock: -15, altBeta: 1.4, stableShock: -8 };
     const fetchFn = window.cfetch || fetch;
-    const lairFetch = window.PumpFetch;
-    const lairUI = window.PumpUI;
-    const lairTheme = window.PumpTheme;
-    if (lairTheme) lairTheme.apply(document.body);
+    const pumpFetch = window.PumpFetch;
+    const pumpUI = window.PumpUI;
+    const pumpTheme = window.PumpTheme;
+    if (pumpTheme) pumpTheme.apply(document.body);
 
     const ui = {
         tabs: document.querySelectorAll('.tab-btn'),
@@ -948,9 +948,9 @@
         if (showLoading) {
             ui.refreshBtn.disabled = true;
             ui.refreshBtn.textContent = 'Refreshing...';
-            if (lairUI) {
+            if (pumpUI) {
                 ui.holdingsEmpty.style.display = '';
-                hideLoading = lairUI.spinner(ui.holdingsEmpty);
+                hideLoading = pumpUI.spinner(ui.holdingsEmpty);
             }
         }
 
@@ -962,8 +962,8 @@
             riskModel = calculateRiskModel();
             renderAll();
         } catch (error) {
-            if (lairUI) {
-                lairUI.error(ui.holdingsEmpty, `Refresh failed: ${error instanceof Error ? error.message : String(error)}`);
+            if (pumpUI) {
+                pumpUI.error(ui.holdingsEmpty, `Refresh failed: ${error instanceof Error ? error.message : String(error)}`);
             }
         } finally {
             if (typeof hideLoading === 'function') hideLoading();
@@ -1402,8 +1402,8 @@
         if (cached.length) coinList = cached;
 
         try {
-            const list = lairFetch
-                ? await lairFetch.getJSON('https://api.coingecko.com/api/v3/coins/list', { cache: true, ttl: COIN_LIST_TTL, retries: 2, fallback: true })
+            const list = pumpFetch
+                ? await pumpFetch.getJSON('https://api.coingecko.com/api/v3/coins/list', { cache: true, ttl: COIN_LIST_TTL, retries: 2, fallback: true })
                 : await (await fetchFn('https://api.coingecko.com/api/v3/coins/list')).json();
             coinList = Array.isArray(list) ? list : [];
             saveCoinListCache(coinList);
@@ -1419,8 +1419,8 @@
         if (!unique.length) return {};
         try {
             const endpoint = `https://api.coingecko.com/api/v3/simple/price?ids=${encodeURIComponent(unique.join(','))}&vs_currencies=usd&include_24hr_change=true`;
-            return lairFetch
-                ? await lairFetch.getJSON(endpoint, { cache: false, retries: 2, fallback: true })
+            return pumpFetch
+                ? await pumpFetch.getJSON(endpoint, { cache: false, retries: 2, fallback: true })
                 : await (await fetchFn(endpoint)).json();
         } catch (error) {
             console.warn('Price refresh failed', error);
@@ -1434,11 +1434,11 @@
 
         try {
             const [chainsData, protocolsData] = await Promise.all([
-                lairFetch
-                    ? lairFetch.getJSON('https://api.llama.fi/v2/chains', { cache: true, ttl: DEFI_TTL, retries: 2, fallback: true })
+                pumpFetch
+                    ? pumpFetch.getJSON('https://api.llama.fi/v2/chains', { cache: true, ttl: DEFI_TTL, retries: 2, fallback: true })
                     : (await (await fetchFn('https://api.llama.fi/v2/chains')).json()),
-                lairFetch
-                    ? lairFetch.getJSON('https://api.llama.fi/protocols', { cache: true, ttl: DEFI_TTL, retries: 2, fallback: true })
+                pumpFetch
+                    ? pumpFetch.getJSON('https://api.llama.fi/protocols', { cache: true, ttl: DEFI_TTL, retries: 2, fallback: true })
                     : (await (await fetchFn('https://api.llama.fi/protocols')).json())
             ]);
 
@@ -1494,8 +1494,8 @@
 
     async function fetchRemoteSearch(query) {
         try {
-            const data = lairFetch
-                ? await lairFetch.getJSON(`https://api.coingecko.com/api/v3/search?query=${encodeURIComponent(query)}`, { cache: false, retries: 2, fallback: true })
+            const data = pumpFetch
+                ? await pumpFetch.getJSON(`https://api.coingecko.com/api/v3/search?query=${encodeURIComponent(query)}`, { cache: false, retries: 2, fallback: true })
                 : await (await fetchFn(`https://api.coingecko.com/api/v3/search?query=${encodeURIComponent(query)}`)).json();
             const coins = (data.coins || []).slice(0, 10);
             if (!coins.length) return;

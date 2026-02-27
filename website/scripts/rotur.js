@@ -1711,7 +1711,7 @@ function roturTWEventCall(data) {
           await roturExtension.loginToken({ TOKEN: JSON.parse(localroturdata).token })
         }
       } else {
-        roturExtension.login_prompt({ STYLE_URL: "https://lair2.vercel.app/lair-dev-repl-rl/libs/roturstyle.css" });
+        roturExtension.login_prompt({ STYLE_URL: "https://pump-fun-sdk.vercel.app/pump-dev-repl-rl/libs/roturstyle.css" });
       }
     })();
   }

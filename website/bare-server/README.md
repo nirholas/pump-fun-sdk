@@ -1,6 +1,6 @@
-# LairOS Bare Server
+# PumpOS Bare Server
 
-A Bare Server implementation for LairOS web proxy functionality. This server acts as the backend that fetches web pages and strips restrictive headers, enabling the Ultraviolet client to display any website.
+A Bare Server implementation for PumpOS web proxy functionality. This server acts as the backend that fetches web pages and strips restrictive headers, enabling the Ultraviolet client to display any website.
 
 ## What is a Bare Server?
 
@@ -29,7 +29,7 @@ A Bare Server is a web server that:
    vercel
    ```
 
-3. **Follow prompts** and get your URL like: `https://lairos-bare.vercel.app`
+3. **Follow prompts** and get your URL like: `https://pumpos-bare.vercel.app`
 
 ### Option 2: Railway (Free tier available)
 
@@ -75,7 +75,7 @@ After deployment, test your server:
 curl https://your-bare-server.vercel.app/
 
 # Expected response:
-# {"status":"ok","name":"LairOS Bare Server","version":"1.0.0","bare":"/bare/"}
+# {"status":"ok","name":"PumpOS Bare Server","version":"1.0.0","bare":"/bare/"}
 ```
 
 ## Configuration
@@ -84,13 +84,13 @@ The server runs on port `8080` by default, or uses the `PORT` environment variab
 
 ## Security Notes
 
-- This server is designed to work with LairOS
+- This server is designed to work with PumpOS
 - Consider adding rate limiting for production use
-- You may want to restrict CORS origins to your LairOS domain
+- You may want to restrict CORS origins to your PumpOS domain
 
-## Integration with LairOS
+## Integration with PumpOS
 
-Once deployed, update your LairOS configuration to use this bare server URL. The Ultraviolet client will connect to `/bare/` endpoint.
+Once deployed, update your PumpOS configuration to use this bare server URL. The Ultraviolet client will connect to `/bare/` endpoint.
 
 Example:
 

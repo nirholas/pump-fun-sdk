@@ -14,38 +14,38 @@
     },
     {
       "text": "Your DeFi command center",
-      "appName": "Lair Dashboard",
-      "img": "/assets/lairlogo.png"
+      "appName": "Pump Dashboard",
+      "img": "/assets/pump.png"
     },
     {
       "text": "DeFi intelligence hub",
       "appName": "DeFi Dashboard",
-      "img": "/assets/applairio.png"
+      "img": "/assets/pump.png"
     },
     {
       "text": "Track the whales",
       "appName": "Whale Alerts",
-      "img": "/assets/lairlogo.png"
+      "img": "/assets/pump.png"
     },
     {
       "text": "Fly through the crypto galaxy",
-      "appName": "Lair Cosmos",
-      "img": "/assets/lairlogo.png"
+      "appName": "Pump Cosmos",
+      "img": "/assets/pump.png"
     },
     {
       "text": "See where the money flows",
-      "appName": "Lair Flux",
-      "img": "/assets/lairlogo.png"
+      "appName": "Pump Flux",
+      "img": "/assets/pump.png"
     },
     {
       "text": "Check the market's pulse",
-      "appName": "Lair Pulse",
-      "img": "/assets/lairlogo.png"
+      "appName": "Pump Pulse",
+      "img": "/assets/pump.png"
     },
     {
       "text": "Detect market anomalies",
-      "appName": "Lair Sonar",
-      "img": "/assets/lairlogo.png"
+      "appName": "Pump Sonar",
+      "img": "/assets/pump.png"
     }
   ],
   "apps": [
@@ -281,7 +281,7 @@
     },
     {
       "id": "cli",
-      "name": "Lair CLI",
+      "name": "Pump CLI",
       "src": "/Pump-Store/apps/cli.html",
       "by": "nich",
       "desc": "System CLI for Pump OS",
@@ -291,7 +291,7 @@
       "th": "#5FFCA6",
       "size": "24KB",
       "qt": "Explore more inside",
-      "ldesc": "Access Lair System directly with Lair CLI, read and write files, execute functions and return data."
+      "ldesc": "Access Pump System directly with Pump CLI, read and write files, execute functions and return data."
     },
     {
       "id": "coingecko",
@@ -346,7 +346,7 @@
     },
     {
       "id": "cosmos",
-      "name": "Lair Cosmos",
+      "name": "Pump Cosmos",
       "src": "/Pump-Store/apps/cosmos.html",
       "by": "nich",
       "desc": "Living galaxy where every token is a star",
@@ -366,7 +366,7 @@
     },
     {
       "id": "pulse",
-      "name": "Lair Pulse",
+      "name": "Pump Pulse",
       "src": "/Pump-Store/apps/pulse.html",
       "by": "nich",
       "desc": "Crypto vital signs monitor — ICU-style market health dashboard",
@@ -386,7 +386,7 @@
     },
     {
       "id": "sonar",
-      "name": "Lair Sonar",
+      "name": "Pump Sonar",
       "src": "/Pump-Store/apps/sonar.html",
       "by": "nich",
       "desc": "Rotating radar that scans for crypto market anomalies",
@@ -668,7 +668,7 @@
     },
     {
       "id": "flux",
-      "name": "Lair Flux",
+      "name": "Pump Flux",
       "src": "/Pump-Store/apps/flux.html",
       "by": "nich",
       "desc": "Real-time capital flow visualization across crypto sectors",
@@ -923,9 +923,9 @@
       "qt": "Dive deeper in data"
     },
     {
-      "id": "lairai",
+      "id": "pumpai",
       "name": "Pump AI",
-      "src": "/appdata/lairai.html",
+      "src": "/appdata/pumpai.html",
       "by": "PumpOS",
       "desc": "",
       "cat": "tools",
@@ -938,11 +938,11 @@
       "icon": "<svg width='232' height='232' viewBox='0 0 232 232' fill='none' xmlns='http://www.w3.org/2000/svg'><rect width='232' height='232' rx='40' fill='#a855f7'/><circle cx='116' cy='100' r='50' fill='white' opacity='0.9'/><path d='M90 90c0-14 12-26 26-26s26 12 26 26' stroke='#a855f7' stroke-width='8' stroke-linecap='round' fill='none'/><circle cx='116' cy='116' r='6' fill='#a855f7'/><path d='M116 122v14' stroke='#a855f7' stroke-width='6' stroke-linecap='round'/><rect x='60' y='160' width='112' height='40' rx='20' fill='white' opacity='0.9'/><circle cx='88' cy='180' r='6' fill='#a855f7'/><circle cx='116' cy='180' r='6' fill='#a855f7'/><circle cx='144' cy='180' r='6' fill='#a855f7'/><circle cx='76' cy='70' r='12' fill='white' opacity='0.5'/><circle cx='156' cy='70' r='12' fill='white' opacity='0.5'/><path d='M68 60l-10-16M164 60l10-16' stroke='white' stroke-width='4' stroke-linecap='round' opacity='0.6'/></svg>"
     },
     {
-      "id": "lairbot",
+      "id": "pumpbot",
       "name": "Pump Bot",
-      "src": "/appdata/lairbot.html",
+      "src": "/appdata/pumpbot.html",
       "by": "nich",
-      "desc": "Lair automation bot",
+      "desc": "Pump automation bot",
       "cat": "tools",
       "ver": "1",
       "symbol": "smart_toy",
@@ -956,9 +956,9 @@
       "ldesc": "Automate tasks and workflows in PumpOS with the Pump Bot."
     },
     {
-      "id": "lairdefi",
+      "id": "pumpdefi",
       "name": "Pump DeFi",
-      "src": "/appdata/lairdefi.html",
+      "src": "/appdata/pumpdefi.html",
       "by": "nich",
       "desc": "Access Pump DeFi platform with wallet support",
       "cat": "defi",
@@ -972,12 +972,12 @@
       "size": "65KB",
       "qt": "DeFi made simple",
       "ldesc": "Full-featured Pump DeFi platform embedded in PumpOS. Stake, swap, and manage your crypto assets with MetaMask and WalletConnect support.",
-      "img": "/assets/lairlogo.png"
+      "img": "/assets/pump.png"
     },
     {
-      "id": "lairdocs",
+      "id": "pumpdocs",
       "name": "Pump Docs",
-      "src": "/appdata/lairdocs.html",
+      "src": "/appdata/pumpdocs.html",
       "by": "nich",
       "desc": "PumpOS documentation viewer",
       "cat": "tools",
@@ -992,9 +992,9 @@
       "ldesc": "Browse PumpOS documentation, guides, and API references."
     },
     {
-      "id": "lairheatmap",
-      "name": "Lair Market Heatmap",
-      "src": "/Pump-Store/apps/lairheatmap.html",
+      "id": "pumpheatmap",
+      "name": "Pump Market Heatmap",
+      "src": "/Pump-Store/apps/pumpheatmap.html",
       "by": "PumpOS",
       "desc": "",
       "cat": "analytics",
@@ -1434,7 +1434,7 @@
       "cat": "trading",
       "ver": "1.0",
       "size": "2KB",
-      "icon": "../../assets/logo.svg"
+      "icon": "../../assets/pump.svg"
     },
     {
       "id": "portfolio-aggregator",
@@ -2406,11 +2406,11 @@
         "unsandboxed"
       ],
       "size": "2KB",
-      "icon": "../assets/logo.svg"
+      "icon": "../assets/pump.svg"
     },
     {
       "id": "dashboard",
-      "name": "Lair Dashboard",
+      "name": "Pump Dashboard",
       "src": "/appdata/dashboard.html",
       "by": "nich",
       "desc": "Portfolio, news, gas, and market data in one place",
@@ -2484,9 +2484,9 @@
       "ldesc": "Real-time Ethereum gas prices with cost estimates for common operations like ETH transfers, token swaps, NFT mints, and staking. Shows costs in ETH and USD."
     },
     {
-      "id": "lairchat",
+      "id": "pumpchat",
       "name": "Pump Chat",
-      "src": "/appdata/lairchat.html",
+      "src": "/appdata/pumpchat.html",
       "by": "PumpOS",
       "desc": "",
       "cat": "social",
@@ -2498,9 +2498,9 @@
       "icon": "<svg width='232' height='232' viewBox='0 0 232 232' fill='none' xmlns='http://www.w3.org/2000/svg'><rect width='232' height='232' rx='40' fill='#6366f1'/><path d='M60 80h112a16 16 0 0116 16v48a16 16 0 01-16 16h-60l-32 24v-24H60a16 16 0 01-16-16V96a16 16 0 0116-16z' stroke='#fff' stroke-width='12' stroke-linecap='round' stroke-linejoin='round'/><circle cx='92' cy='120' r='8' fill='#fff'/><circle cx='116' cy='120' r='8' fill='#fff'/><circle cx='140' cy='120' r='8' fill='#fff'/></svg>"
     },
     {
-      "id": "laircoin",
+      "id": "pumpcoin",
       "name": "Coin Detail",
-      "src": "/appdata/laircoin.html",
+      "src": "/appdata/pumpcoin.html",
       "by": "PumpOS",
       "desc": "",
       "cat": "defi",
@@ -2513,9 +2513,9 @@
       "icon": "<svg width='232' height='232' viewBox='0 0 232 232' fill='none' xmlns='http://www.w3.org/2000/svg'><rect width='232' height='232' rx='40' fill='#f59e0b'/><circle cx='116' cy='116' r='70' fill='white' opacity='0.9'/><circle cx='116' cy='116' r='55' fill='#f59e0b'/><text x='116' y='132' text-anchor='middle' font-size='60' font-weight='bold' fill='white' font-family='sans-serif'>$</text><circle cx='60' cy='60' r='20' fill='white' opacity='0.3'/><circle cx='172' cy='172' r='16' fill='white' opacity='0.3'/></svg>"
     },
     {
-      "id": "lairdexscreener",
+      "id": "pumpdexscreener",
       "name": "DEX Screener",
-      "src": "/appdata/lairdexscreener.html",
+      "src": "/appdata/pumpdexscreener.html",
       "by": "nich",
       "desc": "Native DEX pair screener with real-time data",
       "cat": "trading",
@@ -2527,9 +2527,9 @@
       "ldesc": "Professional DEX pair screener using real DexScreener API. Search pairs, filter by chain (ETH, SOL, Base, BSC, ARB, MATIC, AVAX, SUI, TON), sort by volume/liquidity/change/age/transactions. Detailed pair panel with buy/sell ratios, FDV, and direct links. Auto-refreshes every 30s."
     },
     {
-      "id": "lairfeargreed",
+      "id": "pumpfeargreed",
       "name": "Fear & Greed Index",
-      "src": "/appdata/lairfeargreed.html",
+      "src": "/appdata/pumpfeargreed.html",
       "by": "PumpOS",
       "desc": "",
       "cat": "analytics",
@@ -2542,9 +2542,9 @@
       "icon": "<svg width='232' height='232' viewBox='0 0 232 232' fill='none' xmlns='http://www.w3.org/2000/svg'><rect width='232' height='232' rx='40' fill='#059669'/><path d='M36 146a80 80 0 01160 0' stroke='white' stroke-width='14' stroke-linecap='round' fill='none'/><path d='M56 146a60 60 0 01120 0' stroke='#00d4aa' stroke-width='10' stroke-linecap='round' fill='none' opacity='0.5'/><line x1='116' y1='146' x2='146' y2='90' stroke='white' stroke-width='8' stroke-linecap='round'/><circle cx='116' cy='146' r='10' fill='white'/><text x='48' y='180' font-size='20' fill='white' opacity='0.7' font-family='sans-serif'>Fear</text><text x='148' y='180' font-size='20' fill='white' opacity='0.7' font-family='sans-serif'>Greed</text></svg>"
     },
     {
-      "id": "lairlaunch",
+      "id": "pumplaunch",
       "name": "Pump Launch",
-      "src": "/appdata/lairlaunch.html",
+      "src": "/appdata/pumplaunch.html",
       "by": "PumpOS",
       "desc": "",
       "cat": "defi",
@@ -2557,9 +2557,9 @@
       "icon": "<svg width='232' height='232' viewBox='0 0 232 232' fill='none' xmlns='http://www.w3.org/2000/svg'><rect width='232' height='232' rx='40' fill='#2563eb'/><path d='M116 30c-20 0-36 60-36 100s16 50 36 50 36-10 36-50S136 30 116 30z' fill='white' opacity='0.9'/><path d='M80 130l-24 40c-4 6 0 14 8 14h20' fill='white' opacity='0.6'/><path d='M152 130l24 40c4 6 0 14-8 14h-20' fill='white' opacity='0.6'/><ellipse cx='116' cy='180' rx='20' ry='10' fill='#ff6b6b'/><ellipse cx='116' cy='190' rx='14' ry='20' fill='#fbbf24' opacity='0.8'/><ellipse cx='116' cy='198' rx='8' ry='14' fill='#ff6b6b' opacity='0.6'/><circle cx='116' cy='90' r='12' fill='#2563eb'/></svg>"
     },
     {
-      "id": "lairliquidations",
+      "id": "pumpliquidations",
       "name": "Liquidation Tracker",
-      "src": "/appdata/lairliquidations.html",
+      "src": "/appdata/pumpliquidations.html",
       "by": "nich",
       "desc": "Real-time futures liquidation feed",
       "cat": "defi",
@@ -2575,9 +2575,9 @@
       "ldesc": "Live liquidation tracker powered by Binance Futures WebSocket. See long and short liquidations in real time, top liquidated coins, long/short ratio, and largest single liquidation. Filter by longs or shorts."
     },
     {
-      "id": "laironchain",
+      "id": "pumponchain",
       "name": "On-Chain Analytics",
-      "src": "/appdata/laironchain.html",
+      "src": "/appdata/pumponchain.html",
       "by": "nich",
       "desc": "Bitcoin & Ethereum on-chain metrics",
       "cat": "analytics",
@@ -2593,9 +2593,9 @@
       "ldesc": "On-chain analytics for Bitcoin and Ethereum. Bitcoin tab: hash rate, difficulty, mempool, block stats, supply, mining pool distribution. Ethereum tab: price, gas prices, market data. Network tab: global crypto market cap, DeFi TVL, dominance breakdown."
     },
     {
-      "id": "lairportfolio",
+      "id": "pumpportfolio",
       "name": "Portfolio",
-      "src": "/appdata/lairportfolio.html",
+      "src": "/appdata/pumpportfolio.html",
       "by": "nich",
       "desc": "Manual portfolio tracker with allocation chart",
       "cat": "defi",
@@ -2611,9 +2611,9 @@
       "ldesc": "Track your crypto portfolio with a visual allocation chart. Add holdings manually, see live valuations, and monitor your overall performance."
     },
     {
-      "id": "lairterminal",
+      "id": "pumpterminal",
       "name": "Trade Terminal",
-      "src": "/appdata/lairterminal.html",
+      "src": "/appdata/pumpterminal.html",
       "by": "nich",
       "desc": "Candlestick charts, order book, and live trades",
       "cat": "tools",
@@ -2629,9 +2629,9 @@
       "ldesc": "Full-featured trade terminal with real-time candlestick charts via Binance WebSocket, live order book depth, recent trades feed, 20 trading pairs, 7 timeframes, and technical indicators (SMA, EMA, Bollinger Bands)."
     },
     {
-      "id": "lairtrending",
+      "id": "pumptrending",
       "name": "Trending Tokens",
-      "src": "/appdata/lairtrending.html",
+      "src": "/appdata/pumptrending.html",
       "by": "PumpOS",
       "desc": "",
       "cat": "analytics",
@@ -2644,9 +2644,9 @@
       "icon": "<svg width='232' height='232' viewBox='0 0 232 232' fill='none' xmlns='http://www.w3.org/2000/svg'><rect width='232' height='232' rx='40' fill='%23ec4899'/><path d='M40 170l40-30 40 10 40-60 40-30 30-20' stroke='white' stroke-width='10' stroke-linecap='round' stroke-linejoin='round'/><path d='M190 40l20 0 0 20' stroke='white' stroke-width='8' stroke-linecap='round' stroke-linejoin='round'/><circle cx='40' cy='170' r='8' fill='white'/><circle cx='80' cy='140' r='8' fill='white'/><circle cx='120' cy='150' r='8' fill='white'/><circle cx='160' cy='90' r='8' fill='white'/><circle cx='200' cy='60' r='8' fill='white'/><path d='M40 170l40-30 40 10 40-60 40-30 40-20' stroke='white' stroke-width='4' stroke-linecap='round' opacity='0.3' stroke-dasharray='8 4'/></svg>"
     },
     {
-      "id": "lairwatchlist",
+      "id": "pumpwatchlist",
       "name": "Watchlist",
-      "src": "/appdata/lairwatchlist.html",
+      "src": "/appdata/pumpwatchlist.html",
       "by": "nich",
       "desc": "Personal crypto watchlist with alerts and notes",
       "cat": "analytics",

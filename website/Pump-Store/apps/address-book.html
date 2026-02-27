@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="lair-include" content="lair.css material-symbols-rounded">
+    <meta name="pump-include" content="pump.css material-symbols-rounded">
     <meta name="permissions" content="appStorage, clipboard">
     <meta name="capabilities" content="addressBook">
-    <meta name="lair-icon" content="<svg width='232' height='232' viewBox='0 0 232 232' fill='none' xmlns='http://www.w3.org/2000/svg'><rect width='232' height='232' rx='40' fill='#14B8A6'/><text x='116' y='140' text-anchor='middle' fill='white' font-size='100' font-weight='bold'>📒</text></svg>">
+    <meta name="pump-icon" content="<svg width='232' height='232' viewBox='0 0 232 232' fill='none' xmlns='http://www.w3.org/2000/svg'><rect width='232' height='232' rx='40' fill='#14B8A6'/><text x='116' y='140' text-anchor='middle' fill='white' font-size='100' font-weight='bold'>📒</text></svg>">
     <title>Address Book</title>
     <style>
         :root { color-scheme: dark; }
@@ -506,8 +506,8 @@ let contacts = [];
 let clipboardHistory = [];
 let activeCategory = 'all';
 let editingId = null;
-const STORAGE_KEY = 'lair-address-book';
-const CLIP_KEY = 'lair-clipboard-history';
+const STORAGE_KEY = 'pump-address-book';
+const CLIP_KEY = 'pump-clipboard-history';
 const MAX_CLIP = 20;
 
 /* ── Chain Config ── */

@@ -20,7 +20,7 @@
 
     // WalletConnect project ID — configurable via localStorage
     function getWCProjectId() {
-        return localStorage.getItem('lair_wc_project_id') || '';
+        return localStorage.getItem('pump_wc_project_id') || '';
     }
 
     // ──────────────────────────── State ────────────────────────────
@@ -287,7 +287,7 @@
     async function connectWalletConnect() {
         var projectId = getWCProjectId();
         if (!projectId) {
-            notify('WalletConnect', 'Project ID required. Go to cloud.walletconnect.com to get one, then set it in PumpOS terminal: localStorage.setItem("lair_wc_project_id", "YOUR_ID")', 'warning');
+            notify('WalletConnect', 'Project ID required. Go to cloud.walletconnect.com to get one, then set it in PumpOS terminal: localStorage.setItem("pump_wc_project_id", "YOUR_ID")', 'warning');
             return false;
         }
 
@@ -309,7 +309,7 @@
                     name: 'PumpOS',
                     description: 'PumpOS — Web3 Desktop Environment',
                     url: window.location.origin,
-                    icons: [window.location.origin + '/n.png'],
+                    icons: [window.location.origin + '/pump.png'],
                 },
             });
 
@@ -363,7 +363,7 @@
 
             var sdk = new CoinbaseWalletSDK({
                 appName: 'PumpOS',
-                appLogoUrl: window.location.origin + '/n.png',
+                appLogoUrl: window.location.origin + '/pump.png',
             });
 
             var provider = sdk.makeWeb3Provider();
@@ -409,7 +409,7 @@
         state.balance = null;
         state.provider = null;
 
-        localStorage.removeItem('lair_wallet');
+        localStorage.removeItem('pump_wallet');
         updateUI();
         closeDropdown();
         closeChainDropdown();
@@ -495,7 +495,7 @@
     // ──────────────────────────── Persistence ────────────────────────────
     function persist() {
         if (state.address) {
-            localStorage.setItem('lair_wallet', JSON.stringify({
+            localStorage.setItem('pump_wallet', JSON.stringify({
                 address: state.address,
                 chainId: state.chainId,
                 provider: state.provider,
@@ -504,7 +504,7 @@
     }
 
     async function autoReconnect() {
-        var saved = localStorage.getItem('lair_wallet');
+        var saved = localStorage.getItem('pump_wallet');
         if (!saved) return;
 
         try {

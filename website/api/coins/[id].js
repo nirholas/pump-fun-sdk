@@ -2,7 +2,7 @@
  * GET /api/coins/[id] — Get a single coin with engagement reactions.
  *
  * Zero-dependency Vercel serverless function using Neon HTTP SQL.
- * Returns the format expected by laircoin.html:
+ * Returns the format expected by pumpcoin.html:
  *   { success: true, data: { id, ticker, name, ..., reactions: { "🔥": 5 } } }
  */
 

@@ -70,7 +70,7 @@ const STATUS_DISPLAY = {
  * Transform a raw DB row (camelCase) into the snake_case contract
  * that all PumpOS frontend apps expect.
  *
- * Fields consumed by lairtrending.html, lairlaunch.html, lairdefi.html, laircoin.html:
+ * Fields consumed by pumptrending.html, pumplaunch.html, pumpdefi.html, pumpcoin.html:
  *   image_url, current_engagement, progress_percentage, launch_threshold,
  *   total_reactions, total_shares, total_replies, replies_count, forwards_count,
  *   creator_username, contract_address, created_at, etc.
@@ -99,7 +99,7 @@ function transformCoin(row) {
     total_shares: Number(row.totalShares) || 0,
     total_replies: Number(row.totalReplies) || 0,
 
-    // Denormalized counters for laircoin detail view
+    // Denormalized counters for pumpcoin detail view
     replies_count: Number(row.totalReplies) || 0,
     forwards_count: Number(row.totalShares) || 0,
 

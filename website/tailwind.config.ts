@@ -85,8 +85,8 @@ const config: Config = {
         grid: '24px 24px',
       },
       borderRadius: {
-        lair: '0.7em',
-        'lair-sm': '0.35em',
+        pump: '0.7em',
+        'pump-sm': '0.35em',
       },
     },
   },

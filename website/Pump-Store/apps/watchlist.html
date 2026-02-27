@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="lair-perms" content="network" />
+    <meta name="pump-perms" content="network" />
     <title>Watchlist</title>
-    <meta name="lair-icon" content="bookmark_star">
-    <meta name="lair-include" content="lair.css material-symbols-rounded">
+    <meta name="pump-icon" content="bookmark_star">
+    <meta name="pump-include" content="pump.css material-symbols-rounded">
     <meta name="permissions" content="appStorage, network">
     <meta name="capabilities" content="watchlist">
     <style>
@@ -207,7 +207,7 @@
 
 <script>
 /* ── State ── */
-const STORAGE_KEY = 'lair_watchlist';
+const STORAGE_KEY = 'pump_watchlist';
 const DEFAULT_COINS = ['bitcoin','ethereum','solana','dogecoin','cardano','avalanche-2','chainlink','polkadot','uniswap','aave'];
 let watchlist = [];
 let coinData = {};

@@ -148,7 +148,7 @@
 
 		// Restore saved volume
 		try {
-			const saved = localStorage.getItem('lair-os-volume');
+			const saved = localStorage.getItem('pump-os-volume');
 			if (saved !== null) volumeLevel = parseInt(saved, 10);
 		} catch (_) {}
 		slider.value = volumeLevel;
@@ -165,7 +165,7 @@
 			volumeLevel = parseInt(slider.value, 10);
 			if (levelEl) levelEl.textContent = volumeLevel + '%';
 			updateVolumeIcon();
-			try { localStorage.setItem('lair-os-volume', volumeLevel); } catch (_) {}
+			try { localStorage.setItem('pump-os-volume', volumeLevel); } catch (_) {}
 			const qaVol = $('qa-volume-value');
 			if (qaVol) qaVol.textContent = volumeLevel + '%';
 		});

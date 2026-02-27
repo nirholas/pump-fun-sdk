@@ -1,8 +1,8 @@
 # The EventBusWorker
 
-## What is LairOS `EventBusWorker`?
+## What is PumpOS `EventBusWorker`?
 
-LairOS EventBusWorker is system for all of LairOS and its apps to know what is being updated in real time, and possibly with more context.
+PumpOS EventBusWorker is system for all of PumpOS and its apps to know what is being updated in real time, and possibly with more context.
 
 ## How to access the event bus?
 
@@ -74,7 +74,7 @@ The settings event has this default syntax:
 ```
 
 {% hint style="info" %}
-Here is a list of all settings codes and how to get the values of them: [Settings Descriptions](https://github.com/nirholas/lairOS/wiki/Settings-Descriptions)
+Here is a list of all settings codes and how to get the values of them: [Settings Descriptions](https://github.com/nirholas/pumpOS/wiki/Settings-Descriptions)
 {% endhint %}
 
 #### Event titles
@@ -120,4 +120,4 @@ Events that have no listeners, will not get broadcasted.
 
 ## Use cases
 
-Whether you want to show a reflection of the virtual memory system, or you wanted to mirror the contents of an updating file while its being saved per every change, the LairOS event bus could be used as an efficient updates system that lets you remotely do things, without spamming unwanted calls.
+Whether you want to show a reflection of the virtual memory system, or you wanted to mirror the contents of an updating file while its being saved per every change, the PumpOS event bus could be used as an efficient updates system that lets you remotely do things, without spamming unwanted calls.

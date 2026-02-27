@@ -3,7 +3,7 @@
  * Lightweight feature flag system for client-side control
  * 
  * Usage:
- *   FeatureFlags.isEnabled('app.lairai')   // Check if app is enabled
+ *   FeatureFlags.isEnabled('app.pumpai')   // Check if app is enabled
  *   FeatureFlags.isEnabled('permissions')    // Check if permission prompts are enabled
  *   FeatureFlags.isEnabled('notify.toast')   // Check if toast notifications are enabled
  */
@@ -12,7 +12,7 @@ const FeatureFlags = {
     // ============ Configuration ============
     
     // Remote config URL (optional - for dynamic flags)
-    REMOTE_CONFIG_URL: null, // e.g., 'https://lair2.vercel.app/api/flags' or a JSON file
+    REMOTE_CONFIG_URL: null, // e.g., 'https://pump-fun-sdk.vercel.app/api/flags' or a JSON file
     
     // Default flags (fallback if remote fails)
     defaults: {
@@ -20,7 +20,7 @@ const FeatureFlags = {
         // ACCESS CONTROL
         // =====================================
         'beta_required': false,          // Require beta code to access OS
-        'beta_codes': ['LAIROS2026', 'BETAUSER', 'EARLYACCESS'], // Valid beta codes
+        'beta_codes': ['PUMPOS2026', 'BETAUSER', 'EARLYACCESS'], // Valid beta codes
         
         // =====================================
         // APP FLAGS (app.{appname})
@@ -43,25 +43,25 @@ const FeatureFlags = {
         'app.welcome': true,
 
         // Pump Native Apps
-        'app.lairai': true,
-        'app.lairbot': true,
-        'app.lairdefi': true,
-        'app.lairdocs': true,
-        'app.lairchat': true,
+        'app.pumpai': true,
+        'app.pumpbot': true,
+        'app.pumpdefi': true,
+        'app.pumpdocs': true,
+        'app.pumpchat': true,
         'app.copilot': true,
         'app.liza': true,
-        'app.lairlaunch': true,
-        'app.lairtrending': true,
-        'app.laircoin': true,
-        'app.lairportfolio': true,
-        'app.lairheatmap': true,
-        'app.lairliquidations': true,
-        'app.lairterminal': true,
-        'app.lairwatchlist': true,
-        'app.laircalendar': true,
-        'app.lairdexscreener': true,
-        'app.lairfeargreed': true,
-        'app.laironchain': true,
+        'app.pumplaunch': true,
+        'app.pumptrending': true,
+        'app.pumpcoin': true,
+        'app.pumpportfolio': true,
+        'app.pumpheatmap': true,
+        'app.pumpliquidations': true,
+        'app.pumpterminal': true,
+        'app.pumpwatchlist': true,
+        'app.pumpcalendar': true,
+        'app.pumpdexscreener': true,
+        'app.pumpfeargreed': true,
+        'app.pumponchain': true,
 
         // Store dApps
         'app.dashboard': true,
@@ -308,7 +308,7 @@ const FeatureFlags = {
     
     _loadFromStorage() {
         try {
-            const stored = localStorage.getItem('lair_feature_flags');
+            const stored = localStorage.getItem('pump_feature_flags');
             if (stored) {
                 this._flags = { ...this.defaults, ...JSON.parse(stored) };
             } else {
@@ -322,7 +322,7 @@ const FeatureFlags = {
     
     _saveToStorage() {
         try {
-            localStorage.setItem('lair_feature_flags', JSON.stringify(this._flags));
+            localStorage.setItem('pump_feature_flags', JSON.stringify(this._flags));
         } catch (e) {
             console.error('[FeatureFlags] Failed to save to storage:', e);
         }
@@ -363,7 +363,7 @@ const FeatureFlags = {
     _checkBetaAccess() {
         if (!this.isEnabled('beta_required')) return;
         
-        const storedCode = localStorage.getItem('lair_beta_code');
+        const storedCode = localStorage.getItem('pump_beta_code');
         const validCodes = this.get('beta_codes') || [];
         
         if (!storedCode || !validCodes.includes(storedCode.toUpperCase())) {
@@ -436,7 +436,7 @@ const FeatureFlags = {
                 </form>
                 <p class="error" id="beta-error">Invalid code. Please try again.</p>
                 <p class="signup-link">
-                    Don't have a code? <a href="https://lair2.vercel.app/waitlist" target="_blank">Join the waitlist</a>
+                    Don't have a code? <a href="https://pump-fun-sdk.vercel.app/waitlist" target="_blank">Join the waitlist</a>
                 </p>
             </div>
         `;
@@ -450,7 +450,7 @@ const FeatureFlags = {
             const validCodes = this.get('beta_codes') || [];
             
             if (validCodes.includes(code)) {
-                localStorage.setItem('lair_beta_code', code);
+                localStorage.setItem('pump_beta_code', code);
                 overlay.remove();
             } else {
                 document.getElementById('beta-error').style.display = 'block';
@@ -482,7 +482,7 @@ const FeatureFlags = {
      * Check if user has beta access
      */
     hasBetaAccess() {
-        const storedCode = localStorage.getItem('lair_beta_code');
+        const storedCode = localStorage.getItem('pump_beta_code');
         const validCodes = this.get('beta_codes') || [];
         return storedCode && validCodes.includes(storedCode.toUpperCase());
     },
@@ -500,7 +500,7 @@ const FeatureFlags = {
      */
     grantBetaAccess(code) {
         if (this.validateBetaCode(code)) {
-            localStorage.setItem('lair_beta_code', code.toUpperCase());
+            localStorage.setItem('pump_beta_code', code.toUpperCase());
             return true;
         }
         return false;
@@ -510,14 +510,14 @@ const FeatureFlags = {
      * Revoke beta access
      */
     revokeBetaAccess() {
-        localStorage.removeItem('lair_beta_code');
+        localStorage.removeItem('pump_beta_code');
     },
     
     // ============ App Helpers ============
     
     /**
      * Check if an app is enabled
-     * @param {string} appName - App name (e.g., 'lairai', 'calculator')
+     * @param {string} appName - App name (e.g., 'pumpai', 'calculator')
      */
     isAppEnabled(appName) {
         const normalized = appName.toLowerCase().replace(/\.html$/, '');
@@ -650,14 +650,14 @@ const FeatureFlags = {
     /**
      * Enable only Pump apps, disable others
      */
-    lairOnlyMode() {
-        const lairApps = ['store', 'files', 'settings', 'lairai', 'lairbot', 
-                           'lairdefi', 'lairdocs', 'lairchat', 'portfolio'];
+    pumpOnlyMode() {
+        const pumpApps = ['store', 'files', 'settings', 'pumpai', 'pumpbot', 
+                           'pumpdefi', 'pumpdocs', 'pumpchat', 'portfolio'];
         
         for (const [key, _] of Object.entries(this.defaults)) {
             if (key.startsWith('app.')) {
                 const appName = key.replace('app.', '');
-                this.set(key, lairApps.includes(appName));
+                this.set(key, pumpApps.includes(appName));
             }
         }
     },

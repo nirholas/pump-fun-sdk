@@ -1,6 +1,6 @@
-# Ultraviolet Proxy for LairOS
+# Ultraviolet Proxy for PumpOS
 
-This directory contains the Ultraviolet web proxy client that enables LairOS to browse any website, even those that block iframes.
+This directory contains the Ultraviolet web proxy client that enables PumpOS to browse any website, even those that block iframes.
 
 ## Files
 
@@ -37,7 +37,7 @@ Also update `sw.js` with the same bare server URL.
 
 ## OpenBare
 
-LairOS uses [OpenBare](https://github.com/nirholas/openbare) as its proxy backend. The production server runs at:
+PumpOS uses [OpenBare](https://github.com/nirholas/openbare) as its proxy backend. The production server runs at:
 
 - **Production**: `https://openbare.xyz/bare/`
 - **Local dev**: `http://localhost:8080/bare/`
@@ -53,8 +53,8 @@ LairOS uses [OpenBare](https://github.com/nirholas/openbare) as its proxy backen
 1. Clone OpenBare: `git clone https://github.com/nirholas/openbare`
 2. Run the edge server locally (see OpenBare docs)
 3. Update `uv.config.js` bare URL to `http://localhost:8080/bare/`
-4. Serve LairOS: `npx serve` (from root)
-5. Open LairOS and launch "UV Browser" from the store
+4. Serve PumpOS: `npx serve` (from root)
+5. Open PumpOS and launch "UV Browser" from the store
 
 ## Troubleshooting
 

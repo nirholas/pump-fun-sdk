@@ -130,7 +130,7 @@ input:focus, textarea:focus, select:focus {
   animation: borderGlow 3s ease-in-out infinite;
 }
 
-/* Lair pop animation */
+/* Pump pop animation */
 @keyframes pop {
   from {
     filter: opacity(0%);

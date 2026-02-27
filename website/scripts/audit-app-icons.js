@@ -22,7 +22,7 @@ function readHtmlFiles(dir) {
 }
 
 function hasPumpIconMeta(content) {
-  const regex = /<meta\s+name=["']lair-icon["']\s+content=["']([^"']*)["']/i;
+  const regex = /<meta\s+name=["']pump-icon["']\s+content=["']([^"']*)["']/i;
   const match = content.match(regex);
   return Boolean(match && match[1] && match[1].trim().length > 0);
 }
@@ -61,7 +61,7 @@ if (missingHtmlIcons.length || missingStoreSymbols.length) {
   console.error('❌ App icon audit failed. Missing icon metadata in:');
 
   if (missingHtmlIcons.length) {
-    console.error('\nHTML files missing <meta name="lair-icon">:');
+    console.error('\nHTML files missing <meta name="pump-icon">:');
     for (const item of missingHtmlIcons) {
       console.error(`- ${item}`);
     }

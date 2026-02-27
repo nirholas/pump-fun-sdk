@@ -2,10 +2,10 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="lair-include" content="lair.css" />
+    <meta name="pump-include" content="pump.css" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta
-      name="lair-icon"
+      name="pump-icon"
       content="<svg version='1.1' xmlns='http://www.w3.org/2000/svg' width='72.63792' height='72.89678' viewBox='0,0,72.63792,72.89678'><defs><linearGradient x1='236.77944' y1='195.83445' x2='262.0072' y2='195.83445' gradientUnits='userSpaceOnUse' id='color-1'><stop offset='0' stop-color='#007c30'/><stop offset='1' stop-color='#b1d900'/></linearGradient><linearGradient x1='225.81025' y1='163.6288' x2='225.81025' y2='196.37121' gradientUnits='userSpaceOnUse' id='color-2'><stop offset='0' stop-color='#89ff8f'/><stop offset='1' stop-color='#007c30'/></linearGradient></defs><g transform='translate(-203.73251,-143.3707)'><path d='M203.73252,216.26749v-72.53497h72.53497v72.53497z' fill='#0b0f0d'/><path d='M236.77944,195.83445h25.22776' fill='none' stroke='url(#color-1)' stroke-width='5' stroke-linecap='round'/><path d='M203.88843,186.60104v-43.23034h72.48201v7.2482c0,0 -15.14542,18.20653 -36.92222,27.32654c-15.1326,6.33745 -35.55979,8.65561 -35.55979,8.65561z' fill='#1b2320'/><path d='M217.99281,163.6288l15.63488,16.5811l-15.63488,16.16132' fill='none' stroke='url(#color-2)' stroke-width='5' stroke-linecap='round'/></g></svg>"
     />
     <title>PumpOS Terminal</title>
@@ -112,7 +112,7 @@
     <div class="terminal">
       <div id="terminal-output" class="terminal-output"></div>
       <div class="prompt-row">
-        <span class="prompt">lair&gt;</span>
+        <span class="prompt">pump&gt;</span>
         <input id="cli-input" type="text" autocomplete="off" spellcheck="false" placeholder="type 'help'" />
       </div>
     </div>
@@ -121,7 +121,7 @@
       const output = document.getElementById("terminal-output");
       const input = document.getElementById("cli-input");
 
-      const ETHERSCAN_API_KEY_STORAGE = "lair_cli_etherscan_key";
+      const ETHERSCAN_API_KEY_STORAGE = "pump_cli_etherscan_key";
       const DEFAULT_ETHERSCAN_KEY = "YourApiKeyToken";
 
       const commandNames = [
@@ -177,7 +177,7 @@
       }
 
       function printCommand(command) {
-        printLine(`lair> ${command}`, "command");
+        printLine(`pump> ${command}`, "command");
       }
 
       function formatNumber(value, max = 2) {

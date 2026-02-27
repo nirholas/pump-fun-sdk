@@ -70,7 +70,7 @@ The SDK interacts with three on-chain programs:
 ### Token Lifecycle
 
 <div align="center">
-  <img src="assets/token-lifecycle.svg" alt="Token lifecycle — bonding curve to AMM graduation" width="720">
+  <img src="assets/pump.svg" alt="Token lifecycle — bonding curve to AMM graduation" width="720">
 </div>
 
 ```mermaid
@@ -104,7 +104,7 @@ All Program Derived Addresses are computed deterministically in `pda.ts`. Key PD
 ### Fee System
 
 <div align="center">
-  <img src="assets/fee-sharing.svg" alt="Fee sharing flow — trades to shareholders" width="720">
+  <img src="assets/pump.svg" alt="Fee sharing flow — trades to shareholders" width="720">
 </div>
 
 Fees are calculated based on market cap tiers:

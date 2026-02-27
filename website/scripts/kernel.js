@@ -1,6 +1,6 @@
 var dragging = false, remToPx = parseFloat(getComputedStyle(document.documentElement).fontSize), navheight;
 
-var lairdotcsscache, transactionLib = [], notificationContext = {};
+var pumpdotcsscache, transactionLib = [], notificationContext = {};
 
 /**
  * Parses a full HTML document string and extracts head/body content separately.
@@ -319,18 +319,18 @@ async function prepareIframeContent(cont, appid, winuid) {
     let contentString = isBase64(cont) ? decodeBase64Content(cont) : (cont || "<center><h1>Unavailable</h1>App Data cannot be read.</center>");
 
     let styleBlock = '';
-    if (getMetaTagContent(contentString, 'lair-include')?.includes('lair.css')) {
-        let updatedCss = lairdotcsscache || '';
-        const lairCssTag = document.getElementById('laircsstag');
-        if (lairCssTag) {
-            const customCss = lairCssTag.textContent;
+    if (getMetaTagContent(contentString, 'pump-include')?.includes('pump.css')) {
+        let updatedCss = pumpdotcsscache || '';
+        const pumpCssTag = document.getElementById('pumpcsstag');
+        if (pumpCssTag) {
+            const customCss = pumpCssTag.textContent;
             const variableRegex = /--([\w-]+)\s*:\s*([^;]+);/g;
             let customVariables = {};
             let match;
             while ((match = variableRegex.exec(customCss)) !== null) {
                 customVariables[`--${match[1]}`] = match[2].trim();
             }
-            updatedCss = lairdotcsscache.replace(/:root\s*{([^}]*)}/, (match, declarations) => {
+            updatedCss = pumpdotcsscache.replace(/:root\s*{([^}]*)}/, (match, declarations) => {
                 let updated = declarations.trim();
                 for (const [key, val] of Object.entries(customVariables)) {
                     const regex = new RegExp(`(${key}\\s*:\\s*).*?;`, 'g');
@@ -359,13 +359,13 @@ async function prepareIframeContent(cont, appid, winuid) {
         }
     }
 
-    if (getMetaTagContent(contentString, 'lair-include')?.includes('material-symbols-rounded')) {
+    if (getMetaTagContent(contentString, 'pump-include')?.includes('material-symbols-rounded')) {
         const fontUrl = `${window.location.origin}/libs/MaterialSymbolsRounded.woff2`;
         cacheFont(fontUrl, 'material-symbols-rounded');
         styleBlock += `<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"><style>@font-face{font-family:'Material Symbols Rounded';font-style:normal;font-display:swap;src:url(${fontUrl}) format('woff2');}.material-symbols-rounded{font-family:'Material Symbols Rounded';font-weight:normal;font-style:normal;font-size:24px;line-height:1;display:inline-block;white-space:nowrap;direction:ltr;-webkit-font-smoothing:antialiased;font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;}</style>`;
     }
 
-    const ctxScript = getMetaTagContent(contentString, 'lair-include')?.includes('contextMenu') ? await fetch('scripts/ctxmenu.js').then(res => res.text()) : '';
+    const ctxScript = getMetaTagContent(contentString, 'pump-include')?.includes('contextMenu') ? await fetch('scripts/ctxmenu.js').then(res => res.text()) : '';
 
     /* ── Early globals (non-deferred, goes in <head> so inline body scripts can use cfetch) ── */
     const earlyScript = `<script>
@@ -374,13 +374,13 @@ async function prepareIframeContent(cont, appid, winuid) {
    This blocks the primary exploit vector (accessing frameElement to remove sandbox). */
 try { Object.defineProperty(window, 'frameElement', { value: null, writable: false, configurable: false }); } catch(_) {}
 
-window.LAIR_HOST = (window.location.ancestorOrigins?.[0] || '').replace(/\\/$/, '') || '${location.origin}';
+window.PUMP_HOST = (window.location.ancestorOrigins?.[0] || '').replace(/\\/$/, '') || '${location.origin}';
 window.cfetch = async function cfetch(url, opts) {
     try {
-        var u = new URL(url, window.LAIR_HOST);
-        if (u.origin === window.LAIR_HOST) return fetch(url, opts);
+        var u = new URL(url, window.PUMP_HOST);
+        if (u.origin === window.PUMP_HOST) return fetch(url, opts);
     } catch(_) {}
-    var proxyUrl = window.LAIR_HOST + '/api/proxy?url=' + encodeURIComponent(url);
+    var proxyUrl = window.PUMP_HOST + '/api/proxy?url=' + encodeURIComponent(url);
     if (opts && opts.method && opts.method.toUpperCase() === 'POST') {
         return fetch(proxyUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: opts.body });
     }
@@ -407,11 +407,11 @@ window.addEventListener("message", async e => {
             await greenflag();
         } catch (t) {}
         window.parent.postMessage({ data: "gfdone", iframeId: myWindow.windowID }, "*");
-    } else if (e.data?.type === "lair-style" && typeof e.data.css === "string") {
-        let styleTag = document.getElementById("laircsstag");
+    } else if (e.data?.type === "pump-style" && typeof e.data.css === "string") {
+        let styleTag = document.getElementById("pumpcsstag");
         if (!styleTag) {
             styleTag = document.createElement("style");
-            styleTag.id = "laircsstag";
+            styleTag.id = "pumpcsstag";
             document.head.appendChild(styleTag);
         }
         styleTag.textContent = e.data.css;
@@ -530,9 +530,9 @@ async function loadIframe(windowContent, windowLoader, loaderSpinner, cont, appi
 
     let registry = await getSetting(appid, "AppRegistry.json") || { perms: [] };
 
-    // Merge permissions declared in the app HTML via <meta name="lair-perms"> or legacy <meta name="permissions">
+    // Merge permissions declared in the app HTML via <meta name="pump-perms"> or legacy <meta name="permissions">
     const rawContent = isBase64(cont) ? decodeBase64Content(cont) : (cont || "");
-    const declaredPerms = (getMetaTagContent(rawContent, 'lair-perms') || '').split(/[\s,]+/).filter(Boolean);
+    const declaredPerms = (getMetaTagContent(rawContent, 'pump-perms') || '').split(/[\s,]+/).filter(Boolean);
     const legacyPerms = (getMetaTagContent(rawContent, 'permissions') || '').split(/[\s,]+/).filter(Boolean);
     const mergedPerms = [...new Set([...(registry.perms || []), ...declaredPerms, ...legacyPerms])];
 

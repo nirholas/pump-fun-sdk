@@ -2,11 +2,11 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="lair-include" content="lair.css">
+    <meta name="pump-include" content="pump.css">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Crypto News</title>
-    <meta name="lair-icon" content="<svg width='232' height='232' viewBox='0 0 232 232' fill='none' xmlns='http://www.w3.org/2000/svg'><rect width='232' height='232' rx='40' fill='#1a1a2e'/><rect x='30' y='50' width='172' height='20' rx='4' fill='#00d4aa'/><rect x='30' y='85' width='140' height='12' rx='3' fill='#ffffff' opacity='0.7'/><rect x='30' y='105' width='160' height='12' rx='3' fill='#ffffff' opacity='0.5'/><rect x='30' y='130' width='172' height='20' rx='4' fill='#ff6b6b'/><rect x='30' y='165' width='120' height='12' rx='3' fill='#ffffff' opacity='0.7'/><rect x='30' y='185' width='150' height='12' rx='3' fill='#ffffff' opacity='0.5'/></svg>">
-    <meta name="lair-description" content="Real-time crypto news aggregator - Bitcoin, Ethereum, DeFi, and more from 7+ sources">
+    <meta name="pump-icon" content="<svg width='232' height='232' viewBox='0 0 232 232' fill='none' xmlns='http://www.w3.org/2000/svg'><rect width='232' height='232' rx='40' fill='#1a1a2e'/><rect x='30' y='50' width='172' height='20' rx='4' fill='#00d4aa'/><rect x='30' y='85' width='140' height='12' rx='3' fill='#ffffff' opacity='0.7'/><rect x='30' y='105' width='160' height='12' rx='3' fill='#ffffff' opacity='0.5'/><rect x='30' y='130' width='172' height='20' rx='4' fill='#ff6b6b'/><rect x='30' y='165' width='120' height='12' rx='3' fill='#ffffff' opacity='0.7'/><rect x='30' y='185' width='150' height='12' rx='3' fill='#ffffff' opacity='0.5'/></svg>">
+    <meta name="pump-description" content="Real-time crypto news aggregator - Bitcoin, Ethereum, DeFi, and more from 7+ sources">
     <style>
         :root {
             --bg-primary: #0a0a0f;
@@ -782,7 +782,7 @@
 
     <script>
         const API_BASE = 'https://free-crypto-news.vercel.app';
-        const LAIR_HOST = window.LAIR_HOST || (window.location.ancestorOrigins?.[0] || '').replace(/\/$/, '') || location.origin;
+        const PUMP_HOST = window.PUMP_HOST || (window.location.ancestorOrigins?.[0] || '').replace(/\/$/, '') || location.origin;
 
         /* CORS-safe fetch: blob: iframes have origin=null so external APIs block us.
            Route through our Vercel CORS proxy at /api/proxy. */
@@ -791,7 +791,7 @@
                 const r = await fetch(url, opts);
                 if (r.ok) return r;
             } catch (_) {}
-            return fetch(LAIR_HOST + '/api/proxy?url=' + encodeURIComponent(url), opts);
+            return fetch(PUMP_HOST + '/api/proxy?url=' + encodeURIComponent(url), opts);
         }
 
         let currentEndpoint = '/api/news';

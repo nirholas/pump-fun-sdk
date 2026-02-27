@@ -26,9 +26,6 @@ import {
   bondingCurveMarketCap,
   newBondingCurve,
   // Fee helpers
-  getFee,
-  computeFeesBps,
-  calculateFeeTier,
   isCreatorUsingSharingConfig,
   // PDA derivation
   bondingCurvePda,
@@ -47,10 +44,139 @@ import {
   PUMP_AMM_PROGRAM_ID,
   PUMP_FEE_PROGRAM_ID,
   MAYHEM_PROGRAM_ID,
-  MAX_SHAREHOLDERS,
-  PUMP_TOKEN_MINT,
 } from "@pump-fun/pump-sdk";
+import type {
+  Global,
+  BondingCurve,
+  FeeConfig,
+} from "@pump-fun/pump-sdk";
+
+interface Fees {
+  lpFeeBps: BN;
+  protocolFeeBps: BN;
+  creatorFeeBps: BN;
+}
+
+interface FeeTier {
+  marketCapLamportsThreshold: BN;
+  fees: Fees;
+}
+
 import type { ServerState, ToolResult } from "../types/index.js";
+
+// ---------------------------------------------------------------------------
+// Constants not exported from @pump-fun/pump-sdk
+// ---------------------------------------------------------------------------
+
+const MAX_SHAREHOLDERS = 10;
+const PUMP_TOKEN_MINT = new PublicKey(
+  "pumpCmXqMfrsAkQ5r49WcJnRayYRqmXz6ae8H7H9Dfn",
+);
+
+// ---------------------------------------------------------------------------
+// Fee helpers (re-implemented locally — not exported from the SDK)
+// ---------------------------------------------------------------------------
+
+const ONE_BILLION_SUPPLY = new BN(1_000_000_000_000_000);
+
+function ceilDiv(a: BN, b: BN): BN {
+  return a.add(b.subn(1)).div(b);
+}
+
+function feeFromAmount(amount: BN, feeBasisPoints: BN): BN {
+  return ceilDiv(amount.mul(feeBasisPoints), new BN(10_000));
+}
+
+function getFee({
+  global,
+  feeConfig,
+  mintSupply,
+  bondingCurve,
+  amount,
+  isNewBondingCurve,
+}: {
+  global: Global;
+  feeConfig: FeeConfig | null;
+  mintSupply: BN;
+  bondingCurve: BondingCurve;
+  amount: BN;
+  isNewBondingCurve: boolean;
+}): BN {
+  const { virtualSolReserves, virtualTokenReserves, isMayhemMode } =
+    bondingCurve;
+  const { protocolFeeBps, creatorFeeBps } = computeFeesBps({
+    global,
+    feeConfig,
+    mintSupply: isMayhemMode ? mintSupply : ONE_BILLION_SUPPLY,
+    virtualSolReserves,
+    virtualTokenReserves,
+  });
+
+  return feeFromAmount(amount, protocolFeeBps).add(
+    isNewBondingCurve || !PublicKey.default.equals(bondingCurve.creator)
+      ? feeFromAmount(amount, creatorFeeBps)
+      : new BN(0),
+  );
+}
+
+interface CalculatedFeesBps {
+  protocolFeeBps: BN;
+  creatorFeeBps: BN;
+}
+
+function computeFeesBps({
+  global,
+  feeConfig,
+  mintSupply,
+  virtualSolReserves,
+  virtualTokenReserves,
+}: {
+  global: Global;
+  feeConfig: FeeConfig | null;
+  mintSupply: BN;
+  virtualSolReserves: BN;
+  virtualTokenReserves: BN;
+}): CalculatedFeesBps {
+  if (feeConfig != null) {
+    const marketCap = bondingCurveMarketCap({
+      mintSupply,
+      virtualSolReserves,
+      virtualTokenReserves,
+    });
+
+    return calculateFeeTier({
+      feeTiers: feeConfig.feeTiers,
+      marketCap,
+    });
+  }
+
+  return {
+    protocolFeeBps: global.feeBasisPoints,
+    creatorFeeBps: global.creatorFeeBasisPoints,
+  };
+}
+
+function calculateFeeTier({
+  feeTiers,
+  marketCap,
+}: {
+  feeTiers: FeeTier[];
+  marketCap: BN;
+}): Fees {
+  const firstTier = feeTiers[0];
+
+  if (marketCap.lt(firstTier.marketCapLamportsThreshold)) {
+    return firstTier.fees;
+  }
+
+  for (const tier of feeTiers.slice().reverse()) {
+    if (marketCap.gte(tier.marketCapLamportsThreshold)) {
+      return tier.fees;
+    }
+  }
+
+  return firstTier.fees;
+}
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -321,17 +447,14 @@ async function handleGetMarketCap(
   const connection = getConnection(rpcUrl);
   const sdk = new OnlinePumpSdk(connection);
 
-  const global = await sdk.fetchGlobal();
-  const feeConfig = await sdk.fetchFeeConfig();
   const bondingCurve = await sdk.fetchBondingCurve(mint);
 
   if (!bondingCurve) return err("Bonding curve not found for this mint");
 
   const marketCap = bondingCurveMarketCap({
-    global,
-    feeConfig,
-    bondingCurve,
     mintSupply: bondingCurve.tokenTotalSupply,
+    virtualSolReserves: bondingCurve.virtualSolReserves,
+    virtualTokenReserves: bondingCurve.virtualTokenReserves,
   });
 
   return ok(
@@ -376,13 +499,7 @@ async function handleBuildCreateToken(
   // Generate a mint keypair — the caller needs to sign with it
   const mint = Keypair.generate();
 
-  const rpcUrl = args.rpcUrl as string | undefined;
-  const connection = getConnection(rpcUrl);
-  const sdk = new OnlinePumpSdk(connection);
-  const global = await sdk.fetchGlobal();
-
   const instruction = await PUMP_SDK.createV2Instruction({
-    global,
     mint: mint.publicKey,
     name,
     symbol,
@@ -438,6 +555,7 @@ async function handleBuildCreateAndBuy(
     amount: tokenAmount,
     solAmount,
     mayhemMode,
+    cashback: false,
   });
 
   return ok(
@@ -483,6 +601,7 @@ async function handleBuildBuy(
     solAmount,
     amount: tokenAmount,
     slippage,
+    tokenProgram: new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"),
   });
 
   return ok(
@@ -526,6 +645,8 @@ async function handleBuildSell(
     amount: tokenAmount,
     solAmount,
     slippage,
+    tokenProgram: new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"),
+    mayhemMode: false,
   });
 
   return ok(
@@ -538,10 +659,17 @@ async function handleBuildMigrate(
 ): Promise<ToolResult> {
   const mint = requirePubkey(args.mint, "mint");
   const user = requirePubkey(args.user, "user");
+  const rpcUrl = args.rpcUrl as string | undefined;
+
+  const connection = getConnection(rpcUrl);
+  const sdk = new OnlinePumpSdk(connection);
+  const global = await sdk.fetchGlobal();
 
   const instruction = await PUMP_SDK.migrateInstruction({
+    withdrawAuthority: global.withdrawAuthority,
     mint,
     user,
+    tokenProgram: new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"),
   });
 
   return ok(
@@ -570,17 +698,16 @@ async function handleCalculateFees(
   if (!bondingCurve) return err("Bonding curve not found");
 
   const marketCap = bondingCurveMarketCap({
-    global,
-    feeConfig,
-    bondingCurve,
     mintSupply: bondingCurve.tokenTotalSupply,
+    virtualSolReserves: bondingCurve.virtualSolReserves,
+    virtualTokenReserves: bondingCurve.virtualTokenReserves,
   });
 
-  const fee = getFee({ feeConfig, amount, marketCapLamports: marketCap });
-  const feesBps = computeFeesBps({ feeConfig, marketCapLamports: marketCap });
+  const fee = getFee({ global, feeConfig, mintSupply: bondingCurve.tokenTotalSupply, bondingCurve, amount, isNewBondingCurve: false });
+  const feesBps = computeFeesBps({ global, feeConfig, mintSupply: bondingCurve.tokenTotalSupply, virtualSolReserves: bondingCurve.virtualSolReserves, virtualTokenReserves: bondingCurve.virtualTokenReserves });
 
   return ok(
-    `💸 Fee Calculation\n\nAmount: ${formatLamports(amount)}\nMint: ${mint.toBase58()}\nMarket Cap: ${formatLamports(marketCap)}\n\nTotal Fee: ${formatLamports(fee)}\nFee BPS:\n  LP Fee: ${feesBps.lpFeeBps} bps\n  Protocol Fee: ${feesBps.protocolFeeBps} bps\n  Creator Fee: ${feesBps.creatorFeeBps} bps`,
+    `💸 Fee Calculation\n\nAmount: ${formatLamports(amount)}\nMint: ${mint.toBase58()}\nMarket Cap: ${formatLamports(marketCap)}\n\nTotal Fee: ${formatLamports(fee)}\nFee BPS:\n  Protocol Fee: ${feesBps.protocolFeeBps.toString()} bps\n  Creator Fee: ${feesBps.creatorFeeBps.toString()} bps`,
   );
 }
 
@@ -594,11 +721,10 @@ async function handleGetFeeTier(
   const sdk = new OnlinePumpSdk(connection);
   const feeConfig = await sdk.fetchFeeConfig();
 
-  const tier = calculateFeeTier({ feeConfig, marketCapLamports });
-  const feesBps = computeFeesBps({ feeConfig, marketCapLamports });
+  const tier = calculateFeeTier({ feeTiers: feeConfig.feeTiers, marketCap: marketCapLamports });
 
   return ok(
-    `📊 Fee Tier\n\nMarket Cap: ${formatLamports(marketCapLamports)}\n\nApplicable Fees:\n  LP Fee: ${feesBps.lpFeeBps} bps (${(feesBps.lpFeeBps / 100).toFixed(2)}%)\n  Protocol Fee: ${feesBps.protocolFeeBps} bps (${(feesBps.protocolFeeBps / 100).toFixed(2)}%)\n  Creator Fee: ${feesBps.creatorFeeBps} bps (${(feesBps.creatorFeeBps / 100).toFixed(2)}%)`,
+    `📊 Fee Tier\n\nMarket Cap: ${formatLamports(marketCapLamports)}\n\nApplicable Fees:\n  LP Fee: ${tier.lpFeeBps.toString()} bps\n  Protocol Fee: ${tier.protocolFeeBps.toString()} bps\n  Creator Fee: ${tier.creatorFeeBps.toString()} bps`,
   );
 }
 
@@ -611,6 +737,7 @@ async function handleBuildCreateFeeSharing(
   const instruction = await PUMP_SDK.createFeeSharingConfig({
     creator,
     mint,
+    pool: null,
   });
 
   return ok(
@@ -784,7 +911,8 @@ async function handleGetVolumeStats(
   const stats = await sdk.fetchUserVolumeAccumulatorTotalStats(user);
 
   return ok(
-    `📊 Volume Statistics\n\nUser: ${user.toBase58()}\nTotal SOL Volume (Pump): ${formatLamports(stats.pumpSolVolume)}\nTotal SOL Volume (AMM): ${formatLamports(stats.ammSolVolume)}\nCombined SOL Volume: ${formatLamports(stats.pumpSolVolume.add(stats.ammSolVolume))}`,
+    `📊 Volume Statistics\n\nUser: ${user.toBase58()}\nTotal SOL Volume: ${formatLamports(stats.currentSolVolume)}\nTotal Unclaimed Tokens: ${bnToString(stats.totalUnclaimedTokens)}\nTotal Claimed Tokens: ${bnToString(stats.totalClaimedTokens)}`,
+
   );
 }
 

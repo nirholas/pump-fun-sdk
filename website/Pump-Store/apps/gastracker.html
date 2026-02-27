@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="lair-include" content="lair.css">
+    <meta name="pump-include" content="pump.css">
     <meta name="capabilities" content="gas_tracker">
-    <meta name="lair-icon" content="local_gas_station">
-    <meta name="lair-perms" content="network" />
+    <meta name="pump-icon" content="local_gas_station">
+    <meta name="pump-perms" content="network" />
     <title>Gas Tracker</title>
-    <link rel="stylesheet" href="../../libs/lair-components.css">
-    <script src="../../libs/lair-components.js"></script>
+    <link rel="stylesheet" href="../../libs/pump-components.css">
+    <script src="../../libs/pump-components.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -271,11 +271,11 @@
     (function() {
         'use strict';
         const fetchFn = window.cfetch || fetch;
-        const lairFetch = window.PumpFetch;
-        const lairUI = window.PumpUI;
-        const lairTheme = window.PumpTheme;
-        const lairPoll = window.PumpPoll;
-        if (lairTheme) lairTheme.apply(document.body);
+        const pumpFetch = window.PumpFetch;
+        const pumpUI = window.PumpUI;
+        const pumpTheme = window.PumpTheme;
+        const pumpPoll = window.PumpPoll;
+        if (pumpTheme) pumpTheme.apply(document.body);
 
         const CHAINS = [
             { id: 'eth',  name: 'Ethereum',  icon: '⟠',  owlId: 'eth',  transferGas: 21000 },
@@ -427,10 +427,10 @@
             const canvas = document.querySelector(`canvas[data-sparkline="${chainId}"]`);
             if (!canvas) return;
 
-            if (lairUI && typeof lairUI.sparkline === 'function') {
+            if (pumpUI && typeof pumpUI.sparkline === 'function') {
                 const data = gasHistory[chainId];
                 const rect = canvas.getBoundingClientRect();
-                lairUI.sparkline(canvas, data, {
+                pumpUI.sparkline(canvas, data, {
                     width: Math.max(20, Math.floor(rect.width || 120)),
                     height: Math.max(20, Math.floor(rect.height || 24))
                 });
@@ -478,8 +478,8 @@
 
         async function fetchEthGas() {
             try {
-                const json = lairFetch
-                    ? await lairFetch.getJSON('https://api.etherscan.io/api?module=gastracker&action=gasoracle', { cache: false, retries: 1, fallback: true })
+                const json = pumpFetch
+                    ? await pumpFetch.getJSON('https://api.etherscan.io/api?module=gastracker&action=gasoracle', { cache: false, retries: 1, fallback: true })
                     : await (async () => {
                         const res = await fetchFn('https://api.etherscan.io/api?module=gastracker&action=gasoracle');
                         if (!res.ok) throw new Error(`ETH gas endpoint ${res.status}`);
@@ -496,8 +496,8 @@
 
             // Fallback: beaconcha.in
             try {
-                const json = lairFetch
-                    ? await lairFetch.getJSON('https://beaconcha.in/api/v1/execution/gasnow', { cache: false, retries: 1, fallback: true })
+                const json = pumpFetch
+                    ? await pumpFetch.getJSON('https://beaconcha.in/api/v1/execution/gasnow', { cache: false, retries: 1, fallback: true })
                     : await (async () => {
                         const res = await fetchFn('https://beaconcha.in/api/v1/execution/gasnow');
                         if (!res.ok) throw new Error(`Beacon gas endpoint ${res.status}`);
@@ -517,8 +517,8 @@
 
         async function fetchOwlracleGas(chain) {
             try {
-                const json = lairFetch
-                    ? await lairFetch.getJSON(`https://api.owlracle.info/v4/${chain.owlId}/gas?accept=100,50,35`, { cache: false, retries: 1, fallback: true })
+                const json = pumpFetch
+                    ? await pumpFetch.getJSON(`https://api.owlracle.info/v4/${chain.owlId}/gas?accept=100,50,35`, { cache: false, retries: 1, fallback: true })
                     : await (async () => {
                         const res = await fetchFn(`https://api.owlracle.info/v4/${chain.owlId}/gas?accept=100,50,35`);
                         if (!res.ok) throw new Error(`Owlracle endpoint ${res.status}`);
@@ -601,8 +601,8 @@
 
         // --- Init ---
         renderSkeletons();
-        if (lairPoll) {
-            lairPoll.start(async () => {
+        if (pumpPoll) {
+            pumpPoll.start(async () => {
                 await fetchAll();
                 return true;
             }, REFRESH_INTERVAL * 1000, () => {});
@@ -612,7 +612,7 @@
         startCountdown();
 
         window.addEventListener('beforeunload', () => {
-            if (lairPoll) lairPoll.stop();
+            if (pumpPoll) pumpPoll.stop();
         });
     })();
     </script>

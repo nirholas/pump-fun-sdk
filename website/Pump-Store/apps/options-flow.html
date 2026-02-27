@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="lair-include" content="lair.css material-symbols-rounded">
+    <meta name="pump-include" content="pump.css material-symbols-rounded">
     <meta name="permissions" content="appStorage">
     <meta name="capabilities" content="calendar">
-    <meta name="lair-icon" content="<svg width='232' height='232' viewBox='0 0 232 232' fill='none' xmlns='http://www.w3.org/2000/svg'><rect width='232' height='232' rx='40' fill='#6366F1'/><text x='116' y='140' text-anchor='middle' fill='white' font-size='100' font-weight='bold'>📅</text></svg>">
+    <meta name="pump-icon" content="<svg width='232' height='232' viewBox='0 0 232 232' fill='none' xmlns='http://www.w3.org/2000/svg'><rect width='232' height='232' rx='40' fill='#6366F1'/><text x='116' y='140' text-anchor='middle' fill='white' font-size='100' font-weight='bold'>📅</text></svg>">
     <title>Economic Calendar</title>
     <style>
         :root {
@@ -622,7 +622,7 @@
     }
 
     // ==================== CUSTOM EVENTS (localStorage) ====================
-    var STORAGE_KEY = 'lair_econ_cal_events';
+    var STORAGE_KEY = 'pump_econ_cal_events';
 
     function loadCustomEvents() {
         try {
@@ -1047,7 +1047,7 @@
         var url = URL.createObjectURL(blob);
         var a = document.createElement('a');
         a.href = url;
-        a.download = 'lair-economic-calendar-' + fmtDate(TODAY) + '.json';
+        a.download = 'pump-economic-calendar-' + fmtDate(TODAY) + '.json';
         a.click();
         URL.revokeObjectURL(url);
     }

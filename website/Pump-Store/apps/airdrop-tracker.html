@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="lair-include" content="lair.css">
-    <meta name="lair-icon" content='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="24" height="24" fill="white"><path d="M160-400q0-100 50.5-180.5T350-710v84q-60 36-95 97t-35 129h-60Zm280 280q-100 0-180.5-50.5T130-310h84q36 60 97 95t129 35v60Zm40-180q-58 0-99-41t-41-99q0-58 41-99t99-41q58 0 99 41t41 99q0 58-41 99t-99 41Zm200-100q0-62-35-123t-95-97v-84q89 49 139.5 129.5T740-400h-60Zm-200 340v-60q62 0 123-35t97-95h84q-49 89-129.5 139.5T480-60Z"/></svg>'>
+    <meta name="pump-include" content="pump.css">
+    <meta name="pump-icon" content='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="24" height="24" fill="white"><path d="M160-400q0-100 50.5-180.5T350-710v84q-60 36-95 97t-35 129h-60Zm280 280q-100 0-180.5-50.5T130-310h84q36 60 97 95t129 35v60Zm40-180q-58 0-99-41t-41-99q0-58 41-99t99-41q58 0 99 41t41 99q0 58-41 99t-99 41Zm200-100q0-62-35-123t-95-97v-84q89 49 139.5 129.5T740-400h-60Zm-200 340v-60q62 0 123-35t97-95h84q-49 89-129.5 139.5T480-60Z"/></svg>'>
     <meta name="capabilities" content="airdrop_tracker">
-    <meta name="lair-perms" content="network" />
+    <meta name="pump-perms" content="network" />
     <title>Airdrop Tracker</title>
     <style>
         :root { --col-bg1:#0a0a0a; --col-bg2:#111111; --col-bg3:#1a1a1a; --col-txt1:#ffffff; --colors-accent:#00e87b; --col-good:#00e87b; --col-bad:#ff4d4d; }
@@ -55,8 +55,8 @@
 (function () {
     const fetchFn = window.cfetch || fetch;
     let activeTab = 'active';
-    const keyActive = 'lair.airdrops.active';
-    const keyClaimed = 'lair.airdrops.claimed';
+    const keyActive = 'pump.airdrops.active';
+    const keyClaimed = 'pump.airdrops.claimed';
     let activeDrops = JSON.parse(localStorage.getItem(keyActive) || '[]');
     let claimedDrops = JSON.parse(localStorage.getItem(keyClaimed) || '[]');
     let potential = [];
@@ -145,7 +145,7 @@
         view.querySelectorAll('button[data-score]').forEach(btn => btn.addEventListener('click', () => {
             const idx = Number(btn.dataset.score);
             potential[idx].score = Math.min(potential[idx].maxScore, potential[idx].score + 1);
-            localStorage.setItem('lair.airdrops.potential-score', JSON.stringify(potential.map(p => p.score)));
+            localStorage.setItem('pump.airdrops.potential-score', JSON.stringify(potential.map(p => p.score)));
             render();
         }));
     }
@@ -163,7 +163,7 @@
             const res = await fetchFn('https://api.llama.fi/protocols');
             if (!res.ok) throw new Error('HTTP ' + res.status);
             const protocols = await res.json();
-            const scored = JSON.parse(localStorage.getItem('lair.airdrops.potential-score') || '[]');
+            const scored = JSON.parse(localStorage.getItem('pump.airdrops.potential-score') || '[]');
             potential = protocols
                 .filter(p => !p.symbol && (p.tvl || 0) > 5000000)
                 .sort((a, b) => (b.tvl || 0) - (a.tvl || 0))

@@ -12,4 +12,4 @@ Learn how to use these, [here](./).
 | `CamImgFormat`    | Choose what file type to save your images saved from the camera app to.                           |
 | `defFileLayout`   | Choose how the files app shows you the file lists.                                                |
 | `timefrmt`        | Choose in what format time gets displayed in the _Nova Nav_.                                      |
-| `defSearchEngine` | Choose the default search engine for Lair browser. (valid values are: NWP, Bing)                  |
+| `defSearchEngine` | Choose the default search engine for Pump browser. (valid values are: NWP, Bing)                  |

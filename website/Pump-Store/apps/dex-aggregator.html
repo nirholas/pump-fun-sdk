@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="lair-include" content="lair.css">
+    <meta name="pump-include" content="pump.css">
     <meta name="capabilities" content="dex_swap">
     <meta name="aspect-ratio" content="3/4">
-    <meta name="lair-icon" content="swap_calls">
-    <meta name="lair-perms" content="network" />
+    <meta name="pump-icon" content="swap_calls">
+    <meta name="pump-perms" content="network" />
     <title>Swap</title>
     <style>
         :root {
@@ -689,7 +689,7 @@
         // --- Pair persistence ---
         function loadSavedPair() {
             try {
-                const saved = JSON.parse(localStorage.getItem('lair_swap_pair'));
+                const saved = JSON.parse(localStorage.getItem('pump_swap_pair'));
                 if (saved) {
                     payToken = TOKENS.find(t => t.symbol === saved.pay) || TOKENS[0];
                     receiveToken = TOKENS.find(t => t.symbol === saved.receive) || TOKENS[1];
@@ -703,7 +703,7 @@
 
         function savePair() {
             try {
-                localStorage.setItem('lair_swap_pair', JSON.stringify({
+                localStorage.setItem('pump_swap_pair', JSON.stringify({
                     pay: payToken.symbol,
                     receive: receiveToken.symbol
                 }));

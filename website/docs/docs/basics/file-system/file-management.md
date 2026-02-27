@@ -8,7 +8,7 @@ Create a File in a folder with specified content. This is an asynchronous functi
 await ntx.fileSet.createFile(folderName, fileName, type, content)
 ```
 
-* where `folderName` is the Folder Name the file should be saved in (available: `Downloads` and `Apps`), and `fileName` is the File Name the file should be saved as. This **should not contain** a file extension, learn how to remove file extensions with Lair.js.
+* where `folderName` is the Folder Name the file should be saved in (available: `Downloads` and `Apps`), and `fileName` is the File Name the file should be saved as. This **should not contain** a file extension, learn how to remove file extensions with Pump.js.
 * `type` is the type of the file, for example, `app`, `txt` etc.
 * `content` is the file content / value.
 
@@ -41,7 +41,7 @@ This data can later be read by the opened app (only the text app reads such.), i
 ntx.olp.launch("text", {"lclfile": UID});
 ```
 
-* where `UID` is an Identification of a File, usually it is a 6 Characters long string assigned to every single file in LairOS. You may obtain it using the following function (getFileNamesByFolder)
+* where `UID` is an Identification of a File, usually it is a 6 Characters long string assigned to every single file in PumpOS. You may obtain it using the following function (getFileNamesByFolder)
 
 > ⚠ This function is deprecated and may be replaced with a more proper and efficient function in near future. Try to not use this on production.
 
@@ -64,7 +64,7 @@ Get the file content with a path. This is an asynchronous function.
 Usage Example:
 
 ```js
-await lairos.getFileByPath(path)
+await pumpos.getFileByPath(path)
 ```
 
 * where `path` is the path of the file.

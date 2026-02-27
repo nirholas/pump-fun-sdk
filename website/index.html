@@ -10,9 +10,9 @@
 	<title>PumpOS</title>
 	<script src="scripts/readwrite.js" defer></script>
 	<script src="system32.js" defer></script>
-	<link rel="stylesheet" href="lair.css">
+	<link rel="stylesheet" href="pump.css">
 	<link rel="stylesheet" href="style.css">
-	<link rel="icon" type="image/webp" href="n.png">
+	<link rel="icon" type="image/webp" href="pump.png">
 	<!--PumpOS scripts-->
 	<script src="scripts/featureflags.js"></script>
 	<script src="scripts/utility.js"></script>
@@ -165,7 +165,7 @@
 			</dialog>
 			<dialog id="edison">
 				<div class="edisonrl">
-					<img src="n.png" alt="PumpOS Logo">
+					<img src="pump.png" alt="PumpOS Logo">
 					<div class="progress-container">
 						<div class="progress-bar" id="progress-bar"></div>
 					</div>
@@ -199,7 +199,7 @@
 
 			<div class="layer44 ctxAvail" id="desktop">
 				<!-- Sidebar Dock -->
-				<nav class="lair-sidebar" id="lair-sidebar">
+				<nav class="pump-sidebar" id="pump-sidebar">
 					<button class="sidebar-item" type="button" title="Files" data-app="files">
 						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960"><path d="M160-160q-33 0-56.5-23.5T80-240v-480q0-33 23.5-56.5T160-800h240l80 80h320q33 0 56.5 23.5T880-640v400q0 33-23.5 56.5T800-160H160Z"/></svg>
 						<span class="sidebar-tip">Files</span>
@@ -208,11 +208,11 @@
 						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960"><path d="M480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm-40-82v-78q-33 0-56.5-23.5T360-320v-40L168-552q-3 18-5.5 36t-2.5 36q0 121 79.5 212T440-162Zm276-102q26-36 43-77.5t23-87.5H660q-8 36-25.5 67T596-276l-36 36q32 12 66 12t90-36Z"/></svg>
 						<span class="sidebar-tip">Browser</span>
 					</button>
-					<button class="sidebar-item" type="button" title="AI" data-app="lairai">
+					<button class="sidebar-item" type="button" title="AI" data-app="pumpai">
 						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960"><path d="M160-400q0-29 16-52.5t42-34.5q-2-10-3-20t-1-21q0-80 56-136t136-56q53 0 97.5 27.5T571-618q29-8 55.5 6t39.5 42q28 7 46 30t18 52q0 33-23.5 56.5T650-408H320q-33 0-56.5-23.5T240-488q-36-11-58-41t-22-67v-4ZM80-160v-80h800v80H80Z"/></svg>
 						<span class="sidebar-tip">AI</span>
 					</button>
-					<button class="sidebar-item" type="button" title="DeFi" data-app="lairdefi">
+					<button class="sidebar-item" type="button" title="DeFi" data-app="pumpdefi">
 						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960"><path d="M120-120v-80l80-80v160h-80Zm160 0v-240l80-80v320h-80Zm160 0v-320l80 81v239h-80Zm160 0v-239l80-80v319h-80Zm160 0v-400l80-80v480h-80ZM120-327v-113l280-280 160 160 280-280v113L560-447 400-607 120-327Z"/></svg>
 						<span class="sidebar-tip">DeFi</span>
 					</button>
@@ -341,7 +341,7 @@
 			<div id="maxappscontainer">
 
 			</div>
-			<nav id="lairnav" class="scalableui">
+			<nav id="pumpnav" class="scalableui">
 				<div class="flodiv">
 					<quicks navobj id="dock">
 
@@ -430,9 +430,9 @@
 				</div>
 				<div class="strtsearcont">
 					<div class="neweles" id="bobthedropdown">
-						<div class="lairmenusearchinpbtn"
+						<div class="pumpmenusearchinpbtn"
 							onclick="document.getElementById('appdmod').close(); opensearchpanel();">
-							<input id="lairmenusearchinp" placeholder="Search"></span>
+							<input id="pumpmenusearchinp" placeholder="Search"></span>
 							<span class="material-symbols-rounded">
 								search
 							</span>
@@ -480,7 +480,7 @@
 								</label>
 							</div>
 						</button>
-						<button class="tooltip " style="margin-left: auto;" onclick="logoutoflair()">
+						<button class="tooltip " style="margin-left: auto;" onclick="logoutofpump()">
 							<span class="tooltiptext">Sign Out</span>
 							<span class="material-symbols-rounded">
 								logout
@@ -502,7 +502,7 @@
 					close
 				</span>
 				<small>Welcome to PumpOS Setup,</small>
-				<h1 id="lairsetupusernamedisplay"></h1>
+				<h1 id="pumpsetupusernamedisplay"></h1>
 			<div class="buttongroup-grid">
 				<button onclick="gid('terminal').showModal();gid('bios').close();">
 					<span class="material-symbols-rounded">
@@ -522,7 +522,7 @@
 					</span>
 					Fix default apps
 				</button>
-				<button onclick="logoutoflair()">
+				<button onclick="logoutofpump()">
 					<span class="material-symbols-rounded">
 						logout
 					</span>
@@ -828,7 +828,7 @@
 	<!-- Sidebar Dock click handlers -->
 	<script>
 	document.addEventListener('DOMContentLoaded', function() {
-		var sidebar = document.getElementById('lair-sidebar');
+		var sidebar = document.getElementById('pump-sidebar');
 		if (!sidebar) return;
 		sidebar.addEventListener('click', function(e) {
 			var btn = e.target.closest('.sidebar-item');

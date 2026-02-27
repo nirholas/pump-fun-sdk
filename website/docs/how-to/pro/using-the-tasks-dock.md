@@ -4,9 +4,9 @@ icon: rectangle-history
 
 # Using the Tasks Dock
 
-<figure><img src="../../.gitbook/assets/image (6).png" alt=""><figcaption><p>The Tasks Dock in LairOS 2.05</p></figcaption></figure>
+<figure><img src="../../.gitbook/assets/image (6).png" alt=""><figcaption><p>The Tasks Dock in PumpOS 2.05</p></figcaption></figure>
 
-LairOS tasks dock is a wonderful tool if you need to multitask in LairOS. Multitasking requires constant window management actions including minimizing, restoring, and reordering windows on the depth scale.
+PumpOS tasks dock is a wonderful tool if you need to multitask in PumpOS. Multitasking requires constant window management actions including minimizing, restoring, and reordering windows on the depth scale.
 
 The task dock allows all these window management functions to be done with simple clicks on the icons of corresponding windows.&#x20;
 

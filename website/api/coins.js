@@ -2,7 +2,7 @@
  * GET /api/coins — List all minting/pending coins.
  *
  * Zero-dependency Vercel serverless function using Neon HTTP SQL.
- * Returns the format expected by lairlaunch.html, lairtrending.html, lairdefi.html:
+ * Returns the format expected by pumplaunch.html, pumptrending.html, pumpdefi.html:
  *   { success: true, data: [ { id, ticker, name, status, image_url, ... } ] }
  *
  * Query params:

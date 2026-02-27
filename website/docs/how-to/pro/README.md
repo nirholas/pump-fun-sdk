@@ -2,5 +2,5 @@
 icon: book-blank
 ---
 
-# LairOS How To
+# PumpOS How To
 

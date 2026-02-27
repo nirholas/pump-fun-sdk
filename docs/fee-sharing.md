@@ -3,7 +3,7 @@
 Set up and manage creator fee distribution among multiple shareholders.
 
 <div align="center">
-  <img src="assets/fee-sharing.svg" alt="Fee sharing flow — trades to creator vault to shareholders" width="720">
+  <img src="assets/pump.svg" alt="Fee sharing flow — trades to creator vault to shareholders" width="720">
 </div>
 
 ## Overview

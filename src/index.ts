@@ -21,7 +21,10 @@ export {
   PumpSdk,
   PUMP_SDK,
   isCreatorUsingSharingConfig,
+  PUMP_TOKEN_MINT,
+  MAX_SHAREHOLDERS,
 } from "./sdk";
+export { getFee, computeFeesBps, calculateFeeTier } from "./fees";
 export {
   OnlinePumpSdk,
   MinimumDistributableFeeResult,

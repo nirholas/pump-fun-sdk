@@ -27,7 +27,7 @@ wss.on('connection', (ws) => {
 
 // Set up CORS headers
 app.use((req, res, next) => {
-    res.header('Access-Control-Allow-Origin', 'https://lair2.vercel.app');
+    res.header('Access-Control-Allow-Origin', 'https://pump-fun-sdk.vercel.app');
     res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
     next();
 });

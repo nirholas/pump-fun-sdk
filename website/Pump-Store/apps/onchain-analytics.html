@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="lair-perms" content="network" />
+    <meta name="pump-perms" content="network" />
     <title>On-Chain Analytics</title>
-    <meta name="lair-icon" content="monitoring">
-    <meta name="lair-include" content="lair.css material-symbols-rounded">
+    <meta name="pump-icon" content="monitoring">
+    <meta name="pump-include" content="pump.css material-symbols-rounded">
     <meta name="permissions" content="appStorage, network">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -269,7 +269,7 @@
 
     /* ===== Gas Tab ===== */
     async function renderGas() {
-        var etherscanKey = localStorage.getItem('lair_cli_etherscan_key') || 'YourApiKeyToken';
+        var etherscanKey = localStorage.getItem('pump_cli_etherscan_key') || 'YourApiKeyToken';
         var chainIds = [
             { name: 'Ethereum', id: '1', color: '#627eea' },
             { name: 'Base', id: '8453', color: '#0052ff' },

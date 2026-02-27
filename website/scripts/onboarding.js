@@ -37,7 +37,7 @@ const PumpOnboarding = (() => {
         </div>
       `,
       cta: 'Next',
-      highlight: '#lairnav',
+      highlight: '#pumpnav',
     },
     {
       id: 'sidebar',
@@ -53,7 +53,7 @@ const PumpOnboarding = (() => {
         </div>
       `,
       cta: 'Next',
-      highlight: '#lair-sidebar',
+      highlight: '#pump-sidebar',
     },
     {
       id: 'shortcuts',
@@ -81,22 +81,22 @@ const PumpOnboarding = (() => {
             <span class="ob-qs-name">Dashboard</span>
             <span class="ob-qs-desc">Market overview at a glance</span>
           </button>
-          <button class="ob-qs-card" data-app="lairtrending">
+          <button class="ob-qs-card" data-app="pumptrending">
             <span class="material-symbols-rounded">trending_up</span>
             <span class="ob-qs-name">Trending</span>
             <span class="ob-qs-desc">Hot tokens right now</span>
           </button>
-          <button class="ob-qs-card" data-app="lairai">
+          <button class="ob-qs-card" data-app="pumpai">
             <span class="material-symbols-rounded">smart_toy</span>
             <span class="ob-qs-name">Pump AI</span>
             <span class="ob-qs-desc">Chat-driven DeFi research</span>
           </button>
-          <button class="ob-qs-card" data-app="lairheatmap">
+          <button class="ob-qs-card" data-app="pumpheatmap">
             <span class="material-symbols-rounded">grid_view</span>
             <span class="ob-qs-name">Heatmap</span>
             <span class="ob-qs-desc">Visual market sentiment</span>
           </button>
-          <button class="ob-qs-card" data-app="lairdexscreener">
+          <button class="ob-qs-card" data-app="pumpdexscreener">
             <span class="material-symbols-rounded">candlestick_chart</span>
             <span class="ob-qs-name">DEX Screener</span>
             <span class="ob-qs-desc">Live on-chain charts</span>

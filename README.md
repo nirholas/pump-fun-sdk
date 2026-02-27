@@ -10,7 +10,7 @@
 </pre>
 
 <p>
-  <img src=".github/banner.svg" alt="Pump SDK — Official Community PumpFun SDK" width="720">
+  <img src=".github/pump.svg" alt="Pump SDK — Official Community PumpFun SDK" width="720">
 </p>
 
 <h3>The official community TypeScript SDK for the <a href="https://pump.fun">Pump</a> protocol on Solana</h3>
@@ -47,9 +47,9 @@ Token Creation &nbsp;·&nbsp; Bonding Curves &nbsp;·&nbsp; AMM Pools &nbsp;·&n
 ### ⚡ See it in action
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset=".github/demo.svg">
-  <source media="(prefers-color-scheme: light)" srcset=".github/demo.svg">
-  <img alt="Pump SDK — create tokens, buy on bonding curve, submit transactions" src=".github/demo.svg" width="720">
+  <source media="(prefers-color-scheme: dark)" srcset=".github/pump.svg">
+  <source media="(prefers-color-scheme: light)" srcset=".github/pump.svg">
+  <img alt="Pump SDK — create tokens, buy on bonding curve, submit transactions" src=".github/pump.svg" width="720">
 </picture>
 
 </div>
@@ -272,7 +272,7 @@ flowchart LR
 ## 💻 Usage
 
 <div align="center">
-  <img src="docs/assets/buy-sell-flow.svg" alt="Buy and sell transaction flow" width="720">
+  <img src="docs/assets/pump.svg" alt="Buy and sell transaction flow" width="720">
 </div>
 
 ### Create a Token
@@ -448,7 +448,7 @@ const instructions = await sdk.claimTokenIncentivesBothPrograms(
 ## 🏗️ Architecture
 
 <div align="center">
-  <img src="docs/assets/bonding-curve.svg" alt="Bonding curve price mechanics" width="720">
+  <img src="docs/assets/pump.svg" alt="Bonding curve price mechanics" width="720">
 </div>
 
 The SDK is split into two layers:

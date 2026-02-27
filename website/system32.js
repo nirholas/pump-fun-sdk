@@ -1,6 +1,6 @@
 
 var CurrentUsername = 'Admin';
-var password = "lair";
+var password = "pump";
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 var lethalpasswordtimes = true;
@@ -44,7 +44,7 @@ const eventBusWorker = (() => {
     return { deliver, listen };
 })();
 
-const lairBusRouter = (() => {
+const pumpBusRouter = (() => {
     const appWindows = new Map();
     const windowToApp = new WeakMap();
     const pendingRequests = new Map();
@@ -77,7 +77,7 @@ const lairBusRouter = (() => {
     function postToWindow(targetWindow, payload) {
         if (!targetWindow) return false;
         try {
-            targetWindow.postMessage({ __lairBus: true, payload }, '*');
+            targetWindow.postMessage({ __pumpBus: true, payload }, '*');
             return true;
         } catch (error) {
             removeWindowRegistration(targetWindow);
@@ -148,7 +148,7 @@ const lairBusRouter = (() => {
 
     window.addEventListener('message', (event) => {
         const { data, source } = event;
-        if (!data || !data.__lairBus || !data.payload || !source) return;
+        if (!data || !data.__pumpBus || !data.payload || !source) return;
 
         const payload = data.payload;
         if (payload.kind === 'register') {
@@ -215,7 +215,7 @@ async function removeUser(username = CurrentUsername) {
         const deleteRequest = indexedDB.deleteDatabase(username);
         deleteRequest.onsuccess = function () {
             console.log(`Database for user ${username} deleted successfully.`);
-            logoutoflair();
+            logoutofpump();
         };
         deleteRequest.onerror = function (event) {
             console.error(`Error deleting database for user ${username}:`, event.target.error);

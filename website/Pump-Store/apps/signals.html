@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="lair-include" content="lair.css">
+    <meta name="pump-include" content="pump.css">
     <meta name="capabilities" content="trending_tokens">
-    <meta name="lair-icon" content="whatshot">
-    <meta name="lair-perms" content="network" />
+    <meta name="pump-icon" content="whatshot">
+    <meta name="pump-perms" content="network" />
     <title>Trending</title>
     <style>
         :root {
@@ -419,8 +419,8 @@
 
         const TRENDING_URL = 'https://api.coingecko.com/api/v3/search/trending';
         const MARKETS_URL = 'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=volume_desc&per_page=20&sparkline=true&price_change_percentage=1h,24h,7d';
-        const CACHE_KEY_TRENDING = 'lair_trending_cache';
-        const CACHE_KEY_MARKETS = 'lair_markets_cache';
+        const CACHE_KEY_TRENDING = 'pump_trending_cache';
+        const CACHE_KEY_MARKETS = 'pump_markets_cache';
         const CACHE_TTL = 120000; // 2 minutes
         const REFRESH_INTERVAL = 120; // seconds
 

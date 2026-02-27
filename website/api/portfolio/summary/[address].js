@@ -3,7 +3,7 @@
  *
  * Vercel serverless function that fetches a wallet portfolio summary using
  * Ankr's public multichain balance API. Returns data in the format expected
- * by lairdefi.html: { success: true, data: { totalValueUsd, change24h, balances: [...] } }
+ * by pumpdefi.html: { success: true, data: { totalValueUsd, change24h, balances: [...] } }
  */
 
 const ANKR_RPC = 'https://rpc.ankr.com/multichain';

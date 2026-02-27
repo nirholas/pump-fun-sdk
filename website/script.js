@@ -1,4 +1,4 @@
-var batteryLevel, winds = {}, memory = {}, _nowapp, fulsapp = false, appsHistory = [], nowwindow, appicns = {}, fileslist = [], badlaunch = false, initmenuload = true, fileTypeAssociations = {}, handlers = {}, Gtodo, notifLog = {}, initialization = false, onstartup = [], lairFeaturedImage = `/assets/wallpapers/lair.jpg`, defAppsList = [
+var batteryLevel, winds = {}, memory = {}, _nowapp, fulsapp = false, appsHistory = [], nowwindow, appicns = {}, fileslist = [], badlaunch = false, initmenuload = true, fileTypeAssociations = {}, handlers = {}, Gtodo, notifLog = {}, initialization = false, onstartup = [], pumpFeaturedImage = `/assets/wallpapers/pump.jpg`, defAppsList = [
 	"store",
 	"files",
 	"settings",
@@ -10,25 +10,25 @@ var batteryLevel, winds = {}, memory = {}, _nowapp, fulsapp = false, appsHistory
 	"gallery",
 	"browser",
 	"studio",
-	"lairai",
-	"lairbot",
-	"lairdefi",
-	"lairdocs",
+	"pumpai",
+	"pumpbot",
+	"pumpdefi",
+	"pumpdocs",
 	"tweetcharts",
-	"lairlaunch",
-	"lairtrending",
-	"laircoin",
-	"lairportfolio",
-	"lairheatmap",
-	"lairliquidations",
-	"lairterminal",
+	"pumplaunch",
+	"pumptrending",
+	"pumpcoin",
+	"pumpportfolio",
+	"pumpheatmap",
+	"pumpliquidations",
+	"pumpterminal",
 	"cryptonews",
 	"alerts",
 	"gasestimator",
 	"dashboard",
-	"lairfeargreed",
-	"lairdexscreener",
-	"lairwatchlist"
+	"pumpfeargreed",
+	"pumpdexscreener",
+	"pumpwatchlist"
 ], timeFormat, timetypecondition = true, genTaskBar, genDesktop, nonotif;
 
 let currentImage = 1;
@@ -102,7 +102,7 @@ function loginscreenbackbtn() {
 async function showloginmod() {
 	if (badlaunch) { return }
 	var imgprvtmp = gid("wallbgpreview");
-	imgprvtmp.src = lairFeaturedImage;
+	imgprvtmp.src = pumpFeaturedImage;
 	imgprvtmp.onload = function handler() {
 		imgprvtmp.onload = null;
 
@@ -127,7 +127,7 @@ async function showloginmod() {
 					CurrentUsername = cacusername;
 					let isdefaultpass = false;
 					try {
-						isdefaultpass = await checkPassword('lair');
+						isdefaultpass = await checkPassword('pump');
 					} catch (err) {
 						console.error("Password check failed:", err);
 					}
@@ -322,7 +322,7 @@ async function startup() {
 				const allowPumpAiStartup = await getSetting('allowPumpAiStartup') === true;
 
 				allOnstarts.forEach(item => {
-					if (item === 'lairai' && !allowPumpAiStartup) return;
+					if (item === 'pumpai' && !allowPumpAiStartup) return;
 					openapp(0, item, {}, 1);
 				})
 			} catch (e) { }
@@ -459,7 +459,7 @@ async function loadrecentapps() {
 			Array.from(metaTags).forEach(tag => {
 				const tagName = tag.getAttribute('name');
 				const tagContent = tag.getAttribute('content');
-				if (tagName === 'lair-icon' && tagContent) {
+				if (tagName === 'pump-icon' && tagContent) {
 					metaTagData = tagContent;
 				}
 			});
@@ -485,7 +485,7 @@ async function loadrecentapps() {
 		gid("serrecentapps").appendChild(appShortcutDiv);
 	})).then(async () => {
 
-		gid("lairmenusearchinp").focus();
+		gid("pumpmenusearchinp").focus();
 	}).catch((error) => {
 		console.error('An error occurred:', error);
 	});
@@ -648,7 +648,7 @@ async function getAppIcon(content, id, lazy = 0) {
 					return fallback;
 				}
 			}
-			const iconContent = await withTimeout(getMetaTagContent(content, 'lair-icon', true));
+			const iconContent = await withTimeout(getMetaTagContent(content, 'pump-icon', true));
 			if (iconContent && containsSmallSVGElement(iconContent)) {
 				appicns[id] = iconContent;
 				await saveIconToRegistry(id, iconContent, registry);
@@ -874,7 +874,7 @@ async function extractAndRegisterCapabilities(appId, content) {
 		const appFileName = await getFileNameByID(appId);
 		const appNameLower = appFileName?.toLowerCase().replace('.app', '') || '';
 		const isBuiltInApp = defAppsList.some(defApp => appNameLower.includes(defApp.toLowerCase()));
-		const isPumpApp = appNameLower.startsWith('lair');
+		const isPumpApp = appNameLower.startsWith('pump');
 		if (isBuiltInApp || isPumpApp) {
 			console.log("Built-in/Pump app detected, auto-approving permissions:", appFileName);
 			onlyDefPerms = true;
@@ -1357,7 +1357,7 @@ eventBusWorker.listen({
 async function openFirstTimeWelcomeApps() {
 	const isMobile = matchMedia('(pointer: coarse)').matches;
 	let welcomeApp = await getSetting('firstTimeWelcomeApp') || 'welcome';
-	if (welcomeApp === 'lairai') {
+	if (welcomeApp === 'pumpai') {
 		welcomeApp = 'welcome';
 	}
 	
@@ -1427,7 +1427,7 @@ async function initializeOS() {
 }
 
 async function createDesktopShortcuts() {
-	const desktopApps = ["terminal", "dashboard", "cryptonews", "lairai", "lairdocs", "lairlaunch", "store", "files", "settings"];
+	const desktopApps = ["terminal", "dashboard", "cryptonews", "pumpai", "pumpdocs", "pumplaunch", "store", "files", "settings"];
 	
 	try {
 		const allApps = await getFileNamesByFolder("Apps");
@@ -1593,7 +1593,7 @@ async function rlstrtappse(event) {
 
 	if (event.key === "Enter") {
 		event.preventDefault();
-		if (searchValue === "i love lairos") {
+		if (searchValue === "i love pumpos") {
 			closeElementedis(gid("searchwindow"));
 			let x = await ask("What can i call you?");
 			say("i love you too, " + x);
@@ -1965,19 +1965,19 @@ function runAsWasm(content) {
 
 async function realgenTaskBar() {
 	gid("dock").style.display = "none";
-	gid("lairnav").style.display = "grid";
+	gid("pumpnav").style.display = "grid";
 
 	// nav theme
 	try {
 
 		var PumpNavCtrl = await getSetting("PumpNavCtrl")
 		if (PumpNavCtrl.bg) {
-			gid("lairnav").style.backgroundColor = "transparent";
+			gid("pumpnav").style.backgroundColor = "transparent";
 		} else {
-			gid("lairnav").style.backgroundColor = "var(--col-bg1)";
+			gid("pumpnav").style.backgroundColor = "var(--col-bg1)";
 		}
 
-		gid("lairnav").style.justifyContent = PumpNavCtrl.align;
+		gid("pumpnav").style.justifyContent = PumpNavCtrl.align;
 	} catch (e) { }
 
 	var appbarelement = document.getElementById("dock");
@@ -2137,7 +2137,7 @@ async function renderWall() {
 	}
 	document.getElementById("bgimage").onerror = async function (event) {
 		toast("It doesn't seem to work as the wallpaper...")
-		setbgimagetourl(lairFeaturedImage);
+		setbgimagetourl(pumpFeaturedImage);
 		if (await getSetting("wall")) {
 			remSettingKey("wall");
 		}
@@ -2248,7 +2248,7 @@ async function checkifpassright() {
 	}
 	gid("loginform1").value = '';
 }
-async function logoutoflair() {
+async function logoutofpump() {
 	await cleanupram();
 	await showloginmod();
 	removeTheme();
@@ -2261,7 +2261,7 @@ async function cleanupram() {
 	document.querySelectorAll('dialog[open].onramcloseable').forEach(dialog => dialog.close());
 	memory = null;
 	CurrentUsername = null;
-	password = 'lair';
+	password = 'pump';
 	winds = {};
 	MemoryTimeCache = null;
 	lethalpasswordtimes = true;
@@ -2277,7 +2277,7 @@ async function setandinitnewuser() {
 	await initializeOS();
 	gid('loginmod').close();
 }
-async function lairrefresh() {
+async function pumprefresh() {
 	genDesktop();
 	genTaskBar();
 	cleanupInvalidAssociations();
@@ -2288,7 +2288,7 @@ async function lairrefresh() {
 	loadSessionSettings();
 }
 function launchbios() {
-	document.getElementById('lairsetupusernamedisplay').innerText = CurrentUsername;
+	document.getElementById('pumpsetupusernamedisplay').innerText = CurrentUsername;
 	document.getElementById('bios').showModal();
 }
 function domLoad_checkedgecases() {
@@ -2314,7 +2314,7 @@ document.addEventListener("DOMContentLoaded", async function () {
 	genTaskBar = debounce(realgenTaskBar, 500);
 	genDesktop = debounce(realgenDesktop, 500);
 
-	const searchInput5342 = document.querySelector('#lairmenusearchinp');
+	const searchInput5342 = document.querySelector('#pumpmenusearchinp');
 	let keyHeld = false;
 
 	searchInput5342.addEventListener('keydown', () => {
@@ -2365,7 +2365,7 @@ document.addEventListener("DOMContentLoaded", async function () {
 
 	await loadScripts();
 
-	setbgimagetourl(lairFeaturedImage);
+	setbgimagetourl(pumpFeaturedImage);
 
 	gid("nowrunninapps").style.display = "none";
 	gid('seprw-openb').onclick = function () {
@@ -2477,7 +2477,7 @@ document.addEventListener("DOMContentLoaded", async function () {
 	}
 
 	startfunctions();
-	gid("lairnav").style.display = "none";
+	gid("pumpnav").style.display = "none";
 	async function waitForNonNull() {
 		const startTime = Date.now();
 		const maxWaitTime = 2000;
@@ -3074,12 +3074,12 @@ document.addEventListener('DOMContentLoaded', () => {
 			}
 		});
 		
-		localStorage.setItem('lair-desktop-positions', JSON.stringify(positions));
+		localStorage.setItem('pump-desktop-positions', JSON.stringify(positions));
 	}
 	
 	function restoreIconPositions() {
 		try {
-			const saved = localStorage.getItem('lair-desktop-positions');
+			const saved = localStorage.getItem('pump-desktop-positions');
 			if (!saved) return;
 			
 			const positions = JSON.parse(saved);

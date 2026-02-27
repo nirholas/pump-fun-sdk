@@ -1,14 +1,14 @@
 # File system
 
-The core file system of LairOS is saved in a low-level local browser API called the IndexedDB. This can safely store large amounts of data right in your browser's storage.
+The core file system of PumpOS is saved in a low-level local browser API called the IndexedDB. This can safely store large amounts of data right in your browser's storage.
 
 The file system is a collection of linked folders and files, which form a tree.
 
-The LairOS Memory is simply a JS Object. This JS object contains keys and values which make up different Items.
+The PumpOS Memory is simply a JS Object. This JS object contains keys and values which make up different Items.
 
 The core file system, as mentioned above, is saved in IDB, but inside indexedDB, we open a domain-wide IDB database. This database has a store for every user. This store contains a set of keys and values which are tree and `contentpool`.
 
-The `tree` is the virtual folder structure of the memory. In LairOS, these folders either contain an array of arrays or objects, which are subfolders or files, respectively. Whereas the `contentpool` contains the file contents as values with file IDs as their keys.
+The `tree` is the virtual folder structure of the memory. In PumpOS, these folders either contain an array of arrays or objects, which are subfolders or files, respectively. Whereas the `contentpool` contains the file contents as values with file IDs as their keys.
 
 ## Rules
 

@@ -26,20 +26,20 @@ const NotificationCenter = (() => {
         'source.whaleAlert': true,
         'source.gasTracker': true,
         'source.cryptoNews': true,
-        'source.lairLaunch': true,
+        'source.pumpLaunch': true,
         'source.portfolio': true,
         'source.system': true,
     };
 
     function _loadPrefs() {
         try {
-            const saved = localStorage.getItem('lair-notif-prefs');
+            const saved = localStorage.getItem('pump-notif-prefs');
             return saved ? { ..._defaultPrefs, ...JSON.parse(saved) } : { ..._defaultPrefs };
         } catch { return { ..._defaultPrefs }; }
     }
 
     function _savePrefs(prefs) {
-        try { localStorage.setItem('lair-notif-prefs', JSON.stringify(prefs)); } catch {}
+        try { localStorage.setItem('pump-notif-prefs', JSON.stringify(prefs)); } catch {}
     }
 
     let prefs = _loadPrefs();
@@ -116,13 +116,13 @@ const NotificationCenter = (() => {
     // ─── History persistence ───
     function _saveHistory() {
         try {
-            localStorage.setItem('lair-notification-history', JSON.stringify(history));
+            localStorage.setItem('pump-notification-history', JSON.stringify(history));
         } catch {}
     }
 
     function _loadHistory() {
         try {
-            const saved = localStorage.getItem('lair-notification-history');
+            const saved = localStorage.getItem('pump-notification-history');
             if (saved) {
                 history = JSON.parse(saved).map(n => ({
                     ...n,
@@ -528,7 +528,7 @@ const NotificationCenter = (() => {
                 ${make('source.whaleAlert', 'Whale Alerts')}
                 ${make('source.gasTracker', 'Gas Tracker')}
                 ${make('source.cryptoNews', 'Crypto News')}
-                ${make('source.lairLaunch', 'Pump Launch')}
+                ${make('source.pumpLaunch', 'Pump Launch')}
                 ${make('source.portfolio', 'Portfolio')}
                 ${make('source.system', 'System')}
             </div>

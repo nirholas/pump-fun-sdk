@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="lair-include" content="lair.css">
+    <meta name="pump-include" content="pump.css">
     <meta name="capabilities" content="whale_alerts">
-    <meta name="lair-icon" content="phishing">
-    <meta name="lair-perms" content="network" />
+    <meta name="pump-icon" content="phishing">
+    <meta name="pump-perms" content="network" />
     <title>Whale Alerts</title>
-    <link rel="stylesheet" href="../../libs/lair-components.css">
-    <script src="../../libs/lair-components.js"></script>
+    <link rel="stylesheet" href="../../libs/pump-components.css">
+    <script src="../../libs/pump-components.js"></script>
     <style>
         :root {
             --col-bg1: #101010;
@@ -363,12 +363,12 @@
     (function() {
         'use strict';
         const fetchFn = window.cfetch || fetch;
-        const lairFetch = window.PumpFetch;
-        const lairUI = window.PumpUI;
-        const lairTheme = window.PumpTheme;
-        const lairPoll = window.PumpPoll;
-        const lairWS = window.PumpWS;
-        if (lairTheme) lairTheme.apply(document.body);
+        const pumpFetch = window.PumpFetch;
+        const pumpUI = window.PumpUI;
+        const pumpTheme = window.PumpTheme;
+        const pumpPoll = window.PumpPoll;
+        const pumpWS = window.PumpWS;
+        if (pumpTheme) pumpTheme.apply(document.body);
 
         // --- State ---
         const MAX_ITEMS = 50;
@@ -450,8 +450,8 @@
             }
 
             try {
-                const data = lairFetch
-                    ? await lairFetch.getJSON('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd', { cache: true, ttl: 300000, retries: 2, fallback: true })
+                const data = pumpFetch
+                    ? await pumpFetch.getJSON('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd', { cache: true, ttl: 300000, retries: 2, fallback: true })
                     : await (await fetchFn('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd')).json();
                 const value = Number(data?.bitcoin?.usd);
                 if (Number.isFinite(value) && value > 0) {
@@ -470,8 +470,8 @@
             const now = Math.floor(Date.now() / 1000);
             const start = now - 3600; // last hour
             const url = `https://api.whale-alert.io/v1/transactions?min_value=1000000&start=${start}`;
-            const data = lairFetch
-                ? await lairFetch.getJSON(url, { cache: false, retries: 1, fallback: true })
+            const data = pumpFetch
+                ? await pumpFetch.getJSON(url, { cache: false, retries: 1, fallback: true })
                 : await (await fetchFn(url)).json();
             if (data.result !== 'success' || !data.transactions) throw new Error('Bad response');
             return data.transactions.map((tx, index) => ({
@@ -497,8 +497,8 @@
         // --- Blockchair BTC fallback ---
         async function fetchBlockchairFallback() {
             const url = 'https://api.blockchair.com/bitcoin/transactions?q=output_total(100000000..)&limit=10&s=time(desc)';
-            const data = lairFetch
-                ? await lairFetch.getJSON(url, { cache: false, retries: 1, fallback: true })
+            const data = pumpFetch
+                ? await pumpFetch.getJSON(url, { cache: false, retries: 1, fallback: true })
                 : await (await fetchFn(url)).json();
             if (!data.data || !data.data.length) throw new Error('No data');
             const btcUsdPrice = await getBtcUsdPrice();
@@ -532,8 +532,8 @@
             for (const token of topTokens) {
                 try {
                     const url = `https://api.dexscreener.com/latest/dex/tokens/${token}`;
-                    const data = lairFetch
-                        ? await lairFetch.getJSON(url, { cache: false, retries: 1, fallback: true })
+                    const data = pumpFetch
+                        ? await pumpFetch.getJSON(url, { cache: false, retries: 1, fallback: true })
                         : await (await fetchFn(url)).json();
                     if (!data.pairs || !data.pairs.length) continue;
 
@@ -709,8 +709,8 @@
 
             feed.innerHTML = '';
             if (filtered.length === 0) {
-                if (lairUI) {
-                    lairUI.empty(feed, 'No whale alerts found. Waiting for large transactions…');
+                if (pumpUI) {
+                    pumpUI.empty(feed, 'No whale alerts found. Waiting for large transactions…');
                 } else {
                     feed.innerHTML = '<div class="empty-state"><div class="icon">🐋</div><p>No whale alerts found</p><p style="font-size:0.85em;opacity:0.6;">Waiting for large transactions…</p></div>';
                 }
@@ -723,8 +723,8 @@
         }
 
         function renderErrorState() {
-            if (lairUI) {
-                lairUI.error(feed, 'Unable to fetch whale data. APIs may be rate-limited.', async function() {
+            if (pumpUI) {
+                pumpUI.error(feed, 'Unable to fetch whale data. APIs may be rate-limited.', async function() {
                     try {
                         const data = await fetchData(false);
                         transactions = data.slice(0, MAX_ITEMS).sort(function(a, b) { return b.timestamp - a.timestamp; });
@@ -827,8 +827,8 @@
             }
 
             // Poll every 30s (shared poller if available)
-            if (lairPoll) {
-                lairPoll.start(() => fetchData(false), 30000, (newData, error) => {
+            if (pumpPoll) {
+                pumpPoll.start(() => fetchData(false), 30000, (newData, error) => {
                     if (error) {
                         setStatus(false, 'Connection error');
                         if (!transactions.length) renderErrorState();
@@ -848,8 +848,8 @@
                 }, 30000);
             }
 
-            if (lairWS) {
-                lairWS.subscribe('whale_alerts', function(message) {
+            if (pumpWS) {
+                pumpWS.subscribe('whale_alerts', function(message) {
                     if (!message || !message.txHash) return;
                     mergeIncomingData([message]);
                 });
@@ -862,8 +862,8 @@
         init();
 
         window.addEventListener('beforeunload', function() {
-            if (lairPoll) lairPoll.stop();
-            if (lairWS) lairWS.unsubscribe('whale_alerts');
+            if (pumpPoll) pumpPoll.stop();
+            if (pumpWS) pumpWS.unsubscribe('whale_alerts');
         });
     })();
     </script>

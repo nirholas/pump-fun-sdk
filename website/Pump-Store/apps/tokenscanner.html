@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="lair-include" content="lair.css">
+    <meta name="pump-include" content="pump.css">
     <meta name="capabilities" content="token_scanner">
-    <meta name="lair-icon" content="verified_user">
-    <meta name="lair-perms" content="network" />
+    <meta name="pump-icon" content="verified_user">
+    <meta name="pump-perms" content="network" />
     <title>Token Scanner</title>
-    <script src="../../libs/lair-bus.js"></script>
+    <script src="../../libs/pump-bus.js"></script>
     <style>
         :root {
             --col-bg1: #101010;
@@ -404,9 +404,9 @@
     (function() {
         const fetchFn = window.cfetch || fetch;
 
-        const lairBus = window.PumpBus;
-        if (lairBus) {
-            lairBus.register('tokenscanner');
+        const pumpBus = window.PumpBus;
+        if (pumpBus) {
+            pumpBus.register('tokenscanner');
         }
         const CHAINS = { 1: 'ETH', 56: 'BSC', 8453: 'Base', 42161: 'ARB', 137: 'MATIC' };
         const STORAGE_KEY = 'tokenscanner_recent';
@@ -750,9 +750,9 @@
             return { ok: true, address };
         }
 
-        if (lairBus) {
-            lairBus.on('token:scan', (payload) => applyBusScanPayload(payload));
-            lairBus.on('token:select', (payload) => {
+        if (pumpBus) {
+            pumpBus.on('token:scan', (payload) => applyBusScanPayload(payload));
+            pumpBus.on('token:select', (payload) => {
                 if (!payload?.address) {
                     return { ok: false, reason: 'address_missing' };
                 }
@@ -783,8 +783,8 @@
                 renderChecks(data);
                 showResults();
 
-                if (lairBus && verdict.level === 'danger') {
-                    lairBus.broadcast('alert:fired', {
+                if (pumpBus && verdict.level === 'danger') {
+                    pumpBus.broadcast('alert:fired', {
                         type: 'token-risk',
                         message: `${data.token_symbol || 'Token'} flagged as high risk`,
                         data: {

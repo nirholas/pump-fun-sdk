@@ -2,10 +2,10 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="lair-include" content="lair.css">
+    <meta name="pump-include" content="pump.css">
     <meta name="permissions" content="network">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="lair-icon" content="<svg width='232' height='232' viewBox='0 0 232 232' fill='none' xmlns='http://www.w3.org/2000/svg'><rect width='232' height='232' rx='40' fill='#fbbf24'/><path d='M116 40c-8 0-14 6-14 14v6c-24 8-40 30-40 56v30l-14 14v8h136v-8l-14-14v-30c0-26-16-48-40-56v-6c0-8-6-14-14-14z' fill='white'/><circle cx='116' cy='192' r='18' fill='white'/><circle cx='170' cy='60' r='20' fill='#ff4444'/><text x='170' y='67' text-anchor='middle' font-size='22' font-weight='bold' fill='white' font-family='sans-serif'>!</text></svg>">
+    <meta name="pump-icon" content="<svg width='232' height='232' viewBox='0 0 232 232' fill='none' xmlns='http://www.w3.org/2000/svg'><rect width='232' height='232' rx='40' fill='#fbbf24'/><path d='M116 40c-8 0-14 6-14 14v6c-24 8-40 30-40 56v30l-14 14v8h136v-8l-14-14v-30c0-26-16-48-40-56v-6c0-8-6-14-14-14z' fill='white'/><circle cx='116' cy='192' r='18' fill='white'/><circle cx='170' cy='60' r='20' fill='#ff4444'/><text x='170' y='67' text-anchor='middle' font-size='22' font-weight='bold' fill='white' font-family='sans-serif'>!</text></svg>">
     <title>Price Alerts</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Symbols+Outlined" rel="stylesheet">
@@ -460,7 +460,7 @@
 
         // Load alerts from localStorage
         function loadAlerts() {
-            const saved = localStorage.getItem('lair_price_alerts');
+            const saved = localStorage.getItem('pump_price_alerts');
             if (saved) {
                 alerts = JSON.parse(saved);
             }
@@ -469,7 +469,7 @@
 
         // Save alerts to localStorage
         function saveAlerts() {
-            localStorage.setItem('lair_price_alerts', JSON.stringify(alerts));
+            localStorage.setItem('pump_price_alerts', JSON.stringify(alerts));
         }
 
         // Fetch current prices

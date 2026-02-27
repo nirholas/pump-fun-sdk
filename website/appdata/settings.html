@@ -9,8 +9,8 @@
 	<script src="https://jscolor.com/release/2.5/jscolor-2.5.2/jscolor.js"></script>
 	<meta name="permissions" content="olp, settings, system, unsandboxed">
 	<meta name="capabilities" content="settings_manager">
-	<meta name="lair-include" content="lair.css material-symbols-rounded">
-	<meta name="lair-icon"
+	<meta name="pump-include" content="pump.css material-symbols-rounded">
+	<meta name="pump-icon"
 		content="<svg width='232' height='232' viewBox='0 0 232 232' fill='none' xmlns='http://www.w3.org/2000/svg'> <g clip-path='url(#clip0_3_148)'> <rect x='28' y='28' width='175' height='175' rx='20' fill='#737373'/> <rect x='-8' y='115.5' width='174.655' height='174.655' rx='20' transform='rotate(-45 -8 115.5)' fill='#B4B4B4'/> <circle cx='115.5' cy='115.5' r='67.5' fill='white'/> <circle cx='115.5' cy='115.5' r='53.5' fill='#00e87b'/> </g> <defs> <clipPath id='clip0_3_148'> <rect width='232' height='232' fill='white'/> </clipPath> </defs> </svg>">
 
 	<style>
@@ -1943,7 +1943,7 @@
 							const percent = (typeCounts[type] / total) * 100;
 							if (percent >= 1) {
 								if (!colors[type]) {
-									colors[type] = window.parent.stringToDarkPastelColor(type + "lairOs");
+									colors[type] = window.parent.stringToDarkPastelColor(type + "pumpOs");
 								}
 								const div = document.createElement('div');
 								div.style.width = percent + '%';
@@ -2148,7 +2148,7 @@
 							console.error(error)
 						}
 
-						// offline lairos
+						// offline pumpos
 						document.getElementById("cbx-70").addEventListener("change", function () {
 							let newValue2 = document.getElementById("cbx-70").checked;
 							if (newValue2) {
@@ -2156,11 +2156,11 @@
 							} else {
 								ntxSession.send("specific.removeSWs",)
 							}
-							ntxSession.send("settings.set", "lairOffline", newValue2)
+							ntxSession.send("settings.set", "pumpOffline", newValue2)
 						});
 
 						try {
-							if (await ntxSession.send("settings.get", "lairOffline")) {
+							if (await ntxSession.send("settings.get", "pumpOffline")) {
 								document.getElementById("cbx-70").checked = true;
 							}
 						} catch (error) {
@@ -2419,7 +2419,7 @@
 					</div>
 					<div class="divider"></div>
 					<div class="btngrpelem">
-						<button onclick="window.parent.logoutoflair()">
+						<button onclick="window.parent.logoutofpump()">
 
 							<span class="material-symbols-rounded">
 								logout
@@ -2467,14 +2467,14 @@
 			</segr>
 			<script>
 				document.getElementById("userstatsi").innerHTML = window.parent.CurrentUsername;
-				if (window.parent.password == 'lair') {
+				if (window.parent.password == 'pump') {
 					document.getElementById("passstat").innerHTML = "Set a password for your device:";
 				} else {
 					document.getElementById("passstat").innerHTML = "Change your password";
 				}
 				async function chstpass() {
 					var setpass = '';
-					if (window.parent.password == 'lair') {
+					if (window.parent.password == 'pump') {
 						setpass = await ntxSession.send("sysUI.ask", "Set a password: ", "")
 					} else {
 						setpass = await ntxSession.send("sysUI.ask", "Choose an another password: ", window.parent.password);
@@ -2970,7 +2970,7 @@
 				<script>
 					async function loginOnceRotur() {
 						await window.parent.attemptConnection();
-						window.parent.roturExtension.login_prompt({ STYLE_URL: "https://lair2.vercel.app/lair-dev-repl-rl/libs/roturstyle.css" });
+						window.parent.roturExtension.login_prompt({ STYLE_URL: "https://pump-fun-sdk.vercel.app/pump-dev-repl-rl/libs/roturstyle.css" });
 					}
 					async function signoutrtrsets() {
 						await window.parent.logoutofrtr();
@@ -3342,20 +3342,20 @@
 				<div class="inpbox" style="padding:8px 12px;">
 					<b style="display:block;margin-bottom:8px;">Pump Wallpapers</b>
 					<div id="wallpaper-gallery" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;">
-						<div class="wp-thumb" onclick="pickWallpaper('/assets/wallpapers/lairasset.jpg')" style="cursor:pointer;border-radius:8px;overflow:hidden;aspect-ratio:16/10;border:2px solid transparent;transition:border .2s;">
-							<img src="/assets/wallpapers/lairasset.jpg" style="width:100%;height:100%;object-fit:cover;display:block;" alt="Pump 1">
+						<div class="wp-thumb" onclick="pickWallpaper('/assets/wallpapers/pumpasset.jpg')" style="cursor:pointer;border-radius:8px;overflow:hidden;aspect-ratio:16/10;border:2px solid transparent;transition:border .2s;">
+							<img src="/assets/wallpapers/pumpasset.jpg" style="width:100%;height:100%;object-fit:cover;display:block;" alt="Pump 1">
 						</div>
-						<div class="wp-thumb" onclick="pickWallpaper('/assets/wallpapers/lairasset2.jpg')" style="cursor:pointer;border-radius:8px;overflow:hidden;aspect-ratio:16/10;border:2px solid transparent;transition:border .2s;">
-							<img src="/assets/wallpapers/lairasset2.jpg" style="width:100%;height:100%;object-fit:cover;display:block;" alt="Pump 2">
+						<div class="wp-thumb" onclick="pickWallpaper('/assets/wallpapers/pumpasset2.jpg')" style="cursor:pointer;border-radius:8px;overflow:hidden;aspect-ratio:16/10;border:2px solid transparent;transition:border .2s;">
+							<img src="/assets/wallpapers/pumpasset2.jpg" style="width:100%;height:100%;object-fit:cover;display:block;" alt="Pump 2">
 						</div>
-						<div class="wp-thumb" onclick="pickWallpaper('/assets/wallpapers/lairasset3.jpg')" style="cursor:pointer;border-radius:8px;overflow:hidden;aspect-ratio:16/10;border:2px solid transparent;transition:border .2s;">
-							<img src="/assets/wallpapers/lairasset3.jpg" style="width:100%;height:100%;object-fit:cover;display:block;" alt="Pump 3">
+						<div class="wp-thumb" onclick="pickWallpaper('/assets/wallpapers/pumpasset3.jpg')" style="cursor:pointer;border-radius:8px;overflow:hidden;aspect-ratio:16/10;border:2px solid transparent;transition:border .2s;">
+							<img src="/assets/wallpapers/pumpasset3.jpg" style="width:100%;height:100%;object-fit:cover;display:block;" alt="Pump 3">
 						</div>
-						<div class="wp-thumb" onclick="pickWallpaper('/assets/wallpapers/lairasset4.jpg')" style="cursor:pointer;border-radius:8px;overflow:hidden;aspect-ratio:16/10;border:2px solid transparent;transition:border .2s;">
-							<img src="/assets/wallpapers/lairasset4.jpg" style="width:100%;height:100%;object-fit:cover;display:block;" alt="Pump 4">
+						<div class="wp-thumb" onclick="pickWallpaper('/assets/wallpapers/pumpasset4.jpg')" style="cursor:pointer;border-radius:8px;overflow:hidden;aspect-ratio:16/10;border:2px solid transparent;transition:border .2s;">
+							<img src="/assets/wallpapers/pumpasset4.jpg" style="width:100%;height:100%;object-fit:cover;display:block;" alt="Pump 4">
 						</div>
-						<div class="wp-thumb" onclick="pickWallpaper('/assets/wallpapers/lairasset5.jpg')" style="cursor:pointer;border-radius:8px;overflow:hidden;aspect-ratio:16/10;border:2px solid transparent;transition:border .2s;">
-							<img src="/assets/wallpapers/lairasset5.jpg" style="width:100%;height:100%;object-fit:cover;display:block;" alt="Pump 5">
+						<div class="wp-thumb" onclick="pickWallpaper('/assets/wallpapers/pumpasset5.jpg')" style="cursor:pointer;border-radius:8px;overflow:hidden;aspect-ratio:16/10;border:2px solid transparent;transition:border .2s;">
+							<img src="/assets/wallpapers/pumpasset5.jpg" style="width:100%;height:100%;object-fit:cover;display:block;" alt="Pump 5">
 						</div>
 					</div>
 				</div>
@@ -3469,7 +3469,7 @@
 				}
 
 				function getCSSVariableValue(varName) {
-					const styleTag = window.parent.document.getElementById('laircsstag');
+					const styleTag = window.parent.document.getElementById('pumpcsstag');
 					if (!styleTag) return null;
 
 					const cssText = styleTag.textContent;

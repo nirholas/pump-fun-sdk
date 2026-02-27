@@ -2,7 +2,7 @@
  * GET /api/market/overview
  *
  * Vercel serverless function that returns a market overview with global stats
- * and whale alert data, matching the format expected by lairdefi.html:
+ * and whale alert data, matching the format expected by pumpdefi.html:
  * { ok: true, global: {...}, whaleAlerts: [...] }
  */
 

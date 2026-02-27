@@ -1,6 +1,6 @@
-# LairOS Open-Source Credits
+# PumpOS Open-Source Credits
 
-LairOS builds on and learns from open-source ecosystems. This document tracks all adopted, integrated, and inspiration-source projects for transparency and community credit.
+PumpOS builds on and learns from open-source ecosystems. This document tracks all adopted, integrated, and inspiration-source projects for transparency and community credit.
 
 ---
 
@@ -10,22 +10,22 @@ LairOS builds on and learns from open-source ecosystems. This document tracks al
 
 - **Stars:** ~28,000 | **License:** MIT
 - **Repo:** https://github.com/ccxt/ccxt
-- **Usage in Lair:** Powers the `exchangeService` in `@nirholas/shared` — provides unified access to 100+ exchanges for tickers, OHLCV candles, orderbooks, funding rates, and open interest data.
+- **Usage in Pump:** Powers the `exchangeService` in `@nirholas/shared` — provides unified access to 100+ exchanges for tickers, OHLCV candles, orderbooks, funding rates, and open interest data.
 - **Files:** `packages/shared/src/services/exchange.ts`, `arbitrage-scanner.ts`
 
 ### technicalindicators — Technical Analysis Library
 
 - **Stars:** ~3,800 | **License:** MIT
 - **Repo:** https://github.com/anandanand84/technicalindicators
-- **Usage in Lair:** Powers the `technicalAnalysis` service — computes RSI, MACD, Bollinger Bands, Stochastic, ADX, ATR, CCI, OBV, and 30+ candlestick pattern detections.
+- **Usage in Pump:** Powers the `technicalAnalysis` service — computes RSI, MACD, Bollinger Bands, Stochastic, ADX, ATR, CCI, OBV, and 30+ candlestick pattern detections.
 - **Files:** `packages/shared/src/services/technical-analysis.ts`
 
 ### TradingView Lightweight Charts
 
 - **Stars:** ~9,000 | **License:** Apache 2.0
 - **Repo:** https://github.com/nickovchinnikov/lightweight-charts
-- **Usage in Lair:** Professional charting in LairOS desktop apps (loaded via CDN).
-- **Files:** Various LairOS app HTML files in `packages/os/Lair-Store/apps/`
+- **Usage in Pump:** Professional charting in PumpOS desktop apps (loaded via CDN).
+- **Files:** Various PumpOS app HTML files in `packages/os/Pump-Store/apps/`
 
 ---
 
@@ -68,7 +68,7 @@ LairOS builds on and learns from open-source ecosystems. This document tracks al
 
 - https://github.com/grammyjs/grammY
 - **License:** MIT | **Lang:** TypeScript
-- **Reference:** Modern type-safe Telegram bot patterns (Lair uses Telegraf but studies grammY for architecture).
+- **Reference:** Modern type-safe Telegram bot patterns (Pump uses Telegraf but studies grammY for architecture).
 
 ---
 
@@ -89,7 +89,7 @@ LairOS builds on and learns from open-source ecosystems. This document tracks al
 
 ---
 
-## LairOS App Integrations Influenced by OSS
+## PumpOS App Integrations Influenced by OSS
 
 - **Exchange Service** (`packages/shared/src/services/exchange.ts`)
   - Multi-exchange data via ccxt. Tickers, candles, orderbooks, funding rates.
@@ -103,7 +103,7 @@ LairOS builds on and learns from open-source ecosystems. This document tracks al
 - **Arbitrage Scanner** (`packages/shared/src/services/arbitrage-scanner.ts`)
   - Cross-exchange price discrepancy detection inspired by hummingbot.
 
-- **Orderbook Heatmap app** (`packages/os/Lair-Store/apps/orderbook-heatmap.html`)
+- **Orderbook Heatmap app** (`packages/os/Pump-Store/apps/orderbook-heatmap.html`)
   - Uses Binance depth websocket + heatmap visualization patterns from orderbook heatmap research.
 
 ---
@@ -125,7 +125,7 @@ LairOS builds on and learns from open-source ecosystems. This document tracks al
 
 ## Contribution Intent
 
-LairOS aims to contribute improvements back to open source where practical, especially around:
+PumpOS aims to contribute improvements back to open source where practical, especially around:
 
 - Modular web-native trading tool UI patterns
 - Reusable data adapters for real-time crypto analytics

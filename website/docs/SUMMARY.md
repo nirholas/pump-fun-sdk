@@ -1,10 +1,10 @@
 # Table of contents
 
-* [Welcome to LairOS👋](README.md)
+* [Welcome to PumpOS👋](README.md)
 
 ## Get started
 
-* [Access LairOS](get-started/access-lairos.md)
+* [Access PumpOS](get-started/access-pumpos.md)
 
 ## docs
 
@@ -24,7 +24,7 @@
 * [Standards](docs/standards/README.md)
   * [Error standards](docs/standards/error-standards.md)
 * [Networking](docs/networking/README.md)
-  * [Rotur In LairOS](docs/networking/rotur-in-lairos.md)
+  * [Rotur In PumpOS](docs/networking/rotur-in-pumpos.md)
 
 ## ❓ How to
 
@@ -32,7 +32,7 @@
   * [Changing default openers](how-to/pro/changing-default-openers.md)
   * [Data recovery](how-to/pro/data-recovery.md)
   * [Using the Tasks Dock](how-to/pro/using-the-tasks-dock.md)
-* [Publish to Lair Store](how-to/publish-to-lair-store.md)
+* [Publish to Pump Store](how-to/publish-to-pump-store.md)
 * [Protips](how-to/protips.md)
 
 ## 🗃️ References
@@ -43,5 +43,5 @@
 
 * [Projects](more/projects.md)
 * [Feedback and suggest](more/feedback-and-suggest.md)
-* [❤️ Support LairOS](more/support-lairos.md)
+* [❤️ Support PumpOS](more/support-pumpos.md)
 * [Features](more/features.md)

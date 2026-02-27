@@ -293,15 +293,15 @@ async function loadWidgetIframe(el, w) {
         const rawHtml = await resp.text();
         const { head, body } = extractBodyContent(rawHtml);
 
-        // Inject lair.css if the widget requests it
+        // Inject pump.css if the widget requests it
         let styleBlock = '';
-        if (rawHtml.includes('lair-include') && rawHtml.includes('lair.css')) {
-            styleBlock = `<style>${lairdotcsscache || ''}</style>`;
+        if (rawHtml.includes('pump-include') && rawHtml.includes('pump.css')) {
+            styleBlock = `<style>${pumpdotcsscache || ''}</style>`;
         }
 
         // Inject saved settings as a global on the iframe window
         const savedSettings = _widgetSettings[w.id] || {};
-const cfetchScript = `<script>window.LAIR_HOST="${location.origin}";window.cfetch=async function(u,o){try{var x=new URL(u,window.LAIR_HOST);if(x.origin===window.LAIR_HOST)return fetch(u,o)}catch(_){}var p=window.LAIR_HOST+"/api/proxy?url="+encodeURIComponent(u);if(o&&o.method&&o.method.toUpperCase()==="POST"){return fetch(p,{method:"POST",headers:{"Content-Type":"application/json"},body:o.body})}return fetch(p)}<\/script>`;
+const cfetchScript = `<script>window.PUMP_HOST="${location.origin}";window.cfetch=async function(u,o){try{var x=new URL(u,window.PUMP_HOST);if(x.origin===window.PUMP_HOST)return fetch(u,o)}catch(_){}var p=window.PUMP_HOST+"/api/proxy?url="+encodeURIComponent(u);if(o&&o.method&&o.method.toUpperCase()==="POST"){return fetch(p,{method:"POST",headers:{"Content-Type":"application/json"},body:o.body})}return fetch(p)}<\/script>`;
         const settingsScript = `<script>window.__widgetSettings = ${JSON.stringify(savedSettings)}; window.__widgetId = "${w.id}";<\/script>`;
 
         const blobHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"><base href="${location.origin}/">${styleBlock}${cfetchScript}${settingsScript}${head}</head><body style="margin:0;overflow:hidden;background:transparent;">${body}</body></html>`;
@@ -513,7 +513,7 @@ async function addWidget(src, name) {
     try {
         const resp = await fetch(src);
         const html = await resp.text();
-        const match = html.match(/lair-widget-size["']\s+content=["']([^"']+)/);
+        const match = html.match(/pump-widget-size["']\s+content=["']([^"']+)/);
         if (match && WIDGET_SIZE_MAP[match[1]]) {
             wCols = WIDGET_SIZE_MAP[match[1]].w;
             hRows = WIDGET_SIZE_MAP[match[1]].h;
@@ -774,8 +774,8 @@ window.addEventListener('message', (e) => {
     if (e.data.type === 'widgetOpenApp') {
         const appName = e.data.app;
         const map = {
-            files: 'files', browser: 'browser', ai: 'lairai',
-            defi: 'lairdefi', store: 'store', settings: 'settings'
+            files: 'files', browser: 'browser', ai: 'pumpai',
+            defi: 'pumpdefi', store: 'store', settings: 'settings'
         };
         const key = map[appName] || appName;
         try { openapp(key, 1); } catch (_) {}

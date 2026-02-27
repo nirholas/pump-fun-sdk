@@ -2,9 +2,9 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="lair-include" content="lair.css">
+    <meta name="pump-include" content="pump.css">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="lair-icon" content="account_balance_wallet">
+    <meta name="pump-icon" content="account_balance_wallet">
     <title>Wallet Connect</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Symbols+Outlined" rel="stylesheet">
@@ -656,7 +656,7 @@
 
         /* ── Initialization ── */
         function init() {
-            const saved = localStorage.getItem('lair_wallet_connect');
+            const saved = localStorage.getItem('pump_wallet_connect');
             if (saved) {
                 try {
                     const data = JSON.parse(saved);
@@ -664,7 +664,7 @@
                     currentNetwork = data.network || 'ethereum';
                     showConnectedView();
                     loadBalances();
-                } catch(e) { localStorage.removeItem('lair_wallet_connect'); }
+                } catch(e) { localStorage.removeItem('pump_wallet_connect'); }
             }
             // Listen for account/chain changes
             if (window.ethereum) {
@@ -677,7 +677,7 @@
         }
 
         function save() {
-            localStorage.setItem('lair_wallet_connect', JSON.stringify({ address: walletAddress, network: currentNetwork }));
+            localStorage.setItem('pump_wallet_connect', JSON.stringify({ address: walletAddress, network: currentNetwork }));
         }
 
         function shortAddr(a) { return a ? a.slice(0,6) + '...' + a.slice(-4) : ''; }
@@ -745,7 +745,7 @@
         function disconnectWallet() {
             walletAddress = null;
             tokenData = [];
-            localStorage.removeItem('lair_wallet_connect');
+            localStorage.removeItem('pump_wallet_connect');
             document.getElementById('disconnectedView').classList.remove('hidden');
             document.getElementById('connectedView').classList.remove('active');
             document.getElementById('tokenList').innerHTML = '';

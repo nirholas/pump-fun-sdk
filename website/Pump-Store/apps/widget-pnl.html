@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="lair-include" content="lair.css">
-    <meta name="lair-widget" content="true">
-    <meta name="lair-widget-size" content="2x2">
-    <meta name="lair-icon" content="trending_up">
+    <meta name="pump-include" content="pump.css">
+    <meta name="pump-widget" content="true">
+    <meta name="pump-widget-size" content="2x2">
+    <meta name="pump-icon" content="trending_up">
     <meta name="capabilities" content="widget,pnl_tracker">
     <title>PnL Widget</title>
     <style>
@@ -188,8 +188,8 @@
         /* ═══════════════════════════════════════
            Data Layer — localStorage + journal
            ═══════════════════════════════════════ */
-        const STORAGE_KEY = 'lair_pnl_tracker';
-        const JOURNAL_KEY = 'lair_trading_journal';
+        const STORAGE_KEY = 'pump_pnl_tracker';
+        const JOURNAL_KEY = 'pump_trading_journal';
         const MAX_HISTORY = 365;   /* Cap history at 1 year to prevent localStorage bloat */
 
         let _prevPnl = null;       /* Track previous value for pulse animation */

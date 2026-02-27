@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="lair-include" content="lair.css">
-    <meta name="lair-widget" content="true">
-    <meta name="lair-widget-size" content="2x1">
-    <meta name="lair-icon" content='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="24" height="24" fill="white"><path d="M160-120v-640q0-33 23.5-56.5T240-840h280q33 0 56.5 23.5T600-760v280h40q33 0 56.5 23.5T720-400v120q0 17 11.5 28.5T760-240q17 0 28.5-11.5T800-280v-320h-40q-17 0-28.5-11.5T720-640v-80l-40-40 54-54 126 126v368q0 50-35 85t-85 35q-50 0-85-35t-35-85v-120h-80v320H160Zm120-360h200v-200H280v200Z"/></svg>'>
+    <meta name="pump-include" content="pump.css">
+    <meta name="pump-widget" content="true">
+    <meta name="pump-widget-size" content="2x1">
+    <meta name="pump-icon" content='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="24" height="24" fill="white"><path d="M160-120v-640q0-33 23.5-56.5T240-840h280q33 0 56.5 23.5T600-760v280h40q33 0 56.5 23.5T720-400v120q0 17 11.5 28.5T760-240q17 0 28.5-11.5T800-280v-320h-40q-17 0-28.5-11.5T720-640v-80l-40-40 54-54 126 126v368q0 50-35 85t-85 35q-50 0-85-35t-35-85v-120h-80v320H160Zm120-360h200v-200H280v200Z"/></svg>'>
     <meta name="capabilities" content="widget,gas_tracker">
-    <meta name="lair-perms" content="network" />
+    <meta name="pump-perms" content="network" />
     <title>Gas Tracker</title>
     <style>
         *{margin:0;padding:0;box-sizing:border-box}
@@ -380,7 +380,7 @@
         let errorCount = 0;
         let mainTimer = null;
         const HISTORY_LEN = 20;
-        const CACHE_KEY = 'lair_gas_widget_cache';
+        const CACHE_KEY = 'pump_gas_widget_cache';
         const CACHE_TTL = 25 * 1000;
 
         /* Load cache on init */

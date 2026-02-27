@@ -1,4 +1,4 @@
-# Rotur In LairOS
+# Rotur In PumpOS
 
 ### Available methods
 

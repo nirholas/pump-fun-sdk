@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="lair-include" content="lair.css">
+    <meta name="pump-include" content="pump.css">
     <meta name="capabilities" content="crypto_charts">
-    <meta name="lair-icon" content="candlestick_chart">
-    <meta name="lair-perms" content="network" />
+    <meta name="pump-icon" content="candlestick_chart">
+    <meta name="pump-perms" content="network" />
     <title>Crypto Charts</title>
-    <script src="../../libs/lair-bus.js"></script>
+    <script src="../../libs/pump-bus.js"></script>
     <script src="https://unpkg.com/lightweight-charts@4.1.0/dist/lightweight-charts.standalone.production.js"></script>
     <style>
         :root {
@@ -318,10 +318,10 @@ let indSeries = {}; // keyed by indicator name
 let rsiPane = null;
 let lastData = {candles:[],volumes:[]};
 let arTimer = null;
-const lairBus = window.PumpBus;
+const pumpBus = window.PumpBus;
 
-if (lairBus) {
-    lairBus.register('cryptocharts');
+if (pumpBus) {
+    pumpBus.register('cryptocharts');
 }
 
 const cache = new Map();
@@ -352,12 +352,12 @@ function selectCoinFromBusPayload(payload){
     return true;
 }
 
-if(lairBus){
-    lairBus.on('token:chart',payload=>{
+if(pumpBus){
+    pumpBus.on('token:chart',payload=>{
         const applied=selectCoinFromBusPayload(payload);
         return {ok:applied,coinId:S.coin?.id||null};
     });
-    lairBus.on('token:select',payload=>{
+    pumpBus.on('token:select',payload=>{
         selectCoinFromBusPayload(payload);
     });
 }
@@ -789,8 +789,8 @@ async function loadData(){
             el.lp.textContent=fp(px);
             const{t,c}=fpc(ch24);el.lc.textContent=t;el.lc.className='ch '+(c);
 
-            if(lairBus&&px!=null){
-                lairBus.broadcast('price:update',{
+            if(pumpBus&&px!=null){
+                pumpBus.broadcast('price:update',{
                     symbol:S.coin?.sym||null,
                     price:px,
                     change24h:ch24??null

@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="lair-include" content="lair.css material-symbols-rounded">
+    <meta name="pump-include" content="pump.css material-symbols-rounded">
     <meta name="permissions" content="appStorage">
     <meta name="capabilities" content="hotkeys">
-    <meta name="lair-icon" content="<svg width='232' height='232' viewBox='0 0 232 232' fill='none' xmlns='http://www.w3.org/2000/svg'><rect width='232' height='232' rx='40' fill='#8B5CF6'/><text x='116' y='140' text-anchor='middle' fill='white' font-size='100' font-weight='bold'>⌨️</text></svg>">
+    <meta name="pump-icon" content="<svg width='232' height='232' viewBox='0 0 232 232' fill='none' xmlns='http://www.w3.org/2000/svg'><rect width='232' height='232' rx='40' fill='#8B5CF6'/><text x='116' y='140' text-anchor='middle' fill='white' font-size='100' font-weight='bold'>⌨️</text></svg>">
     <title>Hotkeys</title>
     <style>
         :root {
@@ -407,7 +407,7 @@
         { id: 'app-news',      combo: 'ctrl+shift+n', label: 'Crypto News',              type: 'openApp', appId: 'cryptonews' },
         { id: 'app-watchlist', combo: 'ctrl+shift+w', label: 'Watchlist',                type: 'openApp', appId: 'watchlist' },
         { id: 'app-scanner',   combo: 'ctrl+shift+t', label: 'Token Scanner',            type: 'openApp', appId: 'tokenscanner' },
-        { id: 'app-ai',        combo: 'ctrl+shift+a', label: 'Pump AI',                  type: 'openApp', appId: 'lairai' }
+        { id: 'app-ai',        combo: 'ctrl+shift+a', label: 'Pump AI',                  type: 'openApp', appId: 'pumpai' }
     ];
 
     const DEFAULT_QUICK_SHORTCUTS = [
@@ -416,7 +416,7 @@
         { id: 'quick-3', combo: 'ctrl+shift+3', label: 'Layout Preset 3', type: 'quickAction', actionId: 'layout-3' }
     ];
 
-    const STORAGE_KEY = 'lair-hotkeys';
+    const STORAGE_KEY = 'pump-hotkeys';
 
     // ===== State =====
     let appShortcuts = [];

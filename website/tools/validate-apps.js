@@ -138,12 +138,12 @@ async function parallelLimit(tasks, limit) {
 
 /**
  * Determine if a line with a hardcoded color should be ignored.
- * Whitelisted contexts: SVG icons, lair-icon meta, CSS var() fallbacks,
+ * Whitelisted contexts: SVG icons, pump-icon meta, CSS var() fallbacks,
  * CSS custom property definitions, gradient definitions.
  */
 function isColorWhitelisted(line) {
-    // Inside lair-icon meta content (SVGs use fill="#xxx")
-    if (/lair-icon/i.test(line)) return true;
+    // Inside pump-icon meta content (SVGs use fill="#xxx")
+    if (/pump-icon/i.test(line)) return true;
     // Inside an <svg> element (standalone SVG or inline)
     if (/<svg\b/i.test(line) || /<\/svg>/i.test(line) || /\bfill\s*=\s*["']/i.test(line) || /\bstroke\s*=\s*["']/i.test(line)) return true;
     // CSS gradient definitions are acceptable
@@ -160,9 +160,9 @@ function isColorWhitelisted(line) {
 function validateMetaTags(content, lines) {
     const issues = [];
 
-    // Check lair-include meta
-    if (!/<meta\s+name\s*=\s*["']lair-include["']/i.test(content)) {
-        issues.push({ severity: 'error', msg: 'Missing meta: lair-include' });
+    // Check pump-include meta
+    if (!/<meta\s+name\s*=\s*["']pump-include["']/i.test(content)) {
+        issues.push({ severity: 'error', msg: 'Missing meta: pump-include' });
     }
 
     // Check charset
@@ -335,7 +335,7 @@ function detectDuplicates(fileResults) {
     // Skip exact same filename in different dirs — that's flagged by title dupe above
     const nameMap = new Map();
     for (const { filePath, name } of fileResults) {
-        const stem = name.replace(/\.html$/, '').replace(/^(widget-|lair)/, '').replace(/[-_]/g, '').toLowerCase();
+        const stem = name.replace(/\.html$/, '').replace(/^(widget-|pump)/, '').replace(/[-_]/g, '').toLowerCase();
         if (!stem) continue;
         if (!nameMap.has(stem)) nameMap.set(stem, []);
         nameMap.get(stem).push({ filePath, name });
@@ -361,14 +361,14 @@ function detectDuplicates(fileResults) {
 
 // ─── Auto-Fix ────────────────────────────────────────────────────────────────
 
-const META_TAG = '<meta name="lair-include" content="lair.css">';
+const META_TAG = '<meta name="pump-include" content="pump.css">';
 
 /**
- * Attempt to inject lair-include meta tag into a file.
+ * Attempt to inject pump-include meta tag into a file.
  * Returns true if the file was modified.
  */
 function fixMissingPumpInclude(filePath, content) {
-    if (/<meta\s+name\s*=\s*["']lair-include["']/i.test(content)) return false;
+    if (/<meta\s+name\s*=\s*["']pump-include["']/i.test(content)) return false;
     if (content.trim().length === 0) return false; // skip empty files
 
     let newContent;
@@ -433,9 +433,9 @@ async function main() {
                 continue;
             }
 
-            // Inject missing lair-include
+            // Inject missing pump-include
             if (fixMissingPumpInclude(entry.filePath, content)) {
-                console.log(`🔧 Fixed lair-include: ${entry.dirLabel}/${entry.name}`);
+                console.log(`🔧 Fixed pump-include: ${entry.dirLabel}/${entry.name}`);
                 fixedCount++;
             }
 
@@ -565,7 +565,7 @@ async function main() {
         console.log('\nTip: Run with --verbose to see all warnings and passing files.');
     }
     if (!fix && countError > 0) {
-        console.log('Tip: Run with --fix to auto-fix missing lair-include and remove empty files.');
+        console.log('Tip: Run with --fix to auto-fix missing pump-include and remove empty files.');
     }
 
     // Exit code: 1 if any errors

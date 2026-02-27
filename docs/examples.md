@@ -3,7 +3,7 @@
 Practical code examples for common Pump SDK operations.
 
 <div align="center">
-  <img src="assets/buy-sell-flow.svg" alt="Buy and sell transaction flow" width="720">
+  <img src="assets/pump.svg" alt="Buy and sell transaction flow" width="720">
 </div>
 
 ## Table of Contents

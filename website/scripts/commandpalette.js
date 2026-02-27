@@ -7,7 +7,7 @@
     'use strict';
 
     // ── MRU tracking ──────────────────────────────────────────────
-    const MRU_KEY = 'lair_cmd_mru';
+    const MRU_KEY = 'pump_cmd_mru';
     const MRU_MAX = 20;
 
     function getMRU() {
@@ -121,12 +121,12 @@
 
         // ── Quick nav ─────────────────────────────────────────────
         cmds.push(
-            { id: 'nav.dexscreener', label: 'Open DEX Screener', icon: 'candlestick_chart', category: 'Quick Nav', action: () => openapp('lairdexscreener', 1) },
-            { id: 'nav.portfolio', label: 'Open Portfolio', icon: 'account_balance_wallet', category: 'Quick Nav', action: () => openapp('lairportfolio', 1) },
-            { id: 'nav.trending', label: 'Open Trending', icon: 'trending_up', category: 'Quick Nav', action: () => openapp('lairtrending', 1) },
-            { id: 'nav.heatmap', label: 'Open Heatmap', icon: 'grid_view', category: 'Quick Nav', action: () => openapp('lairheatmap', 1) },
-            { id: 'nav.terminal', label: 'Open Terminal', icon: 'terminal', category: 'Quick Nav', action: () => openapp('lairterminal', 1) },
-            { id: 'nav.ai', label: 'Open Pump AI', icon: 'smart_toy', category: 'Quick Nav', action: () => openapp('lairai', 1) }
+            { id: 'nav.dexscreener', label: 'Open DEX Screener', icon: 'candlestick_chart', category: 'Quick Nav', action: () => openapp('pumpdexscreener', 1) },
+            { id: 'nav.portfolio', label: 'Open Portfolio', icon: 'account_balance_wallet', category: 'Quick Nav', action: () => openapp('pumpportfolio', 1) },
+            { id: 'nav.trending', label: 'Open Trending', icon: 'trending_up', category: 'Quick Nav', action: () => openapp('pumptrending', 1) },
+            { id: 'nav.heatmap', label: 'Open Heatmap', icon: 'grid_view', category: 'Quick Nav', action: () => openapp('pumpheatmap', 1) },
+            { id: 'nav.terminal', label: 'Open Terminal', icon: 'terminal', category: 'Quick Nav', action: () => openapp('pumpterminal', 1) },
+            { id: 'nav.ai', label: 'Open Pump AI', icon: 'smart_toy', category: 'Quick Nav', action: () => openapp('pumpai', 1) }
         );
 
         return cmds;

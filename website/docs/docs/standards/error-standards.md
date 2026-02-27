@@ -1,6 +1,6 @@
 # Error standards
 
-Lair OS may get things wrong eventually; these error codes help you identify what exactly happened. Chances are, you are quite unlikely to see these.
+Pump OS may get things wrong eventually; these error codes help you identify what exactly happened. Chances are, you are quite unlikely to see these.
 
 We have made a standard for all of these errors, so that we can just mention their codes without saying the whole thing.
 

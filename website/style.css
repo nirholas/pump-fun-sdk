@@ -152,7 +152,7 @@ nav [navobj] {
 	transition: var(--time1);
 }
 
-#lairic {
+#pumpic {
 	fill: var(--col-txt1);
 }
 
@@ -1087,7 +1087,7 @@ nav [navobj] {
 	font-size: 15px;
 }
 
-input#lairmenusearchinp {
+input#pumpmenusearchinp {
 	display: flex;
 	width: 60px;
 	font-size: inherit;
@@ -1098,7 +1098,7 @@ input#lairmenusearchinp {
 	color: inherit;
 }
 
-.lairmenusearchinpbtn span {
+.pumpmenusearchinpbtn span {
 	font-size: 1rem;
 	display: flex;
 	align-items: center;
@@ -1106,7 +1106,7 @@ input#lairmenusearchinp {
 	opacity: 0.5;
 }
 
-.lairmenusearchinpbtn {
+.pumpmenusearchinpbtn {
 	display: flex !important;
 	flex-direction: row;
 	background: var(--col-bg2);
@@ -2663,7 +2663,7 @@ dialog#nich {
 	}
 
 	h1#nich-title {
-		/* background: url(libs/nich.png); */
+		/* background: url(pump.png); */
 		-webkit-background-clip: text;
 		background-size: 50%;
 		-webkit-text-fill-color: transparent;

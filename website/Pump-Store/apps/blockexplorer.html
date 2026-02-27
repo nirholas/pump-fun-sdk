@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="lair-include" content="lair.css">
+    <meta name="pump-include" content="pump.css">
     <meta name="capabilities" content="block_explorer">
-    <meta name="lair-icon" content="search">
-    <meta name="lair-perms" content="network" />
+    <meta name="pump-icon" content="search">
+    <meta name="pump-perms" content="network" />
     <title>Block Explorer</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -643,7 +643,7 @@
         // ── Local Storage (Recent Searches) ──
         function getRecentSearches() {
             try {
-                return JSON.parse(localStorage.getItem('lair_blockexplorer_recent') || '[]');
+                return JSON.parse(localStorage.getItem('pump_blockexplorer_recent') || '[]');
             } catch { return []; }
         }
 
@@ -652,7 +652,7 @@
             recent = recent.filter(r => r.query !== query);
             recent.unshift({ query, chain: currentChain, time: Date.now() });
             if (recent.length > 10) recent = recent.slice(0, 10);
-            localStorage.setItem('lair_blockexplorer_recent', JSON.stringify(recent));
+            localStorage.setItem('pump_blockexplorer_recent', JSON.stringify(recent));
             renderRecentSearches();
         }
 

@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="lair-include" content="lair.css material-symbols-rounded">
+    <meta name="pump-include" content="pump.css material-symbols-rounded">
     <meta name="permissions" content="appStorage">
     <meta name="capabilities" content="notifications">
-    <meta name="lair-icon" content="<svg width='232' height='232' viewBox='0 0 232 232' fill='none' xmlns='http://www.w3.org/2000/svg'><rect width='232' height='232' rx='40' fill='#EF4444'/><text x='116' y='140' text-anchor='middle' fill='white' font-size='100' font-weight='bold'>🔔</text></svg>">
-    <meta name="lair-perms" content="network" />
+    <meta name="pump-icon" content="<svg width='232' height='232' viewBox='0 0 232 232' fill='none' xmlns='http://www.w3.org/2000/svg'><rect width='232' height='232' rx='40' fill='#EF4444'/><text x='116' y='140' text-anchor='middle' fill='white' font-size='100' font-weight='bold'>🔔</text></svg>">
+    <meta name="pump-perms" content="network" />
     <title>Notifications</title>
-    <script src="../../libs/lair-bus.js"></script>
+    <script src="../../libs/pump-bus.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html, body { height: 100%; }
@@ -528,7 +528,7 @@
     const _f = window.cfetch || fetch;
 
     /* ── State ── */
-    const STORAGE_KEY = 'lair_notification_center';
+    const STORAGE_KEY = 'pump_notification_center';
     let state = {
         notifications: [],
         rules: [],
@@ -1183,18 +1183,18 @@
     }
 
     function setupPumpBus() {
-        const lairBus = window.PumpBus;
-        if (!lairBus) return;
+        const pumpBus = window.PumpBus;
+        if (!pumpBus) return;
 
-        lairBus.register('notification-center');
-        lairBus.on('alert:fired', (payload) => {
+        pumpBus.register('notification-center');
+        pumpBus.on('alert:fired', (payload) => {
             const severity = payload?.type === 'token-risk' ? 'high' : 'medium';
             addNotification(
                 'general',
                 payload?.type ? `Alert: ${String(payload.type).replace(/[-_]/g, ' ')}` : 'Alert Fired',
                 payload?.message || 'An app triggered an alert event.',
                 severity,
-                'lair-bus'
+                'pump-bus'
             );
             return { ok: true };
         });
