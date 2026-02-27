@@ -9,7 +9,7 @@
     <title>TradingView</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        html, body { width: 100%; height: 100%; overflow: hidden; background: var(--col-bg1, #080A19); color: var(--col-txt1, #A7C2F3); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        html, body { width: 100%; height: 100%; overflow: hidden; background: var(--col-bg1, #0a0a0a); color: var(--col-txt1, #ffffff); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
 
         .controls {
             position: absolute; top: 0; left: 0; right: 0; z-index: 100;
@@ -23,12 +23,12 @@
 
         .search-box {
             display: flex; align-items: center; gap: 4px;
-            background: var(--col-bg3, #15183E); border-radius: 6px;
+            background: var(--col-bg3, #1a1a1a); border-radius: 6px;
             padding: 4px 8px; flex: 0 1 200px; min-width: 120px;
         }
         .search-box .material-symbols-rounded { font-size: 16px; color: #5A6080; }
         .search-box input {
-            background: none; border: none; outline: none; color: var(--col-txt1, #A7C2F3);
+            background: none; border: none; outline: none; color: var(--col-txt1, #ffffff);
             font-size: 13px; width: 100%; font-family: inherit;
         }
         .search-box input::placeholder { color: #5A6080; }
@@ -38,7 +38,7 @@
         .pair-pills { display: flex; gap: 3px; flex-wrap: wrap; }
         .pair-pill {
             background: transparent; border: 1px solid rgba(112, 188, 249, 0.1);
-            color: var(--col-txt1, #A7C2F3); border-radius: 4px;
+            color: var(--col-txt1, #ffffff); border-radius: 4px;
             padding: 3px 8px; font-size: 11px; font-weight: 600;
             cursor: pointer; transition: all 0.15s; white-space: nowrap;
             font-family: 'SF Mono', 'Fira Code', monospace;
@@ -47,7 +47,7 @@
         .pair-pill.active { background: rgba(41, 98, 255, 0.25); border-color: #2962FF; color: #fff; }
 
         .exchange-select {
-            background: var(--col-bg3, #15183E); color: var(--col-txt1, #A7C2F3);
+            background: var(--col-bg3, #1a1a1a); color: var(--col-txt1, #ffffff);
             border: 1px solid rgba(112, 188, 249, 0.1); border-radius: 4px;
             padding: 3px 6px; font-size: 11px; cursor: pointer; outline: none;
             font-family: inherit;
@@ -62,7 +62,7 @@
             cursor: pointer; transition: all 0.15s;
             font-family: 'SF Mono', 'Fira Code', monospace;
         }
-        .tf-pill:hover { color: var(--col-txt1, #A7C2F3); background: rgba(112, 188, 249, 0.06); }
+        .tf-pill:hover { color: var(--col-txt1, #ffffff); background: rgba(112, 188, 249, 0.06); }
         .tf-pill.active { color: #2962FF; background: rgba(41, 98, 255, 0.12); }
 
         #chart-area {
@@ -71,7 +71,7 @@
 
         .loading-overlay {
             position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-            background: var(--col-bg1, #080A19); z-index: 50;
+            background: var(--col-bg1, #0a0a0a); z-index: 50;
             flex-direction: column; gap: 12px;
         }
         .loading-overlay .spinner {
@@ -175,7 +175,7 @@
                 theme: 'dark',
                 style: '1',
                 locale: 'en',
-                toolbar_bg: '#080A19',
+                toolbar_bg: '#0a0a0a',
                 enable_publishing: false,
                 allow_symbol_change: true,
                 container_id: 'tv_chart_widget',
@@ -184,9 +184,9 @@
                 hide_legend: false,
                 save_image: true,
                 studies: ['RSI@tv-basicstudies', 'MAExp@tv-basicstudies'],
-                backgroundColor: '#080A19',
+                backgroundColor: '#0a0a0a',
                 gridColor: '#111336',
-                loading_screen: { backgroundColor: '#080A19', foregroundColor: '#2962FF' },
+                loading_screen: { backgroundColor: '#0a0a0a', foregroundColor: '#2962FF' },
                 overrides: {
                     'mainSeriesProperties.candleStyle.upColor': '#26a69a',
                     'mainSeriesProperties.candleStyle.downColor': '#ef5350',
@@ -194,7 +194,7 @@
                     'mainSeriesProperties.candleStyle.wickDownColor': '#ef5350',
                     'mainSeriesProperties.candleStyle.borderUpColor': '#26a69a',
                     'mainSeriesProperties.candleStyle.borderDownColor': '#ef5350',
-                    'paneProperties.background': '#080A19',
+                    'paneProperties.background': '#0a0a0a',
                     'paneProperties.vertGridProperties.color': '#111336',
                     'paneProperties.horzGridProperties.color': '#111336',
                     'scalesProperties.textColor': '#5A6080',

@@ -74,8 +74,8 @@
 
         .seg button.active {
             opacity: 1;
-            background: color-mix(in srgb, var(--colors-accent, rgb(97,121,255)) 20%, transparent);
-            color: var(--colors-accent, rgb(97, 121, 255));
+            background: color-mix(in srgb, var(--colors-accent, #00e87b) 20%, transparent);
+            color: var(--colors-accent, #00e87b);
         }
 
         .symbol-wrap {
@@ -96,7 +96,7 @@
             outline: none;
         }
 
-        .symbol-wrap input:focus { border-color: var(--colors-accent, rgb(97, 121, 255)); }
+        .symbol-wrap input:focus { border-color: var(--colors-accent, #00e87b); }
 
         .status {
             font-size: 11px;
@@ -297,7 +297,7 @@
             padding: 7px 12px;
             font-size: 12px;
             color: #fff;
-            background: var(--colors-accent, rgb(97, 121, 255));
+            background: var(--colors-accent, #00e87b);
             cursor: pointer;
         }
 
@@ -633,7 +633,7 @@
                     clearTimeout(state.reconnectTimer);
                     if (wsRetries > 8) {
                         setStatus('err', 'Stream unavailable — may be restricted in your region');
-                        stateBox.innerHTML = '<span class="material-symbols-rounded">cloud_off</span><span>Binance Futures stream unavailable in your region (HTTP 451). <a href="#" onclick="wsRetries=0;connect();return false;" style="color:var(--colors-accent,#6179ff);">Retry</a></span>';
+                        stateBox.innerHTML = '<span class="material-symbols-rounded">cloud_off</span><span>Binance Futures stream unavailable in your region (HTTP 451). <a href="#" onclick="wsRetries=0;connect();return false;" style="color:var(--colors-accent,#00e87b);">Retry</a></span>';
                         stateBox.style.display = '';
                         return;
                     }

@@ -14,7 +14,7 @@
             --col-bg3: #222222;
             --col-txt1: white;
             --col-txt2: #aaa;
-            --colors-accent: rgb(97, 121, 255);
+            --colors-accent: #00e87b;
             --col-good: #5be45b;
             --col-bad: #d44343;
             --col-warn: #f0a030;
@@ -754,7 +754,7 @@ function renderTerms() {
 function highlight(text) {
     if (!searchQuery) return text;
     const re = new RegExp(`(${searchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-    return text.replace(re, '<mark style="background:rgba(97,121,255,0.3);color:inherit;border-radius:2px;padding:0 1px;">$1</mark>');
+    return text.replace(re, '<mark style="background:rgba(0,232,123,0.3);color:inherit;border-radius:2px;padding:0 1px;">$1</mark>');
 }
 
 // ── Quiz Mode ──

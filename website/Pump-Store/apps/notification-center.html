@@ -49,7 +49,7 @@
         }
         .header-btn:hover { color: var(--col-txt1, #fff); border-color: #444; }
         .header-btn .material-symbols-rounded { font-size: 14px; }
-        .header-btn.active { background: var(--colors-accent, #6179ff); color: #fff; border-color: var(--colors-accent, #6179ff); }
+        .header-btn.active { background: var(--colors-accent, #00e87b); color: #fff; border-color: var(--colors-accent, #00e87b); }
 
         /* ── Tabs ── */
         .tabs {
@@ -65,7 +65,7 @@
             transition: all 0.15s; user-select: none;
         }
         .tab:hover { color: var(--col-txt1, #fff); }
-        .tab.active { color: var(--col-txt1, #fff); border-bottom-color: var(--colors-accent, #6179ff); }
+        .tab.active { color: var(--col-txt1, #fff); border-bottom-color: var(--colors-accent, #00e87b); }
 
         /* ── Panels ── */
         .panel { display: none; flex: 1; flex-direction: column; overflow: hidden; }
@@ -106,7 +106,7 @@
             position: relative; cursor: default;
         }
         .notif-card:hover { background: var(--col-bg2, #171717); }
-        .notif-card.unread { background: rgba(97,121,255,0.04); }
+        .notif-card.unread { background: rgba(0,232,123,0.04); }
         .notif-card.severity-high { border-left-color: #EF4444; }
         .notif-card.severity-medium { border-left-color: #F59E0B; }
         .notif-card.severity-low { border-left-color: #3B82F6; }
@@ -141,7 +141,7 @@
 
         .unread-dot {
             width: 6px; height: 6px; border-radius: 50%;
-            background: var(--colors-accent, #6179ff);
+            background: var(--colors-accent, #00e87b);
             flex-shrink: 0; margin-top: 4px;
         }
         .unread-dot.read { background: transparent; }
@@ -165,7 +165,7 @@
         }
         .rules-title { font-size: 13px; font-weight: 700; }
         .add-rule-btn {
-            background: var(--colors-accent, #6179ff); border: none; color: #fff;
+            background: var(--colors-accent, #00e87b); border: none; color: #fff;
             border-radius: 6px; padding: 6px 14px; cursor: pointer;
             font-size: 11px; font-family: inherit; font-weight: 600;
             display: flex; align-items: center; gap: 4px; transition: opacity 0.15s;
@@ -183,7 +183,7 @@
             width: 32px; height: 32px; border-radius: 8px;
             display: flex; align-items: center; justify-content: center;
             flex-shrink: 0; font-size: 16px;
-            background: rgba(97,121,255,0.1); color: var(--colors-accent, #6179ff);
+            background: rgba(0,232,123,0.1); color: var(--colors-accent, #00e87b);
         }
         .rule-info { flex: 1; min-width: 0; }
         .rule-desc { font-size: 12px; font-weight: 600; }
@@ -199,7 +199,7 @@
             position: absolute; inset: 0; border-radius: 9px;
             background: var(--col-bg3, #333); transition: background 0.2s;
         }
-        .toggle input:checked + .toggle-track { background: var(--colors-accent, #6179ff); }
+        .toggle input:checked + .toggle-track { background: var(--colors-accent, #00e87b); }
         .toggle-thumb {
             position: absolute; top: 2px; left: 2px;
             width: 14px; height: 14px; border-radius: 50%;
@@ -252,7 +252,7 @@
             padding: 4px 8px; font-size: 11px; width: 70px;
             text-align: right; font-family: inherit; outline: none;
         }
-        .setting-input:focus { border-color: var(--colors-accent, #6179ff); }
+        .setting-input:focus { border-color: var(--colors-accent, #00e87b); }
 
         /* ── Modal ── */
         .modal-overlay {
@@ -290,7 +290,7 @@
             color: var(--col-txt1, #fff); border-radius: 6px;
             padding: 8px 12px; font-size: 13px; font-family: inherit; outline: none;
         }
-        .form-select:focus, .form-input:focus { border-color: var(--colors-accent, #6179ff); }
+        .form-select:focus, .form-input:focus { border-color: var(--colors-accent, #00e87b); }
         .form-select option { background: var(--col-bg1, #101010); }
 
         .form-row { display: flex; gap: 10px; }
@@ -307,7 +307,7 @@
         }
         .btn-cancel:hover { color: var(--col-txt1, #fff); }
         .btn-save {
-            background: var(--colors-accent, #6179ff); border: none; color: #fff;
+            background: var(--colors-accent, #00e87b); border: none; color: #fff;
             border-radius: 6px; padding: 8px 16px; cursor: pointer;
             font-size: 12px; font-family: inherit; font-weight: 600;
         }

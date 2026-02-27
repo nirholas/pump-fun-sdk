@@ -14,12 +14,12 @@
         :root {
             --col-bg1: #101010; --col-bg2: #171717; --col-bg3: #222;
             --col-txt1: #fff; --col-txt2: #999; --col-txt3: #666;
-            --colors-accent: rgb(97,121,255); --col-good: #5be45b; --col-bad: #d44343;
+            --colors-accent: #00e87b; --col-good: #5be45b; --col-bad: #d44343;
             --siz-radius1: 6px; --siz-radius2: 4px;
             --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
             --sma-color-1: #f0b90b; --sma-color-2: #e040fb;
             --ema-color-1: #00bcd4; --ema-color-2: #ff6d00;
-            --bb-color: rgba(97,121,255,0.2);
+            --bb-color: rgba(0,232,123,0.2);
         }
         *{margin:0;padding:0;box-sizing:border-box}
         body,html{width:100%;height:100%;overflow:hidden;font-family:var(--font);background:var(--col-bg1);color:var(--col-txt1)}
@@ -62,7 +62,7 @@
         .coin-list::-webkit-scrollbar-thumb{background:#333;border-radius:2px}
         .coin-item{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:var(--siz-radius2);cursor:pointer;font-size:12px;transition:background .1s}
         .coin-item:hover{background:var(--col-bg3)}
-        .coin-item.active{background:rgba(97,121,255,.12)}
+        .coin-item.active{background:rgba(0,232,123,.12)}
         .coin-item .ci-sym{font-weight:600;min-width:48px;color:var(--col-txt1)}
         .coin-item .ci-name{color:var(--col-txt2);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
         .coin-item .ci-rank{color:var(--col-txt3);font-size:10px}
@@ -559,9 +559,9 @@ function buildChart(){
     if(ct==='candle'||ct==='heikin'){
         mainSeries=chart.addCandlestickSeries({upColor:'#5be45b',downColor:'#d44343',borderUpColor:'#5be45b',borderDownColor:'#d44343',wickUpColor:'#5be45b',wickDownColor:'#d44343'});
     }else if(ct==='line'){
-        mainSeries=chart.addLineSeries({color:'rgb(97,121,255)',lineWidth:2});
+        mainSeries=chart.addLineSeries({color:'#00e87b',lineWidth:2});
     }else if(ct==='area'){
-        mainSeries=chart.addAreaSeries({topColor:'rgba(97,121,255,0.35)',bottomColor:'rgba(97,121,255,0.01)',lineColor:'rgb(97,121,255)',lineWidth:2});
+        mainSeries=chart.addAreaSeries({topColor:'rgba(0,232,123,0.35)',bottomColor:'rgba(0,232,123,0.01)',lineColor:'#00e87b',lineWidth:2});
     }else if(ct==='baseline'){
         mainSeries=chart.addBaselineSeries({topLineColor:'var(--col-good)',bottomLineColor:'var(--col-bad)',topFillColor1:'rgba(91,228,91,0.15)',topFillColor2:'rgba(91,228,91,0)',bottomFillColor1:'rgba(212,67,67,0)',bottomFillColor2:'rgba(212,67,67,0.15)',lineWidth:2});
     }
@@ -607,8 +607,8 @@ function applyIndicators(){
     }
     if(I.bb){
         const bb=calcBB(cd,20,2);
-        const su=chart.addLineSeries({color:'rgba(97,121,255,0.5)',lineWidth:1,priceLineVisible:false,lastValueVisible:false});
-        const sl=chart.addLineSeries({color:'rgba(97,121,255,0.5)',lineWidth:1,priceLineVisible:false,lastValueVisible:false});
+        const su=chart.addLineSeries({color:'rgba(0,232,123,0.5)',lineWidth:1,priceLineVisible:false,lastValueVisible:false});
+        const sl=chart.addLineSeries({color:'rgba(0,232,123,0.5)',lineWidth:1,priceLineVisible:false,lastValueVisible:false});
         su.setData(bb.upper);sl.setData(bb.lower);
         indSeries.bb=[su,sl];
     }
@@ -676,7 +676,7 @@ function updateLegendIndicators(param){
             const sl=param.seriesData.get(indSeries.bb[1]);
             if(su)uv=fp(su.value);if(sl)lv=fp(sl.value);
         }
-        parts.push(`<span style="color:rgba(97,121,255,.7)">BB: ${uv} / ${lv}</span>`);
+        parts.push(`<span style="color:rgba(0,232,123,.7)">BB: ${uv} / ${lv}</span>`);
     }
     el.lgInd.innerHTML=parts.join(' ');
 }

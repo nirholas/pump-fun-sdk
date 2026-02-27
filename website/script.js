@@ -2678,8 +2678,8 @@ async function clerkSignIn() {
 		await clerkInstance.openSignIn({
 			appearance: {
 				variables: {
-					colorPrimary: '#6366f1',
-					colorBackground: '#1a1a2e',
+					colorPrimary: '#00e87b',
+					colorBackground: '#0a0a0a',
 					colorText: '#ffffff',
 					colorTextSecondary: '#a0a0a0',
 					borderRadius: '0.5rem'

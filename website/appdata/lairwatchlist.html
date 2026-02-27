@@ -26,9 +26,9 @@
             flex-shrink: 0;
         }
         .header h2 { font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 6px; flex: 1; }
-        .header h2 .material-symbols-rounded { font-size: 18px; color: var(--colors-accent, #6179ff); }
+        .header h2 .material-symbols-rounded { font-size: 18px; color: var(--colors-accent, #00e87b); }
         .add-btn {
-            background: var(--colors-accent, #6179ff); border: none; color: #fff;
+            background: var(--colors-accent, #00e87b); border: none; color: #fff;
             border-radius: 6px; padding: 5px 12px; cursor: pointer;
             font-size: 11px; font-family: inherit; font-weight: 600;
             display: flex; align-items: center; gap: 4px; transition: opacity 0.15s;
@@ -41,7 +41,7 @@
             font-size: 11px; font-family: inherit; transition: all 0.15s;
         }
         .sort-btn:hover { color: var(--col-txt1, #fff); }
-        .sort-btn.active { background: var(--colors-accent, #6179ff); color: #fff; border-color: var(--colors-accent, #6179ff); }
+        .sort-btn.active { background: var(--colors-accent, #00e87b); color: #fff; border-color: var(--colors-accent, #00e87b); }
 
         /* ── Summary bar ── */
         .summary {
@@ -74,7 +74,7 @@
             color: var(--col-txt1, #fff); border-radius: 6px; padding: 8px 12px;
             font-size: 13px; font-family: inherit; outline: none;
         }
-        .modal-header input:focus { border-color: var(--colors-accent, #6179ff); }
+        .modal-header input:focus { border-color: var(--colors-accent, #00e87b); }
         .modal-close {
             background: none; border: none; color: #888; cursor: pointer; padding: 4px;
             display: flex; align-items: center;
@@ -108,7 +108,7 @@
             cursor: pointer; user-select: none; white-space: nowrap;
         }
         thead th:hover { color: #aaa; }
-        thead th.sorted { color: var(--colors-accent, #6179ff); }
+        thead th.sorted { color: var(--colors-accent, #00e87b); }
         thead th .arrow { font-size: 10px; margin-left: 2px; }
         tbody tr {
             border-bottom: 1px solid rgba(255,255,255,0.03);
@@ -141,7 +141,7 @@
         .empty .material-symbols-rounded { font-size: 48px; opacity: 0.3; }
         .empty p { font-size: 13px; }
         .empty .add-cta {
-            background: var(--colors-accent, #6179ff); color: #fff; border: none;
+            background: var(--colors-accent, #00e87b); color: #fff; border: none;
             border-radius: 8px; padding: 8px 20px; cursor: pointer;
             font-size: 12px; font-family: inherit; font-weight: 600;
         }
@@ -256,7 +256,7 @@ async function fetchPrices() {
         render();
     } catch(e) {
         console.error('Fetch error:', e);
-        document.getElementById('loadingState').innerHTML = `<span style="color:#ef4444">Failed to load data. <span style="cursor:pointer;color:var(--colors-accent,#6179ff)" onclick="fetchPrices()">Retry</span></span>`;
+        document.getElementById('loadingState').innerHTML = `<span style="color:#ef4444">Failed to load data. <span style="cursor:pointer;color:var(--colors-accent,#00e87b)" onclick="fetchPrices()">Retry</span></span>`;
     }
 }
 

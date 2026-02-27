@@ -39,7 +39,7 @@
             font-size: 11px; font-family: inherit; transition: all 0.15s;
         }
         .ctrl-btn:hover { color: var(--col-txt1, #fff); }
-        .ctrl-btn.active { background: var(--colors-accent, #6179ff); color: #fff; border-color: var(--colors-accent, #6179ff); }
+        .ctrl-btn.active { background: var(--colors-accent, #00e87b); color: #fff; border-color: var(--colors-accent, #00e87b); }
 
         /* ── Stats cards ── */
         .stats-grid {
@@ -111,7 +111,7 @@
         .ratio-short { background: #5be45b; height: 100%; transition: width 0.5s; }
 
         .state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 48px; flex: 1; }
-        .spinner { width: 30px; height: 30px; border: 3px solid var(--col-bg3, #262626); border-top-color: var(--colors-accent, #6179ff); border-radius: 50%; animation: spin 0.7s linear infinite; margin-bottom: 14px; }
+        .spinner { width: 30px; height: 30px; border: 3px solid var(--col-bg3, #262626); border-top-color: var(--colors-accent, #00e87b); border-radius: 50%; animation: spin 0.7s linear infinite; margin-bottom: 14px; }
         @keyframes spin { to { transform: rotate(360deg); } }
         .state p { color: #666; font-size: 13px; }
 
@@ -441,7 +441,7 @@ function renderTopCoins() {
 
     document.getElementById('topList').innerHTML = sorted.map((c, i) => {
         const pct = (c.total / max * 100).toFixed(0);
-        const color = c.total > max * 0.5 ? '#f59e0b' : 'var(--colors-accent, #6179ff)';
+        const color = c.total > max * 0.5 ? '#f59e0b' : 'var(--colors-accent, #00e87b)';
         return `<div class="sp-item">
             <div class="sp-rank">${i + 1}</div>
             <div class="sp-sym">${c.clean}</div>

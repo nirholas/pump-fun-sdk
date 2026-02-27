@@ -16,7 +16,7 @@
             font-family: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
             display: flex; flex-direction: column;
         }
-        a { color: var(--colors-accent, #6179ff); text-decoration: none; }
+        a { color: var(--colors-accent, #00e87b); text-decoration: none; }
 
         /* ── Tab bar ── */
         .tab-bar {
@@ -34,7 +34,7 @@
             transition: all 0.2s; user-select: none;
         }
         .tab:hover { opacity: 0.7; }
-        .tab.active { opacity: 1; color: var(--colors-accent, #6179ff); border-bottom-color: var(--colors-accent, #6179ff); }
+        .tab.active { opacity: 1; color: var(--colors-accent, #00e87b); border-bottom-color: var(--colors-accent, #00e87b); }
         .tab .material-symbols-rounded { font-size: 16px; }
 
         /* ── Stats bar ── */
@@ -74,7 +74,7 @@
             color: var(--col-txt1, #fff); font-size: 12px;
             outline: none; font-family: inherit;
         }
-        .search-bar input:focus { border-color: var(--colors-accent, #6179ff); }
+        .search-bar input:focus { border-color: var(--colors-accent, #00e87b); }
         .search-bar input::placeholder { color: #555; }
 
         /* ── Table ── */
@@ -105,7 +105,7 @@
             width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
             display: flex; align-items: center; justify-content: center;
             font-size: 12px; font-weight: 700;
-            background: var(--col-bg3, #262626); color: var(--colors-accent, #6179ff);
+            background: var(--col-bg3, #262626); color: var(--colors-accent, #00e87b);
             overflow: hidden;
         }
         .ci-icon img { width: 100%; height: 100%; object-fit: cover; }
@@ -125,8 +125,8 @@
             border-radius: 10px; padding: 14px;
             cursor: pointer; transition: all 0.15s;
         }
-        .t-card:hover { border-color: var(--colors-accent, #6179ff); transform: translateY(-1px); }
-        .t-rank { font-size: 10px; font-weight: 700; color: var(--colors-accent, #6179ff); margin-bottom: 6px; }
+        .t-card:hover { border-color: var(--colors-accent, #00e87b); transform: translateY(-1px); }
+        .t-rank { font-size: 10px; font-weight: 700; color: var(--colors-accent, #00e87b); margin-bottom: 6px; }
         .t-stats { display: flex; justify-content: space-between; gap: 8px; margin-top: 10px; }
         .ts-l { font-size: 10px; color: #555; }
         .ts-v { font-size: 13px; font-weight: 600; }
@@ -183,9 +183,9 @@
             border-radius: 8px; padding: 9px 12px; color: var(--col-txt1, #fff);
             font-size: 12px; outline: none; font-family: inherit;
         }
-        .p-input-row input:focus { border-color: var(--colors-accent, #6179ff); }
+        .p-input-row input:focus { border-color: var(--colors-accent, #00e87b); }
         .p-input-row button {
-            padding: 9px 18px; background: var(--colors-accent, #6179ff);
+            padding: 9px 18px; background: var(--colors-accent, #00e87b);
             color: #fff; border: none; border-radius: 8px; cursor: pointer;
             font-weight: 600; font-size: 12px; font-family: inherit;
         }
@@ -229,7 +229,7 @@
         }
         .badge-up { background: rgba(91,228,91,0.12); color: #5be45b; }
         .badge-dn { background: rgba(239,68,68,0.12); color: #ef4444; }
-        .badge-blue { background: rgba(97,121,255,0.12); color: #6179ff; }
+        .badge-blue { background: rgba(97,121,255,0.12); color: #00e87b; }
 
         /* ── Section headers ── */
         .sec-h { padding: 14px 14px 6px; font-size: 12px; color: #555; display: flex; align-items: center; gap: 6px; }
@@ -240,9 +240,9 @@
         .state .material-symbols-rounded { font-size: 40px; color: #333; margin-bottom: 10px; }
         .state p { color: #666; font-size: 13px; }
         .state .sub { font-size: 11px; color: #444; margin-top: 4px; }
-        .spinner { width: 30px; height: 30px; border: 3px solid var(--col-bg3, #262626); border-top-color: var(--colors-accent, #6179ff); border-radius: 50%; animation: spin 0.7s linear infinite; margin-bottom: 14px; }
+        .spinner { width: 30px; height: 30px; border: 3px solid var(--col-bg3, #262626); border-top-color: var(--colors-accent, #00e87b); border-radius: 50%; animation: spin 0.7s linear infinite; margin-bottom: 14px; }
         @keyframes spin { to { transform: rotate(360deg); } }
-        .retry { margin-top: 10px; padding: 7px 18px; background: var(--colors-accent, #6179ff); color: #fff; border: none; border-radius: 7px; cursor: pointer; font-size: 12px; font-weight: 600; font-family: inherit; }
+        .retry { margin-top: 10px; padding: 7px 18px; background: var(--colors-accent, #00e87b); color: #fff; border: none; border-radius: 7px; cursor: pointer; font-size: 12px; font-weight: 600; font-family: inherit; }
 
         /* ── Launch cards ── */
         .lc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; padding-top: 10px; }
@@ -252,9 +252,9 @@
             border-radius: 12px; overflow: hidden;
             cursor: pointer; transition: all 0.15s;
         }
-        .lc-card:hover { border-color: var(--colors-accent, #6179ff); transform: translateY(-1px); }
+        .lc-card:hover { border-color: var(--colors-accent, #00e87b); transform: translateY(-1px); }
         .lc-hero {
-            height: 100px; background: linear-gradient(135deg, #6179ff33 0%, #a855f733 100%);
+            height: 100px; background: linear-gradient(135deg, #00e87b33 0%, #a855f733 100%);
             display: flex; align-items: center; justify-content: center; position: relative;
         }
         .lc-hero img {
@@ -263,7 +263,7 @@
         }
         .lc-hero .lc-avatar {
             width: 64px; height: 64px; border-radius: 50%;
-            background: var(--col-bg3, #262626); color: var(--colors-accent, #6179ff);
+            background: var(--col-bg3, #262626); color: var(--colors-accent, #00e87b);
             display: flex; align-items: center; justify-content: center;
             font-size: 24px; font-weight: 700;
             border: 3px solid var(--col-bg2, #171717);
@@ -278,7 +278,7 @@
         .lc-status.failed { background: rgba(239,68,68,0.15); color: #ef4444; }
         .lc-body { padding: 12px; }
         .lc-title { font-size: 15px; font-weight: 700; }
-        .lc-ticker { font-size: 11px; color: var(--colors-accent, #6179ff); font-weight: 600; }
+        .lc-ticker { font-size: 11px; color: var(--colors-accent, #00e87b); font-weight: 600; }
         .lc-creator { font-size: 11px; color: #666; margin-top: 4px; display: flex; align-items: center; gap: 4px; }
         .lc-creator-dot {
             width: 16px; height: 16px; border-radius: 50%; background: var(--col-bg3, #262626);
@@ -298,7 +298,7 @@
         .lc-bar { height: 6px; background: var(--col-bg3, #262626); border-radius: 3px; overflow: hidden; }
         .lc-bar-fill {
             height: 100%; border-radius: 3px;
-            background: linear-gradient(90deg, #38bdf8, #6179ff, #a855f7);
+            background: linear-gradient(90deg, #38bdf8, #00e87b, #a855f7);
             transition: width 0.5s ease;
         }
         .lc-contract {
@@ -308,7 +308,7 @@
             display: flex; align-items: center; justify-content: space-between;
         }
         .lc-copy {
-            background: none; border: none; color: var(--colors-accent, #6179ff);
+            background: none; border: none; color: var(--colors-accent, #00e87b);
             cursor: pointer; font-size: 14px; font-family: 'Material Symbols Rounded';
         }
 
@@ -323,7 +323,7 @@
         .lcd-bar-lg { height: 10px; background: var(--col-bg3, #262626); border-radius: 5px; overflow: hidden; }
         .lcd-bar-lg-fill {
             height: 100%; border-radius: 5px;
-            background: linear-gradient(90deg, #38bdf8, #6179ff, #a855f7);
+            background: linear-gradient(90deg, #38bdf8, #00e87b, #a855f7);
             transition: width 0.5s ease;
         }
         .lcd-reactions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
@@ -340,7 +340,7 @@
         }
         .lcd-addr { flex: 1; font-family: monospace; font-size: 12px; color: #aaa; word-break: break-all; }
         .lcd-copy-btn {
-            padding: 6px 14px; background: var(--colors-accent, #6179ff);
+            padding: 6px 14px; background: var(--colors-accent, #00e87b);
             color: #fff; border: none; border-radius: 6px; cursor: pointer;
             font-size: 12px; font-weight: 600; font-family: inherit; white-space: nowrap;
         }
@@ -819,7 +819,7 @@ async function loadWhales() {
         }
 
         const icons = { exchange_deposit:'↓', exchange_withdrawal:'↑', whale_transfer:'↔' };
-        const colors = { exchange_deposit:'#ef4444', exchange_withdrawal:'#5be45b', whale_transfer:'#6179ff' };
+        const colors = { exchange_deposit:'#ef4444', exchange_withdrawal:'#5be45b', whale_transfer:'#00e87b' };
 
         const totalVal = alerts.reduce((s,a) => s+(a.amountUsd||0), 0);
         const deps = alerts.filter(a => a.transactionType==='exchange_deposit').length;
@@ -835,7 +835,7 @@ async function loadWhales() {
             </div>
             <div class="w-list">${alerts.map(a => `
                 <div class="w-alert ${a.significance||''}">
-                    <div class="w-icon" style="color:${colors[a.transactionType]||'#6179ff'}">${icons[a.transactionType]||'·'}</div>
+                    <div class="w-icon" style="color:${colors[a.transactionType]||'#00e87b'}">${icons[a.transactionType]||'·'}</div>
                     <div class="w-body">
                         <div class="w-headline">${a.amount?.toLocaleString()||'?'} ${a.symbol} <span class="muted" style="font-size:11px;">($${fmtNum(a.amountUsd)})</span></div>
                         <div class="w-detail">${a.from?.owner||'Unknown'} → ${a.to?.owner||'Unknown'} · ${a.blockchain||'?'}</div>

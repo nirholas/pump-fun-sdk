@@ -1,0 +1,10 @@
+node_modules
+dist
+dist-worker
+.wrangler
+*.md
+.git
+.gitignore
+api/
+wrangler.toml
+vercel.json
