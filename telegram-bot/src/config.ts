@@ -34,7 +34,7 @@ export function loadConfig(): BotConfig {
     }
 
     const pollIntervalSeconds = Number.parseInt(
-        process.env.POLL_INTERVAL_SECONDS || '15',
+        process.env.POLL_INTERVAL_SECONDS || '30',
         10,
     );
 

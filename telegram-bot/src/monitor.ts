@@ -156,6 +156,10 @@ export class PumpFunMonitor {
     private readonly MAX_CTO_CACHE = 200;
     /** Rate-limited RPC request queue */
     private rpcQueue: RpcQueue;
+    /** Consecutive poll-level 429 errors — drives adaptive backoff */
+    private consecutive429s = 0;
+    /** Maximum adaptive poll multiplier (poll interval × this) */
+    private readonly MAX_BACKOFF_MULTIPLIER = 8;
 
     constructor(
         config: BotConfig,
@@ -245,7 +249,7 @@ export class PumpFunMonitor {
         }
 
         if (this.pollTimer) {
-            clearInterval(this.pollTimer);
+            clearTimeout(this.pollTimer);
             this.pollTimer = undefined;
         }
 
@@ -340,12 +344,35 @@ export class PumpFunMonitor {
     // ──────────────────────────────────────────────────────────────────────
 
     private startPolling(): void {
-        // Initial poll
-        this.poll().catch((err) => log.error('Initial poll failed:', err));
+        // Initial poll (delayed to let bot commands register first)
+        setTimeout(() => {
+            this.poll().catch((err) => log.error('Initial poll failed:', err));
+        }, 3_000);
 
-        this.pollTimer = setInterval(() => {
-            this.poll().catch((err) => log.error('Poll error:', err));
-        }, this.config.pollIntervalSeconds * 1000);
+        // Adaptive polling: increase interval when rate-limited
+        const scheduleNext = () => {
+            const multiplier = Math.min(
+                2 ** this.consecutive429s,
+                this.MAX_BACKOFF_MULTIPLIER,
+            );
+            const intervalMs = this.config.pollIntervalSeconds * 1000 * multiplier;
+            if (multiplier > 1) {
+                log.info(
+                    'Adaptive backoff: next poll in %ds (multiplier ×%d)',
+                    intervalMs / 1000,
+                    multiplier,
+                );
+            }
+            this.pollTimer = setTimeout(async () => {
+                try {
+                    await this.poll();
+                } catch (err) {
+                    log.error('Poll error:', err);
+                }
+                if (this.state.isRunning) scheduleNext();
+            }, intervalMs);
+        };
+        scheduleNext();
     }
 
     private async poll(): Promise<void> {
@@ -360,7 +387,7 @@ export class PumpFunMonitor {
 
     private async pollProgram(pubkey: PublicKey, programId: string): Promise<void> {
         const opts: SignaturesForAddressOptions = {
-            limit: 50,
+            limit: 20,
         };
 
         const lastSig = this.lastSignatures.get(programId);
@@ -396,8 +423,16 @@ export class PumpFunMonitor {
                 ordered.length,
                 programId.slice(0, 8),
             );
-        } catch (err) {
-            log.error('Error fetching signatures for %s:', programId.slice(0, 8), err);
+            // Successful poll — reset backoff
+            this.consecutive429s = 0;
+        } catch (err: any) {
+            const is429 = err?.message?.includes('429') || err?.message?.includes('Too many requests');
+            if (is429) {
+                this.consecutive429s++;
+                this.rpcQueue.note429();
+            } else {
+                log.error('Error fetching signatures for %s:', programId.slice(0, 8), err);
+            }
         }
     }
 
