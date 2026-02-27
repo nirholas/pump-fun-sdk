@@ -54,6 +54,9 @@ export class PumpFunMonitor {
     /** Track processed signatures to avoid duplicate notifications */
     private processedSignatures = new Set<string>();
     private readonly MAX_PROCESSED_CACHE = 10_000;
+    /** Cache of recent CTO events for /cto command queries */
+    private recentCtoEvents: CreatorChangeEvent[] = [];
+    private readonly MAX_CTO_CACHE = 200;
 
     constructor(
         config: BotConfig,
@@ -85,6 +88,11 @@ export class PumpFunMonitor {
 
     getState(): MonitorState {
         return { ...this.state };
+    }
+
+    /** Return cached recent CTO events (newest first). */
+    getRecentCtoEvents(): CreatorChangeEvent[] {
+        return [...this.recentCtoEvents];
     }
 
     async start(): Promise<void> {
@@ -344,6 +352,12 @@ export class PumpFunMonitor {
                 );
 
                 this.onCreatorChange(ctoEvent);
+
+                // Cache for /cto queries
+                this.recentCtoEvents.unshift(ctoEvent);
+                if (this.recentCtoEvents.length > this.MAX_CTO_CACHE) {
+                    this.recentCtoEvents.length = this.MAX_CTO_CACHE;
+                }
             }
         } catch (err) {
             log.error('Error processing tx %s:', signature, err);

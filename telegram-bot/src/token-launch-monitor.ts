@@ -332,6 +332,7 @@ export class TokenLaunchMonitor {
             let symbol = '';
             let metadataUri = '';
             let mayhemMode = false;
+            let cashbackEnabled = false;
             let isCreate = false;
 
             for (const ix of transaction.message.instructions) {
@@ -352,6 +353,7 @@ export class TokenLaunchMonitor {
                         symbol = parsed.symbol;
                         metadataUri = parsed.uri;
                         mayhemMode = parsed.mayhemMode;
+                        cashbackEnabled = parsed.cashbackEnabled;
                         break;
                     }
                 }
@@ -426,6 +428,7 @@ export class TokenLaunchMonitor {
             }
 
             const event: TokenLaunchEvent = {
+                cashbackEnabled,
                 creatorWallet,
                 description: (metadata?.description as string) || '',
                 githubUrls,
@@ -507,12 +510,12 @@ export class TokenLaunchMonitor {
      *   - symbol: string (4-byte LE length prefix + UTF-8 bytes)
      *   - uri: string (4-byte LE length prefix + UTF-8 bytes)
      *   - creator: Pubkey (32 bytes) — only in createV2
-     *   - mayhemMode: bool (1 byte) — only in createV2
-     *   - cashback: Vec<bool> — only in createV2
+     *   - mayhemMode: Option<OptionBool> (1-2 bytes) — only in createV2
+     *   - cashback: Option<OptionBool> (1-2 bytes) — only in createV2
      */
     private parseCreateInstructionData(
         dataBase58: string,
-    ): { name: string; symbol: string; uri: string; mayhemMode: boolean } | null {
+    ): { name: string; symbol: string; uri: string; mayhemMode: boolean; cashbackEnabled: boolean } | null {
         try {
             const bytes = bs58.decode(dataBase58);
             if (bytes.length < 8) return null;
@@ -541,18 +544,36 @@ export class TokenLaunchMonitor {
             offset += uriResult.bytesConsumed;
 
             let mayhemMode = false;
+            let cashbackEnabled = false;
 
             if (isCreateV2) {
                 // Skip creator pubkey (32 bytes)
                 offset += 32;
 
-                // Read mayhemMode (bool: 1 byte)
+                // Read mayhemMode: Option<OptionBool>
+                // Format: 0 = None | 1 = Some, followed by 1 byte bool value
                 if (offset < bytes.length) {
-                    mayhemMode = bytes[offset] === 1;
+                    const optPresent = bytes[offset] === 1;
+                    offset += 1;
+                    if (optPresent && offset < bytes.length) {
+                        mayhemMode = bytes[offset] === 1;
+                        offset += 1;
+                    }
+                }
+
+                // Read cashback: Option<OptionBool>
+                if (offset < bytes.length) {
+                    const optPresent = bytes[offset] === 1;
+                    offset += 1;
+                    if (optPresent && offset < bytes.length) {
+                        cashbackEnabled = bytes[offset] === 1;
+                        offset += 1;
+                    }
                 }
             }
 
             return {
+                cashbackEnabled,
                 mayhemMode,
                 name: nameResult.value,
                 symbol: symbolResult.value,

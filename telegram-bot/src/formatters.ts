@@ -193,7 +193,10 @@ export function formatHelp(): string {
         `/list — Show all active watches\n` +
         `/status — Monitor status & stats\n` +
         `/help — Show this help\n\n` +
-        `📡 <b>Launch Monitor:</b>\n` +
+        `� <b>Creator Takeover (CTO):</b>\n` +
+        `/cto — Show CTO stats & recent events\n` +
+        `/cto <code>&lt;mint_or_wallet&gt;</code> — Look up CTO events for a token or wallet\n\n` +
+        `�📡 <b>Launch Monitor:</b>\n` +
         `/monitor <code>[github]</code> — Start real-time token launch feed\n` +
         `/stopmonitor — Stop the launch feed\n\n` +
         `<b>How it works:</b>\n` +

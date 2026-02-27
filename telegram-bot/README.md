@@ -285,7 +285,28 @@ data: {"txSignature":"5xK...","claimerWallet":"HN7c...","amountSol":2.5,"claimTy
 
 ### Webhooks
 
-When creating a watch with a `webhookUrl`, the API will POST claim events to that URL with exponential backoff retries (up to 3 attempts):
+When creating a watch with a `webhookUrl`, the API will POST claim events to that URL with exponential backoff retries (up to 3 attempts).
+
+**HMAC Signature Verification:** If `WEBHOOK_SECRET` is set, every webhook includes an `X-PumpFun-Signature` header containing `sha256=<hex>`. Verify it on your server:
+
+```javascript
+const crypto = require('crypto');
+
+function verifyWebhook(body, signature, secret) {
+  const expected = 'sha256=' + crypto
+    .createHmac('sha256', secret)
+    .update(body)
+    .digest('hex');
+  return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
+}
+```
+
+Webhook headers:
+- `X-PumpFun-Event: claim.detected`
+- `X-PumpFun-Timestamp: <unix_ms>`
+- `X-PumpFun-Signature: sha256=<hex>` (when `WEBHOOK_SECRET` is set)
+
+Payload:
 
 ```json
 {
@@ -327,9 +348,7 @@ The API is designed for horizontal scaling:
 | Claim buffer | In-memory ring buffer | Swap for Redis Streams |
 | SSE fan-out | In-process subscribers | Add Redis pub/sub |
 | Webhooks | Fire-and-forget with retry | Add job queue (BullMQ) |
-    ├── bot.ts             # grammY Telegram bot & command handlers
-    └── formatters.ts      # Rich HTML message formatting
-```
+
 
 ## Environment Variables
 
@@ -341,10 +360,14 @@ The API is designed for horizontal scaling:
 | `POLL_INTERVAL_SECONDS` | — | `15` | Polling interval (when WS unavailable) |
 | `ALLOWED_USER_IDS` | — | (allow all) | Comma-separated Telegram user IDs |
 | `LOG_LEVEL` | — | `info` | `debug`, `info`, `warn`, `error` |
+| `ENABLE_LAUNCH_MONITOR` | — | `false` | Enable new token launch monitoring |
+| `GITHUB_ONLY_FILTER` | — | `false` | Only notify for tokens with GitHub links |
+| `IPFS_GATEWAY` | — | `https://cf-ipfs.com/ipfs/` | IPFS gateway for metadata fetching |
 | `ENABLE_API` | — | `false` | Enable the REST API server |
 | `API_ONLY` | — | `false` | Run API without Telegram bot |
 | `API_PORT` | — | `3000` | HTTP port for the API server |
 | `API_KEYS` | — | (no auth) | Comma-separated API keys for auth |
+| `WEBHOOK_SECRET` | — | (none) | HMAC-SHA256 secret for signing webhook payloads |
 | `CORS_ORIGINS` | — | `*` | Allowed CORS origins |
 | `MAX_WATCHES_PER_CLIENT` | — | `100` | Max watches per API key |
 | `RATE_LIMIT_MAX` | — | `100` | Requests per rate limit window |

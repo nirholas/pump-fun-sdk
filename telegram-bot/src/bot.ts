@@ -83,6 +83,7 @@ export function createBot(
     bot.command('unwatch', handleUnwatch);
     bot.command('list', handleList);
     bot.command('status', (ctx) => handleStatus(ctx, monitor, launchMonitor));
+    bot.command('cto', (ctx) => handleCto(ctx, monitor));
     bot.command('monitor', (ctx) => handleMonitor(ctx));
     bot.command('stopmonitor', (ctx) => handleStopMonitor(ctx));
 
@@ -216,6 +217,148 @@ async function handleUnwatch(ctx: Context): Promise<void> {
             '❌ Watch not found. Use /list to see your active watches.',
         );
     }
+}
+
+// ============================================================================
+// /cto <mint_or_wallet>
+// ============================================================================
+
+async function handleCto(ctx: Context, monitor: PumpFunMonitor): Promise<void> {
+    const text = ctx.message?.text || '';
+    const parts = text.split(/\s+/).slice(1); // strip /cto
+
+    if (parts.length === 0) {
+        // Show CTO stats and usage
+        const state = monitor.getState();
+        const recentEvents = monitor.getRecentCtoEvents();
+        let msg =
+            '🔀 <b>Creator Takeover (CTO) Monitor</b>\n\n' +
+            `📊 <b>CTO Events Detected:</b> ${state.creatorChanges || 0}\n\n`;
+
+        if (recentEvents.length > 0) {
+            msg += '<b>Recent CTO Events:</b>\n\n';
+            for (const evt of recentEvents.slice(0, 5)) {
+                const shortSigner = `${evt.signerWallet.slice(0, 6)}...${evt.signerWallet.slice(-4)}`;
+                const shortNew = evt.newCreatorWallet
+                    ? `${evt.newCreatorWallet.slice(0, 6)}...${evt.newCreatorWallet.slice(-4)}`
+                    : '<i>from metadata</i>';
+                const shortMint = evt.tokenMint
+                    ? `${evt.tokenMint.slice(0, 6)}...${evt.tokenMint.slice(-4)}`
+                    : 'unknown';
+                const time = new Date(evt.timestamp * 1000).toISOString().replace('T', ' ').slice(0, 19);
+                msg += `• <b>${escapeHtml(evt.changeLabel)}</b>\n` +
+                    `  Signer: <code>${shortSigner}</code>\n` +
+                    `  New Creator: <code>${shortNew}</code>\n` +
+                    `  Mint: <code>${shortMint}</code>\n` +
+                    `  Time: ${time} UTC\n` +
+                    `  <a href="https://solscan.io/tx/${evt.txSignature}">View TX</a>\n\n`;
+            }
+        } else {
+            msg += '<i>No CTO events detected yet. The monitor is watching for creator changes in real-time.</i>\n\n';
+        }
+
+        msg += '<b>Usage:</b>\n' +
+            '<code>/cto &lt;mint_address&gt;</code> — Look up creator for a token\n' +
+            '<code>/cto &lt;wallet_address&gt;</code> — Find CTO events for a wallet\n\n' +
+            '<b>What is CTO?</b>\n' +
+            'Creator Takeover redirects future creator fees to a new wallet. ' +
+            'This can happen via <code>set_creator</code>, <code>admin_set_creator</code>, ' +
+            '<code>set_coin_creator</code>, <code>admin_set_coin_creator</code>, or ' +
+            '<code>migrate_pool_coin_creator</code>.';
+
+        await ctx.reply(msg, {
+            parse_mode: 'HTML',
+            link_preview_options: { is_disabled: true },
+        });
+        return;
+    }
+
+    const input = parts[0];
+
+    // Validate: must be a Solana base58 address (32-44 chars)
+    if (!/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(input)) {
+        await ctx.reply(
+            '❌ Invalid address. Provide a Solana base58-encoded mint or wallet address (32-44 characters).',
+        );
+        return;
+    }
+
+    // Search recent CTO events for this address (as mint, signer, or new creator)
+    const recentEvents = monitor.getRecentCtoEvents();
+    const inputLower = input.toLowerCase();
+    const matching = recentEvents.filter(
+        (evt) =>
+            evt.tokenMint.toLowerCase() === inputLower ||
+            evt.signerWallet.toLowerCase() === inputLower ||
+            (evt.newCreatorWallet && evt.newCreatorWallet.toLowerCase() === inputLower),
+    );
+
+    if (matching.length === 0) {
+        const shortAddr = `${input.slice(0, 6)}...${input.slice(-4)}`;
+        await ctx.reply(
+            `🔍 <b>No CTO Events Found</b>\n\n` +
+            `No recent creator change events involving <code>${shortAddr}</code>.\n\n` +
+            `This address hasn't appeared as a signer, new creator, or token mint in any ` +
+            `detected CTO transactions since the monitor started.\n\n` +
+            `💡 <b>Tip:</b> Add it to your watch list to get notified when CTO events occur:\n` +
+            `<code>/watch ${input}</code>`,
+            { parse_mode: 'HTML' },
+        );
+        return;
+    }
+
+    // Determine the role of this address
+    const asMint = matching.filter((e) => e.tokenMint.toLowerCase() === inputLower);
+    const asSigner = matching.filter((e) => e.signerWallet.toLowerCase() === inputLower);
+    const asNewCreator = matching.filter(
+        (e) => e.newCreatorWallet && e.newCreatorWallet.toLowerCase() === inputLower,
+    );
+
+    const shortAddr = `${input.slice(0, 6)}...${input.slice(-4)}`;
+    let msg = `🔀 <b>CTO Events for <code>${shortAddr}</code></b>\n\n`;
+
+    if (asMint.length > 0) {
+        msg += `🪙 <b>As Token Mint:</b> ${asMint.length} event(s)\n`;
+    }
+    if (asSigner.length > 0) {
+        msg += `✍️ <b>As Signer/Authority:</b> ${asSigner.length} event(s)\n`;
+    }
+    if (asNewCreator.length > 0) {
+        msg += `🆕 <b>As New Creator:</b> ${asNewCreator.length} event(s)\n`;
+    }
+
+    msg += '\n';
+
+    for (const evt of matching.slice(0, 8)) {
+        const shortSigner = `${evt.signerWallet.slice(0, 6)}...${evt.signerWallet.slice(-4)}`;
+        const shortNew = evt.newCreatorWallet
+            ? `${evt.newCreatorWallet.slice(0, 6)}...${evt.newCreatorWallet.slice(-4)}`
+            : '<i>from metadata</i>';
+        const shortMint = evt.tokenMint
+            ? `${evt.tokenMint.slice(0, 6)}...${evt.tokenMint.slice(-4)}`
+            : 'unknown';
+        const time = new Date(evt.timestamp * 1000).toISOString().replace('T', ' ').slice(0, 19);
+        const program = evt.programId?.includes('pAMM') ? 'PumpSwap' : 'Pump';
+
+        msg += `📝 <b>${escapeHtml(evt.changeLabel)}</b>\n` +
+            `  👤 Signer: <code>${shortSigner}</code>\n` +
+            `  🆕 New Creator: <code>${shortNew}</code>\n` +
+            `  🪙 Mint: <code>${shortMint}</code>\n` +
+            `  ⚙️ Program: ${program}\n` +
+            `  🕐 ${time} UTC\n` +
+            `  🔗 <a href="https://solscan.io/tx/${evt.txSignature}">View TX</a>` +
+            (evt.tokenMint ? ` · <a href="https://pump.fun/coin/${evt.tokenMint}">pump.fun</a>` : '') +
+            '\n\n';
+    }
+
+    if (matching.length > 8) {
+        msg += `<i>... and ${matching.length - 8} more event(s)</i>\n`;
+    }
+
+    await ctx.reply(msg, {
+        parse_mode: 'HTML',
+        link_preview_options: { is_disabled: true },
+    });
 }
 
 // ============================================================================

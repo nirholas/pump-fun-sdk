@@ -470,7 +470,7 @@ The SDK is split into two layers:
 │                              │                                   │
 │  Export: PUMP_SDK singleton   │  Export: OnlinePumpSdk class      │
 ├──────────────────────────────┴───────────────────────────────────┤
-│  bondingCurve.ts │ fees.ts │ pda.ts │ state.ts │ tokenIncentives │
+│  bondingCurve.ts │ fees.ts │ pda.ts │ state.ts │ analytics.ts   │
 ├──────────────────────────────────────────────────────────────────┤
 │             Anchor IDLs: pump │ pump_amm │ pump_fees              │
 └──────────────────────────────────────────────────────────────────┘
@@ -485,6 +485,7 @@ src/
 ├── sdk.ts              # PumpSdk (offline instruction builder)
 ├── onlineSdk.ts        # OnlinePumpSdk (fetcher + builder)
 ├── bondingCurve.ts     # Pure math for price quoting
+├── analytics.ts        # Price impact, graduation progress, token price
 ├── fees.ts             # Fee tier calculation logic
 ├── errors.ts           # Custom error classes
 ├── pda.ts              # PDA derivation helpers
@@ -523,6 +524,27 @@ cd mcp-server && npm install && npm run build
 **Capabilities:** Generate keypairs · Vanity addresses · Sign messages · Verify signatures · Validate addresses · Restore from seeds
 
 See [mcp-server/README.md](mcp-server/README.md) for setup instructions.
+
+---
+
+## 📡 Telegram Bot + API
+
+The included [Telegram bot](telegram-bot/) monitors PumpFun fee claims, cashback rewards, creator takeovers, and new token launches on Solana — with real-time notifications.
+
+Also ships a **REST API** for programmatic access: per-client watches, paginated claim queries, SSE streaming, and HMAC-signed webhooks.
+
+```bash
+# Bot only
+cd telegram-bot && npm install && npm run dev
+
+# Bot + API
+npm run dev:full
+
+# API only (no Telegram)
+npm run api
+```
+
+See [telegram-bot/README.md](telegram-bot/README.md) for setup and API reference.
 
 ---
 
