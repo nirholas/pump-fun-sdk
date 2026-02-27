@@ -220,6 +220,71 @@ After migration, the token trades on the PumpAMM program with pool-based swaps.
 
 ---
 
+## Step 5b: Trade on the AMM
+
+After migration, buy and sell tokens on the AMM pool:
+
+```typescript
+import { canonicalPumpPoolPda } from "@pump-fun/pump-sdk";
+
+const pool = canonicalPumpPoolPda(mint.publicKey);
+
+// Buy tokens on AMM
+const ammBuyIx = await PUMP_SDK.ammBuyInstruction({
+  user: wallet.publicKey,
+  pool,
+  mint: mint.publicKey,
+  baseAmountOut: new BN(1_000_000),
+  maxQuoteAmountIn: new BN(0.1 * 1e9),
+});
+
+const ammBuyTx = new Transaction().add(ammBuyIx);
+await sendAndConfirmTransaction(connection, ammBuyTx, [wallet]);
+
+// Sell tokens on AMM
+const ammSellIx = await PUMP_SDK.ammSellInstruction({
+  user: wallet.publicKey,
+  pool,
+  mint: mint.publicKey,
+  baseAmountIn: new BN(500_000),
+  minQuoteAmountOut: new BN(0.01 * 1e9),
+});
+
+const ammSellTx = new Transaction().add(ammSellIx);
+await sendAndConfirmTransaction(connection, ammSellTx, [wallet]);
+```
+
+## Step 5c: Provide Liquidity (Optional)
+
+Deposit liquidity into the AMM pool and earn LP fees:
+
+```typescript
+// Deposit
+const depositIx = await PUMP_SDK.ammDepositInstruction({
+  user: wallet.publicKey,
+  pool,
+  mint: mint.publicKey,
+  maxBaseAmountIn: new BN(10_000_000),
+  maxQuoteAmountIn: new BN(1 * 1e9),
+  minLpTokenAmountOut: new BN(1),
+});
+
+const depositTx = new Transaction().add(depositIx);
+await sendAndConfirmTransaction(connection, depositTx, [wallet]);
+
+// Withdraw later
+const withdrawIx = await PUMP_SDK.ammWithdrawInstruction({
+  user: wallet.publicKey,
+  pool,
+  mint: mint.publicKey,
+  lpTokenAmountIn: new BN(50_000),
+  minBaseAmountOut: new BN(1),
+  minQuoteAmountOut: new BN(1),
+});
+```
+
+---
+
 ## Step 6: Collect Creator Fees
 
 Trading generates fees for the token creator. Collect them from both programs:

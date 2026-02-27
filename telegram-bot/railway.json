@@ -58,6 +58,26 @@
             "CORS_ORIGINS": {
                 "description": "CORS allowed origins (* = all)",
                 "required": false
+            },
+            "ENABLE_GRADUATION_ALERTS": {
+                "description": "Enable graduation/migration alerts (true/false, default: true)",
+                "required": false
+            },
+            "ENABLE_TRADE_ALERTS": {
+                "description": "Enable whale trade alerts (true/false, default: false)",
+                "required": false
+            },
+            "WHALE_THRESHOLD_SOL": {
+                "description": "Minimum SOL for whale trade alert (default: 10)",
+                "required": false
+            },
+            "ENABLE_FEE_DISTRIBUTION_ALERTS": {
+                "description": "Enable creator fee distribution alerts (true/false, default: false)",
+                "required": false
+            },
+            "LOG_LEVEL": {
+                "description": "Log level: debug | info | warn | error (default: info)",
+                "required": false
             }
         }
     }

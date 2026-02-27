@@ -16,7 +16,7 @@ The `solana-wallet-toolkit` MCP server enables AI assistants (like Claude) to ge
 - `mcp-server/src/handlers/resources.ts` — resource listing and reading
 - `mcp-server/src/handlers/prompts.ts` — prompt listing and retrieval
 - `mcp-server/src/handlers/sampling.ts` — server-initiated LLM sampling helpers
-- `mcp-server/src/tools/index.ts` — tool implementations (7 tools)
+- `mcp-server/src/tools/index.ts` — tool implementations (47 tools)
 - `mcp-server/src/resources/config.ts` — server config resource
 - `mcp-server/src/resources/keypair.ts` — keypair resource (public key only)
 - `mcp-server/src/resources/address.ts` — address validation resource

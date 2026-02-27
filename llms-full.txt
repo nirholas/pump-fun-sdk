@@ -115,7 +115,7 @@ Educational reference implementation:
 ### MCP Server (mcp-server/)
 
 Model Context Protocol server for AI agent integration:
-- 7 tools: generate_keypair, generate_vanity, sign_message, verify_signature, validate_address, estimate_vanity_time, restore_keypair
+- 47 tools: quoting, building transactions, fee management, analytics, AMM operations, social fees, wallet operations (generate_keypair, generate_vanity, sign_message, verify_signature, validate_address, estimate_vanity_time, restore_keypair, and 40 more)
 - 3 resource URIs: solana://config, solana://keypair/{id}, solana://address/{pubkey}
 - 3 prompts: create_wallet, security_audit, batch_generate
 - stdio transport, session keypair management with zeroization on shutdown
@@ -155,9 +155,7 @@ Static HTML/CSS/JS web desktop (PumpOS) with:
 - Live trades dashboard: real-time token launches and trades via WebSocket relay
 - Bonding curve calculator, fee tier explorer, token launch simulator
 - Token incentives tracker, creator fee sharing configurator, SDK API reference
-- Migration tracker, smart money tracker, alpha terminal, whale alerts- CTO (creator takeover) alerts: detect creator fee redirection events
-- Persistent state with JSON file storage
-- Docker deployment with multi-stage build and HEALTHCHECK
+- Migration tracker, smart money tracker, alpha terminal, whale alerts
 
 ### Shell Scripts (scripts/)
 

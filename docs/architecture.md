@@ -61,7 +61,7 @@ The SDK is split into two layers:
 
 | Layer | Class | Needs Connection? | Use Case |
 |-------|-------|-------------------|----------|
-| Offline | `PumpSdk` | No | Building instructions, decoding accounts, pure computation |
+| Offline | `PumpSdk` | No | 42 instruction builders, decoding accounts, pure computation |
 | Online | `OnlinePumpSdk` | Yes | Fetching on-chain state, simulating transactions |
 
 **`PumpSdk`** uses a null Anchor provider internally, so it can construct any instruction without touching the network. A pre-built singleton is exported as `PUMP_SDK`.
@@ -74,9 +74,10 @@ The SDK interacts with four on-chain programs:
 
 | Program | ID | Purpose |
 |---------|----|---------|
-| **Pump** | `6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P` | Token creation, bonding curve buy/sell |
-| **PumpAMM** | `pAMMBay6oceH9fJKBRHGP5D4bD4sWpmSwMn52FMfXEA` | AMM pool for graduated tokens |
-| **PumpFees** | `pfeeUxB6jkeY1Hxd7CsFCAjcbHA9rWtchMGdZ6VojVZ` | Fee sharing configuration and distribution |
+| **Pump** | `6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P` | Token creation, bonding curve buy/sell, cashback |
+| **PumpAMM** | `pAMMBay6oceH9fJKBRHGP5D4bD4sWpmSwMn52FMfXEA` | AMM pool trading, liquidity, graduated token fees |
+| **PumpFees** | `pfeeUxB6jkeY1Hxd7CsFCAjcbHA9rWtchMGdZ6VojVZ` | Fee sharing, social fees, authority management |
+| **Mayhem** | `MAyhSmzXzV1pTf7LsNkrNwkWKTo4ougAJ1PPg47MD4e` | Alternate routing and fee recipients |
 | **Mayhem** | `MAyhSmzXzV1pTf7LsNkrNwkWKTo4ougAJ1PPg47MD4e` | Alternate routing mode |
 
 ### Token Lifecycle
@@ -87,16 +88,18 @@ The SDK interacts with four on-chain programs:
 
 ```mermaid
 flowchart LR
-  A["🔄 Bonding Curve\n(Pump Program)\n\n• createV2\n• buy / sell\n• Price discovery"]
-  B["💱 AMM Pool\n(PumpAMM Program)\n\n• Pool-based swaps\n• LP fees\n• Graduated trading"]
+  A["🔄 Bonding Curve\n(Pump Program)\n\n• createV2\n• buy / sell / buyExactSolIn\n• Cashback"]
+  B["💱 AMM Pool\n(PumpAMM Program)\n\n• buy / sell / exactQuoteIn\n• deposit / withdraw\n• LP + creator fees\n• Cashback"]
   A -- "complete = true\nMigration" --> B
 ```
 
-1. **Creation** — A new token is created with `createV2Instruction`. It starts on a bonding curve.
-2. **Trading** — Users buy and sell using `buyInstructions` / `sellInstructions`. Prices follow the bonding curve math.
+1. **Creation** — A new token is created with `createV2Instruction`. It starts on a bonding curve. Optionally enable cashback.
+2. **Trading** — Users buy and sell using `buyInstructions` / `sellInstructions` / `buyExactSolInInstruction`. Prices follow the bonding curve math.
 3. **Graduation** — When `bondingCurve.complete` becomes `true`, the token graduates.
 4. **Migration** — `migrateInstruction` moves the token to a canonical AMM pool derived by `canonicalPumpPoolPda(mint)`.
-5. **AMM Trading** — Post-graduation trading happens on the AMM with LP, protocol, and creator fees.
+5. **AMM Trading** — Post-graduation trading via `ammBuyInstruction` / `ammSellInstruction` / `ammBuyExactQuoteInInstruction`.
+6. **AMM Liquidity** — LPs deposit/withdraw via `ammDepositInstruction` / `ammWithdrawInstruction`.
+7. **Rewards** — Cashback (`claimCashbackInstruction`, `ammClaimCashbackInstruction`), volume rewards, and social fee PDAs.
 
 ### PDA Derivation
 
@@ -160,6 +163,7 @@ This pattern appears for:
 - Token incentive claims
 - Volume accumulator syncs
 - Unclaimed token queries
+- Cashback claims
 
 It ensures correct behavior regardless of whether a token has graduated to the AMM.
 
@@ -267,4 +271,5 @@ Aggregates data from 15+ DeFi sources (CoinGecko, DexScreener, GeckoTerminal, Bi
 3. **Deterministic PDAs** — All account addresses are derivable from mint and user public keys.
 4. **Backward compatibility** — V1 methods (`createInstruction`, `createAndBuyInstructions`) are kept but deprecated in favor of V2.
 5. **Type safety** — Full TypeScript types for all on-chain account structures via Anchor IDL types.
+6. **Comprehensive coverage** — 42 instruction builders spanning 4 programs, with 53 matching MCP tools for AI agent integration.
 
