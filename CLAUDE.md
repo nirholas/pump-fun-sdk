@@ -34,7 +34,7 @@ The Pump SDK (`@pump-fun/pump-sdk`) is a TypeScript SDK for the Pump protocol on
 | `scripts/` | Bash scripts (generate, verify, batch) |
 | `docs/` | API reference, architecture, guides |
 | `tests/` | Cross-language test suites |
-| `website/` | PumpOS web desktop with 143 Pump-Store apps |
+| `website/` | PumpOS web desktop with 169 Pump-Store apps |
 | `security/` | Security audits and checklists |
 | `skills/` | Agent skill documents |
 | `prompts/` | Agent prompt templates |

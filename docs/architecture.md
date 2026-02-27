@@ -16,7 +16,7 @@ Beyond the core SDK (`src/`), the repository includes several companion componen
 | `websocket-server/` | WebSocket relay — PumpFun API to browser clients |
 | `x402/` | x402 payment protocol — HTTP 402 micropayments with Solana USDC |
 | `live/` | Standalone live dashboards — token launches + trades analytics |
-| `website/` | PumpOS web desktop with 143 Pump-Store apps |
+| `website/` | PumpOS web desktop with 169 Pump-Store apps |
 | `tutorials/` | 19 hands-on tutorial guides |
 | `scripts/` | Production Bash scripts wrapping solana-keygen |
 | `tests/` | Cross-language test suites |

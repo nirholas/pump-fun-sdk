@@ -1,6 +1,6 @@
 ---
 name: pump-website
-description: "PumpOS — static HTML/CSS/JS web desktop for the Pump SDK with 143 Pump-Store apps, live token dashboards, interactive DeFi tools, PWA support, and Vercel deployment."
+description: "PumpOS — static HTML/CSS/JS web desktop for the Pump SDK with 169 Pump-Store apps, live token dashboards, interactive DeFi tools, PWA support, and Vercel deployment."
 metadata:
   openclaw:
     homepage: https://github.com/nirholas/pump-fun-sdk

@@ -72,9 +72,9 @@ Token Creation &nbsp;·&nbsp; Bonding Curves &nbsp;·&nbsp; AMM Trading &nbsp;·
 - [Programs](#-programs) — 4 on-chain program addresses
 - [WebSocket Relay](#-websocket-relay-server) — Real-time token launch feed
 - [Live Dashboards](#-live-dashboards) — Browser-based monitoring
-- [MCP Server](#-mcp-server) — 47+ tools for AI agents
+- [MCP Server](#-mcp-server) — 53 tools for AI agents
 - [Telegram Bot](#-telegram-bot--api) — Fee claim & CTO alerts
-- [PumpOS Web Desktop](#-pumpos-web-desktop) — 169 Pump-Store apps
+- [PumpOS Web Desktop](#-pumpos-web-desktop) — 143 Pump-Store apps
 - [x402 Payments](#-x402-payment-protocol) — HTTP 402 micropayments
 - [DeFi Agents](#-defi-agents) — 58 production-ready AI agent definitions
 - [Lair Platform](#-lair-telegram-platform) — Unified DeFi Telegram bot
@@ -719,25 +719,25 @@ Both support multi-endpoint failover and custom RPC endpoint input.
 
 ## 🤖 MCP Server
 
-The included [MCP server](mcp-server/) exposes **47+ tools** to AI assistants like Claude, GPT, and Cursor — covering the full Pump protocol plus wallet operations.
+The included [MCP server](mcp-server/) exposes **53 tools** to AI assistants like Claude, GPT, and Cursor — covering the full Pump protocol plus wallet operations.
 
 ```bash
 cd mcp-server && npm install && npm run build
 ```
 
 <details>
-<summary><strong>Full tool reference (47+ tools)</strong></summary>
+<summary><strong>Full tool reference (53 tools)</strong></summary>
 
 | Category | Tools |
 |----------|-------|
-| **Wallet** | `generate_keypair`, `generate_vanity`, `sign_message`, `verify_signature`, `validate_address`, `restore_keypair` |
+| **Wallet** | `generate_keypair`, `generate_vanity`, `sign_message`, `verify_signature`, `validate_address`, `estimate_vanity_time`, `restore_keypair` |
 | **Price Quoting** | `quote_buy`, `quote_sell`, `quote_buy_cost` |
 | **Bonding Curve** | `get_market_cap`, `get_bonding_curve` |
-| **Token Lifecycle** | `build_create_token`, `build_create_and_buy`, `build_buy`, `build_sell`, `build_buy_exact_sol`, `build_migrate` |
+| **Token Lifecycle** | `build_create_token`, `build_create_and_buy`, `build_buy`, `build_sell`, `build_sell_all`, `build_buy_exact_sol`, `build_migrate` |
 | **Fee System** | `calculate_fees`, `get_fee_tier`, `build_create_fee_sharing`, `build_update_fee_shares`, `build_distribute_fees`, `get_creator_vault_balance`, `build_collect_creator_fees` |
 | **Social Fees** | `build_create_social_fee`, `build_claim_social_fee`, `build_reset_fee_sharing`, `build_transfer_fee_authority`, `build_revoke_fee_authority` |
 | **Token Incentives** | `build_init_volume_tracker`, `build_claim_incentives`, `get_unclaimed_rewards`, `get_volume_stats` |
-| **Analytics** | `get_price_impact`, `get_graduation_progress`, `get_token_price`, `get_token_summary`, `build_sell_all`, `is_graduated`, `get_token_balance` |
+| **Analytics** | `get_price_impact`, `get_graduation_progress`, `get_token_price`, `get_token_summary`, `is_graduated`, `get_token_balance` |
 | **AMM Trading** | `build_amm_buy`, `build_amm_sell`, `build_amm_buy_exact_quote` |
 | **AMM Liquidity** | `build_amm_deposit`, `build_amm_withdraw` |
 | **Cashback** | `build_claim_cashback`, `build_amm_claim_cashback` |
@@ -938,7 +938,7 @@ Also see: [FAQ](FAQ.md) · [Roadmap](ROADMAP.md) · [Changelog](CHANGELOG.md)
 | `mcp-server/` | Model Context Protocol server for AI agent integration |
 | `telegram-bot/` | PumpFun fee claim monitor — Telegram bot + REST API |
 | `websocket-server/` | WebSocket relay — PumpFun API to browser clients |
-| `website/` | PumpOS web desktop with 143 Pump-Store apps |
+| `website/` | PumpOS web desktop with 169 Pump-Store apps |
 | `x402/` | x402 payment protocol — HTTP 402 micropayments with Solana USDC |
 | `lair-tg/` | Lair — unified Telegram bot platform for DeFi intelligence |
 | `live/` | Standalone live token launch + trades pages |
