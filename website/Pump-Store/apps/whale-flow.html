@@ -9,7 +9,7 @@
     <meta name="lair-perms" content="network" />
     <title>Whale Flow</title>
     <style>
-        :root{--bg1:#050714;--bg2:#0A0D24;--bg3:#12163A;--txt1:#E2E8F0;--txt2:#7B8AB8;--accent:#6179FF;--good:#34D399;--bad:#F87171;--warn:#FBBF24;}
+        :root{--bg1:#050714;--bg2:#0A0D24;--bg3:#12163A;--txt1:#E2E8F0;--txt2:#7B8AB8;--accent:#00e87b;--good:#34D399;--bad:#F87171;--warn:#FBBF24;}
         *{box-sizing:border-box;margin:0;padding:0;}
         html,body{height:100%;background:var(--bg1);color:var(--txt1);font-family:'Inter',-apple-system,system-ui,sans-serif;overflow:hidden;}
         .app{height:100%;display:grid;grid-template-rows:auto 1fr auto;}
@@ -86,7 +86,7 @@
         <div class="legend">
             <div class="legend-title">Transaction Size</div>
             <div class="legend-item"><div class="legend-dot" style="background:#34D399;width:8px;height:8px;"></div>$100K - $500K</div>
-            <div class="legend-item"><div class="legend-dot" style="background:#6179FF;width:12px;height:12px;"></div>$500K - $5M</div>
+            <div class="legend-item"><div class="legend-dot" style="background:#00e87b;width:12px;height:12px;"></div>$500K - $5M</div>
             <div class="legend-item"><div class="legend-dot" style="background:#FBBF24;width:16px;height:16px;"></div>$5M - $50M</div>
             <div class="legend-item"><div class="legend-dot" style="background:#F87171;width:20px;height:20px;"></div>$50M+</div>
         </div>
@@ -430,7 +430,7 @@
             const tagText = tx.type === 'buy' ? 'BUY' : tx.type === 'sell' ? 'SELL' : 'XFER';
             return `<div class="tx">
                 <div class="time">${fmtTime(tx.time)}</div>
-                <div class="coin" style="color:${tx.coin === 'BTC' ? '#FBBF24' : '#6179FF'};">${tx.coin}</div>
+                <div class="coin" style="color:${tx.coin === 'BTC' ? '#FBBF24' : '#00e87b'};">${tx.coin}</div>
                 <div class="addr">${fmtAddr(tx.from)} → ${fmtAddr(tx.to)}</div>
                 <div class="amt">${fmtUsd(tx.value)}</div>
                 <div class="tag ${tagClass}">${tagText}</div>

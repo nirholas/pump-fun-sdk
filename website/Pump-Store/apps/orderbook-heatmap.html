@@ -58,7 +58,7 @@ function draw(){
     const frame=snapshots[i];
     for(const lv of frame){
       const yy=y(lv.price); const alpha=Math.min(1, lv.intensity);
-      ctx.fillStyle=lv.side==='bid'?`rgba(133,255,133,${alpha})`:`rgba(255,120,120,${alpha})`;
+      ctx.fillStyle=lv.side==='bid'?`rgba(0,232,123,${alpha})`:`rgba(255,120,120,${alpha})`;
       ctx.fillRect(i*xStep, yy, Math.ceil(xStep)+1, 3);
     }
   }

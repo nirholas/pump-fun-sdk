@@ -1,12 +1,12 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.nirholas/pump-fun-sdk",
-  "description": "Pump SDK MCP — Solana token launchpad, bonding curves, vanity addresses, key management",
+  "description": "Build extend and maintain pump - Token creation buying selling migration fee collection",
   "title": "Pump SDK MCP Server",
   "repository": {
     "url": "https://github.com/nirholas/pump-fun-sdk",
     "source": "github"
   },
-  "version": "1.0.0"
+  "version": "1.0.1"
 }
 

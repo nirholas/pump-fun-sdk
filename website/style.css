@@ -3423,11 +3423,11 @@ dialog#nich {
 }
 
 .nc-history__item--unread {
-	background: rgba(97,121,255,0.06);
+	background: rgba(0,232,123,0.06);
 }
 
 .nc-history__item--unread:hover {
-	background: rgba(97,121,255,0.1);
+	background: rgba(0,232,123,0.1);
 }
 
 .nc-history__item-icon {
@@ -4201,8 +4201,8 @@ dialog#nich {
 	margin-top: 18vh;
 	width: min(540px, 90vw);
 	max-height: 420px;
-	background: var(--col-bg2, #0C0F27);
-	border: 1px solid var(--col-bg3, #15183E);
+	background: var(--col-bg2, #111111);
+	border: 1px solid var(--col-bg3, #1a1a1a);
 	border-radius: 12px;
 	box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255,255,255,0.04) inset;
 	overflow: hidden;
@@ -4219,11 +4219,11 @@ dialog#nich {
 	align-items: center;
 	gap: 8px;
 	padding: 12px 16px;
-	border-bottom: 1px solid var(--col-bg3, #15183E);
+	border-bottom: 1px solid var(--col-bg3, #1a1a1a);
 }
 .palette-search-icon {
 	font-size: 20px;
-	color: var(--col-txt1, #A7C2F3);
+	color: var(--col-txt1, #ffffff);
 	opacity: 0.5;
 }
 #palette-input {
@@ -4232,18 +4232,18 @@ dialog#nich {
 	border: none;
 	outline: none;
 	font-size: 15px;
-	color: var(--col-txt1, #A7C2F3);
+	color: var(--col-txt1, #ffffff);
 	font-family: inherit;
 }
 #palette-input::placeholder {
-	color: var(--col-txt1, #A7C2F3);
+	color: var(--col-txt1, #ffffff);
 	opacity: 0.35;
 }
 .palette-hint {
 	padding: 2px 7px;
 	border-radius: 4px;
-	background: var(--col-bg3, #15183E);
-	color: var(--col-txt1, #A7C2F3);
+	background: var(--col-bg3, #1a1a1a);
+	color: var(--col-txt1, #ffffff);
 	opacity: 0.5;
 	font-size: 11px;
 	font-family: inherit;
@@ -4260,7 +4260,7 @@ dialog#nich {
 	font-size: 11px;
 	text-transform: uppercase;
 	letter-spacing: 0.06em;
-	color: var(--col-txt1, #A7C2F3);
+	color: var(--col-txt1, #ffffff);
 	opacity: 0.4;
 	font-weight: 600;
 }
@@ -4271,11 +4271,11 @@ dialog#nich {
 	padding: 8px 16px;
 	cursor: pointer;
 	transition: background 0.08s;
-	color: var(--col-txt1, #A7C2F3);
+	color: var(--col-txt1, #ffffff);
 }
 .palette-item:hover,
 .palette-item-active {
-	background: var(--col-bg3, #15183E);
+	background: var(--col-bg3, #1a1a1a);
 }
 .palette-item-icon {
 	font-size: 18px;
@@ -4292,7 +4292,7 @@ dialog#nich {
 	text-overflow: ellipsis;
 }
 .palette-item-label b {
-	color: var(--col-bgh, #70BCF9);
+	color: var(--col-bgh, #00e87b);
 	font-weight: 600;
 }
 .palette-item-category {
@@ -4303,7 +4303,7 @@ dialog#nich {
 .palette-empty {
 	text-align: center;
 	padding: 24px 16px;
-	color: var(--col-txt1, #A7C2F3);
+	color: var(--col-txt1, #ffffff);
 	opacity: 0.4;
 	font-size: 14px;
 }
@@ -4314,7 +4314,7 @@ dialog#nich {
 	background: transparent;
 }
 #palette-results::-webkit-scrollbar-thumb {
-	background: var(--col-bg3, #15183E);
+	background: var(--col-bg3, #1a1a1a);
 	border-radius: 3px;
 }
 @media (max-width: 600px) {

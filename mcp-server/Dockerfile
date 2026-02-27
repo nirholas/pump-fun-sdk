@@ -3,11 +3,11 @@ FROM node:20-alpine AS build
 
 WORKDIR /app
 
-COPY package.json package-lock.json* ./
+COPY mcp-server/package.json mcp-server/package-lock.json* ./
 RUN npm ci
 
-COPY tsconfig.json ./
-COPY src/ src/
+COPY mcp-server/tsconfig.json ./
+COPY mcp-server/src/ src/
 RUN npm run build
 
 # ── Production stage ──────────────────────────────────────────────────────────
@@ -17,7 +17,7 @@ WORKDIR /app
 
 RUN addgroup -S mcp && adduser -S mcp -G mcp
 
-COPY package.json package-lock.json* ./
+COPY mcp-server/package.json mcp-server/package-lock.json* ./
 RUN npm ci --omit=dev && npm cache clean --force
 
 COPY --from=build /app/dist dist/

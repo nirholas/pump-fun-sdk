@@ -1,6 +1,6 @@
 # Pump SDK Tutorials
 
-> 15 hands-on tutorials for building on the Pump protocol with `@pump-fun/pump-sdk`.
+> 16 hands-on tutorials for building on the Pump protocol with `@pump-fun/pump-sdk`.
 
 ## Getting Started
 
@@ -49,6 +49,12 @@ npm install @pump-fun/pump-sdk @solana/web3.js @coral-xyz/anchor bn.js
 | 13 | [Generating Vanity Addresses](./13-vanity-addresses.md) | Rust, TypeScript, shell generators |
 | 14 | [x402 Paywalled APIs](./14-x402-paywalled-apis.md) | HTTP 402, USDC micropayments, Express middleware |
 | 15 | [Decoding On-Chain Accounts](./15-decoding-accounts.md) | `decodeGlobal`, `decodeBondingCurve`, batch decoding |
+
+### Monitoring & Operations
+
+| # | Tutorial | Topics |
+|---|---------|--------|
+| 16 | [Monitoring Claims](./16-monitoring-claims.md) | Unclaimed tokens, creator vaults, fee distributions, cashback, polling |
 
 ## Prerequisites
 

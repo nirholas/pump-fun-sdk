@@ -104,7 +104,7 @@
         .tt-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
         .tt-name { font-weight: 700; font-size: 14px; }
         .tt-change { font-size: 12px; font-weight: 600; }
-        .tt-change.pos { color: #85ff85; }
+        .tt-change.pos { color: #00e87b; }
         .tt-change.neg { color: #ff6b6b; }
         .tt-row { display: flex; justify-content: space-between; font-size: 11px; padding: 3px 0; }
         .tt-label { opacity: 0.4; }
@@ -244,7 +244,7 @@
         </button>
     </div>
     <div class="hud-legend">
-        <div><span style="color:#85ff85">●</span> Capital inflow (24h)</div>
+        <div><span style="color:#00e87b">●</span> Capital inflow (24h)</div>
         <div><span style="color:#ff6b6b">●</span> Capital outflow (24h)</div>
         <div>Node size = market cap</div>
         <div>Flow speed = volume intensity</div>
@@ -333,7 +333,7 @@ let totalMcap = 0;
 const CAT_MAP = {
     'layer-1':                  { name: 'Layer 1',       color: '#00e87b', emoji: '⛓' },
     'layer-2':                  { name: 'Layer 2',       color: '#34d4f1', emoji: '🔗' },
-    'decentralized-finance-defi': { name: 'DeFi',       color: '#85ff85', emoji: '🏦' },
+    'decentralized-finance-defi': { name: 'DeFi',       color: '#00e87b', emoji: '🏦' },
     'stablecoins':              { name: 'Stablecoins',   color: '#ffd700', emoji: '💵' },
     'meme-token':               { name: 'Meme',          color: '#ff6b9d', emoji: '🐕' },
     'non-fungible-tokens-nft':  { name: 'NFTs',          color: '#c084fc', emoji: '🖼' },
@@ -842,7 +842,7 @@ function render() {
         if (arcLen > 0.05) {
             ctx.beginPath();
             ctx.arc(s.x, s.y, r + 4, -Math.PI / 2, -Math.PI / 2 + arcLen * Math.sign(changeNorm), changeNorm < 0);
-            ctx.strokeStyle = changeNorm > 0 ? 'rgba(133,255,133,0.6)' : 'rgba(255,107,107,0.6)';
+            ctx.strokeStyle = changeNorm > 0 ? 'rgba(0,232,123,0.6)' : 'rgba(255,107,107,0.6)';
             ctx.lineWidth = 2.5;
             ctx.lineCap = 'round';
             ctx.stroke();
@@ -865,7 +865,7 @@ function render() {
             // Change %
             const chStr = (s.change24h >= 0 ? '+' : '') + s.change24h.toFixed(1) + '%';
             ctx.font = `600 ${Math.max(8, Math.min(10, r * 0.18))}px -apple-system, system-ui, sans-serif`;
-            ctx.fillStyle = s.change24h >= 0 ? 'rgba(133,255,133,0.7)' : 'rgba(255,107,107,0.7)';
+            ctx.fillStyle = s.change24h >= 0 ? 'rgba(0,232,123,0.7)' : 'rgba(255,107,107,0.7)';
             ctx.fillText(chStr, s.x, s.y + r + 26);
         }
     });
@@ -996,7 +996,7 @@ function showDetailPanel(sector) {
         ['24h Change', (sector.change24h >= 0 ? '+' : '') + sector.change24h.toFixed(2) + '%'],
         ['Vol/MCap', ((sector.vol / (sector.mcap || 1)) * 100).toFixed(2) + '%'],
         ['Dominance', totalMcap > 0 ? ((sector.mcap / totalMcap) * 100).toFixed(2) + '%' : '—'],
-    ].map(([label, value]) => `<div class="dp-stat"><span class="dp-stat-label">${label}</span><span class="dp-stat-value" style="${label === '24h Change' ? 'color:' + (sector.change24h >= 0 ? '#85ff85' : '#ff6b6b') : ''}">${value}</span></div>`).join('');
+    ].map(([label, value]) => `<div class="dp-stat"><span class="dp-stat-label">${label}</span><span class="dp-stat-value" style="${label === '24h Change' ? 'color:' + (sector.change24h >= 0 ? '#00e87b' : '#ff6b6b') : ''}">${value}</span></div>`).join('');
 
     document.getElementById('dp-stats').innerHTML = statsHtml;
 
@@ -1009,7 +1009,7 @@ function showDetailPanel(sector) {
     // Top coins
     const coinsHtml = sector.coins.slice(0, 6).map(c => {
         const ch = (c.change || 0);
-        const chColor = ch >= 0 ? '#85ff85' : '#ff6b6b';
+        const chColor = ch >= 0 ? '#00e87b' : '#ff6b6b';
         return `<div class="dp-coin">
             <div class="dp-coin-dot" style="background:${sector.color}"></div>
             <span class="dp-coin-name">${c.symbol}</span>
@@ -1057,7 +1057,7 @@ function renderSearchResults(query) {
         const ch = s.change24h;
         return `<div class="sr-item" data-idx="${sectors.indexOf(s)}">
             <span class="sr-item-name">${s.emoji} ${s.name}</span>
-            <span class="sr-item-change" style="color:${ch >= 0 ? '#85ff85' : '#ff6b6b'}">${ch >= 0 ? '+' : ''}${ch.toFixed(1)}%</span>
+            <span class="sr-item-change" style="color:${ch >= 0 ? '#00e87b' : '#ff6b6b'}">${ch >= 0 ? '+' : ''}${ch.toFixed(1)}%</span>
         </div>`;
     }).join('');
 

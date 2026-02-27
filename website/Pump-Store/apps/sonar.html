@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="lair-include" content="lair.css material-symbols-rounded">
-    <meta name="lair-icon" content='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="#34d4f1" stroke-width=".5" opacity=".3"/><circle cx="12" cy="12" r="7" stroke="#34d4f1" stroke-width=".4" opacity=".25"/><circle cx="12" cy="12" r="4" stroke="#34d4f1" stroke-width=".3" opacity=".2"/><line x1="12" y1="2" x2="12" y2="22" stroke="#34d4f1" stroke-width=".2" opacity=".15"/><line x1="2" y1="12" x2="22" y2="12" stroke="#34d4f1" stroke-width=".2" opacity=".15"/><line x1="12" y1="12" x2="20" y2="6" stroke="#34d4f1" stroke-width="1.2" opacity=".7"/><circle cx="17" cy="8" r="1.5" fill="#34d4f1" opacity=".6"/><circle cx="9" cy="7" r="1" fill="#85ff85" opacity=".5"/><circle cx="15" cy="15" r="1.2" fill="#fbbf24" opacity=".5"/></svg>'>
+    <meta name="lair-icon" content='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="#34d4f1" stroke-width=".5" opacity=".3"/><circle cx="12" cy="12" r="7" stroke="#34d4f1" stroke-width=".4" opacity=".25"/><circle cx="12" cy="12" r="4" stroke="#34d4f1" stroke-width=".3" opacity=".2"/><line x1="12" y1="2" x2="12" y2="22" stroke="#34d4f1" stroke-width=".2" opacity=".15"/><line x1="2" y1="12" x2="22" y2="12" stroke="#34d4f1" stroke-width=".2" opacity=".15"/><line x1="12" y1="12" x2="20" y2="6" stroke="#34d4f1" stroke-width="1.2" opacity=".7"/><circle cx="17" cy="8" r="1.5" fill="#34d4f1" opacity=".6"/><circle cx="9" cy="7" r="1" fill="#00e87b" opacity=".5"/><circle cx="15" cy="15" r="1.2" fill="#fbbf24" opacity=".5"/></svg>'>
     <meta name="permissions" content="network">
     <meta name="capabilities" content="crypto_anomaly_radar_scanner">
     <meta name="lair-category" content="analytics">
@@ -106,7 +106,7 @@
             border-radius: 4px; font-weight: 600;
         }
         .sp-item-type.volume { background: rgba(52,212,241,0.12); color: #34d4f1; }
-        .sp-item-type.breakout { background: rgba(133,255,133,0.12); color: #85ff85; }
+        .sp-item-type.breakout { background: rgba(0,232,123,0.12); color: #00e87b; }
         .sp-item-type.crash { background: rgba(255,107,107,0.12); color: #ff6b6b; }
         .sp-item-type.whale { background: rgba(251,191,36,0.12); color: #fbbf24; }
         .sp-item-type.divergence { background: rgba(192,132,252,0.12); color: #c084fc; }
@@ -324,7 +324,7 @@ let mouseX = null, mouseY = null;
 // Sector definitions (angle ranges on the radar)
 const SECTORS = [
     { name: 'L1/L2',       angle: 0,      span: 45,  color: '#00e87b', ids: ['bitcoin','ethereum','solana','cardano','avalanche-2','polkadot','near','sui','aptos','toncoin','tron','cosmos','algorand','fantom','matic-network','arbitrum','optimism','starknet'] },
-    { name: 'DeFi',        angle: 45,     span: 45,  color: '#85ff85', ids: ['uniswap','aave','lido-dao','maker','compound-governance-token','curve-dao-token','pancakeswap-token','jupiter-exchange-solana','raydium','sushi','1inch','synthetix-network-token'] },
+    { name: 'DeFi',        angle: 45,     span: 45,  color: '#00e87b', ids: ['uniswap','aave','lido-dao','maker','compound-governance-token','curve-dao-token','pancakeswap-token','jupiter-exchange-solana','raydium','sushi','1inch','synthetix-network-token'] },
     { name: 'Stablecoins', angle: 90,     span: 30,  color: '#ffd700', ids: ['tether','usd-coin','dai','first-digital-usd','true-usd','ethena-usde','frax'] },
     { name: 'Meme',        angle: 120,    span: 45,  color: '#ff6b9d', ids: ['dogecoin','shiba-inu','pepe','bonk','floki','dogwifcoin','brett','popcat','mog-coin','turbo'] },
     { name: 'AI',          angle: 165,    span: 40,  color: '#22d3ee', ids: ['fetch-ai','render-token','the-graph','ocean-protocol','singularitynet','bittensor','worldcoin-wld','akash-network','io-net'] },
@@ -872,7 +872,7 @@ function showTooltip(blip) {
     const ch = t.price_change_percentage_24h || 0;
     const chEl = document.getElementById('tt-change');
     chEl.textContent = (ch >= 0 ? '+' : '') + ch.toFixed(2) + '%';
-    chEl.style.color = ch >= 0 ? '#85ff85' : '#ff6b6b';
+    chEl.style.color = ch >= 0 ? '#00e87b' : '#ff6b6b';
 
     document.getElementById('tt-vol').textContent = '$' + fmtB(t.total_volume);
     document.getElementById('tt-mcap').textContent = '$' + fmtB(t.market_cap);

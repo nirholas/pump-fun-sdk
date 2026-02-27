@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="lair-include" content="lair.css material-symbols-rounded">
-    <meta name="lair-icon" content='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"><path d="M2 12h3l2-6 3 12 2.5-8 2 4 1.5-2h6" stroke="#85ff85" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="10.5" stroke="#85ff85" stroke-width=".4" opacity=".2"/><circle cx="12" cy="12" r="7" stroke="#85ff85" stroke-width=".3" opacity=".15"/></svg>'>
+    <meta name="lair-icon" content='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"><path d="M2 12h3l2-6 3 12 2.5-8 2 4 1.5-2h6" stroke="#00e87b" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="10.5" stroke="#00e87b" stroke-width=".4" opacity=".2"/><circle cx="12" cy="12" r="7" stroke="#00e87b" stroke-width=".3" opacity=".15"/></svg>'>
     <meta name="permissions" content="network">
     <meta name="capabilities" content="crypto_vital_signs_monitor">
     <meta name="lair-category" content="analytics">
@@ -16,7 +16,7 @@
             width: 100%; height: 100%;
             overflow: hidden;
             background: #010a04;
-            color: #85ff85;
+            color: #00e87b;
             font-family: 'SF Mono', 'Fira Code', 'JetBrains Mono', 'Cascadia Code', monospace;
             user-select: none;
         }
@@ -39,7 +39,7 @@
             justify-content: space-between;
             padding: 8px 16px;
             background: rgba(0,20,0,0.6);
-            border-bottom: 1px solid rgba(133,255,133,0.08);
+            border-bottom: 1px solid rgba(0,232,123,0.08);
         }
         .icu-title {
             font-size: 11px;
@@ -59,7 +59,7 @@
         }
         .icu-status-dot {
             width: 6px; height: 6px; border-radius: 50%;
-            background: #85ff85;
+            background: #00e87b;
             animation: blink 2s ease-in-out infinite;
         }
         @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
@@ -131,7 +131,7 @@
             font-weight: 600;
             margin-top: 2px;
         }
-        .vital-change.pos { color: #85ff85; }
+        .vital-change.pos { color: #00e87b; }
         .vital-change.neg { color: #ff6b6b; }
 
         .vital-canvas-wrap {
@@ -162,14 +162,14 @@
             gap: 16px;
             padding: 8px 16px;
             background: rgba(0,20,0,0.6);
-            border-top: 1px solid rgba(133,255,133,0.08);
+            border-top: 1px solid rgba(0,232,123,0.08);
         }
         .health-label {
             font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; opacity: 0.4;
             white-space: nowrap;
         }
         .health-track {
-            flex: 1; height: 6px; background: rgba(133,255,133,0.06);
+            flex: 1; height: 6px; background: rgba(0,232,123,0.06);
             border-radius: 3px; overflow: hidden; position: relative;
         }
         .health-fill {
@@ -222,7 +222,7 @@
             position: relative;
         }
         .loader-ecg-line {
-            stroke: #85ff85;
+            stroke: #00e87b;
             stroke-width: 2;
             fill: none;
             stroke-linecap: round;
@@ -299,7 +299,7 @@
         <div class="vital-range"><span id="lo-eth">—</span><span id="hi-eth">—</span></div>
     </div>
 
-    <div class="vital-panel" id="panel-mcap" data-color="#85ff85">
+    <div class="vital-panel" id="panel-mcap" data-color="#00e87b">
         <div class="vital-header">
             <div>
                 <div class="vital-label">Total Market Cap</div>
@@ -363,7 +363,7 @@
     <div class="health-bar">
         <span class="health-label">Market Health</span>
         <div class="health-track">
-            <div class="health-fill" id="health-fill" style="width:50%;background:#85ff85"></div>
+            <div class="health-fill" id="health-fill" style="width:50%;background:#00e87b"></div>
         </div>
         <div>
             <div class="health-score" id="health-score">—</div>
@@ -392,7 +392,7 @@
 const VITALS = [
     { key: 'btc', label: 'Bitcoin',         color: '#f7931a', maxPoints: 200 },
     { key: 'eth', label: 'Ethereum',         color: '#627eea', maxPoints: 200 },
-    { key: 'mcap', label: 'Total MCap',     color: '#85ff85', maxPoints: 200 },
+    { key: 'mcap', label: 'Total MCap',     color: '#00e87b', maxPoints: 200 },
     { key: 'vol', label: '24h Volume',       color: '#34d4f1', maxPoints: 200 },
     { key: 'dom', label: 'BTC Dominance',   color: '#fbbf24', maxPoints: 200 },
     { key: 'fg',  label: 'Fear & Greed',    color: '#c084fc', maxPoints: 200 },
@@ -664,7 +664,7 @@ function updateDisplays() {
         const panel = document.getElementById('panel-fg');
         if (d.value <= 25) panel.style.setProperty('--vital-color', '#ff6b6b');
         else if (d.value <= 40) panel.style.setProperty('--vital-color', '#fbbf24');
-        else if (d.value <= 60) panel.style.setProperty('--vital-color', '#85ff85');
+        else if (d.value <= 60) panel.style.setProperty('--vital-color', '#00e87b');
         else if (d.value <= 75) panel.style.setProperty('--vital-color', '#34d4f1');
         else panel.style.setProperty('--vital-color', '#c084fc');
     }
@@ -745,7 +745,7 @@ function computeHealth() {
 
     // Color based on score
     let color, grade;
-    if (healthScore >= 80) { color = '#85ff85'; grade = 'Bullish'; }
+    if (healthScore >= 80) { color = '#00e87b'; grade = 'Bullish'; }
     else if (healthScore >= 60) { color = '#34d4f1'; grade = 'Healthy'; }
     else if (healthScore >= 40) { color = '#fbbf24'; grade = 'Neutral'; }
     else if (healthScore >= 20) { color = '#ff9f43'; grade = 'Stressed'; }

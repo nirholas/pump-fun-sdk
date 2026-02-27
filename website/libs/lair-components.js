@@ -276,7 +276,7 @@
 
       const width = opts.width || 120;
       const height = opts.height || 32;
-      const color = opts.color || getComputedVar(['--colors-accent', '--col-good']) || '#6179ff';
+      const color = opts.color || getComputedVar(['--colors-accent', '--col-good']) || '#00e87b';
       const fill = `${color}22`;
 
       let canvas = container;

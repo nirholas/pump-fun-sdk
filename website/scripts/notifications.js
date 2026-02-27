@@ -46,11 +46,11 @@ const NotificationCenter = (() => {
 
     // ─── Type config ───
     const TYPE_CONFIG = {
-        info:    { icon: 'info',          borderColor: '#6179ff' },
-        success: { icon: 'check_circle',  borderColor: 'var(--col-good, #85FF85)' },
+        info:    { icon: 'info',          borderColor: '#00e87b' },
+        success: { icon: 'check_circle',  borderColor: 'var(--col-good, #00e87b)' },
         warning: { icon: 'warning',       borderColor: '#f5a623' },
-        error:   { icon: 'error',         borderColor: 'var(--col-bad, #AC4949)' },
-        price:   { icon: 'trending_up',   borderColor: 'var(--colors-accent, #6179ff)' },
+        error:   { icon: 'error',         borderColor: 'var(--col-bad, #ff4d4d)' },
+        price:   { icon: 'trending_up',   borderColor: 'var(--colors-accent, #00e87b)' },
     };
 
     // ─── Helpers ───

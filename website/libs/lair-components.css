@@ -17,7 +17,7 @@
   height: 22px;
   border-radius: 999px;
   border: 2px solid var(--col-bg3, #2a2a2a);
-  border-top-color: var(--colors-accent, #6179ff);
+  border-top-color: var(--colors-accent, #00e87b);
   animation: lair-spin 0.7s linear infinite;
 }
 
@@ -107,7 +107,7 @@
   height: 14px;
   border-radius: 999px;
   object-fit: cover;
-  background: var(--colors-accent, #6179ff);
+  background: var(--colors-accent, #00e87b);
 }
 
 .lair-token-symbol {
