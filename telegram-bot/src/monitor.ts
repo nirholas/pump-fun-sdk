@@ -27,14 +27,14 @@ import { log } from './logger.js';
 // RPC Rate Limiter — concurrency + token-bucket throttle
 // ============================================================================
 
-/** Max concurrent getParsedTransaction calls */
-const MAX_CONCURRENCY = 3;
-/** Minimum ms between successive RPC requests */
-const MIN_REQUEST_INTERVAL_MS = 200;
+/** Max concurrent getParsedTransaction calls (1 for public RPCs) */
+const MAX_CONCURRENCY = 1;
+/** Minimum ms between successive RPC requests (1s for public RPCs) */
+const MIN_REQUEST_INTERVAL_MS = 1_000;
 /** Max signatures to queue; beyond this new ones are silently dropped */
-const MAX_QUEUE_SIZE = 200;
+const MAX_QUEUE_SIZE = 50;
 /** Suppress repeated 429 log lines — log once per window */
-const RATE_LIMIT_LOG_WINDOW_MS = 10_000;
+const RATE_LIMIT_LOG_WINDOW_MS = 30_000;
 
 class RpcQueue {
     private queue: string[] = [];
@@ -391,7 +391,7 @@ export class PumpFunMonitor {
 
     private async pollProgram(pubkey: PublicKey, programId: string): Promise<void> {
         const opts: SignaturesForAddressOptions = {
-            limit: 20,
+            limit: 10,
         };
 
         const lastSig = this.lastSignatures.get(programId);
