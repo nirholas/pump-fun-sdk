@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PumpFun Live — New Token Launches</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0a0a0a;
+    color: #00ff41;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    line-height: 1.5;
+    padding: 0;
+  }
+
+  /* ── Header ────────────────────────────────────────── */
+  #header {
+    background: #111;
+    border-bottom: 1px solid #222;
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  #header h1 {
+    font-size: 16px;
+    color: #00ff41;
+    white-space: nowrap;
+  }
+  #header .status {
+    font-size: 12px;
+    color: #666;
+  }
+  #header .status.connected { color: #00ff41; }
+  #header .status.error { color: #ff4141; }
+  #header .controls {
+    margin-left: auto;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  input[type="text"] {
+    background: #1a1a1a;
+    border: 1px solid #333;
+    color: #ccc;
+    padding: 6px 10px;
+    font-family: inherit;
+    font-size: 12px;
+    width: 340px;
+    border-radius: 3px;
+  }
+  input[type="text"]:focus { outline: none; border-color: #00ff41; }
+  button {
+    background: #1a1a1a;
+    border: 1px solid #333;
+    color: #00ff41;
+    padding: 6px 14px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 12px;
+    border-radius: 3px;
+  }
+  button:hover { background: #252525; border-color: #00ff41; }
+  button.active { background: #002200; border-color: #00ff41; }
+
+  /* ── Stats bar ─────────────────────────────────────── */
+  #stats {
+    background: #0d0d0d;
+    border-bottom: 1px solid #1a1a1a;
+    padding: 6px 20px;
+    font-size: 11px;
+    color: #555;
+    display: flex;
+    gap: 24px;
+  }
+  #stats span { color: #888; }
+  #stats .val { color: #00ff41; }
+
+  /* ── Log area ──────────────────────────────────────── */
+  #log {
+    padding: 12px 20px;
+    max-height: calc(100vh - 110px);
+    overflow-y: auto;
+  }
+  .entry {
+    border-bottom: 1px solid #111;
+    padding: 8px 0;
+    animation: fadeIn 0.3s ease;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .entry .time { color: #444; }
+  .entry .label { color: #888; }
+  .entry .name { color: #ffcc00; font-weight: bold; }
+  .entry .symbol { color: #ff9900; }
+  .entry .addr { color: #4a9eff; }
+  .entry .github { color: #00ff41; font-weight: bold; }
+  .entry .raw { color: #333; font-size: 11px; word-break: break-all; }
+  .entry a { color: #4a9eff; text-decoration: none; }
+  .entry a:hover { text-decoration: underline; }
+
+  .sys { color: #555; padding: 4px 0; }
+  .sys.error { color: #ff4141; }
+  .sys.warn { color: #ffcc00; }
+
+  /* ── Scrollbar ─────────────────────────────────────── */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: #0a0a0a; }
+  ::-webkit-scrollbar-thumb { background: #222; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #333; }
+
+  /* ── Responsive ────────────────────────────────────── */
+  @media (max-width: 700px) {
+    input[type="text"] { width: 100%; }
+    #header { flex-direction: column; align-items: flex-start; }
+    #header .controls { margin-left: 0; width: 100%; flex-wrap: wrap; }
+  }
+</style>
+</head>
+<body>
+
+<div id="header">
+  <h1>⚡ PumpFun Live</h1>
+  <div class="status" id="status">● Disconnected</div>
+  <div class="controls">
+    <input type="text" id="rpc" placeholder="wss://atlas-mainnet.helius-rpc.com/?api-key=YOUR_KEY" />
+    <button id="btn-connect">Connect</button>
+    <button id="btn-pause">Pause</button>
+    <button id="btn-clear">Clear</button>
+  </div>
+</div>
+
+<div id="stats">
+  <div>Tokens: <span class="val" id="s-total">0</span></div>
+  <div>With GitHub: <span class="val" id="s-github">0</span></div>
+  <div>Logs/sec: <span class="val" id="s-rate">0</span></div>
+  <div>Uptime: <span class="val" id="s-uptime">0s</span></div>
+</div>
+
+<div id="log"></div>
+
+<script>
+// ════════════════════════════════════════════════════════════════════
+// PumpFun Live Token Launch WebSocket Monitor
+// Connects to a Solana RPC WebSocket and subscribes to Pump program
+// logs. Detects createV2 token launches in real-time.
+// ════════════════════════════════════════════════════════════════════
+
+const PUMP_PROGRAM = '6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P';
+const MAX_LOG_ENTRIES = 500;
+
+// ── State ───────────────────────────────────────────────────────────
+let ws = null;
+let subId = null;
+let paused = false;
+let startTime = 0;
+let stats = { total: 0, github: 0, logsReceived: 0, lastSecondLogs: 0 };
+let rateInterval = null;
+
+// ── DOM refs ────────────────────────────────────────────────────────
+const $log = document.getElementById('log');
+const $status = document.getElementById('status');
+const $rpc = document.getElementById('rpc');
+const $btnConnect = document.getElementById('btn-connect');
+const $btnPause = document.getElementById('btn-pause');
+const $btnClear = document.getElementById('btn-clear');
+
+// ── Buttons ─────────────────────────────────────────────────────────
+$btnConnect.onclick = () => {
+  if (ws && ws.readyState <= 1) { disconnect(); return; }
+  const url = $rpc.value.trim();
+  if (!url) { sysLog('Enter a WebSocket RPC URL (e.g. wss://your-helius-url)', 'error'); return; }
+  connect(url);
+};
+$btnPause.onclick = () => {
+  paused = !paused;
+  $btnPause.textContent = paused ? 'Resume' : 'Pause';
+  $btnPause.classList.toggle('active', paused);
+  sysLog(paused ? 'Paused — events still tracked, display frozen' : 'Resumed');
+};
+$btnClear.onclick = () => { $log.innerHTML = ''; };
+
+// ── Connect to WebSocket RPC ────────────────────────────────────────
+function connect(url) {
+  setStatus('Connecting...', '');
+  $btnConnect.textContent = 'Disconnect';
+  sysLog(`Connecting to ${url}...`);
+
+  ws = new WebSocket(url);
+
+  ws.onopen = () => {
+    setStatus('● Connected — subscribing to Pump program...', 'connected');
+    startTime = Date.now();
+    startRateCounter();
+
+    // Subscribe to logs for the Pump program
+    ws.send(JSON.stringify({
+      jsonrpc: '2.0',
+      id: 1,
+      method: 'logsSubscribe',
+      params: [
+        { mentions: [PUMP_PROGRAM] },
+        { commitment: 'confirmed' }
+      ]
+    }));
+  };
+
+  ws.onmessage = (evt) => {
+    let msg;
+    try { msg = JSON.parse(evt.data); } catch { return; }
+
+    // Subscription confirmation
+    if (msg.id === 1 && msg.result !== undefined) {
+      subId = msg.result;
+      setStatus(`● Live — subscriptionId: ${subId}`, 'connected');
+      sysLog(`Subscribed to ${PUMP_PROGRAM} (sub=${subId}). Waiting for token launches...`);
+      return;
+    }
+
+    // Log notification
+    if (msg.method === 'logsNotify' && msg.params?.result) {
+      stats.logsReceived++;
+      handleLogNotification(msg.params.result);
+    }
+  };
+
+  ws.onerror = (err) => {
+    setStatus('● Error', 'error');
+    sysLog('WebSocket error — check console', 'error');
+    console.error('WS Error:', err);
+  };
+
+  ws.onclose = (evt) => {
+    setStatus('● Disconnected', '');
+    sysLog(`Disconnected (code=${evt.code}). ${evt.reason || ''}`);
+    $btnConnect.textContent = 'Connect';
+    stopRateCounter();
+    ws = null;
+    subId = null;
+  };
+}
+
+function disconnect() {
+  if (ws) {
+    // Unsubscribe first
+    if (subId !== null) {
+      ws.send(JSON.stringify({ jsonrpc: '2.0', id: 2, method: 'logsUnsubscribe', params: [subId] }));
+    }
+    ws.close();
+  }
+}
+
+// ── Handle incoming log notifications ───────────────────────────────
+function handleLogNotification(result) {
+  const { value } = result;
+  if (!value || value.err) return;
+
+  const { signature, logs } = value;
+  if (!logs || !Array.isArray(logs)) return;
+
+  const logsText = logs.join('\n');
+
+  // Detect token creation: look for Create or CreateV2 instruction
+  const isCreate = logsText.includes('Instruction: Create');
+  if (!isCreate) return;
+
+  // ── Parse what we can from the raw logs ─────────────────────────
+  const info = parseCreateLogs(logs, signature);
+  stats.total++;
+
+  // Check if we can find a GitHub reference in the logs (unlikely from
+  // raw logs, but metadata URI might be visible in Program data)
+  if (info.metadataUri && info.metadataUri.includes('github.com')) {
+    info.hasGithub = true;
+    stats.github++;
+  }
+
+  // Try fetching metadata in background (best-effort)
+  if (info.metadataUri) {
+    fetchMetadata(info.metadataUri, signature);
+  }
+
+  if (!paused) renderEntry(info);
+  updateStats();
+}
+
+// ── Parse create instruction data from logs ─────────────────────────
+function parseCreateLogs(logs, signature) {
+  const info = {
+    signature,
+    time: new Date().toLocaleTimeString(),
+    name: null,
+    symbol: null,
+    metadataUri: null,
+    mint: null,
+    creator: null,
+    hasGithub: false,
+    githubUrls: [],
+    rawLogs: logs,
+    isV2: false,
+  };
+
+  for (const line of logs) {
+    // Detect version
+    if (line.includes('Instruction: CreateV2')) info.isV2 = true;
+
+    // Some RPC providers show decoded instruction data in logs
+    // Look for Program data (base64 encoded event data)
+    if (line.startsWith('Program data: ')) {
+      try {
+        const b64 = line.slice('Program data: '.length);
+        const decoded = atob(b64);
+        // Try to find readable strings (name, symbol, URI)
+        const readable = decoded.replace(/[^\x20-\x7E]/g, ' ').trim();
+        if (readable.includes('http')) {
+          const urlMatch = readable.match(/(https?:\/\/[^\s]+)/);
+          if (urlMatch) info.metadataUri = urlMatch[1];
+        }
+      } catch { /* ignore */ }
+    }
+
+    // Extract invoke log to find accounts
+    if (line.includes('Program log: mint:')) {
+      const m = line.match(/mint:\s*(\w{32,})/);
+      if (m) info.mint = m[1];
+    }
+  }
+
+  return info;
+}
+
+// ── Fetch token metadata (best-effort, non-blocking) ────────────────
+async function fetchMetadata(uri, signature) {
+  try {
+    // Normalize IPFS URIs
+    let url = uri;
+    if (url.startsWith('ipfs://')) {
+      url = 'https://cf-ipfs.com/ipfs/' + url.slice(7);
+    }
+
+    const resp = await fetch(url, { signal: AbortSignal.timeout(5000) });
+    if (!resp.ok) return;
+
+    const meta = await resp.json();
+    const githubUrls = extractGithubUrls(meta);
+
+    if (githubUrls.length > 0) {
+      stats.github++;
+      updateStats();
+
+      // Update the existing entry if visible
+      const el = document.getElementById('tx-' + signature.slice(0, 16));
+      if (el) {
+        const githubDiv = document.createElement('div');
+        githubDiv.innerHTML = '🌐 <span class="github">GitHub: ' +
+          githubUrls.map(u => `<a href="${esc(u)}" target="_blank">${esc(u)}</a>`).join(', ') +
+          '</span>';
+        el.appendChild(githubDiv);
+      }
+    }
+
+    // Update name/symbol if found
+    if (meta.name || meta.symbol) {
+      const el = document.getElementById('tx-' + signature.slice(0, 16));
+      if (el) {
+        const nameEl = el.querySelector('.name');
+        const symEl = el.querySelector('.symbol');
+        if (nameEl && meta.name) nameEl.textContent = meta.name;
+        if (symEl && meta.symbol) symEl.textContent = '(' + meta.symbol + ')';
+      }
+    }
+  } catch { /* metadata fetch is best-effort */ }
+}
+
+// ── Extract GitHub URLs from metadata ───────────────────────────────
+function extractGithubUrls(meta) {
+  const urls = new Set();
+  const ghPattern = /https?:\/\/(www\.)?github\.com\/[^\s"'<>]+/gi;
+
+  function scan(val) {
+    if (typeof val === 'string') {
+      const matches = val.match(ghPattern);
+      if (matches) matches.forEach(u => urls.add(u));
+    } else if (val && typeof val === 'object') {
+      Object.values(val).forEach(scan);
+    }
+  }
+  scan(meta);
+  return [...urls];
+}
+
+// ── Render a token launch entry ─────────────────────────────────────
+function renderEntry(info) {
+  const div = document.createElement('div');
+  div.className = 'entry';
+  div.id = 'tx-' + info.signature.slice(0, 16);
+
+  const shortSig = info.signature.slice(0, 8) + '...' + info.signature.slice(-6);
+  const version = info.isV2 ? 'CreateV2' : 'Create';
+
+  div.innerHTML =
+    `<span class="time">${info.time}</span> ` +
+    `🚀 <span class="name">${esc(info.name || 'Loading...')}</span> ` +
+    `<span class="symbol">${info.symbol ? '(' + esc(info.symbol) + ')' : ''}</span> ` +
+    `<span class="label">[${version}]</span>` +
+    (info.mint ? ` <span class="label">mint:</span><span class="addr">${info.mint.slice(0,6)}...${info.mint.slice(-4)}</span>` : '') +
+    ` <a href="https://solscan.io/tx/${info.signature}" target="_blank" class="addr">${shortSig}</a>` +
+    (info.hasGithub ? ` <span class="github">★ GitHub</span>` : '') +
+    `<div class="raw">${info.rawLogs.slice(0, 5).map(esc).join(' → ')}</div>`;
+
+  // Prepend (newest first)
+  $log.prepend(div);
+
+  // Limit entries
+  while ($log.children.length > MAX_LOG_ENTRIES) {
+    $log.removeChild($log.lastChild);
+  }
+}
+
+// ── System log ──────────────────────────────────────────────────────
+function sysLog(msg, level = '') {
+  const div = document.createElement('div');
+  div.className = 'sys' + (level ? ' ' + level : '');
+  div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+  $log.prepend(div);
+}
+
+// ── Stats ───────────────────────────────────────────────────────────
+function updateStats() {
+  document.getElementById('s-total').textContent = stats.total;
+  document.getElementById('s-github').textContent = stats.github;
+}
+
+function startRateCounter() {
+  let prev = 0;
+  rateInterval = setInterval(() => {
+    const rate = stats.logsReceived - prev;
+    prev = stats.logsReceived;
+    document.getElementById('s-rate').textContent = rate;
+
+    if (startTime) {
+      const sec = Math.floor((Date.now() - startTime) / 1000);
+      const m = Math.floor(sec / 60);
+      const s = sec % 60;
+      document.getElementById('s-uptime').textContent = m > 0 ? `${m}m ${s}s` : `${s}s`;
+    }
+  }, 1000);
+}
+
+function stopRateCounter() {
+  if (rateInterval) { clearInterval(rateInterval); rateInterval = null; }
+}
+
+// ── Helpers ─────────────────────────────────────────────────────────
+function setStatus(text, cls) {
+  $status.textContent = text;
+  $status.className = 'status' + (cls ? ' ' + cls : '');
+}
+
+function esc(s) {
+  const d = document.createElement('div');
+  d.textContent = s || '';
+  return d.innerHTML;
+}
+
+// ── Init ────────────────────────────────────────────────────────────
+sysLog('PumpFun Live Monitor — paste a Solana WebSocket RPC URL and click Connect');
+sysLog('Free RPCs are rate-limited. Recommended: Helius, QuickNode, or Triton.');
+sysLog(`Monitoring program: ${PUMP_PROGRAM}`);
+</script>
+</body>
+</html>
