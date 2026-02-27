@@ -1260,3 +1260,298 @@ async function handleGetTokenBalance(
     `💰 Token Balance\n\nMint: ${mint.toBase58()}\nUser: ${user.toBase58()}\nBalance: ${bnToString(balance)} raw units\nBalance: ${bnToString(wholeTokens)}.${remainder.toString(10).padStart(6, "0")} tokens`,
   );
 }
+
+// ============================================================================
+// BUY EXACT SOL
+// ============================================================================
+
+async function handleBuildBuyExactSol(
+  args: Record<string, unknown>,
+): Promise<ToolResult> {
+  const mint = requirePubkey(args.mint, "mint");
+  const user = requirePubkey(args.user, "user");
+  const solAmount = requireBN(args.solAmount, "solAmount");
+  const minTokenAmount = requireBN(args.minTokenAmount, "minTokenAmount");
+  const rpcUrl = args.rpcUrl as string | undefined;
+
+  const connection = getConnection(rpcUrl);
+  const sdk = new OnlinePumpSdk(connection);
+  const global = await sdk.fetchGlobal();
+  const feeRecipient = global.feeRecipients[0] ?? global.feeRecipient;
+
+  const bondingCurve = await sdk.fetchBondingCurve(mint);
+  if (!bondingCurve) return err("Bonding curve not found");
+
+  const ix = await PUMP_SDK.buyExactSolInInstruction({
+    user,
+    mint,
+    creator: bondingCurve.creator,
+    feeRecipient,
+    solAmount,
+    minTokenAmount,
+  });
+
+  return ok(
+    `🛒 Buy Exact SOL Instruction Built\n\nMint: ${mint.toBase58()}\nUser: ${user.toBase58()}\nSOL Amount: ${formatLamports(solAmount)}\nMin Tokens: ${bnToString(minTokenAmount)}\n\n${serializeInstructions([ix])}`,
+  );
+}
+
+// ============================================================================
+// AMM TRADING
+// ============================================================================
+
+async function handleBuildAmmBuy(
+  args: Record<string, unknown>,
+): Promise<ToolResult> {
+  const mint = requirePubkey(args.mint, "mint");
+  const user = requirePubkey(args.user, "user");
+  const pool = requirePubkey(args.pool, "pool");
+  const baseAmountOut = requireBN(args.baseAmountOut, "baseAmountOut");
+  const maxQuoteAmountIn = requireBN(args.maxQuoteAmountIn, "maxQuoteAmountIn");
+
+  const ix = await PUMP_SDK.ammBuyInstruction({
+    user,
+    pool,
+    mint,
+    baseAmountOut,
+    maxQuoteAmountIn,
+  });
+
+  return ok(
+    `🛒 AMM Buy Instruction Built\n\nMint: ${mint.toBase58()}\nPool: ${pool.toBase58()}\nTokens Out: ${bnToString(baseAmountOut)}\nMax SOL In: ${formatLamports(maxQuoteAmountIn)}\n\n${serializeInstructions([ix])}`,
+  );
+}
+
+async function handleBuildAmmSell(
+  args: Record<string, unknown>,
+): Promise<ToolResult> {
+  const mint = requirePubkey(args.mint, "mint");
+  const user = requirePubkey(args.user, "user");
+  const pool = requirePubkey(args.pool, "pool");
+  const baseAmountIn = requireBN(args.baseAmountIn, "baseAmountIn");
+  const minQuoteAmountOut = requireBN(args.minQuoteAmountOut, "minQuoteAmountOut");
+
+  const ix = await PUMP_SDK.ammSellInstruction({
+    user,
+    pool,
+    mint,
+    baseAmountIn,
+    minQuoteAmountOut,
+  });
+
+  return ok(
+    `💰 AMM Sell Instruction Built\n\nMint: ${mint.toBase58()}\nPool: ${pool.toBase58()}\nTokens In: ${bnToString(baseAmountIn)}\nMin SOL Out: ${formatLamports(minQuoteAmountOut)}\n\n${serializeInstructions([ix])}`,
+  );
+}
+
+async function handleBuildAmmBuyExactQuote(
+  args: Record<string, unknown>,
+): Promise<ToolResult> {
+  const mint = requirePubkey(args.mint, "mint");
+  const user = requirePubkey(args.user, "user");
+  const pool = requirePubkey(args.pool, "pool");
+  const quoteAmountIn = requireBN(args.quoteAmountIn, "quoteAmountIn");
+  const minBaseAmountOut = requireBN(args.minBaseAmountOut, "minBaseAmountOut");
+
+  const ix = await PUMP_SDK.ammBuyExactQuoteInInstruction({
+    user,
+    pool,
+    mint,
+    quoteAmountIn,
+    minBaseAmountOut,
+  });
+
+  return ok(
+    `🛒 AMM Buy (Exact SOL) Instruction Built\n\nMint: ${mint.toBase58()}\nPool: ${pool.toBase58()}\nSOL In: ${formatLamports(quoteAmountIn)}\nMin Tokens Out: ${bnToString(minBaseAmountOut)}\n\n${serializeInstructions([ix])}`,
+  );
+}
+
+// ============================================================================
+// AMM LIQUIDITY
+// ============================================================================
+
+async function handleBuildAmmDeposit(
+  args: Record<string, unknown>,
+): Promise<ToolResult> {
+  const mint = requirePubkey(args.mint, "mint");
+  const user = requirePubkey(args.user, "user");
+  const pool = requirePubkey(args.pool, "pool");
+  const maxBaseAmountIn = requireBN(args.maxBaseAmountIn, "maxBaseAmountIn");
+  const maxQuoteAmountIn = requireBN(args.maxQuoteAmountIn, "maxQuoteAmountIn");
+  const minLpTokenAmountOut = requireBN(args.minLpTokenAmountOut, "minLpTokenAmountOut");
+
+  const ix = await PUMP_SDK.ammDepositInstruction({
+    user,
+    pool,
+    mint,
+    maxBaseAmountIn,
+    maxQuoteAmountIn,
+    minLpTokenAmountOut,
+  });
+
+  return ok(
+    `🏦 AMM Deposit Instruction Built\n\nMint: ${mint.toBase58()}\nPool: ${pool.toBase58()}\nMax Tokens In: ${bnToString(maxBaseAmountIn)}\nMax SOL In: ${formatLamports(maxQuoteAmountIn)}\nMin LP Out: ${bnToString(minLpTokenAmountOut)}\n\n${serializeInstructions([ix])}`,
+  );
+}
+
+async function handleBuildAmmWithdraw(
+  args: Record<string, unknown>,
+): Promise<ToolResult> {
+  const mint = requirePubkey(args.mint, "mint");
+  const user = requirePubkey(args.user, "user");
+  const pool = requirePubkey(args.pool, "pool");
+  const lpTokenAmountIn = requireBN(args.lpTokenAmountIn, "lpTokenAmountIn");
+  const minBaseAmountOut = requireBN(args.minBaseAmountOut, "minBaseAmountOut");
+  const minQuoteAmountOut = requireBN(args.minQuoteAmountOut, "minQuoteAmountOut");
+
+  const ix = await PUMP_SDK.ammWithdrawInstruction({
+    user,
+    pool,
+    mint,
+    lpTokenAmountIn,
+    minBaseAmountOut,
+    minQuoteAmountOut,
+  });
+
+  return ok(
+    `🏧 AMM Withdraw Instruction Built\n\nMint: ${mint.toBase58()}\nPool: ${pool.toBase58()}\nLP Tokens In: ${bnToString(lpTokenAmountIn)}\nMin Tokens Out: ${bnToString(minBaseAmountOut)}\nMin SOL Out: ${formatLamports(minQuoteAmountOut)}\n\n${serializeInstructions([ix])}`,
+  );
+}
+
+// ============================================================================
+// CASHBACK
+// ============================================================================
+
+async function handleBuildClaimCashback(
+  args: Record<string, unknown>,
+): Promise<ToolResult> {
+  const user = requirePubkey(args.user, "user");
+
+  const ix = await PUMP_SDK.claimCashbackInstruction({ user });
+
+  return ok(
+    `🎁 Claim Cashback Instruction Built\n\nUser: ${user.toBase58()}\nProgram: Pump (bonding curve)\n\n${serializeInstructions([ix])}`,
+  );
+}
+
+async function handleBuildAmmClaimCashback(
+  args: Record<string, unknown>,
+): Promise<ToolResult> {
+  const user = requirePubkey(args.user, "user");
+
+  const ix = await PUMP_SDK.ammClaimCashbackInstruction({ user });
+
+  return ok(
+    `🎁 Claim AMM Cashback Instruction Built\n\nUser: ${user.toBase58()}\nProgram: PumpAMM\n\n${serializeInstructions([ix])}`,
+  );
+}
+
+// ============================================================================
+// FEE SHARING (Social Fees, Authority Management)
+// ============================================================================
+
+async function handleBuildCreateSocialFee(
+  args: Record<string, unknown>,
+): Promise<ToolResult> {
+  const payer = requirePubkey(args.payer, "payer");
+  const authority = requirePubkey(args.authority, "authority");
+  const user = requirePubkey(args.user, "user");
+
+  const ix = await PUMP_SDK.createSocialFeePdaInstruction({
+    payer,
+    authority,
+    user,
+  });
+
+  return ok(
+    `🔗 Create Social Fee PDA Instruction Built\n\nPayer: ${payer.toBase58()}\nAuthority: ${authority.toBase58()}\nUser: ${user.toBase58()}\n\n${serializeInstructions([ix])}`,
+  );
+}
+
+async function handleBuildClaimSocialFee(
+  args: Record<string, unknown>,
+): Promise<ToolResult> {
+  const authority = requirePubkey(args.authority, "authority");
+  const user = requirePubkey(args.user, "user");
+
+  const ix = await PUMP_SDK.claimSocialFeePdaInstruction({
+    authority,
+    user,
+  });
+
+  return ok(
+    `💰 Claim Social Fee Instruction Built\n\nAuthority: ${authority.toBase58()}\nUser: ${user.toBase58()}\n\n${serializeInstructions([ix])}`,
+  );
+}
+
+async function handleBuildResetFeeSharing(
+  args: Record<string, unknown>,
+): Promise<ToolResult> {
+  const authority = requirePubkey(args.authority, "authority");
+  const mint = requirePubkey(args.mint, "mint");
+
+  const ix = await PUMP_SDK.resetFeeSharingConfigInstruction({
+    authority,
+    mint,
+  });
+
+  return ok(
+    `🔄 Reset Fee Sharing Config Instruction Built\n\nAuthority: ${authority.toBase58()}\nMint: ${mint.toBase58()}\n\n${serializeInstructions([ix])}`,
+  );
+}
+
+async function handleBuildTransferFeeAuthority(
+  args: Record<string, unknown>,
+): Promise<ToolResult> {
+  const authority = requirePubkey(args.authority, "authority");
+  const mint = requirePubkey(args.mint, "mint");
+  const newAuthority = requirePubkey(args.newAuthority, "newAuthority");
+
+  const ix = await PUMP_SDK.transferFeeSharingAuthorityInstruction({
+    authority,
+    mint,
+    newAuthority,
+  });
+
+  return ok(
+    `🔑 Transfer Fee Sharing Authority Instruction Built\n\nMint: ${mint.toBase58()}\nCurrent Authority: ${authority.toBase58()}\nNew Authority: ${newAuthority.toBase58()}\n\n${serializeInstructions([ix])}`,
+  );
+}
+
+async function handleBuildRevokeFeeAuthority(
+  args: Record<string, unknown>,
+): Promise<ToolResult> {
+  const authority = requirePubkey(args.authority, "authority");
+  const mint = requirePubkey(args.mint, "mint");
+
+  const ix = await PUMP_SDK.revokeFeeSharingAuthorityInstruction({
+    authority,
+    mint,
+  });
+
+  return ok(
+    `🔒 Revoke Fee Sharing Authority Instruction Built\n\nMint: ${mint.toBase58()}\nAuthority: ${authority.toBase58()}\n\n⚠️ This is PERMANENT. No one will be able to modify this fee sharing config after this.\n\n${serializeInstructions([ix])}`,
+  );
+}
+
+// ============================================================================
+// CREATOR MANAGEMENT
+// ============================================================================
+
+async function handleBuildMigrateCreator(
+  args: Record<string, unknown>,
+): Promise<ToolResult> {
+  const authority = requirePubkey(args.authority, "authority");
+  const mint = requirePubkey(args.mint, "mint");
+  const newCreator = requirePubkey(args.newCreator, "newCreator");
+
+  const ix = await PUMP_SDK.migrateBondingCurveCreatorInstruction({
+    authority,
+    mint,
+    newCreator,
+  });
+
+  return ok(
+    `👤 Migrate Bonding Curve Creator Instruction Built\n\nMint: ${mint.toBase58()}\nAuthority: ${authority.toBase58()}\nNew Creator: ${newCreator.toBase58()}\n\n${serializeInstructions([ix])}`,
+  );
+}

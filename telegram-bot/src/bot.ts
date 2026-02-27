@@ -20,7 +20,7 @@ import {
     formatWelcome,
     escapeHtml,
 } from './formatters.js';
-import type { TokenLaunchMonitorState } from './types.js';
+import type { PumpEventMonitorState, TokenLaunchMonitorState } from './types.js';
 import {
     activateMonitor,
     deactivateMonitor,
@@ -46,6 +46,11 @@ import type { BotConfig, CreatorChangeEvent, FeeClaimEvent } from './types.js';
 /** Minimal interface for the TokenLaunchMonitor (built by Agent 1). */
 export interface TokenLaunchMonitorLike {
     getState(): TokenLaunchMonitorState;
+}
+
+/** Minimal interface for the PumpEventMonitor. */
+export interface PumpEventMonitorLike {
+    getState(): PumpEventMonitorState;
 }
 
 // ============================================================================

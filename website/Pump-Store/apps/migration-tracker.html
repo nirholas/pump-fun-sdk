@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="pump-include" content="pump.css">
+    <meta name="capabilities" content="migration_tracker">
+    <meta name="pump-icon" content="swap_horiz">
+    <meta name="pump-perms" content="none" />
+    <title>Migration Tracker</title>
+    <style>
+        :root {
+            --bg1:#0a0a0f; --bg2:#141420; --bg3:#1e1e30;
+            --txt1:#fff; --txt2:#9ca3af;
+            --accent:#00e87b; --accent2:#00c868;
+            --blue:#60a5fa; --purple:#a78bfa; --yellow:#fbbf24; --orange:#fb923c; --red:#ff4d6a;
+            --radius:12px;
+        }
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg1);color:var(--txt1);min-height:100vh;padding:16px;overflow-y:auto}
+        .app{max-width:620px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+        .header{display:flex;align-items:center;gap:10px}
+        .header h1{font-size:1.2em}
+        .badge{font-size:.65em;background:var(--accent);color:#000;padding:2px 8px;border-radius:20px;font-weight:600}
+        .card{background:var(--bg2);border:1px solid rgba(255,255,255,.06);border-radius:var(--radius);padding:18px}
+        .card-title{font-size:.9em;font-weight:500;margin-bottom:12px}
+        .info-box{padding:12px 16px;background:rgba(0,232,123,.06);border-radius:8px;font-size:.8em;color:var(--txt2);display:flex;gap:8px;align-items:flex-start}
+
+        .stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+        .stat-box{background:var(--bg3);border-radius:10px;padding:14px;text-align:center}
+        .stat-box .val{font-size:1.4em;font-weight:700}
+        .stat-box .lbl{font-size:.68em;color:var(--txt2);text-transform:uppercase;margin-top:4px}
+
+        .pipeline{display:flex;align-items:center;gap:0;margin:8px 0}
+        .pipe-stage{flex:1;text-align:center;padding:12px 8px;position:relative}
+        .pipe-stage .pipe-icon{font-size:1.8em;margin-bottom:4px}
+        .pipe-stage .pipe-label{font-size:.75em;font-weight:500}
+        .pipe-stage .pipe-sub{font-size:.68em;color:var(--txt2);margin-top:2px}
+        .pipe-arrow{font-size:1.2em;color:var(--txt2);flex-shrink:0}
+        .pipe-stage.active .pipe-label{color:var(--accent)}
+
+        .token-list{display:flex;flex-direction:column;gap:8px}
+        .token-card{background:var(--bg3);border-radius:10px;padding:14px;display:flex;gap:12px;align-items:center;cursor:pointer;transition:all .2s;border:1px solid transparent}
+        .token-card:hover{border-color:rgba(255,255,255,.1)}
+        .token-card .token-avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.2em;flex-shrink:0}
+        .token-card .token-info{flex:1;min-width:0}
+        .token-card .token-name{font-size:.9em;font-weight:600}
+        .token-card .token-addr{font-size:.7em;color:var(--txt2);font-family:monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+        .token-card .token-status{text-align:right}
+        .token-card .status-badge{font-size:.72em;padding:3px 8px;border-radius:12px;font-weight:500}
+        .badge-bonding{background:rgba(0,232,123,.12);color:var(--accent)}
+        .badge-graduating{background:rgba(251,191,36,.12);color:var(--yellow)}
+        .badge-graduated{background:rgba(96,165,250,.12);color:var(--blue)}
+        .badge-amm{background:rgba(167,139,250,.12);color:var(--purple)}
+        .token-card .token-progress{margin-top:4px;font-size:.72em;color:var(--txt2)}
+
+        .progress-bar{height:6px;background:var(--bg1);border-radius:3px;overflow:hidden;margin-top:6px}
+        .progress-fill{height:100%;border-radius:3px;transition:width .5s}
+
+        .detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+        .detail-item{padding:10px;background:var(--bg3);border-radius:8px}
+        .detail-item .lbl{font-size:.68em;color:var(--txt2);text-transform:uppercase;margin-bottom:2px}
+        .detail-item .val{font-size:.9em;font-weight:500}
+
+        .flow-diagram{display:flex;flex-direction:column;gap:2px;padding:12px;background:var(--bg3);border-radius:8px;font-size:.82em}
+        .flow-step{display:flex;align-items:center;gap:10px;padding:4px 0}
+        .flow-num{width:24px;height:24px;border-radius:50%;background:var(--accent);color:#000;display:flex;align-items:center;justify-content:center;font-size:.75em;font-weight:700;flex-shrink:0}
+        .flow-line{width:2px;height:12px;margin-left:11px;background:rgba(0,232,123,.3)}
+
+        .chart-container{width:100%;height:160px;position:relative}
+        canvas{width:100%;height:100%}
+
+        .code-block{background:var(--bg3);border-radius:8px;padding:14px;font-family:monospace;font-size:.78em;line-height:1.6;overflow-x:auto;color:var(--accent)}
+    </style>
+</head>
+<body>
+<div class="app">
+    <div class="header">
+        <span style="font-size:28px">🎓</span>
+        <h1>Migration Tracker</h1>
+        <span class="badge">SDK</span>
+    </div>
+
+    <div class="info-box">
+        <span>💡</span>
+        <div>When a bonding curve fills (793.1M tokens sold), it <strong>graduates</strong> and migrates to <strong>PumpAMM</strong> for full liquidity pool trading. Track the journey here.</div>
+    </div>
+
+    <!-- Overview Stats -->
+    <div class="stat-row">
+        <div class="stat-box">
+            <div class="val" style="color:var(--accent)" id="statBonding">8</div>
+            <div class="lbl">On Bonding Curve</div>
+        </div>
+        <div class="stat-box">
+            <div class="val" style="color:var(--yellow)" id="statGraduating">2</div>
+            <div class="lbl">Near Graduation</div>
+        </div>
+        <div class="stat-box">
+            <div class="val" style="color:var(--blue)" id="statGraduated">5</div>
+            <div class="lbl">Graduated to AMM</div>
+        </div>
+    </div>
+
+    <!-- Migration Pipeline -->
+    <div class="card">
+        <div class="card-title">Migration Pipeline</div>
+        <div class="pipeline">
+            <div class="pipe-stage active">
+                <div class="pipe-icon">🟢</div>
+                <div class="pipe-label">createV2</div>
+                <div class="pipe-sub">Token created</div>
+            </div>
+            <div class="pipe-arrow">→</div>
+            <div class="pipe-stage active">
+                <div class="pipe-icon">📈</div>
+                <div class="pipe-label">Bonding Curve</div>
+                <div class="pipe-sub">Buy/Sell trading</div>
+            </div>
+            <div class="pipe-arrow">→</div>
+            <div class="pipe-stage">
+                <div class="pipe-icon">🎓</div>
+                <div class="pipe-label">complete=true</div>
+                <div class="pipe-sub">Curve filled</div>
+            </div>
+            <div class="pipe-arrow">→</div>
+            <div class="pipe-stage">
+                <div class="pipe-icon">🏊</div>
+                <div class="pipe-label">PumpAMM</div>
+                <div class="pipe-sub">migrate()</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Token List -->
+    <div class="card">
+        <div class="card-title">Tracked Tokens</div>
+        <div class="token-list" id="tokenList"></div>
+    </div>
+
+    <!-- Selected Token Detail -->
+    <div class="card" id="detailCard" style="display:none">
+        <div class="card-title" id="detailTitle">Token Details</div>
+        <div class="detail-grid" id="detailGrid"></div>
+        <div style="margin-top:12px">
+            <div style="display:flex;justify-content:space-between;font-size:.8em;margin-bottom:4px">
+                <span>Curve Progress</span>
+                <span id="detailPct">0%</span>
+            </div>
+            <div class="progress-bar" style="height:10px">
+                <div class="progress-fill" id="detailProgress" style="width:0%;background:linear-gradient(90deg,var(--accent),var(--blue))"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Graduation Chart -->
+    <div class="card">
+        <div class="card-title">Graduation Timeline (Simulated)</div>
+        <div class="chart-container"><canvas id="gradChart"></canvas></div>
+    </div>
+
+    <!-- Migration Flow -->
+    <div class="card">
+        <div class="card-title">Migration Process</div>
+        <div class="flow-diagram">
+            <div class="flow-step"><div class="flow-num">1</div><span>Bonding curve reaches <code>realTokenReserves = 0</code></span></div>
+            <div class="flow-line"></div>
+            <div class="flow-step"><div class="flow-num">2</div><span><code>BondingCurve.complete</code> set to <code>true</code></span></div>
+            <div class="flow-line"></div>
+            <div class="flow-step"><div class="flow-num">3</div><span>Anyone calls <code>migrateInstruction(mint)</code></span></div>
+            <div class="flow-line"></div>
+            <div class="flow-step"><div class="flow-num">4</div><span>Liquidity transferred to <code>canonicalPumpPoolPda</code></span></div>
+            <div class="flow-line"></div>
+            <div class="flow-step"><div class="flow-num">5</div><span>PumpAMM pool activated — open market trading begins</span></div>
+        </div>
+    </div>
+
+    <!-- SDK Code -->
+    <div class="card">
+        <div class="card-title">SDK Usage</div>
+        <div class="code-block">
+<span style="color:var(--purple)">import</span> { OnlinePumpSdk, PUMP_SDK } <span style="color:var(--purple)">from</span> <span style="color:var(--yellow)">'@pump-fun/pump-sdk'</span>;
+
+<span style="color:var(--txt2)">// Check if token has graduated</span>
+<span style="color:var(--purple)">const</span> bc = <span style="color:var(--purple)">await</span> sdk.fetchBondingCurve(mint);
+<span style="color:var(--purple)">if</span> (bc.complete) {
+  console.log(<span style="color:var(--yellow)">'Token graduated! Ready for migration.'</span>);
+}
+
+<span style="color:var(--txt2)">// Trigger migration (permissionless)</span>
+<span style="color:var(--purple)">const</span> ixs = PUMP_SDK.migrateInstruction(mint,
+  mintAccountInfo, bondingCurveAccountInfo
+);
+
+<span style="color:var(--txt2)">// Get canonical AMM pool PDA</span>
+<span style="color:var(--purple)">const</span> pool = canonicalPumpPoolPda(mint);
+
+<span style="color:var(--txt2)">// Check graduation progress</span>
+<span style="color:var(--purple)">const</span> progress = 1 - bc.realTokenReserves / 793_100_000e6;
+        </div>
+    </div>
+</div>
+
+<script>
+// Simulated tokens data
+const tokens = [
+    { name: 'MOONCAT', symbol: '🐱', color: '#ff6b6b', progress: 95.2, mcap: 81.1, volume: 234.5, status: 'graduating', created: '2h ago' },
+    { name: 'DEGEN', symbol: '🎰', color: '#fbbf24', progress: 87.3, mcap: 74.2, volume: 189.3, status: 'graduating', created: '4h ago' },
+    { name: 'SOLPUNK', symbol: '🤘', color: '#a78bfa', progress: 100, mcap: 85.6, volume: 567.8, status: 'graduated', created: '1d ago' },
+    { name: 'WIZHAT', symbol: '🧙', color: '#60a5fa', progress: 100, mcap: 92.3, volume: 890.1, status: 'amm', created: '2d ago' },
+    { name: 'PEPEMAX', symbol: '🐸', color: '#00e87b', progress: 62.4, mcap: 53.1, volume: 78.5, status: 'bonding', created: '30m ago' },
+    { name: 'DOGWIF', symbol: '🐕', color: '#fb923c', progress: 45.8, mcap: 38.9, volume: 56.2, status: 'bonding', created: '1h ago' },
+    { name: 'AICOIN', symbol: '🤖', color: '#f472b6', progress: 31.2, mcap: 36.5, volume: 34.1, status: 'bonding', created: '45m ago' },
+    { name: 'NFTDAO', symbol: '🖼️', color: '#818cf8', progress: 100, mcap: 88.4, volume: 445.6, status: 'graduated', created: '3d ago' },
+    { name: 'STAKE', symbol: '🥩', color: '#f43f5e', progress: 100, mcap: 91.2, volume: 678.9, status: 'amm', created: '5d ago' },
+    { name: 'COPE', symbol: '😤', color: '#14b8a6', progress: 18.5, mcap: 33.7, volume: 22.3, status: 'bonding', created: '15m ago' },
+    { name: 'WAGMI', symbol: '✊', color: '#eab308', progress: 100, mcap: 86.7, volume: 512.3, status: 'graduated', created: '1d ago' },
+    { name: 'BASED', symbol: '💎', color: '#06b6d4', progress: 72.1, mcap: 61.3, volume: 98.4, status: 'bonding', created: '2h ago' },
+    { name: 'NGMI', symbol: '📉', color: '#ef4444', progress: 8.3, mcap: 30.1, volume: 11.5, status: 'bonding', created: '5m ago' },
+    { name: 'ALPHA', symbol: '🅰️', color: '#8b5cf6', progress: 100, mcap: 89.5, volume: 723.4, status: 'amm', created: '4d ago' },
+    { name: 'MEMEX', symbol: '🧬', color: '#22d3ee', progress: 55.7, mcap: 47.3, volume: 67.8, status: 'bonding', created: '1h ago' },
+];
+
+function getStatusBadge(status) {
+    const map = {
+        bonding: '<span class="status-badge badge-bonding">Bonding Curve</span>',
+        graduating: '<span class="status-badge badge-graduating">Near Graduation</span>',
+        graduated: '<span class="status-badge badge-graduated">Graduated</span>',
+        amm: '<span class="status-badge badge-amm">PumpAMM</span>',
+    };
+    return map[status] || '';
+}
+
+function renderTokenList() {
+    const list = document.getElementById('tokenList');
+    list.innerHTML = '';
+
+    // Sort: graduating first, then by progress desc
+    const sorted = [...tokens].sort((a, b) => {
+        const order = { graduating: 0, bonding: 1, graduated: 2, amm: 3 };
+        if (order[a.status] !== order[b.status]) return order[a.status] - order[b.status];
+        return b.progress - a.progress;
+    });
+
+    sorted.forEach((token, i) => {
+        const card = document.createElement('div');
+        card.className = 'token-card';
+        card.onclick = () => showDetail(token);
+        card.innerHTML = `
+            <div class="token-avatar" style="background:${token.color}22;color:${token.color}">${token.symbol}</div>
+            <div class="token-info">
+                <div class="token-name">${token.name}</div>
+                <div class="token-addr">${token.created} • ${token.volume.toFixed(1)} SOL volume</div>
+                <div class="progress-bar" style="margin-top:4px">
+                    <div class="progress-fill" style="width:${token.progress}%;background:${token.progress >= 100 ? 'var(--blue)' : token.progress > 80 ? 'var(--yellow)' : 'var(--accent)'}"></div>
+                </div>
+            </div>
+            <div class="token-status">
+                ${getStatusBadge(token.status)}
+                <div class="token-progress">${token.progress.toFixed(1)}%</div>
+            </div>
+        `;
+        list.appendChild(card);
+    });
+
+    // Update stats
+    document.getElementById('statBonding').textContent = tokens.filter(t => t.status === 'bonding').length;
+    document.getElementById('statGraduating').textContent = tokens.filter(t => t.status === 'graduating').length;
+    document.getElementById('statGraduated').textContent = tokens.filter(t => t.status === 'graduated' || t.status === 'amm').length;
+}
+
+function showDetail(token) {
+    const card = document.getElementById('detailCard');
+    card.style.display = 'block';
+    document.getElementById('detailTitle').textContent = `${token.symbol} ${token.name} Details`;
+
+    const soldTokens = (token.progress / 100) * 793100000;
+    const vTokenReserves = 1073000191 - soldTokens;
+    const k = 30e9 * 1073000191e6;
+    const vSolReserves = k / (vTokenReserves * 1e6);
+
+    const grid = document.getElementById('detailGrid');
+    grid.innerHTML = `
+        <div class="detail-item"><div class="lbl">Status</div><div class="val">${token.status.charAt(0).toUpperCase() + token.status.slice(1)}</div></div>
+        <div class="detail-item"><div class="lbl">Market Cap</div><div class="val">${token.mcap.toFixed(1)} SOL</div></div>
+        <div class="detail-item"><div class="lbl">Volume</div><div class="val">${token.volume.toFixed(1)} SOL</div></div>
+        <div class="detail-item"><div class="lbl">Tokens Sold</div><div class="val">${(soldTokens / 1e6).toFixed(1)}M</div></div>
+        <div class="detail-item"><div class="lbl">Virtual SOL</div><div class="val">${(vSolReserves / 1e9).toFixed(2)} SOL</div></div>
+        <div class="detail-item"><div class="lbl">Remaining</div><div class="val">${((793100000 - soldTokens) / 1e6).toFixed(1)}M tokens</div></div>
+    `;
+
+    document.getElementById('detailPct').textContent = token.progress.toFixed(1) + '%';
+    document.getElementById('detailProgress').style.width = token.progress + '%';
+    card.scrollIntoView({ behavior: 'smooth' });
+}
+
+function drawGradChart() {
+    const canvas = document.getElementById('gradChart');
+    const ctx = canvas.getContext('2d');
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.parentElement.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    ctx.scale(dpr, dpr);
+    canvas.style.width = rect.width + 'px';
+    canvas.style.height = rect.height + 'px';
+
+    const w = rect.width, h = rect.height, pad = 30;
+    ctx.clearRect(0, 0, w, h);
+
+    // Simulated graduations over time (last 24h, hourly)
+    const hours = 24;
+    const grads = [];
+    for (let i = 0; i < hours; i++) {
+        grads.push(Math.floor(Math.random() * 8 + 2));
+    }
+
+    const maxG = Math.max(...grads) * 1.2;
+
+    // Grid
+    ctx.strokeStyle = 'rgba(255,255,255,.04)';
+    for (let i = 0; i <= 4; i++) {
+        const y = pad + (h - pad * 2) * i / 4;
+        ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(w - pad, y); ctx.stroke();
+    }
+
+    // Bars
+    const barW = Math.max(4, (w - pad * 2) / hours - 2);
+    grads.forEach((g, i) => {
+        const x = pad + (i / hours) * (w - pad * 2);
+        const barH = (g / maxG) * (h - pad * 2);
+        const y = h - pad - barH;
+
+        const grad = ctx.createLinearGradient(0, y, 0, h - pad);
+        grad.addColorStop(0, 'rgba(96,165,250,0.8)');
+        grad.addColorStop(1, 'rgba(96,165,250,0.1)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(x, y, barW, barH);
+
+        // Label
+        if (i % 4 === 0) {
+            ctx.fillStyle = 'rgba(255,255,255,.3)';
+            ctx.font = '10px Inter,sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(`${hours - i}h`, x + barW / 2, h - pad + 14);
+        }
+    });
+
+    ctx.fillStyle = 'rgba(255,255,255,.3)';
+    ctx.font = '10px Inter,sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Graduations per hour (simulated)', w / 2, pad - 8);
+}
+
+// Simulate progress updates
+function simulateProgress() {
+    tokens.forEach(token => {
+        if (token.status === 'bonding' || token.status === 'graduating') {
+            token.progress = Math.min(100, token.progress + Math.random() * 0.5);
+            token.mcap = 28 + (token.progress / 100) * 58;
+            token.volume += Math.random() * 2;
+            if (token.progress >= 90 && token.status === 'bonding') token.status = 'graduating';
+            if (token.progress >= 100) {
+                token.status = 'graduated';
+                token.progress = 100;
+            }
+        }
+    });
+    renderTokenList();
+}
+
+renderTokenList();
+setTimeout(drawGradChart, 100);
+window.addEventListener('resize', drawGradChart);
+setInterval(simulateProgress, 3000);
+</script>
+</body>
+</html>

@@ -2,7 +2,13 @@
   "name": "@sperax/plugin-sdk",
   "version": "1.0.0",
   "description": "SperaxOS Plugin SDK - Build plugins for SperaxOS",
-  "keywords": ["sperax", "speraxos", "sdk", "plugin", "chat-plugin"],
+  "keywords": [
+    "sperax",
+    "speraxos",
+    "sdk",
+    "plugin",
+    "chat-plugin"
+  ],
   "homepage": "https://github.com/nirholas/plugin.delivery",
   "repository": {
     "type": "git",
@@ -50,6 +56,6 @@
   "devDependencies": {
     "@types/react": "^18",
     "typescript": "^5.7.3",
-    "vitest": "^3.0.0"
+    "vitest": "^3.2.4"
   }
 }
