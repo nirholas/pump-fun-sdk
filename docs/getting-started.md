@@ -97,6 +97,7 @@ const instructions = await PUMP_SDK.buyInstructions({
   solAmount,
   amount: tokenAmount,
   slippage: 1, // 1%
+  tokenProgram: TOKEN_PROGRAM_ID,
 });
 ```
 
@@ -104,6 +105,7 @@ const instructions = await PUMP_SDK.buyInstructions({
 
 ```typescript
 import { getSellSolAmountFromTokenAmount } from "@pump-fun/pump-sdk";
+import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 
 const { bondingCurveAccountInfo, bondingCurve } = await sdk.fetchSellState(
   mint,
@@ -126,6 +128,8 @@ const instructions = await PUMP_SDK.sellInstructions({
     amount: sellAmount,
   }),
   slippage: 1,
+  tokenProgram: TOKEN_PROGRAM_ID,
+  mayhemMode: false,
 });
 ```
 

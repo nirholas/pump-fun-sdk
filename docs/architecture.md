@@ -121,7 +121,7 @@ interface FeeTier {
 }
 ```
 
-The `calculateFeesBps()` function in `fees.ts` selects the appropriate tier based on the token's current market cap. Fee amounts are in basis points (1 bps = 0.01%).
+The `computeFeesBps()` function in `fees.ts` selects the appropriate tier based on the token's current market cap. Fee amounts are in basis points (1 bps = 0.01%).
 
 ### Mayhem Mode
 

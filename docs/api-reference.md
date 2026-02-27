@@ -21,7 +21,8 @@ Complete reference for all public classes, functions, types, and constants expor
 |----------|------|-------|-------------|
 | `PUMP_SDK` | `PumpSdk` | — | Pre-built offline SDK singleton |
 | `BONDING_CURVE_NEW_SIZE` | `number` | `151` | Byte size of new bonding curve accounts |
-| `ONE_BILLION_SUPPLY` | `BN` | `1_000_000_000_000_000` | Standard total token supply (with decimals) |
+| `PUMP_TOKEN_MINT` | `PublicKey` | `pumpCmXqMfrsAkQ5r49WcJnRayYRqmXz6ae8H7H9Dfn` | Pump token mint address |
+| `MAX_SHAREHOLDERS` | `number` | `10` | Maximum number of fee sharing shareholders |
 | `CANONICAL_POOL_INDEX` | `number` | `0` | Default AMM pool index |
 
 ### Pre-computed PDAs
@@ -79,7 +80,7 @@ const ix = await sdk.createV2Instruction({
   creator: PublicKey,     // Creator wallet
   user: PublicKey,        // Fee payer
   mayhemMode: boolean,    // Enable mayhem mode
-  cashback?: PublicKey,   // Optional cashback recipient
+  cashback?: boolean,    // Enable cashback (default: false)
 });
 ```
 
@@ -99,7 +100,7 @@ const ixs = await sdk.createV2AndBuyInstructions({
   amount: BN,             // Token amount to buy
   solAmount: BN,          // SOL to spend (lamports)
   mayhemMode: boolean,
-  cashback?: PublicKey,
+  cashback?: boolean,         // Enable cashback (default: false)
 });
 ```
 
@@ -128,7 +129,7 @@ const ixs = await sdk.buyInstructions({
   amount: BN,             // Token amount to receive
   solAmount: BN,          // Max SOL to spend (lamports)
   slippage: number,       // Slippage tolerance (e.g. 1 = 1%)
-  tokenProgram?: PublicKey,
+  tokenProgram: PublicKey, // Default: TOKEN_PROGRAM_ID
 });
 ```
 
@@ -150,9 +151,9 @@ const ixs = await sdk.sellInstructions({
   amount: BN,             // Token amount to sell
   solAmount: BN,          // Min SOL to receive (lamports)
   slippage: number,
-  tokenProgram?: PublicKey,
-  mayhemMode?: boolean,
-  cashback?: PublicKey,
+  tokenProgram: PublicKey,  // Default: TOKEN_PROGRAM_ID
+  mayhemMode: boolean,     // Default: false
+  cashback?: boolean,      // Enable cashback (default: false)
 });
 ```
 
@@ -230,7 +231,7 @@ Creates a fee sharing configuration for a token.
 const ix = await sdk.createFeeSharingConfig({
   creator: PublicKey,
   mint: PublicKey,
-  pool?: PublicKey,   // Required for graduated tokens
+  pool: PublicKey | null,  // null for bonding curve tokens, required for graduated tokens
 });
 ```
 
@@ -246,8 +247,8 @@ Updates the shareholder distribution. Validates:
 const ix = await sdk.updateFeeShares({
   authority: PublicKey,
   mint: PublicKey,
-  currentShareholders: Shareholder[],
-  newShareholders: Shareholder[],
+  currentShareholders: PublicKey[],  // Public keys of current shareholders
+  newShareholders: Shareholder[],     // New shareholders with share allocations
 });
 ```
 
@@ -431,6 +432,14 @@ Creates a fresh bonding curve state from global configuration.
 
 ```typescript
 const curve = newBondingCurve(global: Global);
+// Returns:
+// {
+//   virtualTokenReserves, virtualSolReserves,
+//   realTokenReserves, realSolReserves: BN(0),
+//   tokenTotalSupply, complete: false,
+//   creator: PublicKey.default,
+//   isMayhemMode: global.mayhemModeEnabled,
+// }
 ```
 
 ### Token Incentives
@@ -476,6 +485,41 @@ const todayRewards = currentDayTokens(
 | `getSolVaultPda()` | `PublicKey` | SOL vault address |
 | `getTokenVaultPda(mint)` | `PublicKey` | Token vault address |
 | `getEventAuthorityPda(programId)` | `PublicKey` | Event authority for a program |
+
+### Fee Functions
+
+#### `getFee(feeBasisPoints, amount)`
+
+Calculates the fee amount given a fee rate and trade amount.
+
+```typescript
+import { getFee } from "@pump-fun/pump-sdk";
+
+const fee = getFee(feeBasisPoints: BN, amount: BN);
+```
+
+#### `computeFeesBps(feeConfig, marketCapLamports)`
+
+Selects the appropriate fee tier based on market cap and returns the applicable fee rates.
+
+```typescript
+import { computeFeesBps } from "@pump-fun/pump-sdk";
+
+const { protocolFeeBps, creatorFeeBps } = computeFeesBps(
+  feeConfig: FeeConfig | null,
+  marketCapLamports: BN,
+);
+```
+
+#### `calculateFeeTier(feeConfig, marketCapLamports)`
+
+Returns the full `Fees` object for the given market cap tier.
+
+```typescript
+import { calculateFeeTier } from "@pump-fun/pump-sdk";
+
+const fees = calculateFeeTier(feeConfig: FeeConfig | null, marketCapLamports: BN);
+```
 
 ### Program Constructors
 
@@ -660,8 +704,6 @@ All errors extend `Error`.
 | `NoShareholdersError` | Empty shareholders array in `updateFeeShares` |
 | `TooManyShareholdersError` | More than 10 shareholders |
 | `ZeroShareError` | A shareholder has 0 bps |
-| `ShareCalculationOverflowError` | Share math overflow |
 | `InvalidShareTotalError` | Shares don't sum to 10,000 bps |
 | `DuplicateShareholderError` | Duplicate addresses in shareholders |
-| `PoolRequiredForGraduatedError` | `createFeeSharingConfig` for graduated token without pool |
 

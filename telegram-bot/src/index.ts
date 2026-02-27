@@ -17,6 +17,7 @@ import { getActiveMonitors } from './launch-store.js';
 import { log, setLogLevel } from './logger.js';
 import { PumpFunMonitor } from './monitor.js';
 import { loadWatches } from './store.js';
+import { loadApiConfig, PumpFunApi } from './api/index.js';
 
 async function main(): Promise<void> {
     // ── Load config ──────────────────────────────────────────────────────

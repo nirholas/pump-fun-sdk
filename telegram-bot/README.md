@@ -140,14 +140,185 @@ pumpfun-telegram-bot/
 ├── .gitignore
 ├── README.md
 ├── data/                  # Persisted watch data (auto-created)
-│   └── watches.json
+│   ├── watches.json       # Telegram bot watches
+│   └── api-watches.json   # API watches
 └── src/
-    ├── index.ts           # Entry point — wires everything together
+    ├── index.ts           # Entry point — wires bot + API together
     ├── config.ts          # Environment variable loading
     ├── types.ts           # All type definitions & PumpFun constants
     ├── logger.ts          # Simple leveled logger
-    ├── store.ts           # In-memory + disk-persisted watch store
+    ├── store.ts           # In-memory + disk-persisted watch store (bot)
     ├── monitor.ts         # Solana RPC monitor for PumpFun fee claims
+    ├── bot.ts             # grammY Telegram bot & command handlers
+    ├── formatters.ts      # Rich HTML message formatting
+    └── api/               # Scalable REST API
+        ├── index.ts       # Module barrel
+        ├── server.ts      # HTTP server, routing, auth, CORS
+        ├── types.ts       # API request/response types
+        ├── apiStore.ts    # Per-client watch CRUD (separate from bot)
+        ├── claimBuffer.ts # Ring buffer + SSE fan-out for claims
+        ├── rateLimiter.ts # Sliding-window per-client rate limiter
+        └── webhooks.ts    # Webhook delivery with retries
+```
+
+## REST API
+
+The bot includes a scalable REST API for programmatic access to the fee claim monitoring system. Enable it alongside the Telegram bot or run it standalone.
+
+### Quick Start (API)
+
+```bash
+# API-only mode (no Telegram bot)
+npm run api
+
+# Bot + API together
+npm run dev:full
+
+# Production
+ENABLE_API=true npm run build && ENABLE_API=true npm start
+```
+
+### Authentication
+
+Set `API_KEYS` in `.env` to require API key authentication:
+
+```env
+API_KEYS=sk_live_abc123,sk_live_def456
+```
+
+Pass your key via header:
+
+```bash
+# X-API-Key header
+curl -H "X-API-Key: sk_live_abc123" http://localhost:3000/api/v1/status
+
+# Or Authorization Bearer
+curl -H "Authorization: Bearer sk_live_abc123" http://localhost:3000/api/v1/status
+```
+
+If `API_KEYS` is empty, no authentication is required (development mode).
+
+### API Endpoints
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| `GET` | `/api/v1/health` | No | Health check, uptime, monitor status |
+| `GET` | `/api/v1/status` | Yes | Detailed monitor + watch + claim stats |
+| `GET` | `/api/v1/claims` | Yes | Paginated claim history with filters |
+| `GET` | `/api/v1/claims/stream` | Yes | SSE real-time claim event stream |
+| `GET` | `/api/v1/watches` | Yes | List your watches (paginated) |
+| `POST` | `/api/v1/watches` | Yes | Create a new watch |
+| `GET` | `/api/v1/watches/:id` | Yes | Get a specific watch |
+| `PATCH` | `/api/v1/watches/:id` | Yes | Update a watch |
+| `DELETE` | `/api/v1/watches/:id` | Yes | Delete a watch |
+
+### Create a Watch
+
+```bash
+curl -X POST http://localhost:3000/api/v1/watches \
+  -H "X-API-Key: sk_live_abc123" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "wallet": "HN7c...4xYz",
+    "label": "MyProject",
+    "webhookUrl": "https://example.com/webhook"
+  }'
+```
+
+Response:
+
+```json
+{
+  "id": "aw_1740700000001",
+  "wallet": "HN7c...4xYz",
+  "label": "MyProject",
+  "active": true,
+  "webhookUrl": "https://example.com/webhook",
+  "createdAt": "2026-02-27T12:00:00.000Z",
+  "clientId": "client_abc"
+}
+```
+
+### Query Claims
+
+```bash
+# All claims (paginated)
+curl "http://localhost:3000/api/v1/claims?page=1&limit=20" -H "X-API-Key: ..."
+
+# Filter by wallet
+curl "http://localhost:3000/api/v1/claims?wallet=HN7c...4xYz" -H "X-API-Key: ..."
+
+# Filter by type and amount
+curl "http://localhost:3000/api/v1/claims?isCashback=false&minAmountSol=1.0" -H "X-API-Key: ..."
+
+# Filter by date range
+curl "http://localhost:3000/api/v1/claims?since=2026-02-01&until=2026-02-28" -H "X-API-Key: ..."
+```
+
+### Real-Time SSE Stream
+
+```bash
+# Stream all claims
+curl -N "http://localhost:3000/api/v1/claims/stream" -H "X-API-Key: ..."
+
+# Stream filtered by wallet
+curl -N "http://localhost:3000/api/v1/claims/stream?wallet=HN7c...4xYz" -H "X-API-Key: ..."
+```
+
+Events:
+
+```
+event: connected
+data: {"clientId":"client_abc","timestamp":"2026-02-27T12:00:00.000Z"}
+
+event: claim
+data: {"txSignature":"5xK...","claimerWallet":"HN7c...","amountSol":2.5,"claimType":"collect_creator_fee",...}
+```
+
+### Webhooks
+
+When creating a watch with a `webhookUrl`, the API will POST claim events to that URL with exponential backoff retries (up to 3 attempts):
+
+```json
+{
+  "event": "claim.detected",
+  "data": {
+    "txSignature": "5xK...",
+    "claimerWallet": "HN7c...4xYz",
+    "amountSol": 2.5,
+    "claimType": "collect_creator_fee",
+    "tokenMint": "pump...Dfn",
+    "timestamp": "2026-02-27T14:30:00.000Z"
+  },
+  "watchIds": ["aw_1740700000001"],
+  "timestamp": "2026-02-27T14:30:01.000Z"
+}
+```
+
+### Rate Limiting
+
+All authenticated endpoints are rate-limited per API key:
+
+| Header | Description |
+|--------|-------------|
+| `X-RateLimit-Limit` | Max requests per window |
+| `X-RateLimit-Remaining` | Requests remaining |
+| `X-RateLimit-Reset` | Seconds until window resets |
+| `Retry-After` | Seconds to wait (only on 429) |
+
+Default: 100 requests per 60-second window. Configure via `RATE_LIMIT_MAX` and `RATE_LIMIT_WINDOW_MS`.
+
+### Scaling
+
+The API is designed for horizontal scaling:
+
+| Component | Single Instance | Multi-Instance |
+|-----------|----------------|----------------|
+| Rate limiter | In-memory Map | Swap for Redis |
+| Watch store | JSON file | Swap for PostgreSQL/Redis |
+| Claim buffer | In-memory ring buffer | Swap for Redis Streams |
+| SSE fan-out | In-process subscribers | Add Redis pub/sub |
+| Webhooks | Fire-and-forget with retry | Add job queue (BullMQ) |
     ├── bot.ts             # grammY Telegram bot & command handlers
     └── formatters.ts      # Rich HTML message formatting
 ```
@@ -156,12 +327,21 @@ pumpfun-telegram-bot/
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `TELEGRAM_BOT_TOKEN` | ✅ | — | Bot token from @BotFather |
+| `TELEGRAM_BOT_TOKEN` | ✅* | — | Bot token from @BotFather (*not needed in API-only mode) |
 | `SOLANA_RPC_URL` | — | `https://api.mainnet-beta.solana.com` | Solana RPC endpoint |
 | `SOLANA_WS_URL` | — | Derived from RPC URL | WebSocket endpoint for real-time |
 | `POLL_INTERVAL_SECONDS` | — | `15` | Polling interval (when WS unavailable) |
 | `ALLOWED_USER_IDS` | — | (allow all) | Comma-separated Telegram user IDs |
 | `LOG_LEVEL` | — | `info` | `debug`, `info`, `warn`, `error` |
+| `ENABLE_API` | — | `false` | Enable the REST API server |
+| `API_ONLY` | — | `false` | Run API without Telegram bot |
+| `API_PORT` | — | `3000` | HTTP port for the API server |
+| `API_KEYS` | — | (no auth) | Comma-separated API keys for auth |
+| `CORS_ORIGINS` | — | `*` | Allowed CORS origins |
+| `MAX_WATCHES_PER_CLIENT` | — | `100` | Max watches per API key |
+| `RATE_LIMIT_MAX` | — | `100` | Requests per rate limit window |
+| `RATE_LIMIT_WINDOW_MS` | — | `60000` | Rate limit window in ms |
+| `CLAIM_BUFFER_SIZE` | — | `10000` | Max claims buffered in memory |
 
 ## Adding to a Group Chat
 

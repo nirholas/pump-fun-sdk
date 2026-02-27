@@ -72,6 +72,8 @@ console.log("Created & bought:", sig);
 ## Buy with Slippage Protection
 
 ```typescript
+import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
+
 const mint = new PublicKey("token-mint-address");
 const user = wallet.publicKey;
 const solAmount = new BN(0.1 * 1e9); // 0.1 SOL
@@ -99,6 +101,7 @@ const instructions = await PUMP_SDK.buyInstructions({
   solAmount,
   amount: tokenAmount,
   slippage: 2, // 2% slippage tolerance
+  tokenProgram: TOKEN_PROGRAM_ID,
 });
 
 const tx = new Transaction().add(...instructions);
@@ -109,6 +112,7 @@ await sendAndConfirmTransaction(connection, tx, [wallet]);
 
 ```typescript
 import { getSellSolAmountFromTokenAmount } from "@pump-fun/pump-sdk";
+import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 
 const sellAmount = new BN(1_000_000); // tokens to sell
 
@@ -135,6 +139,8 @@ const instructions = await PUMP_SDK.sellInstructions({
   amount: sellAmount,
   solAmount: solReceived,
   slippage: 1,
+  tokenProgram: TOKEN_PROGRAM_ID,
+  mayhemMode: false,
 });
 
 const tx = new Transaction().add(...instructions);
@@ -226,13 +232,14 @@ import {
 const createIx = await PUMP_SDK.createFeeSharingConfig({
   creator: wallet.publicKey,
   mint,
+  pool: null,  // null for bonding curve tokens
 });
 
 // 2. Set shareholders
 const updateIx = await PUMP_SDK.updateFeeShares({
   authority: wallet.publicKey,
   mint,
-  currentShareholders: [],
+  currentShareholders: [],  // PublicKey[] — empty on first setup
   newShareholders: [
     { address: new PublicKey("addr-A"), shareBps: 7000 }, // 70%
     { address: new PublicKey("addr-B"), shareBps: 3000 }, // 30%

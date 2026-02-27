@@ -4,8 +4,7 @@ compatibility_date = "2025-01-01"
 compatibility_flags = ["nodejs_compat"]
 
 routes = [
-  { pattern = "pump.modelcontextprotocol.name", custom_domain = true },
-  { pattern = "modelcontextprotocol.name", custom_domain = true }
+  { pattern = "pump.modelcontextprotocol.name", custom_domain = true }
 ]
 
 [durable_objects]

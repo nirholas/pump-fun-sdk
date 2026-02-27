@@ -459,6 +459,34 @@ chmod 600 <file>.json
 
 ---
 
+## Script Wrappers
+
+The repository includes production-ready Bash scripts in `scripts/` that wrap `solana-keygen` with additional features like validation, permissions, and batch processing:
+
+| Script | Purpose |
+|--------|---------|
+| `scripts/generate-vanity.sh` | Generate a vanity address with automatic file permissions and verification |
+| `scripts/batch-generate.sh` | Generate multiple vanity addresses in batch |
+| `scripts/verify-keypair.sh` | Verify a keypair file is valid and matches expected address |
+| `scripts/utils.sh` | Shared utility functions used by other scripts |
+
+### Example Usage
+
+```bash
+# Generate a single vanity address
+./scripts/generate-vanity.sh --prefix SOL
+
+# Batch generate 5 addresses
+./scripts/batch-generate.sh --prefix My --count 5
+
+# Verify a keypair
+./scripts/verify-keypair.sh <keypair-file>.json
+```
+
+These scripts automatically handle file permissions (`0600`), verification, and error handling.
+
+---
+
 ## Additional Resources
 
 - [Solana CLI Documentation](https://docs.solana.com/cli)

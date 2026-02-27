@@ -337,7 +337,8 @@ export class TokenLaunchMonitor {
 
             if (metadataUri) {
                 try {
-                    metadata = await this.fetchMetadata(metadataUri);
+                    const fetched = await this.fetchMetadata(metadataUri);
+                    metadata = fetched ?? undefined;
                     if (metadata) {
                         githubUrls = this.extractGithubUrls(metadata);
 

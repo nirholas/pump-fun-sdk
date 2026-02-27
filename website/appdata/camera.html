@@ -996,7 +996,7 @@ async function actuallyStartRecording() {
         const filtersPage = document.getElementById("ft-filtersPage");
         filtersPage.innerHTML = Object.entries(filterFunctions).map(([key, f]) => `
     <div class="single_filter" data-filter="${key}">
-        <img src="../../pump.png">
+        <img src="../pump.png">
         <span class="label">${key.replace(/([A-Z])/g, " $1").replace(/^./, s => s.toUpperCase())}</span>
     </div>
 `).join("");

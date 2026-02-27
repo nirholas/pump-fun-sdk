@@ -35,7 +35,9 @@ const curve = newBondingCurve(global);
 //   realTokenReserves: global.initialRealTokenReserves,
 //   realSolReserves: BN(0),
 //   tokenTotalSupply: global.tokenTotalSupply,
-//   complete: false
+//   complete: false,
+//   creator: PublicKey.default,
+//   isMayhemMode: global.mayhemModeEnabled,
 // }
 ```
 
@@ -163,7 +165,11 @@ A bonding curve is "complete" when `realTokenReserves` reaches zero — all avai
 ```typescript
 if (bondingCurve.complete) {
   // Token has graduated — migrate to AMM
-  const ix = await PUMP_SDK.migrateInstruction({ mint, creator });
+  const ix = await PUMP_SDK.migrateInstruction({
+    withdrawAuthority: global.withdrawAuthority,
+    mint,
+    user: wallet.publicKey,
+  });
 }
 ```
 

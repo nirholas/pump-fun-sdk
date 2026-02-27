@@ -9,10 +9,12 @@ import 'dotenv/config';
 import type { BotConfig } from './types.js';
 
 export function loadConfig(): BotConfig {
+    const apiOnly = process.env.API_ONLY === 'true';
     const telegramToken = process.env.TELEGRAM_BOT_TOKEN;
-    if (!telegramToken) {
+    if (!telegramToken && !apiOnly) {
         throw new Error(
-            'TELEGRAM_BOT_TOKEN is required. Create a bot via @BotFather and set the env var.',
+            'TELEGRAM_BOT_TOKEN is required. Create a bot via @BotFather and set the env var.\n' +
+            'Or set API_ONLY=true to run the REST API without a Telegram bot.',
         );
     }
 
@@ -62,6 +64,6 @@ export function loadConfig(): BotConfig {
         pollIntervalSeconds,
         solanaRpcUrl,
         solanaWsUrl,
-        telegramToken,
+        telegramToken: telegramToken || '',
     };
 }

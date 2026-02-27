@@ -8,6 +8,9 @@
     "scripts": {
         "dev": "tsx watch src/index.ts",
         "start": "node dist/index.js",
+        "api": "ENABLE_API=true API_ONLY=true tsx src/index.ts",
+        "api:dev": "ENABLE_API=true API_ONLY=true tsx watch src/index.ts",
+        "dev:full": "ENABLE_API=true tsx watch src/index.ts",
         "build": "tsc",
         "typecheck": "tsc --noEmit"
     },

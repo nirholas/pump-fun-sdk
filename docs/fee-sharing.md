@@ -37,6 +37,7 @@ const creator = wallet.publicKey;
 const ix = await PUMP_SDK.createFeeSharingConfig({
   creator,
   mint,
+  pool: null,
 });
 
 // For graduated tokens (on AMM), you must provide the pool:
@@ -50,7 +51,7 @@ const ix = await PUMP_SDK.createFeeSharingConfig({
 });
 ```
 
-> **Note:** If the token has graduated (`bondingCurve.complete === true`) and you don't provide the pool, the SDK throws `PoolRequiredForGraduatedError`.
+> **Note:** For graduated tokens (`bondingCurve.complete === true`), you must provide the pool address. For ungraduated tokens, pass `pool: null`.
 
 ## Step 2: Set Up Shareholders
 
@@ -130,9 +131,9 @@ To change the distribution, pass both current and new shareholders:
 
 ```typescript
 const currentShareholders = [
-  { address: new PublicKey("wallet-A"), shareBps: 5000 },
-  { address: new PublicKey("wallet-B"), shareBps: 3000 },
-  { address: new PublicKey("wallet-C"), shareBps: 2000 },
+  new PublicKey("wallet-A"),
+  new PublicKey("wallet-B"),
+  new PublicKey("wallet-C"),
 ];
 
 const newShareholders = [
@@ -143,7 +144,7 @@ const newShareholders = [
 const ix = await PUMP_SDK.updateFeeShares({
   authority: creator,
   mint,
-  currentShareholders,
+  currentShareholders,  // PublicKey[] of current shareholders
   newShareholders,
 });
 ```

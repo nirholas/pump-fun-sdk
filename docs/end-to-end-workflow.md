@@ -12,6 +12,7 @@ import {
   Transaction,
   sendAndConfirmTransaction,
 } from "@solana/web3.js";
+import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import BN from "bn.js";
 import {
   OnlinePumpSdk,
@@ -89,6 +90,7 @@ const buyIxs = await PUMP_SDK.buyInstructions({
   solAmount,
   amount: tokenAmount,
   slippage: 2, // 2% slippage tolerance
+  tokenProgram: TOKEN_PROGRAM_ID,
 });
 
 const buyTx = new Transaction().add(...buyIxs);
@@ -174,6 +176,8 @@ const sellIxs = await PUMP_SDK.sellInstructions({
   amount: sellAmount,
   solAmount: solOut,
   slippage: 1,
+  tokenProgram: TOKEN_PROGRAM_ID,
+  mayhemMode: false,
 });
 
 const sellTx = new Transaction().add(...sellIxs);
@@ -196,9 +200,11 @@ const { bondingCurve: currentCurve } = await sdk.fetchBuyState(
 if (currentCurve.complete) {
   console.log("Token has graduated! Migrating to AMM...");
 
+  const global = await sdk.fetchGlobal();
   const migrateIx = await PUMP_SDK.migrateInstruction({
+    withdrawAuthority: global.withdrawAuthority,
     mint: mint.publicKey,
-    creator: wallet.publicKey,
+    user: wallet.publicKey,
   });
 
   const migrateTx = new Transaction().add(migrateIx);
@@ -243,7 +249,8 @@ Split creator fees among multiple shareholders:
 const configIx = await PUMP_SDK.createFeeSharingConfig({
   creator: wallet.publicKey,
   mint: mint.publicKey,
-  // Include pool for graduated tokens:
+  pool: null,  // null for bonding curve tokens
+  // For graduated tokens, use:
   // pool: canonicalPumpPoolPda(mint.publicKey),
 });
 
@@ -254,7 +261,7 @@ await sendAndConfirmTransaction(connection, configTx, [wallet]);
 const shareholderIx = await PUMP_SDK.updateFeeShares({
   authority: wallet.publicKey,
   mint: mint.publicKey,
-  currentShareholders: [],
+  currentShareholders: [],  // PublicKey[] — empty on first setup
   newShareholders: [
     { address: wallet.publicKey, shareBps: 7000 },     // 70%
     { address: new PublicKey("..."), shareBps: 3000 },  // 30%

@@ -710,7 +710,7 @@ textarea::placeholder {
    Sidebar Dock — fixed left-edge launcher
    ═══════════════════════════════════════════ */
 
-.lair-sidebar {
+.pump-sidebar {
 	position: absolute;
 	left: 6px;
 	top: 50%;
@@ -825,7 +825,7 @@ textarea::placeholder {
 
 /* ── Mobile: hide sidebar (taskbar dock suffices) ── */
 @media (max-width: 768px) {
-	.lair-sidebar {
+	.pump-sidebar {
 		display: none;
 	}
 }
