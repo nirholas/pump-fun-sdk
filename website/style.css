@@ -2933,7 +2933,7 @@ dialog#nich {
 
 .widget-picker-badge {
 	font-size: 0.6rem;
-	background: var(--colors-accent, rgb(97, 121, 255));
+	background: var(--colors-accent, #00e87b);
 	padding: 1px 6px;
 	border-radius: 4px;
 	opacity: 0.7;
@@ -3050,7 +3050,7 @@ dialog#nich {
 }
 
 .widget-settings-btn:hover {
-	background: var(--colors-accent, rgb(97, 121, 255));
+	background: var(--colors-accent, #00e87b);
 }
 
 .widgets-locked .widget-settings-btn {
@@ -3134,8 +3134,8 @@ dialog#nich {
 }
 
 .widget-settings-toggle.active {
-	background: var(--colors-accent, rgb(97, 121, 255));
-	border-color: var(--colors-accent, rgb(97, 121, 255));
+	background: var(--colors-accent, #00e87b);
+	border-color: var(--colors-accent, #00e87b);
 }
 
 .widget-settings-select,
@@ -3154,7 +3154,7 @@ dialog#nich {
 
 .widget-settings-select:focus,
 .widget-settings-input:focus {
-	border-color: var(--colors-accent, rgb(97, 121, 255));
+	border-color: var(--colors-accent, #00e87b);
 }
 
 .widget-settings-select option {
@@ -3199,7 +3199,7 @@ dialog#nich {
 	backdrop-filter: blur(18px);
 	-webkit-backdrop-filter: blur(18px);
 	border: 1px solid rgba(255,255,255,0.07);
-	border-left: 3px solid var(--colors-accent, #6179ff);
+	border-left: 3px solid var(--colors-accent, #00e87b);
 	border-radius: 10px;
 	padding: 12px 14px;
 	display: flex;
@@ -3225,11 +3225,11 @@ dialog#nich {
 }
 
 /* Type accent borders */
-.nc-toast--info    { border-left-color: #6179ff; }
-.nc-toast--success { border-left-color: var(--col-good, #85FF85); }
+.nc-toast--info    { border-left-color: #00e87b; }
+.nc-toast--success { border-left-color: var(--col-good, #00e87b); }
 .nc-toast--warning { border-left-color: #f5a623; }
-.nc-toast--error   { border-left-color: var(--col-bad, #AC4949); }
-.nc-toast--price   { border-left-color: var(--colors-accent, #6179ff); }
+.nc-toast--error   { border-left-color: var(--col-bad, #ff4d4d); }
+.nc-toast--price   { border-left-color: var(--colors-accent, #00e87b); }
 
 .nc-toast__icon {
 	flex-shrink: 0;
@@ -3238,11 +3238,11 @@ dialog#nich {
 	display: flex;
 	align-items: center;
 }
-.nc-toast--info  .nc-toast__icon { color: #6179ff; }
-.nc-toast--success .nc-toast__icon { color: var(--col-good, #85FF85); }
+.nc-toast--info  .nc-toast__icon { color: #00e87b; }
+.nc-toast--success .nc-toast__icon { color: var(--col-good, #00e87b); }
 .nc-toast--warning .nc-toast__icon { color: #f5a623; }
-.nc-toast--error .nc-toast__icon { color: var(--col-bad, #AC4949); }
-.nc-toast--price .nc-toast__icon { color: var(--colors-accent, #6179ff); }
+.nc-toast--error .nc-toast__icon { color: var(--col-bad, #ff4d4d); }
+.nc-toast--price .nc-toast__icon { color: var(--colors-accent, #00e87b); }
 
 .nc-toast__emoji { font-size: 1.2rem; }
 
@@ -3525,7 +3525,7 @@ dialog#nich {
 }
 
 .nc-pref__row input[type="checkbox"] {
-	accent-color: var(--colors-accent, #6179ff);
+	accent-color: var(--colors-accent, #00e87b);
 	width: 16px;
 	height: 16px;
 	cursor: pointer;
@@ -3912,18 +3912,18 @@ dialog#nich {
 }
 
 /* Price colors */
-.tray-value.price-up { color: var(--col-good, #85FF85); }
-.tray-value.price-down { color: var(--col-bad, #AC4949); }
+.tray-value.price-up { color: var(--col-good, #00e87b); }
+.tray-value.price-down { color: var(--col-bad, #ff4d4d); }
 
 /* Gas color coding */
-.tray-value.gas-low { color: var(--col-good, #85FF85); }
+.tray-value.gas-low { color: var(--col-good, #00e87b); }
 .tray-value.gas-mid { color: #f5a623; }
-.tray-value.gas-high { color: var(--col-bad, #AC4949); }
+.tray-value.gas-high { color: var(--col-bad, #ff4d4d); }
 
 /* Fear & Greed color coding */
-.tray-value.fng-fear { color: var(--col-bad, #AC4949); }
+.tray-value.fng-fear { color: var(--col-bad, #ff4d4d); }
 .tray-value.fng-neutral { color: #f5a623; }
-.tray-value.fng-greed { color: var(--col-good, #85FF85); }
+.tray-value.fng-greed { color: var(--col-good, #00e87b); }
 
 /* Network dot */
 .tray-dot {
@@ -3934,15 +3934,15 @@ dialog#nich {
 	transition: background-color 0.3s;
 }
 
-.tray-dot.online { background-color: var(--col-good, #85FF85); }
-.tray-dot.offline { background-color: var(--col-bad, #AC4949); }
+.tray-dot.online { background-color: var(--col-good, #00e87b); }
+.tray-dot.offline { background-color: var(--col-bad, #ff4d4d); }
 
 /* Notification badge */
 .tray-badge {
 	position: absolute;
 	top: -2px;
 	right: -2px;
-	background: var(--col-bad, #AC4949);
+	background: var(--col-bad, #ff4d4d);
 	color: white;
 	font-size: 0.55rem;
 	min-width: 14px;
@@ -3983,7 +3983,7 @@ dialog#nich {
 	direction: rtl;
 	width: 4px;
 	height: 90px;
-	accent-color: var(--colors-accent, rgb(97, 121, 255));
+	accent-color: var(--colors-accent, #00e87b);
 	cursor: pointer;
 	appearance: auto;
 }
@@ -4411,7 +4411,7 @@ dialog#nich {
 	cursor: pointer;
 }
 .ob-dot.active {
-	background: var(--colors-accent, #6179ff);
+	background: var(--colors-accent, #00e87b);
 	width: 24px;
 	border-radius: 4px;
 }
@@ -4479,7 +4479,7 @@ dialog#nich {
 }
 .ob-pill .material-symbols-rounded {
 	font-size: 16px;
-	color: var(--colors-accent, #6179ff);
+	color: var(--colors-accent, #00e87b);
 }
 .ob-pill:hover {
 	background: rgba(97, 121, 255, 0.12);
@@ -4510,7 +4510,7 @@ dialog#nich {
 }
 .ob-anno-item > .material-symbols-rounded {
 	font-size: 22px;
-	color: var(--colors-accent, #6179ff);
+	color: var(--colors-accent, #00e87b);
 	flex-shrink: 0;
 	margin-top: 2px;
 }
@@ -4585,7 +4585,7 @@ dialog#nich {
 }
 .ob-qs-card .material-symbols-rounded {
 	font-size: 28px;
-	color: var(--colors-accent, #6179ff);
+	color: var(--colors-accent, #00e87b);
 }
 .ob-qs-name {
 	font-size: 0.82rem;
@@ -4608,7 +4608,7 @@ dialog#nich {
 .ob-btn-primary {
 	flex: 1;
 	padding: 12px 24px;
-	background: var(--colors-accent, #6179ff);
+	background: var(--colors-accent, #00e87b);
 	color: #fff;
 	border: none;
 	border-radius: 12px;
@@ -4623,7 +4623,7 @@ dialog#nich {
 	box-shadow: 0 4px 20px rgba(97, 121, 255, 0.35);
 }
 .ob-btn-primary.ob-finish {
-	background: linear-gradient(135deg, #6179ff, #a855f7);
+	background: linear-gradient(135deg, #00e87b, #a855f7);
 }
 .ob-btn-secondary {
 	padding: 12px 20px;

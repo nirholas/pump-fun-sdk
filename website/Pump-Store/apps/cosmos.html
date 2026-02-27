@@ -94,8 +94,8 @@
         }
 
         .hud-btn.active {
-            background: rgba(97,121,255,0.15);
-            border-color: rgba(97,121,255,0.4);
+            background: rgba(0,232,123,0.15);
+            border-color: rgba(0,232,123,0.4);
             color: #8fa4ff;
         }
 
@@ -271,7 +271,7 @@
             transition: all 3s ease;
         }
 
-        .glow-1 { top: -200px; left: -100px; background: #6179ff; }
+        .glow-1 { top: -200px; left: -100px; background: #00e87b; }
         .glow-2 { bottom: -200px; right: -100px; background: #ff61d4; }
 
         /* ─── Loading state ─── */
@@ -310,7 +310,7 @@
 
         .loading-bar-fill {
             height: 100%;
-            background: linear-gradient(90deg, #6179ff, #a78bfa, #ff61d4);
+            background: linear-gradient(90deg, #00e87b, #a78bfa, #ff61d4);
             width: 0%;
             transition: width 0.4s ease;
             border-radius: 1px;
@@ -336,7 +336,7 @@
             height: 3px;
             background: #fff;
             border-radius: 50%;
-            box-shadow: 0 0 8px 2px rgba(255,255,255,0.5), 0 0 20px 4px rgba(97,121,255,0.3);
+            box-shadow: 0 0 8px 2px rgba(255,255,255,0.5), 0 0 20px 4px rgba(0,232,123,0.3);
             z-index: 5;
             pointer-events: none;
             animation: shootingStar var(--dur) linear forwards;
@@ -1153,7 +1153,7 @@ function render() {
     if (camera.zoom < 3) {
         ctx.save();
         const nebulaColors = [
-            { x: -100, y: -80, r: 250, color: 'rgba(97,121,255,0.015)' },
+            { x: -100, y: -80, r: 250, color: 'rgba(0,232,123,0.015)' },
             { x: 120, y: 60, r: 200, color: 'rgba(255,97,212,0.01)' },
             { x: -50, y: 100, r: 180, color: 'rgba(120,255,180,0.008)' },
         ];

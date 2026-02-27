@@ -9,7 +9,7 @@
     <meta name="lair-perms" content="network" />
     <title>Funding Arbitrage</title>
     <style>
-        :root{--bg1:#101010;--bg2:#171717;--bg3:#222;--t1:#fff;--t2:#999;--t3:#666;--acc:rgb(97,121,255);--gn:#5be45b;--rd:#d44343;--yl:#f0b90b;--r1:6px;--font:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
+        :root{--bg1:#101010;--bg2:#171717;--bg3:#222;--t1:#fff;--t2:#999;--t3:#666;--acc:#00e87b;--gn:#5be45b;--rd:#d44343;--yl:#f0b90b;--r1:6px;--font:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
         *{margin:0;padding:0;box-sizing:border-box}
         body,html{width:100%;height:100%;overflow:hidden;font-family:var(--font);background:var(--bg1);color:var(--t1)}
         .app{display:flex;flex-direction:column;height:100%}
@@ -20,7 +20,7 @@
         .pills{display:flex;gap:3px}
         .pill{background:var(--bg2);color:var(--t2);border:1px solid #262626;border-radius:4px;padding:3px 8px;font-size:10px;font-weight:600;cursor:pointer;transition:all .12s;font-family:var(--font)}
         .pill:hover{border-color:#444;color:var(--t1)}
-        .pill.on{background:rgba(97,121,255,.12);border-color:var(--acc);color:var(--acc)}
+        .pill.on{background:rgba(0,232,123,.12);border-color:var(--acc);color:var(--acc)}
         .sep{width:1px;height:20px;background:#262626;flex-shrink:0}
         .spacer{flex:1;min-width:6px}
         .badge{font-size:10px;color:var(--t3);white-space:nowrap}
@@ -45,7 +45,7 @@
         th.sorted{color:var(--acc)}
         td{padding:6px 10px;border-bottom:1px solid #141414;white-space:nowrap}
         tr{transition:background .08s}
-        tr:hover{background:rgba(97,121,255,.04)}
+        tr:hover{background:rgba(0,232,123,.04)}
         .up{color:var(--gn)}.dn{color:var(--rd)}.yl{color:var(--yl)}
         .rate-bar{display:inline-block;height:12px;border-radius:2px;min-width:2px;vertical-align:middle;margin-left:4px}
         .rate-bar.pos{background:rgba(91,228,91,.3)}
@@ -56,7 +56,7 @@
         .arb-badge{display:inline-block;padding:2px 6px;border-radius:3px;font-size:9px;font-weight:700}
         .arb-hot{background:rgba(91,228,91,.15);color:var(--gn)}
         .arb-warm{background:rgba(240,185,11,.12);color:var(--yl)}
-        .arb-cool{background:rgba(97,121,255,.1);color:var(--acc)}
+        .arb-cool{background:rgba(0,232,123,.1);color:var(--acc)}
         .explain{font-size:9px;color:var(--t3);max-width:200px;white-space:normal;line-height:1.3}
 
         .ov{position:absolute;inset:0;z-index:10;display:flex;align-items:center;justify-content:center;background:rgba(16,16,16,.92)}

@@ -31,7 +31,7 @@
             color: var(--col-txt1, #fff); border-radius: 6px; padding: 6px 10px;
             font-size: 13px; font-weight: 600; cursor: pointer; outline: none; font-family: inherit;
         }
-        .pair-select:focus { border-color: var(--colors-accent, #6179ff); }
+        .pair-select:focus { border-color: var(--colors-accent, #00e87b); }
         .pair-price { font-size: 20px; font-weight: 700; }
         .pair-change { font-size: 12px; font-weight: 600; }
         .pair-stat { font-size: 10px; color: #888; display: flex; flex-direction: column; }
@@ -42,7 +42,7 @@
             font-size: 11px; font-family: inherit; transition: all 0.15s;
         }
         .tf-btn:hover { color: var(--col-txt1, #fff); }
-        .tf-btn.active { background: var(--colors-accent, #6179ff); color: #fff; border-color: var(--colors-accent, #6179ff); }
+        .tf-btn.active { background: var(--colors-accent, #00e87b); color: #fff; border-color: var(--colors-accent, #00e87b); }
 
         /* ── Main layout ── */
         .main { display: flex; flex: 1; overflow: hidden; }
@@ -65,7 +65,7 @@
             border-bottom: 2px solid transparent; transition: all 0.15s;
         }
         .sb-tab:hover { color: #aaa; }
-        .sb-tab.active { color: var(--colors-accent, #6179ff); border-bottom-color: var(--colors-accent, #6179ff); }
+        .sb-tab.active { color: var(--colors-accent, #00e87b); border-bottom-color: var(--colors-accent, #00e87b); }
         .sb-panel { display: none; flex: 1; overflow-y: auto; flex-direction: column; }
         .sb-panel.active { display: flex; }
         .sb-panel::-webkit-scrollbar { width: 4px; }
@@ -122,7 +122,7 @@
             background: var(--col-bg3, #262626); position: relative;
             transition: background 0.2s; cursor: pointer; border: none;
         }
-        .ind-toggle.on { background: var(--colors-accent, #6179ff); }
+        .ind-toggle.on { background: var(--colors-accent, #00e87b); }
         .ind-toggle::after {
             content: ''; position: absolute; top: 2px; left: 2px;
             width: 16px; height: 16px; border-radius: 50%;
@@ -149,7 +149,7 @@
 
         /* ── Loading ── */
         .loader { display: flex; align-items: center; justify-content: center; height: 100%; }
-        .spinner { width: 30px; height: 30px; border: 3px solid var(--col-bg3, #262626); border-top-color: var(--colors-accent, #6179ff); border-radius: 50%; animation: spin 0.7s linear infinite; }
+        .spinner { width: 30px; height: 30px; border: 3px solid var(--col-bg3, #262626); border-top-color: var(--colors-accent, #00e87b); border-radius: 50%; animation: spin 0.7s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
 
         /* ── Responsive ── */
@@ -309,7 +309,7 @@ function initChart() {
     });
 
     volumeSeries = chart.addHistogramSeries({
-        color: '#6179ff33', priceFormat: { type: 'volume' },
+        color: '#00e87b33', priceFormat: { type: 'volume' },
         priceScaleId: '', scaleMargins: { top: 0.85, bottom: 0 },
     });
 

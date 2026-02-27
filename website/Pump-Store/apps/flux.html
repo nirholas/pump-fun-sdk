@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="lair-include" content="lair.css material-symbols-rounded">
-    <meta name="lair-icon" content='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"><defs><linearGradient id="fg" x1="0" y1="0" x2="24" y2="24"><stop offset="0%" stop-color="#6179ff"/><stop offset="100%" stop-color="#ff6b9d"/></linearGradient></defs><circle cx="5" cy="5" r="2" fill="url(#fg)" opacity=".8"/><circle cx="19" cy="5" r="2.5" fill="url(#fg)" opacity=".7"/><circle cx="12" cy="12" r="3" fill="url(#fg)" opacity=".9"/><circle cx="5" cy="19" r="1.8" fill="url(#fg)" opacity=".6"/><circle cx="19" cy="19" r="2.2" fill="url(#fg)" opacity=".75"/><line x1="5" y1="5" x2="12" y2="12" stroke="url(#fg)" stroke-width=".5" opacity=".4"/><line x1="19" y1="5" x2="12" y2="12" stroke="url(#fg)" stroke-width=".5" opacity=".4"/><line x1="5" y1="19" x2="12" y2="12" stroke="url(#fg)" stroke-width=".5" opacity=".4"/><line x1="19" y1="19" x2="12" y2="12" stroke="url(#fg)" stroke-width=".5" opacity=".4"/><line x1="5" y1="5" x2="19" y2="5" stroke="url(#fg)" stroke-width=".3" opacity=".25"/><line x1="5" y1="19" x2="19" y2="19" stroke="url(#fg)" stroke-width=".3" opacity=".25"/></svg>'>
+    <meta name="lair-icon" content='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"><defs><linearGradient id="fg" x1="0" y1="0" x2="24" y2="24"><stop offset="0%" stop-color="#00e87b"/><stop offset="100%" stop-color="#ff6b9d"/></linearGradient></defs><circle cx="5" cy="5" r="2" fill="url(#fg)" opacity=".8"/><circle cx="19" cy="5" r="2.5" fill="url(#fg)" opacity=".7"/><circle cx="12" cy="12" r="3" fill="url(#fg)" opacity=".9"/><circle cx="5" cy="19" r="1.8" fill="url(#fg)" opacity=".6"/><circle cx="19" cy="19" r="2.2" fill="url(#fg)" opacity=".75"/><line x1="5" y1="5" x2="12" y2="12" stroke="url(#fg)" stroke-width=".5" opacity=".4"/><line x1="19" y1="5" x2="12" y2="12" stroke="url(#fg)" stroke-width=".5" opacity=".4"/><line x1="5" y1="19" x2="12" y2="12" stroke="url(#fg)" stroke-width=".5" opacity=".4"/><line x1="19" y1="19" x2="12" y2="12" stroke="url(#fg)" stroke-width=".5" opacity=".4"/><line x1="5" y1="5" x2="19" y2="5" stroke="url(#fg)" stroke-width=".3" opacity=".25"/><line x1="5" y1="19" x2="19" y2="19" stroke="url(#fg)" stroke-width=".3" opacity=".25"/></svg>'>
     <meta name="permissions" content="network">
     <meta name="capabilities" content="crypto_capital_flow_visualization">
     <meta name="lair-category" content="analytics">
@@ -78,8 +78,8 @@
             border-color: rgba(255,255,255,0.15);
         }
         .hud-btn.active {
-            background: rgba(97,121,255,0.15);
-            border-color: rgba(97,121,255,0.4);
+            background: rgba(0,232,123,0.15);
+            border-color: rgba(0,232,123,0.4);
             color: #8fa4ff;
         }
         .hud-btn .material-symbols-rounded { font-size: 14px; }
@@ -171,7 +171,7 @@
         #search-input {
             width: 100%; background: none; border: none;
             color: #fff; font-size: 18px; font-family: inherit;
-            outline: none; caret-color: #6179ff;
+            outline: none; caret-color: #00e87b;
         }
         #search-input::placeholder { color: rgba(255,255,255,0.2); }
         #search-results {
@@ -185,7 +185,7 @@
             font-size: 13px;
             transition: background 0.15s;
         }
-        .sr-item:hover, .sr-item.active { background: rgba(97,121,255,0.1); }
+        .sr-item:hover, .sr-item.active { background: rgba(0,232,123,0.1); }
         .sr-item-name { font-weight: 600; }
         .sr-item-change { font-size: 12px; font-weight: 600; }
 
@@ -201,8 +201,8 @@
         #loader.fade { opacity: 0; pointer-events: none; }
         .loader-ring {
             width: 40px; height: 40px;
-            border: 2px solid rgba(97,121,255,0.15);
-            border-top-color: #6179ff;
+            border: 2px solid rgba(0,232,123,0.15);
+            border-top-color: #00e87b;
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
@@ -331,7 +331,7 @@ let totalMcap = 0;
 
 // CoinGecko category mapping → friendly names + colors
 const CAT_MAP = {
-    'layer-1':                  { name: 'Layer 1',       color: '#6179ff', emoji: '⛓' },
+    'layer-1':                  { name: 'Layer 1',       color: '#00e87b', emoji: '⛓' },
     'layer-2':                  { name: 'Layer 2',       color: '#34d4f1', emoji: '🔗' },
     'decentralized-finance-defi': { name: 'DeFi',       color: '#85ff85', emoji: '🏦' },
     'stablecoins':              { name: 'Stablecoins',   color: '#ffd700', emoji: '💵' },

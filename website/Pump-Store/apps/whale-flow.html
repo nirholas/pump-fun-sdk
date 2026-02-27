@@ -24,7 +24,7 @@
         .controls button:hover{border-color:var(--accent);}
 
         /* Canvas area */
-        .canvas-area{position:relative;overflow:hidden;background:radial-gradient(ellipse at 50% 50%, rgba(97,121,255,.04) 0%, transparent 70%);}
+        .canvas-area{position:relative;overflow:hidden;background:radial-gradient(ellipse at 50% 50%, rgba(0,232,123,.04) 0%, transparent 70%);}
         canvas{width:100%;height:100%;display:block;}
 
         /* HUD overlay */
@@ -50,7 +50,7 @@
         .tx .tag{font-size:9px;padding:1px 5px;border-radius:999px;text-align:center;}
         .tag-buy{background:rgba(52,211,153,.15);color:var(--good);}
         .tag-sell{background:rgba(248,113,113,.15);color:var(--bad);}
-        .tag-transfer{background:rgba(97,121,255,.15);color:var(--accent);}
+        .tag-transfer{background:rgba(0,232,123,.15);color:var(--accent);}
 
         .tooltip{position:absolute;pointer-events:none;background:rgba(5,7,20,.95);border:1px solid rgba(255,255,255,.15);color:#fff;font-size:11px;padding:8px 12px;border-radius:8px;display:none;z-index:20;max-width:250px;line-height:1.5;}
     </style>
@@ -239,7 +239,7 @@
         ctx.fillRect(0, 0, W, H);
 
         // Draw grid
-        ctx.strokeStyle = 'rgba(97,121,255,0.03)';
+        ctx.strokeStyle = 'rgba(0,232,123,0.03)';
         ctx.lineWidth = 1;
         const gridSize = 60;
         for (let x = 0; x < W; x += gridSize) {

@@ -109,8 +109,8 @@
             text-align: right;
             font-variant-numeric: tabular-nums;
         }
-        .up { color: var(--col-good, #85FF85); }
-        .down { color: var(--col-bad, #AC4949); }
+        .up { color: var(--col-good, #00e87b); }
+        .down { color: var(--col-bad, #ff4d4d); }
         .bar {
             width: 30px;
             height: 4px;
@@ -232,7 +232,7 @@
                 const isUp = c.change >= 0;
                 const pct = Math.abs(c.change);
                 const barPct = Math.min(100, (pct / maxAbs) * 100);
-                const color = isUp ? 'var(--col-good, #85FF85)' : 'var(--col-bad, #AC4949)';
+                const color = isUp ? 'var(--col-good, #00e87b)' : 'var(--col-bad, #ff4d4d)';
 
                 return `<div class="row">
                     <span class="rank">${i + 1}</span>

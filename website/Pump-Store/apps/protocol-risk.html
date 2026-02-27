@@ -10,7 +10,7 @@
     <title>Protocol Risk Scanner</title>
     <style>
         :root {
-            --bg1:#080A19; --bg2:#0C0F27; --bg3:#15183E; --bg4:#1C2050;
+            --bg1:#0a0a0a; --bg2:#111111; --bg3:#1a1a1a; --bg4:#1C2050;
             --txt1:#E2E8F0; --txt2:#94A3B8; --accent:#6179FF;
             --good:#34D399; --bad:#F87171; --warn:#FBBF24; --radius:10px;
         }
@@ -30,7 +30,7 @@
 
         /* Protocol Card */
         .card{background:var(--bg2);border:1px solid rgba(255,255,255,.08);border-radius:var(--radius);overflow:hidden;transition:border-color .2s;}
-        .card:hover{border-color:rgba(97,121,255,.3);}
+        .card:hover{border-color:rgba(0,232,123,.3);}
         .card-head{padding:14px 16px;display:flex;align-items:center;gap:12px;border-bottom:1px solid rgba(255,255,255,.05);}
         .card-icon{width:36px;height:36px;border-radius:8px;background:var(--bg3);display:flex;align-items:center;justify-content:center;overflow:hidden;}
         .card-icon img{width:100%;height:100%;object-fit:cover;}
@@ -70,7 +70,7 @@
     <div class="header">
         <h1>Protocol Risk Scanner</h1>
         <span class="badge badge-live">LIVE</span>
-        <span class="badge" style="background:rgba(97,121,255,.15);color:var(--accent);" id="count">Loading...</span>
+        <span class="badge" style="background:rgba(0,232,123,.15);color:var(--accent);" id="count">Loading...</span>
         <input class="search-box" type="text" id="search" placeholder="Search protocols...">
     </div>
     <div class="content" id="content">

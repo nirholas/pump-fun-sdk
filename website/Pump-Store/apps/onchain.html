@@ -33,7 +33,7 @@
             transition: all 0.15s; display: flex; align-items: center; gap: 4px;
         }
         .tab-btn:hover { color: var(--col-txt1, #fff); }
-        .tab-btn.active { background: var(--colors-accent, #6179ff); color: #fff; }
+        .tab-btn.active { background: var(--colors-accent, #00e87b); color: #fff; }
         .refresh-info { margin-left: auto; font-size: 10px; color: #555; }
 
         .content { flex: 1; overflow-y: auto; padding: 16px; }
@@ -45,7 +45,7 @@
             background: var(--col-bg2, #171717); border: 1px solid var(--col-bg3, #262626);
             border-radius: 10px; padding: 16px; transition: border-color 0.2s;
         }
-        .metric-card:hover { border-color: var(--colors-accent, #6179ff); }
+        .metric-card:hover { border-color: var(--colors-accent, #00e87b); }
         .mc-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
         .mc-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
         .mc-label { font-size: 11px; color: #888; }
@@ -71,7 +71,7 @@
         .flow-bar-fill { height: 100%; border-radius: 3px; }
 
         .state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 48px; width: 100%; }
-        .spinner { width: 30px; height: 30px; border: 3px solid var(--col-bg3, #262626); border-top-color: var(--colors-accent, #6179ff); border-radius: 50%; animation: spin 0.7s linear infinite; margin-bottom: 14px; }
+        .spinner { width: 30px; height: 30px; border: 3px solid var(--col-bg3, #262626); border-top-color: var(--colors-accent, #00e87b); border-radius: 50%; animation: spin 0.7s linear infinite; margin-bottom: 14px; }
         @keyframes spin { to { transform: rotate(360deg); } }
         .state p { color: #666; font-size: 13px; }
     </style>
@@ -199,7 +199,7 @@ function renderBtc(data) {
     <div class="section-title"><span class="material-symbols-rounded" style="font-size:16px;">monitoring</span> Network Metrics</div>
     <div class="cards-grid">
         <div class="metric-card"><div class="mc-header"><div class="mc-icon" style="background:rgba(247,147,26,0.15);">⛏️</div><div class="mc-label">Hash Rate</div></div><div class="mc-value" style="color:#f7931a;">${hashrate}</div><div class="mc-sub">Computational power securing the network</div><div class="mc-sparkline"><canvas data-spark="hashrate" data-color="#f7931a"></canvas></div></div>
-        <div class="metric-card"><div class="mc-header"><div class="mc-icon" style="background:rgba(97,121,255,0.15);">🔒</div><div class="mc-label">Difficulty</div></div><div class="mc-value">${difficulty}</div><div class="mc-sub">Mining difficulty adjustment</div><div class="mc-sparkline"><canvas data-spark="difficulty" data-color="#6179ff"></canvas></div></div>
+        <div class="metric-card"><div class="mc-header"><div class="mc-icon" style="background:rgba(0,232,123,0.15);">🔒</div><div class="mc-label">Difficulty</div></div><div class="mc-value">${difficulty}</div><div class="mc-sub">Mining difficulty adjustment</div><div class="mc-sparkline"><canvas data-spark="difficulty" data-color="#00e87b"></canvas></div></div>
         <div class="metric-card"><div class="mc-header"><div class="mc-icon" style="background:rgba(91,228,91,0.15);">📊</div><div class="mc-label">Transactions (24h)</div></div><div class="mc-value up">${txCount}</div><div class="mc-sub">Confirmed transactions in last 24 hours</div><div class="mc-sparkline"><canvas data-spark="txcount" data-color="#5be45b"></canvas></div></div>
         <div class="metric-card"><div class="mc-header"><div class="mc-icon" style="background:rgba(255,255,255,0.05);">📦</div><div class="mc-label">Block Height</div></div><div class="mc-value">${blockHeight}</div><div class="mc-sub">Total blocks mined since genesis</div></div>
         <div class="metric-card"><div class="mc-header"><div class="mc-icon" style="background:rgba(245,158,11,0.15);">🕐</div><div class="mc-label">Mempool Size</div></div><div class="mc-value neutral">${mempoolBytes}</div><div class="mc-sub">${unconfirmed} unconfirmed transactions</div><div class="mc-sparkline"><canvas data-spark="mempool" data-color="#f59e0b"></canvas></div></div>
@@ -209,7 +209,7 @@ function renderBtc(data) {
     <div class="cards-grid">
         <div class="metric-card"><div class="mc-header"><div class="mc-icon" style="background:rgba(247,147,26,0.15);">₿</div><div class="mc-label">Total Supply</div></div><div class="mc-value">${totalBtc} BTC</div><div class="mc-sub">${((s.totalbc / 1e8 / 21000000) * 100).toFixed(2)}% of max supply mined</div></div>
         <div class="metric-card"><div class="mc-header"><div class="mc-icon" style="background:rgba(91,228,91,0.15);">💰</div><div class="mc-label">Price</div></div><div class="mc-value up">${price}</div><div class="mc-sub">Market cap: ${mktCap}</div></div>
-        <div class="metric-card"><div class="mc-header"><div class="mc-icon" style="background:rgba(97,121,255,0.15);">💸</div><div class="mc-label">Revenue per Block</div></div><div class="mc-value">$${s.market_price_usd ? fmtNum(s.estimated_btc_sent / s.n_blocks_mined / 1e8 * s.market_price_usd) : '—'}</div><div class="mc-sub">Avg value transacted per block</div></div>
+        <div class="metric-card"><div class="mc-header"><div class="mc-icon" style="background:rgba(0,232,123,0.15);">💸</div><div class="mc-label">Revenue per Block</div></div><div class="mc-value">$${s.market_price_usd ? fmtNum(s.estimated_btc_sent / s.n_blocks_mined / 1e8 * s.market_price_usd) : '—'}</div><div class="mc-sub">Avg value transacted per block</div></div>
     </div>`;
 
     if (data.pools) {
@@ -279,7 +279,7 @@ function renderNetwork(data) {
     let html = `
     <div class="section-title"><span class="material-symbols-rounded" style="font-size:16px;">public</span> Global Crypto Market</div>
     <div class="cards-grid">
-        <div class="metric-card"><div class="mc-header"><div class="mc-icon" style="background:rgba(97,121,255,0.15);">🌍</div><div class="mc-label">Total Market Cap</div></div><div class="mc-value" style="color:var(--colors-accent,#6179ff);">${totalMkt}</div><div class="mc-change ${parseFloat(mktChange) >= 0 ? 'up' : 'dn'}">${mktChange}% (24h)</div></div>
+        <div class="metric-card"><div class="mc-header"><div class="mc-icon" style="background:rgba(0,232,123,0.15);">🌍</div><div class="mc-label">Total Market Cap</div></div><div class="mc-value" style="color:var(--colors-accent,#00e87b);">${totalMkt}</div><div class="mc-change ${parseFloat(mktChange) >= 0 ? 'up' : 'dn'}">${mktChange}% (24h)</div></div>
         <div class="metric-card"><div class="mc-header"><div class="mc-icon" style="background:rgba(91,228,91,0.15);">📊</div><div class="mc-label">24h Volume</div></div><div class="mc-value up">${totalVol}</div><div class="mc-sub">${g.active_cryptocurrencies?.toLocaleString() || '—'} active coins</div></div>
         <div class="metric-card"><div class="mc-header"><div class="mc-icon" style="background:rgba(247,147,26,0.15);">₿</div><div class="mc-label">BTC Dominance</div></div><div class="mc-value" style="color:#f7931a;">${btcDom}%</div><div class="mc-sub">ETH: ${ethDom}%</div></div>
         <div class="metric-card"><div class="mc-header"><div class="mc-icon" style="background:rgba(255,255,255,0.05);">🏦</div><div class="mc-label">Markets</div></div><div class="mc-value">${g.markets?.toLocaleString() || '—'}</div><div class="mc-sub">Active trading pairs</div></div>
@@ -293,7 +293,7 @@ function renderNetwork(data) {
     <table class="flow-table"><thead><tr><th>Asset</th><th>Dominance</th><th></th></tr></thead><tbody>`;
 
     dominancePairs.slice(0, 10).forEach(([sym, pct]) => {
-        const c = colors[sym] || 'var(--colors-accent, #6179ff)';
+        const c = colors[sym] || 'var(--colors-accent, #00e87b)';
         html += `<tr><td style="font-weight:600;text-transform:uppercase;">${sym}</td><td>${pct.toFixed(2)}%</td><td><div class="flow-bar"><div class="flow-bar-bg"><div class="flow-bar-fill" style="width:${pct}%;background:${c};"></div></div></div></td></tr>`;
     });
     html += '</tbody></table>';

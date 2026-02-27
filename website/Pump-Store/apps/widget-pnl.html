@@ -13,7 +13,7 @@
         *{margin:0;padding:0;box-sizing:border-box}
         body{
             background:transparent;
-            color:var(--col-txt1,#A7C2F3);
+            color:var(--col-txt1,#ffffff);
             font-family:'Segoe UI',system-ui,sans-serif;
             display:flex;align-items:center;justify-content:center;
             height:100vh;overflow:hidden;user-select:none;
@@ -34,8 +34,8 @@
             opacity:0;transition:opacity 1.2s ease;
             pointer-events:none;z-index:0;
         }
-        .pnl.glow-up::before{background:var(--col-good,#85FF85);opacity:.06}
-        .pnl.glow-down::before{background:var(--col-bad,#AC4949);opacity:.06}
+        .pnl.glow-up::before{background:var(--col-good,#00e87b);opacity:.06}
+        .pnl.glow-down::before{background:var(--col-bad,#ff4d4d);opacity:.06}
 
         .pnl > *{position:relative;z-index:1}
 
@@ -64,8 +64,8 @@
         }
 
         /* ── Color classes ──────────────────── */
-        .up{color:var(--col-good,#85FF85)}
-        .down{color:var(--col-bad,#AC4949)}
+        .up{color:var(--col-good,#00e87b)}
+        .down{color:var(--col-bad,#ff4d4d)}
         .neutral{opacity:.4}
 
         /* ── Balance row ────────────────────── */
@@ -98,8 +98,8 @@
             background:rgba(255,255,255,.04);
             opacity:.5;margin-top:1px;
         }
-        .streak.hot{background:rgba(133,255,133,.08);color:var(--col-good,#85FF85);opacity:.8}
-        .streak.cold{background:rgba(172,73,73,.08);color:var(--col-bad,#AC4949);opacity:.8}
+        .streak.hot{background:rgba(133,255,133,.08);color:var(--col-good,#00e87b);opacity:.8}
+        .streak.cold{background:rgba(172,73,73,.08);color:var(--col-bad,#ff4d4d);opacity:.8}
 
         /* ── Sparkline with gradient fill ───── */
         .sparkline-wrap{
@@ -132,7 +132,7 @@
         .spin{
             width:16px;height:16px;
             border:2px solid rgba(255,255,255,.08);
-            border-top-color:var(--colors-accent,rgb(97,121,255));
+            border-top-color:var(--colors-accent,#00e87b);
             border-radius:50%;
             animation:sp .7s linear infinite;
         }
@@ -367,8 +367,8 @@
 
             const isUp = cum[cum.length - 1] >= 0;
             const lineColor = isUp
-                ? (getComputedStyle(document.documentElement).getPropertyValue('--col-good').trim() || '#85FF85')
-                : (getComputedStyle(document.documentElement).getPropertyValue('--col-bad').trim() || '#AC4949');
+                ? (getComputedStyle(document.documentElement).getPropertyValue('--col-good').trim() || '#00e87b')
+                : (getComputedStyle(document.documentElement).getPropertyValue('--col-bad').trim() || '#ff4d4d');
 
             /* Build path points */
             const pts = cum.map((v, i) => ({

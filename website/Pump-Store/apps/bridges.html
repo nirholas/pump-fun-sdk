@@ -10,20 +10,20 @@
   <title>Bridge Tracker</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body { height: 100%; background: var(--col-bg1, #080A19); color: var(--col-txt1, #A7C2F3); font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+    html, body { height: 100%; background: var(--col-bg1, #0a0a0a); color: var(--col-txt1, #ffffff); font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
     .app { height: 100%; display: grid; grid-template-rows: auto auto minmax(160px, 34%) 1fr; overflow: hidden; }
-    .header { padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; border-bottom: 1px solid rgba(112,188,249,0.12); background: var(--col-bg2, #0C0F27); }
+    .header { padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; border-bottom: 1px solid rgba(112,188,249,0.12); background: var(--col-bg2, #111111); }
     .title { display: flex; gap: 8px; align-items: center; font-size: 14px; font-weight: 700; }
-    .title .material-symbols-rounded { color: var(--colors-accent, rgb(97,121,255)); }
+    .title .material-symbols-rounded { color: var(--colors-accent, #00e87b); }
     .controls { display: flex; align-items: center; gap: 8px; }
-    .btn { background: var(--col-bg3, #15183E); color: var(--col-txt1, #A7C2F3); border: 1px solid rgba(112,188,249,0.2); border-radius: 8px; padding: 6px 10px; font-size: 12px; cursor: pointer; }
+    .btn { background: var(--col-bg3, #1a1a1a); color: var(--col-txt1, #ffffff); border: 1px solid rgba(112,188,249,0.2); border-radius: 8px; padding: 6px 10px; font-size: 12px; cursor: pointer; }
 
     .stats { display: grid; grid-template-columns: repeat(3, minmax(160px, 1fr)); gap: 8px; padding: 8px 14px; border-bottom: 1px solid rgba(112,188,249,0.08); }
     .stat { background: rgba(112,188,249,0.05); border: 1px solid rgba(112,188,249,0.09); border-radius: 10px; padding: 8px 10px; }
     .k { font-size: 10px; color: #7384b1; text-transform: uppercase; letter-spacing: .04em; }
     .v { margin-top: 2px; font-size: 14px; font-weight: 700; }
-    .good { color: var(--col-good, #85FF85); }
-    .bad { color: var(--col-bad, #AC4949); }
+    .good { color: var(--col-good, #00e87b); }
+    .bad { color: var(--col-bad, #ff4d4d); }
 
     .flows { padding: 8px 14px; border-bottom: 1px solid rgba(112,188,249,0.08); overflow: auto; }
     .flow-title { font-size: 11px; color: #7f8cb4; margin-bottom: 6px; }
@@ -32,7 +32,7 @@
 
     .table-wrap { overflow: auto; }
     table { width: 100%; border-collapse: collapse; min-width: 840px; }
-    thead th { position: sticky; top: 0; background: var(--col-bg2, #0C0F27); font-size: 11px; color: #6f7ea8; text-align: right; padding: 8px 10px; border-bottom: 1px solid rgba(112,188,249,0.1); }
+    thead th { position: sticky; top: 0; background: var(--col-bg2, #111111); font-size: 11px; color: #6f7ea8; text-align: right; padding: 8px 10px; border-bottom: 1px solid rgba(112,188,249,0.1); }
     thead th:first-child, tbody td:first-child { text-align: left; }
     tbody tr { border-bottom: 1px solid rgba(112,188,249,0.06); }
     tbody tr:hover { background: rgba(112,188,249,0.05); }

@@ -3,16 +3,16 @@
 :root {
 	--font-size-base: 1rem;
 
-	/* basic colors — Ultramarine */
-	--col-bg1: #080A19;
-	--col-txt1: #A7C2F3;
-	--col-bg2: #0C0F27;
-	--col-bg3: #15183E;
-	--col-bgh: #70BCF9;
-	--col-txth: #0F1538;
+	/* basic colors — pump.fun green + white */
+	--col-bg1: #0a0a0a;
+	--col-txt1: #ffffff;
+	--col-bg2: #111111;
+	--col-bg3: #1a1a1a;
+	--col-bgh: #00e87b;
+	--col-txth: #0a0a0a;
 
-	--col-good: #85FF85;
-	--col-bad: #AC4949;
+	--col-good: #00e87b;
+	--col-bad: #ff4d4d;
 
 	/* sizing */
 	--sizing-normal: 0.48rem;
@@ -35,7 +35,7 @@
 	--box-crisp-col: #ffffff0c;
 
 	/* Extended support */
-	--colors-accent: rgb(97, 121, 255);
+	--colors-accent: #00e87b;
 
 	--font-size-small: calc(var(--font-size-base) * 0.85);
 	--font-size-normal: var(--font-size-base);

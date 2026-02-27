@@ -17,7 +17,7 @@
             font-family: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
             display: flex; flex-direction: column;
         }
-        a { color: var(--colors-accent, #6179ff); text-decoration: none; }
+        a { color: var(--colors-accent, #00e87b); text-decoration: none; }
 
         /* ── Tab bar ── */
         .tab-bar {
@@ -35,7 +35,7 @@
             transition: all 0.2s; user-select: none;
         }
         .tab:hover { opacity: 0.7; }
-        .tab.active { opacity: 1; color: var(--colors-accent, #6179ff); border-bottom-color: var(--colors-accent, #6179ff); }
+        .tab.active { opacity: 1; color: var(--colors-accent, #00e87b); border-bottom-color: var(--colors-accent, #00e87b); }
         .tab .material-symbols-rounded { font-size: 16px; }
 
         /* ── Header bar ── */
@@ -50,7 +50,7 @@
         .header-bar .sub { color: #666; }
         .header-bar .spacer { flex: 1; }
         .header-bar .src-link { font-size: 10px; color: #555; }
-        .header-bar .src-link:hover { color: var(--colors-accent, #6179ff); }
+        .header-bar .src-link:hover { color: var(--colors-accent, #00e87b); }
 
         /* ── Panels ── */
         .panel { display: none; flex: 1; overflow-y: auto; flex-direction: column; }
@@ -75,8 +75,8 @@
             white-space: nowrap; transition: all 0.15s;
             color: var(--col-txt1, #ccc);
         }
-        .asset-pill:hover { border-color: var(--colors-accent, #6179ff); }
-        .asset-pill.active { background: var(--colors-accent, #6179ff); color: #fff; border-color: var(--colors-accent, #6179ff); }
+        .asset-pill:hover { border-color: var(--colors-accent, #00e87b); }
+        .asset-pill.active { background: var(--colors-accent, #00e87b); color: #fff; border-color: var(--colors-accent, #00e87b); }
         .asset-pill img { width: 16px; height: 16px; border-radius: 50%; }
 
         /* ── Scatter plot ── */
@@ -97,13 +97,13 @@
             font-size: 11px; font-weight: 500; font-family: inherit;
             transition: all 0.15s;
         }
-        .ctrl-btn:hover { border-color: var(--colors-accent, #6179ff); }
-        .ctrl-btn.active { background: var(--colors-accent, #6179ff); color: #fff; border-color: var(--colors-accent, #6179ff); }
+        .ctrl-btn:hover { border-color: var(--colors-accent, #00e87b); }
+        .ctrl-btn.active { background: var(--colors-accent, #00e87b); color: #fff; border-color: var(--colors-accent, #00e87b); }
         .ctrl-toggle {
             display: flex; align-items: center; gap: 5px;
             font-size: 11px; color: #888; cursor: pointer; user-select: none;
         }
-        .ctrl-toggle input { accent-color: var(--colors-accent, #6179ff); }
+        .ctrl-toggle input { accent-color: var(--colors-accent, #00e87b); }
 
         /* ── Stats summary ── */
         .stats-grid {
@@ -158,13 +158,13 @@
             gap: 8px; cursor: pointer; transition: all 0.15s;
             text-align: center;
         }
-        .home-card:hover { border-color: var(--colors-accent, #6179ff); transform: translateY(-2px); }
+        .home-card:hover { border-color: var(--colors-accent, #00e87b); transform: translateY(-2px); }
         .home-card img { width: 40px; height: 40px; border-radius: 50%; }
         .home-card .initials {
             width: 40px; height: 40px; border-radius: 50%;
             background: var(--col-bg3, #262626); display: flex;
             align-items: center; justify-content: center;
-            font-weight: 700; font-size: 14px; color: var(--colors-accent, #6179ff);
+            font-weight: 700; font-size: 14px; color: var(--colors-accent, #00e87b);
         }
         .home-card .asset-name { font-size: 12px; font-weight: 600; }
         .home-card .founder { font-size: 10px; color: #666; }
@@ -173,16 +173,16 @@
         .up { color: #5be45b; }
         .dn { color: #ef4444; }
         .muted { color: #888; }
-        .accent { color: var(--colors-accent, #6179ff); }
+        .accent { color: var(--colors-accent, #00e87b); }
 
         /* ── Loading / Empty / Error ── */
         .state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 48px 20px; text-align: center; flex: 1; }
         .state .material-symbols-rounded { font-size: 40px; color: #333; margin-bottom: 10px; }
         .state p { color: #666; font-size: 13px; }
         .state .sub { font-size: 11px; color: #444; margin-top: 4px; }
-        .spinner { width: 30px; height: 30px; border: 3px solid var(--col-bg3, #262626); border-top-color: var(--colors-accent, #6179ff); border-radius: 50%; animation: spin 0.7s linear infinite; margin-bottom: 14px; }
+        .spinner { width: 30px; height: 30px; border: 3px solid var(--col-bg3, #262626); border-top-color: var(--colors-accent, #00e87b); border-radius: 50%; animation: spin 0.7s linear infinite; margin-bottom: 14px; }
         @keyframes spin { to { transform: rotate(360deg); } }
-        .retry { margin-top: 10px; padding: 7px 18px; background: var(--colors-accent, #6179ff); color: #fff; border: none; border-radius: 7px; cursor: pointer; font-size: 12px; font-weight: 600; font-family: inherit; }
+        .retry { margin-top: 10px; padding: 7px 18px; background: var(--colors-accent, #00e87b); color: #fff; border: none; border-radius: 7px; cursor: pointer; font-size: 12px; font-weight: 600; font-family: inherit; }
 
         /* ── Tooltip ── */
         .tooltip {
@@ -218,7 +218,7 @@
 <body>
 
     <div class="header-bar">
-        <span class="material-symbols-rounded" style="color:var(--colors-accent, #6179ff);font-size:18px;">query_stats</span>
+        <span class="material-symbols-rounded" style="color:var(--colors-accent, #00e87b);font-size:18px;">query_stats</span>
         <span class="title">Tweet Charts</span>
         <span class="sub">Founder tweets × token price</span>
         <span class="spacer"></span>
@@ -450,7 +450,7 @@ function renderScatter() {
 
     // Gather all points
     let points = [];
-    const colors = ['#6179ff', '#5be45b', '#ef4444', '#f59e0b', '#a855f7', '#ec4899', '#14b8a6', '#f97316', '#8b5cf6', '#06b6d4', '#10b981', '#e879f9', '#fb923c', '#4ade80', '#f43e5e'];
+    const colors = ['#00e87b', '#5be45b', '#ef4444', '#f59e0b', '#a855f7', '#ec4899', '#14b8a6', '#f97316', '#8b5cf6', '#06b6d4', '#10b981', '#e879f9', '#fb923c', '#4ade80', '#f43e5e'];
 
     ids.forEach((id, ci) => {
         const events = allEvents[id] || [];

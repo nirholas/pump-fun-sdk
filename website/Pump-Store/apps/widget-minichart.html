@@ -45,8 +45,8 @@
             font-weight: 600;
             margin-left: auto;
         }
-        .up { color: var(--col-good, #85FF85); }
-        .down { color: var(--col-bad, #AC4949); }
+        .up { color: var(--col-good, #00e87b); }
+        .down { color: var(--col-bad, #ff4d4d); }
 
         .chart-wrap {
             flex: 1;
@@ -276,7 +276,7 @@
             const max = Math.max(...prices);
             const range = max - min || 1;
             const isUp = prices[prices.length - 1] >= prices[0];
-            const color = isUp ? '#85FF85' : '#AC4949';
+            const color = isUp ? '#00e87b' : '#ff4d4d';
             const pad = h * 0.08;
 
             ctx.strokeStyle = color;
@@ -327,7 +327,7 @@
             for (let i = 0; i < n; i++) {
                 const x = gap * i + gap / 2;
                 const isUp = closes[i] >= opens[i];
-                const color = isUp ? '#85FF85' : '#AC4949';
+                const color = isUp ? '#00e87b' : '#ff4d4d';
 
                 const yHigh  = h - pad - ((highs[i]  - min) / range) * (h - pad * 2);
                 const yLow   = h - pad - ((lows[i]   - min) / range) * (h - pad * 2);
