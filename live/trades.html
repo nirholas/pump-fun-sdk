@@ -154,6 +154,7 @@
         <option value="whale">Whales Only (≥1 SOL)</option>
       </select>
       <input type="text" id="search" placeholder="Filter by mint or token..." />
+      <input type="text" id="rpc" placeholder="wss:// custom RPC endpoint" title="Paste your Helius / Quicknode / Triton WebSocket URL here" />
       <button id="btn-pause">Pause</button>
       <button id="btn-sound">🔇</button>
       <button id="btn-clear" class="danger">Clear</button>
@@ -216,7 +217,7 @@
       <div class="panel">
         <h3>🔗 Connection</h3>
         <div class="row"><span class="label">Program</span><span style="color:var(--blue); font-size:10px;">6EF8...F6P</span></div>
-        <div class="row"><span class="label">Network</span><span style="color:var(--text);">Mainnet</span></div>
+        <div class="row"><span class="label">Endpoint</span><span id="endpoint-display" style="color:var(--text); font-size:10px;">auto</span></div>
         <div class="row"><span class="label">Commitment</span><span style="color:var(--text);">confirmed</span></div>
         <div class="row"><span class="label">Sub ID</span><span id="sub-id" style="color:var(--text);">—</span></div>
       </div>
@@ -241,6 +242,15 @@ const WHALE_THRESHOLD_LAMPORTS = 1_000_000_000; // 1 SOL
 const CHART_BUCKETS = 10;  // 10 x 30s = 5 min
 const BUCKET_MS = 30_000;
 
+// ── RPC Endpoints (tried in order, rotates on failure) ──────────────
+const RPC_ENDPOINTS = [
+  'wss://api.mainnet-beta.solana.com',
+  'wss://solana-mainnet.core.chainstack.com',
+  'wss://mainnet.helius-rpc.com/?api-key=demo',
+  'wss://solana-rpc.publicnode.com',
+];
+let rpcIndex = 0;
+
 // ── State ───────────────────────────────────────────────────────────
 let ws = null;
 let subId = null;
@@ -251,6 +261,7 @@ let reconnectDelay = 1000;
 let reconnectTimer = null;
 let manualDisconnect = false;
 let rateInterval = null;
+let connectAttempts = 0;
 
 const stats = {
   total: 0, buys: 0, sells: 0, creates: 0, migrates: 0, whales: 0,
@@ -276,6 +287,7 @@ const $search = document.getElementById('search');
 const $btnPause = document.getElementById('btn-pause');
 const $btnSound = document.getElementById('btn-sound');
 const $btnClear = document.getElementById('btn-clear');
+const $rpc = document.getElementById('rpc');
 
 // ── Audio context (whale sound) ─────────────────────────────────────
 let audioCtx = null;
@@ -309,18 +321,48 @@ $btnClear.onclick = () => {
   while ($feed.children.length > 1) $feed.removeChild($feed.lastChild);
 };
 
-// ── WebSocket Connection ────────────────────────────────────────────
-function connect() {
-  const url = 'wss://api.mainnet-beta.solana.com';
-  manualDisconnect = false;
-  setStatus('Connecting...', '');
-  sysLog(`Connecting to Solana mainnet WebSocket...`);
+// ── WebSocket Connection (multi-endpoint failover) ──────────────────
+function getNextEndpoint() {
+  // If the user typed a custom URL, always use that
+  const custom = $rpc.value.trim();
+  if (custom && custom.startsWith('wss://')) return custom;
+  // Otherwise rotate through built-in list
+  const url = RPC_ENDPOINTS[rpcIndex % RPC_ENDPOINTS.length];
+  rpcIndex++;
+  return url;
+}
 
-  ws = new WebSocket(url);
+function connect() {
+  if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
+  const url = getNextEndpoint();
+  manualDisconnect = false;
+  connectAttempts++;
+  const shortUrl = url.replace(/api-key=\w+/, 'api-key=***').slice(0, 60);
+  setStatus('Connecting...', '');
+  sysLog(`Connecting to ${shortUrl}...`);
+
+  try {
+    ws = new WebSocket(url);
+  } catch (e) {
+    sysLog(`Invalid WebSocket URL: ${e.message}`, 'error');
+    scheduleReconnect();
+    return;
+  }
+
+  // Timeout — if no open within 8s, try next endpoint
+  const connectTimeout = setTimeout(() => {
+    if (ws && ws.readyState !== WebSocket.OPEN) {
+      sysLog(`Connection timeout for ${shortUrl}, trying next...`, 'warn');
+      try { ws.close(); } catch {}
+    }
+  }, 8000);
 
   ws.onopen = () => {
+    clearTimeout(connectTimeout);
     reconnectDelay = 1000;
+    connectAttempts = 0;
     setStatus('● Subscribing...', 'ok');
+    document.getElementById('endpoint-display').textContent = new URL(url).hostname;
     if (!startTime) startTime = Date.now();
     startRateCounter();
 
@@ -336,11 +378,19 @@ function connect() {
     let msg;
     try { msg = JSON.parse(evt.data); } catch { return; }
 
+    // Subscription confirmation
     if (msg.id === 1 && msg.result !== undefined) {
       subId = msg.result;
       setStatus(`● Live — sub:${subId}`, 'ok');
       document.getElementById('sub-id').textContent = subId;
       sysLog(`Subscribed (id=${subId}). Monitoring all Pump trades...`);
+      return;
+    }
+
+    // RPC error (some endpoints reject logsSubscribe)
+    if (msg.id === 1 && msg.error) {
+      sysLog(`RPC rejected subscription: ${msg.error.message || JSON.stringify(msg.error)}`, 'error');
+      try { ws.close(); } catch {}
       return;
     }
 
@@ -351,23 +401,35 @@ function connect() {
   };
 
   ws.onerror = () => {
+    clearTimeout(connectTimeout);
     setStatus('● Error', 'err');
-    sysLog('WebSocket error', 'error');
+    sysLog(`WebSocket error on ${shortUrl}`, 'error');
   };
 
   ws.onclose = (evt) => {
+    clearTimeout(connectTimeout);
     ws = null; subId = null;
     document.getElementById('sub-id').textContent = '—';
     if (!manualDisconnect) {
-      setStatus(`● Reconnecting ${reconnectDelay / 1000}s...`, 'err');
-      sysLog(`Disconnected (${evt.code}). Reconnecting...`, 'warn');
-      reconnectTimer = setTimeout(connect, reconnectDelay);
-      reconnectDelay = Math.min(reconnectDelay * 2, 30000);
+      scheduleReconnect();
     } else {
       setStatus('● Disconnected', '');
       stopRateCounter();
     }
   };
+}
+
+function scheduleReconnect() {
+  const delay = Math.min(reconnectDelay, 15000);
+  const nextUrl = RPC_ENDPOINTS[rpcIndex % RPC_ENDPOINTS.length];
+  const shortNext = nextUrl.replace(/api-key=\w+/, 'api-key=***').slice(0, 50);
+  setStatus(`● Retrying ${(delay / 1000).toFixed(0)}s...`, 'err');
+  sysLog(`Trying next endpoint in ${(delay / 1000).toFixed(0)}s → ${shortNext}`, 'warn');
+  reconnectTimer = setTimeout(connect, delay);
+  // Increase delay, but reset after cycling all endpoints once
+  if (connectAttempts >= RPC_ENDPOINTS.length) {
+    reconnectDelay = Math.min(reconnectDelay * 1.5, 15000);
+  }
 }
 
 // ── Process a log notification ──────────────────────────────────────
@@ -749,7 +811,21 @@ function setStatus(text, cls) {
 renderChart();
 sysLog('PumpFun Live Trades — Real-time analytics dashboard');
 sysLog(`Monitoring Pump program: ${PUMP_PROGRAM}`);
+sysLog(`${RPC_ENDPOINTS.length} RPC endpoints configured — auto-failover on error`);
+sysLog('Paste your own wss:// RPC URL in the header to use a private endpoint');
 sysLog('Tracking: buys, sells, creates, migrations, whale alerts (≥1 SOL)');
+
+// Allow Enter in RPC input to force reconnect
+$rpc.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    reconnectDelay = 1000;
+    connectAttempts = 0;
+    if (ws) { manualDisconnect = true; try { ws.close(); } catch {} }
+    setTimeout(connect, 100);
+  }
+});
+
 connect();
 </script>
 </body>

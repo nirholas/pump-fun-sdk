@@ -346,6 +346,46 @@ export async function handlePumpToolCall(
       case "get_token_balance":
         return await handleGetTokenBalance(args);
 
+      // ── New: Exact SOL Buy ──────────────────────────────────────────
+      case "build_buy_exact_sol":
+        return await handleBuildBuyExactSol(args);
+
+      // ── New: AMM Trading ────────────────────────────────────────────
+      case "build_amm_buy":
+        return await handleBuildAmmBuy(args);
+      case "build_amm_sell":
+        return await handleBuildAmmSell(args);
+      case "build_amm_buy_exact_quote":
+        return await handleBuildAmmBuyExactQuote(args);
+
+      // ── New: AMM Liquidity ──────────────────────────────────────────
+      case "build_amm_deposit":
+        return await handleBuildAmmDeposit(args);
+      case "build_amm_withdraw":
+        return await handleBuildAmmWithdraw(args);
+
+      // ── New: Cashback ───────────────────────────────────────────────
+      case "build_claim_cashback":
+        return await handleBuildClaimCashback(args);
+      case "build_amm_claim_cashback":
+        return await handleBuildAmmClaimCashback(args);
+
+      // ── New: Fee Sharing ────────────────────────────────────────────
+      case "build_create_social_fee":
+        return await handleBuildCreateSocialFee(args);
+      case "build_claim_social_fee":
+        return await handleBuildClaimSocialFee(args);
+      case "build_reset_fee_sharing":
+        return await handleBuildResetFeeSharing(args);
+      case "build_transfer_fee_authority":
+        return await handleBuildTransferFeeAuthority(args);
+      case "build_revoke_fee_authority":
+        return await handleBuildRevokeFeeAuthority(args);
+
+      // ── New: Creator Management ─────────────────────────────────────
+      case "build_migrate_creator":
+        return await handleBuildMigrateCreator(args);
+
       default:
         return err(`Unknown pump tool: ${name}`);
     }

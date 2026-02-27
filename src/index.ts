@@ -1,12 +1,14 @@
 export { Pump } from "./idl/pump";
 export { default as pumpIdl } from "./idl/pump.json";
 export type { PumpFees } from "./idl/pump_fees";
+export type { PumpAmm } from "./idl/pump_amm";
 export {
   getBuyTokenAmountFromSolAmount,
   getBuySolAmountFromTokenAmount,
   getSellSolAmountFromTokenAmount,
   newBondingCurve,
   bondingCurveMarketCap,
+  getStaticRandomFeeRecipient,
 } from "./bondingCurve";
 export * from "./pda";
 export {
@@ -24,7 +26,8 @@ export {
   PUMP_TOKEN_MINT,
   MAX_SHAREHOLDERS,
 } from "./sdk";
-export { getFee, computeFeesBps, calculateFeeTier } from "./fees";
+export { getFee, computeFeesBps, calculateFeeTier, ONE_BILLION_SUPPLY } from "./fees";
+export type { CalculatedFeesBps } from "./fees";
 export {
   OnlinePumpSdk,
   MinimumDistributableFeeResult,
@@ -42,6 +45,7 @@ export {
   DistributeCreatorFeesEvent,
   MinimumDistributableFeeEvent,
 } from "./state";
+export type { Fees, FeeTier } from "./state";
 export { totalUnclaimedTokens, currentDayTokens } from "./tokenIncentives";
 export * from "./errors";
 export {

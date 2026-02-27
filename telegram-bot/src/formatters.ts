@@ -150,6 +150,7 @@ export function formatStatus(
     watchCount: number,
     launchState?: TokenLaunchMonitorState,
     activeMonitorCount?: number,
+    eventState?: PumpEventMonitorState,
 ): string {
     const uptime = state.startedAt
         ? formatDuration(Date.now() - state.startedAt)
@@ -174,6 +175,10 @@ export function formatStatus(
 
     if (launchState) {
         text += `\n\n${formatMonitorStatus(launchState, activeMonitorCount)}`;
+    }
+
+    if (eventState) {
+        text += `\n\n${formatEventMonitorStatus(eventState)}`;
     }
 
     return text;
@@ -249,6 +254,7 @@ export function formatTokenLaunchNotification(event: TokenLaunchEvent): string {
     }
 
     const mayhemIcon = event.mayhemMode ? '✅' : '❌';
+    const cashbackIcon = event.cashbackEnabled ? '✅' : '❌';
     const timeStr = event.timestamp
         ? formatTime(event.timestamp)
         : new Date().toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
@@ -260,6 +266,7 @@ export function formatTokenLaunchNotification(event: TokenLaunchEvent): string {
         `🔗 <b>Mint:</b> <a href="${solscanMint}"><code>${mint}</code></a>\n` +
         githubSection +
         `\n⚡ <b>Mayhem Mode:</b> ${mayhemIcon}\n` +
+        `💸 <b>Cashback:</b> ${cashbackIcon}\n` +
         `🕐 <b>Time:</b> ${timeStr}\n\n` +
         `🔗 <a href="${solscanTx}">View TX</a> · ` +
         `<a href="${solscanMint}">Solscan</a> · ` +
