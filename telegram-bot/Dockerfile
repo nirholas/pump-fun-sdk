@@ -27,8 +27,9 @@ RUN npm ci --omit=dev && npm cache clean --force
 COPY --from=build /app/dist dist/
 
 # Persistent data directory for watch entries
+# NOTE: Railway bans the VOLUME keyword — use Railway Volumes instead
+# https://docs.railway.com/reference/volumes
 RUN mkdir -p /app/data && chown bot:bot /app/data
-VOLUME /app/data
 
 # API server port — Railway injects PORT; EXPOSE is just metadata
 EXPOSE 3000
