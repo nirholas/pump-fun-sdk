@@ -1,8 +1,8 @@
-# PumpOS Website — Static Web Desktop with 143 Apps
+# PumpOS Website — Static Web Desktop with 169 Apps
 
 ## Skill Description
 
-Build and maintain PumpOS — a fully static HTML/CSS/JS web desktop environment with 143 Pump-Store apps, live token dashboards, interactive DeFi tools, PWA support, and Vercel deployment. No framework, no build step.
+Build and maintain PumpOS — a fully static HTML/CSS/JS web desktop environment with 169 Pump-Store apps, live token dashboards, interactive DeFi tools, PWA support, and Vercel deployment. No framework, no build step.
 
 ## Context
 
@@ -38,7 +38,7 @@ PumpOS (`pumpos.app`) is a browser-based OS simulation themed around Solana DeFi
 20+ apps: store, browser, calculator, camera, files, gallery, settings, terminal, studio, copilot, dashboard, portfolio, alerts
 
 ### Pump-Store Apps (`website/Pump-Store/apps/`)
-143 installable apps as individual HTML files. Database at `Pump-Store/db/v2.json`.
+169 installable apps as individual HTML files. Database at `Pump-Store/db/v2.json`.
 
 ### Configuration
 - `website/vercel.json` — static deployment (SPA rewrite, immutable caching)

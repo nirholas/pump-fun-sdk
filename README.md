@@ -72,7 +72,7 @@ Token Creation &nbsp;·&nbsp; Bonding Curves &nbsp;·&nbsp; AMM Trading &nbsp;·
 - [Programs](#-programs) — 4 on-chain program addresses
 - [WebSocket Relay](#-websocket-relay-server) — Real-time token launch feed
 - [Live Dashboards](#-live-dashboards) — Browser-based monitoring
-- [MCP Server](#-mcp-server) — 47 tools for AI agents
+- [MCP Server](#-mcp-server) — 53 tools for AI agents
 - [Telegram Bot](#-telegram-bot--api) — Fee claim & CTO alerts
 - [PumpOS Web Desktop](#-pumpos-web-desktop) — 169 Pump-Store apps
 - [x402 Payments](#-x402-payment-protocol) — HTTP 402 micropayments

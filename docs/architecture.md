@@ -11,7 +11,7 @@ Beyond the core SDK (`src/`), the repository includes several companion componen
 | `src/` | Core SDK — instruction builders, bonding curve math, social fees, PDAs, state, events |
 | `rust/` | High-performance Rust vanity address generator (rayon + solana-sdk) |
 | `typescript/` | TypeScript vanity address generator (@solana/web3.js) |
-| `mcp-server/` | Model Context Protocol server for AI agent integration (47 tools) |
+| `mcp-server/` | Model Context Protocol server for AI agent integration (53 tools) |
 | `telegram-bot/` | PumpFun activity monitor — Telegram bot + REST API (claims, CTO, launches, graduation, whales, fee distribution) |
 | `websocket-server/` | WebSocket relay — PumpFun API to browser clients |
 | `x402/` | x402 payment protocol — HTTP 402 micropayments with Solana USDC |

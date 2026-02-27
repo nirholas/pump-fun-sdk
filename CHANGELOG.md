@@ -61,7 +61,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - GitHub Actions security workflow — npm audit, cargo audit, CodeQL, dependency review
 - GitHub Actions stale issue management
 - **x402 payment protocol** (`x402/`) — HTTP 402 micropayments with Solana USDC, `x402Paywall()` server middleware and `X402Client` auto-pay client
-- **MCP server expanded to 47 tools** — quoting, building TXs, fees, analytics, AMM ops, social fees, wallet; deploys to Railway, Cloudflare Workers, or Vercel
+- **MCP server expanded to 53 tools** — quoting, building TXs, fees, analytics, AMM ops, social fees, wallet; deploys to Railway, Cloudflare Workers, or Vercel
 - **28 agent skill documents** (`skills/`) — covering every domain from SDK core to security
 - Discussion templates — Ideas, Q&A, Show & Tell
 - Issue template config with contact links

@@ -116,10 +116,10 @@ pump-fun-sdk/
 │   └── idl/                # Anchor IDLs (pump, pump_amm, pump_fees)
 ├── rust/                   # Rust vanity address generator
 ├── typescript/             # TypeScript vanity generator
-├── mcp-server/             # MCP server — 47 tools for AI agents
+├── mcp-server/             # MCP server — 53 tools for AI agents
 ├── telegram-bot/           # Telegram bot + REST API (claims, CTO, launches)
 ├── websocket-server/       # WebSocket relay (PumpFun API → browsers)
-├── website/                # PumpOS web desktop with 143 Pump-Store apps
+├── website/                # PumpOS web desktop with 169 Pump-Store apps
 ├── x402/                   # x402 payment protocol (HTTP 402 USDC micropayments)
 ├── live/                   # Standalone live dashboard pages
 ├── tutorials/              # 19 hands-on tutorial guides

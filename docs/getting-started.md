@@ -158,7 +158,7 @@ console.log("Transaction:", signature);
 
 ### Ecosystem
 
-- [MCP Server](../mcp-server/) — 47 tools for AI agents (Claude, GPT, Cursor)
+- [MCP Server](../mcp-server/) — 53 tools for AI agents (Claude, GPT, Cursor)
 - [Telegram Bot](../telegram-bot/) — fee claim monitor, CTO alerts, whale detection
 - [WebSocket Relay](../websocket-server/) — real-time token launch feed for browsers
 - [Live Dashboards](../live/) — browser-based token launch & trades monitoring

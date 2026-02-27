@@ -11,7 +11,7 @@ PumpOS is a full web-based desktop environment featuring a taskbar, windowed app
 ## Features
 
 - **Desktop Environment** — Draggable, resizable windows with taskbar and system tray
-- **Pump-Store** — 143 installable apps covering DeFi dashboards, trading tools, charts, wallet viewers, Pump SDK reference, and more
+- **Pump-Store** — 169 installable apps covering DeFi dashboards, trading tools, charts, wallet viewers, Pump SDK reference, and more
 - **Live Trades Dashboard** — Real-time token launch and trade analytics via WebSocket relay (`live.html`)
 - **Service Worker** — Offline-capable with `sw.js` caching
 - **BIOS Screen** — Boot animation at `bios.html`
@@ -25,7 +25,7 @@ website/
 ├── live.html               # Live trades dashboard (WebSocket)
 ├── bios.html               # Boot animation
 ├── newtab.html             # New tab page
-├── Pump-Store/             # 143 installable apps
+├── Pump-Store/             # 169 installable apps
 │   ├── apps/               # Individual app HTML files
 │   └── db/                 # App metadata
 ├── api/                    # Serverless API endpoints

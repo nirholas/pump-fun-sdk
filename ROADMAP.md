@@ -36,7 +36,7 @@
 | Feature | Status | Details |
 |---------|--------|---------|
 | Telegram claim bot | ✅ Done | Fee claims, cashback, CTO alerts, token launches, graduation, whale trades, REST API |
-| Enhanced MCP tools | ✅ Done | 47 tools — quoting, building, fees, analytics, AMM, social fees, wallet |
+| Enhanced MCP tools | ✅ Done | 53 tools — quoting, building, fees, analytics, AMM, social fees, wallet |
 | WebSocket relay server | ✅ Done | Real-time token launches + trades broadcast to browsers |
 | Live trades dashboard | ✅ Done | PumpPortal + relay fallback with auto-demo |
 | On-chain analytics | ✅ Done | Price impact, graduation progress, token price, bonding curve summary |
