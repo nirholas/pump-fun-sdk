@@ -31,7 +31,7 @@ For that to happen, agents need:
 
 pump-fun-sdk is the most complete open-source SDK for the Pumpfun protocol. It covers the entire token lifecycle: creation → bonding curve trading → graduation → AMM trading → fee collection → fee distribution → volume incentives.
 
-The MCP server exposes 47 tools — covering quoting, transaction building, fees, analytics, AMM operations, social fees, and wallet management — so AI agents like Claude can interact with the full Pump protocol via natural language. The vanity address generator lets agents (and humans) create memorable on-chain identities.
+The MCP server exposes 53 tools — covering quoting, transaction building, fees, analytics, AMM operations, social fees, and wallet management — so AI agents like Claude can interact with the full Pump protocol via natural language. The vanity address generator lets agents (and humans) create memorable on-chain identities.
 
 ### Tomorrow
 

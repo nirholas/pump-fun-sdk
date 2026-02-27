@@ -69,7 +69,7 @@ npm publish --access public
 ## Vercel Website Deployment
 
 ```bash
-# website/ directory — Next.js 14
+# website/ directory — static HTML/CSS/JS
 vercel --prod
 ```
 

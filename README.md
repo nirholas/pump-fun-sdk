@@ -819,7 +819,7 @@ website/
 
 ---
 
-## � x402 Payment Protocol
+## 💳 x402 Payment Protocol
 
 The [`x402/`](x402/) package implements [HTTP 402 Payment Required](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/402) as a real micropayment protocol using Solana USDC.
 

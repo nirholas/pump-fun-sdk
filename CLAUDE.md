@@ -9,7 +9,7 @@ The Pump SDK (`@pump-fun/pump-sdk`) is a TypeScript SDK for the Pump protocol on
 - **Online SDK (`OnlinePumpSdk`)** — Extends offline SDK with RPC fetchers
 - **Rust vanity generator** — 100K+ keys/sec multi-threaded generator
 - **TypeScript vanity generator** — Educational reference implementation
-- **MCP server** — Model Context Protocol for AI agent integration (47 tools)
+- **MCP server** — Model Context Protocol for AI agent integration (53 tools)
 - **Telegram bot** — PumpFun activity monitor (9 commands: fee claims, CTO alerts, whale trades, graduation)
 - **WebSocket relay server** — Real-time token launch broadcasting to browser clients
 - **Live dashboards** — Standalone browser UIs for token launches and trade analytics
@@ -24,7 +24,7 @@ The Pump SDK (`@pump-fun/pump-sdk`) is a TypeScript SDK for the Pump protocol on
 | `src/` | Core SDK (instruction builders, bonding curve math, social fees, PDAs, state, events) |
 | `rust/` | Rust vanity generator (rayon + solana-sdk) |
 | `typescript/` | TypeScript vanity generator (@solana/web3.js) |
-| `mcp-server/` | MCP server (47 tools — quoting, trading, fees, analytics, wallet) |
+| `mcp-server/` | MCP server (53 tools — quoting, trading, fees, analytics, wallet) |
 | `telegram-bot/` | PumpFun activity monitor (9 commands — fee claims, CTO, whale, graduation) |
 | `websocket-server/` | WebSocket relay — PumpFun API to browser clients |
 | `live/` | Standalone live dashboards — token launches + trades analytics |

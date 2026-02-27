@@ -156,7 +156,7 @@ Yes. We use only official Solana keypair generation (`solana-sdk` in Rust, `@sol
 
 ### What is MCP?
 
-Model Context Protocol — Anthropic's open standard for connecting AI assistants (like Claude) to external tools. Our MCP server exposes **47 tools** covering the entire Pump protocol: quoting, building transactions, fee management, analytics, AMM operations, social fees, and wallet operations.
+Model Context Protocol — Anthropic's open standard for connecting AI assistants (like Claude) to external tools. Our MCP server exposes **53 tools** covering the entire Pump protocol: quoting, building transactions, fee management, analytics, AMM operations, social fees, and wallet operations.
 
 ### What can it do?
 

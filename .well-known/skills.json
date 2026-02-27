@@ -93,7 +93,7 @@
         {
             "id": "mcp-server",
             "name": "MCP Server — Model Context Protocol for Solana Wallet Operations",
-            "description": "Model Context Protocol server exposing 47 tools, 3 resource types, and 3 prompts for AI agent consumption over stdio transport with session keypair management.",
+            "description": "Model Context Protocol server exposing 53 tools, 3 resource types, and 3 prompts for AI agent consumption over stdio transport with session keypair management.",
             "path": ".github/skills/mcp-server.skill.md",
             "tags": ["mcp", "ai", "tools", "server", "integration", "stdio"]
         },
