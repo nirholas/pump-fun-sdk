@@ -17,7 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **WebSocket relay server** (`websocket-server/`) — PumpFun API → SolanaMonitor → WebSocket relay → browsers; deployed on Railway (`pump-fun-websocket-production.up.railway.app`)
 - **PumpEventMonitor** (`telegram-bot/src/pump-event-monitor.ts`) — Anchor event decoder for graduation, whale trades, and fee distribution events via WebSocket or HTTP polling
 - **Live trades dashboard** (`website/live.html`) — real-time token launch + trade feed with volume charts, buy/sell ratio, whale alerts, top tokens, and demo mode
-- **PumpOS Pump-Store** — 143 installable apps including bonding-curve-calc, fee-tier-explorer, token-launch-sim, migration-tracker, token-incentives, creator-fee-sharing, pump-sdk-reference, smart-money, alpha terminal, and more
+- **PumpOS Pump-Store** — 169 installable apps including bonding-curve-calc, fee-tier-explorer, token-launch-sim, migration-tracker, token-incentives, creator-fee-sharing, pump-sdk-reference, smart-money, alpha terminal, and more
 - **Lair-TG** (`lair-tg/`) — unified Telegram bot platform for DeFi intelligence, wallet management, and token launching
 - **Standalone live pages** (`live/`) — `index.html` (token launches) and `trades.html` (trade feed) with separate Vercel deployment
 - **AMM trade events** — `AmmBuyEvent`, `AmmSellEvent`, `DepositEvent`, `WithdrawEvent`, `CreatePoolEvent` exported from state

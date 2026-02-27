@@ -17,7 +17,7 @@ The repository also includes:
 - **Lair-TG** — unified Telegram bot platform for DeFi intelligence
 - **Shell scripts** — production Bash wrappers for solana-keygen
 - **Tutorials** — 19 hands-on guides covering the full SDK
-- **Documentation site** — PumpOS web desktop with 143 Pump-Store apps
+- **Documentation site** — PumpOS web desktop with 169 Pump-Store apps
 
 ## Architecture
 

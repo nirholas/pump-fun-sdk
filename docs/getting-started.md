@@ -155,7 +155,6 @@ console.log("Transaction:", signature);
 - [Tutorials](../tutorials/) — 19 hands-on guides covering every SDK feature
 - [Migration Guide](./MIGRATION.md) — upgrading between versions
 - [Troubleshooting](./TROUBLESHOOTING.md) — common issues and solutions
-- [Tutorials](../tutorials/) — 19 hands-on guides covering every feature
 
 ### Ecosystem
 
@@ -165,5 +164,6 @@ console.log("Transaction:", signature);
 - [Live Dashboards](../live/) — browser-based token launch & trades monitoring
 - [x402 Payments](../x402/) — HTTP 402 micropayments with Solana USDC
 - [DeFi Agents](../packages/defi-agents/) — 58 AI agent definitions for DeFi workflows
-- [PumpOS Website](../website/) — web desktop with 143 apps
+- [Lair-TG Platform](../lair-tg/) — unified Telegram bot for DeFi intelligence
+- [PumpOS Website](../website/) — web desktop with 169 apps
 

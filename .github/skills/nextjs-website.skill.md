@@ -1,223 +1,143 @@
-# Next.js Website — PWA with Client-Side Solana Cryptography
+# PumpOS Website — Static Web Desktop with 143 Apps
 
 ## Skill Description
 
-Build and maintain the project's marketing and tools website — a Next.js 14 App Router application with client-side Solana cryptography, dark/light theming, PWA support, and interactive tool components, deployed on Vercel.
+Build and maintain PumpOS — a fully static HTML/CSS/JS web desktop environment with 143 Pump-Store apps, live token dashboards, interactive DeFi tools, PWA support, and Vercel deployment. No framework, no build step.
 
 ## Context
 
-The website serves as both a marketing page and an interactive tool hub where users can generate wallets, create vanity addresses, sign/verify messages, and validate addresses entirely in the browser. All cryptographic operations happen client-side — no private keys ever leave the browser. The site uses Tailwind CSS with a Solana-branded design system and framer-motion animations.
+PumpOS (`pumpos.app`) is a browser-based OS simulation themed around Solana DeFi. The entire desktop shell lives in a single `index.html` file. Apps are self-contained HTML files loaded in iframes. The kernel (`system32.js`) provides event bus and IPC routing between apps via `postMessage`. All crypto operations run client-side.
 
 ## Key Files
 
-### App Router Pages
-- `website/src/app/page.tsx` — landing page (hero, features grid, stats)
-- `website/src/app/layout.tsx` — root layout (Navigation, Footer, ThemeProvider, ServiceWorker)
-- `website/src/app/globals.css` — Tailwind directives, CSS variables, custom effects
-- `website/src/app/docs/page.tsx` — documentation page
-- `website/src/app/examples/page.tsx` — examples page
-- `website/src/app/mcp/page.tsx` — MCP server info page
-- `website/src/app/tools/page.tsx` — interactive tools hub
+### Desktop Shell
+- `website/index.html` — desktop shell (869 lines) — taskbar, windows, start menu, wallpaper
+- `website/script.js` — app management, window lifecycle, taskbar, 30 default apps (3,187 lines)
+- `website/system32.js` — OS kernel — event bus, IPC router, user system (1,310 lines)
+- `website/pump.css` — design system tokens — colors, spacing, radii, easing (894 lines)
+- `website/style.css` — full component styles — windows, taskbar, menus, scrollbars (4,678 lines)
 
-### Components
-- `website/src/components/Navigation.tsx` — sticky nav with mobile menu, 5 links, theme toggle
-- `website/src/components/Footer.tsx` — GitHub links, @nichxbt, license, disclaimer
-- `website/src/components/ThemeProvider.tsx` — dark/light mode context
-- `website/src/components/ServiceWorkerRegistrar.tsx` — PWA service worker registration
+### Script Modules (`website/scripts/`)
+- `kernel.js`, `windman.js` — window management
+- `commandpalette.js` — Cmd+K command palette
+- `wallet-connect.js` — Solana wallet integration
+- `systemtray.js`, `systemFeatures.js` — system tray features
+- `notifications.js`, `onboarding.js` — UX features
+- `widgets.js`, `smartmoney.js` — dashboard widgets
+- `featureflags.js` — feature flag system
+- `ctxmenu.js` — right-click context menus
+- `readwrite.js` — virtual filesystem
 
-### Interactive Tools (10 components)
-- `website/src/components/tools/GenerateWallet.tsx` — standard keypair generation
-- `website/src/components/tools/VanityGenerator.tsx` — vanity address generation
-- `website/src/components/tools/SignMessage.tsx` — message signing
-- `website/src/components/tools/VerifySignature.tsx` — signature verification
-- `website/src/components/tools/Validate.tsx` — address validation
-- `website/src/components/tools/RestoreWallet.tsx` — keypair restoration from private key
-- `website/src/components/tools/DifficultyEstimator.tsx` — vanity pattern difficulty calculator
-- `website/src/components/tools/BatchGenerator.tsx` — multiple keypair generation
-- `website/src/components/tools/Base58Converter.tsx` — Base58 encoding/decoding
-- `website/src/components/tools/ExplorerLink.tsx` — Solana Explorer link generator
+### Special Pages
+- `website/live.html` — real-time token launch dashboard (WebSocket relay)
+- `website/bios.html` — boot/BIOS screen
+- `website/newtab.html` — browser new-tab page
+- `website/plugin-demo.html` — plugin SDK demo
 
-### Utilities
-- `website/src/lib/utils.ts` — Base58 validation, bytesToHex, formatNumber, formatDuration
+### Built-in Apps (`website/appdata/`)
+20+ apps: store, browser, calculator, camera, files, gallery, settings, terminal, studio, copilot, dashboard, portfolio, alerts
+
+### Pump-Store Apps (`website/Pump-Store/apps/`)
+143 installable apps as individual HTML files. Database at `Pump-Store/db/v2.json`.
 
 ### Configuration
-- `website/package.json` — Next.js 14, React 18, Solana deps
-- `website/next.config.js` — webpack fallbacks for Node.js built-ins
-- `website/tailwind.config.ts` — Solana branding, custom animations
-- `website/postcss.config.js` — PostCSS with Tailwind and Autoprefixer
-- `website/tsconfig.json` — TypeScript configuration
-- `website/public/` — static assets, manifest, service worker
-- `vercel.json` — Vercel deployment config (`{ "framework": "nextjs" }`)
+- `website/vercel.json` — static deployment (SPA rewrite, immutable caching)
+- `website/webmanifest.json` — PWA manifest (standalone, `web+pump://` protocol)
+- `website/sw.js` — service worker (cache-first, offline support)
+- `website/package.json` — metadata only (no build scripts)
+
+### Developer Tools (`website/tools/`)
+- `audit-store.js` — audit Pump-Store integrity
+- `dedup-db.js` — deduplicate store database
+- `generate-store-catalog.js` — generate store catalog
+- `validate-apps.js` — validate app HTML files
 
 ## Key Concepts
 
-### Client-Side Cryptography
+### Desktop Architecture
 
-All crypto runs in the browser — no server calls:
+Single-page app with OS-like window management:
 
-```typescript
-import { Keypair } from '@solana/web3.js';
-import nacl from 'tweetnacl';
-import bs58 from 'bs58';
-
-// Generate
-const keypair = Keypair.generate();
-
-// Sign
-const message = new TextEncoder().encode(text);
-const signature = nacl.sign.detached(message, keypair.secretKey);
-
-// Verify
-const isValid = nacl.sign.detached.verify(message, signature, publicKeyBytes);
+```
+index.html (shell)
+├── Taskbar (bottom bar with pinned apps)
+├── Start Menu (app launcher)
+├── Desktop (wallpaper + icons)
+└── Windows (draggable, resizable iframes)
+    ├── Built-in apps (appdata/*.html)
+    └── Pump-Store apps (Pump-Store/apps/*.html)
 ```
 
-### Next.js Webpack Fallbacks
+### IPC and Event Bus
 
-Browser bundles need Node.js built-ins disabled:
+Apps communicate via `system32.js` kernel:
 
 ```javascript
-// next.config.js
-module.exports = {
-    reactStrictMode: true,
-    webpack: (config) => {
-        config.resolve.fallback = {
-            fs: false,
-            net: false,
-            tls: false,
-            crypto: false,
-        };
-        return config;
-    },
-};
-```
+// App sending a message
+parent.postMessage({
+    type: 'pump-bus',
+    target: 'portfolio',
+    payload: { action: 'refresh' }
+}, '*');
 
-### Component Pattern
-
-All tool components use `'use client'` directive and follow this pattern:
-
-```typescript
-'use client';
-import { useState } from 'react';
-import { motion } from 'framer-motion';
-
-export default function ToolComponent() {
-    const [result, setResult] = useState(null);
-    const [loading, setLoading] = useState(false);
-    
-    const handleAction = async () => {
-        setLoading(true);
-        try {
-            // Crypto operation
-        } finally {
-            setLoading(false);
-        }
-    };
-    
-    return (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-            {/* UI */}
-        </motion.div>
-    );
-}
+// App receiving messages
+window.addEventListener('message', (event) => {
+    if (event.data.type === 'pump-bus') {
+        // Handle IPC message
+    }
+});
 ```
 
 ### Design System
 
-**Solana brand colors:**
-```typescript
-// tailwind.config.ts
-colors: {
-    solana: {
-        purple: '#9945FF',
-        green: '#14F195',
-    },
-    dark: {
-        900: '#0a0a0f',
-        800: '#12121a',
-        700: '#1a1a2e',
-        600: '#252540',
-    }
+CSS custom properties in `pump.css`:
+
+```css
+:root {
+    --col-accent: #00e87b;        /* Pump green */
+    --col-bg-0: #0a0a0a;          /* Deepest background */
+    --col-bg-1: #111111;          /* Surface */
+    --col-bg-2: #1a1a1a;          /* Elevated surface */
+    --col-good: #00e87b;          /* Success */
+    --col-bad: #ff4d4d;           /* Error */
+    --border-radius-1: 0.7em;     /* Large radius */
+    --border-radius-2: 0.35em;    /* Medium radius */
+    --border-radius-3: 0.233em;   /* Small radius */
 }
 ```
 
-**Custom animations:**
-- `pulse-slow` — subtle background pulsing
-- `glow` — neon glow effect for highlights
-- `scan` — scanning line animation
-- `float` — gentle floating motion
-- `gradient` — animated gradient backgrounds
-- `fade-in` / `slide-up` — entrance animations
-
-**Font:** JetBrains Mono for code elements
-
-**Dark mode:** CSS class strategy via `ThemeProvider` context
-
 ### PWA Support
 
-- Service worker registered via `ServiceWorkerRegistrar` component
-- Manifest file in `public/`
-- Offline fallback page at `offline.html`
-- App installable on mobile devices
-
-### Page Structure
-
-```
-layout.tsx (root)
-├── Navigation (sticky, desktop + mobile)
-├── ThemeProvider (dark/light context)
-├── ServiceWorkerRegistrar
-├── {page content}
-└── Footer
-```
-
-**5 routes:**
-- `/` — Hero section, features grid, statistics
-- `/tools` — 10 interactive tool components
-- `/docs` — Documentation
-- `/examples` — Code examples
-- `/mcp` — MCP server information
+- Cache-first service worker in `sw.js`
+- Web app manifest with standalone display mode
+- `web+pump://` custom protocol handler
+- Installable with 512×512 icons
+- Apple meta tags for iOS compatibility
 
 ## Patterns to Follow
 
-- Use `'use client'` directive on all interactive components
-- Never send private keys to any server — all crypto is client-side
-- Use `framer-motion` for all animations — consistent API
-- Wrap async operations in try/catch with loading states
-- Use Tailwind's `dark:` variant for dark mode styles
-- Keep tool components self-contained (each in its own file)
-- Use `clsx` for conditional class merging
-- Validate all user input (Base58, address format) before crypto operations
-- Format large numbers and durations using utility functions from `lib/utils.ts`
+- No frameworks — vanilla HTML/CSS/JS only
+- Apps are self-contained HTML files loaded in iframes
+- Use `system32.js` event bus for inter-app communication
+- Use CSS custom properties from `pump.css` for consistent theming
+- All crypto operations run client-side — never send keys to a server
+- Store new apps in `Pump-Store/apps/` and register in `Pump-Store/db/v2.json`
+- Keep tool scripts in `website/tools/` for store maintenance
 
 ## Common Pitfalls
 
-- `@solana/web3.js` uses Node.js `crypto` module — must set webpack fallback to `false`
-- `Keypair.generate()` uses browser's `crypto.getRandomValues()` — works without node `crypto`
-- `bs58` v6 is ESM-only — may need dynamic import in certain contexts
-- framer-motion tree-shaking: import only needed components to reduce bundle size
-- Service worker caching can serve stale versions — implement proper cache invalidation
-- Private keys displayed in the browser should have a copy-to-clipboard-only UX, not persistent display
-- Mobile Safari may not support all Web Crypto API features — test on real devices
-
-## Dependencies
-
-| Package | Purpose |
-|---------|---------|
-| `next` (14.x) | Framework |
-| `react` (18.x) | UI library |
-| `@solana/web3.js` | Solana crypto operations |
-| `tweetnacl` | Ed25519 signing/verification |
-| `bs58` | Base58 encoding/decoding |
-| `framer-motion` | Animations |
-| `@tsparticles/react` | Particle background effects |
-| `lucide-react` | Icon library |
-| `clsx` | Class name merging |
-| `tailwindcss` (3.4) | Utility-first CSS |
+- Service worker caching may serve stale content — update the whitelist version in `sw.js`
+- `system32.js` IPC requires apps to listen for `postMessage` events with proper origin checks
+- Pump-Store apps must be fully self-contained HTML (no external deps beyond `/libs/`)
+- The `script.js` default app list controls first-launch desktop pins — update when adding built-in apps
+- `vercel.json` SPA rewrite sends all non-asset paths to `index.html` — API routes need the `api/` function
+- Mobile responsive breakpoint at 768px — test touch interactions for window management
 
 ## Deployment
 
-- Hosted on Vercel with `vercel.json: { "framework": "nextjs" }`
-- Automatic deploys from `main` branch
-- No server-side secrets needed (client-side only)
-- Static optimization for marketing pages, client rendering for tools
+- Hosted on Vercel at `pumpos.app`
+- No build step — purely static files
+- SPA routing via rewrite rules
+- `/libs/` and `/assets/` get immutable caching (1 year max-age)
+- API proxy serverless function at `api/proxy.js` (15s timeout, 256MB)
 

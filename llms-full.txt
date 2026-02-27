@@ -122,14 +122,18 @@ Model Context Protocol server for AI agent integration:
 
 ### Telegram Bot (telegram-bot/)
 
-PumpFun fee claim monitoring bot with Telegram notifications:
+PumpFun activity monitoring bot with Telegram notifications:
 - grammY framework with @solana/web3.js for Solana RPC/WebSocket
 - Real-time on-chain monitoring of fee claim transactions across Pump, PumpAMM, and PumpFees programs
 - 3 detection strategies: discriminator matching, inner instruction SOL transfers, balance-change heuristic
 - 4th strategy: event log parsing for claim discriminators
-- Commands: /start, /help, /watch, /unwatch, /list, /status, /monitor, /stopmonitor
+- 9 commands: /start, /help, /watch, /unwatch, /list, /status, /cto, /monitor, /stopmonitor
+- CTO (Creator Takeover) alerts: detect creator fee redirection events
+- Graduation alerts: bonding curve completion and AMM migration notifications
+- Whale trade alerts: configurable SOL threshold for large buy/sell detection
+- Fee distribution alerts: tracks creator fee distributions to shareholders
 - REST API: auth, rate limiting, SSE streaming, HMAC-signed webhooks, OpenAPI spec
-- Token launch monitor: real-time detection of new PumpFun token mints- CTO (creator takeover) alerts: detect creator fee redirection events
+- Token launch monitor: real-time detection of new PumpFun token mints
 - PumpEventMonitor: Anchor event decoder for graduation, whale trades, and fee distribution events
 - Persistent state with JSON file storage
 - Docker deployment with multi-stage build and HEALTHCHECK
@@ -141,17 +145,34 @@ Real-time token launch relay server:
 - One upstream connection to PumpFun, broadcasts parsed events to all connected browsers
 - Health check at `/health` returns connection status and client count
 - Deployed on Railway at `pump-fun-websocket-production.up.railway.app`
-- Used by `website/live.html` for real-time monitoring
+- Powers live dashboards and website/live.html for real-time monitoring
 - Message types: `token-launch`, `status`, `heartbeat`
+- Token metadata: name, symbol, mint, creator, marketCapSol, social links, GitHub URLs
+
+### Live Dashboards (live/)
+
+Standalone browser UIs for real-time PumpFun monitoring:
+- index.html — Token launch dashboard with full Anchor CreateEvent decoding (name, symbol, creator, market cap)
+- trades.html — Real-time buy/sell feed with volume charts, whale detection, analytics
+- Multi-endpoint failover for WebSocket connections
+- Custom RPC endpoint input support
 
 ### Lair-TG (lair-tg/)
 
 Unified Telegram bot platform for DeFi intelligence, wallet management, and token launching.
 
+### DeFi Agents (packages/defi-agents/)
+
+58 production-ready AI agent definitions in universal JSON format. Each agent specifies capabilities, personality, knowledge domains, and task patterns. Works with any AI platform (Claude, GPT, LLaMA, local models). Includes agents-manifest.json registry. 18-language i18n support.
+
+### Plugin.delivery (packages/plugin.delivery/)
+
+AI Plugin Index for SperaxOS function-call plugins and tools. OpenAPI-compatible plugin SDK, gateway, and developer tools for building function-calling plugins with Vercel edge deployment.
+
 ### PumpOS Website (website/)
 
 Static HTML/CSS/JS web desktop (PumpOS) with:
-- 143 Pump-Store apps: DeFi dashboards, trading tools, charts, wallet management, Pump SDK tools
+- 169 Pump-Store apps: DeFi dashboards, trading tools, charts, wallet management, Pump SDK tools
 - Live trades dashboard: real-time token launches and trades via WebSocket relay
 - Bonding curve calculator, fee tier explorer, token launch simulator
 - Token incentives tracker, creator fee sharing configurator, SDK API reference
