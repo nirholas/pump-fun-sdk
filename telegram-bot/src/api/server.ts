@@ -61,7 +61,7 @@ export function loadApiConfig(): ApiConfig {
         claimBufferSize: Number.parseInt(process.env.CLAIM_BUFFER_SIZE || '10000', 10),
         corsOrigins: process.env.CORS_ORIGINS || '*',
         maxWatchesPerClient: Number.parseInt(process.env.MAX_WATCHES_PER_CLIENT || '100', 10),
-        port: Number.parseInt(process.env.API_PORT || '3000', 10),
+        port: Number.parseInt(process.env.API_PORT || process.env.PORT || '3000', 10),
         rateLimitMax: Number.parseInt(process.env.RATE_LIMIT_MAX || '100', 10),
         rateLimitWindowMs: Number.parseInt(process.env.RATE_LIMIT_WINDOW_MS || '60000', 10),
     };

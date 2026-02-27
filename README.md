@@ -103,7 +103,7 @@ Token Creation &nbsp;·&nbsp; Bonding Curves &nbsp;·&nbsp; AMM Trading &nbsp;·
 <tr><td><strong>Offline mode</strong></td><td align="center">✅ No connection needed</td><td align="center">❌ Always online</td><td align="center">⚠️ Partial</td></tr>
 <tr><td><strong>TypeScript types</strong></td><td align="center">✅ Full IDL types</td><td align="center">❌ None</td><td align="center">⚠️ Partial</td></tr>
 <tr><td><strong>Analytics</strong></td><td align="center">✅ Price impact, graduation</td><td align="center">❌ DIY</td><td align="center">⚠️ Partial</td></tr>
-<tr><td><strong>MCP server</strong></td><td align="center">✅ 47+ tools for AI agents</td><td align="center">❌</td><td align="center">❌</td></tr>
+<tr><td><strong>MCP server</strong></td><td align="center">✅ 53 tools for AI agents</td><td align="center">❌</td><td align="center">❌</td></tr>
 <tr><td><strong>Real-time feed</strong></td><td align="center">✅ WebSocket relay</td><td align="center">❌ DIY</td><td align="center">❌</td></tr>
 <tr><td><strong>Telegram bot</strong></td><td align="center">✅ Claims + CTO + API</td><td align="center">❌</td><td align="center">❌</td></tr>
 <tr><td><strong>DeFi agents</strong></td><td align="center">✅ 58 agent definitions</td><td align="center">❌</td><td align="center">❌</td></tr>

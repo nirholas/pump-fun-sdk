@@ -224,7 +224,7 @@ import { OnlinePumpSdk, PUMP_SDK, getBuyTokenAmountFromSolAmount } from "@pump-f
 
 const sdk = new OnlinePumpSdk(connection);
 const global = await sdk.fetchGlobal();
-const ix = await PUMP_SDK.createV2Instruction({ mint, name, symbol, uri, creator, user });
+const ix = await PUMP_SDK.createV2Instruction({ mint, name, symbol, uri, creator, user, mayhemMode: false });
 ```
 
 ### Generate vanity address (Rust)

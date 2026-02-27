@@ -47,7 +47,7 @@ npx jest --coverage
 
 ### Configuration
 
-The SDK uses Jest with `ts-jest`. See `jest.config.js` at the project root (or `package.json` scripts).
+The SDK uses Jest with `ts-jest`. See `jest.config.ts` at the project root (or `package.json` scripts).
 
 ---
 

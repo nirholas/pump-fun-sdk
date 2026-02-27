@@ -57,7 +57,7 @@ Check how close a token is to graduating from the bonding curve to an AMM pool:
 ```typescript
 import { getGraduationProgress } from "@pump-fun/pump-sdk";
 
-const progress = getGraduationProgress(bondingCurve);
+const progress = getGraduationProgress(global, bondingCurve);
 
 console.log(`Progress: ${(progress.progressBps / 100).toFixed(1)}%`);
 console.log(`Graduated: ${progress.isGraduated}`);
@@ -77,6 +77,7 @@ import { getTokenPrice } from "@pump-fun/pump-sdk";
 const price = getTokenPrice({
   global,
   feeConfig,
+  mintSupply: bondingCurve.tokenTotalSupply,
   bondingCurve,
 });
 
@@ -94,7 +95,7 @@ Get a comprehensive snapshot of a bonding curve in a single call:
 ```typescript
 import { getBondingCurveSummary } from "@pump-fun/pump-sdk";
 
-const summary = getBondingCurveSummary({ global, feeConfig, bondingCurve });
+const summary = getBondingCurveSummary({ global, feeConfig, mintSupply: bondingCurve.tokenTotalSupply, bondingCurve });
 
 console.log(`Market cap: ${summary.marketCap.toNumber() / 1e9} SOL`);
 console.log(`Progress: ${(summary.progressBps / 100).toFixed(1)}%`);
