@@ -18,7 +18,10 @@
 | `website/` | PumpOS web desktop (static HTML/CSS/JS) |
 | `x402/` | x402 payment protocol integration |
 | `tutorials/` | 19 hands-on tutorial guides |
-| `telegram-bot/` | PumpFun fee claim monitoring bot |
+| `telegram-bot/` | PumpFun activity monitor bot (fee claims, CTO, whale, graduation) |
+| `websocket-server/` | WebSocket relay — PumpFun API to browser clients |
+| `live/` | Real-time token launch + trades dashboards |
+| `lair-tg/` | Lair — unified Telegram bot platform for DeFi intelligence |
 | `prompts/` | Agent prompt templates |
 
 ## Three On-Chain Programs
@@ -42,11 +45,16 @@
 import { PUMP_SDK, OnlinePumpSdk } from "@pump-fun/pump-sdk";
 
 // Offline (no connection needed)
-const ix = await PUMP_SDK.createV2Instruction({ mint, name, symbol, uri, creator, user });
+const ix = await PUMP_SDK.createV2Instruction({ mint, name, symbol, uri, creator, user, mayhemMode: false });
 
-// Online (needs connection)
+// Online (needs connection for state fetching, offline SDK for instruction building)
 const sdk = new OnlinePumpSdk(connection);
-const ixs = await sdk.buyInstructions({ global, bondingCurve, mint, user, solAmount, amount, slippage });
+const global = await sdk.fetchGlobal();
+const { bondingCurve, bondingCurveAccountInfo, associatedUserAccountInfo } = await sdk.fetchBuyState(mint, user);
+const ixs = await PUMP_SDK.buyInstructions({
+  global, bondingCurveAccountInfo, bondingCurve, associatedUserAccountInfo,
+  mint, user, solAmount, amount, slippage: 1, tokenProgram: TOKEN_PROGRAM_ID,
+});
 ```
 
 ### Bonding Curve Math

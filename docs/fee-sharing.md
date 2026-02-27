@@ -162,3 +162,23 @@ const balance = await onlineSdk.getCreatorVaultBalanceBothPrograms(creator);
 console.log("Uncollected fees:", balance.toString(), "lamports");
 ```
 
+## Social Fee PDAs
+
+For platform-based fee routing (e.g., tipping by username rather than wallet address), the SDK supports social fee PDAs. These are documented in the [Architecture Guide](architecture.md#social-fee-pdas).
+
+```typescript
+// Create a social fee PDA for a platform user
+const ix = await PUMP_SDK.createSocialFeePdaInstruction({
+  payer: wallet.publicKey,
+  userId: "@username",
+  platform: "twitter",
+});
+
+// Claim fees routed to a social fee PDA
+const ix2 = await PUMP_SDK.claimSocialFeePdaInstruction({
+  claimer: wallet.publicKey,
+  userId: "@username",
+  platform: "twitter",
+});
+```
+

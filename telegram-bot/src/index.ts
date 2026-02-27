@@ -72,6 +72,8 @@ async function main(): Promise<void> {
             if (!bot) return;
             const monitors = getActiveMonitors();
             for (const entry of monitors) {
+                // Skip chats that disabled launch alerts
+                if (!entry.alerts.launches) continue;
                 // Apply github filter
                 if (entry.githubOnly && !event.hasGithub) continue;
 
@@ -103,12 +105,15 @@ async function main(): Promise<void> {
             const { PumpEventMonitor } = await import('./pump-event-monitor.js');
 
             const broadcastToMonitors = async (
+                alertKey: 'graduations' | 'whales' | 'feeDistributions',
                 formatFn: (event: never) => string,
                 event: GraduationEvent | TradeAlertEvent | FeeDistributionEvent,
             ) => {
                 if (!bot) return;
                 const monitors = getActiveMonitors();
                 for (const entry of monitors) {
+                    // Respect per-chat alert preferences
+                    if (!entry.alerts[alertKey]) continue;
                     try {
                         const message = formatFn(event as never);
                         await bot.api.sendMessage(entry.chatId, message, {
@@ -123,9 +128,9 @@ async function main(): Promise<void> {
 
             eventMonitor = new PumpEventMonitor(
                 config,
-                (event: GraduationEvent) => broadcastToMonitors(formatGraduationNotification, event),
-                (event: TradeAlertEvent) => broadcastToMonitors(formatTradeAlertNotification, event),
-                (event: FeeDistributionEvent) => broadcastToMonitors(formatFeeDistributionNotification, event),
+                (event: GraduationEvent) => broadcastToMonitors('graduations', formatGraduationNotification, event),
+                (event: TradeAlertEvent) => broadcastToMonitors('whales', formatTradeAlertNotification, event),
+                (event: FeeDistributionEvent) => broadcastToMonitors('feeDistributions', formatFeeDistributionNotification, event),
             );
             log.info('Pump event monitor loaded');
         } catch {
@@ -203,6 +208,8 @@ async function main(): Promise<void> {
             { command: 'unwatch', description: 'Stop watching a wallet' },
             { command: 'list', description: 'List active watches' },
             { command: 'status', description: 'Monitor status & stats' },
+            { command: 'cto', description: 'Creator Takeover lookup & stats' },
+            { command: 'alerts', description: 'Configure alert types per chat' },
             { command: 'monitor', description: 'Start real-time token launch feed' },
             { command: 'stopmonitor', description: 'Stop the token launch feed' },
         ]);

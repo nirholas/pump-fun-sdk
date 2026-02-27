@@ -5,7 +5,7 @@
 This workspace is a single repository:
 
 - **pump-fun-sdk** (`/workspaces/pump-fun-sdk`) — Main repository
-  - `website/` — PumpOS web desktop (Next.js + vanilla HTML/CSS/JS)
+  - `website/` — PumpOS web desktop (static HTML/CSS/JS)
   - `src/` — Core Pump SDK (TypeScript)
   - Branch: `main` — Production
 

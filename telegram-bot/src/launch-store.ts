@@ -24,6 +24,19 @@ export interface LaunchMonitorEntry {
     activatedAt: number;
     /** When deactivated (unix ms), 0 if still active */
     deactivatedAt: number;
+    /** Per-chat alert toggles (defaults to all enabled) */
+    alerts: AlertPreferences;
+}
+
+export interface AlertPreferences {
+    /** Receive new token launch notifications */
+    launches: boolean;
+    /** Receive graduation / AMM migration notifications */
+    graduations: boolean;
+    /** Receive whale trade notifications */
+    whales: boolean;
+    /** Receive creator fee distribution notifications */
+    feeDistributions: boolean;
 }
 
 // ============================================================================
@@ -35,6 +48,14 @@ const monitors = new Map<number, LaunchMonitorEntry>();
 // ============================================================================
 // Operations
 // ============================================================================
+
+/** Default alert preferences — everything enabled */
+export const DEFAULT_ALERTS: AlertPreferences = {
+    feeDistributions: true,
+    graduations: true,
+    launches: true,
+    whales: true,
+};
 
 /** Activate (or update) the launch monitor for a chat. */
 export function activateMonitor(
@@ -49,6 +70,7 @@ export function activateMonitor(
         activatedAt: Date.now(),
         activatedBy: userId,
         active: true,
+        alerts: existing?.alerts ?? { ...DEFAULT_ALERTS },
         chatId,
         deactivatedAt: 0,
         githubOnly,
@@ -104,4 +126,36 @@ export function isMonitorActive(chatId: number): boolean {
 /** Get the monitor entry for a chat (active or not). */
 export function getMonitorEntry(chatId: number): LaunchMonitorEntry | undefined {
     return monitors.get(chatId);
+}
+
+/** Update alert preferences for a chat. Creates a default entry if none exists. */
+export function updateAlerts(
+    chatId: number,
+    userId: number,
+    updates: Partial<AlertPreferences>,
+): LaunchMonitorEntry {
+    let entry = monitors.get(chatId);
+    if (!entry) {
+        entry = {
+            activatedAt: Date.now(),
+            activatedBy: userId,
+            active: true,
+            alerts: { ...DEFAULT_ALERTS },
+            chatId,
+            deactivatedAt: 0,
+            githubOnly: false,
+        };
+        monitors.set(chatId, entry);
+    }
+    // Merge the updates
+    entry.alerts = { ...entry.alerts, ...updates };
+    log.info(
+        'Alert preferences updated for chat %d: launches=%s grad=%s whales=%s fees=%s',
+        chatId,
+        entry.alerts.launches,
+        entry.alerts.graduations,
+        entry.alerts.whales,
+        entry.alerts.feeDistributions,
+    );
+    return entry;
 }

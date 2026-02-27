@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="pump-include" content="pump.css">
+    <meta name="pump-icon" content="<svg width='232' height='232' viewBox='0 0 232 232' fill='none' xmlns='http://www.w3.org/2000/svg'><rect width='232' height='232' rx='40' fill='#00e87b'/><text x='116' y='140' font-size='120' text-anchor='middle' fill='#0a0a0a'>🔌</text></svg>">
+    <meta name="pump-theme-color" content="#00e87b">
+    <meta name="pump-aspect-ratio" content="1100x750">
+    <title>Plugin Demo</title>
+    <style>
+        :root { color-scheme: dark; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Poppins', Inter, -apple-system, sans-serif;
+            background: #05060a; color: #f5f7ff;
+            min-height: 100vh; overflow: auto;
+        }
+        .container { width: min(1060px, 100% - 16px); margin: 12px auto; }
+
+        /* Header */
+        .hero { text-align: center; padding: 1.5rem 0 1rem; }
+        .hero h1 { font-size: 1.5rem; font-weight: 800; }
+        .hero h1 em { font-style: normal; color: #00e87b; }
+        .hero p { color: #888; font-size: 0.82rem; margin-top: 0.25rem; }
+        .badges { display: flex; gap: 0.4rem; justify-content: center; margin-top: 0.6rem; flex-wrap: wrap; }
+        .badge {
+            padding: 0.2rem 0.6rem; font-size: 0.68rem; border-radius: 999px;
+            background: #ffffff08; border: 1px solid #ffffff10; color: #aaa;
+        }
+        .badge.g { background: #00e87b18; color: #00e87b; border-color: #00e87b30; }
+
+        /* Tabs */
+        .tabs {
+            display: flex; gap: 2px; flex-wrap: wrap; background: #0e0f14;
+            border-radius: 10px; padding: 3px; margin-bottom: 1rem;
+        }
+        .tab {
+            flex: 1; min-width: 110px; padding: 0.45rem 0.6rem; text-align: center;
+            background: transparent; border: none; color: #666; font-family: inherit;
+            font-size: 0.78rem; font-weight: 600; border-radius: 8px; cursor: pointer;
+            transition: all 0.15s;
+        }
+        .tab:hover { color: #ccc; background: #161822; }
+        .tab.on { color: #0a0a0a; background: #00e87b; }
+
+        /* Panels */
+        .panel { display: none; background: #0e0f14; border-radius: 10px; padding: 1.2rem; border: 1px solid #ffffff08; }
+        .panel.on { display: block; }
+        .panel h2 { font-size: 1.1rem; margin-bottom: 0.15rem; }
+        .panel .desc { color: #666; font-size: 0.78rem; margin-bottom: 1rem; }
+
+        /* Forms */
+        .row { display: flex; gap: 0.6rem; align-items: flex-end; flex-wrap: wrap; margin-bottom: 0.75rem; }
+        .fld { flex: 1; min-width: 160px; }
+        .fld label { display: block; font-size: 0.68rem; color: #666; margin-bottom: 0.15rem; text-transform: uppercase; letter-spacing: 0.04em; }
+        .fld input, .fld select {
+            width: 100%; padding: 0.5rem 0.6rem; background: #161822;
+            border: 1px solid #ffffff12; border-radius: 6px; color: #f5f7ff;
+            font-family: 'Courier New', monospace; font-size: 0.82rem; outline: none;
+        }
+        .fld input:focus, .fld select:focus { border-color: #00e87b; }
+        .fld input::placeholder { color: #444; }
+
+        .go {
+            padding: 0.5rem 1.2rem; background: #00e87b; color: #0a0a0a;
+            border: none; border-radius: 6px; font-family: inherit;
+            font-weight: 600; font-size: 0.82rem; cursor: pointer;
+        }
+        .go:hover { filter: brightness(1.1); }
+        .go:disabled { opacity: 0.4; cursor: wait; }
+        .go.ld { color: transparent; position: relative; }
+        .go.ld::after {
+            content: ''; position: absolute; top: 50%; left: 50%;
+            width: 14px; height: 14px; margin: -7px 0 0 -7px;
+            border: 2px solid #0a0a0a; border-top-color: transparent;
+            border-radius: 50%; animation: sp 0.5s linear infinite;
+        }
+        @keyframes sp { to { transform: rotate(360deg); } }
+
+        /* Curl */
+        .curl { margin-top: 0.5rem; background: #161822; border: 1px solid #ffffff08; border-radius: 6px; overflow: hidden; }
+        .curl button {
+            width: 100%; padding: 0.35rem 0.6rem; text-align: left;
+            background: transparent; border: none; color: #555; font-family: inherit;
+            font-size: 0.7rem; cursor: pointer;
+        }
+        .curl button:hover { color: #999; }
+        .curl pre {
+            display: none; padding: 0.6rem; font-family: 'Courier New', monospace;
+            font-size: 0.72rem; color: #8b949e; white-space: pre-wrap; word-break: break-all;
+            border-top: 1px solid #ffffff06;
+        }
+        .curl.open pre { display: block; }
+
+        /* Response */
+        .resp { margin-top: 0.6rem; background: #0d1117; border: 1px solid #ffffff08; border-radius: 6px; overflow: hidden; display: none; }
+        .resp.show { display: block; }
+        .resp-hdr {
+            display: flex; justify-content: space-between; padding: 0.35rem 0.6rem;
+            background: #161b22; border-bottom: 1px solid #ffffff08; font-size: 0.7rem;
+        }
+        .resp-hdr .s { font-weight: 600; }
+        .resp-hdr .s.ok { color: #00e87b; }
+        .resp-hdr .s.er { color: #ff4d4d; }
+        .resp-hdr .t { color: #555; }
+        .resp pre {
+            padding: 0.75rem; font-family: 'Courier New', monospace; font-size: 0.76rem;
+            color: #c9d1d9; overflow: auto; max-height: 400px; line-height: 1.45;
+        }
+
+        /* Links */
+        .foot { text-align: center; padding: 1rem 0; color: #444; font-size: 0.72rem; }
+        .foot a { color: #00e87b; text-decoration: none; }
+        .foot a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="hero">
+        <h1>🚀 Pump Fun <em>SDK</em> Plugin</h1>
+        <p>SperaxOS plugin — query Solana bonding curves, prices, fees &amp; incentives</p>
+        <div class="badges">
+            <span class="badge g">Live API</span>
+            <span class="badge">SperaxOS</span>
+            <span class="badge">Solana Mainnet</span>
+            <span class="badge">6 Endpoints</span>
+        </div>
+    </div>
+
+    <div class="tabs">
+        <button class="tab on" data-t="bc">Bonding Curve</button>
+        <button class="tab" data-t="pq">Price Quote</button>
+        <button class="tab" data-t="mc">Market Cap</button>
+        <button class="tab" data-t="ft">Fee Tiers</button>
+        <button class="tab" data-t="ti">Incentives</button>
+        <button class="tab" data-t="fs">Fee Sharing</button>
+    </div>
+
+    <!-- Bonding Curve -->
+    <div class="panel on" id="p-bc">
+        <h2>getBondingCurve</h2>
+        <p class="desc">Fetch bonding curve state — virtual/real reserves, graduation status, current price</p>
+        <div class="row">
+            <div class="fld"><label>Token Mint</label><input id="bc-m" placeholder="7GCihgDB8fe6KNjn2MYtkzZcRjQy3t9GHdC8uHYmW2hr"></div>
+            <button class="go" onclick="fire('bc')">Query</button>
+        </div>
+        <div class="curl" id="c-bc"><button onclick="this.parentElement.classList.toggle('open')">▸ curl</button><pre></pre></div>
+        <div class="resp" id="r-bc"><div class="resp-hdr"><span class="s"></span><span class="t"></span></div><pre></pre></div>
+    </div>
+
+    <!-- Price Quote -->
+    <div class="panel" id="p-pq">
+        <h2>getPriceQuote</h2>
+        <p class="desc">Buy/sell quote via constant-product AMM formula (xy = k)</p>
+        <div class="row">
+            <div class="fld"><label>Token Mint</label><input id="pq-m" placeholder="7GCihgDB8fe6KNjn2MYtkzZcRjQy3t9GHdC8uHYmW2hr"></div>
+            <div class="fld" style="max-width:100px"><label>Side</label><select id="pq-s"><option value="buy">Buy</option><option value="sell">Sell</option></select></div>
+            <div class="fld" style="max-width:170px"><label>Amount (lamports)</label><input id="pq-a" placeholder="1000000000"></div>
+            <button class="go" onclick="fire('pq')">Quote</button>
+        </div>
+        <div class="curl" id="c-pq"><button onclick="this.parentElement.classList.toggle('open')">▸ curl</button><pre></pre></div>
+        <div class="resp" id="r-pq"><div class="resp-hdr"><span class="s"></span><span class="t"></span></div><pre></pre></div>
+    </div>
+
+    <!-- Market Cap -->
+    <div class="panel" id="p-mc">
+        <h2>getMarketCap</h2>
+        <p class="desc">Price × supply → market cap in SOL &amp; USD</p>
+        <div class="row">
+            <div class="fld"><label>Token Mint</label><input id="mc-m" placeholder="7GCihgDB8fe6KNjn2MYtkzZcRjQy3t9GHdC8uHYmW2hr"></div>
+            <button class="go" onclick="fire('mc')">Calculate</button>
+        </div>
+        <div class="curl" id="c-mc"><button onclick="this.parentElement.classList.toggle('open')">▸ curl</button><pre></pre></div>
+        <div class="resp" id="r-mc"><div class="resp-hdr"><span class="s"></span><span class="t"></span></div><pre></pre></div>
+    </div>
+
+    <!-- Fee Tier -->
+    <div class="panel" id="p-ft">
+        <h2>getFeeTier</h2>
+        <p class="desc">5 fee tiers from 0.25% to 2% by SOL trade size</p>
+        <div class="row">
+            <div class="fld" style="max-width:170px"><label>SOL Amount</label><input id="ft-a" placeholder="1.5" value="1.5"></div>
+            <button class="go" onclick="fire('ft')">Calculate</button>
+        </div>
+        <div class="curl" id="c-ft"><button onclick="this.parentElement.classList.toggle('open')">▸ curl</button><pre></pre></div>
+        <div class="resp" id="r-ft"><div class="resp-hdr"><span class="s"></span><span class="t"></span></div><pre></pre></div>
+    </div>
+
+    <!-- Token Incentives -->
+    <div class="panel" id="p-ti">
+        <h2>getTokenIncentives</h2>
+        <p class="desc">PUMP token reward schedule &amp; optional per-wallet stats</p>
+        <div class="row">
+            <div class="fld"><label>Wallet (optional)</label><input id="ti-w" placeholder="Leave blank for global stats"></div>
+            <button class="go" onclick="fire('ti')">Query</button>
+        </div>
+        <div class="curl" id="c-ti"><button onclick="this.parentElement.classList.toggle('open')">▸ curl</button><pre></pre></div>
+        <div class="resp" id="r-ti"><div class="resp-hdr"><span class="s"></span><span class="t"></span></div><pre></pre></div>
+    </div>
+
+    <!-- Fee Sharing -->
+    <div class="panel" id="p-fs">
+        <h2>getFeeSharing</h2>
+        <p class="desc">Creator fee sharing config — vault, shareholder BPS splits</p>
+        <div class="row">
+            <div class="fld"><label>Token Mint</label><input id="fs-m" placeholder="7GCihgDB8fe6KNjn2MYtkzZcRjQy3t9GHdC8uHYmW2hr"></div>
+            <button class="go" onclick="fire('fs')">Query</button>
+        </div>
+        <div class="curl" id="c-fs"><button onclick="this.parentElement.classList.toggle('open')">▸ curl</button><pre></pre></div>
+        <div class="resp" id="r-fs"><div class="resp-hdr"><span class="s"></span><span class="t"></span></div><pre></pre></div>
+    </div>
+
+    <div class="foot">
+        <a href="https://plugin.delivery">plugin.delivery</a> · <a href="https://github.com/nicholasxuu/pump-fun-sdk">GitHub</a> · MIT License
+    </div>
+</div>
+
+<script>
+const API = 'https://plugin.delivery/api/pump-fun-sdk';
+const EP = {
+    bc: 'bonding-curve', pq: 'price-quote', mc: 'market-cap',
+    ft: 'fee-tier', ti: 'token-incentives', fs: 'fee-sharing'
+};
+
+// Tabs
+document.querySelectorAll('.tab').forEach(t => {
+    t.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(b => b.classList.remove('on'));
+        document.querySelectorAll('.panel').forEach(p => p.classList.remove('on'));
+        t.classList.add('on');
+        document.getElementById('p-' + t.dataset.t).classList.add('on');
+    });
+});
+
+function payload(k) {
+    switch(k) {
+        case 'bc': return { mint: document.getElementById('bc-m').value.trim() };
+        case 'pq': return { mint: document.getElementById('pq-m').value.trim(), side: document.getElementById('pq-s').value, amount: document.getElementById('pq-a').value.trim() };
+        case 'mc': return { mint: document.getElementById('mc-m').value.trim() };
+        case 'ft': return { solAmount: document.getElementById('ft-a').value.trim() };
+        case 'ti': { const w = document.getElementById('ti-w').value.trim(); return w ? { wallet: w } : {}; }
+        case 'fs': return { mint: document.getElementById('fs-m').value.trim() };
+    }
+}
+
+async function fire(k) {
+    const p = payload(k);
+    const ep = EP[k];
+    const url = `${API}/${ep}`;
+    const curl = `curl -X POST '${url}' \\\n  -H 'Content-Type: application/json' \\\n  -d '${JSON.stringify(p)}'`;
+    document.querySelector('#c-' + k + ' pre').textContent = curl;
+
+    const btn = document.querySelector('#p-' + k + ' .go');
+    const resp = document.getElementById('r-' + k);
+    btn.classList.add('ld'); btn.disabled = true;
+    resp.classList.add('show');
+    resp.querySelector('pre').textContent = 'Loading...';
+    resp.querySelector('.s').textContent = '';
+    resp.querySelector('.s').className = 's';
+    resp.querySelector('.t').textContent = '';
+
+    const t0 = performance.now();
+    try {
+        const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(p) });
+        const ms = Math.round(performance.now() - t0);
+        const data = await res.json();
+        resp.querySelector('.s').textContent = res.ok ? `${res.status} OK` : `${res.status} Error`;
+        resp.querySelector('.s').classList.add(res.ok ? 'ok' : 'er');
+        resp.querySelector('.t').textContent = ms + 'ms';
+        resp.querySelector('pre').textContent = JSON.stringify(data, null, 2);
+    } catch(e) {
+        const ms = Math.round(performance.now() - t0);
+        resp.querySelector('.s').textContent = 'Network Error';
+        resp.querySelector('.s').classList.add('er');
+        resp.querySelector('.t').textContent = ms + 'ms';
+        resp.querySelector('pre').textContent = e.message + '\n\nAPI may not be deployed yet. Use the curl command above.';
+    } finally { btn.classList.remove('ld'); btn.disabled = false; }
+}
+</script>
+
+</body>
+</html>

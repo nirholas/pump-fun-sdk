@@ -9,8 +9,10 @@ The Pump SDK (`@pump-fun/pump-sdk`) is a TypeScript SDK for the Pump protocol on
 - **Online SDK (`OnlinePumpSdk`)** — Extends offline SDK with RPC fetchers
 - **Rust vanity generator** — 100K+ keys/sec multi-threaded generator
 - **TypeScript vanity generator** — Educational reference implementation
-- **MCP server** — Model Context Protocol for AI agent integration
-- **Telegram bot** — PumpFun fee claim monitoring with Telegram notifications
+- **MCP server** — Model Context Protocol for AI agent integration (47 tools)
+- **Telegram bot** — PumpFun activity monitor (9 commands: fee claims, CTO alerts, whale trades, graduation)
+- **WebSocket relay server** — Real-time token launch broadcasting to browser clients
+- **Live dashboards** — Standalone browser UIs for token launches and trade analytics
 - **x402 payment protocol** — HTTP 402 micropayments with Solana USDC
 - **Shell scripts** — Production Bash wrappers for solana-keygen
 - **Tutorials** — 19 hands-on guides covering the full SDK
@@ -19,19 +21,22 @@ The Pump SDK (`@pump-fun/pump-sdk`) is a TypeScript SDK for the Pump protocol on
 
 | Directory | Purpose |
 |-----------|---------|
-| `src/` | Core SDK (instruction builders, bonding curve math, fees, PDAs, state) |
+| `src/` | Core SDK (instruction builders, bonding curve math, social fees, PDAs, state, events) |
 | `rust/` | Rust vanity generator (rayon + solana-sdk) |
 | `typescript/` | TypeScript vanity generator (@solana/web3.js) |
-| `mcp-server/` | MCP server (tools, resources, prompts) |
-| `telegram-bot/` | PumpFun fee claim monitoring bot |
+| `mcp-server/` | MCP server (47 tools — quoting, trading, fees, analytics, wallet) |
+| `telegram-bot/` | PumpFun activity monitor (9 commands — fee claims, CTO, whale, graduation) |
+| `websocket-server/` | WebSocket relay — PumpFun API to browser clients |
+| `live/` | Standalone live dashboards — token launches + trades analytics |
 | `x402/` | x402 payment protocol (HTTP 402 USDC micropayments) |
 | `tutorials/` | 19 hands-on tutorial guides |
 | `scripts/` | Bash scripts (generate, verify, batch) |
 | `docs/` | API reference, architecture, guides |
 | `tests/` | Cross-language test suites |
-| `website/` | PumpOS web desktop (static HTML/CSS/JS) |
-| `.github/skills/` | 28 detailed agent skill documents |
-| `.well-known/` | AI plugin, agent config, skills registry, security.txt |
+| `website/` | PumpOS web desktop with 169 Pump-Store apps |
+| `security/` | Security audits and checklists |
+| `skills/` | Agent skill documents |
+| `prompts/` | Agent prompt templates |
 
 ## On-Chain Programs
 

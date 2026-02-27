@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Social fee PDAs** — `createSocialFeePdaInstruction`, `claimSocialFeePdaInstruction`, `fetchSocialFeePda`, `decodeSocialFeePdaAccount` for platform-based fee collection (userId + platform identifiers)
+- **Social fee events** — `SocialFeePdaCreatedEvent`, `SocialFeePdaClaimedEvent` exported from state
+- **WebSocket relay server** (`websocket-server/`) — PumpFun API → SolanaMonitor → WebSocket relay → browsers; deployed on Railway (`pump-fun-websocket-production.up.railway.app`)
+- **PumpEventMonitor** (`telegram-bot/src/pump-event-monitor.ts`) — Anchor event decoder for graduation, whale trades, and fee distribution events via WebSocket or HTTP polling
+- **Live trades dashboard** (`website/live.html`) — real-time token launch + trade feed with volume charts, buy/sell ratio, whale alerts, top tokens, and demo mode
+- **PumpOS Pump-Store** — 169 installable apps including bonding-curve-calc, fee-tier-explorer, token-launch-sim, migration-tracker, token-incentives, creator-fee-sharing, pump-sdk-reference, smart-money, alpha terminal, and more
+- **Lair-TG** (`lair-tg/`) — unified Telegram bot platform for DeFi intelligence, wallet management, and token launching
+- **Standalone live pages** (`live/`) — `index.html` (token launches) and `trades.html` (trade feed) with separate Vercel deployment
+- **AMM trade events** — `AmmBuyEvent`, `AmmSellEvent`, `DepositEvent`, `WithdrawEvent`, `CreatePoolEvent` exported from state
+- **Fee sharing events** — `CreateFeeSharingConfigEvent`, `UpdateFeeSharesEvent`, `ResetFeeSharingConfigEvent`, `RevokeFeeSharingAuthorityEvent`, `TransferFeeSharingAuthorityEvent`
+- **Graduation/whale/fee formatters** (`telegram-bot/src/formatters.ts`) — rich HTML notification formatting for graduation events, whale trades, and fee distributions
 - **Analytics module** (`src/analytics.ts`) — price impact, graduation progress, token price, bonding curve summary
 - **Telegram bot REST API** — scalable HTTP API with auth, rate limiting, SSE streaming, webhooks
   - `GET /api/v1/health` — health check (no auth)
@@ -19,6 +30,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `CRUD /api/v1/watches` — per-client watch management
 - **Telegram bot token launch monitor** — real-time detection of new PumpFun token launches with `/monitor` and `/stopmonitor` commands
 - **CTO (creator takeover) alerts** — detect creator fee redirection events
+- **Telegram bot pump event monitor** — `PumpEventMonitor` class for on-chain event tracking via Anchor discriminator matching
+  - **Graduation alerts** — notifications when a token completes its bonding curve or migrates to PumpAMM pool
+  - **Whale trade alerts** — configurable SOL threshold for large buy/sell notifications with visual bonding curve progress bar
+  - **Fee distribution alerts** — tracks `DistributeCreatorFees` events with shareholder breakdown and share percentages
+  - **Cashback coin flag** — token launch notifications now show whether cashback is enabled
+  - New env vars: `ENABLE_GRADUATION_ALERTS`, `ENABLE_TRADE_ALERTS`, `WHALE_THRESHOLD_SOL`, `ENABLE_FEE_DISTRIBUTION_ALERTS`
 - **HMAC-SHA256 webhook signatures** — `X-PumpFun-Signature` header for webhook payload verification
 - **Request logging** — method, path, status, duration for all API requests
 - **Security headers** — `X-Content-Type-Options`, `X-Frame-Options`, `X-Request-Id` on all API responses
@@ -40,6 +57,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - GitHub Actions release workflow — npm publish and Rust binary releases
 - GitHub Actions security workflow — npm audit, cargo audit, CodeQL, dependency review
 - GitHub Actions stale issue management
+- **x402 payment protocol** (`x402/`) — HTTP 402 micropayments with Solana USDC, `x402Paywall()` server middleware and `X402Client` auto-pay client
+- **MCP server expanded to 47 tools** — quoting, building TXs, fees, analytics, AMM ops, social fees, wallet; deploys to Railway, Cloudflare Workers, or Vercel
+- **28 agent skill documents** (`skills/`) — covering every domain from SDK core to security
 - Discussion templates — Ideas, Q&A, Show & Tell
 - Issue template config with contact links
 - Documentation improvement issue template
@@ -51,10 +71,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Live page WebSocket endpoints updated — removed public Solana RPCs, now uses PumpPortal + Railway relay server
 - Telegram bot version bumped to 1.1.0
 - `TELEGRAM_BOT_TOKEN` now optional in API-only mode
 - Railway `healthcheckPath` set to `/api/v1/health`
 - Dockerfile: added OCI labels, `EXPOSE 3000`, `HEALTHCHECK`, `API_PORT` env
+- SolanaMonitor refactored to use PumpFun API for real-time token launches
 
 ### Fixed
 
@@ -62,6 +84,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed missing `description` field in `TokenLaunchEvent` construction
 - Fixed `.well-known/agent.json` PumpFees program ID mismatch
 - Fixed all docs incorrectly describing website as "Next.js" (it's static HTML/CSS/JS)
+- Removed 'Transfer' keyword from Telegram bot WS filter (matched every tx)
+- Fixed WebSocket multi-endpoint failover for live dashboard
+- Fixed `$btnConnect is not defined` ReferenceError in live token launch monitor — added missing button element and DOM ref
+- Fixed relay message type mismatch — `'launch'` → `'token-launch'` to match actual relay server output
 
 ## [1.0.0] - 2026-02-11
 

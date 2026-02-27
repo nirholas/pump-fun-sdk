@@ -17,7 +17,19 @@ Practical code examples for common Pump SDK operations.
 - [Set Up Fee Sharing](#set-up-fee-sharing)
 - [Track Trading Volume Rewards](#track-trading-volume-rewards)
 - [Migrate a Graduated Token](#migrate-a-graduated-token)
+- [AMM Trading — Buy & Sell Graduated Tokens](#amm-trading--buy--sell-graduated-tokens)
+- [AMM Liquidity — Deposit & Withdraw](#amm-liquidity--deposit--withdraw)
+- [Cashback — Claim Trading Rebates](#cashback--claim-trading-rebates)
+- [Social Fee PDAs](#social-fee-pdas)
+- [Fee Sharing Authority Management](#fee-sharing-authority-management)
+- [Buy with Exact SOL Input](#buy-with-exact-sol-input)
 - [Decode Account Data](#decode-account-data)
+- [Sell All Tokens](#sell-all-tokens)
+- [Check Graduation Status](#check-graduation-status)
+- [Analytics — Price Impact](#analytics--price-impact)
+- [Analytics — Graduation Progress](#analytics--graduation-progress)
+- [Analytics — Bonding Curve Summary](#analytics--bonding-curve-summary)
+- [Fetch Analytics Online](#fetch-analytics-online)
 
 ---
 
@@ -320,5 +332,140 @@ if (globalInfo) {
   const global = PUMP_SDK.decodeGlobal(globalInfo);
   console.log("Fee bps:", global.feeBasisPoints.toString());
 }
+```
+
+## Analytics — Price Impact
+
+Calculate how much a trade will move the price:
+
+```typescript
+import { calculateBuyPriceImpact, calculateSellPriceImpact } from "@pump-fun/pump-sdk";
+import BN from "bn.js";
+
+// Buy impact
+const buyImpact = calculateBuyPriceImpact({
+  global,
+  feeConfig,
+  mintSupply: bondingCurve.tokenTotalSupply,
+  bondingCurve,
+  solAmount: new BN(1_000_000_000), // 1 SOL
+});
+
+console.log(`Buy impact: ${buyImpact.impactBps} bps`);
+console.log(`Tokens received: ${buyImpact.outputAmount.toString()}`);
+console.log(`Price before: ${buyImpact.priceBefore.toString()} lamports/token`);
+console.log(`Price after: ${buyImpact.priceAfter.toString()} lamports/token`);
+
+// Sell impact
+const sellImpact = calculateSellPriceImpact({
+  global,
+  feeConfig,
+  mintSupply: bondingCurve.tokenTotalSupply,
+  bondingCurve,
+  tokenAmount: new BN(1_000_000), // 1 whole token
+});
+
+console.log(`Sell impact: ${sellImpact.impactBps} bps`);
+console.log(`SOL received: ${sellImpact.outputAmount.toString()} lamports`);
+```
+
+## Analytics — Graduation Progress
+
+Check how close a token is to graduating:
+
+```typescript
+import { getGraduationProgress } from "@pump-fun/pump-sdk";
+
+const progress = getGraduationProgress(bondingCurve);
+
+console.log(`Progress: ${(progress.progressBps / 100).toFixed(1)}%`);
+console.log(`Graduated: ${progress.isGraduated}`);
+console.log(`Tokens remaining: ${progress.tokensRemaining.toString()}`);
+console.log(`SOL accumulated: ${progress.solAccumulated.toString()} lamports`);
+```
+
+## Analytics — Bonding Curve Summary
+
+Get a comprehensive snapshot in one call:
+
+```typescript
+import { getBondingCurveSummary } from "@pump-fun/pump-sdk";
+
+const summary = getBondingCurveSummary({ global, feeConfig, bondingCurve });
+
+console.log(`Market cap: ${summary.marketCap.toString()} lamports`);
+console.log(`Progress: ${(summary.progressBps / 100).toFixed(1)}%`);
+console.log(`Buy price: ${summary.buyPricePerToken.toString()} lamports/token`);
+console.log(`Sell price: ${summary.sellPricePerToken.toString()} lamports/token`);
+console.log(`Real SOL reserves: ${summary.realSolReserves.toString()}`);
+console.log(`Real token reserves: ${summary.realTokenReserves.toString()}`);
+```
+
+## Sell All Tokens
+
+Sell a user's entire token balance and reclaim ATA rent:
+
+```typescript
+const sdk = new OnlinePumpSdk(connection);
+const instructions = await sdk.sellAllInstructions({
+  mint,
+  user: wallet.publicKey,
+  slippage: 1, // 1%
+});
+
+if (instructions.length > 0) {
+  const tx = new Transaction().add(...instructions);
+  await sendAndConfirmTransaction(connection, tx, [wallet]);
+  console.log("Sold all tokens and closed ATA!");
+} else {
+  console.log("No tokens to sell.");
+}
+```
+
+## Check Graduation Status
+
+Check whether a token has graduated to the AMM pool:
+
+```typescript
+const sdk = new OnlinePumpSdk(connection);
+
+const graduated = await sdk.isGraduated(mint);
+console.log("Graduated:", graduated);
+
+if (graduated) {
+  const pool = await sdk.fetchPool(mint);
+  console.log("Pool creator:", pool.creator.toBase58());
+  console.log("LP supply:", pool.lpSupply.toString());
+}
+```
+
+## Fetch Analytics Online
+
+Use online SDK wrappers that fetch state and compute analytics in one call:
+
+```typescript
+const sdk = new OnlinePumpSdk(connection);
+
+// Full summary (market cap, progress, price, reserves)
+const summary = await sdk.fetchBondingCurveSummary(mint);
+console.log(`Market cap: ${summary.marketCap.toNumber() / 1e9} SOL`);
+console.log(`Progress: ${(summary.progressBps / 100).toFixed(1)}%`);
+
+// Token price
+const price = await sdk.fetchTokenPrice(mint);
+console.log(`Buy: ${price.buyPricePerToken.toString()} lamports/token`);
+console.log(`Sell: ${price.sellPricePerToken.toString()} lamports/token`);
+
+// Price impact of a 1 SOL buy
+const impact = await sdk.fetchBuyPriceImpact(mint, new BN(1e9));
+console.log(`Impact: ${impact.impactBps} bps`);
+
+// Graduation progress
+const progress = await sdk.fetchGraduationProgress(mint);
+console.log(`${(progress.progressBps / 100).toFixed(1)}% graduated`);
+
+// Token balance
+const balance = await sdk.getTokenBalance(mint, wallet.publicKey);
+console.log(`Balance: ${balance.toString()} raw units`);
 ```
 

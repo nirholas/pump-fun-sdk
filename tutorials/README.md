@@ -60,7 +60,7 @@ npm install @pump-fun/pump-sdk @solana/web3.js @coral-xyz/anchor bn.js
 
 | # | Tutorial | Topics |
 |---|---------|--------|
-| 17 | [Build a Monitoring Website](./17-monitoring-website.md) | Next.js dashboard, API routes, real-time bonding curve UI |
+| 17 | [Build a Monitoring Website](./17-monitoring-website.md) | Live dashboard, real-time bonding curve UI |
 | 18 | [Telegram Bot](./18-telegram-bot.md) | Price alerts, claim checking, graduation notifications |
 | 19 | [CoinGecko Integration](./19-coingecko-integration.md) | SOL/USD prices, token discovery, price comparison |
 

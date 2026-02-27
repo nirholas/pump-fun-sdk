@@ -72,11 +72,12 @@ Token Creation &nbsp;·&nbsp; Bonding Curves &nbsp;·&nbsp; AMM Trading &nbsp;·
 - [Programs](#-programs) — 4 on-chain program addresses
 - [WebSocket Relay](#-websocket-relay-server) — Real-time token launch feed
 - [Live Dashboards](#-live-dashboards) — Browser-based monitoring
-- [MCP Server](#-mcp-server--53-tools) — 53 tools for AI agents
+- [MCP Server](#-mcp-server) — 47+ tools for AI agents
 - [Telegram Bot](#-telegram-bot--api) — Fee claim & CTO alerts
-- [PumpOS Web Desktop](#-pumpos-web-desktop) — 143 apps in a web OS
+- [PumpOS Web Desktop](#-pumpos-web-desktop) — 143+ Pump-Store apps
 - [x402 Payments](#-x402-payment-protocol) — HTTP 402 micropayments
 - [DeFi Agents](#-defi-agents) — 58 production-ready AI agent definitions
+- [Lair Platform](#-lair-telegram-platform) — Unified DeFi Telegram bot
 - [Tutorials](#-tutorials) — 19 hands-on guides
 - [Documentation](#-documentation) — Full guides and references
 - [Contributing](#-contributing) — Help make Pump SDK better
@@ -102,7 +103,7 @@ Token Creation &nbsp;·&nbsp; Bonding Curves &nbsp;·&nbsp; AMM Trading &nbsp;·
 <tr><td><strong>Offline mode</strong></td><td align="center">✅ No connection needed</td><td align="center">❌ Always online</td><td align="center">⚠️ Partial</td></tr>
 <tr><td><strong>TypeScript types</strong></td><td align="center">✅ Full IDL types</td><td align="center">❌ None</td><td align="center">⚠️ Partial</td></tr>
 <tr><td><strong>Analytics</strong></td><td align="center">✅ Price impact, graduation</td><td align="center">❌ DIY</td><td align="center">⚠️ Partial</td></tr>
-<tr><td><strong>MCP server</strong></td><td align="center">✅ 47 tools for AI agents</td><td align="center">❌</td><td align="center">❌</td></tr>
+<tr><td><strong>MCP server</strong></td><td align="center">✅ 47+ tools for AI agents</td><td align="center">❌</td><td align="center">❌</td></tr>
 <tr><td><strong>Real-time feed</strong></td><td align="center">✅ WebSocket relay</td><td align="center">❌ DIY</td><td align="center">❌</td></tr>
 <tr><td><strong>Telegram bot</strong></td><td align="center">✅ Claims + CTO + API</td><td align="center">❌</td><td align="center">❌</td></tr>
 <tr><td><strong>DeFi agents</strong></td><td align="center">✅ 58 agent definitions</td><td align="center">❌</td><td align="center">❌</td></tr>
@@ -451,7 +452,7 @@ Split creator fees among up to 10 shareholders. See the full [Fee Sharing Guide]
 import { PUMP_SDK, isCreatorUsingSharingConfig } from "@pump-fun/pump-sdk";
 
 // 1. Create a sharing config
-const ix = await PUMP_SDK.createFeeSharingConfig({ creator: wallet.publicKey, mint });
+const ix = await PUMP_SDK.createFeeSharingConfig({ creator: wallet.publicKey, mint, pool: null });
 
 // 2. Set shareholders (shares must total 10,000 bps = 100%)
 const ix2 = await PUMP_SDK.updateFeeShares({
@@ -609,15 +610,15 @@ const impact = calculateBuyPriceImpact({
 console.log(`Impact: ${impact.impactBps} bps, tokens: ${impact.outputAmount}`);
 
 // How close to graduation?
-const progress = getGraduationProgress(bondingCurve);
+const progress = getGraduationProgress(global, bondingCurve);
 console.log(`${(progress.progressBps / 100).toFixed(1)}% graduated`);
 
 // Current price per token
-const price = getTokenPrice({ global, feeConfig, bondingCurve });
+const price = getTokenPrice({ global, feeConfig, mintSupply: bondingCurve.tokenTotalSupply, bondingCurve });
 console.log(`Buy: ${price.buyPricePerToken} lamports/token`);
 
 // Full summary in one call
-const summary = getBondingCurveSummary({ global, feeConfig, bondingCurve });
+const summary = getBondingCurveSummary({ global, feeConfig, mintSupply: bondingCurve.tokenTotalSupply, bondingCurve });
 ```
 
 ---
@@ -656,14 +657,14 @@ The SDK is split into two layers:
 ```
 src/
 ├── index.ts            # Public API — re-exports everything
-├── sdk.ts              # PumpSdk — 30+ instruction builders, 14 decoders, 22+ event parsers
+├── sdk.ts              # PumpSdk — 42 instruction builders, 14 account decoders, 27 event decoders
 ├── onlineSdk.ts        # OnlinePumpSdk — fetchers + BothPrograms aggregators
 ├── bondingCurve.ts     # Pure math for price quoting
 ├── analytics.ts        # Price impact, graduation progress, token price, bonding curve summary
 ├── fees.ts             # Fee tier calculation logic
 ├── errors.ts           # Custom error classes
 ├── pda.ts              # PDA derivation helpers (incl. socialFeePda)
-├── state.ts            # 35+ TypeScript types for on-chain accounts & events
+├── state.ts            # 40+ TypeScript types for on-chain accounts & events
 ├── tokenIncentives.ts  # Volume-based reward calculations
 └── idl/                # Anchor IDLs for all three programs
     ├── pump.ts / pump.json           # 29 instructions
@@ -795,18 +796,22 @@ See [telegram-bot/README.md](telegram-bot/README.md) for setup and API reference
 
 The [website](website/) is a static HTML/CSS/JS web desktop (PumpOS) featuring:
 
-- **143 Pump-Store apps** — DeFi dashboards, trading tools, charts, wallets, and more
+- **169 Pump-Store apps** — DeFi dashboards, trading tools, charts, wallets, Pump SDK tools, and more
 - **Live trades dashboard** — real-time token launches and trades via WebSocket relay
-- **Bonding curve calculator** — interactive price simulation
-- **Fee tier explorer** — visualize market-cap-based fee tiers
-- **Token launch simulator** — test token lifecycle without mainnet
+- **Bonding curve calculator** — interactive constant-product AMM price simulation
+- **Fee tier explorer** — visualize market-cap-based tiered fee schedules
+- **Token launch simulator** — animated token lifecycle from creation to graduation
+- **Token incentives tracker** — PUMP token rewards, daily earnings, and claim status
+- **Creator fee sharing** — configure shareholders, BPS allocations, and distribution preview
+- **Migration tracker** — monitor token graduation progress and AMM pool migration
+- **SDK API reference** — interactive documentation for all 30+ SDK methods
 - **Solana wallet** — in-browser wallet management
 
 ```
 website/
 ├── index.html          # PumpOS desktop shell
 ├── live.html           # Live token launches + trades dashboard
-├── Pump-Store/         # 143 installable apps
+├── Pump-Store/         # 169 installable apps
 │   ├── apps/           # Individual app HTML files
 │   └── db/v2.json      # App registry
 └── assets/             # Images, icons, wallpapers
@@ -897,7 +902,7 @@ See [lair-tg/README.md](lair-tg/README.md) for architecture and setup.
 
 ---
 
-## �📖 Documentation
+## 📖 Documentation
 
 | Guide | Description |
 |-------|-------------|
@@ -906,6 +911,7 @@ See [lair-tg/README.md](lair-tg/README.md) for architecture and setup.
 | [Architecture](docs/architecture.md) | SDK structure, lifecycle, and design patterns |
 | [API Reference](docs/api-reference.md) | Full class, function, and type documentation |
 | [Examples](docs/examples.md) | Practical code examples for common operations |
+| [Analytics](docs/analytics.md) | Price impact, graduation progress, token pricing |
 | [Bonding Curve Math](docs/bonding-curve-math.md) | Virtual reserves, price formulas, and graduation |
 | [Fee Sharing](docs/fee-sharing.md) | Creator fee distribution to shareholders |
 | [Fee Tiers](docs/fee-tiers.md) | Market-cap-based fee tier mechanics |
@@ -932,7 +938,7 @@ Also see: [FAQ](FAQ.md) · [Roadmap](ROADMAP.md) · [Changelog](CHANGELOG.md)
 | `mcp-server/` | Model Context Protocol server for AI agent integration |
 | `telegram-bot/` | PumpFun fee claim monitor — Telegram bot + REST API |
 | `websocket-server/` | WebSocket relay — PumpFun API to browser clients |
-| `website/` | PumpOS web desktop with 143 Pump-Store apps |
+| `website/` | PumpOS web desktop with 169 Pump-Store apps |
 | `x402/` | x402 payment protocol — HTTP 402 micropayments with Solana USDC |
 | `lair-tg/` | Lair — unified Telegram bot platform for DeFi intelligence |
 | `live/` | Standalone live token launch + trades pages |

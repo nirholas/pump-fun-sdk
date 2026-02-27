@@ -27,6 +27,7 @@ import {
     getActiveMonitorCount,
     getMonitorEntry,
     isMonitorActive,
+    updateAlerts,
 } from './launch-store.js';
 import { log } from './logger.js';
 import type { PumpFunMonitor } from './monitor.js';
@@ -90,6 +91,7 @@ export function createBot(
     bot.command('list', handleList);
     bot.command('status', (ctx) => handleStatus(ctx, monitor, launchMonitor, eventMonitor));
     bot.command('cto', (ctx) => handleCto(ctx, monitor));
+    bot.command('alerts', (ctx) => handleAlerts(ctx));
     bot.command('monitor', (ctx) => handleMonitor(ctx));
     bot.command('stopmonitor', (ctx) => handleStopMonitor(ctx));
 
@@ -365,6 +367,105 @@ async function handleCto(ctx: Context, monitor: PumpFunMonitor): Promise<void> {
         parse_mode: 'HTML',
         link_preview_options: { is_disabled: true },
     });
+}
+
+// ============================================================================
+// /alerts [type] [on|off]
+// ============================================================================
+
+async function handleAlerts(ctx: Context): Promise<void> {
+    const text = ctx.message?.text || '';
+    const parts = text.split(/\s+/).slice(1); // strip /alerts
+    const chatId = ctx.chat!.id;
+    const userId = ctx.from!.id;
+
+    // Valid alert type names
+    const ALERT_TYPES: Record<string, keyof import('./launch-store.js').AlertPreferences> = {
+        'launches': 'launches',
+        'launch': 'launches',
+        'graduations': 'graduations',
+        'graduation': 'graduations',
+        'grad': 'graduations',
+        'whales': 'whales',
+        'whale': 'whales',
+        'trades': 'whales',
+        'fees': 'feeDistributions',
+        'distributions': 'feeDistributions',
+        'dist': 'feeDistributions',
+    };
+
+    if (parts.length === 0) {
+        // Show current alert preferences
+        const entry = getMonitorEntry(chatId);
+        const alerts = entry?.alerts ?? { launches: true, graduations: true, whales: true, feeDistributions: true };
+        const active = entry?.active ?? false;
+
+        const icon = (on: boolean) => on ? '✅' : '❌';
+
+        await ctx.reply(
+            `🔔 <b>Alert Preferences</b>\n\n` +
+            `📡 <b>Monitor:</b> ${active ? '✅ Active' : '❌ Inactive'}\n\n` +
+            `${icon(alerts.launches)} <b>Token Launches</b> — <code>launches</code>\n` +
+            `${icon(alerts.graduations)} <b>Graduations</b> — <code>graduations</code>\n` +
+            `${icon(alerts.whales)} <b>Whale Trades</b> — <code>whales</code>\n` +
+            `${icon(alerts.feeDistributions)} <b>Fee Distributions</b> — <code>fees</code>\n\n` +
+            `<b>Toggle:</b> <code>/alerts &lt;type&gt; on|off</code>\n` +
+            `<b>Example:</b> <code>/alerts whales off</code>\n` +
+            `<b>All on/off:</b> <code>/alerts all on</code>`,
+            { parse_mode: 'HTML' },
+        );
+        return;
+    }
+
+    const typeName = parts[0].toLowerCase();
+    const action = parts[1]?.toLowerCase();
+
+    // Handle /alerts all on|off
+    if (typeName === 'all') {
+        if (action !== 'on' && action !== 'off') {
+            await ctx.reply('Usage: <code>/alerts all on</code> or <code>/alerts all off</code>', { parse_mode: 'HTML' });
+            return;
+        }
+        const value = action === 'on';
+        updateAlerts(chatId, userId, {
+            feeDistributions: value,
+            graduations: value,
+            launches: value,
+            whales: value,
+        });
+        await ctx.reply(
+            `${value ? '✅' : '❌'} All alert types turned <b>${action}</b>.`,
+            { parse_mode: 'HTML' },
+        );
+        return;
+    }
+
+    const key = ALERT_TYPES[typeName];
+    if (!key) {
+        await ctx.reply(
+            `❌ Unknown alert type: <code>${escapeHtml(typeName)}</code>\n\n` +
+            `Valid types: <code>launches</code>, <code>graduations</code>, <code>whales</code>, <code>fees</code>, <code>all</code>`,
+            { parse_mode: 'HTML' },
+        );
+        return;
+    }
+
+    if (action !== 'on' && action !== 'off') {
+        await ctx.reply(
+            `Usage: <code>/alerts ${typeName} on</code> or <code>/alerts ${typeName} off</code>`,
+            { parse_mode: 'HTML' },
+        );
+        return;
+    }
+
+    const value = action === 'on';
+    updateAlerts(chatId, userId, { [key]: value });
+    const label = key === 'feeDistributions' ? 'Fee Distributions' :
+        key.charAt(0).toUpperCase() + key.slice(1);
+    await ctx.reply(
+        `${value ? '✅' : '❌'} <b>${label}</b> alerts turned <b>${action}</b>.`,
+        { parse_mode: 'HTML' },
+    );
 }
 
 // ============================================================================

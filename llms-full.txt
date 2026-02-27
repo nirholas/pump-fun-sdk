@@ -4,7 +4,7 @@ This file provides comprehensive context for AI assistants working with this cod
 
 ## Project Overview
 
-The Pump SDK (`@pump-fun/pump-sdk`) is a TypeScript SDK for the Pump protocol — a Solana-based token launchpad with bonding curve pricing, automatic AMM migration, tiered fees, creator fee sharing, and token incentives. Also includes vanity address generators (Rust + TypeScript), MCP server, and production shell scripts. Uses ONLY official Solana Labs libraries for all cryptographic operations.
+The Pump SDK (`@pump-fun/pump-sdk`) is a TypeScript SDK for the Pump protocol — a Solana-based token launchpad with bonding curve pricing, automatic AMM migration, tiered fees, creator fee sharing, token incentives, and social fee integrations. Also includes vanity address generators (Rust + TypeScript), MCP server (47 tools), WebSocket relay, live dashboards, Telegram bot (9 commands), and production shell scripts. Uses ONLY official Solana Labs libraries for all cryptographic operations.
 
 ## Official Libraries Only
 
@@ -35,10 +35,12 @@ Key methods:
 - `migrateInstruction` — Graduate token to AMM
 - `createFeeSharingConfig` / `updateFeeShares` / `distributeCreatorFees` — Fee sharing
 - `initUserVolumeAccumulator` / `syncUserVolumeAccumulator` — Token incentives
-- Decoder methods: `decodeGlobal`, `decodeBondingCurve`, `decodeFeeConfig`, etc.
+- `createSocialFeePdaInstruction` / `claimSocialFeePdaInstruction` — Platform-based fee collection
+- Decoder methods: `decodeGlobal`, `decodeBondingCurve`, `decodeFeeConfig`, `decodeSocialFeePdaAccount`, etc.
 
 **Online SDK (`OnlinePumpSdk`)** — Extends offline with RPC fetchers:
 - `fetchGlobal`, `fetchBondingCurve`, `fetchBuyState`, `fetchSellState`
+- `fetchSocialFeePda` — Fetch social fee PDA state by userId + platform
 - `collectCoinCreatorFeeInstructions`, `getCreatorVaultBalanceBothPrograms`
 - `claimTokenIncentivesBothPrograms`, `buildDistributeCreatorFeesInstructions`
 
@@ -62,6 +64,16 @@ Key methods:
 - `getGraduationProgress` — How close a token is to graduating
 - `getTokenPrice` — Per-token SOL cost on the curve
 - `getBondingCurveSummary` — Combined overview of price, progress, market cap
+
+**Event Types (`state.ts`):**
+- Trading: `TradeEvent`, `AmmBuyEvent`, `AmmSellEvent`
+- Lifecycle: `CreateEvent`, `CompleteEvent`, `CompletePumpAmmMigrationEvent`
+- Fees: `CollectCreatorFeeEvent`, `ClaimCashbackEvent`, `DistributeCreatorFeesEvent`
+- Fee Sharing: `CreateFeeSharingConfigEvent`, `UpdateFeeSharesEvent`, `ResetFeeSharingConfigEvent`, `RevokeFeeSharingAuthorityEvent`, `TransferFeeSharingAuthorityEvent`
+- Social Fees: `SocialFeePdaCreatedEvent`, `SocialFeePdaClaimedEvent`
+- Volume: `ClaimTokenIncentivesEvent`, `InitUserVolumeAccumulatorEvent`, `SyncUserVolumeAccumulatorEvent`
+- Pools: `CreatePoolEvent`, `DepositEvent`, `WithdrawEvent`
+- Admin: `AdminSetCreatorEvent`, `SetCreatorEvent`, `MigrateBondingCurveCreatorEvent`, `ExtendAccountEvent`
 
 ## Solana Address Format
 
@@ -117,8 +129,33 @@ PumpFun fee claim monitoring bot with Telegram notifications:
 - 4th strategy: event log parsing for claim discriminators
 - Commands: /start, /help, /watch, /unwatch, /list, /status, /monitor, /stopmonitor
 - REST API: auth, rate limiting, SSE streaming, HMAC-signed webhooks, OpenAPI spec
-- Token launch monitor: real-time detection of new PumpFun token mints
-- CTO (creator takeover) alerts: detect creator fee redirection events
+- Token launch monitor: real-time detection of new PumpFun token mints- CTO (creator takeover) alerts: detect creator fee redirection events
+- PumpEventMonitor: Anchor event decoder for graduation, whale trades, and fee distribution events
+- Persistent state with JSON file storage
+- Docker deployment with multi-stage build and HEALTHCHECK
+
+### WebSocket Relay Server (websocket-server/)
+
+Real-time token launch relay server:
+- Architecture: PumpFun API ◄─ SolanaMonitor ─► Relay Server (:3099/ws) ─► Browsers
+- One upstream connection to PumpFun, broadcasts parsed events to all connected browsers
+- Health check at `/health` returns connection status and client count
+- Deployed on Railway at `pump-fun-websocket-production.up.railway.app`
+- Used by `website/live.html` for real-time monitoring
+- Message types: `token-launch`, `status`, `heartbeat`
+
+### Lair-TG (lair-tg/)
+
+Unified Telegram bot platform for DeFi intelligence, wallet management, and token launching.
+
+### PumpOS Website (website/)
+
+Static HTML/CSS/JS web desktop (PumpOS) with:
+- 169 Pump-Store apps: DeFi dashboards, trading tools, charts, wallet management, Pump SDK tools
+- Live trades dashboard: real-time token launches and trades via WebSocket relay
+- Bonding curve calculator, fee tier explorer, token launch simulator
+- Token incentives tracker, creator fee sharing configurator, SDK API reference
+- Migration tracker, smart money tracker, alpha terminal, whale alerts- CTO (creator takeover) alerts: detect creator fee redirection events
 - Persistent state with JSON file storage
 - Docker deployment with multi-stage build and HEALTHCHECK
 

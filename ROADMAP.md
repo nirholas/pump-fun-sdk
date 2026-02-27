@@ -35,13 +35,19 @@
 
 | Feature | Status | Details |
 |---------|--------|---------|
-| Telegram claim bot | 🚧 In Progress | Claim creator fees from Telegram with one command |
-| Enhanced MCP tools | 🚧 In Progress | Token creation, trading, and fee management from Claude |
+| Telegram claim bot | ✅ Done | Fee claims, cashback, CTO alerts, token launches, graduation, whale trades, REST API |
+| Enhanced MCP tools | ✅ Done | 47 tools — quoting, building, fees, analytics, AMM, social fees, wallet |
+| WebSocket relay server | ✅ Done | Real-time token launches + trades broadcast to browsers |
+| Live trades dashboard | ✅ Done | PumpPortal + relay fallback with auto-demo |
+| On-chain analytics | ✅ Done | Price impact, graduation progress, token price, bonding curve summary |
+| x402 payment protocol | ✅ Done | HTTP 402 micropayments with Solana USDC |
+| 19 tutorials | ✅ Done | Step-by-step guides from token creation to CoinGecko integration |
+| PumpOS website | ✅ Done | Web desktop with 169 Pump-Store apps |
+| DeFi agents | ✅ Done | 58 production-ready AI agent definitions with 18-language i18n |
+| Lair-TG platform | ✅ Done | Unified Telegram bot for DeFi intelligence, wallet management, token launching |
 | SperaxOS integration | 🚧 In Progress | pump-fun-sdk as a native SperaxOS skill |
 | OpenClaw skill packages | 📋 Planned | Packaged agent skills for plug-and-play deployment |
-| On-chain analytics | 📋 Planned | Bonding curve monitoring, whale tracking, launch detection |
 | Token metadata helpers | 📋 Planned | Arweave/IPFS upload, metadata JSON builders |
-| WebSocket subscriptions | 📋 Planned | Real-time bonding curve state changes |
 | Transaction simulation | 📋 Planned | Dry-run buys/sells before submitting |
 
 ## Q3 2026 — Scale

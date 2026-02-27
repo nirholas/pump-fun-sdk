@@ -6,7 +6,7 @@ Manage the project's build, release, and deployment pipeline across four ecosyst
 
 ## Context
 
-The project ships multiple artifacts: an npm package (`@pump-fun/pump-sdk`), a Rust binary (`solana-vanity`), a TypeScript CLI (`solana-vanity-ts`), an MCP server (`solana-wallet-toolkit`), and a Next.js website. Each has its own build system, dependency management, and release process, unified by a root Makefile and semantic-release.
+The project ships multiple artifacts: an npm package (`@pump-fun/pump-sdk`), a Rust binary (`solana-vanity`), a TypeScript CLI (`solana-vanity-ts`), an MCP server (`solana-wallet-toolkit`), and a static website (PumpOS). Each has its own build system, dependency management, and release process, unified by a root Makefile and semantic-release.
 
 ## Key Files
 
@@ -29,8 +29,8 @@ The project ships multiple artifacts: an npm package (`@pump-fun/pump-sdk`), a R
 - `server.json` — MCP server manifest
 
 ### Website
-- `website/package.json` — Next.js app dependencies
-- `website/next.config.js` — Next.js build config
+- `website/package.json` — PumpOS static site dependencies
+- `website/index.html` — PumpOS desktop shell
 - `vercel.json` — Vercel deployment config
 
 ### Meta
@@ -185,14 +185,10 @@ clean-fixtures  # Remove test fixtures
 
 ### Website Deployment (Vercel)
 
-```json
-// vercel.json
-{ "framework": "nextjs" }
-```
-
+- Static HTML/CSS/JS site deployed to Vercel
 - Automatic deploys from `main` branch
+- No build step needed — static files served directly
 - No environment variables needed (client-side only)
-- Next.js static optimization for marketing pages
 
 ### MCP Server Distribution
 

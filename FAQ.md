@@ -156,7 +156,18 @@ Yes. We use only official Solana keypair generation (`solana-sdk` in Rust, `@sol
 
 ### What is MCP?
 
-Model Context Protocol — Anthropic's open standard for connecting AI assistants (like Claude) to external tools. Our MCP server gives Claude the ability to generate wallets, sign messages, and manage Solana addresses.
+Model Context Protocol — Anthropic's open standard for connecting AI assistants (like Claude) to external tools. Our MCP server exposes **47 tools** covering the entire Pump protocol: quoting, building transactions, fee management, analytics, AMM operations, social fees, and wallet operations.
+
+### What can it do?
+
+| Category | Examples |
+|----------|---------|
+| Quoting | `quote_buy`, `quote_sell`, `get_market_cap`, `get_bonding_curve` |
+| Building TXs | `build_create_token`, `build_buy`, `build_sell`, `build_migrate` |
+| Fees | `calculate_fees`, `build_distribute_fees`, `get_creator_vault_balance` |
+| Analytics | `get_price_impact`, `get_graduation_progress`, `get_token_price` |
+| AMM | `build_amm_buy`, `build_amm_sell`, `build_amm_deposit`, `build_amm_withdraw` |
+| Wallet | `generate_keypair`, `sign_message`, `verify_signature`, `validate_address` |
 
 ### How do I set it up with Claude Desktop?
 
@@ -165,12 +176,23 @@ Add this to your Claude Desktop config:
 ```json
 {
   "mcpServers": {
-    "solana-wallet": {
+    "pump-sdk": {
       "command": "node",
       "args": ["/path/to/pump-fun-sdk/mcp-server/dist/index.js"]
     }
   }
 }
+```
+
+### Can I deploy it as a hosted service?
+
+Yes. The MCP server can deploy to Railway, Cloudflare Workers, or Vercel:
+
+```bash
+cd mcp-server
+railway up          # Railway
+npx wrangler deploy # Cloudflare Workers
+vercel              # Vercel
 ```
 
 ### Are my private keys safe with the MCP server?

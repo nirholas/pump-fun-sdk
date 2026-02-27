@@ -143,6 +143,56 @@ For Cashback Coins:
 🔗 View TX · Wallet · pump.fun
 ```
 
+### Graduation Alert
+
+```
+🎓 Token Graduated!
+
+🔗 Mint: pump...Dfn
+👤 Triggered by: HN7c...4xYz
+📈 Type: AMM Migration
+💰 SOL Migrated: 85.00 SOL
+🏊 Migration Fee: 0.5000 SOL
+🔗 AMM Pool: pAMM...9kBf
+🕐 Time: 2026-02-26 15:00:00 UTC
+
+🔗 View TX · Solscan · pump.fun
+```
+
+### Whale Trade Alert
+
+```
+🐋 Whale BUY!
+
+🟢 Amount: 50.00 SOL
+🪙 Token: pump...Dfn
+👤 Trader: 9kBf...3mNp
+💹 Market Cap: ~420.5 SOL
+📊 Graduation: [████████░░] 82.3%
+💰 Fee: 0.5000 SOL | Creator Fee: 0.2500 SOL
+🕐 Time: 2026-02-26 15:05:00 UTC
+
+🔗 View TX · Solscan · pump.fun
+```
+
+### Fee Distribution Alert
+
+```
+💎 Creator Fees Distributed!
+
+🪙 Token: pump...Dfn
+💰 Distributed: 1.2500 SOL
+👤 Admin: HN7c...4xYz
+👥 Shareholders (3):
+  • 9kBf...3mNp — 50.0%
+  • Abcd...eF12 — 30.0%
+  • Ghij...kL34 — 20.0%
+
+🕐 Time: 2026-02-26 15:10:00 UTC
+
+🔗 View TX · Solscan · pump.fun
+```
+
 ## Project Structure
 
 ```
@@ -156,13 +206,14 @@ pumpfun-telegram-bot/
 │   ├── watches.json       # Telegram bot watches
 │   └── api-watches.json   # API watches
 └── src/
-    ├── index.ts           # Entry point — wires bot + API together
+    ├── index.ts           # Entry point — wires bot + API + event monitor together
     ├── config.ts          # Environment variable loading
     ├── types.ts           # All type definitions & PumpFun constants
     ├── logger.ts          # Simple leveled logger
     ├── store.ts           # In-memory + disk-persisted watch store (bot)
     ├── monitor.ts         # Solana RPC monitor for PumpFun fee claims
     ├── token-launch-monitor.ts  # Real-time new token launch detection
+    ├── pump-event-monitor.ts    # Graduation, whale trade & fee distribution monitor
     ├── launch-store.ts    # Per-chat launch monitor state
     ├── bot.ts             # grammу Telegram bot & command handlers
     ├── formatters.ts      # Rich HTML message formatting
@@ -371,6 +422,10 @@ The API is designed for horizontal scaling:
 | `ENABLE_LAUNCH_MONITOR` | — | `false` | Enable new token launch monitoring |
 | `GITHUB_ONLY_FILTER` | — | `false` | Only notify for tokens with GitHub links |
 | `IPFS_GATEWAY` | — | `https://cf-ipfs.com/ipfs/` | IPFS gateway for metadata fetching |
+| `ENABLE_GRADUATION_ALERTS` | — | `true` | Enable token graduation/migration alerts |
+| `ENABLE_TRADE_ALERTS` | — | `false` | Enable whale trade alerts |
+| `WHALE_THRESHOLD_SOL` | — | `10` | Minimum SOL for whale trade notifications |
+| `ENABLE_FEE_DISTRIBUTION_ALERTS` | — | `false` | Enable creator fee distribution alerts |
 | `ENABLE_API` | — | `false` | Enable the REST API server |
 | `API_ONLY` | — | `false` | Run API without Telegram bot |
 | `API_PORT` | — | `3000` | HTTP port for the API server |

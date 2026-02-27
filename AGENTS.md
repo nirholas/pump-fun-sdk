@@ -9,12 +9,14 @@ The Pump SDK (`@pump-fun/pump-sdk`) is a TypeScript SDK for the Pump protocol �
 The repository also includes:
 - **Rust vanity address generator** — multi-threaded, 100K+ keys/sec with rayon + solana-sdk
 - **TypeScript vanity generator** — educational reference implementation with @solana/web3.js
-- **MCP server** — Model Context Protocol server for AI agent integration
-- **Telegram bot** — PumpFun fee claim monitoring with Telegram notifications
+- **MCP server** — Model Context Protocol server for AI agent integration (47 tools)
+- **Telegram bot** — PumpFun activity monitor with 9 commands (fee claims, CTO alerts, whale trades, graduation)
+- **WebSocket relay server** — Real-time token launch broadcasting to browser clients
+- **Live dashboards** — Standalone browser UIs for token launches and trade analytics
 - **x402 payment protocol** — HTTP 402 micropayments with Solana USDC
 - **Shell scripts** — production Bash wrappers for solana-keygen
 - **Tutorials** — 19 hands-on guides covering the full SDK
-- **Documentation site** — PumpOS web desktop
+- **Documentation site** — PumpOS web desktop with 169 Pump-Store apps
 
 ## Architecture
 
@@ -25,13 +27,16 @@ The repository also includes:
 | TypeScript vanity generator | `typescript/` | TypeScript |
 | MCP server | `mcp-server/` | TypeScript |
 | Telegram bot | `telegram-bot/` | TypeScript |
+| WebSocket relay | `websocket-server/` | TypeScript |
+| Live dashboards | `live/` | HTML/JS |
 | x402 payment protocol | `x402/` | TypeScript |
+| Website (PumpOS) | `website/` | HTML/CSS/JS |
 | Tutorials | `tutorials/` | Markdown |
 | Shell scripts | `scripts/` | Bash |
 | Test suites | `tests/` | Mixed |
 | Documentation | `docs/` | Markdown |
-| Website | `website/` | HTML/CSS/JS |
 | Security audits | `security/` | Markdown |
+| Agent skills | `skills/` | Markdown |
 | Agent prompts | `prompts/` | Markdown |
 | Audit & verification tools | `tools/` | Mixed |
 

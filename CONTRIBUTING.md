@@ -104,23 +104,33 @@ npm start
 ```
 pump-fun-sdk/
 ├── src/                    # Core TypeScript SDK
-│   ├── sdk.ts              # PumpSdk (offline instruction builder)
-│   ├── onlineSdk.ts        # OnlinePumpSdk (fetcher + builder)
+│   ├── sdk.ts              # PumpSdk — 30+ instruction builders, 14 decoders
+│   ├── onlineSdk.ts        # OnlinePumpSdk — fetcher + BothPrograms aggregators
 │   ├── bondingCurve.ts     # Bonding curve math
-│   ├── fees.ts             # Fee calculation
-│   ├── state.ts            # On-chain account types
-│   ├── pda.ts              # PDA derivations
+│   ├── analytics.ts        # Price impact, graduation %, token price, summaries
+│   ├── fees.ts             # Fee tier calculation
+│   ├── state.ts            # 35+ on-chain account & event types
+│   ├── pda.ts              # PDA derivations (incl. socialFeePda)
 │   ├── tokenIncentives.ts  # Volume-based rewards
 │   ├── errors.ts           # Custom errors
-│   └── idl/                # Anchor IDLs
+│   └── idl/                # Anchor IDLs (pump, pump_amm, pump_fees)
 ├── rust/                   # Rust vanity address generator
 ├── typescript/             # TypeScript vanity generator
-├── mcp-server/             # MCP server for AI agents
+├── mcp-server/             # MCP server — 47 tools for AI agents
+├── telegram-bot/           # Telegram bot + REST API (claims, CTO, launches)
+├── websocket-server/       # WebSocket relay (PumpFun API → browsers)
+├── website/                # PumpOS web desktop with 169 Pump-Store apps
+├── x402/                   # x402 payment protocol (HTTP 402 USDC micropayments)
+├── live/                   # Standalone live dashboard pages
+├── tutorials/              # 19 hands-on tutorial guides
 ├── scripts/                # Shell scripts
 ├── tests/                  # Test suites
 ├── docs/                   # Documentation
-├── security/               # Security audits
-└── .github/                # GitHub templates, workflows, skills
+├── security/               # Security audits & checklists
+├── skills/                 # 28 agent skill documents
+├── prompts/                # Agent prompt templates
+├── tools/                  # Verification & audit utilities
+└── .github/                # GitHub templates, workflows
 ```
 
 ---

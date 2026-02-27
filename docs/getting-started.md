@@ -146,11 +146,13 @@ console.log("Transaction:", signature);
 ## Next Steps
 
 - [Examples](./examples.md) — practical code examples for common operations
+- [Analytics Guide](./analytics.md) — price impact, graduation progress, token pricing
 - [API Reference](./api-reference.md) — full class and function documentation
 - [Architecture](./architecture.md) — how the SDK is structured
 - [Bonding Curve Math](./bonding-curve-math.md) — virtual reserves, price formulas
 - [Fee Sharing Guide](./fee-sharing.md) — set up creator fee distribution
 - [Token Incentives Guide](./token-incentives.md) — volume-based token rewards
+- [Tutorials](../tutorials/) — 19 hands-on guides covering every SDK feature
 - [Migration Guide](./MIGRATION.md) — upgrading between versions
 - [Troubleshooting](./TROUBLESHOOTING.md) — common issues and solutions
 - [Tutorials](../tutorials/) — 19 hands-on guides covering every feature
@@ -163,5 +165,5 @@ console.log("Transaction:", signature);
 - [Live Dashboards](../live/) — browser-based token launch & trades monitoring
 - [x402 Payments](../x402/) — HTTP 402 micropayments with Solana USDC
 - [DeFi Agents](../packages/defi-agents/) — 58 AI agent definitions for DeFi workflows
-- [PumpOS Website](../website/) — web desktop with 143 apps
+- [PumpOS Website](../website/) — web desktop with 169 apps
 

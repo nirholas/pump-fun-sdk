@@ -190,27 +190,68 @@ export function formatStatus(
 
 export function formatHelp(): string {
     return (
-        `🤖 <b>PumpFun Fee Claim Bot</b>\n\n` +
-        `Monitor when PumpFun creator fees or cashback rewards are claimed on Solana.\n\n` +
-        `<b>Commands:</b>\n` +
-        `/watch <code>&lt;wallet&gt;</code> <code>[label]</code> — Watch a fee recipient wallet\n` +
-        `/unwatch <code>&lt;wallet_or_#&gt;</code> — Stop watching a wallet\n` +
-        `/list — Show all active watches\n` +
-        `/status — Monitor status & stats\n` +
-        `/help — Show this help\n\n` +
-        `� <b>Creator Takeover (CTO):</b>\n` +
-        `/cto — Show CTO stats & recent events\n` +
-        `/cto <code>&lt;mint_or_wallet&gt;</code> — Look up CTO events for a token or wallet\n\n` +
-        `�📡 <b>Launch Monitor:</b>\n` +
-        `/monitor <code>[github]</code> — Start real-time token launch feed\n` +
-        `/stopmonitor — Stop the launch feed\n\n` +
-        `<b>How it works:</b>\n` +
-        `1. Add a fee-recipient wallet address with /watch\n` +
-        `2. The bot monitors PumpFun on-chain for fee claims and creator changes\n` +
-        `3. When that wallet claims creator fees or cashback, you get notified instantly\n` +
-        `4. When creator fees are redirected (CTO) involving a watched wallet, you get alerted\n\n` +
-        `<b>Works in:</b> DMs and group chats\n` +
-        `<b>Supports:</b> Creator Fees + Cashback Coins + CTO Alerts (Pump + PumpSwap AMM)`
+        `🤖 <b>PumpFun Fee Claim Bot</b>
+
+` +
+        `Monitor when PumpFun creator fees or cashback rewards are claimed on Solana.
+
+` +
+        `<b>Commands:</b>
+` +
+        `/watch <code>&lt;wallet&gt;</code> <code>[label]</code> — Watch a fee recipient wallet
+` +
+        `/unwatch <code>&lt;wallet_or_#&gt;</code> — Stop watching a wallet
+` +
+        `/list — Show all active watches
+` +
+        `/status — Monitor status & stats
+` +
+        `/help — Show this help
+
+` +
+        `🔀 <b>Creator Takeover (CTO):</b>
+` +
+        `/cto — Show CTO stats & recent events
+` +
+        `/cto <code>&lt;mint_or_wallet&gt;</code> — Look up CTO events for a token or wallet
+
+` +
+        `🔔 <b>Alert Preferences:</b>
+` +
+        `/alerts — View current alert settings
+` +
+        `/alerts <code>&lt;type&gt;</code> <code>on|off</code> — Toggle an alert type
+` +
+        `/alerts <code>all on|off</code> — Toggle all alerts
+` +
+        `  Types: <code>launches</code>, <code>graduations</code>, <code>whales</code>, <code>fees</code>
+
+` +
+        `📡 <b>Launch Monitor:</b>
+` +
+        `/monitor <code>[github]</code> — Start real-time token launch feed
+` +
+        `/stopmonitor — Stop the launch feed
+
+` +
+        `<b>How it works:</b>
+` +
+        `1. Add a fee-recipient wallet address with /watch
+` +
+        `2. The bot monitors PumpFun on-chain for fee claims and creator changes
+` +
+        `3. When that wallet claims creator fees or cashback, you get notified instantly
+` +
+        `4. When creator fees are redirected (CTO) involving a watched wallet, you get alerted
+` +
+        `5. Use /monitor to receive real-time token launches, graduations, whale trades, and fee distributions
+` +
+        `6. Customize which alerts you receive with /alerts
+
+` +
+        `<b>Works in:</b> DMs and group chats
+` +
+        `<b>Supports:</b> Creator Fees + Cashback + CTO + Launches + Graduations + Whale Trades + Fee Distributions`
     );
 }
 
