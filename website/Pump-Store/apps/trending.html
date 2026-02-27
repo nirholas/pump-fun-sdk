@@ -419,10 +419,10 @@
     (function() {
         'use strict';
         const fetchFn = window.cfetch || fetch;
-        const lairFetch = window.LairFetch;
-        const lairUI = window.LairUI;
-        const lairTheme = window.LairTheme;
-        const lairBus = window.LairBus;
+        const lairFetch = window.PumpFetch;
+        const lairUI = window.PumpUI;
+        const lairTheme = window.PumpTheme;
+        const lairBus = window.PumpBus;
         if (lairTheme) lairTheme.apply(document.body);
         if (lairBus) lairBus.register('trending');
 

@@ -1,4 +1,4 @@
-// Load Lair logo from assets
+// Load Pump logo from assets
 fetch('assets/transparentlogo.svg')
 	.then(response => response.text())
 	.then(svg => {
@@ -141,7 +141,7 @@ async function getMimeType(extension) {
 	return 'application/octet-stream';
 }
 
-async function useLairOffline() {
+async function usePumpOffline() {
 	if (await justConfirm("Turn on offline mode?", "Offline mode saves a copy of PumpOS (~5MB) in your browser.")) {
 
 		if ('serviceWorker' in navigator) {
@@ -336,10 +336,10 @@ function convertTontxSession(jsCode) {
 		cleanupInvalidAssociations: "system.cleanupInvalidAssociations",
 		sysLog: "system.sysLog",
 
-		useLairOffline: "specific.useLairOffline",
+		usePumpOffline: "specific.usePumpOffline",
 		removeSWs: "specific.removeSWs",
 		installdefaultapps: "specific.installdefaultapps",
-		erdbsfull: "system.eraseLair"
+		erdbsfull: "system.erasePump"
 	};
 
 	const convertedCode = jsCode.replace(

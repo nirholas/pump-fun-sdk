@@ -55,7 +55,7 @@
       .replace(/'/g, '&#039;');
   }
 
-  class LairFetch {
+  class PumpFetch {
     static async get(url, opts = {}) {
       return this._request(url, { ...opts, parseAs: opts.parseAs || 'text' });
     }
@@ -87,8 +87,8 @@
       let lastError = null;
 
       let hideLoading = null;
-      if (container && global.LairUI) {
-        hideLoading = global.LairUI.spinner(container);
+      if (container && global.PumpUI) {
+        hideLoading = global.PumpUI.spinner(container);
       }
 
       try {
@@ -119,8 +119,8 @@
 
         throw lastError || new Error('Request failed');
       } catch (error) {
-        if (container && global.LairUI) {
-          global.LairUI.error(container, error.message || 'Request failed');
+        if (container && global.PumpUI) {
+          global.PumpUI.error(container, error.message || 'Request failed');
         }
         throw error;
       } finally {
@@ -129,7 +129,7 @@
     }
   }
 
-  const LairTheme = {
+  const PumpTheme = {
     isDark() {
       const root = document.documentElement;
       if (root.classList.contains('dark') || root.dataset.theme === 'dark') return true;
@@ -157,7 +157,7 @@
     }
   };
 
-  const LairUI = {
+  const PumpUI = {
     spinner(container) {
       if (!container) return () => {};
       const spinner = document.createElement('div');
@@ -372,7 +372,7 @@
     return wsState.socket;
   }
 
-  const LairWS = {
+  const PumpWS = {
     subscribe(channel, callback) {
       if (!channel || typeof callback !== 'function') return;
       const callbacks = wsState.subs.get(channel) || [];
@@ -393,7 +393,7 @@
     }
   };
 
-  const LairPoll = {
+  const PumpPoll = {
     _timer: null,
     _isRunning: false,
 
@@ -424,9 +424,9 @@
     }
   };
 
-  global.LairFetch = LairFetch;
-  global.LairUI = LairUI;
-  global.LairTheme = LairTheme;
-  global.LairWS = LairWS;
-  global.LairPoll = LairPoll;
+  global.PumpFetch = PumpFetch;
+  global.PumpUI = PumpUI;
+  global.PumpTheme = PumpTheme;
+  global.PumpWS = PumpWS;
+  global.PumpPoll = PumpPoll;
 })(window);

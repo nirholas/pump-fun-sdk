@@ -1,6 +1,6 @@
 /**
  * Health check endpoint for PumpOS.
- * Returns 200 OK so iframe apps (e.g. Lairbot) can verify the host is reachable.
+ * Returns 200 OK so iframe apps (e.g. Pumpbot) can verify the host is reachable.
  *
  * GET /api/health → { status: "ok", ts: <unix ms> }
  */

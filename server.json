@@ -1,46 +1,12 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.nirholas/pump-fun-sdk",
-  "title": "Pump SDK MCP Server",
   "description": "Pump SDK MCP — Solana token launchpad, bonding curves, vanity addresses, key management",
-  "license": "MIT",
-  "authors": [
-    {
-      "name": "nirholas",
-      "url": "https://github.com/nirholas"
-    }
-  ],
+  "title": "Pump SDK MCP Server",
   "repository": {
     "url": "https://github.com/nirholas/pump-fun-sdk",
     "source": "github"
   },
-  "version": "1.0.0",
-  "links": {
-    "homepage": "https://github.com/nirholas/pump-fun-sdk",
-    "bugs": "https://github.com/nirholas/pump-fun-sdk/issues"
-  },
-  "icons": [
-    {
-      "src": "https://raw.githubusercontent.com/nirholas/pump-fun-sdk/main/assets/milady.svg",
-      "type": "svg"
-    }
-  ],
-  "_meta": {
-    "io.modelcontextprotocol.registry/publisher-provided": {
-      "keywords": [
-        "solana",
-        "pump",
-        "sdk",
-        "bonding-curve",
-        "vanity",
-        "keypair",
-        "mcp",
-        "blockchain",
-        "web3",
-        "token-launchpad"
-      ],
-      "category": "Blockchain"
-    }
-  }
+  "version": "1.0.0"
 }
 

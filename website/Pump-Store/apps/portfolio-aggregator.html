@@ -795,9 +795,9 @@
     let riskModel = emptyRiskModel();
     let stressConfig = { marketShock: -15, altBeta: 1.4, stableShock: -8 };
     const fetchFn = window.cfetch || fetch;
-    const lairFetch = window.LairFetch;
-    const lairUI = window.LairUI;
-    const lairTheme = window.LairTheme;
+    const lairFetch = window.PumpFetch;
+    const lairUI = window.PumpUI;
+    const lairTheme = window.PumpTheme;
     if (lairTheme) lairTheme.apply(document.body);
 
     const ui = {

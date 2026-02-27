@@ -318,7 +318,7 @@ let indSeries = {}; // keyed by indicator name
 let rsiPane = null;
 let lastData = {candles:[],volumes:[]};
 let arTimer = null;
-const lairBus = window.LairBus;
+const lairBus = window.PumpBus;
 
 if (lairBus) {
     lairBus.register('cryptocharts');

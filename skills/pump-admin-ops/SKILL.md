@@ -1,9 +1,6 @@
 ---
-name: Pump Admin Operations
-description: >
-  Admin and authority operations for the Pump protocol — set coin creator, update
-  token incentives, set IDL authority, claim cashback, Mayhem mode, and BothPrograms
-  cross-program admin instructions.
+name: pump-admin-ops
+description: "Admin and authority operations for the Pump protocol — set coin creator, update token incentives, set IDL authority, claim cashback, Mayhem mode, and BothPrograms cross-program admin instructions."
 metadata:
   openclaw:
     homepage: https://github.com/nirholas/pump-fun-sdk

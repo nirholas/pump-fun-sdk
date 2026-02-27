@@ -100,7 +100,7 @@ function inferCategory(filename, content) {
     if (f.includes('news') || f.includes('social') || f.includes('chat') || f.includes('sentiment') ||
         f.includes('twitter') || f.includes('feed') || f.includes('research')) return 'social';
 
-    // Tools — Lair system apps and utilities
+    // Tools — Pump system apps and utilities
     if (f.includes('calc') || f.includes('convert') || f.includes('tool') || f.includes('note') ||
         f.includes('json') || f.includes('pdf') || f.includes('editor') || f.includes('timer') ||
         f.includes('unit') || f.includes('calendar') || f.includes('datamgr') || f.includes('cli') ||

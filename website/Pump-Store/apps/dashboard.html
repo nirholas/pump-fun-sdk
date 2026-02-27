@@ -384,9 +384,9 @@
             ];
 
             const fetchFn = window.cfetch || window.fetch.bind(window);
-            const lairFetch = window.LairFetch;
-            const lairUI = window.LairUI;
-            const lairTheme = window.LairTheme;
+            const lairFetch = window.PumpFetch;
+            const lairUI = window.PumpUI;
+            const lairTheme = window.PumpTheme;
             if (lairTheme) lairTheme.apply(document.body);
 
             function setUpdated(id) {

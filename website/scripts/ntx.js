@@ -94,10 +94,10 @@ class NTXSession {
             cleanupInvalidAssociations: cleanupInvalidAssociations,
             sysLog: sysLog,
             password: password,
-            eraseLair: erdbsfull
+            erasePump: erdbsfull
         };
         this.specific = {
-            useLairOffline: useLairOffline,
+            usePumpOffline: usePumpOffline,
             removeSWs: removeSWs,
             installdefaultapps: installdefaultapps
         }

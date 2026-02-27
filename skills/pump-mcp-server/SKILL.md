@@ -1,9 +1,6 @@
 ---
-name: Pump MCP Server
-description: >
-  Model Context Protocol server exposing 7 tools, 3 resource types, and 3 prompts
-  for AI agent consumption — Solana wallet operations, vanity address generation,
-  message signing, and address validation over stdio transport.
+name: pump-mcp-server
+description: "Model Context Protocol server exposing 7 tools, 3 resource types, and 3 prompts for AI agent consumption — Solana wallet operations, vanity address generation, message signing, and address validation over stdio transport."
 metadata:
   openclaw:
     homepage: https://github.com/nirholas/pump-fun-sdk

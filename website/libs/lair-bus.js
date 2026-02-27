@@ -1,7 +1,7 @@
 (function () {
     'use strict';
 
-    class LairBus {
+    class PumpBus {
         static appId = null;
         static initialized = false;
         static requestCounter = 0;
@@ -74,7 +74,7 @@
             return new Promise((resolve, reject) => {
                 const timer = setTimeout(() => {
                     this.pendingRequests.delete(requestId);
-                    reject(new Error(`LairBus request timed out: ${event}`));
+                    reject(new Error(`PumpBus request timed out: ${event}`));
                 }, Math.max(1, timeoutMs));
 
                 this.pendingRequests.set(requestId, { resolve, reject, timer });
@@ -126,7 +126,7 @@
                         hasResponse = true;
                     }
                 } catch (error) {
-                    console.error('LairBus event handler failed:', error);
+                    console.error('PumpBus event handler failed:', error);
                 }
             }
 
@@ -168,6 +168,6 @@
         }
     }
 
-    LairBus._ensureInitialized();
-    window.LairBus = LairBus;
+    PumpBus._ensureInitialized();
+    window.PumpBus = PumpBus;
 })();

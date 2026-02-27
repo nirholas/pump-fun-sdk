@@ -1,9 +1,6 @@
 ---
-name: Pump SDK Core
-description: >
-  Build and extend the core Pump SDK — an offline-first TypeScript SDK that constructs
-  Solana TransactionInstructions for token creation, buying, selling, migration, and
-  creator fee collection across three on-chain programs (Pump, PumpAMM, PumpFees).
+name: pump-sdk-core
+description: "Build and extend the core Pump SDK — an offline-first TypeScript SDK that constructs Solana TransactionInstructions for token creation, buying, selling, migration, and creator fee collection across three on-chain programs (Pump, PumpAMM, PumpFees)."
 metadata:
   openclaw:
     homepage: https://github.com/nirholas/pump-fun-sdk

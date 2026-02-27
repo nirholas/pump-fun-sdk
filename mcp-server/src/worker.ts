@@ -1,3 +1,5 @@
+/// <reference types="@cloudflare/workers-types" />
+
 /**
  * Cloudflare Workers entry point for the Solana Wallet MCP Server.
  *

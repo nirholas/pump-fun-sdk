@@ -42,7 +42,7 @@ const FeatureFlags = {
         'app.studio': true,
         'app.welcome': true,
 
-        // Lair Native Apps
+        // Pump Native Apps
         'app.lairai': true,
         'app.lairbot': true,
         'app.lairdefi': true,
@@ -648,7 +648,7 @@ const FeatureFlags = {
     // ============ Bulk Operations ============
     
     /**
-     * Enable only Lair apps, disable others
+     * Enable only Pump apps, disable others
      */
     lairOnlyMode() {
         const lairApps = ['store', 'files', 'settings', 'lairai', 'lairbot', 

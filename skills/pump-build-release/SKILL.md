@@ -1,9 +1,6 @@
 ---
-name: Pump Build & Release
-description: >
-  Build and release pipeline for the Pump SDK — tsup TypeScript builds, Cargo release
-  profiles, semantic release with commitizen, npm publishing, linting, Makefile targets,
-  Vercel deployment, and MCP server distribution.
+name: pump-build-release
+description: "Build and release pipeline for the Pump SDK — tsup TypeScript builds, Cargo release profiles, semantic release with commitizen, npm publishing, linting, Makefile targets, Vercel deployment, and MCP server distribution."
 metadata:
   openclaw:
     homepage: https://github.com/nirholas/pump-fun-sdk

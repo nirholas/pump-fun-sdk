@@ -2152,7 +2152,7 @@
 						document.getElementById("cbx-70").addEventListener("change", function () {
 							let newValue2 = document.getElementById("cbx-70").checked;
 							if (newValue2) {
-								ntxSession.send("specific.useLairOffline",);
+								ntxSession.send("specific.usePumpOffline",);
 							} else {
 								ntxSession.send("specific.removeSWs",)
 							}
@@ -2388,7 +2388,7 @@
 					if (!confirm("Erase Device? \nThis will remove all data, including every user's files, folders, apps, permissions, cache and everything.\n\nWould you like to Clear your device?")) {
 						return;
 					}
-					await ntxSession.send("system.eraseLair",);
+					await ntxSession.send("system.erasePump",);
 				}
 				async function erdbsur() {
 					if (!confirm("Remove User? \nThis will remove your data, including your files, folders, apps, permissions, cache and everything.\n\nWould you like to Clear your account?")) {
@@ -3035,7 +3035,7 @@
 					<input class="colorpickerui" id="text-high" data-variable="--col-txth"></input>
 				</div>
 			</segr>
-			<h3>Lair Nav <div class="betatag">beta</div>
+			<h3>Pump Nav <div class="betatag">beta</div>
 			</h3>
 			<segr>
 				<div class="single_setting">
@@ -3340,22 +3340,22 @@
 			<h1>Wallpaper</h1>
 			<segr>
 				<div class="inpbox" style="padding:8px 12px;">
-					<b style="display:block;margin-bottom:8px;">Lair Wallpapers</b>
+					<b style="display:block;margin-bottom:8px;">Pump Wallpapers</b>
 					<div id="wallpaper-gallery" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;">
 						<div class="wp-thumb" onclick="pickWallpaper('/assets/wallpapers/lairasset.jpg')" style="cursor:pointer;border-radius:8px;overflow:hidden;aspect-ratio:16/10;border:2px solid transparent;transition:border .2s;">
-							<img src="/assets/wallpapers/lairasset.jpg" style="width:100%;height:100%;object-fit:cover;display:block;" alt="Lair 1">
+							<img src="/assets/wallpapers/lairasset.jpg" style="width:100%;height:100%;object-fit:cover;display:block;" alt="Pump 1">
 						</div>
 						<div class="wp-thumb" onclick="pickWallpaper('/assets/wallpapers/lairasset2.jpg')" style="cursor:pointer;border-radius:8px;overflow:hidden;aspect-ratio:16/10;border:2px solid transparent;transition:border .2s;">
-							<img src="/assets/wallpapers/lairasset2.jpg" style="width:100%;height:100%;object-fit:cover;display:block;" alt="Lair 2">
+							<img src="/assets/wallpapers/lairasset2.jpg" style="width:100%;height:100%;object-fit:cover;display:block;" alt="Pump 2">
 						</div>
 						<div class="wp-thumb" onclick="pickWallpaper('/assets/wallpapers/lairasset3.jpg')" style="cursor:pointer;border-radius:8px;overflow:hidden;aspect-ratio:16/10;border:2px solid transparent;transition:border .2s;">
-							<img src="/assets/wallpapers/lairasset3.jpg" style="width:100%;height:100%;object-fit:cover;display:block;" alt="Lair 3">
+							<img src="/assets/wallpapers/lairasset3.jpg" style="width:100%;height:100%;object-fit:cover;display:block;" alt="Pump 3">
 						</div>
 						<div class="wp-thumb" onclick="pickWallpaper('/assets/wallpapers/lairasset4.jpg')" style="cursor:pointer;border-radius:8px;overflow:hidden;aspect-ratio:16/10;border:2px solid transparent;transition:border .2s;">
-							<img src="/assets/wallpapers/lairasset4.jpg" style="width:100%;height:100%;object-fit:cover;display:block;" alt="Lair 4">
+							<img src="/assets/wallpapers/lairasset4.jpg" style="width:100%;height:100%;object-fit:cover;display:block;" alt="Pump 4">
 						</div>
 						<div class="wp-thumb" onclick="pickWallpaper('/assets/wallpapers/lairasset5.jpg')" style="cursor:pointer;border-radius:8px;overflow:hidden;aspect-ratio:16/10;border:2px solid transparent;transition:border .2s;">
-							<img src="/assets/wallpapers/lairasset5.jpg" style="width:100%;height:100%;object-fit:cover;display:block;" alt="Lair 5">
+							<img src="/assets/wallpapers/lairasset5.jpg" style="width:100%;height:100%;object-fit:cover;display:block;" alt="Pump 5">
 						</div>
 					</div>
 				</div>

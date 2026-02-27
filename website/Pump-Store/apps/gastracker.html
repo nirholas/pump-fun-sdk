@@ -271,10 +271,10 @@
     (function() {
         'use strict';
         const fetchFn = window.cfetch || fetch;
-        const lairFetch = window.LairFetch;
-        const lairUI = window.LairUI;
-        const lairTheme = window.LairTheme;
-        const lairPoll = window.LairPoll;
+        const lairFetch = window.PumpFetch;
+        const lairUI = window.PumpUI;
+        const lairTheme = window.PumpTheme;
+        const lairPoll = window.PumpPoll;
         if (lairTheme) lairTheme.apply(document.body);
 
         const CHAINS = [

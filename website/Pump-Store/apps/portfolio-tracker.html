@@ -794,7 +794,7 @@
     let riskModel = emptyRiskModel();
     let stressConfig = { marketShock: -15, altBeta: 1.4, stableShock: -8 };
     const fetchFn = window.cfetch || fetch;
-    const lairBus = window.LairBus;
+    const lairBus = window.PumpBus;
 
     if (lairBus) {
         lairBus.register('portfolio');

@@ -105,7 +105,7 @@ async function getMenuItems(target) {
 			{ icon: isWidgetsLocked() ? 'lock_open' : 'lock', label: isWidgetsLocked() ? 'Unlock widgets' : 'Lock widgets', action: () => toggleWidgetLock() },
 			{ icon: 'restart_alt', label: 'Reset widgets', action: () => resetWidgets() },
 			{ icon: 'refresh', label: 'Refresh homescreen', action: () => lairrefresh() },
-			{ icon: 'power', label: 'Lair setup', action: () => launchbios() },
+			{ icon: 'power', label: 'Pump setup', action: () => launchbios() },
 		];
 	}
 	if (target.classList.contains('windowheader')) {

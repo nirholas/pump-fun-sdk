@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="lair-include" content="lair.css">
     <meta name="lair-icon" content="<svg width='232' height='232' viewBox='0 0 232 232' fill='none' xmlns='http://www.w3.org/2000/svg'><rect width='232' height='232' rx='40' fill='#6366f1'/><rect x='24' y='24' width='86' height='86' rx='14' fill='white' opacity='0.9'/><rect x='122' y='24' width='86' height='40' rx='14' fill='white' opacity='0.7'/><rect x='122' y='76' width='86' height='34' rx='14' fill='#00d4aa' opacity='0.8'/><rect x='24' y='122' width='40' height='86' rx='14' fill='white' opacity='0.7'/><rect x='76' y='122' width='34' height='86' rx='14' fill='#fbbf24' opacity='0.8'/><rect x='122' y='122' width='86' height='86' rx='14' fill='white' opacity='0.9'/></svg>">
-    <title>Lair Dashboard</title>
+    <title>Pump Dashboard</title>
     <link rel="stylesheet" href="../libs/lair-components.css">
     <script src="../libs/lair-components.js"></script>
     <style>
@@ -384,9 +384,9 @@
             ];
 
             const fetchFn = window.cfetch || window.fetch.bind(window);
-            const lairFetch = window.LairFetch;
-            const lairUI = window.LairUI;
-            const lairTheme = window.LairTheme;
+            const lairFetch = window.PumpFetch;
+            const lairUI = window.PumpUI;
+            const lairTheme = window.PumpTheme;
             if (lairTheme) lairTheme.apply(document.body);
 
             function setUpdated(id) {

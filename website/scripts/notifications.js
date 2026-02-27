@@ -1,7 +1,7 @@
 // ============================================
 // PumpOS Unified Notification Center
 // Toast notifications, history panel, preferences,
-// debouncing, browser notifications, Lair.notify() bridge
+// debouncing, browser notifications, Pump.notify() bridge
 // ============================================
 
 const NotificationCenter = (() => {
@@ -407,8 +407,8 @@ const NotificationCenter = (() => {
         // Bridge legacy notify() — wrap whatever is currently defined
         _patchLegacyNotify();
 
-        // Bridge Lair.notify for iframes/apps
-        window.LairNotify = function (title, message, emoji) {
+        // Bridge Pump.notify for iframes/apps
+        window.PumpNotify = function (title, message, emoji) {
             return show({ title, message, emoji, type: 'info', source: 'App' });
         };
 

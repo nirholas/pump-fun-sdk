@@ -367,7 +367,7 @@ const META_TAG = '<meta name="lair-include" content="lair.css">';
  * Attempt to inject lair-include meta tag into a file.
  * Returns true if the file was modified.
  */
-function fixMissingLairInclude(filePath, content) {
+function fixMissingPumpInclude(filePath, content) {
     if (/<meta\s+name\s*=\s*["']lair-include["']/i.test(content)) return false;
     if (content.trim().length === 0) return false; // skip empty files
 
@@ -434,7 +434,7 @@ async function main() {
             }
 
             // Inject missing lair-include
-            if (fixMissingLairInclude(entry.filePath, content)) {
+            if (fixMissingPumpInclude(entry.filePath, content)) {
                 console.log(`🔧 Fixed lair-include: ${entry.dirLabel}/${entry.name}`);
                 fixedCount++;
             }

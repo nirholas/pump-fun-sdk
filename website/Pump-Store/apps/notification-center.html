@@ -1182,8 +1182,8 @@
         return elapsed < (rule.cooldown || 3600) * 1000;
     }
 
-    function setupLairBus() {
-        const lairBus = window.LairBus;
+    function setupPumpBus() {
+        const lairBus = window.PumpBus;
         if (!lairBus) return;
 
         lairBus.register('notification-center');
@@ -1203,7 +1203,7 @@
     /* ── Init ── */
     function init() {
         load();
-        setupLairBus();
+        setupPumpBus();
 
         // Apply settings to UI
         $('settingSound').checked = state.settings.soundEnabled;

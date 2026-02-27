@@ -1,9 +1,6 @@
 ---
-name: Pump Website
-description: >
-  Next.js 14 documentation website for the Pump SDK — interactive tool components for
-  bonding curve visualization, fee calculation, vanity generation, keypair verification,
-  client-side Solana cryptography, PWA support, and Vercel deployment.
+name: pump-website
+description: "Next.js 14 documentation website for the Pump SDK — interactive tool components for bonding curve visualization, fee calculation, vanity generation, keypair verification, client-side Solana cryptography, PWA support, and Vercel deployment."
 metadata:
   openclaw:
     homepage: https://github.com/nirholas/pump-fun-sdk

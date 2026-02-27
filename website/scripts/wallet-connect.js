@@ -180,7 +180,7 @@
             });
             state.balance = formatBalance(raw);
         } catch (e) {
-            console.warn('[LairWallet] Balance fetch failed:', e);
+            console.warn('[PumpWallet] Balance fetch failed:', e);
             state.balance = null;
         }
     }
@@ -275,7 +275,7 @@
             notify('Wallet Connected', truncAddr(state.address), 'success');
             return true;
         } catch (e) {
-            console.error('[LairWallet] Injected connect failed:', e);
+            console.error('[PumpWallet] Injected connect failed:', e);
             notify('Connection Failed', e.message || 'User rejected the request.', 'error');
             state.connecting = false;
             updateUI();
@@ -335,7 +335,7 @@
 
             return true;
         } catch (e) {
-            console.error('[LairWallet] WalletConnect failed:', e);
+            console.error('[PumpWallet] WalletConnect failed:', e);
             var msg = e.message || 'WalletConnect connection failed.';
             if (msg.includes('fetch')) msg = 'Could not load WalletConnect SDK. Check your internet connection.';
             notify('WalletConnect Failed', msg, 'error');
@@ -385,7 +385,7 @@
             notify('Wallet Connected', truncAddr(state.address) + ' via Coinbase', 'success');
             return true;
         } catch (e) {
-            console.error('[LairWallet] Coinbase connect failed:', e);
+            console.error('[PumpWallet] Coinbase connect failed:', e);
             var msg = e.message || 'Coinbase Wallet connection failed.';
             if (msg.includes('fetch')) msg = 'Could not load Coinbase SDK. Check your internet connection.';
             notify('Coinbase Failed', msg, 'error');
@@ -531,7 +531,7 @@
             }
             // For WC/CB, user must reconnect manually
         } catch (e) {
-            console.warn('[LairWallet] Auto-reconnect failed:', e);
+            console.warn('[PumpWallet] Auto-reconnect failed:', e);
         }
     }
 
@@ -688,7 +688,7 @@
         if (typeof showNotification === 'function') {
             showNotification(title, message || '', type || 'info');
         } else {
-            console.log('[LairWallet] ' + type + ': ' + title + (message ? ' — ' + message : ''));
+            console.log('[PumpWallet] ' + type + ': ' + title + (message ? ' — ' + message : ''));
         }
     }
 
@@ -701,7 +701,7 @@
         txConfirmModal = document.getElementById('wallet-tx-modal');
 
         if (!walletBtn) {
-            console.warn('[LairWallet] #wallet-connect-btn not found in DOM');
+            console.warn('[PumpWallet] #wallet-connect-btn not found in DOM');
             return;
         }
 
@@ -789,7 +789,7 @@
         // Auto-reconnect
         autoReconnect();
 
-        console.log('[LairWallet] Initialized');
+        console.log('[PumpWallet] Initialized');
     }
 
     // Wait for DOM
@@ -801,7 +801,7 @@
     }
 
     // ──────────────────────────── Public API ────────────────────────────
-    window.LairWallet = {
+    window.PumpWallet = {
         connect: connectInjected,
         connectWC: connectWalletConnect,
         connectCB: connectCoinbase,

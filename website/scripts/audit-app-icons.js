@@ -21,7 +21,7 @@ function readHtmlFiles(dir) {
     .map((fileName) => path.join(dir, fileName));
 }
 
-function hasLairIconMeta(content) {
+function hasPumpIconMeta(content) {
   const regex = /<meta\s+name=["']lair-icon["']\s+content=["']([^"']*)["']/i;
   const match = content.match(regex);
   return Boolean(match && match[1] && match[1].trim().length > 0);
@@ -33,7 +33,7 @@ function auditHtmlIcons() {
   for (const dir of htmlTargets) {
     for (const filePath of readHtmlFiles(dir)) {
       const content = fs.readFileSync(filePath, 'utf8');
-      if (!hasLairIconMeta(content)) {
+      if (!hasPumpIconMeta(content)) {
         missing.push(path.relative(rootDir, filePath));
       }
     }
