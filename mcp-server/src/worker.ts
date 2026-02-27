@@ -146,33 +146,36 @@ export default {
   ): Promise<Response> {
     const url = new URL(request.url);
 
-    // Route MCP traffic to the Durable Object
-    if (
-      url.pathname === "/sse" ||
-      url.pathname.startsWith("/sse/") ||
-      url.pathname === "/mcp"
-    ) {
-      const id = env.MCP_OBJECT.idFromName("default");
-      return env.MCP_OBJECT.get(id).fetch(request);
-    }
-
     // CORS preflight
     if (request.method === "OPTIONS") {
       return new Response(null, {
         headers: {
           "Access-Control-Allow-Origin": "*",
-          "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-          "Access-Control-Allow-Headers": "Content-Type",
+          "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type, mcp-session-id, Last-Event-ID",
+          "Access-Control-Expose-Headers": "mcp-session-id",
         },
       });
     }
 
-    // Health / info
+    // Route MCP traffic to the Durable Object
+    // Accept /mcp, /sse, and POST to / (for clients that use root URL)
+    if (
+      url.pathname === "/sse" ||
+      url.pathname.startsWith("/sse/") ||
+      url.pathname === "/mcp" ||
+      (url.pathname === "/" && request.method === "POST")
+    ) {
+      const id = env.MCP_OBJECT.idFromName("default");
+      return env.MCP_OBJECT.get(id).fetch(request);
+    }
+
+    // Health / info (GET / only)
     return new Response(
       JSON.stringify({
         name: "solana-wallet-toolkit",
         version: "1.0.0",
-        description: "Solana Wallet MCP Server — Cloudflare Workers",
+        description: "Pump SDK MCP Server — Solana token launchpad with bonding curves, vanity addresses, key management",
         endpoints: {
           sse: "/sse",
           streamableHttp: "/mcp",
