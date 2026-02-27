@@ -10,7 +10,10 @@ The Pump SDK (`@pump-fun/pump-sdk`) is a TypeScript SDK for the Pump protocol on
 - **Rust vanity generator** — 100K+ keys/sec multi-threaded generator
 - **TypeScript vanity generator** — Educational reference implementation
 - **MCP server** — Model Context Protocol for AI agent integration
+- **Telegram bot** — PumpFun fee claim monitoring with Telegram notifications
+- **x402 payment protocol** — HTTP 402 micropayments with Solana USDC
 - **Shell scripts** — Production Bash wrappers for solana-keygen
+- **Tutorials** — 19 hands-on guides covering the full SDK
 
 ## Key Directories
 

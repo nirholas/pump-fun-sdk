@@ -31,7 +31,8 @@ Token Creation &nbsp;·&nbsp; Bonding Curves &nbsp;·&nbsp; AMM Pools &nbsp;·&n
   <a href="https://solana.com"><img src="https://img.shields.io/badge/Solana-mainnet-00e87b?style=flat-square&labelColor=ffffff&logo=data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHZpZXdCb3g9IjAgMCAyMCAyMCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMyAxNUw2IDEyTDE3IDEyTDE0IDE1WiIgZmlsbD0id2hpdGUiLz48L3N2Zz4=&logoColor=00e87b" alt="Solana"></a>&nbsp;
   <a href="src/"><img src="https://img.shields.io/badge/TypeScript-types_included-00e87b?style=flat-square&labelColor=ffffff&logo=typescript&logoColor=00e87b" alt="TypeScript"></a>&nbsp;
   <a href="mcp-server/"><img src="https://img.shields.io/badge/MCP_Server-included-00e87b?style=flat-square&labelColor=ffffff" alt="MCP Server"></a>&nbsp;
-  <a href="rust/"><img src="https://img.shields.io/badge/Rust-CLI-00e87b?style=flat-square&labelColor=ffffff&logo=rust&logoColor=00e87b" alt="Rust CLI"></a>
+  <a href="rust/"><img src="https://img.shields.io/badge/Rust-CLI-00e87b?style=flat-square&labelColor=ffffff&logo=rust&logoColor=00e87b" alt="Rust CLI"></a>&nbsp;
+  <a href="telegram-bot/"><img src="https://img.shields.io/badge/Telegram-Bot-00e87b?style=flat-square&labelColor=ffffff&logo=telegram&logoColor=00e87b" alt="Telegram Bot"></a>
 </p>
 
 <br>
@@ -66,6 +67,7 @@ Token Creation &nbsp;·&nbsp; Bonding Curves &nbsp;·&nbsp; AMM Pools &nbsp;·&n
 - [Architecture](#-architecture) — Offline & online SDK layers
 - [Programs](#-programs) — On-chain program addresses
 - [MCP Server](#-mcp-server) — AI agent integration
+- [Telegram Bot](#-telegram-bot) — Fee claim notifications
 - [Documentation](#-documentation) — Full guides and references
 - [Contributing](#-contributing) — Help make Pump SDK better
 
@@ -144,8 +146,8 @@ Token Creation &nbsp;·&nbsp; Bonding Curves &nbsp;·&nbsp; AMM Pools &nbsp;·&n
 
 **🤖 AI & Tooling**
 - MCP server for Claude, GPT, Cursor
+- Telegram bot for fee claim alerts
 - Rust CLI for vanity address generation
-- Comprehensive API reference
 
 </td>
 </tr>
@@ -513,7 +515,21 @@ See [mcp-server/README.md](mcp-server/README.md) for setup instructions.
 
 ---
 
-## 📖 Documentation
+## � Telegram Bot
+
+The included [Telegram bot](telegram-bot/) monitors PumpFun on Solana and sends real-time notifications when creator fees or cashback rewards are claimed.
+
+```bash
+cd telegram-bot && npm install && npm run build
+```
+
+**Features:** Watch wallets · Creator fee alerts · Cashback alerts · SOL amounts · Solscan & pump.fun links · Group chat support
+
+**Deploy:** Docker, Railway, or any Node.js host. See [telegram-bot/README.md](telegram-bot/README.md) for setup.
+
+---
+
+## �📖 Documentation
 
 | Guide | Description |
 |-------|-------------|

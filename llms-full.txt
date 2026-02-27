@@ -102,6 +102,16 @@ Model Context Protocol server for AI agent integration:
 - 3 prompts: create_wallet, security_audit, batch_generate
 - stdio transport, session keypair management with zeroization on shutdown
 
+### Telegram Bot (telegram-bot/)
+
+PumpFun fee claim monitoring bot with Telegram notifications:
+- grammY framework with @solana/web3.js for Solana RPC/WebSocket
+- Real-time on-chain monitoring of fee claim transactions across Pump, PumpAMM, and PumpFees programs
+- 3 detection strategies: discriminator matching, inner instruction SOL transfers, balance-change heuristic
+- Commands: /start, /status, /claims, /stats, /settings, /help
+- Persistent state with JSON file storage
+- Docker deployment with multi-stage build
+
 ### Shell Scripts (scripts/)
 
 Production wrappers around `solana-keygen grind`:
