@@ -18043,10 +18043,12 @@ var OnlinePumpSdk = class {
       true,
       quoteTokenProgram
     );
-    const [coinCreatorVaultAtaAccountInfo, coinCreatorTokenAccountInfo] = await this.connection.getMultipleAccountsInfo([
+    const accountInfos = await this.connection.getMultipleAccountsInfo([
       coinCreatorVaultAta,
       coinCreatorTokenAccount
     ]);
+    const coinCreatorVaultAtaAccountInfo = accountInfos[0] ?? null;
+    const coinCreatorTokenAccountInfo = accountInfos[1] ?? null;
     return [
       await this.offlinePumpProgram.methods.collectCreatorFee().accountsPartial({
         creator: coinCreator

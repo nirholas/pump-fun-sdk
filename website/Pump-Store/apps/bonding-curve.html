@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="pump-include" content="pump.css">
+    <meta name="capabilities" content="bonding_curve_viewer">
+    <meta name="aspect-ratio" content="16/10">
+    <meta name="pump-icon" content="show_chart">
+    <meta name="pump-perms" content="network" />
+    <title>Bonding Curve</title>
+    <style>
+        :root { --bg1:#0a0a0a; --bg2:#111; --bg3:#1a1a1a; --accent:#00e87b; --purple:#9945FF; --red:#ff4d4d; --yellow:#ffd43b; }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:'Poppins',system-ui,sans-serif; background:var(--bg1); color:#fff; height:100vh; overflow:hidden; }
+        .app { display:grid; grid-template-rows:auto 1fr auto; height:100vh; }
+
+        .header { padding:12px 16px; display:flex; align-items:center; gap:10px; border-bottom:1px solid #ffffff0a; }
+        .header h1 { font-size:0.95rem; font-weight:600; flex:1; }
+        .search-bar { display:flex; align-items:center; gap:6px; background:var(--bg2); border:1px solid #ffffff0c; border-radius:8px; padding:6px 12px; }
+        .search-bar input { background:none; border:none; color:#fff; font-size:0.8rem; outline:none; width:200px; font-family:inherit; }
+        .search-bar .material-symbols-rounded { font-size:18px; color:#666; }
+
+        .main { display:grid; grid-template-columns:1fr 300px; gap:0; overflow:hidden; }
+
+        /* Chart Panel */
+        .chart-panel { display:flex; flex-direction:column; border-right:1px solid #ffffff08; }
+        .chart-header { display:flex; align-items:center; gap:12px; padding:12px 16px; border-bottom:1px solid #ffffff06; }
+        .token-badge { display:flex; align-items:center; gap:8px; }
+        .token-img { width:32px; height:32px; border-radius:50%; background:linear-gradient(135deg,var(--accent),var(--purple)); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.7rem; }
+        .token-name-area { }
+        .token-name-area .name { font-size:0.9rem; font-weight:600; }
+        .token-name-area .pair { font-size:0.65rem; color:#666; }
+        .price-area { margin-left:auto; text-align:right; }
+        .price-area .price { font-size:1.1rem; font-weight:700; color:var(--accent); }
+        .price-area .change { font-size:0.7rem; }
+        .price-area .change.up { color:var(--accent); }
+        .price-area .change.down { color:var(--red); }
+
+        .chart-container { flex:1; position:relative; padding:8px; }
+        .chart-container canvas { width:100%; height:100%; }
+
+        .chart-controls { display:flex; gap:4px; padding:8px 16px; border-top:1px solid #ffffff06; }
+        .tf-btn { padding:4px 10px; font-size:0.65rem; background:var(--bg2); border:1px solid #ffffff08; border-radius:6px; color:#888; cursor:pointer; font-family:inherit; }
+        .tf-btn.active { background:var(--accent); color:#000; border-color:var(--accent); }
+        .tf-btn:hover:not(.active) { background:var(--bg3); color:#fff; }
+
+        /* Sidebar */
+        .sidebar { display:flex; flex-direction:column; overflow-y:auto; background:var(--bg2); }
+        .sidebar-section { padding:12px 14px; border-bottom:1px solid #ffffff06; }
+        .sidebar-title { font-size:0.65rem; color:#555; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px; }
+
+        .progress-bar-container { background:var(--bg3); border-radius:6px; height:20px; overflow:hidden; position:relative; border:1px solid #ffffff08; }
+        .progress-bar-fill { height:100%; border-radius:6px; transition:width 0.5s; background:linear-gradient(90deg, var(--accent), var(--purple)); }
+        .progress-bar-label { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-size:0.6rem; font-weight:600; }
+
+        .stat-grid { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+        .stat-box { background:var(--bg3); border-radius:8px; padding:8px 10px; border:1px solid #ffffff06; }
+        .stat-box .label { font-size:0.6rem; color:#666; display:block; }
+        .stat-box .value { font-size:0.8rem; font-weight:600; color:#fff; margin-top:2px; }
+        .stat-box .value.green { color:var(--accent); }
+        .stat-box .value.purple { color:var(--purple); }
+        .stat-box .value.yellow { color:var(--yellow); }
+
+        .status-badge { display:inline-flex; align-items:center; gap:4px; padding:4px 10px; border-radius:20px; font-size:0.7rem; font-weight:600; }
+        .status-badge.active { background:rgba(0,232,123,0.12); color:var(--accent); }
+        .status-badge.migrated { background:rgba(153,69,255,0.12); color:var(--purple); }
+        .status-badge .dot { width:6px; height:6px; border-radius:50%; }
+        .status-badge.active .dot { background:var(--accent); animation:pulse 1.5s infinite; }
+        .status-badge.migrated .dot { background:var(--purple); }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+        .trade-list { max-height:180px; overflow-y:auto; }
+        .trade-item { display:flex; align-items:center; gap:8px; padding:6px 0; font-size:0.7rem; border-bottom:1px solid #ffffff04; }
+        .trade-item .type { width:36px; font-weight:600; }
+        .trade-item .type.buy { color:var(--accent); }
+        .trade-item .type.sell { color:var(--red); }
+        .trade-item .amount { flex:1; color:#aaa; }
+        .trade-item .time { color:#555; }
+
+        .buy-sell-btns { display:flex; gap:6px; margin-top:8px; }
+        .buy-sell-btns button { flex:1; padding:8px; border:none; border-radius:8px; font-weight:600; font-size:0.8rem; cursor:pointer; font-family:inherit; transition:all 0.15s; }
+        .buy-sell-btns .buy-btn { background:var(--accent); color:#000; }
+        .buy-sell-btns .sell-btn { background:var(--red); color:#fff; }
+        .buy-sell-btns button:hover { transform:translateY(-1px); }
+
+        .footer { padding:6px 16px; border-top:1px solid #ffffff0a; font-size:0.6rem; color:#444; display:flex; justify-content:space-between; }
+
+        @media (max-width: 600px) {
+            .main { grid-template-columns:1fr; }
+            .sidebar { max-height:40vh; border-top:1px solid #ffffff0a; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <div class="header">
+            <span class="material-symbols-rounded" style="color:var(--accent);">show_chart</span>
+            <h1>Bonding Curve Viewer</h1>
+            <div class="search-bar">
+                <span class="material-symbols-rounded">search</span>
+                <input id="tokenSearch" placeholder="Search token or paste mint..." onkeydown="if(event.key==='Enter')searchToken()">
+            </div>
+        </div>
+
+        <div class="main">
+            <div class="chart-panel">
+                <div class="chart-header">
+                    <div class="token-badge">
+                        <div class="token-img" id="tokenIcon">P</div>
+                        <div class="token-name-area">
+                            <div class="name" id="chartTokenName">PUMP</div>
+                            <div class="pair" id="chartTokenPair">PUMP/SOL</div>
+                        </div>
+                    </div>
+                    <div class="price-area">
+                        <div class="price" id="chartPrice">$0.000042</div>
+                        <div class="change up" id="chartChange">+24.5%</div>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="mainChart"></canvas>
+                </div>
+                <div class="chart-controls">
+                    <button class="tf-btn" onclick="setTimeframe('1m')">1m</button>
+                    <button class="tf-btn active" onclick="setTimeframe('5m')">5m</button>
+                    <button class="tf-btn" onclick="setTimeframe('15m')">15m</button>
+                    <button class="tf-btn" onclick="setTimeframe('1h')">1h</button>
+                    <button class="tf-btn" onclick="setTimeframe('all')">All</button>
+                    <span style="flex:1"></span>
+                    <button class="tf-btn" onclick="toggleChartType()" id="chartTypeBtn">Line</button>
+                </div>
+            </div>
+
+            <div class="sidebar">
+                <!-- Curve Progress -->
+                <div class="sidebar-section">
+                    <div class="sidebar-title">Bonding Curve Progress</div>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar-fill" id="curveProgress" style="width:67%"></div>
+                        <span class="progress-bar-label" id="curveProgressLabel">67.3%</span>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;margin-top:6px;">
+                        <span class="status-badge active" id="curveStatus"><span class="dot"></span> Active</span>
+                        <span style="font-size:0.65rem;color:#888;" id="solRemaining">28.1 SOL left</span>
+                    </div>
+                </div>
+
+                <!-- Stats -->
+                <div class="sidebar-section">
+                    <div class="sidebar-title">Token Stats</div>
+                    <div class="stat-grid">
+                        <div class="stat-box"><span class="label">Market Cap</span><span class="value green" id="mcap">$42.8K</span></div>
+                        <div class="stat-box"><span class="label">Volume (24h)</span><span class="value" id="vol24h">$12.3K</span></div>
+                        <div class="stat-box"><span class="label">Holders</span><span class="value" id="holders">234</span></div>
+                        <div class="stat-box"><span class="label">Txns (24h)</span><span class="value" id="txns24h">1,892</span></div>
+                        <div class="stat-box"><span class="label">Liquidity</span><span class="value purple" id="liquidity">56.9 SOL</span></div>
+                        <div class="stat-box"><span class="label">Supply On Curve</span><span class="value yellow" id="supplyOnCurve">800M</span></div>
+                    </div>
+                </div>
+
+                <!-- Recent Trades -->
+                <div class="sidebar-section">
+                    <div class="sidebar-title">Recent Trades</div>
+                    <div class="trade-list" id="tradeList"></div>
+                </div>
+
+                <!-- Actions -->
+                <div class="sidebar-section">
+                    <div class="sidebar-title">Quick Trade</div>
+                    <div class="buy-sell-btns">
+                        <button class="buy-btn" onclick="quickBuy()">Buy</button>
+                        <button class="sell-btn" onclick="quickSell()">Sell</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <span>Program: 6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P</span>
+            <span id="lastUpdate">Updated just now</span>
+        </div>
+    </div>
+
+    <script>
+    let chartType = 'line';
+    let priceData = [];
+    let currentTf = '5m';
+
+    function generateDemoData() {
+        const points = 120;
+        const data = [];
+        let price = 0.000028;
+        for (let i = 0; i < points; i++) {
+            const change = (Math.random() - 0.45) * 0.000004;
+            price = Math.max(0.000001, price + change);
+            data.push({
+                time: Date.now() - (points - i) * 300000,
+                open: price - Math.random() * 0.000002,
+                high: price + Math.random() * 0.000003,
+                low: price - Math.random() * 0.000003,
+                close: price,
+                volume: Math.random() * 5000
+            });
+        }
+        return data;
+    }
+
+    function drawChart() {
+        const canvas = document.getElementById('mainChart');
+        const rect = canvas.parentElement.getBoundingClientRect();
+        canvas.width = rect.width * 2;
+        canvas.height = rect.height * 2;
+        const ctx = canvas.getContext('2d');
+        ctx.scale(2, 2);
+        const w = rect.width, h = rect.height;
+        ctx.clearRect(0, 0, w, h);
+
+        if (!priceData.length) return;
+
+        const prices = priceData.map(d => d.close);
+        const minP = Math.min(...priceData.map(d => d.low)) * 0.98;
+        const maxP = Math.max(...priceData.map(d => d.high)) * 1.02;
+        const range = maxP - minP || 1;
+
+        // Grid
+        ctx.strokeStyle = '#ffffff06';
+        ctx.lineWidth = 0.5;
+        for (let i = 0; i <= 4; i++) {
+            const y = (h / 4) * i;
+            ctx.beginPath(); ctx.moveTo(40, y); ctx.lineTo(w, y); ctx.stroke();
+            const priceLabel = maxP - (range / 4) * i;
+            ctx.fillStyle = '#444';
+            ctx.font = '9px sans-serif';
+            ctx.fillText('$' + priceLabel.toFixed(6), 0, y + 3);
+        }
+
+        const barW = Math.max(1, (w - 50) / priceData.length - 1);
+        const startX = 44;
+
+        if (chartType === 'candle') {
+            priceData.forEach((d, i) => {
+                const x = startX + i * (barW + 1);
+                const oY = h - ((d.open - minP) / range) * h;
+                const cY = h - ((d.close - minP) / range) * h;
+                const hY = h - ((d.high - minP) / range) * h;
+                const lY = h - ((d.low - minP) / range) * h;
+                const bullish = d.close >= d.open;
+
+                ctx.strokeStyle = bullish ? '#00e87b' : '#ff4d4d';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(x + barW / 2, hY);
+                ctx.lineTo(x + barW / 2, lY);
+                ctx.stroke();
+
+                ctx.fillStyle = bullish ? '#00e87b' : '#ff4d4d';
+                const top = Math.min(oY, cY);
+                const bodyH = Math.max(1, Math.abs(cY - oY));
+                ctx.fillRect(x, top, barW, bodyH);
+            });
+        } else {
+            // Line chart
+            ctx.beginPath();
+            ctx.strokeStyle = '#00e87b';
+            ctx.lineWidth = 2;
+            priceData.forEach((d, i) => {
+                const x = startX + i * (barW + 1) + barW / 2;
+                const y = h - ((d.close - minP) / range) * h;
+                if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+            });
+            ctx.stroke();
+
+            // Fill
+            const lastX = startX + (priceData.length - 1) * (barW + 1) + barW / 2;
+            ctx.lineTo(lastX, h);
+            ctx.lineTo(startX + barW / 2, h);
+            ctx.closePath();
+            const grad = ctx.createLinearGradient(0, 0, 0, h);
+            grad.addColorStop(0, 'rgba(0,232,123,0.12)');
+            grad.addColorStop(1, 'rgba(0,232,123,0)');
+            ctx.fillStyle = grad;
+            ctx.fill();
+        }
+
+        // Crosshair on latest
+        const lastPrice = prices[prices.length - 1];
+        const lastY = h - ((lastPrice - minP) / range) * h;
+        ctx.beginPath();
+        ctx.strokeStyle = '#00e87b44';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([3, 3]);
+        ctx.moveTo(40, lastY);
+        ctx.lineTo(w, lastY);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Price label
+        ctx.fillStyle = '#00e87b';
+        ctx.fillRect(0, lastY - 8, 42, 16);
+        ctx.fillStyle = '#000';
+        ctx.font = 'bold 8px sans-serif';
+        ctx.fillText('$' + lastPrice.toFixed(6), 2, lastY + 3);
+    }
+
+    function generateTrades() {
+        const list = document.getElementById('tradeList');
+        const trades = [];
+        for (let i = 0; i < 15; i++) {
+            const isBuy = Math.random() > 0.4;
+            const sol = (Math.random() * 5 + 0.1).toFixed(2);
+            const tokens = (parseFloat(sol) * (1e9 / 85) * (0.5 + Math.random())).toFixed(0);
+            const mins = Math.floor(Math.random() * 60);
+            trades.push(`<div class="trade-item">
+                <span class="type ${isBuy?'buy':'sell'}">${isBuy?'BUY':'SELL'}</span>
+                <span class="amount">${Number(tokens).toLocaleString()} tokens</span>
+                <span class="amount">${sol} SOL</span>
+                <span class="time">${mins}m ago</span>
+            </div>`);
+        }
+        list.innerHTML = trades.join('');
+    }
+
+    function setTimeframe(tf) {
+        currentTf = tf;
+        document.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('active'));
+        event.target.classList.add('active');
+        priceData = generateDemoData();
+        drawChart();
+    }
+
+    function toggleChartType() {
+        chartType = chartType === 'line' ? 'candle' : 'line';
+        document.getElementById('chartTypeBtn').textContent = chartType === 'line' ? 'Line' : 'Candle';
+        drawChart();
+    }
+
+    function searchToken() {
+        const q = document.getElementById('tokenSearch').value.trim();
+        if (!q) return;
+        // In production, this would call the RPC to fetch bonding curve state
+        document.getElementById('chartTokenName').textContent = q.length > 8 ? q.slice(0,4)+'..'+q.slice(-4) : q;
+        document.getElementById('chartTokenPair').textContent = q + '/SOL';
+        priceData = generateDemoData();
+        drawChart();
+        generateTrades();
+    }
+
+    function quickBuy() { alert('Connect your Solana wallet and use the SDK: PumpSdk.buyInstruction()'); }
+    function quickSell() { alert('Connect your Solana wallet and use the SDK: PumpSdk.sellInstruction()'); }
+
+    // Init
+    priceData = generateDemoData();
+    setTimeout(() => { drawChart(); generateTrades(); }, 100);
+    window.addEventListener('resize', () => drawChart());
+
+    // Simulate live updates
+    setInterval(() => {
+        if (priceData.length) {
+            const last = priceData[priceData.length - 1];
+            const change = (Math.random() - 0.48) * 0.000003;
+            last.close = Math.max(0.000001, last.close + change);
+            last.high = Math.max(last.high, last.close);
+            last.low = Math.min(last.low, last.close);
+            document.getElementById('chartPrice').textContent = '$' + last.close.toFixed(6);
+            const pctChange = ((last.close - priceData[0].close) / priceData[0].close * 100);
+            const changeEl = document.getElementById('chartChange');
+            changeEl.textContent = (pctChange >= 0 ? '+' : '') + pctChange.toFixed(1) + '%';
+            changeEl.className = 'change ' + (pctChange >= 0 ? 'up' : 'down');
+            drawChart();
+        }
+    }, 3000);
+    </script>
+</body>
+</html>

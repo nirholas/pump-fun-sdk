@@ -134,6 +134,7 @@
   <div class="status" id="status">● Disconnected</div>
   <div class="controls">
     <input type="text" id="rpc" value="wss://api.mainnet-beta.solana.com" style="display:none" />
+    <button id="btn-connect">Disconnect</button>
     <button id="btn-pause">Pause</button>
     <button id="btn-clear">Clear</button>
   </div>
@@ -173,6 +174,7 @@ let manualDisconnect = false;
 const $log = document.getElementById('log');
 const $status = document.getElementById('status');
 const $rpc = document.getElementById('rpc');
+const $btnConnect = document.getElementById('btn-connect');
 const $btnPause = document.getElementById('btn-pause');
 const $btnClear = document.getElementById('btn-clear');
 
@@ -182,6 +184,15 @@ $btnPause.onclick = () => {
   $btnPause.textContent = paused ? 'Resume' : 'Pause';
   $btnPause.classList.toggle('active', paused);
   sysLog(paused ? 'Paused — events still tracked, display frozen' : 'Resumed');
+};
+$btnConnect.onclick = () => {
+  if (ws) {
+    disconnect();
+    $btnConnect.textContent = 'Connect';
+  } else {
+    manualDisconnect = false;
+    connect($rpc.value.trim());
+  }
 };
 $btnClear.onclick = () => { $log.innerHTML = ''; };
 

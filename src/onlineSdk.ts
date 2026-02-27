@@ -214,11 +214,13 @@ export class OnlinePumpSdk {
       true,
       quoteTokenProgram,
     );
-    const [coinCreatorVaultAtaAccountInfo, coinCreatorTokenAccountInfo] =
+    const accountInfos =
       await this.connection.getMultipleAccountsInfo([
         coinCreatorVaultAta,
         coinCreatorTokenAccount,
-      ]) as [AccountInfo<Buffer> | null, AccountInfo<Buffer> | null];
+      ]);
+    const coinCreatorVaultAtaAccountInfo = accountInfos[0] ?? null;
+    const coinCreatorTokenAccountInfo = accountInfos[1] ?? null;
 
     return [
       await this.offlinePumpProgram.methods
