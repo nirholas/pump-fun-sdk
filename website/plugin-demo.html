@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pump Fun SDK — Plugin Demo</title>
+  <meta name="description" content="Interactive demo for the Pump Fun SDK SperaxOS plugin. Test bonding curves, price quotes, fee tiers, and more.">
+  <link rel="icon" type="image/png" href="pump.png">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --col-bg1: #0a0a0a;
+      --col-txt1: #ffffff;
+      --col-bg2: #111111;
+      --col-bg3: #1a1a1a;
+      --col-bgh: #00e87b;
+      --col-txth: #0a0a0a;
+      --col-good: #00e87b;
+      --col-bad: #ff4d4d;
+      --col-warn: #ffb300;
+      --siz-radius1: 0.7em;
+      --siz-radius2: 0.35em;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Poppins', -apple-system, sans-serif;
+      background: var(--col-bg1);
+      color: var(--col-txt1);
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+    a { color: var(--col-bgh); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* Header */
+    .header {
+      text-align: center;
+      padding: 3rem 1rem 2rem;
+      border-bottom: 1px solid #ffffff0c;
+    }
+    .header h1 { font-size: 2.5rem; font-weight: 800; }
+    .header h1 span { color: var(--col-bgh); }
+    .header p { color: #aaa; max-width: 600px; margin: 0.5rem auto 0; }
+    .badge-row { display: flex; gap: 0.5rem; justify-content: center; margin-top: 1rem; flex-wrap: wrap; }
+    .badge {
+      display: inline-block; padding: 0.25rem 0.75rem;
+      background: var(--col-bg3); border-radius: 999px;
+      font-size: 0.75rem; color: #ccc; border: 1px solid #ffffff10;
+    }
+    .badge.green { background: #00e87b20; color: var(--col-bgh); border-color: #00e87b30; }
+
+    /* Layout */
+    .container { max-width: 1100px; margin: 0 auto; padding: 2rem 1rem; }
+
+    /* Tab nav */
+    .tabs {
+      display: flex; gap: 0.25rem; flex-wrap: wrap;
+      background: var(--col-bg2); border-radius: var(--siz-radius1);
+      padding: 0.25rem; margin-bottom: 1.5rem;
+    }
+    .tab-btn {
+      flex: 1; min-width: 140px; padding: 0.6rem 1rem;
+      background: transparent; border: none; color: #888;
+      font-family: inherit; font-size: 0.85rem; font-weight: 600;
+      border-radius: 0.5em; cursor: pointer; transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .tab-btn:hover { color: var(--col-txt1); background: var(--col-bg3); }
+    .tab-btn.active { color: var(--col-txth); background: var(--col-bgh); }
+
+    /* Cards */
+    .card {
+      background: var(--col-bg2); border: 1px solid #ffffff0c;
+      border-radius: var(--siz-radius1); padding: 1.5rem;
+      display: none;
+    }
+    .card.active { display: block; }
+    .card h2 { font-size: 1.3rem; margin-bottom: 0.25rem; }
+    .card .desc { color: #888; font-size: 0.85rem; margin-bottom: 1.25rem; }
+
+    /* Forms */
+    .form-row { display: flex; gap: 0.75rem; align-items: flex-end; flex-wrap: wrap; margin-bottom: 1rem; }
+    .field { flex: 1; min-width: 200px; }
+    .field label { display: block; font-size: 0.75rem; color: #888; margin-bottom: 0.25rem; text-transform: uppercase; letter-spacing: 0.05em; }
+    .field input, .field select {
+      width: 100%; padding: 0.6rem 0.75rem;
+      background: var(--col-bg3); border: 1px solid #ffffff15;
+      border-radius: var(--siz-radius2); color: var(--col-txt1);
+      font-family: 'Courier New', monospace; font-size: 0.9rem;
+      outline: none; transition: border 0.2s;
+    }
+    .field input:focus, .field select:focus { border-color: var(--col-bgh); }
+    .field input::placeholder { color: #555; }
+
+    .btn {
+      padding: 0.6rem 1.5rem; min-width: 100px;
+      background: var(--col-bgh); color: var(--col-txth);
+      border: none; border-radius: var(--siz-radius2);
+      font-family: inherit; font-weight: 600; font-size: 0.9rem;
+      cursor: pointer; transition: all 0.15s;
+    }
+    .btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
+    .btn:active { transform: translateY(0); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    .btn.loading { position: relative; color: transparent; }
+    .btn.loading::after {
+      content: ''; position: absolute; top: 50%; left: 50%;
+      width: 16px; height: 16px; margin: -8px 0 0 -8px;
+      border: 2px solid var(--col-txth); border-top-color: transparent;
+      border-radius: 50%; animation: spin 0.6s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Response area */
+    .response {
+      margin-top: 1rem; background: #0d1117;
+      border: 1px solid #ffffff10; border-radius: var(--siz-radius2);
+      overflow: hidden;
+    }
+    .response-header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 0.5rem 0.75rem; background: #161b22; border-bottom: 1px solid #ffffff10;
+      font-size: 0.75rem;
+    }
+    .response-header .status { font-weight: 600; }
+    .response-header .status.ok { color: var(--col-good); }
+    .response-header .status.err { color: var(--col-bad); }
+    .response-header .time { color: #666; }
+    .response pre {
+      padding: 1rem; overflow-x: auto; font-size: 0.82rem;
+      line-height: 1.5; color: #c9d1d9; font-family: 'Courier New', monospace;
+      max-height: 500px; overflow-y: auto;
+    }
+    .response.empty { display: none; }
+
+    /* curl block */
+    .curl-block {
+      margin-top: 0.75rem; background: var(--col-bg3);
+      border: 1px solid #ffffff10; border-radius: var(--siz-radius2);
+      overflow: hidden;
+    }
+    .curl-toggle {
+      width: 100%; padding: 0.5rem 0.75rem; text-align: left;
+      background: transparent; border: none; color: #888;
+      font-family: inherit; font-size: 0.75rem; cursor: pointer;
+    }
+    .curl-toggle:hover { color: #ccc; }
+    .curl-code {
+      display: none; padding: 0.75rem; font-family: 'Courier New', monospace;
+      font-size: 0.78rem; color: #8b949e; white-space: pre-wrap;
+      word-break: break-all; border-top: 1px solid #ffffff08;
+    }
+    .curl-block.open .curl-code { display: block; }
+
+    /* Footer */
+    .footer {
+      text-align: center; padding: 2rem 1rem;
+      border-top: 1px solid #ffffff0c; color: #555; font-size: 0.8rem;
+    }
+
+    @media (max-width: 640px) {
+      .header h1 { font-size: 1.8rem; }
+      .form-row { flex-direction: column; }
+      .field { min-width: unset; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🚀 Pump Fun <span>SDK</span></h1>
+  <p>Interactive demo for the SperaxOS plugin — query Solana bonding curves, price quotes, fees &amp; incentives in real time.</p>
+  <div class="badge-row">
+    <span class="badge green">Live API</span>
+    <span class="badge">SperaxOS Plugin</span>
+    <span class="badge">Solana Mainnet</span>
+    <span class="badge">6 Endpoints</span>
+  </div>
+</div>
+
+<div class="container">
+
+  <div class="tabs" role="tablist">
+    <button class="tab-btn active" data-tab="bonding-curve" role="tab">Bonding Curve</button>
+    <button class="tab-btn" data-tab="price-quote" role="tab">Price Quote</button>
+    <button class="tab-btn" data-tab="market-cap" role="tab">Market Cap</button>
+    <button class="tab-btn" data-tab="fee-tier" role="tab">Fee Tiers</button>
+    <button class="tab-btn" data-tab="token-incentives" role="tab">Incentives</button>
+    <button class="tab-btn" data-tab="fee-sharing" role="tab">Fee Sharing</button>
+  </div>
+
+  <!-- ==================== Bonding Curve ==================== -->
+  <div class="card active" id="bonding-curve">
+    <h2>getBondingCurve</h2>
+    <p class="desc">Fetch bonding curve state — virtual/real reserves, graduation status, current price</p>
+    <div class="form-row">
+      <div class="field">
+        <label>Token Mint Address</label>
+        <input id="bc-mint" type="text" placeholder="e.g. 7GCihgDB8fe6KNjn2MYtkzZcRjQy3t9GHdC8uHYmW2hr">
+      </div>
+      <button class="btn" onclick="callApi('bonding-curve')">Query</button>
+    </div>
+    <div class="curl-block" id="curl-bonding-curve">
+      <button class="curl-toggle" onclick="toggleCurl('bonding-curve')">▸ Show curl command</button>
+      <div class="curl-code"></div>
+    </div>
+    <div class="response empty" id="resp-bonding-curve">
+      <div class="response-header"><span class="status"></span><span class="time"></span></div>
+      <pre></pre>
+    </div>
+  </div>
+
+  <!-- ==================== Price Quote ==================== -->
+  <div class="card" id="price-quote">
+    <h2>getPriceQuote</h2>
+    <p class="desc">Calculate buy/sell price quote using the bonding curve AMM formula (constant product xy = k)</p>
+    <div class="form-row">
+      <div class="field">
+        <label>Token Mint Address</label>
+        <input id="pq-mint" type="text" placeholder="e.g. 7GCihgDB8fe6KNjn2MYtkzZcRjQy3t9GHdC8uHYmW2hr">
+      </div>
+      <div class="field" style="max-width:120px">
+        <label>Side</label>
+        <select id="pq-side">
+          <option value="buy">Buy</option>
+          <option value="sell">Sell</option>
+        </select>
+      </div>
+      <div class="field" style="max-width:200px">
+        <label>Amount (lamports / raw tokens)</label>
+        <input id="pq-amount" type="text" placeholder="1000000000">
+      </div>
+      <button class="btn" onclick="callApi('price-quote')">Quote</button>
+    </div>
+    <div class="curl-block" id="curl-price-quote">
+      <button class="curl-toggle" onclick="toggleCurl('price-quote')">▸ Show curl command</button>
+      <div class="curl-code"></div>
+    </div>
+    <div class="response empty" id="resp-price-quote">
+      <div class="response-header"><span class="status"></span><span class="time"></span></div>
+      <pre></pre>
+    </div>
+  </div>
+
+  <!-- ==================== Market Cap ==================== -->
+  <div class="card" id="market-cap">
+    <h2>getMarketCap</h2>
+    <p class="desc">Calculate current market cap in SOL and USD from the bonding curve state</p>
+    <div class="form-row">
+      <div class="field">
+        <label>Token Mint Address</label>
+        <input id="mc-mint" type="text" placeholder="e.g. 7GCihgDB8fe6KNjn2MYtkzZcRjQy3t9GHdC8uHYmW2hr">
+      </div>
+      <button class="btn" onclick="callApi('market-cap')">Calculate</button>
+    </div>
+    <div class="curl-block" id="curl-market-cap">
+      <button class="curl-toggle" onclick="toggleCurl('market-cap')">▸ Show curl command</button>
+      <div class="curl-code"></div>
+    </div>
+    <div class="response empty" id="resp-market-cap">
+      <div class="response-header"><span class="status"></span><span class="time"></span></div>
+      <pre></pre>
+    </div>
+  </div>
+
+  <!-- ==================== Fee Tier ==================== -->
+  <div class="card" id="fee-tier">
+    <h2>getFeeTier</h2>
+    <p class="desc">Calculate the fee tier and BPS for a given trade size. Shows all 5 tiers from 0.25% to 2%.</p>
+    <div class="form-row">
+      <div class="field" style="max-width:200px">
+        <label>SOL Amount</label>
+        <input id="ft-amount" type="text" placeholder="1.5" value="1.5">
+      </div>
+      <button class="btn" onclick="callApi('fee-tier')">Calculate</button>
+    </div>
+    <div class="curl-block" id="curl-fee-tier">
+      <button class="curl-toggle" onclick="toggleCurl('fee-tier')">▸ Show curl command</button>
+      <div class="curl-code"></div>
+    </div>
+    <div class="response empty" id="resp-fee-tier">
+      <div class="response-header"><span class="status"></span><span class="time"></span></div>
+      <pre></pre>
+    </div>
+  </div>
+
+  <!-- ==================== Token Incentives ==================== -->
+  <div class="card" id="token-incentives">
+    <h2>getTokenIncentives</h2>
+    <p class="desc">PUMP token reward schedule, daily allocation, and per-user volume stats (wallet optional)</p>
+    <div class="form-row">
+      <div class="field">
+        <label>Wallet Address (optional)</label>
+        <input id="ti-wallet" type="text" placeholder="Leave blank for global stats">
+      </div>
+      <button class="btn" onclick="callApi('token-incentives')">Query</button>
+    </div>
+    <div class="curl-block" id="curl-token-incentives">
+      <button class="curl-toggle" onclick="toggleCurl('token-incentives')">▸ Show curl command</button>
+      <div class="curl-code"></div>
+    </div>
+    <div class="response empty" id="resp-token-incentives">
+      <div class="response-header"><span class="status"></span><span class="time"></span></div>
+      <pre></pre>
+    </div>
+  </div>
+
+  <!-- ==================== Fee Sharing ==================== -->
+  <div class="card" id="fee-sharing">
+    <h2>getFeeSharing</h2>
+    <p class="desc">Fee sharing configuration for a token — shareholder splits, creator vault info</p>
+    <div class="form-row">
+      <div class="field">
+        <label>Token Mint Address</label>
+        <input id="fs-mint" type="text" placeholder="e.g. 7GCihgDB8fe6KNjn2MYtkzZcRjQy3t9GHdC8uHYmW2hr">
+      </div>
+      <button class="btn" onclick="callApi('fee-sharing')">Query</button>
+    </div>
+    <div class="curl-block" id="curl-fee-sharing">
+      <button class="curl-toggle" onclick="toggleCurl('fee-sharing')">▸ Show curl command</button>
+      <div class="curl-code"></div>
+    </div>
+    <div class="response empty" id="resp-fee-sharing">
+      <div class="response-header"><span class="status"></span><span class="time"></span></div>
+      <pre></pre>
+    </div>
+  </div>
+
+</div>
+
+<div class="footer">
+  <p><a href="/">← PumpOS</a> &nbsp;·&nbsp; <a href="https://github.com/nicholasxuu/pump-fun-sdk">GitHub</a> &nbsp;·&nbsp; <a href="https://plugin.delivery">plugin.delivery</a></p>
+  <p style="margin-top:0.5rem">Pump Fun SDK &nbsp;·&nbsp; SperaxOS Plugin &nbsp;·&nbsp; MIT License</p>
+</div>
+
+<script>
+const API_BASE = 'https://plugin.delivery/api/pump-fun-sdk';
+
+// Tab switching
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(btn.dataset.tab).classList.add('active');
+  });
+});
+
+function toggleCurl(id) {
+  document.getElementById('curl-' + id).classList.toggle('open');
+}
+
+function getPayload(endpoint) {
+  switch(endpoint) {
+    case 'bonding-curve':
+      return { mint: document.getElementById('bc-mint').value.trim() };
+    case 'price-quote':
+      return {
+        mint: document.getElementById('pq-mint').value.trim(),
+        side: document.getElementById('pq-side').value,
+        amount: document.getElementById('pq-amount').value.trim(),
+      };
+    case 'market-cap':
+      return { mint: document.getElementById('mc-mint').value.trim() };
+    case 'fee-tier':
+      return { solAmount: document.getElementById('ft-amount').value.trim() };
+    case 'token-incentives': {
+      const wallet = document.getElementById('ti-wallet').value.trim();
+      return wallet ? { wallet } : {};
+    }
+    case 'fee-sharing':
+      return { mint: document.getElementById('fs-mint').value.trim() };
+  }
+}
+
+function buildCurl(endpoint, payload) {
+  const url = `${API_BASE}/${endpoint}`;
+  const body = JSON.stringify(payload);
+  return `curl -X POST '${url}' \\\n  -H 'Content-Type: application/json' \\\n  -d '${body}'`;
+}
+
+async function callApi(endpoint) {
+  const payload = getPayload(endpoint);
+  const respEl = document.getElementById('resp-' + endpoint);
+  const curlEl = document.getElementById('curl-' + endpoint);
+  const btn = respEl.closest('.card').querySelector('.btn');
+
+  // Show curl
+  curlEl.querySelector('.curl-code').textContent = buildCurl(endpoint, payload);
+
+  // Loading state
+  btn.classList.add('loading');
+  btn.disabled = true;
+  respEl.classList.remove('empty');
+  respEl.querySelector('pre').textContent = 'Loading...';
+  respEl.querySelector('.status').textContent = '';
+  respEl.querySelector('.status').className = 'status';
+  respEl.querySelector('.time').textContent = '';
+
+  const start = performance.now();
+  try {
+    const res = await fetch(`${API_BASE}/${endpoint}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const elapsed = Math.round(performance.now() - start);
+    const data = await res.json();
+
+    respEl.querySelector('.status').textContent = res.ok ? `${res.status} OK` : `${res.status} Error`;
+    respEl.querySelector('.status').classList.add(res.ok ? 'ok' : 'err');
+    respEl.querySelector('.time').textContent = `${elapsed}ms`;
+    respEl.querySelector('pre').textContent = JSON.stringify(data, null, 2);
+  } catch (err) {
+    const elapsed = Math.round(performance.now() - start);
+    respEl.querySelector('.status').textContent = 'Network Error';
+    respEl.querySelector('.status').classList.add('err');
+    respEl.querySelector('.time').textContent = `${elapsed}ms`;
+    respEl.querySelector('pre').textContent = err.message + '\n\nThe API may not be deployed yet. See the curl command above to test locally.';
+  } finally {
+    btn.classList.remove('loading');
+    btn.disabled = false;
+  }
+}
+</script>
+
+</body>
+</html>

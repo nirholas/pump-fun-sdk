@@ -1,6 +1,6 @@
 # PumpFun Fee Claim Monitor
 
-Telegram bot + REST API that monitors **PumpFun** on Solana and sends real-time notifications when **Creator Fees**, **Cashback Rewards**, or **Creator Takeovers (CTO)** are detected for watched wallets. Also monitors new token launches.
+Telegram bot + REST API that monitors **PumpFun** on Solana and sends real-time notifications when **Creator Fees**, **Cashback Rewards**, **Creator Takeovers (CTO)**, **Token Graduations**, **Whale Trades**, or **Fee Distributions** are detected. Also monitors new token launches with cashback coin detection.
 
 Works in personal DMs, group chats, and as a standalone API.
 
@@ -9,7 +9,10 @@ Works in personal DMs, group chats, and as a standalone API.
 - **Watch wallets** — Track any fee-recipient Solana wallet
 - **Creator Fees + Cashback Coins** — Detects both claim types
 - **CTO (Creator Takeover) alerts** — Detects creator fee redirection events
-- **Token launch monitor** — Real-time detection of new PumpFun token mints
+- **Token launch monitor** — Real-time detection of new PumpFun token mints with cashback coin flag
+- **🎓 Graduation alerts** — Notifies when a token completes its bonding curve or migrates to PumpAMM
+- **🐋 Whale trade alerts** — Configurable SOL threshold for large buy/sell notifications with bonding curve progress bar
+- **💎 Fee distribution alerts** — Tracks creator fee distributions to shareholders with share breakdown
 - **REST API** — Scalable HTTP API with auth, rate limiting, SSE streaming, and webhooks
 - **Real-time** — WebSocket mode for instant alerts (or HTTP polling fallback)
 - **Group-ready** — Add to Telegram groups so your whole team gets notified
@@ -80,25 +83,30 @@ flowchart TD
     Program["PumpFun Program (6EF8r...F6P)"]
     Fee["Creator Fee claims"]
     Cash["Cashback coin claims"]
-    Program --- Fee & Cash
+    Create["Token creation (createV2)"]
+    Trade["Buy / Sell trades"]
+    Grad["Graduation / AMM migration"]
+    Dist["Fee distributions"]
+    Program --- Fee & Cash & Create & Trade & Grad & Dist
   end
 
-  subgraph Monitor["PumpFunMonitor"]
-    M1["1. Detect PumpFun program transactions"]
-    M2["2. Parse for fee-claim instruction patterns"]
-    M3["3. Extract: claimer, amount, token, type"]
-    M4["4. Match against watched wallets"]
+  subgraph Monitors["Monitors"]
+    direction TB
+    M_Fee["PumpFunMonitor\n→ Fee claims, CTO"]
+    M_Launch["TokenLaunchMonitor\n→ New token mints"]
+    M_Event["PumpEventMonitor\n→ Graduations, whale trades,\nfee distributions"]
   end
 
   subgraph Telegram["Telegram Notifications"]
-    N1["🏦 Creator Fee Claim Detected!"]
-    N2["👤 Claimer: HN7c...4xYz (MyProject)"]
-    N3["💰 Amount: 2.5000 SOL"]
-    N4["🔗 View TX · Wallet · pump.fun"]
+    N1["🏦 Creator Fee Claim"]
+    N2["🚀 New Token Launch"]
+    N3["🎓 Token Graduated!"]
+    N4["🐋 Whale BUY / SELL"]
+    N5["💎 Fees Distributed"]
   end
 
-  Solana -->|"WebSocket onLogs / HTTP polling"| Monitor
-  Monitor -->|"FeeClaimEvent"| Telegram
+  Solana -->|"WebSocket onLogs / HTTP polling"| Monitors
+  Monitors --> Telegram
 ```
 
 ### Detection Strategies

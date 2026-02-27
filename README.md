@@ -63,9 +63,10 @@ Token Creation &nbsp;·&nbsp; Bonding Curves &nbsp;·&nbsp; AMM Pools &nbsp;·&n
 - [Installation](#-installation) — npm, yarn, or pnpm
 - [Token Lifecycle](#-token-lifecycle) — Bonding curve to AMM
 - [Usage Examples](#-usage) — Create, buy, sell, fees, rewards
+- [Analytics](#-analytics) — Price impact, graduation, token price
 - [Architecture](#-architecture) — Offline & online SDK layers
 - [Programs](#-programs) — On-chain program addresses
-- [MCP Server](#-mcp-server) — AI agent integration
+- [Ecosystem](#-ecosystem) — MCP, Telegram, WebSocket, x402, Tutorials
 - [Documentation](#-documentation) — Full guides and references
 - [Contributing](#-contributing) — Help make Pump SDK better
 
@@ -86,7 +87,9 @@ Token Creation &nbsp;·&nbsp; Bonding Curves &nbsp;·&nbsp; AMM Pools &nbsp;·&n
 <tr><td><strong>Volume rewards</strong></td><td align="center">✅ Track & claim</td><td align="center">❌ DIY</td><td align="center">❌ Not supported</td></tr>
 <tr><td><strong>Offline mode</strong></td><td align="center">✅ No connection needed</td><td align="center">❌ Always online</td><td align="center">⚠️ Partial</td></tr>
 <tr><td><strong>TypeScript types</strong></td><td align="center">✅ Full IDL types</td><td align="center">❌ None</td><td align="center">⚠️ Partial</td></tr>
+<tr><td><strong>Analytics</strong></td><td align="center">✅ Price impact, graduation</td><td align="center">❌ DIY</td><td align="center">⚠️ Partial</td></tr>
 <tr><td><strong>MCP server</strong></td><td align="center">✅ AI agent ready</td><td align="center">❌</td><td align="center">❌</td></tr>
+<tr><td><strong>Real-time feed</strong></td><td align="center">✅ WebSocket relay</td><td align="center">❌ DIY</td><td align="center">❌</td></tr>
 <tr><td><strong>3 programs</strong></td><td align="center">✅ Pump + AMM + Fees</td><td align="center">⚠️ Manual</td><td align="center">❌ Not supported</td></tr>
 </table>
 
@@ -146,6 +149,26 @@ Token Creation &nbsp;·&nbsp; Bonding Curves &nbsp;·&nbsp; AMM Pools &nbsp;·&n
 - MCP server for Claude, GPT, Cursor
 - Rust CLI for vanity address generation
 - Comprehensive API reference
+
+</td>
+</tr>
+<tr>
+<td width="50%">
+
+**📊 Analytics**
+- Price impact calculation (buy & sell)
+- Graduation progress tracking
+- Token price quoting
+- Bonding curve summaries
+
+</td>
+<td width="50%">
+
+**📡 Real-Time & Payments**
+- WebSocket relay for live trades
+- Live trades dashboard
+- x402 HTTP 402 micropayments
+- 19 hands-on tutorials
 
 </td>
 </tr>
@@ -449,6 +472,40 @@ const instructions = await sdk.claimTokenIncentivesBothPrograms(
 
 ---
 
+## 📊 Analytics
+
+Offline pure functions for price analysis — no RPC calls needed.
+
+```typescript
+import {
+  calculateBuyPriceImpact,
+  calculateSellPriceImpact,
+  getGraduationProgress,
+  getTokenPrice,
+  getBondingCurveSummary,
+} from "@pump-fun/pump-sdk";
+
+// Price impact of buying 1 SOL worth
+const impact = calculateBuyPriceImpact({
+  global, feeConfig, mintSupply: bondingCurve.tokenTotalSupply,
+  bondingCurve, solAmount: new BN(1e9),
+});
+console.log(`Impact: ${impact.impactBps} bps, tokens: ${impact.outputAmount}`);
+
+// How close to graduation?
+const progress = getGraduationProgress(bondingCurve);
+console.log(`${(progress.progressBps / 100).toFixed(1)}% graduated`);
+
+// Current price per token
+const price = getTokenPrice({ global, feeConfig, bondingCurve });
+console.log(`Buy: ${price.buyPricePerToken} lamports/token`);
+
+// Full summary in one call
+const summary = getBondingCurveSummary({ global, feeConfig, bondingCurve });
+```
+
+---
+
 ## 🏗️ Architecture
 
 <div align="center">
@@ -470,7 +527,7 @@ The SDK is split into two layers:
 │                              │                                   │
 │  Export: PUMP_SDK singleton   │  Export: OnlinePumpSdk class      │
 ├──────────────────────────────┴───────────────────────────────────┤
-│  bondingCurve.ts │ fees.ts │ pda.ts │ state.ts │ analytics.ts   │
+│  bondingCurve.ts │ analytics.ts │ fees.ts │ pda.ts │ state.ts    │
 ├──────────────────────────────────────────────────────────────────┤
 │             Anchor IDLs: pump │ pump_amm │ pump_fees              │
 └──────────────────────────────────────────────────────────────────┘
