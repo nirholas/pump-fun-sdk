@@ -183,7 +183,7 @@
     <div id="tweet-toggle" class="ctrl-btn" onclick="toggleTweets()">
       <span class="dot"></span>
       <span>Tweets</span>
-      <span id="tweet-count">54</span>
+      <span id="tweet-count">68</span>
     </div>
     <span class="ctrl-sep"></span>
     <button class="ctrl-btn" onclick="jumpFirst()">First Tweet</button>
@@ -256,6 +256,7 @@ const SILENCE_GAP_THRESHOLD = 24 * 60 * 60;
 
 // ── Embedded tweet data ──────────────────────────────────────────────────
 const TWEETS = [
+  {"ts":"2026-02-26T20:58:26.000Z","text":"are token locks still a thing like ive been building — lets run this properly for the trenches. we need it","likes":"","views":"0","url":"https://x.com/nichxbt/status/2027126131250643230"},
   {"ts":"2026-02-26T21:00:04.000Z","text":"claim","likes":"21","views":"2.1K","url":"https://x.com/nichxbt/status/2027126541520617662"},
   {"ts":"2026-02-26T21:02:02.000Z","text":"i pushed $GCR for a year to 13m so like can we run this back turbo","likes":"19","views":"805","url":"https://x.com/nichxbt/status/2027127035232166242"},
   {"ts":"2026-02-26T21:03:28.000Z","text":"i am on the front page of pumpfun","likes":"51","views":"2.5K","url":"https://x.com/nichxbt/status/2027127396181365176"},
@@ -274,11 +275,15 @@ const TWEETS = [
   {"ts":"2026-02-26T21:22:39.000Z","text":"aight i downloaded the app","likes":"18","views":"1.6K","url":"https://x.com/nichxbt/status/2027132224794157544"},
   {"ts":"2026-02-26T21:25:43.000Z","text":"i claimed","likes":"12","views":"263","url":"https://x.com/nichxbt/status/2027132997879914956"},
   {"ts":"2026-02-26T21:28:34.000Z","text":"this is crazy but like how high is $PUMP again","likes":"18","views":"1.3K","url":"https://x.com/nichxbt/status/2027133712476025015"},
+  {"ts":"2026-02-26T21:31:51.000Z","text":"pump-sdk is actually so crazy if you think about it","likes":"","views":"0","url":"https://x.com/nichxbt/status/2027134539731227080"},
   {"ts":"2026-02-26T21:35:26.000Z","text":"would you?","likes":"","views":"120","url":"https://x.com/nichxbt/status/2027135442936889776"},
   {"ts":"2026-02-26T21:36:18.000Z","text":"you little shits better listen here — aint no one telling me what to do","likes":"52","views":"2.2K","url":"https://x.com/nichxbt/status/2027135662533869901"},
+  {"ts":"2026-02-26T21:37:24.000Z","text":"thanks","likes":"","views":"0","url":"https://x.com/nichxbt/status/2027135937726312584"},
+  {"ts":"2026-02-26T21:38:24.000Z","text":"thank you. let's build a community","likes":"","views":"0","url":"https://x.com/nichxbt/status/2027136187828421058"},
   {"ts":"2026-02-26T21:38:43.000Z","text":"study small active accounts pushing a token","likes":"331","views":"16K","url":"https://x.com/nichxbt/status/2027136267750908006"},
   {"ts":"2026-02-26T21:40:16.000Z","text":"sure","likes":"6","views":"116","url":"https://x.com/nichxbt/status/2027136658672664746"},
   {"ts":"2026-02-26T21:42:08.000Z","text":"hey","likes":"3","views":"223","url":"https://x.com/nichxbt/status/2027137129789509838"},
+  {"ts":"2026-02-26T21:48:19.000Z","text":"wait you have me thinking — i have a telegram claim bot i was working on this morning. we will release it","likes":"","views":"0","url":"https://x.com/nichxbt/status/2027138682613047343"},
   {"ts":"2026-02-26T21:49:12.000Z","text":"i aint finna go back to jail","likes":"5","views":"85","url":"https://x.com/nichxbt/status/2027138909042597960"},
   {"ts":"2026-02-26T21:50:17.000Z","text":"allow me to cook check this out one sec","likes":"9","views":"181","url":"https://x.com/nichxbt/status/2027139178253914576"},
   {"ts":"2026-02-26T21:55:26.000Z","text":"Give AI agents access to money. MCP servers for your AI agents to interact with DeFi","likes":"80","views":"7.8K","url":"https://x.com/nichxbt/status/2027140474147082543"},
@@ -289,13 +294,19 @@ const TWEETS = [
   {"ts":"2026-02-26T22:04:22.000Z","text":"omg... this is why we do this — i have yet to see anyone do this — you are genius","likes":"20","views":"1.4K","url":"https://x.com/nichxbt/status/2027142723246121171"},
   {"ts":"2026-02-26T22:05:46.000Z","text":"with the pump-fun-sdk you can definitely claim and forward fees to your agent","likes":"23","views":"1.7K","url":"https://x.com/nichxbt/status/2027143075194355834"},
   {"ts":"2026-02-26T22:07:18.000Z","text":"me you and shaw — let's lead by example. it's time","likes":"2","views":"74","url":"https://x.com/nichxbt/status/2027143463121334719"},
+  {"ts":"2026-02-26T22:09:37.000Z","text":"exactly — my agents already on it. TTS is so nice. chat.sperax.io/beta — you can legit just speak to your agents","likes":"","views":"0","url":"https://x.com/nichxbt/status/2027144043210396152"},
   {"ts":"2026-02-26T22:11:26.000Z","text":"buying a domain, paying for hosting, running the project — its the pump-fun-sdk","likes":"4","views":"104","url":"https://x.com/nichxbt/status/2027144502721548523"},
+  {"ts":"2026-02-26T22:16:05.000Z","text":"i am looking for projects to collaborate with — it's quite simple to integrate existing projects within SperaxOS","likes":"","views":"0","url":"https://x.com/nichxbt/status/2027145670596202721"},
   {"ts":"2026-02-26T22:18:16.000Z","text":"seriously even if you launched for fun and have no motion. post below, share your idea. let's build","likes":"14","views":"773","url":"https://x.com/nichxbt/status/2027146220544970886"},
   {"ts":"2026-02-26T22:20:12.000Z","text":"you still owe me $100 so please use my credit for a new video on the pump-fun-sdk","likes":"1","views":"58","url":"https://x.com/nichxbt/status/2027146708568945134"},
   {"ts":"2026-02-26T22:21:02.000Z","text":"no pump-fun-sdk is the one — we don't do pvp here","likes":"","views":"92","url":"https://x.com/nichxbt/status/2027146918758064148"},
   {"ts":"2026-02-26T22:23:57.000Z","text":"let's show them how to build in public with the pump-fun-sdk","likes":"2","views":"148","url":"https://x.com/nichxbt/status/2027147652312547477"},
+  {"ts":"2026-02-26T22:26:16.000Z","text":"pump-sdk the official @Pumpfun source code reverse engineered — and they launched a coin on pumpfun. we have agents","likes":"","views":"0","url":"https://x.com/nichxbt/status/2027148236658749578"},
   {"ts":"2026-02-26T22:33:06.000Z","text":"Want to run AI agents 24/7? Copilot, Claude, or Cursor within Github Codespaces...","likes":"17","views":"1.6K","url":"https://x.com/nichxbt/status/2027149953131491722"},
   {"ts":"2026-02-26T22:34:34.000Z","text":"With the pump-sdk you can build crypto tools, monitor memecoin launches, claims, or snipe tokens","likes":"18","views":"1.6K","url":"https://x.com/nichxbt/status/2027150323291504698"},
+  {"ts":"2026-02-26T22:48:10.000Z","text":"added solana wallet vanity address generator — generate a nice vanity address for your agents","likes":"","views":"0","url":"https://x.com/nichxbt/status/2027153748393603086"},
+  {"ts":"2026-02-26T22:50:49.000Z","text":"what's your github @ ? ill add you as contributor if you want to collab","likes":"","views":"0","url":"https://x.com/nichxbt/status/2027154411370484209"},
+  {"ts":"2026-02-26T23:01:17.000Z","text":"pump-fun-sdk: The Reverse-Engineered Pumpfun Bonding Curve SDK Powering the Next Generation of Solana AI Agents","likes":"","views":"0","url":"https://x.com/nichxbt/status/2027157045749993539"},
   {"ts":"2026-02-26T23:17:58.000Z","text":"bullish","likes":"10","views":"428","url":"https://x.com/nichxbt/status/2027161244344684743"},
   {"ts":"2026-02-26T23:39:57.000Z","text":"not enough will scoop dips","likes":"9","views":"1.7K","url":"https://x.com/nichxbt/status/2027166778695221600"},
   {"ts":"2026-02-26T23:47:20.000Z","text":"the agents are cooking check the repo its nuts","likes":"3","views":"338","url":"https://x.com/nichxbt/status/2027168637900251483"},
@@ -303,13 +314,16 @@ const TWEETS = [
   {"ts":"2026-02-27T00:10:08.000Z","text":"TypeScript/Rust SDK for the Pump protocol on Solana — offline instruction builders, bonding curve math","likes":"14","views":"617","url":"https://x.com/nichxbt/status/2027174372482711656"},
   {"ts":"2026-02-27T00:22:25.000Z","text":"Pump SDK Core — Instruction Building & On-Chain Interaction for Pump Protocol on @openclaw ClawHub","likes":"31","views":"2.3K","url":"https://x.com/nichxbt/status/2027177463567224969"},
   {"ts":"2026-02-27T00:22:47.000Z","text":"The skill's declared requirements and runtime instructions are coherent with its stated purpose","likes":"10","views":"619","url":"https://x.com/nichxbt/status/2027177559071641770"},
+  {"ts":"2026-02-27T00:30:25.000Z","text":"crypto tools are so fun to build — give your agents access to money and watch what they can do!","likes":"","views":"0","url":"https://x.com/nichxbt/status/2027179477420409237"},
   {"ts":"2026-02-27T01:29:18.000Z","text":"correct","likes":"5","views":"117","url":"https://x.com/nichxbt/status/2027194294952710321"},
   {"ts":"2026-02-27T01:30:30.000Z","text":"soon — have something really exciting planned for this. stay tuned!","likes":"9","views":"261","url":"https://x.com/nichxbt/status/2027194598070886625"},
   {"ts":"2026-02-27T03:27:22.000Z","text":"Real-time PumpFun token tracking — built with raw WebSockets on Solana using pump-fun-sdk","likes":"24","views":"1.1K","url":"https://x.com/nichxbt/status/2027224007486194094"},
   {"ts":"2026-02-27T03:40:47.000Z","text":"spent the last couple of months working on it — live today. you will want to rack up the refs","likes":"1","views":"95","url":"https://x.com/nichxbt/status/2027227387881312446"},
   {"ts":"2026-02-27T03:55:07.000Z","text":"omg remotion + pump-sdk — watch this","likes":"11","views":"202","url":"https://x.com/nichxbt/status/2027230992872911088"},
   {"ts":"2026-02-27T04:01:58.000Z","text":"(media)","likes":"2","views":"51","url":"https://x.com/nichxbt/status/2027232717772128427"},
-  {"ts":"2026-02-27T04:04:49.000Z","text":"i think people will be scared to see how long i can go","likes":"4","views":"25","url":"https://x.com/nichxbt/status/2027233432854782143"}
+  {"ts":"2026-02-27T04:04:49.000Z","text":"i think people will be scared to see how long i can go","likes":"4","views":"25","url":"https://x.com/nichxbt/status/2027233432854782143"},
+  {"ts":"2026-02-27T04:47:28.000Z","text":"Generate custom Solana vanity addresses - entirely in your browser. pump-fun-sdk","likes":"","views":"0","url":"https://x.com/nichxbt/status/2027244165738930609"},
+  {"ts":"2026-02-27T04:52:36.000Z","text":"not sure why the agents prefer the terminal look maybe because haha terminal... pumpfun... haha","likes":"","views":"0","url":"https://x.com/nichxbt/status/2027245458717057406"}
 ];
 
 // Convert to tweet-price-charts TweetEvent-like objects with unix timestamps
