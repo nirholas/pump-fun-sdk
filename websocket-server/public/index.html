@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🟢</text></svg>">
+<title>PumpFun Live — Real-Time Token Launches</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0a0a0a;
+    color: #00ff41;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    line-height: 1.5;
+    padding: 0;
+  }
+
+  #header {
+    background: #111;
+    border-bottom: 1px solid #222;
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  #header h1 { font-size: 16px; color: #00ff41; white-space: nowrap; }
+  #header .status { font-size: 12px; color: #666; }
+  #header .status.connected { color: #00ff41; }
+  #header .status.error { color: #ff4141; }
+  #header .status.warn { color: #ffcc00; }
+  #header .controls {
+    margin-left: auto;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  button {
+    background: #1a1a1a;
+    border: 1px solid #333;
+    color: #00ff41;
+    padding: 6px 14px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 12px;
+    border-radius: 3px;
+  }
+  button:hover { background: #252525; border-color: #00ff41; }
+  button.active { background: #002200; border-color: #00ff41; }
+
+  #stats {
+    background: #0d0d0d;
+    border-bottom: 1px solid #1a1a1a;
+    padding: 6px 20px;
+    font-size: 11px;
+    color: #555;
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+  #stats .val { color: #00ff41; }
+
+  #log {
+    padding: 12px 20px;
+    max-height: calc(100vh - 110px);
+    overflow-y: auto;
+  }
+  .entry {
+    border-bottom: 1px solid #111;
+    padding: 8px 0;
+    animation: fadeIn 0.3s ease;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .entry .time { color: #444; }
+  .entry .label { color: #888; }
+  .entry .name { color: #ffcc00; font-weight: bold; }
+  .entry .symbol { color: #ff9900; }
+  .entry .addr { color: #4a9eff; }
+  .entry .github { color: #00ff41; font-weight: bold; }
+  .entry a { color: #4a9eff; text-decoration: none; }
+  .entry a:hover { text-decoration: underline; }
+
+  .sys { color: #555; padding: 4px 0; }
+  .sys.error { color: #ff4141; }
+  .sys.warn { color: #ffcc00; }
+
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: #0a0a0a; }
+  ::-webkit-scrollbar-thumb { background: #222; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #333; }
+
+  @media (max-width: 700px) {
+    #header { flex-direction: column; align-items: flex-start; }
+    #header .controls { margin-left: 0; width: 100%; flex-wrap: wrap; }
+  }
+</style>
+</head>
+<body>
+
+<div id="header">
+  <h1>⚡ PumpFun Live</h1>
+  <div class="status" id="status">● Connecting...</div>
+  <div class="controls">
+    <button id="btn-pause">Pause</button>
+    <button id="btn-clear">Clear</button>
+  </div>
+</div>
+
+<div id="stats">
+  <div>Tokens: <span class="val" id="s-total">0</span></div>
+  <div>With GitHub: <span class="val" id="s-github">0</span></div>
+  <div>Clients: <span class="val" id="s-clients">1</span></div>
+  <div>Solana: <span class="val" id="s-solana">…</span></div>
+  <div>Uptime: <span class="val" id="s-uptime">0s</span></div>
+</div>
+
+<div id="log"></div>
+
+<script>
+// ════════════════════════════════════════════════════════════════════
+// PumpFun Live — connects to PumpFun WebSocket Relay server
+// No Solana RPC key needed — the relay does all the work
+// ════════════════════════════════════════════════════════════════════
+
+const MAX_LOG_ENTRIES = 500;
+
+// ── Derive WS URL from page origin ─────────────────────────────────
+const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+const WS_URL = `${wsProtocol}//${location.host}/ws`;
+
+// ── State ───────────────────────────────────────────────────────────
+let ws = null;
+let paused = false;
+let reconnectDelay = 1000;
+let reconnectTimer = null;
+let seenSignatures = new Set(); // dedup enriched re-broadcasts
+
+// ── DOM refs ────────────────────────────────────────────────────────
+const $log = document.getElementById('log');
+const $status = document.getElementById('status');
+const $btnPause = document.getElementById('btn-pause');
+const $btnClear = document.getElementById('btn-clear');
+
+// ── Buttons ─────────────────────────────────────────────────────────
+$btnPause.onclick = () => {
+  paused = !paused;
+  $btnPause.textContent = paused ? 'Resume' : 'Pause';
+  $btnPause.classList.toggle('active', paused);
+  sysLog(paused ? 'Paused — events still tracked, display frozen' : 'Resumed');
+};
+$btnClear.onclick = () => { $log.innerHTML = ''; };
+
+// ── Connect to our relay ────────────────────────────────────────────
+function connect() {
+  setStatus('● Connecting...', 'warn');
+  sysLog(`Connecting to relay at ${WS_URL}...`);
+
+  ws = new WebSocket(WS_URL);
+
+  ws.onopen = () => {
+    reconnectDelay = 1000;
+    setStatus('● Connected', 'connected');
+    sysLog('Connected to PumpFun relay — streaming token launches');
+  };
+
+  ws.onmessage = (evt) => {
+    let msg;
+    try { msg = JSON.parse(evt.data); } catch { return; }
+
+    switch (msg.type) {
+      case 'token-launch':
+        handleLaunch(msg);
+        break;
+      case 'status':
+        handleStatus(msg);
+        break;
+      case 'heartbeat':
+        // keep-alive, nothing to do
+        break;
+    }
+  };
+
+  ws.onerror = () => {
+    setStatus('● Error', 'error');
+  };
+
+  ws.onclose = () => {
+    ws = null;
+    setStatus(`● Reconnecting in ${reconnectDelay/1000}s...`, 'error');
+    sysLog(`Disconnected. Reconnecting in ${reconnectDelay/1000}s...`, 'warn');
+    reconnectTimer = setTimeout(connect, reconnectDelay);
+    reconnectDelay = Math.min(reconnectDelay * 2, 30000);
+  };
+}
+
+// ── Handle token launch ─────────────────────────────────────────────
+function handleLaunch(event) {
+  const sig = event.signature;
+  const isUpdate = seenSignatures.has(sig);
+  seenSignatures.add(sig);
+
+  // If this is an enriched update, refresh the existing DOM entry
+  if (isUpdate) {
+    const el = document.getElementById('tx-' + sig.slice(0, 16));
+    if (el) {
+      const nameEl = el.querySelector('.name');
+      const symEl = el.querySelector('.symbol');
+      if (nameEl && event.name) nameEl.textContent = event.name;
+      if (symEl && event.symbol) symEl.textContent = '(' + event.symbol + ')';
+
+      if (event.hasGithub && event.githubUrls.length > 0 && !el.querySelector('.github-links')) {
+        const ghDiv = document.createElement('div');
+        ghDiv.className = 'github-links';
+        ghDiv.innerHTML = '🌐 <span class="github">GitHub: ' +
+          event.githubUrls.map(u => `<a href="${esc(u)}" target="_blank">${esc(u)}</a>`).join(', ') +
+          '</span>';
+        el.appendChild(ghDiv);
+      }
+    }
+    return;
+  }
+
+  // New token launch — render it
+  if (!paused) renderEntry(event);
+  document.getElementById('s-total').textContent = seenSignatures.size;
+}
+
+// ── Handle server status ────────────────────────────────────────────
+function handleStatus(status) {
+  document.getElementById('s-total').textContent = status.totalLaunches;
+  document.getElementById('s-github').textContent = status.githubLaunches;
+  document.getElementById('s-clients').textContent = status.clients;
+  document.getElementById('s-solana').textContent = status.connected ? '✓' : '✗';
+
+  const m = Math.floor(status.uptime / 60);
+  const s = status.uptime % 60;
+  document.getElementById('s-uptime').textContent = m > 0 ? `${m}m ${s}s` : `${s}s`;
+
+  if (status.connected) {
+    setStatus('● Live', 'connected');
+  }
+}
+
+// ── Render a token launch entry ─────────────────────────────────────
+function renderEntry(info) {
+  const div = document.createElement('div');
+  div.className = 'entry';
+  div.id = 'tx-' + info.signature.slice(0, 16);
+
+  const shortSig = info.signature.slice(0, 8) + '...' + info.signature.slice(-6);
+  const time = new Date(info.time).toLocaleTimeString();
+  const version = info.isV2 ? 'CreateV2' : 'Create';
+
+  div.innerHTML =
+    `<span class="time">${time}</span> ` +
+    `🚀 <span class="name">${esc(info.name || 'Loading...')}</span> ` +
+    `<span class="symbol">${info.symbol ? '(' + esc(info.symbol) + ')' : ''}</span> ` +
+    `<span class="label">[${version}]</span>` +
+    (info.mint ? ` <span class="label">mint:</span><span class="addr">${info.mint.slice(0,6)}...${info.mint.slice(-4)}</span>` : '') +
+    ` <a href="https://solscan.io/tx/${info.signature}" target="_blank" class="addr">${shortSig}</a>` +
+    (info.hasGithub ? ` <span class="github">★ GitHub</span>` : '');
+
+  if (info.hasGithub && info.githubUrls.length > 0) {
+    const ghDiv = document.createElement('div');
+    ghDiv.className = 'github-links';
+    ghDiv.innerHTML = '🌐 <span class="github">GitHub: ' +
+      info.githubUrls.map(u => `<a href="${esc(u)}" target="_blank">${esc(u)}</a>`).join(', ') +
+      '</span>';
+    div.appendChild(ghDiv);
+  }
+
+  $log.prepend(div);
+
+  while ($log.children.length > MAX_LOG_ENTRIES) {
+    $log.removeChild($log.lastChild);
+  }
+}
+
+// ── Helpers ─────────────────────────────────────────────────────────
+function sysLog(msg, level = '') {
+  const div = document.createElement('div');
+  div.className = 'sys' + (level ? ' ' + level : '');
+  div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+  $log.prepend(div);
+}
+
+function setStatus(text, cls) {
+  $status.textContent = text;
+  $status.className = 'status' + (cls ? ' ' + cls : '');
+}
+
+function esc(s) {
+  const d = document.createElement('div');
+  d.textContent = s || '';
+  return d.innerHTML;
+}
+
+// ── Init ────────────────────────────────────────────────────────────
+sysLog('PumpFun Live — connecting to relay server...');
+connect();
+</script>
+</body>
+</html>

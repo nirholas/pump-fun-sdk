@@ -4,6 +4,10 @@ import BN from "bn.js";
 import { computeFeesBps, getFee } from "./fees";
 import { BondingCurve, FeeConfig, Global } from "./state";
 
+/**
+ * Create a new bonding curve state from global config.
+ * Used when simulating a buy on a token that hasn't been created yet.
+ */
 export function newBondingCurve(global: Global): BondingCurve {
   return {
     virtualTokenReserves: global.initialVirtualTokenReserves,
@@ -60,6 +64,17 @@ function getSellSolAmountFromTokenAmountQuote({
     .div(virtualTokenReserves.add(inputAmount));
 }
 
+/**
+ * Calculate how many tokens you receive for a given SOL amount (buy quote).
+ * Accounts for protocol and creator fees.
+ *
+ * @param global - Global program state
+ * @param feeConfig - Fee tier config (null uses defaults)
+ * @param mintSupply - Current token supply (null for new tokens)
+ * @param bondingCurve - Current bonding curve state (null for new tokens)
+ * @param amount - SOL amount in lamports
+ * @returns Token amount receivable
+ */
 export function getBuyTokenAmountFromSolAmount({
   global,
   feeConfig,
@@ -119,6 +134,17 @@ export function getBuyTokenAmountFromSolAmount({
   return BN.min(tokensReceived, bondingCurve.realTokenReserves);
 }
 
+/**
+ * Calculate how much SOL is required to buy a given token amount (buy cost).
+ * Accounts for protocol and creator fees.
+ *
+ * @param global - Global program state
+ * @param feeConfig - Fee tier config (null uses defaults)
+ * @param mintSupply - Current token supply (null for new tokens)
+ * @param bondingCurve - Current bonding curve state (null for new tokens)
+ * @param amount - Token amount to buy
+ * @returns SOL cost in lamports (including fees)
+ */
 export function getBuySolAmountFromTokenAmount({
   global,
   feeConfig,
@@ -169,6 +195,17 @@ export function getBuySolAmountFromTokenAmount({
   );
 }
 
+/**
+ * Calculate how much SOL you receive for selling a given token amount (sell quote).
+ * Accounts for protocol and creator fees.
+ *
+ * @param global - Global program state
+ * @param feeConfig - Fee tier config (null uses defaults)
+ * @param mintSupply - Current token supply
+ * @param bondingCurve - Current bonding curve state
+ * @param amount - Token amount to sell
+ * @returns SOL receivable in lamports (after fees)
+ */
 export function getSellSolAmountFromTokenAmount({
   global,
   feeConfig,
@@ -209,6 +246,10 @@ export function getSellSolAmountFromTokenAmount({
   );
 }
 
+/**
+ * Pick a random fee recipient from the hardcoded list.
+ * Used when building buy/sell instructions.
+ */
 export function getStaticRandomFeeRecipient(): PublicKey {
   const randomIndex = Math.floor(Math.random() * CURRENT_FEE_RECIPIENTS.length);
   const recipient = CURRENT_FEE_RECIPIENTS[randomIndex]!;
@@ -226,6 +267,16 @@ const CURRENT_FEE_RECIPIENTS = [
   "G5UZAVbAf46s7cKWoyKu8kYTip9DGTpbLZ2qa9Aq69dP",
 ];
 
+/**
+ * Calculate the market cap of a token on its bonding curve.
+ * Formula: `virtualSolReserves * mintSupply / virtualTokenReserves`
+ *
+ * @param mintSupply - Total token supply
+ * @param virtualSolReserves - Virtual SOL reserves
+ * @param virtualTokenReserves - Virtual token reserves
+ * @returns Market cap in lamports
+ * @throws If virtualTokenReserves is zero
+ */
 export function bondingCurveMarketCap({
   mintSupply,
   virtualSolReserves,

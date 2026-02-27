@@ -4,6 +4,7 @@ import BN from "bn.js";
 import { bondingCurveMarketCap } from "./bondingCurve";
 import { FeeConfig, Global, Fees, BondingCurve, FeeTier } from "./state";
 
+/** Constant: 1 billion token supply with 6 decimals (1,000,000,000 * 10^6). */
 export const ONE_BILLION_SUPPLY = new BN(1_000_000_000_000_000);
 
 export interface CalculatedFeesBps {
@@ -11,6 +12,10 @@ export interface CalculatedFeesBps {
   creatorFeeBps: BN;
 }
 
+/**
+ * Calculate the total fee (protocol + creator) for a given trade amount.
+ * Used internally by buy/sell quote functions.
+ */
 export function getFee({
   global,
   feeConfig,
@@ -43,6 +48,10 @@ export function getFee({
   );
 }
 
+/**
+ * Compute the protocol and creator fee rates in basis points.
+ * Uses tiered fees from FeeConfig when available, otherwise falls back to global defaults.
+ */
 export function computeFeesBps({
   global,
   feeConfig,
@@ -75,6 +84,12 @@ export function computeFeesBps({
   };
 }
 
+/**
+ * Select the appropriate fee tier based on market cap.
+ * Fee tiers are ordered by market cap threshold; the highest matching tier is used.
+ *
+ * @throws If feeTiers is empty
+ */
 /// rust reference: pump-fees-math::calculate_fee_tier()
 export function calculateFeeTier({
   feeTiers,

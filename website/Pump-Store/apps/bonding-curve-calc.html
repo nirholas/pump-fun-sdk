@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="pump-include" content="pump.css">
+    <meta name="capabilities" content="bonding_curve_calculator">
+    <meta name="pump-icon" content="show_chart">
+    <meta name="pump-perms" content="none" />
+    <title>Bonding Curve Calculator</title>
+    <style>
+        :root {
+            --col-bg1: #0a0a0f;
+            --col-bg2: #141420;
+            --col-bg3: #1e1e30;
+            --col-txt1: #fff;
+            --col-txt2: #aaa;
+            --accent: #00e87b;
+            --accent2: #00c868;
+            --sell: #ff4d6a;
+            --radius: 12px;
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--col-bg1);
+            color: var(--col-txt1);
+            min-height: 100vh;
+            padding: 16px;
+            overflow-y: auto;
+        }
+        .app { max-width: 560px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+
+        .header { display: flex; align-items: center; gap: 10px; }
+        .header-icon { font-size: 28px; color: var(--accent); }
+        .header h1 { font-size: 1.2em; font-weight: 600; }
+        .header .badge { font-size: 0.65em; background: var(--accent); color: #000; padding: 2px 8px; border-radius: 20px; font-weight: 600; }
+
+        .card {
+            background: var(--col-bg2);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: var(--radius);
+            padding: 20px;
+        }
+
+        .curve-params { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .param-group { display: flex; flex-direction: column; gap: 4px; }
+        .param-group label { font-size: 0.75em; color: var(--col-txt2); text-transform: uppercase; letter-spacing: 0.5px; }
+        .param-group input, .param-group select {
+            background: var(--col-bg3);
+            border: 1px solid rgba(255,255,255,0.08);
+            color: var(--col-txt1);
+            padding: 10px 12px;
+            border-radius: 8px;
+            font-size: 0.9em;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .param-group input:focus, .param-group select:focus { border-color: var(--accent); }
+
+        .direction-toggle { display: flex; gap: 0; border-radius: 8px; overflow: hidden; border: 1px solid rgba(255,255,255,0.08); }
+        .direction-toggle button {
+            flex: 1;
+            padding: 10px;
+            background: var(--col-bg3);
+            color: var(--col-txt2);
+            border: none;
+            cursor: pointer;
+            font-size: 0.85em;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .direction-toggle button.active-buy { background: var(--accent); color: #000; }
+        .direction-toggle button.active-sell { background: var(--sell); color: #fff; }
+
+        .amount-input {
+            display: flex;
+            align-items: center;
+            background: var(--col-bg3);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 8px;
+            padding: 4px;
+            gap: 8px;
+        }
+        .amount-input input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--col-txt1);
+            padding: 10px 12px;
+            font-size: 1.1em;
+            outline: none;
+        }
+        .amount-input .unit {
+            padding: 6px 14px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 6px;
+            font-size: 0.8em;
+            color: var(--col-txt2);
+            font-weight: 500;
+        }
+
+        .result-card {
+            background: linear-gradient(135deg, rgba(0,232,123,0.08), rgba(0,232,123,0.02));
+            border: 1px solid rgba(0,232,123,0.2);
+            border-radius: var(--radius);
+            padding: 20px;
+        }
+        .result-card.sell-mode {
+            background: linear-gradient(135deg, rgba(255,77,106,0.08), rgba(255,77,106,0.02));
+            border-color: rgba(255,77,106,0.2);
+        }
+        .result-label { font-size: 0.75em; color: var(--col-txt2); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+        .result-value { font-size: 1.8em; font-weight: 700; color: var(--accent); }
+        .result-card.sell-mode .result-value { color: var(--sell); }
+        .result-sub { font-size: 0.8em; color: var(--col-txt2); margin-top: 4px; }
+
+        .details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .detail-item { display: flex; flex-direction: column; gap: 2px; }
+        .detail-label { font-size: 0.7em; color: var(--col-txt2); text-transform: uppercase; }
+        .detail-value { font-size: 0.95em; font-weight: 500; }
+
+        .chart-container {
+            width: 100%;
+            height: 200px;
+            position: relative;
+        }
+        canvas { width: 100%; height: 100%; }
+
+        .preset-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+        .preset-btns button {
+            padding: 6px 12px;
+            background: var(--col-bg3);
+            border: 1px solid rgba(255,255,255,0.08);
+            color: var(--col-txt2);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8em;
+            transition: all 0.2s;
+        }
+        .preset-btns button:hover { border-color: var(--accent); color: var(--accent); }
+
+        .info-banner {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 16px;
+            background: rgba(0,232,123,0.06);
+            border-radius: 8px;
+            font-size: 0.8em;
+            color: var(--col-txt2);
+        }
+        .info-banner .icon { color: var(--accent); font-size: 1.2em; }
+
+        .progress-bar {
+            height: 8px;
+            background: var(--col-bg3);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent), var(--accent2));
+            border-radius: 4px;
+            transition: width 0.3s;
+        }
+    </style>
+</head>
+<body>
+<div class="app">
+    <div class="header">
+        <span class="header-icon">📈</span>
+        <h1>Bonding Curve Calculator</h1>
+        <span class="badge">SDK</span>
+    </div>
+
+    <div class="info-banner">
+        <span class="icon">💡</span>
+        Uses the actual Pump Fun bonding curve AMM formula: <code>xy = k</code> constant product
+    </div>
+
+    <!-- Curve Parameters -->
+    <div class="card">
+        <div style="margin-bottom: 12px; font-weight: 500; font-size: 0.9em;">Curve Parameters</div>
+        <div class="curve-params">
+            <div class="param-group">
+                <label>Virtual SOL Reserves</label>
+                <input type="number" id="vSolReserves" value="30" step="0.1" min="0">
+            </div>
+            <div class="param-group">
+                <label>Virtual Token Reserves</label>
+                <input type="number" id="vTokenReserves" value="1073000191" step="1000000" min="0">
+            </div>
+            <div class="param-group">
+                <label>Real Token Reserves</label>
+                <input type="number" id="rTokenReserves" value="793100000" step="1000000" min="0">
+            </div>
+            <div class="param-group">
+                <label>Token Total Supply</label>
+                <input type="number" id="totalSupply" value="1000000000" step="1000000" min="0">
+            </div>
+            <div class="param-group">
+                <label>Protocol Fee (bps)</label>
+                <input type="number" id="protocolFee" value="100" step="1" min="0" max="10000">
+            </div>
+            <div class="param-group">
+                <label>Creator Fee (bps)</label>
+                <input type="number" id="creatorFee" value="100" step="1" min="0" max="10000">
+            </div>
+        </div>
+        <div style="margin-top: 12px;">
+            <div class="param-group">
+                <label>Presets</label>
+                <div class="preset-btns">
+                    <button onclick="loadPreset('new')">New Token (Default)</button>
+                    <button onclick="loadPreset('mid')">50% Filled</button>
+                    <button onclick="loadPreset('near')">Near Graduation</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Direction Toggle -->
+    <div class="direction-toggle">
+        <button id="btnBuy" class="active-buy" onclick="setDirection('buy')">🟢 Buy (SOL → Token)</button>
+        <button id="btnSell" onclick="setDirection('sell')">🔴 Sell (Token → SOL)</button>
+    </div>
+
+    <!-- Amount Input -->
+    <div class="card">
+        <div style="margin-bottom: 8px; font-size: 0.75em; color: var(--col-txt2); text-transform: uppercase;">Input Amount</div>
+        <div class="amount-input">
+            <input type="number" id="inputAmount" value="1" step="0.1" min="0" oninput="calculate()">
+            <span class="unit" id="inputUnit">SOL</span>
+        </div>
+        <div class="preset-btns" style="margin-top: 8px;">
+            <button onclick="setAmount(0.1)">0.1</button>
+            <button onclick="setAmount(0.5)">0.5</button>
+            <button onclick="setAmount(1)">1</button>
+            <button onclick="setAmount(5)">5</button>
+            <button onclick="setAmount(10)">10</button>
+            <button onclick="setAmount(50)">50</button>
+        </div>
+    </div>
+
+    <!-- Result -->
+    <div class="result-card" id="resultCard">
+        <div class="result-label" id="resultLabel">You Receive</div>
+        <div class="result-value" id="resultValue">—</div>
+        <div class="result-sub" id="resultSub"></div>
+    </div>
+
+    <!-- Details -->
+    <div class="card">
+        <div style="margin-bottom: 12px; font-weight: 500; font-size: 0.9em;">Trade Details</div>
+        <div class="details-grid">
+            <div class="detail-item">
+                <span class="detail-label">Price per Token</span>
+                <span class="detail-value" id="pricePerToken">—</span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Price Impact</span>
+                <span class="detail-value" id="priceImpact">—</span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Protocol Fee</span>
+                <span class="detail-value" id="protocolFeeAmt">—</span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Creator Fee</span>
+                <span class="detail-value" id="creatorFeeAmt">—</span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Market Cap</span>
+                <span class="detail-value" id="marketCap">—</span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Curve Progress</span>
+                <span class="detail-value" id="curveProgress">—</span>
+            </div>
+        </div>
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+        </div>
+    </div>
+
+    <!-- Price Curve Chart -->
+    <div class="card">
+        <div style="margin-bottom: 12px; font-weight: 500; font-size: 0.9em;">Bonding Curve Shape</div>
+        <div class="chart-container">
+            <canvas id="curveChart"></canvas>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 0.7em; color: var(--col-txt2); margin-top: 4px;">
+            <span>0 tokens sold</span>
+            <span>→ Graduation (793.1M tokens)</span>
+        </div>
+    </div>
+
+    <!-- Formula Reference -->
+    <div class="card" style="font-size: 0.8em; color: var(--col-txt2);">
+        <div style="margin-bottom: 8px; font-weight: 500; color: var(--col-txt1);">Formula Reference</div>
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+            <div><strong>Buy:</strong> tokens = (inputSOL × virtualTokenReserves) / (virtualSolReserves + inputSOL)</div>
+            <div><strong>Sell:</strong> sol = (inputTokens × virtualSolReserves) / (virtualTokenReserves + inputTokens)</div>
+            <div><strong>Fee:</strong> ceil(amount × feeBps / 10,000)</div>
+            <div><strong>Market Cap:</strong> virtualSolReserves × totalSupply / virtualTokenReserves</div>
+        </div>
+    </div>
+</div>
+
+<script>
+let direction = 'buy';
+const LAMPORTS = 1e9;
+const TOKEN_DECIMALS = 1e6;
+
+const presets = {
+    new: { vSol: 30, vToken: 1073000191, rToken: 793100000, supply: 1000000000, pFee: 100, cFee: 100 },
+    mid: { vSol: 52, vToken: 640000000, rToken: 360000000, supply: 1000000000, pFee: 50, cFee: 50 },
+    near: { vSol: 82, vToken: 393000000, rToken: 113000000, supply: 1000000000, pFee: 25, cFee: 25 },
+};
+
+function loadPreset(key) {
+    const p = presets[key];
+    document.getElementById('vSolReserves').value = p.vSol;
+    document.getElementById('vTokenReserves').value = p.vToken;
+    document.getElementById('rTokenReserves').value = p.rToken;
+    document.getElementById('totalSupply').value = p.supply;
+    document.getElementById('protocolFee').value = p.pFee;
+    document.getElementById('creatorFee').value = p.cFee;
+    calculate();
+    drawCurve();
+}
+
+function setDirection(d) {
+    direction = d;
+    const buyBtn = document.getElementById('btnBuy');
+    const sellBtn = document.getElementById('btnSell');
+    const resultCard = document.getElementById('resultCard');
+    buyBtn.className = d === 'buy' ? 'active-buy' : '';
+    sellBtn.className = d === 'sell' ? 'active-sell' : '';
+    resultCard.className = d === 'sell' ? 'result-card sell-mode' : 'result-card';
+    document.getElementById('inputUnit').textContent = d === 'buy' ? 'SOL' : 'TOKENS';
+    if (d === 'buy') setAmount(1); else setAmount(1000000);
+    calculate();
+}
+
+function setAmount(v) {
+    document.getElementById('inputAmount').value = v;
+    calculate();
+}
+
+function getParams() {
+    return {
+        vSol: parseFloat(document.getElementById('vSolReserves').value) * LAMPORTS,
+        vToken: parseFloat(document.getElementById('vTokenReserves').value) * TOKEN_DECIMALS,
+        rToken: parseFloat(document.getElementById('rTokenReserves').value) * TOKEN_DECIMALS,
+        supply: parseFloat(document.getElementById('totalSupply').value) * TOKEN_DECIMALS,
+        pFeeBps: parseInt(document.getElementById('protocolFee').value),
+        cFeeBps: parseInt(document.getElementById('creatorFee').value),
+    };
+}
+
+function ceilDiv(a, b) { return Math.ceil(a / b); }
+function fee(amount, bps) { return ceilDiv(amount * bps, 10000); }
+
+function buyTokensFromSol(inputSolLamports, params) {
+    const totalFeeBps = params.pFeeBps + params.cFeeBps;
+    const afterFee = Math.floor((inputSolLamports - 1) * 10000 / (totalFeeBps + 10000));
+    const tokens = afterFee * params.vToken / (params.vSol + afterFee);
+    return Math.min(tokens, params.rToken);
+}
+
+function sellSolFromTokens(inputTokens, params) {
+    const solOut = inputTokens * params.vSol / (params.vToken + inputTokens);
+    const pFee = fee(solOut, params.pFeeBps);
+    const cFee = fee(solOut, params.cFeeBps);
+    return Math.max(0, solOut - pFee - cFee);
+}
+
+function spotPrice(params) {
+    return params.vSol / params.vToken;
+}
+
+function marketCapSol(params) {
+    return (params.vSol * params.supply) / params.vToken / LAMPORTS;
+}
+
+function curveProgress(params) {
+    const initial = parseFloat(document.getElementById('rTokenReserves').value) * TOKEN_DECIMALS;
+    const defaultInitial = 793100000 * TOKEN_DECIMALS;
+    return Math.max(0, Math.min(100, (1 - params.rToken / defaultInitial) * 100));
+}
+
+function calculate() {
+    const params = getParams();
+    const input = parseFloat(document.getElementById('inputAmount').value) || 0;
+
+    let output, outputLabel, outputUnit, feeLabel;
+    const spotBefore = spotPrice(params);
+
+    if (direction === 'buy') {
+        const inputLamports = input * LAMPORTS;
+        const tokens = buyTokensFromSol(inputLamports, params);
+        output = tokens / TOKEN_DECIMALS;
+        outputUnit = 'tokens';
+        const totalFee = fee(inputLamports, params.pFeeBps + params.cFeeBps);
+        document.getElementById('protocolFeeAmt').textContent = (fee(inputLamports, params.pFeeBps) / LAMPORTS).toFixed(6) + ' SOL';
+        document.getElementById('creatorFeeAmt').textContent = (fee(inputLamports, params.cFeeBps) / LAMPORTS).toFixed(6) + ' SOL';
+
+        // price impact
+        const newVSol = params.vSol + (inputLamports - totalFee);
+        const newVToken = params.vToken - tokens;
+        const spotAfter = newVSol / newVToken;
+        const impact = ((spotAfter - spotBefore) / spotBefore * 100);
+        document.getElementById('priceImpact').textContent = impact.toFixed(2) + '%';
+        document.getElementById('priceImpact').style.color = impact > 5 ? '#ff4d6a' : impact > 2 ? '#f0b232' : 'var(--accent)';
+    } else {
+        const inputTokens = input * TOKEN_DECIMALS;
+        const sol = sellSolFromTokens(inputTokens, params);
+        output = sol / LAMPORTS;
+        outputUnit = 'SOL';
+        const grossSol = input * TOKEN_DECIMALS * params.vSol / (params.vToken + input * TOKEN_DECIMALS);
+        document.getElementById('protocolFeeAmt').textContent = (fee(grossSol, params.pFeeBps) / LAMPORTS).toFixed(6) + ' SOL';
+        document.getElementById('creatorFeeAmt').textContent = (fee(grossSol, params.cFeeBps) / LAMPORTS).toFixed(6) + ' SOL';
+
+        const newVSol = params.vSol - grossSol;
+        const newVToken = params.vToken + inputTokens;
+        const spotAfter = newVSol / newVToken;
+        const impact = ((spotBefore - spotAfter) / spotBefore * 100);
+        document.getElementById('priceImpact').textContent = '-' + impact.toFixed(2) + '%';
+        document.getElementById('priceImpact').style.color = impact > 5 ? '#ff4d6a' : impact > 2 ? '#f0b232' : 'var(--accent)';
+    }
+
+    document.getElementById('resultValue').textContent = formatNumber(output) + ' ' + outputUnit;
+    document.getElementById('resultLabel').textContent = direction === 'buy' ? 'You Receive (Tokens)' : 'You Receive (SOL)';
+
+    if (direction === 'buy' && input > 0) {
+        const effectivePrice = input / output;
+        document.getElementById('resultSub').textContent = `Effective price: ${effectivePrice.toFixed(10)} SOL/token`;
+    } else if (direction === 'sell' && input > 0) {
+        const effectivePrice = output / input;
+        document.getElementById('resultSub').textContent = `Effective price: ${effectivePrice.toFixed(10)} SOL/token`;
+    }
+
+    document.getElementById('pricePerToken').textContent = (spotBefore * TOKEN_DECIMALS / LAMPORTS).toFixed(10) + ' SOL';
+    document.getElementById('marketCap').textContent = marketCapSol(params).toFixed(2) + ' SOL';
+
+    const progress = curveProgress(params);
+    document.getElementById('curveProgress').textContent = progress.toFixed(1) + '%';
+    document.getElementById('progressFill').style.width = progress + '%';
+}
+
+function formatNumber(n) {
+    if (n >= 1e9) return (n / 1e9).toFixed(2) + 'B';
+    if (n >= 1e6) return (n / 1e6).toFixed(2) + 'M';
+    if (n >= 1e3) return (n / 1e3).toFixed(2) + 'K';
+    return n.toFixed(n < 1 ? 6 : 2);
+}
+
+function drawCurve() {
+    const canvas = document.getElementById('curveChart');
+    const ctx = canvas.getContext('2d');
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.parentElement.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    ctx.scale(dpr, dpr);
+    canvas.style.width = rect.width + 'px';
+    canvas.style.height = rect.height + 'px';
+
+    const w = rect.width, h = rect.height;
+    const params = getParams();
+    const initialRToken = 793100000 * TOKEN_DECIMALS;
+    const steps = 100;
+
+    ctx.clearRect(0, 0, w, h);
+
+    // Calculate prices along the curve
+    const prices = [];
+    for (let i = 0; i <= steps; i++) {
+        const tokensSold = (i / steps) * initialRToken;
+        const curVToken = params.vToken - tokensSold + (initialRToken - params.rToken) * 0; // approximate
+        const baseVToken = 1073000191 * TOKEN_DECIMALS;
+        const baseVSol = 30 * LAMPORTS;
+        const k = baseVSol * baseVToken;
+        const sold = (i / steps) * initialRToken;
+        const vt = baseVToken - sold;
+        const vs = k / vt;
+        const price = vs / vt;
+        prices.push({ x: i / steps, price });
+    }
+
+    const maxPrice = Math.max(...prices.map(p => p.price));
+    const minPrice = Math.min(...prices.map(p => p.price));
+    const pad = 20;
+
+    // Grid
+    ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 5; i++) {
+        const y = pad + (h - pad * 2) * i / 4;
+        ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(w - pad, y); ctx.stroke();
+    }
+
+    // Current position marker
+    const currentProgress = curveProgress(params) / 100;
+    const currentX = pad + currentProgress * (w - pad * 2);
+    ctx.fillStyle = 'rgba(0,232,123,0.1)';
+    ctx.fillRect(currentX - 1, pad, 2, h - pad * 2);
+
+    // Curve
+    const gradient = ctx.createLinearGradient(pad, 0, w - pad, 0);
+    gradient.addColorStop(0, '#00e87b');
+    gradient.addColorStop(1, '#ff4d6a');
+    ctx.strokeStyle = gradient;
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    prices.forEach((p, i) => {
+        const x = pad + p.x * (w - pad * 2);
+        const y = h - pad - ((p.price - minPrice) / (maxPrice - minPrice)) * (h - pad * 2);
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+
+    // Fill under curve
+    ctx.lineTo(w - pad, h - pad);
+    ctx.lineTo(pad, h - pad);
+    ctx.closePath();
+    const fillGrad = ctx.createLinearGradient(0, pad, 0, h - pad);
+    fillGrad.addColorStop(0, 'rgba(0,232,123,0.15)');
+    fillGrad.addColorStop(1, 'rgba(0,232,123,0)');
+    ctx.fillStyle = fillGrad;
+    ctx.fill();
+
+    // Current position dot
+    const currentPriceIdx = Math.round(currentProgress * steps);
+    if (prices[currentPriceIdx]) {
+        const cp = prices[currentPriceIdx];
+        const cx = pad + cp.x * (w - pad * 2);
+        const cy = h - pad - ((cp.price - minPrice) / (maxPrice - minPrice)) * (h - pad * 2);
+        ctx.beginPath();
+        ctx.arc(cx, cy, 6, 0, Math.PI * 2);
+        ctx.fillStyle = '#00e87b';
+        ctx.fill();
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        ctx.fillStyle = '#fff';
+        ctx.font = '11px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('Current', cx, cy - 12);
+    }
+
+    // Graduation line
+    ctx.setLineDash([4, 4]);
+    ctx.strokeStyle = 'rgba(255,77,106,0.5)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(w - pad, pad);
+    ctx.lineTo(w - pad, h - pad);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.fillStyle = '#ff4d6a';
+    ctx.font = '10px Inter, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText('Graduation →', w - pad - 4, pad + 12);
+}
+
+// Input listeners
+document.querySelectorAll('input').forEach(input => {
+    input.addEventListener('input', () => { calculate(); drawCurve(); });
+});
+
+// Init
+calculate();
+setTimeout(drawCurve, 100);
+window.addEventListener('resize', drawCurve);
+</script>
+</body>
+</html>

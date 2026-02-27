@@ -2,6 +2,15 @@ import BN from "bn.js";
 
 import { GlobalVolumeAccumulator, UserVolumeAccumulator } from "./state";
 
+/**
+ * Calculate total unclaimed token incentive rewards for a user.
+ * Aggregates rewards across all completed days plus the current day's partial allocation.
+ *
+ * @param globalVolumeAccumulator - Global volume tracking state
+ * @param userVolumeAccumulator - User's volume tracking state
+ * @param currentTimestamp - Unix timestamp in seconds (defaults to now)
+ * @returns Total unclaimed tokens as BN
+ */
 export function totalUnclaimedTokens(
   globalVolumeAccumulator: GlobalVolumeAccumulator,
   userVolumeAccumulator: UserVolumeAccumulator,
@@ -62,6 +71,14 @@ export function totalUnclaimedTokens(
   return result;
 }
 
+/**
+ * Calculate token rewards earned for the current day based on trading volume.
+ *
+ * @param globalVolumeAccumulator - Global volume tracking state
+ * @param userVolumeAccumulator - User's volume tracking state
+ * @param currentTimestamp - Unix timestamp in seconds (defaults to now)
+ * @returns Current day's token rewards as BN
+ */
 export function currentDayTokens(
   globalVolumeAccumulator: GlobalVolumeAccumulator,
   userVolumeAccumulator: UserVolumeAccumulator,
