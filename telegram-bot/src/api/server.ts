@@ -154,8 +154,8 @@ export class PumpFunApi {
         this.server.maxHeadersCount = 100;
 
         return new Promise((resolve) => {
-            this.server!.listen(this.config.port, () => {
-                log.info('API server listening on port %d', this.config.port);
+            this.server!.listen(this.config.port, '0.0.0.0', () => {
+                log.info('API server listening on 0.0.0.0:%d', this.config.port);
                 resolve();
             });
         });

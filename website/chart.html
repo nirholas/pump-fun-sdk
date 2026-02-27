@@ -98,10 +98,47 @@
   /* ── Help ────────────────────────────────────────────────────── */
   #help-text { position: absolute; bottom: 8px; left: 8px; z-index: 20; font-size: 9px; color: #52525B; user-select: none; }
 
+  /* ── Tweet Feed Panel ───────────────────────────────────────── */
+  #feed-panel {
+    position: fixed; top: 48px; right: 0; bottom: 0; width: 380px;
+    background: var(--surface1); border-left: 1px solid var(--border);
+    z-index: 50; transform: translateX(100%); transition: transform 0.25s ease;
+    display: flex; flex-direction: column;
+  }
+  #feed-panel.open { transform: translateX(0); }
+  #feed-header {
+    padding: 10px 14px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+  }
+  #feed-header .nich-avatar { width: 32px; height: 32px; border-radius: 50%; border: 2px solid var(--blue); }
+  #feed-header .nich-name { font-weight: 700; font-size: 13px; }
+  #feed-header .nich-handle { color: var(--muted); font-size: 11px; }
+  #feed-close {
+    margin-left: auto; background: none; border: 1px solid var(--border);
+    color: var(--muted); width: 28px; height: 28px; border-radius: 5px;
+    cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+  }
+  #feed-close:hover { color: var(--text); border-color: rgba(255,255,255,0.2); }
+  #feed-body { flex: 1; overflow-y: auto; }
+  #feed-body .timeline-placeholder {
+    padding: 20px; text-align: center; color: var(--muted); font-size: 12px;
+  }
+  /* Feed toggle button in controls */
+  .feed-btn { position: relative; }
+  .feed-btn .feed-dot {
+    width: 7px; height: 7px; border-radius: 50%; background: #1DA1F2;
+    box-shadow: 0 0 6px rgba(29,161,242,0.5); display: inline-block;
+  }
+  .feed-btn.off .feed-dot { background: var(--muted); box-shadow: none; }
+  /* Nich avatar in header */
+  .nich-header-avatar { width: 24px; height: 24px; border-radius: 50%; border: 1.5px solid var(--blue); margin-left: 4px; }
+
   @media (max-width: 768px) {
     .header-right .stat { display: none; }
     .links { display: none; }
     #legend { display: none; }
+    #feed-panel { width: 100%; }
   }
 </style>
 </head>
@@ -122,6 +159,7 @@
     <div class="stat"><span class="stat-label">Liq</span><span class="stat-value" id="stat-liq">—</span></div>
     <div class="stat"><span class="stat-label">Txns 1h</span><span class="stat-value" id="stat-txns">—</span></div>
     <div class="status-dot"></div>
+    <img class="nich-header-avatar" src="nich.jpg" alt="nich" onerror="this.style.display='none'">
     <div class="links">
       <a href="https://pump.fun/coin/F4ZHCzizwpop2XS8auuAGQ7LZcUTEwQ22m5sRmB2pump" target="_blank">pump.fun</a>
       <a href="https://dexscreener.com/solana/AS5KLCFs4HVYPebV8MNt2YzD2Fs2jgb5F2p3xXjxm9Aj" target="_blank">DexScreener</a>
@@ -151,6 +189,11 @@
     <button class="ctrl-btn" onclick="jumpFirst()">First Tweet</button>
     <button class="ctrl-btn" onclick="jumpAll()">All Time</button>
     <button class="ctrl-btn" onclick="jumpLast()">Last Tweet</button>
+    <span class="ctrl-sep"></span>
+    <button class="ctrl-btn feed-btn" id="feed-toggle-btn" onclick="toggleFeed()">
+      <span class="feed-dot"></span>
+      <span>Feed</span>
+    </button>
   </div>
 
   <!-- Legend -->
@@ -161,6 +204,28 @@
   </div>
 
   <div id="help-text">Drag to pan · Scroll to zoom</div>
+</div>
+
+<!-- Tweet Feed Panel -->
+<div id="feed-panel">
+  <div id="feed-header">
+    <img class="nich-avatar" src="nich.jpg" alt="nich" onerror="this.style.display='none'">
+    <div>
+      <div class="nich-name">nich</div>
+      <div class="nich-handle">@nichxbt</div>
+    </div>
+    <button id="feed-close" onclick="toggleFeed()">&times;</button>
+  </div>
+  <div id="feed-body">
+    <a class="twitter-timeline"
+       href="https://twitter.com/nichxbt"
+       data-theme="dark"
+       data-chrome="noheader nofooter noborders transparent"
+       data-tweet-limit="20"
+       data-dnt="true">
+      Loading @nichxbt tweets...
+    </a>
+  </div>
 </div>
 
 <!-- Tooltip -->
@@ -436,16 +501,19 @@ function initChart() {
   // Resize
   window.addEventListener('resize', () => {
     const newH = window.innerHeight - 48;
+    const newW = feedOpen ? window.innerWidth - 380 : window.innerWidth;
     area.style.height = newH + 'px';
+    area.style.width = newW + 'px';
     container.style.height = newH + 'px';
-    chart.resize(container.clientWidth, newH);
+    container.style.width = newW + 'px';
+    chart.resize(newW, newH);
     requestAnimationFrame(() => requestAnimationFrame(drawMarkers));
   });
 
   // Load avatar
   const img = new Image();
   img.crossOrigin = 'anonymous';
-  img.src = 'https://pbs.twimg.com/profile_images/1879640218612944896/nxN_sLo__400x400.jpg';
+  img.src = 'nich.jpg';
   img.onload = () => { avatarImg = img; drawMarkers(); };
 }
 
@@ -870,6 +938,44 @@ document.querySelectorAll('.ctrl-btn[data-tf]').forEach(btn => {
 // ══════════════════════════════════════════════════════════════════════════
 // Init
 // ══════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════
+// Tweet Feed Panel
+// ══════════════════════════════════════════════════════════════════════════
+let feedOpen = false;
+let widgetsLoaded = false;
+
+function toggleFeed() {
+  feedOpen = !feedOpen;
+  const panel = document.getElementById('feed-panel');
+  const btn = document.getElementById('feed-toggle-btn');
+  panel.classList.toggle('open', feedOpen);
+  btn.classList.toggle('active', feedOpen);
+
+  // Load Twitter widgets.js on first open (no API key needed)
+  if (feedOpen && !widgetsLoaded) {
+    widgetsLoaded = true;
+    const s = document.createElement('script');
+    s.src = 'https://platform.twitter.com/widgets.js';
+    s.async = true;
+    s.charset = 'utf-8';
+    document.head.appendChild(s);
+  } else if (feedOpen && window.twttr?.widgets) {
+    // Re-render if already loaded
+    window.twttr.widgets.load(document.getElementById('feed-body'));
+  }
+
+  // Resize chart to make room
+  setTimeout(() => {
+    const w = feedOpen ? window.innerWidth - 380 : window.innerWidth;
+    const area = document.getElementById('chart-area');
+    const container = document.getElementById('chart-container');
+    area.style.width = w + 'px';
+    container.style.width = w + 'px';
+    chart.resize(w, window.innerHeight - 48);
+    requestAnimationFrame(() => requestAnimationFrame(drawMarkers));
+  }, 300);
+}
+
 (async function init() {
   initChart();
   await Promise.all([fetchTokenIcon(), fetchDexStats()]);

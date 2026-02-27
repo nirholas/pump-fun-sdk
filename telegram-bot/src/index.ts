@@ -167,6 +167,11 @@ async function main(): Promise<void> {
         };
     }
 
+    // ── Start API server FIRST (so health check responds) ──────────────
+    if (api) {
+        await api.start();
+    }
+
     // ── Start monitor ────────────────────────────────────────────────────
     await monitor.start();
 
@@ -188,11 +193,6 @@ async function main(): Promise<void> {
         } catch (err) {
             log.error('Failed to start pump event monitor:', err);
         }
-    }
-
-    // ── Start API server ─────────────────────────────────────────────────
-    if (api) {
-        await api.start();
     }
 
     // ── Start bot (polling mode for dev, webhook for prod) ───────────────
