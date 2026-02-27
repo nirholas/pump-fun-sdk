@@ -169,7 +169,10 @@ export class PumpFunMonitor {
         this.config = config;
         this.onClaim = onClaim;
         this.onCreatorChange = onCreatorChange ?? (() => {});
-        this.connection = new Connection(config.solanaRpcUrl, 'confirmed');
+        this.connection = new Connection(config.solanaRpcUrl, {
+            commitment: 'confirmed',
+            disableRetryOnRateLimit: true,
+        });
         this.programPubkeys = MONITORED_PROGRAM_IDS.map((id) => new PublicKey(id));
         this.rpcQueue = new RpcQueue((sig) => this.processTransactionThrottled(sig));
 
@@ -214,8 +217,8 @@ export class PumpFunMonitor {
             MONITORED_PROGRAM_IDS.map((p) => p.slice(0, 6) + '...').join(', '),
         );
 
-        // Try WebSocket first
-        if (this.config.solanaWsUrl) {
+        // Try WebSocket first (only if explicitly set — don't auto-derive for public RPCs)
+        if (this.config.solanaWsUrl && process.env.SOLANA_WS_URL) {
             try {
                 await this.startWebSocket();
                 this.state.mode = 'websocket';
@@ -266,6 +269,7 @@ export class PumpFunMonitor {
             {
                 commitment: 'confirmed',
                 wsEndpoint: this.config.solanaWsUrl,
+                disableRetryOnRateLimit: true,
             },
         );
 
