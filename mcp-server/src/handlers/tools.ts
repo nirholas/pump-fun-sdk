@@ -582,6 +582,207 @@ export const TOOLS: ToolDefinition[] = [
       required: ['mint', 'user'],
     },
   },
+
+  // ── Buy Exact SOL ───────────────────────────────────────────────────
+  {
+    name: 'build_buy_exact_sol',
+    description: 'Build a buy instruction with an exact SOL input amount (like a swap). Fetches bonding curve state to determine creator and fee recipient.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        mint: { type: 'string', description: 'Token mint address' },
+        user: { type: 'string', description: 'Buyer wallet public key' },
+        solAmount: { type: 'string', description: 'Exact SOL amount in lamports' },
+        minTokenAmount: { type: 'string', description: 'Minimum tokens to receive (slippage protection)' },
+        rpcUrl: { type: 'string', description: 'Custom Solana RPC URL (optional)' },
+      },
+      required: ['mint', 'user', 'solAmount', 'minTokenAmount'],
+    },
+  },
+
+  // ── AMM Trading ─────────────────────────────────────────────────────
+  {
+    name: 'build_amm_buy',
+    description: 'Build an AMM buy instruction for a graduated token. Specify exact tokens out and max SOL in.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        mint: { type: 'string', description: 'Token mint address' },
+        user: { type: 'string', description: 'Buyer wallet public key' },
+        pool: { type: 'string', description: 'AMM pool address' },
+        baseAmountOut: { type: 'string', description: 'Desired token amount out (raw units)' },
+        maxQuoteAmountIn: { type: 'string', description: 'Maximum SOL to spend in lamports' },
+      },
+      required: ['mint', 'user', 'pool', 'baseAmountOut', 'maxQuoteAmountIn'],
+    },
+  },
+  {
+    name: 'build_amm_sell',
+    description: 'Build an AMM sell instruction for a graduated token. Specify exact tokens in and min SOL out.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        mint: { type: 'string', description: 'Token mint address' },
+        user: { type: 'string', description: 'Seller wallet public key' },
+        pool: { type: 'string', description: 'AMM pool address' },
+        baseAmountIn: { type: 'string', description: 'Token amount to sell (raw units)' },
+        minQuoteAmountOut: { type: 'string', description: 'Minimum SOL to receive in lamports' },
+      },
+      required: ['mint', 'user', 'pool', 'baseAmountIn', 'minQuoteAmountOut'],
+    },
+  },
+  {
+    name: 'build_amm_buy_exact_quote',
+    description: 'Build an AMM buy instruction with exact SOL (quote) input. Specify exact SOL in and min tokens out.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        mint: { type: 'string', description: 'Token mint address' },
+        user: { type: 'string', description: 'Buyer wallet public key' },
+        pool: { type: 'string', description: 'AMM pool address' },
+        quoteAmountIn: { type: 'string', description: 'Exact SOL amount in lamports' },
+        minBaseAmountOut: { type: 'string', description: 'Minimum tokens to receive (raw units)' },
+      },
+      required: ['mint', 'user', 'pool', 'quoteAmountIn', 'minBaseAmountOut'],
+    },
+  },
+
+  // ── AMM Liquidity ───────────────────────────────────────────────────
+  {
+    name: 'build_amm_deposit',
+    description: 'Build an AMM deposit instruction to add liquidity to a graduated pool. Provide both tokens and SOL.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        mint: { type: 'string', description: 'Token mint address' },
+        user: { type: 'string', description: 'Depositor wallet public key' },
+        pool: { type: 'string', description: 'AMM pool address' },
+        maxBaseAmountIn: { type: 'string', description: 'Max token amount to deposit (raw units)' },
+        maxQuoteAmountIn: { type: 'string', description: 'Max SOL amount to deposit in lamports' },
+        minLpTokenAmountOut: { type: 'string', description: 'Minimum LP tokens to receive' },
+      },
+      required: ['mint', 'user', 'pool', 'maxBaseAmountIn', 'maxQuoteAmountIn', 'minLpTokenAmountOut'],
+    },
+  },
+  {
+    name: 'build_amm_withdraw',
+    description: 'Build an AMM withdraw instruction to remove liquidity from a graduated pool.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        mint: { type: 'string', description: 'Token mint address' },
+        user: { type: 'string', description: 'Withdrawer wallet public key' },
+        pool: { type: 'string', description: 'AMM pool address' },
+        lpTokenAmountIn: { type: 'string', description: 'LP token amount to burn' },
+        minBaseAmountOut: { type: 'string', description: 'Minimum tokens to receive (raw units)' },
+        minQuoteAmountOut: { type: 'string', description: 'Minimum SOL to receive in lamports' },
+      },
+      required: ['mint', 'user', 'pool', 'lpTokenAmountIn', 'minBaseAmountOut', 'minQuoteAmountOut'],
+    },
+  },
+
+  // ── Cashback ────────────────────────────────────────────────────────
+  {
+    name: 'build_claim_cashback',
+    description: 'Build an instruction to claim cashback rewards from the Pump bonding curve program.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        user: { type: 'string', description: 'User wallet public key' },
+      },
+      required: ['user'],
+    },
+  },
+  {
+    name: 'build_amm_claim_cashback',
+    description: 'Build an instruction to claim cashback rewards from the PumpAMM program.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        user: { type: 'string', description: 'User wallet public key' },
+      },
+      required: ['user'],
+    },
+  },
+
+  // ── Fee Sharing (Social Fees & Authority) ──────────────────────────
+  {
+    name: 'build_create_social_fee',
+    description: 'Build an instruction to create a social fee PDA that links a user to a fee sharing authority.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        payer: { type: 'string', description: 'Payer wallet public key (pays rent)' },
+        authority: { type: 'string', description: 'Fee sharing authority public key' },
+        user: { type: 'string', description: 'User wallet public key' },
+      },
+      required: ['payer', 'authority', 'user'],
+    },
+  },
+  {
+    name: 'build_claim_social_fee',
+    description: 'Build an instruction to claim accumulated social fees for a user.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        authority: { type: 'string', description: 'Fee sharing authority public key' },
+        user: { type: 'string', description: 'User wallet public key' },
+      },
+      required: ['authority', 'user'],
+    },
+  },
+  {
+    name: 'build_reset_fee_sharing',
+    description: 'Build an instruction to reset fee sharing config for a token mint.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        authority: { type: 'string', description: 'Current authority wallet public key' },
+        mint: { type: 'string', description: 'Token mint address' },
+      },
+      required: ['authority', 'mint'],
+    },
+  },
+  {
+    name: 'build_transfer_fee_authority',
+    description: 'Build an instruction to transfer fee sharing authority to a new wallet.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        authority: { type: 'string', description: 'Current authority wallet public key' },
+        mint: { type: 'string', description: 'Token mint address' },
+        newAuthority: { type: 'string', description: 'New authority wallet public key' },
+      },
+      required: ['authority', 'mint', 'newAuthority'],
+    },
+  },
+  {
+    name: 'build_revoke_fee_authority',
+    description: 'Build an instruction to permanently revoke fee sharing authority. WARNING: This is irreversible!',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        authority: { type: 'string', description: 'Current authority wallet public key' },
+        mint: { type: 'string', description: 'Token mint address' },
+      },
+      required: ['authority', 'mint'],
+    },
+  },
+
+  // ── Creator Management ──────────────────────────────────────────────
+  {
+    name: 'build_migrate_creator',
+    description: 'Build an instruction to migrate bonding curve creator to a new wallet. Transfers future creator fees.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        authority: { type: 'string', description: 'Current authority (creator) wallet public key' },
+        mint: { type: 'string', description: 'Token mint address' },
+        newCreator: { type: 'string', description: 'New creator wallet public key' },
+      },
+      required: ['authority', 'mint', 'newCreator'],
+    },
+  },
 ];
 
 export function registerToolHandlers(server: Server, state: ServerState): void {

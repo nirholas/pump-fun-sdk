@@ -39,28 +39,37 @@ import type {
 } from "./analytics";
 import { Pump } from "./idl/pump";
 import { PumpAmm } from "./idl/pump_amm";
+import { PumpFees } from "./idl/pump_fees";
 import {
+  AMM_GLOBAL_CONFIG_PDA,
   bondingCurvePda,
   canonicalPumpPoolPda,
   creatorVaultPda,
+  feeProgramGlobalPda,
   feeSharingConfigPda,
   GLOBAL_PDA,
   GLOBAL_VOLUME_ACCUMULATOR_PDA,
   PUMP_FEE_CONFIG_PDA,
+  socialFeePda,
   userVolumeAccumulatorPda,
 } from "./pda";
 import {
   getPumpAmmProgram,
+  getPumpFeeProgram,
   getPumpProgram,
   PUMP_SDK,
   PUMP_TOKEN_MINT,
 } from "./sdk";
 import {
+  AmmGlobalConfig,
   BondingCurve,
   FeeConfig,
+  FeeProgramGlobal,
   Global,
   GlobalVolumeAccumulator,
   MinimumDistributableFeeEvent,
+  Pool,
+  SocialFeePda,
   UserVolumeAccumulator,
   UserVolumeAccumulatorTotalStats,
 } from "./state";
@@ -73,6 +82,7 @@ export class OnlinePumpSdk {
   private readonly pumpProgram: Program<Pump>;
   private readonly offlinePumpProgram: Program<Pump>;
   private readonly pumpAmmProgram: Program<PumpAmm>;
+  private readonly pumpFeeProgram: Program<PumpFees>;
   private readonly pumpAmmSdk: OnlinePumpAmmSdk;
   private readonly pumpAmmAdminSdk: PumpAmmAdminSdk;
 
@@ -82,6 +92,7 @@ export class OnlinePumpSdk {
     this.pumpProgram = getPumpProgram(connection);
     this.offlinePumpProgram = OFFLINE_PUMP_PROGRAM;
     this.pumpAmmProgram = getPumpAmmProgram(connection);
+    this.pumpFeeProgram = getPumpFeeProgram(connection);
 
     this.pumpAmmSdk = new OnlinePumpAmmSdk(connection);
     this.pumpAmmAdminSdk = new PumpAmmAdminSdk(connection);
@@ -865,6 +876,55 @@ export class OnlinePumpSdk {
     const poolAddress = canonicalPumpPoolPda(new PublicKey(mint));
     const accountInfo = await this.connection.getAccountInfo(poolAddress);
     return accountInfo !== null;
+  }
+
+  // ─── AMM / Fee Program Fetchers ──────────────────────────────────────
+
+  /**
+   * Fetch a graduated AMM pool account by mint address.
+   */
+  async fetchPool(mint: PublicKeyInitData): Promise<Pool> {
+    const poolAddress = canonicalPumpPoolPda(new PublicKey(mint));
+    return await this.pumpAmmProgram.account.pool.fetch(poolAddress);
+  }
+
+  /**
+   * Fetch a graduated AMM pool account by pool address.
+   */
+  async fetchPoolByAddress(poolAddress: PublicKeyInitData): Promise<Pool> {
+    return await this.pumpAmmProgram.account.pool.fetch(
+      new PublicKey(poolAddress),
+    );
+  }
+
+  /**
+   * Fetch the AMM global config account.
+   */
+  async fetchAmmGlobalConfig(): Promise<AmmGlobalConfig> {
+    return await this.pumpAmmProgram.account.globalConfig.fetch(
+      AMM_GLOBAL_CONFIG_PDA,
+    );
+  }
+
+  /**
+   * Fetch the PumpFees program global account.
+   */
+  async fetchFeeProgramGlobal(): Promise<FeeProgramGlobal> {
+    return await (this.pumpFeeProgram.account as any).feeProgramGlobal.fetch(
+      feeProgramGlobalPda(),
+    );
+  }
+
+  /**
+   * Fetch a social fee PDA account by user ID and platform.
+   */
+  async fetchSocialFeePda(
+    userId: string,
+    platform: number,
+  ): Promise<SocialFeePda> {
+    return await (this.pumpFeeProgram.account as any).socialFeePda.fetch(
+      socialFeePda(userId, platform),
+    );
   }
 
   /**

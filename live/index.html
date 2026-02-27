@@ -160,15 +160,15 @@
 const PUMP_PROGRAM = '6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P';
 const MAX_LOG_ENTRIES = 500;
 
-// ── RPC Endpoints (rotated on failure) ──────────────────────────────
+// ── Endpoints (PumpPortal primary, Solana RPC fallback) ──────────
 const RPC_ENDPOINTS = [
-  'wss://api.mainnet-beta.solana.com',
-  'wss://solana-mainnet.core.chainstack.com',
-  'wss://mainnet.helius-rpc.com/?api-key=demo',
-  'wss://solana-rpc.publicnode.com',
+  { url: 'wss://pumpportal.fun/api/data', protocol: 'pumpportal', label: 'PumpPortal' },
+  { url: 'wss://api.mainnet-beta.solana.com', protocol: 'solana-rpc', label: 'Solana Public' },
+  { url: 'wss://solana-rpc.publicnode.com', protocol: 'solana-rpc', label: 'PublicNode' },
 ];
 let rpcIndex = 0;
 let connectAttempts = 0;
+let currentProtocol = null;
 
 // ── State ───────────────────────────────────────────────────────────
 let ws = null;
@@ -209,23 +209,28 @@ $btnConnect.onclick = () => {
 };
 $btnClear.onclick = () => { $log.innerHTML = ''; };
 
-// ── Connect to WebSocket RPC (multi-endpoint failover) ──────────────
+// ── Connect to WebSocket (PumpPortal or Solana RPC) ───────────────
 function getNextEndpoint() {
   const custom = $rpc.value.trim();
-  if (custom && custom.startsWith('wss://')) return custom;
-  const url = RPC_ENDPOINTS[rpcIndex % RPC_ENDPOINTS.length];
+  if (custom && custom.startsWith('wss://')) {
+    const proto = custom.includes('pumpportal') ? 'pumpportal' : 'solana-rpc';
+    return { url: custom, protocol: proto, label: 'Custom' };
+  }
+  const ep = RPC_ENDPOINTS[rpcIndex % RPC_ENDPOINTS.length];
   rpcIndex++;
-  return url;
+  return ep;
 }
 
 function connect() {
   if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
-  const url = getNextEndpoint();
+  const ep = getNextEndpoint();
+  const url = ep.url;
+  currentProtocol = ep.protocol;
   const shortUrl = url.replace(/api-key=\w+/, 'api-key=***').slice(0, 60);
   setStatus('Connecting...', '');
   $btnConnect.textContent = 'Disconnect';
   connectAttempts++;
-  sysLog(`Connecting to ${shortUrl}...`);
+  sysLog(`Connecting to ${ep.label} (${shortUrl})...`);
 
   try {
     ws = new WebSocket(url);
@@ -237,35 +242,68 @@ function connect() {
 
   const connectTimeout = setTimeout(() => {
     if (ws && ws.readyState !== WebSocket.OPEN) {
-      sysLog(`Timeout on ${shortUrl}, trying next...`, 'warn');
+      sysLog(`Timeout on ${ep.label}, trying next...`, 'warn');
       try { ws.close(); } catch {}
     }
-  }, 8000);
+  }, 10000);
 
   ws.onopen = () => {
     clearTimeout(connectTimeout);
-    reconnectDelay = 1000; // reset backoff on successful connect
+    reconnectDelay = 1000;
     connectAttempts = 0;
-    setStatus('● Connected — subscribing to Pump program...', 'connected');
     if (!startTime) startTime = Date.now();
     startRateCounter();
 
-    // Subscribe to logs for the Pump program
-    ws.send(JSON.stringify({
-      jsonrpc: '2.0',
-      id: 1,
-      method: 'logsSubscribe',
-      params: [
-        { mentions: [PUMP_PROGRAM] },
-        { commitment: 'confirmed' }
-      ]
-    }));
+    if (currentProtocol === 'pumpportal') {
+      // PumpPortal: subscribe to new token creates
+      ws.send(JSON.stringify({ method: 'subscribeNewToken' }));
+      setStatus(`● Live — PumpPortal`, 'connected');
+      sysLog('Subscribed via PumpPortal — streaming new token launches');
+    } else {
+      // Solana RPC: subscribe to program logs
+      setStatus('● Connected — subscribing to Pump program...', 'connected');
+      ws.send(JSON.stringify({
+        jsonrpc: '2.0', id: 1,
+        method: 'logsSubscribe',
+        params: [{ mentions: [PUMP_PROGRAM] }, { commitment: 'confirmed' }],
+      }));
+    }
   };
 
   ws.onmessage = (evt) => {
     let msg;
     try { msg = JSON.parse(evt.data); } catch { return; }
 
+    if (currentProtocol === 'pumpportal') {
+      // PumpPortal sends flat objects: { txType:'create', mint, name, symbol, uri, signature, ... }
+      if (msg && msg.mint) {
+        stats.logsReceived++;
+        const info = {
+          signature: msg.signature || '',
+          time: new Date().toLocaleTimeString(),
+          name: msg.name || null,
+          symbol: msg.symbol || null,
+          metadataUri: msg.uri || null,
+          mint: msg.mint,
+          creator: msg.traderPublicKey || null,
+          hasGithub: false,
+          githubUrls: [],
+          rawLogs: [`PumpPortal: ${msg.txType || 'create'} ${msg.name || msg.mint}`],
+          isV2: true,
+        };
+        stats.total++;
+        if (info.metadataUri && info.metadataUri.includes('github.com')) {
+          info.hasGithub = true;
+          stats.github++;
+        }
+        if (info.metadataUri) fetchMetadata(info.metadataUri, info.signature);
+        if (!paused) renderEntry(info);
+        updateStats();
+      }
+      return;
+    }
+
+    // ── Solana RPC protocol ──
     // Subscription confirmation
     if (msg.id === 1 && msg.result !== undefined) {
       subId = msg.result;
@@ -276,7 +314,8 @@ function connect() {
 
     // RPC error (rejected subscription)
     if (msg.id === 1 && msg.error) {
-      sysLog(`RPC rejected: ${msg.error.message || JSON.stringify(msg.error)}`, 'error');
+      sysLog(`RPC rejected logsSubscribe: ${msg.error.message || JSON.stringify(msg.error)}`, 'error');
+      sysLog('Tip: public RPCs rate-limit this. PumpPortal is recommended.', 'warn');
       try { ws.close(); } catch {}
       return;
     }
@@ -291,7 +330,7 @@ function connect() {
   ws.onerror = (err) => {
     clearTimeout(connectTimeout);
     setStatus('● Error', 'error');
-    sysLog(`WebSocket error on ${shortUrl}`, 'error');
+    sysLog(`WebSocket error on ${ep.label}`, 'error');
     console.error('WS Error:', err);
   };
 
@@ -299,6 +338,7 @@ function connect() {
     clearTimeout(connectTimeout);
     ws = null;
     subId = null;
+    currentProtocol = null;
     if (!manualDisconnect) {
       scheduleReconnect();
     } else {
@@ -312,10 +352,9 @@ function connect() {
 
 function scheduleReconnect() {
   const delay = Math.min(reconnectDelay, 15000);
-  const nextUrl = RPC_ENDPOINTS[rpcIndex % RPC_ENDPOINTS.length];
-  const shortNext = nextUrl.replace(/api-key=\w+/, 'api-key=***').slice(0, 50);
-  setStatus(`● Retrying ${(delay / 1000).toFixed(0)}s...`, 'error');
-  sysLog(`Trying next endpoint in ${(delay / 1000).toFixed(0)}s → ${shortNext}`, 'warn');
+  const nextEp = RPC_ENDPOINTS[rpcIndex % RPC_ENDPOINTS.length];
+  setStatus(`● Retrying ${(delay / 1000).toFixed(0)}s → ${nextEp.label}`, 'error');
+  sysLog(`Trying ${nextEp.label} in ${(delay / 1000).toFixed(0)}s...`, 'warn');
   reconnectTimer = setTimeout(connect, delay);
   if (connectAttempts >= RPC_ENDPOINTS.length) {
     reconnectDelay = Math.min(reconnectDelay * 1.5, 15000);
@@ -549,7 +588,8 @@ function esc(s) {
 // ── Init ────────────────────────────────────────────────────────────
 sysLog('PumpFun Live Monitor — always-on, auto-reconnecting');
 sysLog(`Monitoring program: ${PUMP_PROGRAM}`);
-sysLog(`${RPC_ENDPOINTS.length} endpoints configured — auto-failover on error`);
+sysLog('Primary: PumpPortal API (pre-parsed, no RPC limits)');
+sysLog(`Fallback: ${RPC_ENDPOINTS.filter(e => e.protocol === 'solana-rpc').length} Solana RPC endpoints`);
 
 // Connect immediately on page load
 connect();

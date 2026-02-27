@@ -22,6 +22,103 @@ import {
 import bs58 from 'bs58';
 
 import { log } from './logger.js';
+
+// ============================================================================
+// RPC Rate Limiter — concurrency + token-bucket throttle
+// ============================================================================
+
+/** Max concurrent getParsedTransaction calls */
+const MAX_CONCURRENCY = 3;
+/** Minimum ms between successive RPC requests */
+const MIN_REQUEST_INTERVAL_MS = 200;
+/** Max signatures to queue; beyond this new ones are silently dropped */
+const MAX_QUEUE_SIZE = 200;
+/** Suppress repeated 429 log lines — log once per window */
+const RATE_LIMIT_LOG_WINDOW_MS = 10_000;
+
+class RpcQueue {
+    private queue: string[] = [];
+    private inFlight = 0;
+    private processing = false;
+    private lastRequestTime = 0;
+    private last429LogTime = 0;
+    private dropped429Count = 0;
+    private processFn: (sig: string) => Promise<void>;
+
+    constructor(processFn: (sig: string) => Promise<void>) {
+        this.processFn = processFn;
+    }
+
+    /** Enqueue a signature for processing. Returns false if queue is full. */
+    enqueue(signature: string): boolean {
+        if (this.queue.length >= MAX_QUEUE_SIZE) {
+            return false;
+        }
+        this.queue.push(signature);
+        this.drain();
+        return true;
+    }
+
+    get pending(): number {
+        return this.queue.length;
+    }
+
+    get active(): number {
+        return this.inFlight;
+    }
+
+    /** Log a 429 warning at most once per window to avoid Railway log spam. */
+    note429(): void {
+        this.dropped429Count++;
+        const now = Date.now();
+        if (now - this.last429LogTime >= RATE_LIMIT_LOG_WINDOW_MS) {
+            log.warn(
+                'RPC 429 rate-limited — %d errors in last %ds window (queue: %d, inFlight: %d)',
+                this.dropped429Count,
+                RATE_LIMIT_LOG_WINDOW_MS / 1000,
+                this.queue.length,
+                this.inFlight,
+            );
+            this.dropped429Count = 0;
+            this.last429LogTime = now;
+        }
+    }
+
+    private async drain(): Promise<void> {
+        if (this.processing) return;
+        this.processing = true;
+
+        while (this.queue.length > 0 && this.inFlight < MAX_CONCURRENCY) {
+            // Throttle: wait until MIN_REQUEST_INTERVAL_MS since last request
+            const now = Date.now();
+            const elapsed = now - this.lastRequestTime;
+            if (elapsed < MIN_REQUEST_INTERVAL_MS) {
+                await sleep(MIN_REQUEST_INTERVAL_MS - elapsed);
+            }
+
+            const sig = this.queue.shift();
+            if (!sig) break;
+
+            this.lastRequestTime = Date.now();
+            this.inFlight++;
+
+            // Fire and continue draining (don't await — we allow up to MAX_CONCURRENCY)
+            this.processFn(sig)
+                .catch(() => { /* errors handled inside processFn */ })
+                .finally(() => {
+                    this.inFlight--;
+                    // Kick drain again in case more items queued while we were full
+                    this.drain();
+                });
+        }
+
+        this.processing = false;
+    }
+}
+
+function sleep(ms: number): Promise<void> {
+    return new Promise((r) => setTimeout(r, ms));
+}
 import type { BotConfig, ClaimType, CreatorChangeEvent, FeeClaimEvent, MonitorState } from './types.js';
 import {
     CLAIM_INSTRUCTIONS,
@@ -57,6 +154,8 @@ export class PumpFunMonitor {
     /** Cache of recent CTO events for /cto command queries */
     private recentCtoEvents: CreatorChangeEvent[] = [];
     private readonly MAX_CTO_CACHE = 200;
+    /** Rate-limited RPC request queue */
+    private rpcQueue: RpcQueue;
 
     constructor(
         config: BotConfig,
@@ -68,6 +167,7 @@ export class PumpFunMonitor {
         this.onCreatorChange = onCreatorChange ?? (() => {});
         this.connection = new Connection(config.solanaRpcUrl, 'confirmed');
         this.programPubkeys = MONITORED_PROGRAM_IDS.map((id) => new PublicKey(id));
+        this.rpcQueue = new RpcQueue((sig) => this.processTransactionThrottled(sig));
 
         this.state = {
             cashbackClaims: 0,
@@ -230,7 +330,10 @@ export class PumpFunMonitor {
         if (!hasEventMatch && !hasKeywordMatch) return;
 
         log.debug('Potential claim tx detected via WS: %s', signature);
-        await this.processTransaction(signature);
+        // Queue instead of direct call to respect rate limits
+        if (!this.rpcQueue.enqueue(signature)) {
+            log.debug('RPC queue full, dropping tx %s', signature.slice(0, 12));
+        }
     }
 
     // ──────────────────────────────────────────────────────────────────────
@@ -285,7 +388,8 @@ export class PumpFunMonitor {
             for (const sig of ordered) {
                 if (sig.err) continue;
                 if (this.processedSignatures.has(sig.signature)) continue;
-                await this.processTransaction(sig.signature);
+                // Queue instead of direct call to respect rate limits
+                this.rpcQueue.enqueue(sig.signature);
             }
 
             log.debug(
@@ -302,65 +406,95 @@ export class PumpFunMonitor {
     // Transaction Parser
     // ──────────────────────────────────────────────────────────────────────
 
+    /**
+     * Process a transaction — called directly for backward compat.
+     * Prefer enqueueing via rpcQueue for rate-limited processing.
+     */
     private async processTransaction(signature: string): Promise<void> {
+        return this.processTransactionThrottled(signature);
+    }
+
+    /**
+     * Rate-limited transaction processor — called by the RpcQueue.
+     * Retries once on 429 with exponential backoff before giving up.
+     */
+    private async processTransactionThrottled(signature: string): Promise<void> {
         // Mark as processed to prevent duplicates
         this.markProcessed(signature);
 
-        try {
-            const tx = await this.connection.getParsedTransaction(signature, {
-                commitment: 'confirmed',
-                maxSupportedTransactionVersion: 0,
-            });
+        let tx: import('@solana/web3.js').ParsedTransactionWithMeta | null = null;
 
-            if (!tx || !tx.meta) return;
-
-            const events = this.extractFeeClaimEvents(signature, tx);
-            for (const event of events) {
-                this.state.claimsDetected++;
-                if (event.isCashback) {
-                    this.state.cashbackClaims++;
+        for (let attempt = 0; attempt < 3; attempt++) {
+            try {
+                tx = await this.connection.getParsedTransaction(signature, {
+                    commitment: 'confirmed',
+                    maxSupportedTransactionVersion: 0,
+                });
+                break; // success
+            } catch (err: any) {
+                const is429 = err?.message?.includes('429') || err?.message?.includes('Too many requests');
+                if (is429 && attempt < 2) {
+                    this.rpcQueue.note429();
+                    // Exponential backoff: 2s, 4s
+                    await sleep(2000 * (attempt + 1));
+                    continue;
+                }
+                // Non-429 error or exhausted retries
+                if (is429) {
+                    this.rpcQueue.note429();
                 } else {
-                    this.state.creatorFeeClaims++;
+                    log.error('Error processing tx %s:', signature.slice(0, 16), err);
                 }
-                this.state.lastSlot = tx.slot;
-
-                log.info(
-                    '%s: %s claimed %.4f SOL [%s] (tx: %s)',
-                    event.claimLabel,
-                    event.claimerWallet.slice(0, 8),
-                    event.amountSol,
-                    event.claimType,
-                    signature.slice(0, 12) + '...',
-                );
-
-                this.onClaim(event);
+                return;
             }
+        }
 
-            // ── CTO (Creator Change) Detection ──────────────────────────
-            const ctoEvents = this.extractCreatorChangeEvents(signature, tx);
-            for (const ctoEvent of ctoEvents) {
-                this.state.creatorChanges++;
-                this.state.lastSlot = tx.slot;
+        if (!tx || !tx.meta) return;
 
-                log.info(
-                    '%s: signer=%s newCreator=%s mint=%s (tx: %s)',
-                    ctoEvent.changeLabel,
-                    ctoEvent.signerWallet.slice(0, 8),
-                    ctoEvent.newCreatorWallet ? ctoEvent.newCreatorWallet.slice(0, 8) : 'from-metadata',
-                    ctoEvent.tokenMint ? ctoEvent.tokenMint.slice(0, 8) : 'unknown',
-                    signature.slice(0, 12) + '...',
-                );
-
-                this.onCreatorChange(ctoEvent);
-
-                // Cache for /cto queries
-                this.recentCtoEvents.unshift(ctoEvent);
-                if (this.recentCtoEvents.length > this.MAX_CTO_CACHE) {
-                    this.recentCtoEvents.length = this.MAX_CTO_CACHE;
-                }
+        const events = this.extractFeeClaimEvents(signature, tx);
+        for (const event of events) {
+            this.state.claimsDetected++;
+            if (event.isCashback) {
+                this.state.cashbackClaims++;
+            } else {
+                this.state.creatorFeeClaims++;
             }
-        } catch (err) {
-            log.error('Error processing tx %s:', signature, err);
+            this.state.lastSlot = tx.slot;
+
+            log.info(
+                '%s: %s claimed %.4f SOL [%s] (tx: %s)',
+                event.claimLabel,
+                event.claimerWallet.slice(0, 8),
+                event.amountSol,
+                event.claimType,
+                signature.slice(0, 12) + '...',
+            );
+
+            this.onClaim(event);
+        }
+
+        // ── CTO (Creator Change) Detection ──────────────────────────
+        const ctoEvents = this.extractCreatorChangeEvents(signature, tx);
+        for (const ctoEvent of ctoEvents) {
+            this.state.creatorChanges++;
+            this.state.lastSlot = tx.slot;
+
+            log.info(
+                '%s: signer=%s newCreator=%s mint=%s (tx: %s)',
+                ctoEvent.changeLabel,
+                ctoEvent.signerWallet.slice(0, 8),
+                ctoEvent.newCreatorWallet ? ctoEvent.newCreatorWallet.slice(0, 8) : 'from-metadata',
+                ctoEvent.tokenMint ? ctoEvent.tokenMint.slice(0, 8) : 'unknown',
+                signature.slice(0, 12) + '...',
+            );
+
+            this.onCreatorChange(ctoEvent);
+
+            // Cache for /cto queries
+            this.recentCtoEvents.unshift(ctoEvent);
+            if (this.recentCtoEvents.length > this.MAX_CTO_CACHE) {
+                this.recentCtoEvents.length = this.MAX_CTO_CACHE;
+            }
         }
     }
 

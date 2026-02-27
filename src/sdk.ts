@@ -252,6 +252,36 @@ export class PumpSdk {
     );
   }
 
+  decodePool(accountInfo: AccountInfo<Buffer>): Pool {
+    return this.offlinePumpAmmProgram.coder.accounts.decode<Pool>(
+      "pool",
+      accountInfo.data,
+    );
+  }
+
+  decodeAmmGlobalConfig(accountInfo: AccountInfo<Buffer>): AmmGlobalConfig {
+    return this.offlinePumpAmmProgram.coder.accounts.decode<AmmGlobalConfig>(
+      "globalConfig",
+      accountInfo.data,
+    );
+  }
+
+  decodeFeeProgramGlobal(accountInfo: AccountInfo<Buffer>): FeeProgramGlobal {
+    return this.offlinePumpFeeProgram.coder.accounts.decode<FeeProgramGlobal>(
+      "feeProgramGlobal",
+      accountInfo.data,
+    );
+  }
+
+  decodeSocialFeePdaAccount(
+    accountInfo: AccountInfo<Buffer>,
+  ): SocialFeePdaAccount {
+    return this.offlinePumpFeeProgram.coder.accounts.decode<SocialFeePdaAccount>(
+      "socialFeePda",
+      accountInfo.data,
+    );
+  }
+
   /**
    * @deprecated Use `createInstructionV2` instead.
    */
@@ -1021,6 +1051,212 @@ export class PumpSdk {
   decodeMinimumDistributableFee(data: Buffer): MinimumDistributableFeeEvent {
     return this.offlinePumpProgram.coder.types.decode<MinimumDistributableFeeEvent>(
       "minimumDistributableFeeEvent",
+      data,
+    );
+  }
+
+  // ─── Pump Program Event Decoders ──────────────────────────────────
+
+  decodeTradeEvent(data: Buffer): TradeEvent {
+    return this.offlinePumpProgram.coder.types.decode<TradeEvent>(
+      "tradeEvent",
+      data,
+    );
+  }
+
+  decodeCreateEvent(data: Buffer): CreateEvent {
+    return this.offlinePumpProgram.coder.types.decode<CreateEvent>(
+      "createEvent",
+      data,
+    );
+  }
+
+  decodeCompleteEvent(data: Buffer): CompleteEvent {
+    return this.offlinePumpProgram.coder.types.decode<CompleteEvent>(
+      "completeEvent",
+      data,
+    );
+  }
+
+  decodeCompletePumpAmmMigrationEvent(
+    data: Buffer,
+  ): CompletePumpAmmMigrationEvent {
+    return this.offlinePumpProgram.coder.types.decode<CompletePumpAmmMigrationEvent>(
+      "completePumpAmmMigrationEvent",
+      data,
+    );
+  }
+
+  decodeSetCreatorEvent(data: Buffer): SetCreatorEvent {
+    return this.offlinePumpProgram.coder.types.decode<SetCreatorEvent>(
+      "setCreatorEvent",
+      data,
+    );
+  }
+
+  decodeCollectCreatorFeeEvent(data: Buffer): CollectCreatorFeeEvent {
+    return this.offlinePumpProgram.coder.types.decode<CollectCreatorFeeEvent>(
+      "collectCreatorFeeEvent",
+      data,
+    );
+  }
+
+  decodeClaimTokenIncentivesEvent(data: Buffer): ClaimTokenIncentivesEvent {
+    return this.offlinePumpProgram.coder.types.decode<ClaimTokenIncentivesEvent>(
+      "claimTokenIncentivesEvent",
+      data,
+    );
+  }
+
+  decodeClaimCashbackEvent(data: Buffer): ClaimCashbackEvent {
+    return this.offlinePumpProgram.coder.types.decode<ClaimCashbackEvent>(
+      "claimCashbackEvent",
+      data,
+    );
+  }
+
+  decodeExtendAccountEvent(data: Buffer): ExtendAccountEvent {
+    return this.offlinePumpProgram.coder.types.decode<ExtendAccountEvent>(
+      "extendAccountEvent",
+      data,
+    );
+  }
+
+  decodeInitUserVolumeAccumulatorEvent(
+    data: Buffer,
+  ): InitUserVolumeAccumulatorEvent {
+    return this.offlinePumpProgram.coder.types.decode<InitUserVolumeAccumulatorEvent>(
+      "initUserVolumeAccumulatorEvent",
+      data,
+    );
+  }
+
+  decodeSyncUserVolumeAccumulatorEvent(
+    data: Buffer,
+  ): SyncUserVolumeAccumulatorEvent {
+    return this.offlinePumpProgram.coder.types.decode<SyncUserVolumeAccumulatorEvent>(
+      "syncUserVolumeAccumulatorEvent",
+      data,
+    );
+  }
+
+  decodeCloseUserVolumeAccumulatorEvent(
+    data: Buffer,
+  ): CloseUserVolumeAccumulatorEvent {
+    return this.offlinePumpProgram.coder.types.decode<CloseUserVolumeAccumulatorEvent>(
+      "closeUserVolumeAccumulatorEvent",
+      data,
+    );
+  }
+
+  decodeAdminSetCreatorEvent(data: Buffer): AdminSetCreatorEvent {
+    return this.offlinePumpProgram.coder.types.decode<AdminSetCreatorEvent>(
+      "adminSetCreatorEvent",
+      data,
+    );
+  }
+
+  decodeMigrateBondingCurveCreatorEvent(
+    data: Buffer,
+  ): MigrateBondingCurveCreatorEvent {
+    return this.offlinePumpProgram.coder.types.decode<MigrateBondingCurveCreatorEvent>(
+      "migrateBondingCurveCreatorEvent",
+      data,
+    );
+  }
+
+  // ─── PumpAMM Event Decoders ───────────────────────────────────────
+
+  decodeAmmBuyEvent(data: Buffer): AmmBuyEvent {
+    return this.offlinePumpAmmProgram.coder.types.decode<AmmBuyEvent>(
+      "buyEvent",
+      data,
+    );
+  }
+
+  decodeAmmSellEvent(data: Buffer): AmmSellEvent {
+    return this.offlinePumpAmmProgram.coder.types.decode<AmmSellEvent>(
+      "sellEvent",
+      data,
+    );
+  }
+
+  decodeDepositEvent(data: Buffer): DepositEvent {
+    return this.offlinePumpAmmProgram.coder.types.decode<DepositEvent>(
+      "depositEvent",
+      data,
+    );
+  }
+
+  decodeWithdrawEvent(data: Buffer): WithdrawEvent {
+    return this.offlinePumpAmmProgram.coder.types.decode<WithdrawEvent>(
+      "withdrawEvent",
+      data,
+    );
+  }
+
+  decodeCreatePoolEvent(data: Buffer): CreatePoolEvent {
+    return this.offlinePumpAmmProgram.coder.types.decode<CreatePoolEvent>(
+      "createPoolEvent",
+      data,
+    );
+  }
+
+  // ─── PumpFees Event Decoders ──────────────────────────────────────
+
+  decodeCreateFeeSharingConfigEvent(
+    data: Buffer,
+  ): CreateFeeSharingConfigEvent {
+    return this.offlinePumpFeeProgram.coder.types.decode<CreateFeeSharingConfigEvent>(
+      "createFeeSharingConfigEvent",
+      data,
+    );
+  }
+
+  decodeUpdateFeeSharesEvent(data: Buffer): UpdateFeeSharesEvent {
+    return this.offlinePumpFeeProgram.coder.types.decode<UpdateFeeSharesEvent>(
+      "updateFeeSharesEvent",
+      data,
+    );
+  }
+
+  decodeResetFeeSharingConfigEvent(
+    data: Buffer,
+  ): ResetFeeSharingConfigEvent {
+    return this.offlinePumpFeeProgram.coder.types.decode<ResetFeeSharingConfigEvent>(
+      "resetFeeSharingConfigEvent",
+      data,
+    );
+  }
+
+  decodeRevokeFeeSharingAuthorityEvent(
+    data: Buffer,
+  ): RevokeFeeSharingAuthorityEvent {
+    return this.offlinePumpFeeProgram.coder.types.decode<RevokeFeeSharingAuthorityEvent>(
+      "revokeFeeSharingAuthorityEvent",
+      data,
+    );
+  }
+
+  decodeTransferFeeSharingAuthorityEvent(
+    data: Buffer,
+  ): TransferFeeSharingAuthorityEvent {
+    return this.offlinePumpFeeProgram.coder.types.decode<TransferFeeSharingAuthorityEvent>(
+      "transferFeeSharingAuthorityEvent",
+      data,
+    );
+  }
+
+  decodeSocialFeePdaCreatedEvent(data: Buffer): SocialFeePdaCreatedEvent {
+    return this.offlinePumpFeeProgram.coder.types.decode<SocialFeePdaCreatedEvent>(
+      "socialFeePdaCreated",
+      data,
+    );
+  }
+
+  decodeSocialFeePdaClaimedEvent(data: Buffer): SocialFeePdaClaimedEvent {
+    return this.offlinePumpFeeProgram.coder.types.decode<SocialFeePdaClaimedEvent>(
+      "socialFeePdaClaimed",
       data,
     );
   }

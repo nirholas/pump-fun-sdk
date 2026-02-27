@@ -28,8 +28,8 @@
     "deploy": "vercel --prod"
   },
   "dependencies": {
-    "@sperax/plugin-sdk": "workspace:*",
-    "@sperax/chat-plugins-gateway": "workspace:*"
+    "@sperax/chat-plugins-gateway": "workspace:*",
+    "@sperax/plugin-sdk": "workspace:*"
   },
   "devDependencies": {
     "@types/fs-extra": "^11.0.4",
@@ -48,6 +48,7 @@
     "prettier": "^3.4.2",
     "typescript": "^5.7.3",
     "vercel": "^39.0.0",
+    "vitest": "^4.0.18",
     "zod": "^3.24.1",
     "zod-to-json-schema": "^3.24.1"
   }

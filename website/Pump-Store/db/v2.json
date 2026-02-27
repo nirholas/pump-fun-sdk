@@ -2773,6 +2773,104 @@
       ],
       "size": "7KB",
       "icon": "<svg width='232' height='232' viewBox='0 0 232 232' fill='none' xmlns='http://www.w3.org/2000/svg'><rect width='232' height='232' rx='40' fill='#00e87b'/><path d='M116 50l50 86.6H66L116 50z' fill='#fff' opacity='0.9'/><circle cx='116' cy='152' r='30' fill='#fff' opacity='0.7'/></svg>"
+    },
+    {
+      "id": "bonding-curve-calc",
+      "name": "Bonding Curve Calculator",
+      "src": "/Pump-Store/apps/bonding-curve-calc.html",
+      "by": "PumpOS",
+      "desc": "Simulate buy/sell prices on the Pump bonding curve AMM",
+      "cat": "pump-sdk",
+      "ver": "1.0",
+      "symbol": "show_chart",
+      "th": "#00e87b",
+      "size": "12KB",
+      "qt": "xy = k pricing math",
+      "ldesc": "Interactive bonding curve calculator using the actual Pump Fun AMM formula. Simulate buys and sells, visualize price impact, and see the curve shape from launch to graduation."
+    },
+    {
+      "id": "token-launch-sim",
+      "name": "Token Launch Simulator",
+      "src": "/Pump-Store/apps/token-launch-sim.html",
+      "by": "PumpOS",
+      "desc": "Simulate a token's full lifecycle from creation to AMM graduation",
+      "cat": "pump-sdk",
+      "ver": "1.0",
+      "symbol": "rocket_launch",
+      "th": "#60a5fa",
+      "size": "10KB",
+      "qt": "Watch tokens graduate",
+      "ldesc": "Simulate a Pump Fun token launch with real-time price action, random buys and sells, and watch the bonding curve fill until graduation to PumpAMM. Full lifecycle visualization."
+    },
+    {
+      "id": "fee-tier-explorer",
+      "name": "Fee Tier Explorer",
+      "src": "/Pump-Store/apps/fee-tier-explorer.html",
+      "by": "PumpOS",
+      "desc": "Explore Pump's tiered fee schedule based on market cap",
+      "cat": "pump-sdk",
+      "ver": "1.0",
+      "symbol": "payments",
+      "th": "#fbbf24",
+      "size": "8KB",
+      "qt": "Understand fee tiers",
+      "ldesc": "Interactive explorer for Pump's tiered fee system. See how protocol and creator fees change based on bonding curve market cap. Simulate trade costs with live fee calculations."
+    },
+    {
+      "id": "token-incentives",
+      "name": "Token Incentives Tracker",
+      "src": "/Pump-Store/apps/token-incentives.html",
+      "by": "PumpOS",
+      "desc": "Track PUMP token rewards from trading volume incentives",
+      "cat": "pump-sdk",
+      "ver": "1.0",
+      "symbol": "stars",
+      "th": "#a78bfa",
+      "size": "9KB",
+      "qt": "Earn PUMP tokens",
+      "ldesc": "Track and simulate PUMP token rewards earned through trading volume. See daily earnings, unclaimed tokens, cumulative rewards, and claim projections based on the volume-based incentive program."
+    },
+    {
+      "id": "creator-fee-sharing",
+      "name": "Creator Fee Sharing",
+      "src": "/Pump-Store/apps/creator-fee-sharing.html",
+      "by": "PumpOS",
+      "desc": "Configure revenue sharing splits for token creator fees",
+      "cat": "pump-sdk",
+      "ver": "1.0",
+      "symbol": "group",
+      "th": "#fb923c",
+      "size": "10KB",
+      "qt": "Split creator revenue",
+      "ldesc": "Configure and visualize creator fee sharing among up to 4 shareholders. Interactive pie chart, BPS allocation manager, distribution preview, and validation against the 10,000 BPS total requirement."
+    },
+    {
+      "id": "migration-tracker",
+      "name": "Migration Tracker",
+      "src": "/Pump-Store/apps/migration-tracker.html",
+      "by": "PumpOS",
+      "desc": "Track tokens graduating from bonding curve to PumpAMM",
+      "cat": "pump-sdk",
+      "ver": "1.0",
+      "symbol": "swap_horiz",
+      "th": "#14b8a6",
+      "size": "11KB",
+      "qt": "Monitor graduations",
+      "ldesc": "Track the migration pipeline from bonding curve creation through graduation to PumpAMM pool activation. Live progress simulation, graduation timeline chart, and detailed migration process flow."
+    },
+    {
+      "id": "pump-sdk-reference",
+      "name": "Pump SDK Reference",
+      "src": "/Pump-Store/apps/pump-sdk-reference.html",
+      "by": "PumpOS",
+      "desc": "Interactive API reference for the Pump Fun SDK",
+      "cat": "pump-sdk",
+      "ver": "1.0",
+      "symbol": "menu_book",
+      "th": "#8b5cf6",
+      "size": "14KB",
+      "qt": "SDK documentation",
+      "ldesc": "Complete interactive API reference for @pump-fun/pump-sdk. Browse all methods (PumpSdk, OnlinePumpSdk), math utilities, PDAs, and types with parameters, return types, and code examples."
     }
   ],
   "categories": [
@@ -2782,6 +2880,7 @@
     "games",
     "general",
     "launcher",
+    "pump-sdk",
     "rotur",
     "social",
     "text editor",
@@ -2790,5 +2889,5 @@
     "widgets"
   ],
   "generated": "2026-02-27T02:54:44.368Z",
-  "totalApps": 162
+  "totalApps": 169
 }
