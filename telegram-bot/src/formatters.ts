@@ -4,7 +4,7 @@
  * Rich HTML message formatting for Telegram notifications.
  */
 
-import type { CreatorChangeEvent, FeeClaimEvent, MonitorState, TokenLaunchEvent, TokenLaunchMonitorState, WatchEntry } from './types.js';
+import type { CreatorChangeEvent, FeeClaimEvent, FeeDistributionEvent, GraduationEvent, MonitorState, PumpEventMonitorState, TokenLaunchEvent, TokenLaunchMonitorState, TradeAlertEvent, WatchEntry } from './types.js';
 
 // ============================================================================
 // Fee Claim Notification
