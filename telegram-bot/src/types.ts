@@ -46,6 +46,22 @@ export const CREATE_V2_DISCRIMINATOR = 'd6904cec5f8b31b4';
 export const CREATE_DISCRIMINATOR = '181ec828051c0777';
 
 // ============================================================================
+// Pump Event Discriminators (from official IDL)
+// ============================================================================
+
+/** Anchor event discriminator for CompleteEvent (bonding curve graduation) */
+export const COMPLETE_EVENT_DISCRIMINATOR = '5f72619cd42e9808';
+
+/** Anchor event discriminator for CompletePumpAmmMigrationEvent (AMM pool creation) */
+export const COMPLETE_AMM_MIGRATION_DISCRIMINATOR = 'bde95db95c94ea94';
+
+/** Anchor event discriminator for TradeEvent (buy/sell on bonding curve) */
+export const TRADE_EVENT_DISCRIMINATOR = 'bddb7fd34ee661ee';
+
+/** Approximate SOL threshold for bonding curve graduation (~85 SOL real reserves) */
+export const DEFAULT_GRADUATION_SOL_THRESHOLD = 85;
+
+// ============================================================================
 // Instruction Discriminators (from official IDL, first 8 bytes as hex)
 // ============================================================================
 
@@ -310,6 +326,14 @@ export interface BotConfig {
     githubOnlyFilter: boolean;
     /** IPFS gateway base URL for metadata fetching */
     ipfsGateway: string;
+    /** Enable graduation/migration alerts (default: true) */
+    enableGraduationAlerts: boolean;
+    /** Enable whale trade alerts (default: false) */
+    enableTradeAlerts: boolean;
+    /** Minimum SOL amount for a trade to trigger a whale alert (default: 10) */
+    whaleThresholdSol: number;
+    /** Enable creator fee distribution alerts (default: false) */
+    enableFeeDistributionAlerts: boolean;
 }
 
 // ============================================================================
@@ -367,6 +391,8 @@ export interface TokenLaunchEvent {
     githubUrls: string[];
     /** Whether mayhem mode is enabled */
     mayhemMode: boolean;
+    /** Whether cashback is enabled for this token */
+    cashbackEnabled: boolean;
     /** Full metadata JSON (if fetched successfully) */
     metadata?: Record<string, unknown>;
 }
@@ -391,5 +417,128 @@ export interface TokenLaunchMonitorState {
     /** Whether to only notify for GitHub-linked tokens */
     githubOnly: boolean;
     /** Total errors encountered (metadata fetches, tx parsing, etc.) */
+    errorsEncountered: number;
+}
+
+// ============================================================================
+// Graduation Event
+// ============================================================================
+
+/** Emitted when a token's bonding curve completes and/or migrates to PumpSwap AMM */
+export interface GraduationEvent {
+    /** Transaction signature */
+    txSignature: string;
+    /** Solana slot */
+    slot: number;
+    /** Block timestamp (unix seconds) */
+    timestamp: number;
+    /** The graduated token's mint address */
+    mintAddress: string;
+    /** User who triggered graduation */
+    user: string;
+    /** Bonding curve account */
+    bondingCurve: string;
+    /** true if CompletePumpAmmMigrationEvent, false if just CompleteEvent */
+    isMigration: boolean;
+    /** SOL amount migrated to AMM pool (migration only) */
+    solAmount?: number;
+    /** Token amount migrated (migration only) */
+    mintAmount?: number;
+    /** Migration fee paid in SOL (migration only) */
+    poolMigrationFee?: number;
+    /** PumpSwap AMM pool address (migration only) */
+    poolAddress?: string;
+}
+
+// ============================================================================
+// Trade Alert Event
+// ============================================================================
+
+/** Emitted for significant trades (whale alerts) on the bonding curve */
+export interface TradeAlertEvent {
+    /** Transaction signature */
+    txSignature: string;
+    /** Solana slot */
+    slot: number;
+    /** Block timestamp (unix seconds) */
+    timestamp: number;
+    /** Token mint address */
+    mintAddress: string;
+    /** Trader wallet */
+    user: string;
+    /** Token creator wallet */
+    creator: string;
+    /** true=buy, false=sell */
+    isBuy: boolean;
+    /** Trade amount in SOL */
+    solAmount: number;
+    /** Trade amount in tokens (raw lamport units) */
+    tokenAmount: number;
+    /** Platform fee in SOL */
+    fee: number;
+    /** Creator fee in SOL */
+    creatorFee: number;
+    /** Virtual SOL reserves (for price calculation) */
+    virtualSolReserves: number;
+    /** Virtual token reserves (for price calculation) */
+    virtualTokenReserves: number;
+    /** Real SOL reserves (for graduation progress) */
+    realSolReserves: number;
+    /** Real token reserves */
+    realTokenReserves: number;
+    /** Whether mayhem mode was active */
+    mayhemMode: boolean;
+    /** Approximate market cap in SOL */
+    marketCapSol: number;
+    /** Bonding curve progress toward graduation (0-100) */
+    bondingCurveProgress: number;
+}
+
+// ============================================================================
+// Fee Distribution Event
+// ============================================================================
+
+/** Emitted when creator fees are distributed among shareholders */
+export interface FeeDistributionEvent {
+    /** Transaction signature */
+    txSignature: string;
+    /** Solana slot */
+    slot: number;
+    /** Block timestamp (unix seconds) */
+    timestamp: number;
+    /** Token mint address */
+    mintAddress: string;
+    /** Bonding curve account */
+    bondingCurve: string;
+    /** Admin who triggered distribution */
+    admin: string;
+    /** Total SOL distributed */
+    distributedSol: number;
+    /** Distribution recipients and their shares */
+    shareholders: Array<{ address: string; shareBps: number }>;
+}
+
+// ============================================================================
+// Pump Event Monitor State
+// ============================================================================
+
+export interface PumpEventMonitorState {
+    /** Whether the monitor is currently running */
+    isRunning: boolean;
+    /** Connection mode */
+    mode: 'websocket' | 'polling';
+    /** Graduation events detected */
+    graduationsDetected: number;
+    /** All trades detected (above threshold) */
+    tradesDetected: number;
+    /** Whale trades detected (above whale threshold) */
+    whaleTradesDetected: number;
+    /** Fee distribution events detected */
+    feeDistributionsDetected: number;
+    /** Last processed slot */
+    lastSlot: number;
+    /** Uptime start (unix ms) */
+    startedAt: number;
+    /** Total errors encountered */
     errorsEncountered: number;
 }

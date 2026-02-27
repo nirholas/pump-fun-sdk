@@ -58,6 +58,7 @@ import {
   MinimumDistributableFeeEvent,
 } from "./state";
 
+/** Create an Anchor Program instance for the Pump bonding curve program. */
 export function getPumpProgram(connection: Connection): Program<Pump> {
   return new Program(
     pumpIdl as Pump,
@@ -65,10 +66,12 @@ export function getPumpProgram(connection: Connection): Program<Pump> {
   );
 }
 
+/** Pump bonding curve program ID. */
 export const PUMP_PROGRAM_ID = new PublicKey(
   "6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P",
 );
 
+/** Create an Anchor Program instance for the PumpAMM graduated pool program. */
 export function getPumpAmmProgram(connection: Connection): Program<PumpAmm> {
   return new Program(
     PumpAmmIdl as PumpAmm,
@@ -76,6 +79,7 @@ export function getPumpAmmProgram(connection: Connection): Program<PumpAmm> {
   );
 }
 
+/** Create an Anchor Program instance for the PumpFees fee-sharing program. */
 export function getPumpFeeProgram(connection: Connection): Program<PumpFees> {
   return new Program(
     PumpFeesIdl as PumpFees,
@@ -83,26 +87,38 @@ export function getPumpFeeProgram(connection: Connection): Program<PumpFees> {
   );
 }
 
+/** PumpAMM graduated pool program ID. */
 export const PUMP_AMM_PROGRAM_ID = new PublicKey(
   "pAMMBay6oceH9fJKBRHGP5D4bD4sWpmSwMn52FMfXEA",
 );
 
+/** Mayhem mode program ID. */
 export const MAYHEM_PROGRAM_ID = new PublicKey(
   "MAyhSmzXzV1pTf7LsNkrNwkWKTo4ougAJ1PPg47MD4e",
 );
 
+/** PumpFees fee-sharing program ID. */
 export const PUMP_FEE_PROGRAM_ID = new PublicKey(
   "pfeeUxB6jkeY1Hxd7CsFCAjcbHA9rWtchMGdZ6VojVZ",
 );
 
+/** Account size in bytes for a bonding curve account. */
 export const BONDING_CURVE_NEW_SIZE = 151;
 
+/** PUMP token mint address used for token incentive rewards. */
 export const PUMP_TOKEN_MINT = new PublicKey(
   "pumpCmXqMfrsAkQ5r49WcJnRayYRqmXz6ae8H7H9Dfn",
 );
 
+/** Maximum number of shareholders allowed in a fee-sharing config. */
 export const MAX_SHAREHOLDERS = 10;
 
+/**
+ * Offline-first SDK for building Pump protocol transaction instructions.
+ *
+ * All methods return `TransactionInstruction[]` and require no RPC connection.
+ * Use the pre-built singleton {@link PUMP_SDK} instead of constructing directly.
+ */
 export class PumpSdk {
   private readonly offlinePumpProgram: Program<Pump>;
   private readonly offlinePumpFeeProgram: Program<PumpFees>;
@@ -1012,6 +1028,7 @@ export class PumpSdk {
   }
 }
 
+/** Pre-built singleton instance of {@link PumpSdk}. Use this instead of `new PumpSdk()`. */
 export const PUMP_SDK = new PumpSdk();
 
 /**

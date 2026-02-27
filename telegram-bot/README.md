@@ -1,13 +1,16 @@
-# PumpFun Fee Claim Telegram Bot
+# PumpFun Fee Claim Monitor
 
-A standalone Telegram bot that monitors **PumpFun** on Solana and sends you real-time notifications when **Creator Fees** or **Cashback Rewards** are claimed by watched wallets.
+Telegram bot + REST API that monitors **PumpFun** on Solana and sends real-time notifications when **Creator Fees**, **Cashback Rewards**, or **Creator Takeovers (CTO)** are detected for watched wallets. Also monitors new token launches.
 
-Works in personal DMs and group chats.
+Works in personal DMs, group chats, and as a standalone API.
 
 ## Features
 
 - **Watch wallets** — Track any fee-recipient Solana wallet
 - **Creator Fees + Cashback Coins** — Detects both claim types
+- **CTO (Creator Takeover) alerts** — Detects creator fee redirection events
+- **Token launch monitor** — Real-time detection of new PumpFun token mints
+- **REST API** — Scalable HTTP API with auth, rate limiting, SSE streaming, and webhooks
 - **Real-time** — WebSocket mode for instant alerts (or HTTP polling fallback)
 - **Group-ready** — Add to Telegram groups so your whole team gets notified
 - **Persistent watches** — Saved to disk, survives restarts
@@ -66,6 +69,8 @@ npm start
 | `/unwatch <wallet_or_#>` | Stop watching (by address or list number) |
 | `/list` | Show all active watches for this chat |
 | `/status` | Monitor status, uptime, claims detected |
+| `/monitor` | Start real-time new token launch monitoring |
+| `/stopmonitor` | Stop token launch monitoring |
 
 ## How It Works
 
@@ -149,16 +154,18 @@ pumpfun-telegram-bot/
     ├── logger.ts          # Simple leveled logger
     ├── store.ts           # In-memory + disk-persisted watch store (bot)
     ├── monitor.ts         # Solana RPC monitor for PumpFun fee claims
-    ├── bot.ts             # grammY Telegram bot & command handlers
+    ├── token-launch-monitor.ts  # Real-time new token launch detection
+    ├── launch-store.ts    # Per-chat launch monitor state
+    ├── bot.ts             # grammу Telegram bot & command handlers
     ├── formatters.ts      # Rich HTML message formatting
     └── api/               # Scalable REST API
         ├── index.ts       # Module barrel
-        ├── server.ts      # HTTP server, routing, auth, CORS
+        ├── server.ts      # HTTP server, routing, auth, CORS, OpenAPI
         ├── types.ts       # API request/response types
         ├── apiStore.ts    # Per-client watch CRUD (separate from bot)
         ├── claimBuffer.ts # Ring buffer + SSE fan-out for claims
         ├── rateLimiter.ts # Sliding-window per-client rate limiter
-        └── webhooks.ts    # Webhook delivery with retries
+        └── webhooks.ts    # Webhook delivery with HMAC signatures + retries
 ```
 
 ## REST API
@@ -203,6 +210,7 @@ If `API_KEYS` is empty, no authentication is required (development mode).
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
 | `GET` | `/api/v1/health` | No | Health check, uptime, monitor status |
+| `GET` | `/api/v1/openapi` | No | OpenAPI 3.0.3 spec (JSON) |
 | `GET` | `/api/v1/status` | Yes | Detailed monitor + watch + claim stats |
 | `GET` | `/api/v1/claims` | Yes | Paginated claim history with filters |
 | `GET` | `/api/v1/claims/stream` | Yes | SSE real-time claim event stream |

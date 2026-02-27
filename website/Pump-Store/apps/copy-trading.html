@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="pump-include" content="pump.css">
+    <meta name="capabilities" content="copy_trading">
+    <meta name="aspect-ratio" content="16/10">
+    <meta name="pump-icon" content="content_copy">
+    <meta name="pump-perms" content="network" />
+    <title>Copy Trading</title>
+    <style>
+        :root { --bg1:#0a0a0a; --bg2:#111; --bg3:#1a1a1a; --accent:#00e87b; --purple:#9945FF; --red:#ff4d4d; --yellow:#ffd43b; }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:'Poppins',system-ui,sans-serif; background:var(--bg1); color:#fff; height:100vh; overflow:hidden; }
+        .app { display:grid; grid-template-rows:auto auto 1fr; height:100vh; }
+
+        .header { padding:12px 16px; display:flex; align-items:center; gap:10px; border-bottom:1px solid #ffffff0a; }
+        .header h1 { font-size:0.95rem; font-weight:600; flex:1; }
+        .add-btn { padding:6px 14px; border-radius:8px; border:none; background:var(--accent); color:#000; font-weight:600; font-size:0.75rem; cursor:pointer; font-family:inherit; display:flex; align-items:center; gap:4px; }
+        .add-btn .material-symbols-rounded { font-size:16px; }
+
+        .tabs { display:flex; border-bottom:1px solid #ffffff08; }
+        .tab { flex:1; padding:10px 16px; font-size:0.75rem; text-align:center; cursor:pointer; border-bottom:2px solid transparent; color:#666; transition:all 0.15s; }
+        .tab.active { color:var(--accent); border-bottom-color:var(--accent); }
+        .tab:hover:not(.active) { color:#aaa; }
+
+        .content { overflow-y:auto; padding:16px; }
+
+        /* Wallet Cards */
+        .wallet-card { background:var(--bg2); border:1px solid #ffffff08; border-radius:14px; padding:16px; margin-bottom:12px; transition:all 0.2s; }
+        .wallet-card:hover { border-color:#ffffff14; }
+        .wc-top { display:flex; align-items:center; gap:12px; margin-bottom:14px; }
+        .wc-avatar { width:42px; height:42px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.85rem; flex-shrink:0; }
+        .wc-info { flex:1; min-width:0; }
+        .wc-name { font-weight:600; font-size:0.9rem; display:flex; align-items:center; gap:6px; }
+        .wc-name .badge { font-size:0.55rem; padding:2px 6px; border-radius:10px; font-weight:600; }
+        .wc-name .badge.whale { background:rgba(153,69,255,0.15); color:var(--purple); }
+        .wc-name .badge.smart { background:rgba(0,232,123,0.12); color:var(--accent); }
+        .wc-name .badge.degen { background:rgba(255,77,77,0.12); color:var(--red); }
+        .wc-addr { font-size:0.65rem; color:#555; font-family:monospace; }
+        .wc-toggle { display:flex; flex-direction:column; align-items:flex-end; gap:4px; }
+        .toggle-switch { width:38px; height:20px; border-radius:10px; background:var(--bg3); border:1px solid #ffffff0c; cursor:pointer; position:relative; transition:all 0.2s; }
+        .toggle-switch.on { background:var(--accent); border-color:var(--accent); }
+        .toggle-switch::after { content:''; position:absolute; width:16px; height:16px; border-radius:50%; background:#fff; top:1px; left:1px; transition:all 0.2s; }
+        .toggle-switch.on::after { left:19px; }
+        .toggle-label { font-size:0.55rem; color:#555; }
+
+        .wc-stats { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:14px; }
+        .wc-stat { background:var(--bg3); border-radius:8px; padding:8px 10px; text-align:center; border:1px solid #ffffff04; }
+        .wc-stat .label { font-size:0.55rem; color:#555; display:block; }
+        .wc-stat .value { font-size:0.8rem; font-weight:600; }
+        .wc-stat .value.green { color:var(--accent); }
+        .wc-stat .value.red { color:var(--red); }
+        .wc-stat .value.purple { color:var(--purple); }
+
+        .wc-trades { border-top:1px solid #ffffff06; padding-top:10px; }
+        .wc-trades-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+        .wc-trades-header span { font-size:0.65rem; color:#555; }
+        .wc-trades-header a { font-size:0.65rem; color:var(--accent); text-decoration:none; cursor:pointer; }
+        .trade-row { display:flex; align-items:center; gap:8px; padding:5px 0; font-size:0.7rem; border-bottom:1px solid #ffffff04; }
+        .trade-row:last-child { border:none; }
+        .trade-type { width:30px; font-weight:600; font-size:0.65rem; }
+        .trade-type.buy { color:var(--accent); }
+        .trade-type.sell { color:var(--red); }
+        .trade-token { flex:1; display:flex; align-items:center; gap:6px; }
+        .trade-token-icon { width:18px; height:18px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.5rem; font-weight:700; }
+        .trade-sol { color:#aaa; width:60px; text-align:right; }
+        .trade-pnl { width:60px; text-align:right; font-weight:600; }
+        .trade-pnl.up { color:var(--accent); }
+        .trade-pnl.down { color:var(--red); }
+        .trade-time { color:#444; width:50px; text-align:right; }
+        .copy-trade-btn { padding:3px 8px; border-radius:6px; border:1px solid var(--accent); background:none; color:var(--accent); font-size:0.6rem; cursor:pointer; font-family:inherit; }
+        .copy-trade-btn:hover { background:var(--accent); color:#000; }
+
+        /* Settings Modal */
+        .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.6); display:none; align-items:center; justify-content:center; z-index:100; }
+        .modal-overlay.show { display:flex; }
+        .modal { background:var(--bg2); border:1px solid #ffffff0c; border-radius:16px; padding:24px; width:360px; max-width:90%; }
+        .modal h2 { font-size:0.9rem; margin-bottom:16px; }
+        .modal-field { margin-bottom:12px; }
+        .modal-field label { display:block; font-size:0.65rem; color:#888; margin-bottom:4px; }
+        .modal-field input { width:100%; padding:8px 12px; background:var(--bg3); border:1px solid #ffffff0c; border-radius:8px; color:#fff; font-size:0.8rem; outline:none; font-family:inherit; }
+        .modal-field input:focus { border-color:var(--accent); }
+        .modal-actions { display:flex; gap:8px; margin-top:16px; }
+        .modal-actions button { flex:1; padding:10px; border-radius:8px; font-size:0.8rem; font-weight:600; cursor:pointer; border:none; font-family:inherit; }
+        .modal-actions .cancel { background:var(--bg3); color:#aaa; }
+        .modal-actions .confirm { background:var(--accent); color:#000; }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <div class="header">
+            <span class="material-symbols-rounded" style="color:var(--accent);">content_copy</span>
+            <h1>Copy Trading</h1>
+            <button class="add-btn" onclick="showAddModal()">
+                <span class="material-symbols-rounded">add</span> Follow Wallet
+            </button>
+        </div>
+
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab(this,'wallets')">Tracked Wallets</div>
+            <div class="tab" onclick="switchTab(this,'activity')">Live Activity</div>
+            <div class="tab" onclick="switchTab(this,'pnl')">P&L Summary</div>
+        </div>
+
+        <div class="content" id="content"></div>
+    </div>
+
+    <!-- Add Wallet Modal -->
+    <div class="modal-overlay" id="addModal">
+        <div class="modal">
+            <h2>Follow a Wallet</h2>
+            <div class="modal-field">
+                <label>Wallet Address</label>
+                <input id="modalAddr" placeholder="Paste Solana wallet address..." />
+            </div>
+            <div class="modal-field">
+                <label>Label (optional)</label>
+                <input id="modalLabel" placeholder="e.g. Smart Money #1" />
+            </div>
+            <div class="modal-field">
+                <label>Max SOL per Trade</label>
+                <input id="modalMax" type="number" value="1" step="0.1" />
+            </div>
+            <div class="modal-actions">
+                <button class="cancel" onclick="closeAddModal()">Cancel</button>
+                <button class="confirm" onclick="addWallet()">Follow</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    const DEMO_WALLETS = [
+        {
+            name: 'Smart Money Alpha', addr: '7xKX...r3Pm', type: 'smart',
+            pnl: 342.5, winRate: 78, trades: 156, avgHold: '2.3h', volume: 1240,
+            recentTrades: [
+                { type:'buy', token:'MOONCAT', color:'#00e87b', sol:2.5, pnl:'+45%', time:'3m' },
+                { type:'sell', token:'DEGENWIF', color:'#9945FF', sol:1.8, pnl:'+120%', time:'12m' },
+                { type:'buy', token:'FROGGY', color:'#14F195', sol:3.0, pnl:'-8%', time:'28m' },
+                { type:'buy', token:'SOLAPE', color:'#ff9800', sol:0.5, pnl:'+210%', time:'1h' },
+            ]
+        },
+        {
+            name: 'Whale Watcher', addr: '9dFk...uQ2x', type: 'whale',
+            pnl: 1250.0, winRate: 65, trades: 89, avgHold: '14h', volume: 8900,
+            recentTrades: [
+                { type:'buy', token:'PUMPIT', color:'#e91e63', sol:15.0, pnl:'+12%', time:'5m' },
+                { type:'sell', token:'BONKINU', color:'#ffd43b', sol:22.0, pnl:'+88%', time:'45m' },
+                { type:'buy', token:'SOLTOSHI', color:'#00bcd4', sol:10.0, pnl:'+5%', time:'2h' },
+            ]
+        },
+        {
+            name: 'Degen Trader', addr: '3mPz...hK7n', type: 'degen',
+            pnl: -45.2, winRate: 42, trades: 412, avgHold: '8m', volume: 560,
+            recentTrades: [
+                { type:'buy', token:'YOLOSOL', color:'#ff4d4d', sol:0.2, pnl:'-35%', time:'1m' },
+                { type:'sell', token:'AIDOG', color:'#8bc34a', sol:0.5, pnl:'+15%', time:'4m' },
+                { type:'buy', token:'MEMECOIN', color:'#00e5ff', sol:0.3, pnl:'-60%', time:'6m' },
+                { type:'buy', token:'GALAXYFI', color:'#9945FF', sol:0.1, pnl:'+300%', time:'15m' },
+                { type:'sell', token:'HOTDOG', color:'#ff9800', sol:0.4, pnl:'-22%', time:'22m' },
+            ]
+        }
+    ];
+
+    let activeTab = 'wallets';
+    let followState = { '7xKX...r3Pm': true, '9dFk...uQ2x': false, '3mPz...hK7n': true };
+
+    function switchTab(el, tab) {
+        activeTab = tab;
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        el.classList.add('active');
+        render();
+    }
+
+    function render() {
+        const content = document.getElementById('content');
+        if (activeTab === 'wallets') renderWallets(content);
+        else if (activeTab === 'activity') renderActivity(content);
+        else renderPnl(content);
+    }
+
+    function renderWallets(el) {
+        el.innerHTML = DEMO_WALLETS.map(w => {
+            const isOn = followState[w.addr];
+            const badgeClass = w.type;
+            const badgeLabel = w.type === 'smart' ? '🧠 Smart' : w.type === 'whale' ? '🐋 Whale' : '🎲 Degen';
+            return `<div class="wallet-card">
+                <div class="wc-top">
+                    <div class="wc-avatar" style="background:${w.type==='smart'?'rgba(0,232,123,0.15)':w.type==='whale'?'rgba(153,69,255,0.15)':'rgba(255,77,77,0.15)'};color:${w.type==='smart'?'var(--accent)':w.type==='whale'?'var(--purple)':'var(--red)'}">
+                        ${w.name.split(' ').map(x=>x[0]).join('')}
+                    </div>
+                    <div class="wc-info">
+                        <div class="wc-name">${w.name} <span class="badge ${badgeClass}">${badgeLabel}</span></div>
+                        <div class="wc-addr">${w.addr}</div>
+                    </div>
+                    <div class="wc-toggle">
+                        <div class="toggle-switch ${isOn?'on':''}" onclick="toggleFollow('${w.addr}')"></div>
+                        <span class="toggle-label">${isOn?'Copying':'Paused'}</span>
+                    </div>
+                </div>
+                <div class="wc-stats">
+                    <div class="wc-stat"><span class="label">P&L</span><span class="value ${w.pnl>=0?'green':'red'}">${w.pnl>=0?'+':''}${w.pnl.toFixed(1)} SOL</span></div>
+                    <div class="wc-stat"><span class="label">Win Rate</span><span class="value ${w.winRate>=60?'green':w.winRate>=50?'':'red'}">${w.winRate}%</span></div>
+                    <div class="wc-stat"><span class="label">Trades</span><span class="value">${w.trades}</span></div>
+                    <div class="wc-stat"><span class="label">Avg Hold</span><span class="value purple">${w.avgHold}</span></div>
+                </div>
+                <div class="wc-trades">
+                    <div class="wc-trades-header">
+                        <span>Recent Trades</span>
+                        <a onclick="event.preventDefault()">View All →</a>
+                    </div>
+                    ${w.recentTrades.slice(0,4).map(t => `
+                        <div class="trade-row">
+                            <span class="trade-type ${t.type}">${t.type.toUpperCase()}</span>
+                            <div class="trade-token">
+                                <div class="trade-token-icon" style="background:${t.color}22;color:${t.color}">${t.token.slice(0,2)}</div>
+                                ${t.token}
+                            </div>
+                            <span class="trade-sol">${t.sol} SOL</span>
+                            <span class="trade-pnl ${t.pnl.startsWith('+')?'up':'down'}">${t.pnl}</span>
+                            <span class="trade-time">${t.time}</span>
+                            <button class="copy-trade-btn" onclick="event.stopPropagation();copyTrade('${t.token}','${t.type}',${t.sol})">Copy</button>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    function renderActivity(el) {
+        const allTrades = [];
+        DEMO_WALLETS.forEach(w => {
+            w.recentTrades.forEach(t => allTrades.push({ ...t, wallet: w.name, walletAddr: w.addr }));
+        });
+        allTrades.sort((a,b) => parseInt(a.time) - parseInt(b.time));
+
+        el.innerHTML = `<div style="font-size:0.7rem;color:#555;margin-bottom:12px;">Live feed of all tracked wallet activity</div>` +
+            allTrades.map(t => `
+                <div class="trade-row" style="padding:8px 0;">
+                    <span class="trade-type ${t.type}">${t.type.toUpperCase()}</span>
+                    <div class="trade-token">
+                        <div class="trade-token-icon" style="background:${t.color}22;color:${t.color}">${t.token.slice(0,2)}</div>
+                        <div>
+                            <div>${t.token}</div>
+                            <div style="font-size:0.55rem;color:#444;">${t.wallet}</div>
+                        </div>
+                    </div>
+                    <span class="trade-sol">${t.sol} SOL</span>
+                    <span class="trade-pnl ${t.pnl.startsWith('+')?'up':'down'}">${t.pnl}</span>
+                    <span class="trade-time">${t.time}</span>
+                    <button class="copy-trade-btn" onclick="event.stopPropagation();copyTrade('${t.token}','${t.type}',${t.sol})">Copy</button>
+                </div>
+            `).join('');
+    }
+
+    function renderPnl(el) {
+        const totalPnl = DEMO_WALLETS.reduce((s,w) => s + w.pnl, 0);
+        const totalTrades = DEMO_WALLETS.reduce((s,w) => s + w.trades, 0);
+        const avgWin = (DEMO_WALLETS.reduce((s,w) => s + w.winRate, 0) / DEMO_WALLETS.length).toFixed(0);
+        el.innerHTML = `
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px;">
+                <div class="wc-stat" style="padding:16px;text-align:center;">
+                    <span class="label" style="font-size:0.7rem;">Total P&L</span>
+                    <div class="value ${totalPnl>=0?'green':'red'}" style="font-size:1.4rem;margin-top:6px;">${totalPnl>=0?'+':''}${totalPnl.toFixed(1)} SOL</div>
+                </div>
+                <div class="wc-stat" style="padding:16px;text-align:center;">
+                    <span class="label" style="font-size:0.7rem;">Total Trades</span>
+                    <div class="value" style="font-size:1.4rem;margin-top:6px;">${totalTrades}</div>
+                </div>
+                <div class="wc-stat" style="padding:16px;text-align:center;">
+                    <span class="label" style="font-size:0.7rem;">Avg Win Rate</span>
+                    <div class="value ${avgWin>=60?'green':''}" style="font-size:1.4rem;margin-top:6px;">${avgWin}%</div>
+                </div>
+            </div>
+            <div style="font-size:0.75rem;font-weight:600;margin-bottom:10px;">Per-Wallet Breakdown</div>
+            ${DEMO_WALLETS.map(w => `
+                <div style="display:flex;align-items:center;gap:12px;padding:10px 12px;background:var(--bg2);border-radius:10px;margin-bottom:8px;border:1px solid #ffffff06;">
+                    <span style="font-weight:600;flex:1;font-size:0.8rem;">${w.name}</span>
+                    <span class="${w.pnl>=0?'green':'red'}" style="font-weight:600;color:${w.pnl>=0?'var(--accent)':'var(--red)'};">${w.pnl>=0?'+':''}${w.pnl.toFixed(1)} SOL</span>
+                    <span style="font-size:0.7rem;color:#888;">${w.trades} trades</span>
+                    <span style="font-size:0.7rem;color:${w.winRate>=60?'var(--accent)':'#888'};">${w.winRate}% win</span>
+                </div>
+            `).join('')}
+        `;
+    }
+
+    function toggleFollow(addr) {
+        followState[addr] = !followState[addr];
+        render();
+    }
+
+    function copyTrade(token, type, sol) {
+        alert(`Copy ${type.toUpperCase()} on ${token} (${sol} SOL)\n\nIn production, this calls:\nPumpSdk.${type}Instruction(mint, amount)\n\nConnect your wallet first.`);
+    }
+
+    function showAddModal() { document.getElementById('addModal').classList.add('show'); }
+    function closeAddModal() { document.getElementById('addModal').classList.remove('show'); }
+    function addWallet() {
+        const addr = document.getElementById('modalAddr').value;
+        const label = document.getElementById('modalLabel').value;
+        if (!addr) return;
+        alert(`Following wallet: ${label || addr}\n\nIn production, this subscribes to on-chain events via WebSocket.`);
+        closeAddModal();
+    }
+
+    render();
+    </script>
+</body>
+</html>
