@@ -306,3 +306,4 @@ vercel --prod  # production deploy
 - [Plugin Manifest](../../packages/plugin.delivery/public/pump-fun-sdk/manifest.json)
 - [SperaxOS / Plugin Delivery](https://plugin.delivery)
 - [Pump Fun SDK](https://github.com/nicholasxuu/pump-fun-sdk)
+
