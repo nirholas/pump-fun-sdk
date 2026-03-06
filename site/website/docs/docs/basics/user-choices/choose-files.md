@@ -30,3 +30,4 @@ More: [greenflag](../timing.md), [mywindow](../managing-self/).
 | opener       | A file type to filter with.                            | <p>"opener":"json"<br>"opener":"app"</p>   |
 | dir          | A directory to initialize the choose file window with. | <p>"dir":"Downloads/"<br>"dir":"Apps/"</p> |
 
+
