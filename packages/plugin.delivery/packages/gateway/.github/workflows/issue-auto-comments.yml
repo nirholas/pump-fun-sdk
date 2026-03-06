@@ -70,3 +70,4 @@ jobs:
           token: ${{ secrets.GH_TOKEN }}
           issue-number: ${{ github.event.issue.number }}
           labels: 'Inactive'
+
