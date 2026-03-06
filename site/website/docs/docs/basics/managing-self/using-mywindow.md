@@ -21,3 +21,4 @@ function whatIsMyWindowId() {
 ```
 
 myWindow is also used under OLP for initiating your app as a handler, [learn how.](the-open-launch-protocol.md#using-olp-as-a-trigger)
+
