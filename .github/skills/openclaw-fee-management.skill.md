@@ -188,3 +188,4 @@ interface SharingConfig {
 - More than 10 shareholders — throws `TooManyShareholdersError`
 - Trying to distribute when fees are below minimum threshold
 - Not passing `currentShareholders` when updating — needed for remaining accounts
+
