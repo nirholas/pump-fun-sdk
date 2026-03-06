@@ -9,3 +9,4 @@ module.exports = function handler(_req, res) {
   res.setHeader('Cache-Control', 'no-cache');
   res.status(200).json({ status: 'ok', ts: Date.now() });
 };
+
