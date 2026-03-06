@@ -38,3 +38,4 @@ export const checkUniqueIdentifier = (arr) => {
     consola.success('Unique identifier check pass');
   }
 };
+
