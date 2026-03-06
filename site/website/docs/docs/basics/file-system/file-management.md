@@ -89,3 +89,4 @@ If you only want a specific kind of data from the file (uses lower resources):
 
 <pre class="language-js"><code class="lang-js"><strong>await ntx.fileGet.byId(UID, "fileName|content|metadata|path")
 </strong></code></pre>
+
