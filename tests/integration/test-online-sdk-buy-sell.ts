@@ -142,9 +142,9 @@ async function main() {
   console.log("\nFetching post-buy sell state ...");
   const sellState = await sdk.fetchSellState(mint, wallet.publicKey, buyState.tokenProgram);
 
-  // Read actual token balance from the ATA
-  const { TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync } = await import("@solana/spl-token");
-  const ata = getAssociatedTokenAddressSync(mint, wallet.publicKey, true, TOKEN_PROGRAM_ID);
+  // Read actual token balance from the ATA (use detected token program, not hardcoded SPL)
+  const { getAssociatedTokenAddressSync } = await import("@solana/spl-token");
+  const ata = getAssociatedTokenAddressSync(mint, wallet.publicKey, true, buyState.tokenProgram);
   const ataInfo = await connection.getAccountInfo(ata);
   assert(ataInfo !== null, "ATA does not exist after buy — buy may have failed");
 
