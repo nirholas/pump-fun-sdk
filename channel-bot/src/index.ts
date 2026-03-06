@@ -280,11 +280,21 @@ async function main(): Promise<void> {
 
     // ── Health check server ──────────────────────────────────────────
     const startedAt = Date.now();
+    let messagesPosted = 0;
+    const originalPost = postToChannel;
+    const postToChannelTracked = async (message: string): Promise<void> => {
+        await originalPost(message);
+        messagesPosted++;
+    };
+
     startHealthServer({
         startedAt,
         getStats: () => ({
             feeds: config.feed,
             channel: config.channelId,
+            requireGithub: config.requireGithub,
+            messagesPosted,
+            claimMonitor: claimMonitor.getMetrics(),
         }),
     });
 

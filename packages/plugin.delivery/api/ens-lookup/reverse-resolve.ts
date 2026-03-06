@@ -1,3 +1,5 @@
+import { namehash } from './keccak256.js';
+
 export const config = { runtime: 'edge' };
 
 function isEthAddress(addr: string): boolean {
@@ -10,6 +12,7 @@ function isBase58Address(addr: string): boolean {
 }
 
 const ETH_RPC = 'https://eth.llamarpc.com';
+const ENS_REGISTRY = '0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e';
 
 /**
  * Get ENS name for address (reverse resolution)
@@ -66,32 +69,65 @@ export default async function handler(req: Request) {
       }
     }
 
-    // Ethereum address — ENS reverse resolution
+    // Ethereum address — ENS reverse resolution via registry + resolver
     if (isEthAddress(address)) {
       try {
-        // Build the reverse name: <address>.addr.reverse
         const reverseAddr = address.toLowerCase().slice(2) + '.addr.reverse';
+        const node = namehash(reverseAddr);
 
-        // Simple approach: call the ENS registry for the reverse record resolver
-        // then call name() on it
-        const ENS_REGISTRY = '0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e';
+        // Step 1: Get the resolver for the reverse record
+        const resolverResp = await fetch(ETH_RPC, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            jsonrpc: '2.0', id: 1, method: 'eth_call',
+            params: [{ to: ENS_REGISTRY, data: '0x0178b8bf' + node.slice(2) }, 'latest'],
+          }),
+        });
+        const resolverJson = await resolverResp.json();
+        const resolverResult = resolverJson.result;
 
-        // namehash for addr.reverse is a known constant
-        // For a specific address, we need to compute namehash(reverseAddr)
-        // Since we can't do keccak256 natively in edge, use eth_call with a helper
-        // Attempt via ENS universal resolver
-        const UNIVERSAL_RESOLVER = '0xce01f8eee7E479C928F8919abD53E553a36CeF67';
+        if (resolverResult && resolverResult !== '0x' + '0'.repeat(64)) {
+          const resolverAddr = '0x' + resolverResult.slice(26);
 
-        // Encode reverse(bytes) — simplified: try to get the name via a direct call
-        // For v1, return that reverse resolution requires keccak256 which isn't available in edge runtime
+          // Step 2: Call name(bytes32) on the resolver — selector: 0x691f3431
+          const nameResp = await fetch(ETH_RPC, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              jsonrpc: '2.0', id: 2, method: 'eth_call',
+              params: [{ to: resolverAddr, data: '0x691f3431' + node.slice(2) }, 'latest'],
+            }),
+          });
+          const nameJson = await nameResp.json();
+          const nameResult = nameJson.result;
+
+          if (nameResult && nameResult.length > 130) {
+            // ABI-decode string: offset (32 bytes) + length (32 bytes) + data
+            const strLen = parseInt(nameResult.slice(66, 130), 16);
+            if (strLen > 0 && strLen < 256) {
+              const nameHex = nameResult.slice(130, 130 + strLen * 2);
+              const nameBytes = new Uint8Array(strLen);
+              for (let i = 0; i < strLen; i++) {
+                nameBytes[i] = parseInt(nameHex.slice(i * 2, i * 2 + 2), 16);
+              }
+              const resolvedName = new TextDecoder().decode(nameBytes);
+
+              if (resolvedName && resolvedName.includes('.')) {
+                return new Response(JSON.stringify({
+                  success: true,
+                  data: { address, name: resolvedName, chain: 'ethereum', resolver: resolverAddr },
+                }), {
+                  headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=300' },
+                });
+              }
+            }
+          }
+        }
+
         return new Response(JSON.stringify({
           success: true,
-          data: {
-            address,
-            name: null,
-            chain: 'ethereum',
-            note: 'ENS reverse resolution requires keccak256 hashing. Use a full Ethereum library for production resolution.',
-          },
+          data: { address, name: null, chain: 'ethereum' },
         }), {
           headers: { 'Content-Type': 'application/json' },
         });

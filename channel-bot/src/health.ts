@@ -25,13 +25,16 @@ export function startHealthServer(opts: HealthStats): void {
     server = createServer((req, res) => {
         if (req.method === 'GET' && (req.url === '/health' || req.url === '/')) {
             const uptimeMs = Date.now() - opts.startedAt;
+            const dynamicStats = opts.getStats?.() ?? {};
+            const status = dynamicStats.degraded ? 'degraded' : 'ok';
             const body = JSON.stringify({
-                status: 'ok',
+                status,
                 uptime: `${Math.floor(uptimeMs / 1000)}s`,
                 uptimeMs,
-                ...opts.getStats?.(),
+                ...dynamicStats,
             });
-            res.writeHead(200, { 'Content-Type': 'application/json' });
+            const statusCode = status === 'ok' ? 200 : 503;
+            res.writeHead(statusCode, { 'Content-Type': 'application/json' });
             res.end(body);
         } else {
             res.writeHead(404);

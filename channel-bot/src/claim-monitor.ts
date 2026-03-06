@@ -82,7 +82,7 @@ class RpcQueue {
             this.lastRequestTime = Date.now();
             this.inFlight++;
             this.processFn(sig)
-                .catch(() => {})
+                .catch((err) => { log.debug('RPC queue item failed: %s', err); })
                 .finally(() => { this.inFlight--; this.drain(); });
         }
         this.processing = false;
@@ -165,6 +165,15 @@ export class ClaimMonitor {
             this.pollTimer = undefined;
         }
         log.info('Claim monitor stopped');
+    }
+
+    getMetrics(): Record<string, unknown> {
+        return {
+            claimsDetected: this.claimsDetected,
+            processedSignatures: this.processedSignatures.size,
+            mode: this.wsSubscriptionIds.length > 0 ? 'websocket' : 'polling',
+            uptimeMs: this.startedAt ? Date.now() - this.startedAt : 0,
+        };
     }
 
     // ── WebSocket ────────────────────────────────────────────────────
@@ -309,7 +318,6 @@ export class ClaimMonitor {
             if (!tx?.meta || tx.meta.err) return;
 
             const instructions = tx.transaction.message.instructions;
-            const innerInstructions = tx.meta.innerInstructions ?? [];
             const timestamp = tx.blockTime ?? Math.floor(Date.now() / 1000);
             const slot = tx.slot;
 

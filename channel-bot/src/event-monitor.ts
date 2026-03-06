@@ -202,8 +202,8 @@ export class EventMonitor {
                 } else if (disc === DISTRIBUTE_FEES_EVENT_DISCRIMINATOR) {
                     this.decodeFeeDistribution(bytes, signature);
                 }
-            } catch {
-                // Skip malformed log lines
+            } catch (err) {
+                log.debug('Malformed log line in %s: %s', signature.slice(0, 8), err);
             }
         }
     }
@@ -344,7 +344,7 @@ export class EventMonitor {
             const event: GraduationEvent = {
                 txSignature: signature,
                 slot: 0,
-                timestamp: Math.floor(Date.now() / 1000),
+                timestamp: 0,
                 mintAddress: mint,
                 user,
                 bondingCurve,
@@ -443,25 +443,46 @@ export class EventMonitor {
     private decodeFeeDistribution(bytes: Buffer, signature: string): void {
         try {
             // DistributeCreatorFeesEvent layout after 8-byte discriminator:
-            // mint: Pubkey (32), bondingCurve: Pubkey (32), admin: Pubkey (32),
+            // timestamp: i64, mint: Pubkey (32), sharingConfig: Pubkey (32), admin: Pubkey (32),
+            // shareholders: Vec<{address: Pubkey(32), shareBps: u16}>,
             // distributedAmount: u64
-            if (bytes.length < 8 + 96 + 8) return;
+            if (bytes.length < 8 + 8 + 96 + 8) return;
 
             let offset = 8;
+            const timestamp = Number(bytes.readBigInt64LE(offset)); offset += 8;
             const mint = this.readPubkey(bytes, offset); offset += 32;
             const bondingCurve = this.readPubkey(bytes, offset); offset += 32;
             const admin = this.readPubkey(bytes, offset); offset += 32;
-            const distributedSol = Number(bytes.readBigUInt64LE(offset)) / LAMPORTS_PER_SOL;
+
+            // Parse shareholders vector: 4-byte LE count, then {Pubkey(32) + u16(2)} per entry
+            const shareholders: Array<{ address: string; shareBps: number }> = [];
+            if (offset + 4 <= bytes.length) {
+                const vecLen = bytes.readUInt32LE(offset); offset += 4;
+                for (let i = 0; i < vecLen && offset + 34 <= bytes.length; i++) {
+                    const address = this.readPubkey(bytes, offset); offset += 32;
+                    const shareBps = bytes.readUInt16LE(offset); offset += 2;
+                    shareholders.push({ address, shareBps });
+                }
+                if (vecLen > shareholders.length) {
+                    log.debug('Fee distribution: truncated shareholder list (%d/%d) for %s', shareholders.length, vecLen, signature.slice(0, 8));
+                }
+            }
+
+            // distributedAmount is the last 8 bytes after shareholders
+            let distributedSol = 0;
+            if (offset + 8 <= bytes.length) {
+                distributedSol = Number(bytes.readBigUInt64LE(offset)) / LAMPORTS_PER_SOL;
+            }
 
             const event: FeeDistributionEvent = {
                 txSignature: signature,
                 slot: 0,
-                timestamp: Math.floor(Date.now() / 1000),
+                timestamp: timestamp || Math.floor(Date.now() / 1000),
                 mintAddress: mint,
                 bondingCurve,
                 admin,
                 distributedSol,
-                shareholders: [],
+                shareholders,
             };
 
             this.onFeeDistribution(event);

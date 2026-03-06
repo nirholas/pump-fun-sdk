@@ -1,34 +1,9 @@
+import { namehash } from './keccak256.js';
+
 export const config = { runtime: 'edge' };
 
 const ETH_RPC = 'https://eth.llamarpc.com';
 const ENS_REGISTRY = '0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e';
-
-function namehash(name: string): string {
-  let node = '0x' + '0'.repeat(64);
-  if (!name) return node;
-  const labels = name.split('.');
-  for (let i = labels.length - 1; i >= 0; i--) {
-    const labelHash = keccak256(labels[i]);
-    node = keccak256Hex(node + labelHash.slice(2));
-  }
-  return node;
-}
-
-function keccak256(str: string): string {
-  // Simple implementation using Web Crypto isn't possible for keccak256
-  // Use a manual implementation of the namehash for common names
-  // For production, use ethers.js or a proper keccak256 library
-  // Falling back to the Bonfida API approach for both .eth and .sol
-  return '0x' + '0'.repeat(64);
-}
-
-function keccak256Hex(_hex: string): string {
-  return '0x' + '0'.repeat(64);
-}
-
-function isEthAddress(addr: string): boolean {
-  return /^0x[0-9a-fA-F]{40}$/.test(addr);
-}
 
 function isBase58Address(addr: string): boolean {
   const base58 = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';

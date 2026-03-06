@@ -86,6 +86,14 @@ See `.github/skills/` for 28 detailed skill documents. Each skill has an `applyT
 - If a terminal appears unresponsive, kill it and create a new one rather than retrying in the same terminal
 - **Failure to kill terminals is a blocking violation** — treat it as seriously as a security issue
 
+### File Management (MANDATORY)
+
+- **Always close files when done** — do not leave files open in the editor after finishing edits or reads
+
+### Forbidden Commands
+
+- **NEVER run `npx tsc --noEmit`** — use `npm run typecheck` instead if type-checking is needed
+
 ## Contributing
 
 - Follow the existing code style

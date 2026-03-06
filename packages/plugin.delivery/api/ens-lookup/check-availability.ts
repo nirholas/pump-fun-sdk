@@ -1,3 +1,5 @@
+import { namehash } from './keccak256.js';
+
 export const config = { runtime: 'edge' };
 
 const ETH_RPC = 'https://eth.llamarpc.com';
@@ -60,22 +62,47 @@ export default async function handler(req: Request) {
       availability.sol = { available: true, fullName: `${cleanName}.sol` };
     }
 
-    // Check .eth availability — try to resolve the name
-    // If resolution returns no address, it's likely available
+    // Check .eth availability via ENS registry
     try {
-      // Use a simple approach: try to resolve via ENS
-      // Since we can't compute namehash without keccak256 in edge runtime,
-      // we'll attempt via Bonfida-like approach but for ENS
-      // For v1, we note that full ENS availability check requires keccak256
-      availability.eth = {
-        available: false, // conservative: assume taken unless we can prove otherwise
-        fullName: `${cleanName}.eth`,
-      };
-
-      // Try a basic call to see if the name resolves
-      // ENS names < 3 chars are not registrable
       if (cleanName.length < 3) {
+        // ENS names < 3 chars are not registrable
         availability.eth = { available: false, fullName: `${cleanName}.eth` };
+      } else {
+        const fullName = `${cleanName}.eth`;
+        const node = namehash(fullName);
+
+        // Query ENS registry for resolver — if no resolver, name is available
+        const resolverResp = await fetch(ETH_RPC, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            jsonrpc: '2.0', id: 1, method: 'eth_call',
+            params: [{ to: ENS_REGISTRY, data: '0x0178b8bf' + node.slice(2) }, 'latest'],
+          }),
+        });
+        const resolverJson = await resolverResp.json();
+        const resolverResult = resolverJson.result;
+
+        const isZero = !resolverResult || resolverResult === '0x' + '0'.repeat(64);
+        if (isZero) {
+          availability.eth = { available: true, fullName };
+        } else {
+          // Has resolver — name is taken. Try to get the owner.
+          const ownerResp = await fetch(ETH_RPC, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              jsonrpc: '2.0', id: 2, method: 'eth_call',
+              params: [{ to: ENS_REGISTRY, data: '0x02571be3' + node.slice(2) }, 'latest'],
+            }),
+          });
+          const ownerJson = await ownerResp.json();
+          const ownerResult = ownerJson.result;
+          const ownerAddr = ownerResult && ownerResult !== '0x' + '0'.repeat(64)
+            ? '0x' + ownerResult.slice(26)
+            : undefined;
+          availability.eth = { available: false, fullName, owner: ownerAddr };
+        }
       }
     } catch {
       availability.eth = { available: false, fullName: `${cleanName}.eth` };
@@ -96,4 +123,3 @@ export default async function handler(req: Request) {
     });
   }
 }
-

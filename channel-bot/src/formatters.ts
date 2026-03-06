@@ -95,11 +95,11 @@ export function formatClaimFeed(ctx: ClaimFeedContext): { imageUrl: string | nul
     L.push('');
     const claimSol = event.amountSol.toFixed(4);
     const claimUsd = solUsdPrice > 0 ? ` ($${(event.amountSol * solUsdPrice).toFixed(2)})` : '';
+    L.push(`🏦 <b>${claimSol} SOL</b>${claimUsd}`);
     const isSelf = token?.creator === event.claimerWallet;
-    const claimerTag = isSelf ? '👤 Self' : '👻 3rd-party';
-    L.push(`🏦 <b>${claimSol} SOL</b>${claimUsd} · ${claimerTag}`);
-    const claimerLink = `<a href="https://pump.fun/profile/${event.claimerWallet}">${shortAddr(event.claimerWallet)}</a>`;
-    L.push(`  ↳ ${claimerLink}`);
+    const claimerTag = isSelf ? '👤 Creator' : '👻 3rd-party';
+    const claimerName = `<a href="${esc(githubUser!.htmlUrl)}">${esc(githubUser!.login)}</a>`;
+    L.push(`  ↳ Claimed by ${claimerName} (${claimerTag})`);
     if (token && token.createdTimestamp > 0 && event.timestamp > 0) {
         const diff = event.timestamp - token.createdTimestamp;
         if (diff >= 0) L.push(`⏱ Launch→Claim: <b>${formatDuration(diff)}</b>`);

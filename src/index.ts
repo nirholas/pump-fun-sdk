@@ -95,5 +95,11 @@ export type {
   TokenPriceInfo,
   BondingCurveSummary,
 } from "./analytics";
+export {
+  createFallbackConnection,
+  fetchWithFallback,
+  parseEndpoints,
+} from "./fallback";
+export type { FallbackConfig } from "./fallback";
 
 

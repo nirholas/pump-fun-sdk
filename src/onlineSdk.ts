@@ -14,7 +14,6 @@ import {
   TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
 import {
-  AccountInfo,
   Connection,
   PublicKey,
   PublicKeyInitData,
@@ -74,6 +73,10 @@ import {
   UserVolumeAccumulatorTotalStats,
 } from "./state";
 import { currentDayTokens, totalUnclaimedTokens } from "./tokenIncentives";
+import {
+  createFallbackConnection,
+  type FallbackConfig,
+} from "./fallback";
 
 export const OFFLINE_PUMP_PROGRAM = getPumpProgram(null as any as Connection);
 

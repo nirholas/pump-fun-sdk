@@ -8,7 +8,7 @@ describe("public API exports", () => {
   // ── IDL ────────────────────────────────────────────────────────────
 
   it("exports Pump IDL type and JSON", () => {
-    expect(sdk.Pump).toBeDefined();
+    // Pump is a type-only export (interface), only pumpIdl is a runtime value
     expect(sdk.pumpIdl).toBeDefined();
   });
 
@@ -139,8 +139,8 @@ describe("public API exports", () => {
 
   // ── Online SDK result types ────────────────────────────────────────
 
-  it("exports online SDK result enums", () => {
-    expect(sdk.MinimumDistributableFeeResult).toBeDefined();
-    expect(sdk.DistributeCreatorFeeResult).toBeDefined();
+  it("exports online SDK class", () => {
+    // MinimumDistributableFeeResult and DistributeCreatorFeeResult are type-only exports (interfaces)
+    expect(sdk.OnlinePumpSdk).toBeDefined();
   });
 });

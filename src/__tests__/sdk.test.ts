@@ -12,7 +12,7 @@ import {
   PUMP_TOKEN_MINT,
   MAX_SHAREHOLDERS,
 } from "../sdk";
-import { Platform, SUPPORTED_SOCIAL_PLATFORMS } from "../state";
+import { Platform } from "../state";
 import { feeSharingConfigPda, socialFeePda } from "../pda";
 import { TEST_PUBKEY, TEST_CREATOR } from "./fixtures";
 

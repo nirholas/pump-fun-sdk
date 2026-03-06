@@ -1,14 +1,15 @@
 import { z } from "zod";
 import { PublicKey, Keypair } from "@solana/web3.js";
 import BN from "bn.js";
-import {
-  PUMP_SDK,
-} from "@pump-fun/pump-sdk";
+import { PUMP_SDK, canonicalPumpPoolPda } from "@pump-fun/pump-sdk";
 import type { OnlinePumpSdk } from "@pump-fun/pump-sdk";
 import { publicKeySchema, bnStringSchema, slippageSchema } from "../utils/validation.js";
 import { instructionsToJson } from "../utils/formatting.js";
 import { success, error, getErrorMessage } from "../types.js";
 import type { ToolResult } from "../types.js";
+
+/** Well-known SPL Token Program ID */
+const TOKEN_PROGRAM_ID = new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
 
 // ── build_buy_instructions ──
 export const buildBuySchema = z.object({
@@ -41,11 +42,11 @@ export async function buildBuyInstructions(
       amount: solAmount,
     });
 
-    const instructions = PUMP_SDK.buyInstructions({
+    const instructions = await PUMP_SDK.buyInstructions({
       global,
       bondingCurveAccountInfo,
       bondingCurve,
-      associatedUserAccountInfo,
+      associatedUserAccountInfo: associatedUserAccountInfo ?? null,
       mint,
       user,
       amount,
@@ -94,7 +95,7 @@ export async function buildSellInstructions(
       amount,
     });
 
-    const instructions = PUMP_SDK.sellInstructions({
+    const instructions = await PUMP_SDK.sellInstructions({
       global,
       bondingCurveAccountInfo,
       bondingCurve,
@@ -103,6 +104,7 @@ export async function buildSellInstructions(
       amount,
       solAmount,
       slippage: params.slippage,
+      mayhemMode: false,
     });
 
     return success({
@@ -131,7 +133,7 @@ export async function buildCreateToken(
     const creator = new PublicKey(params.creator);
     const mint = Keypair.generate();
 
-    const instruction = PUMP_SDK.createV2Instruction({
+    const instruction = await PUMP_SDK.createV2Instruction({
       mint: mint.publicKey,
       name: params.name,
       symbol: params.symbol,
@@ -183,7 +185,7 @@ export async function buildCreateAndBuy(
       amount: solAmount,
     });
 
-    const instructions = PUMP_SDK.createV2AndBuyInstructions({
+    const instructions = await PUMP_SDK.createV2AndBuyInstructions({
       global,
       mint: mint.publicKey,
       name: params.name,
@@ -224,23 +226,23 @@ export async function buildAmmSwap(
   try {
     const mint = new PublicKey(params.mint);
     const user = new PublicKey(params.user);
-    const pool = await sdk.fetchPool(mint);
+    const poolAddress = canonicalPumpPoolPda(mint);
     const amount = new BN(params.amount);
     const minOutput = new BN(params.minOutput);
 
     let instruction;
     if (params.side === "buy") {
-      instruction = PUMP_SDK.ammBuyExactQuoteInInstruction({
+      instruction = await PUMP_SDK.ammBuyExactQuoteInInstruction({
         user,
-        pool: pool.address,
+        pool: poolAddress,
         mint,
         quoteAmountIn: amount,
         minBaseAmountOut: minOutput,
       });
     } else {
-      instruction = PUMP_SDK.ammSellInstruction({
+      instruction = await PUMP_SDK.ammSellInstruction({
         user,
-        pool: pool.address,
+        pool: poolAddress,
         mint,
         baseAmountIn: amount,
         minQuoteAmountOut: minOutput,
@@ -272,7 +274,7 @@ export async function buildMigrateInstructions(
     const user = new PublicKey(params.user);
     const withdrawAuthority = new PublicKey(params.withdrawAuthority);
 
-    const instruction = PUMP_SDK.migrateInstruction({
+    const instruction = await PUMP_SDK.migrateInstruction({
       withdrawAuthority,
       mint,
       user,
