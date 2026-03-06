@@ -15,7 +15,7 @@ import { Bot } from 'grammy';
 import { loadConfig } from './config.js';
 import { ClaimMonitor } from './claim-monitor.js';
 import { EventMonitor } from './event-monitor.js';
-import { recordClaim, isFirstClaimByWallet, loadPersistedClaims } from './claim-tracker.js';
+import { recordClaim, isFirstClaimOnToken, loadPersistedClaims } from './claim-tracker.js';
 import type { ClaimPriceSnapshot } from './claim-tracker.js';
 import { fetchTokenInfo, fetchCreatorProfile, fetchTokenHolders, fetchTokenTrades, fetchSolUsdPrice } from './pump-client.js';
 import { fetchRepoFromUrls, fetchGitHubUserFromUrls } from './github-client.js';
@@ -109,35 +109,41 @@ async function main(): Promise<void> {
         }
     }
 
+    // ── Pipeline Counters ─────────────────────────────────────────────
+    const pipeline = { total: 0, withMint: 0, withGithub: 0, firstClaim: 0, posted: 0 };
+    setInterval(() => {
+        log.info('Pipeline: %d callbacks → %d with mint → %d with GitHub → %d first-claim → %d posted',
+            pipeline.total, pipeline.withMint, pipeline.withGithub, pipeline.firstClaim, pipeline.posted);
+    }, 60_000);
+
     // ── Claim Monitor ────────────────────────────────────────────────
     const claimMonitor = new ClaimMonitor(config, async (event: FeeClaimEvent) => {
       try {
         if (!config.feed.claims) return;
+        pipeline.total++;
 
         // Skip wallet-level claims with no token mint (cashback, collect_creator_fee)
         const mint = event.tokenMint;
         if (!mint) return;
-
-        const wallet = event.claimerWallet;
-        if (!wallet) return;
+        pipeline.withMint++;
 
         // GitHub gate FIRST — fetch token and check for GitHub URLs
-        // before marking the wallet as seen. Non-GitHub claims must NOT
+        // before marking the token as seen. Non-GitHub claims must NOT
         // consume the "first-ever" status.
         const token = await fetchTokenInfo(mint);
         if (config.requireGithub) {
             if (!token?.githubUrls?.length) return;
         }
+        pipeline.withGithub++;
 
-        // Only post the first-ever claim by each wallet (checked AFTER
+        // Only post the first-ever claim on each token (checked AFTER
         // GitHub gate so non-GitHub claims don't burn the first-claim flag)
-        if (!isFirstClaimByWallet(wallet)) {
-            log.debug('Skipping claim by %s — wallet already claimed before', wallet.slice(0, 8));
-            return;
-        }
+        if (!isFirstClaimOnToken(mint)) return;
+        pipeline.firstClaim++;
 
-        log.info('📤 First GitHub claim by %s on %s (%.4f SOL)',
-            wallet.slice(0, 8), mint.slice(0, 8), event.amountSol);
+        log.info('📤 First GitHub claim on %s $%s (%.4f SOL) by %s',
+            mint.slice(0, 8), token?.symbol ?? '???', event.amountSol,
+            event.claimerWallet?.slice(0, 8) ?? '?');
 
         // Enrich with remaining data in parallel
         const [creator, holders, trades, solUsdPrice] = await Promise.all([
@@ -191,15 +197,15 @@ async function main(): Promise<void> {
 
         const { imageUrl, caption } = formatClaimFeed(ctx);
 
-        log.info('📤 Posting to %s: %s $%s (%.4f SOL) — %s',
-            config.channelId, token?.name ?? 'Unknown', token?.symbol ?? '???',
-            event.amountSol, imageUrl ? 'with photo' : 'text only');
-
         if (imageUrl) {
             await postPhotoToChannel(imageUrl, caption);
         } else {
             await postToChannel(caption);
         }
+        pipeline.posted++;
+        log.info('✅ Posted to %s: %s $%s (%.4f SOL)',
+            config.channelId, token?.name ?? 'Unknown', token?.symbol ?? '???',
+            event.amountSol);
       } catch (err) {
         log.error('Claim handler error for %s: %s', event.tokenMint ?? 'unknown', err);
       }
