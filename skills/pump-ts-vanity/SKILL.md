@@ -100,3 +100,4 @@ JavaScript's garbage collector may copy/relocate buffers, so `fill(0)` is best-e
 - GC may relocate buffers before `fill(0)` — no guaranteed memory cleanup in JS
 - Base58 is case-sensitive — validate user input patterns
 - `Keypair.generate()` returns 64-byte array (32 secret + 32 public)
+
