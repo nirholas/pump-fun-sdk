@@ -71,3 +71,4 @@ Since users trade on both the bonding curve (Pump) and AMM (PumpAMM):
 - `currentDayTokens` returns 0 if the user's last update was on a different day (sync first)
 - Day indices are zero-based from `startTime`, not from epoch 0
 - Volume accumulator PDAs differ between Pump and PumpAMM programs
+
