@@ -180,3 +180,4 @@ interface BondingCurve {
 - Test tiered fee transitions at boundary market caps
 - Test both legacy (flat fees from Global) and new (tiered from FeeConfig) paths
 
+
