@@ -599,3 +599,4 @@ window.addEventListener('load', () => NotificationCenter.lateInit());
 
 // ─── Global exports ───
 window.NotificationCenter = NotificationCenter;
+
