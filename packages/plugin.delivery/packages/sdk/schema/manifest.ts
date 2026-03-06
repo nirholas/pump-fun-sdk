@@ -38,3 +38,4 @@ export const pluginManifestSchema = z.object({
     })
     .optional(),
 });
+
