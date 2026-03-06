@@ -23,3 +23,4 @@ export const usePluginState = <T>(key: string, initialValue: T) => {
 
   return [value, updateValue] as const;
 };
+
