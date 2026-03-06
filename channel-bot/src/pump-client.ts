@@ -32,6 +32,16 @@ export interface TokenInfo {
     website?: string;
     twitter?: string;
     telegram?: string;
+    githubUrls: string[];
+}
+
+export interface TokenHolderInfo {
+    totalHolders: number;
+}
+
+export interface TokenTradeInfo {
+    recentTradeCount: number;
+    recentVolumeSol: number;
 }
 
 export interface CreatorProfile {
@@ -118,11 +128,19 @@ export async function fetchTokenInfo(mint: string): Promise<TokenInfo | null> {
                 ? (virtualSolReserves * totalSupply) / (virtualTokenReserves * LAMPORTS_PER_SOL)
                 : 0;
 
+        // Bonding curve progress: realSolReserves / ~85 SOL threshold
+        const realSolReserves = Number(raw.real_sol_reserves ?? 0) / LAMPORTS_PER_SOL;
+        const curveProgress = complete ? 100 : Math.min(99, (realSolReserves / 85) * 100);
+
+        // Extract GitHub URLs from description
+        const description = String(raw.description ?? '');
+        const githubUrls = extractGithubUrls(description);
+
         const info: TokenInfo = {
             mint: String(raw.mint ?? mint),
             name: String(raw.name ?? 'Unknown'),
             symbol: String(raw.symbol ?? '???'),
-            description: String(raw.description ?? ''),
+            description,
             imageUri: String(raw.image_uri ?? ''),
             creator: String(raw.creator ?? ''),
             createdTimestamp: Number(raw.created_timestamp ?? 0),
@@ -130,10 +148,11 @@ export async function fetchTokenInfo(mint: string): Promise<TokenInfo | null> {
             usdMarketCap: Number(raw.usd_market_cap ?? 0),
             marketCapSol,
             priceSol,
-            curveProgress: complete ? 100 : 0,
+            curveProgress,
             website: raw.website ? String(raw.website) : undefined,
             twitter: raw.twitter ? String(raw.twitter) : undefined,
             telegram: raw.telegram ? String(raw.telegram) : undefined,
+            githubUrls,
         };
 
         setCache(tokenCache, mint, info, TOKEN_CACHE_TTL);
@@ -219,5 +238,109 @@ export function formatTokenAmount(raw: number): string {
     if (val >= 1_000) return `${(val / 1_000).toFixed(2)}K`;
     if (val >= 1) return val.toFixed(2);
     return val.toFixed(6);
+}
+
+// ============================================================================
+// GitHub URL Extraction
+// ============================================================================
+
+const GITHUB_RE = /https?:\/\/github\.com\/[a-zA-Z0-9_.-]+(?:\/[a-zA-Z0-9_.-]+)?/gi;
+
+/** Extract GitHub URLs from token description or metadata. */
+export function extractGithubUrls(text: string): string[] {
+    if (!text) return [];
+    const matches = text.match(GITHUB_RE);
+    if (!matches) return [];
+    // Deduplicate
+    return [...new Set(matches)];
+}
+
+// ============================================================================
+// Token Holder Count
+// ============================================================================
+
+/** Fetch approximate holder count for a token. */
+export async function fetchTokenHolders(mint: string): Promise<TokenHolderInfo> {
+    const result: TokenHolderInfo = { totalHolders: 0 };
+    try {
+        // PumpFun API doesn't directly expose holder count, but we can use
+        // the getTokenLargestAccounts RPC as a proxy — limit 20 response
+        // tells us there are at least 20 holders. For a better count,
+        // use the getProgramAccounts approach or a third-party indexer.
+        // For now, use the PumpFun trades API to estimate from unique traders.
+        const resp = await fetch(
+            `${PUMPFUN_API}/coins/${encodeURIComponent(mint)}/holders?limit=1&offset=0`,
+            { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(8_000) },
+        );
+        if (resp.ok) {
+            // The response may include a total field or be an array
+            const data = await resp.json();
+            if (typeof data === 'object' && data !== null && 'total' in data) {
+                result.totalHolders = Number((data as Record<string, unknown>).total ?? 0);
+            } else if (Array.isArray(data)) {
+                // Fallback: if no total, just note we got some
+                result.totalHolders = data.length;
+            }
+        }
+    } catch (err) {
+        log.debug('Holder count fetch failed for %s: %s', mint.slice(0, 8), err);
+    }
+    return result;
+}
+
+// ============================================================================
+// Recent Trades / Volume
+// ============================================================================
+
+/** Fetch recent trade activity for a token. */
+export async function fetchTokenTrades(mint: string): Promise<TokenTradeInfo> {
+    const result: TokenTradeInfo = { recentTradeCount: 0, recentVolumeSol: 0 };
+    try {
+        const resp = await fetch(
+            `${PUMPFUN_API}/coins/${encodeURIComponent(mint)}/trades?limit=50&offset=0`,
+            { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(8_000) },
+        );
+        if (resp.ok) {
+            const trades = (await resp.json()) as Array<Record<string, unknown>>;
+            result.recentTradeCount = trades.length;
+            for (const t of trades) {
+                const sol = Number(t.sol_amount ?? 0) / LAMPORTS_PER_SOL;
+                result.recentVolumeSol += sol;
+            }
+        }
+    } catch (err) {
+        log.debug('Trades fetch failed for %s: %s', mint.slice(0, 8), err);
+    }
+    return result;
+}
+
+// ============================================================================
+// SOL/USD Price
+// ============================================================================
+
+let cachedSolPrice = 0;
+let solPriceExpiresAt = 0;
+
+/** Fetch current SOL/USD price from Jupiter price API. */
+export async function fetchSolUsdPrice(): Promise<number> {
+    if (cachedSolPrice > 0 && Date.now() < solPriceExpiresAt) return cachedSolPrice;
+    try {
+        const resp = await fetch(
+            'https://api.jup.ag/price/v2?ids=So11111111111111111111111111111111111111112',
+            { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(5_000) },
+        );
+        if (resp.ok) {
+            const data = (await resp.json()) as Record<string, unknown>;
+            const priceData = (data as Record<string, Record<string, Record<string, unknown>>>)
+                ?.data?.['So11111111111111111111111111111111111111112'];
+            if (priceData?.price) {
+                cachedSolPrice = Number(priceData.price);
+                solPriceExpiresAt = Date.now() + 60_000; // cache 60s
+            }
+        }
+    } catch (err) {
+        log.debug('SOL price fetch failed: %s', err);
+    }
+    return cachedSolPrice;
 }
 
