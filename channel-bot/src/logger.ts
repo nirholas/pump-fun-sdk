@@ -34,3 +34,4 @@ export const log = {
         if (shouldLog('error')) console.error(`[${stamp()}] [ERROR]`, msg, ...args);
     },
 };
+
