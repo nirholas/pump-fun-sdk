@@ -6,3 +6,4 @@ export default async (_req: VercelRequest, response: VercelResponse) => {
     status: 'ok',
   });
 };
+
