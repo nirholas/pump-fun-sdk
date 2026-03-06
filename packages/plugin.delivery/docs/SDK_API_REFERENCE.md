@@ -632,3 +632,4 @@ import type {
 - [Plugin Manifest Reference](./PLUGIN_MANIFEST.md) - Complete manifest schema
 - [Plugin Types Guide](./PLUGIN_TYPES.md) - Choose the right plugin type
 - [Quick Start](./QUICK_START.md) - Build your first plugin
+
