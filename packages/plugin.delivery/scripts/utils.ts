@@ -44,3 +44,4 @@ export const updateAwesomeReadme = (md: string, prompts: string): string => {
 
   return mds.join(readmeSplit);
 };
+
