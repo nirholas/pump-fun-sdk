@@ -34,8 +34,11 @@ class SperaxOS {
 
       const receiverData = (e: MessageEvent) => {
         if (e.data.type === PluginChannel.initStandalonePlugin) {
-          // TODO: drop e.data.props in v2
+          // DEPRECATED: e.data.props support will be removed in v2
           const payload: PluginRequestPayload = e.data.payload || e.data.props;
+          if (e.data.props && !e.data.payload) {
+            console.warn('[SperaxOS] e.data.props is deprecated. Use e.data.payload instead. Will be removed in v2.');
+          }
           const func = payload.apiName;
           const args = JSON.parse(payload.arguments || '{}');
           clearTimeout(timer);

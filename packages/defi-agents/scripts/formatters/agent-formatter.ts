@@ -218,11 +218,21 @@ class AgentFormatter {
       Logger.success('内容生成和分类完成', id);
     }
 
-    // 处理创建时间字段
+    // 处理创建时间字段 — migrate legacy createAt to createdAt
     if (!agent.createdAt) {
-      // @ts-ignore
-      // TODO: 移除 createAt 字段
-      agent.createdAt = agent.createAt;
+      // @ts-ignore — legacy field, safe to remove once all agents have createdAt
+      if (agent.createAt) {
+        // @ts-ignore
+        agent.createdAt = agent.createAt;
+        // @ts-ignore
+        delete agent.createAt;
+      }
+    } else {
+      // @ts-ignore — clean up legacy field if both exist
+      if (agent.createAt) {
+        // @ts-ignore
+        delete agent.createAt;
+      }
     }
 
     // 写入格式化后的文件

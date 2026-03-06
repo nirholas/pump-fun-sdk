@@ -293,25 +293,29 @@ export class Gateway {
     for (const [key, value] of Object.entries(settings)) {
       // 处理 API Key 和 Bearer Token
       authorizations[key] = value as string;
+    }
 
-      // TODO: Basic Auth and OAuth2
-      // if (key.endsWith('_username') && key.endsWith('_password')) {
-      //   // 处理 HTTP Basic Authentication
-      //   const username = settings[key];
-      //   const password = settings[key.replace('_username', '_password')];
-      //   authorizations.basicAuth = new SwaggerClient.PasswordAuthorization(username, password);
-      //   console.log(authorizations.basicAuth);
-      // } else if (
-      //   key.endsWith('_clientId') &&
-      //   key.endsWith('_clientSecret') &&
-      //   key.endsWith('_accessToken')
-      // ) {
-      //   // 处理 OAuth2
-      //   const clientId = settings[key];
-      //   const clientSecret = settings[key.replace('_clientId', '_clientSecret')];
-      //   const accessToken = settings[key.replace('_clientId', '_accessToken')];
-      //   authorizations.oauth2 = { accessToken, clientId, clientSecret };
-      // }
+    // Basic Auth: look for paired _username + _password settings
+    const usernameKey = Object.keys(settings).find(k => k.endsWith('_username'));
+    const passwordKey = Object.keys(settings).find(k => k.endsWith('_password'));
+    if (usernameKey && passwordKey) {
+      const username = settings[usernameKey];
+      const password = settings[passwordKey];
+      if (username && password) {
+        authorizations.basicAuth = new SwaggerClient.PasswordAuthorization(username, password);
+      }
+    }
+
+    // OAuth2: look for _clientId + _clientSecret + _accessToken
+    const clientIdKey = Object.keys(settings).find(k => k.endsWith('_clientId'));
+    const clientSecretKey = Object.keys(settings).find(k => k.endsWith('_clientSecret'));
+    const accessTokenKey = Object.keys(settings).find(k => k.endsWith('_accessToken'));
+    if (clientIdKey && clientSecretKey) {
+      authorizations.oauth2 = {
+        clientId: settings[clientIdKey],
+        clientSecret: settings[clientSecretKey],
+        ...(accessTokenKey && { accessToken: settings[accessTokenKey] }),
+      };
     }
 
     let client;

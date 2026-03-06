@@ -3,7 +3,16 @@ fetch('assets/transparentlogo.svg')
 	.then(response => response.text())
 	.then(svg => {
 		gid("mm").innerHTML = svg;
-		// TODO: Add subtle pulse animation on first visit (check localStorage for first-time user)
+		if (!localStorage.getItem('pump_visited')) {
+			localStorage.setItem('pump_visited', '1');
+			const logo = document.querySelector('#mm svg');
+			if (logo) {
+				const style = document.createElement('style');
+				style.textContent = '@keyframes pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.05);opacity:0.8}}';
+				document.head.appendChild(style);
+				logo.style.animation = 'pulse 2s ease-in-out 3';
+			}
+		}
 	})
 	.catch(() => {
 		// Fallback to inline SVG if transparentlogo.svg fails to load

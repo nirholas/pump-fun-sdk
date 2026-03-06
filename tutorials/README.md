@@ -1,6 +1,6 @@
 # Pump SDK Tutorials
 
-> 27 hands-on tutorials for building on the Pump protocol with `@pump-fun/pump-sdk`.
+> 35 hands-on tutorials for building on the Pump protocol with `@pump-fun/pump-sdk`.
 
 ## Getting Started
 
@@ -30,6 +30,12 @@ npm install @pump-fun/pump-sdk @solana/web3.js @coral-xyz/anchor bn.js
     23 Mayhem Mode → 24 Cross-Program → 27 Cashback & Social
                                 ↓
            25 DeFi Agents → 26 Live Dashboards
+                                ↓
+       28 Analytics → 29 Events → 30 Shell Scripts
+                                ↓
+    31 Rust Vanity → 32 Plugins → 33 Error Handling
+                                ↓
+          34 AMM Liquidity → 35 Admin & Protocol
 ```
 
 **Just want to build something specific?** Jump directly:
@@ -51,6 +57,14 @@ npm install @pump-fun/pump-sdk @solana/web3.js @coral-xyz/anchor bn.js
 | Use Mayhem Mode | [Tutorial 23](./23-mayhem-mode-trading.md) |
 | Trade across programs | [Tutorial 24](./24-cross-program-trading.md) |
 | Deploy live dashboards | [Tutorial 26](./26-live-dashboard-deployment.md) |
+| Get price quotes & analytics | [Tutorial 28](./28-analytics-price-quotes.md) |
+| Parse on-chain events | [Tutorial 29](./29-event-parsing-analytics.md) |
+| Batch vanity generation | [Tutorial 30](./30-batch-shell-scripts.md) |
+| Rust vanity deep dive | [Tutorial 31](./31-rust-vanity-deep-dive.md) |
+| Build plugins | [Tutorial 32](./32-plugin-delivery.md) |
+| Handle errors properly | [Tutorial 33](./33-error-handling-patterns.md) |
+| Provide AMM liquidity | [Tutorial 34](./34-amm-liquidity-operations.md) |
+| Admin protocol management | [Tutorial 35](./35-admin-protocol-management.md) |
 
 ## Tutorials
 
@@ -130,6 +144,34 @@ npm install @pump-fun/pump-sdk @solana/web3.js @coral-xyz/anchor bn.js
 | 23 | [Mayhem Mode Trading](./23-mayhem-mode-trading.md) | Mayhem PDAs, Token-2022, fee tier differences, vault routing | Advanced |
 | 24 | [Cross-Program Trading](./24-cross-program-trading.md) | Pump → PumpAMM lifecycle, graduation detection, unified trading, BothPrograms | Intermediate |
 | 27 | [Cashback & Social Fee PDAs](./27-cashback-social-fees.md) | Cashback rewards, volume accumulators, social fee PDAs, identity linking | Intermediate |
+
+### Analytics & Pricing
+
+| # | Tutorial | Topics | Difficulty |
+|---|---------|--------|------------|
+| 28 | [Analytics & Price Quotes](./28-analytics-price-quotes.md) | All quote functions, price impact, market cap, graduation progress, real-time feeds | Intermediate |
+| 29 | [Event Parsing & Analytics](./29-event-parsing-analytics.md) | 20+ event types, Anchor EventParser, log subscription, trade aggregation | Intermediate |
+
+### Tooling & Scripts
+
+| # | Tutorial | Topics | Difficulty |
+|---|---------|--------|------------|
+| 30 | [Batch Shell Scripts](./30-batch-shell-scripts.md) | generate-vanity.sh, batch-generate.sh, verify-keypair.sh, security practices | Beginner |
+| 31 | [Rust Vanity Deep Dive](./31-rust-vanity-deep-dive.md) | Rayon parallelism, MatchTarget, difficulty estimation, 100K+ keys/sec benchmarks | Advanced |
+| 32 | [Plugin Delivery Marketplace](./32-plugin-delivery.md) | Plugin manifest, 4 UI modes, standalone apps, speraxOS client SDK | Intermediate |
+
+### Error Handling & Robustness
+
+| # | Tutorial | Topics | Difficulty |
+|---|---------|--------|------------|
+| 33 | [Error Handling Patterns](./33-error-handling-patterns.md) | Typed SDK errors, fee validation, transaction retries, RPC error recovery | Intermediate |
+
+### AMM & Protocol Administration
+
+| # | Tutorial | Topics | Difficulty |
+|---|---------|--------|------------|
+| 34 | [AMM Liquidity Operations](./34-amm-liquidity-operations.md) | Deposit, withdraw, LP tokens, coin-creator fees, pool state, AMM events | Advanced |
+| 35 | [Admin & Protocol Management](./35-admin-protocol-management.md) | Protocol toggles, authority management, fee configs, social PDAs, token incentives | Advanced |
 
 ## Prerequisites
 

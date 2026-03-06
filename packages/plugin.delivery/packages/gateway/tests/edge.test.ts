@@ -490,7 +490,7 @@ describe('createGatewayOnEdgeRuntime', () => {
   });
 
   describe('OpenAPI Auth', () => {
-    it.skip('should handle authorization correctly for basicAuth', async () => {
+    it('should handle authorization correctly for basicAuth', async () => {
       const settingsWithBasicAuth = {
         basic_auth_password: 'testpass',
         basic_auth_username: 'testuser',
@@ -527,7 +527,7 @@ describe('createGatewayOnEdgeRuntime', () => {
       expect(mockSwaggerExecute).toHaveBeenCalled();
     });
 
-    it.skip('should handle authorization correctly for OAuth2', async () => {
+    it('should handle authorization correctly for OAuth2', async () => {
       const settingsWithOAuth2 = {
         oauth2_accessToken: 'testtoken',
         oauth2_clientId: 'testclient',

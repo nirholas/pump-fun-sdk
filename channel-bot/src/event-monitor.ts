@@ -2,6 +2,7 @@
  * PumpFun Channel Bot — Event Monitor
  *
  * Monitors the Pump program for on-chain events:
+ *   - Token launches (CreateEvent, CreateV2Event)
  *   - Graduation (CompleteEvent, CompletePumpAmmMigrationEvent)
  *   - Whale trades (TradeEvent above a SOL threshold)
  *   - Fee distributions (DistributeCreatorFeesEvent)
@@ -9,6 +10,7 @@
  * Events are decoded from "Program data:" log lines (Anchor CPI self-invoke).
  * Two modes: WebSocket (real-time) or HTTP polling (fallback).
  */
+
 
 import {
     Connection,
@@ -24,11 +26,14 @@ import { log } from './logger.js';
 import type {
     FeeDistributionEvent,
     GraduationEvent,
+    TokenLaunchEvent,
     TradeAlertEvent,
 } from './types.js';
 import {
     COMPLETE_EVENT_DISCRIMINATOR,
     COMPLETE_AMM_MIGRATION_DISCRIMINATOR,
+    CREATE_V2_DISCRIMINATOR,
+    CREATE_DISCRIMINATOR,
     DEFAULT_GRADUATION_SOL_THRESHOLD,
     PUMP_PROGRAM_ID,
     TRADE_EVENT_DISCRIMINATOR,
@@ -52,6 +57,7 @@ export class EventMonitor {
     private config: ChannelBotConfig;
     private programPubkey: PublicKey;
 
+    private onLaunch: (event: TokenLaunchEvent) => void;
     private onGraduation: (event: GraduationEvent) => void;
     private onWhale: (event: TradeAlertEvent) => void;
     private onFeeDistribution: (event: FeeDistributionEvent) => void;
@@ -67,11 +73,13 @@ export class EventMonitor {
 
     constructor(
         config: ChannelBotConfig,
+        onLaunch: (event: TokenLaunchEvent) => void,
         onGraduation: (event: GraduationEvent) => void,
         onWhale: (event: TradeAlertEvent) => void,
         onFeeDistribution: (event: FeeDistributionEvent) => void,
     ) {
         this.config = config;
+        this.onLaunch = onLaunch;
         this.onGraduation = onGraduation;
         this.onWhale = onWhale;
         this.onFeeDistribution = onFeeDistribution;
@@ -144,7 +152,9 @@ export class EventMonitor {
                 if (bytes.length < 8) continue;
                 const disc = Buffer.from(bytes.subarray(0, 8)).toString('hex');
 
-                if (disc === COMPLETE_EVENT_DISCRIMINATOR || disc === COMPLETE_AMM_MIGRATION_DISCRIMINATOR) {
+                if (disc === CREATE_V2_DISCRIMINATOR || disc === CREATE_DISCRIMINATOR) {
+                    this.decodeLaunch(bytes, disc, signature);
+                } else if (disc === COMPLETE_EVENT_DISCRIMINATOR || disc === COMPLETE_AMM_MIGRATION_DISCRIMINATOR) {
                     this.decodeGraduation(bytes, disc, signature);
                 } else if (disc === TRADE_EVENT_DISCRIMINATOR) {
                     this.decodeTrade(bytes, signature);
@@ -207,6 +217,77 @@ export class EventMonitor {
     }
 
     // ── Decoders ─────────────────────────────────────────────────────
+
+    private decodeLaunch(bytes: Buffer, disc: string, signature: string): void {
+        try {
+            // CreateEvent layout after 8-byte discriminator:
+            // name: string (4-byte len + data), symbol: string, uri: string,
+            // mint: Pubkey (32), bondingCurve: Pubkey (32), user: Pubkey (32),
+            // creator: Pubkey (32), timestamp: i64,
+            // virtualTokenReserves: u64, virtualSolReserves: u64,
+            // realTokenReserves: u64, tokenTotalSupply: u64,
+            // tokenProgram: Pubkey (32), isMayhemMode: bool, isCashbackEnabled: bool
+            if (bytes.length < 20) return; // minimum for disc + a short string
+
+            let offset = 8;
+
+            // Read Borsh-encoded strings: 4-byte LE length prefix + data
+            const readString = (): string => {
+                if (offset + 4 > bytes.length) return '';
+                const len = bytes.readUInt32LE(offset);
+                offset += 4;
+                if (len > 1000 || offset + len > bytes.length) return '';
+                const str = bytes.subarray(offset, offset + len).toString('utf8');
+                offset += len;
+                return str;
+            };
+
+            const name = readString();
+            const symbol = readString();
+            const uri = readString();
+
+            // Remaining fixed-size fields
+            if (offset + 32 + 32 + 32 + 32 + 8 > bytes.length) return;
+
+            const mint = this.readPubkey(bytes, offset); offset += 32;
+            const _bondingCurve = this.readPubkey(bytes, offset); offset += 32;
+            const user = this.readPubkey(bytes, offset); offset += 32;
+            const creator = this.readPubkey(bytes, offset); offset += 32;
+            const timestamp = Number(bytes.readBigInt64LE(offset)); offset += 8;
+
+            // Skip reserves (4 * u64 = 32 bytes) + tokenProgram (32 bytes)
+            let mayhemMode = false;
+            let cashbackEnabled = false;
+            if (offset + 32 + 32 + 1 + 1 <= bytes.length) {
+                offset += 32 + 32; // reserves + tokenProgram
+                mayhemMode = bytes[offset] === 1; offset += 1;
+                cashbackEnabled = bytes[offset] === 1;
+            }
+
+            // Extract GitHub URLs from description/URI
+            const githubUrls = extractGithubUrlsFromString(name + ' ' + symbol + ' ' + uri);
+
+            const event: TokenLaunchEvent = {
+                txSignature: signature,
+                slot: 0,
+                timestamp,
+                mintAddress: mint,
+                creatorWallet: creator || user,
+                name,
+                symbol,
+                description: '',
+                metadataUri: uri,
+                hasGithub: githubUrls.length > 0,
+                githubUrls,
+                mayhemMode,
+                cashbackEnabled,
+            };
+
+            this.onLaunch(event);
+        } catch (err) {
+            log.debug('Launch decode error: %s', err);
+        }
+    }
 
     private decodeGraduation(bytes: Buffer, disc: string, signature: string): void {
         try {

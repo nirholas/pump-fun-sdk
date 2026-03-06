@@ -55,242 +55,168 @@ export function formatClaimFeed(ctx: ClaimFeedContext): { imageUrl: string | nul
 
     lines.push(`🐙 <b>${pumpLink}</b> $${esc(coinTicker)}${mcapTag}${statusBadge}`);
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // Creator
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // Price line
+    if (token?.priceSol && token.priceSol > 0) {
+        const usdPrice = solUsdPrice > 0 ? ` · $${formatPriceUsd(token.priceSol * solUsdPrice)}` : '';
+        lines.push(`💰 ${formatPriceSol(token.priceSol)} SOL${usdPrice}${ageTag}`);
+    } else if (token?.createdTimestamp) {
+        lines.push(`📊 Age: ${timeAgo(token.createdTimestamp)}`);
+    }
+
+    // Market stats: vol · trades · holders — one compact line
+    {
+        const ms: string[] = [];
+        if (trades && trades.recentVolumeSol > 0) ms.push(`💦 ${formatCompact(trades.recentVolumeSol)} SOL`);
+        if (trades && trades.recentTradeCount > 0) ms.push(`🅑 ${trades.recentTradeCount}`);
+        if (holders && holders.totalHolders > 0) ms.push(`👥 ${holders.totalHolders}`);
+        if (ms.length > 0) lines.push(ms.join(' · '));
+    }
+
+    // CA — full, copyable
+    if (mint) lines.push(`<code>${mint}</code>`);
+
+    // -- Fee Claim
     lines.push('');
-    lines.push(`━━ <b>Creator</b> ━━`);
+    {
+        const claimSol = event.amountSol.toFixed(4);
+        const claimUsd = solUsdPrice > 0 ? ` ($${(event.amountSol * solUsdPrice).toFixed(2)})` : '';
+        const isSelf = token?.creator === event.claimerWallet;
+        const claimerTag = isSelf ? '👤 Self' : '👻 3rd-party';
 
-    const creatorWallet = token?.creator ?? '';
-    if (creatorWallet) {
-        const profileLink = `<a href="https://pump.fun/profile/${creatorWallet}">${shortAddr(creatorWallet)}</a>`;
-        lines.push(`👤 ${profileLink}`);
+        lines.push(`🏦 <b>${claimSol} SOL</b>${claimUsd} · ${claimerTag}`);
 
-        if (creator) {
-            const parts: string[] = [];
-            if (creator.totalLaunches > 0) parts.push(`� ${creator.totalLaunches} deploys`);
-            if (creator.scamEstimate > 0) parts.push(`⚠️ ${creator.scamEstimate} scams`);
-            if (parts.length > 0) lines.push(parts.join(' · '));
+        // Show GitHub username as claimer if available
+        if (githubUser) {
+            const ghLink = `<a href="${esc(githubUser.htmlUrl)}">${esc(githubUser.login)}</a>`;
+            lines.push(`  ↳ 🐙 ${ghLink}`);
+        }
+        const claimerLink = `<a href="https://pump.fun/profile/${event.claimerWallet}">${shortAddr(event.claimerWallet)}</a>`;
+        lines.push(`  ↳ ${claimerLink}`);
 
-            // Top coin by creator (highest MC, excluding current)
-            const otherCoins = creator.recentCoins.filter((c) => c.mint !== event.tokenMint);
-            if (otherCoins.length > 0) {
-                const top = otherCoins.sort((a, b) => b.usdMarketCap - a.usdMarketCap)[0];
-                if (top) {
-                    const topLink = `<a href="https://pump.fun/coin/${top.mint}">${esc(top.name)} (${esc(top.symbol)})</a>`;
-                    const mcStr = top.usdMarketCap > 0 ? ` ($${formatCompact(top.usdMarketCap)})` : '';
-                    lines.push(`📊 TOP: ${topLink}${mcStr}`);
+        // Launch → Claim duration
+        if (token && token.createdTimestamp > 0 && event.timestamp > 0) {
+            const diff = event.timestamp - token.createdTimestamp;
+            if (diff >= 0) lines.push(`  ↳ ⏱ Launch→Claim: <b>${formatDuration(diff)}</b>`);
+        }
+    }
+
+    // -- Creator
+    {
+        const creatorWallet = token?.creator ?? '';
+        if (creatorWallet) {
+            lines.push('');
+            const profileLink = `<a href="https://pump.fun/profile/${creatorWallet}">${shortAddr(creatorWallet)}</a>`;
+            const usernameTag = creator?.username ? ` (@${esc(creator.username)})` : '';
+            lines.push(`👤 ${profileLink}${usernameTag}`);
+
+            if (creator) {
+                const parts: string[] = [];
+                if (creator.totalLaunches > 0) parts.push(`🚀 ${creator.totalLaunches}`);
+                const graduated = creator.recentCoins.filter((c) => c.complete).length;
+                if (graduated > 0) parts.push(`🎓 ${graduated}`);
+                if (creator.followers > 0) parts.push(`${creator.followers} fol`);
+                if (creator.scamEstimate > 0) parts.push(`⚠️ ${creator.scamEstimate} scams`);
+                if (parts.length > 0) lines.push(parts.join(' · '));
+
+                // Recent coins as compact ticker list
+                const others = creator.recentCoins.filter((c) => c.mint !== mint).slice(0, 5);
+                if (others.length > 0) {
+                    const tickers = others.map((c) => {
+                        const grad = c.complete ? '⭐' : '';
+                        return `<a href="https://pump.fun/coin/${c.mint}">${esc(c.symbol)}</a>${grad}`;
+                    });
+                    lines.push(`  ↳ ${tickers.join('·')}`);
                 }
             }
         }
     }
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // Fee Recipient
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    lines.push('');
-    {
-        const claimSol = event.amountSol.toFixed(4);
-        const claimUsd = solUsdPrice > 0
-            ? ` ($${(event.amountSol * solUsdPrice).toFixed(2)})`
-            : '';
-
-        // Claimer identity
-        const isSelf = token?.creator === event.claimerWallet;
-
-        // Fee share label — for GitHub claims it's typically 100%
-        const shareLabel = '100%';
-        const claimCountLabel = claimRecord.claimCount > 1 ? ` · ${claimRecord.claimCount}x` : '';
-
-        lines.push(`━━ <b>Fee Recipient</b> (${shareLabel}${claimCountLabel}) ━━`);
-
-        // Show GitHub username if available, otherwise wallet
-        if (githubUser) {
-            const ghLink = `<a href="${esc(githubUser.htmlUrl)}">${esc(githubUser.login)}</a>`;
-            lines.push(`🐙 ${ghLink}`);
-        } else {
-            const claimerLink = `<a href="https://pump.fun/profile/${event.claimerWallet}">${shortAddr(event.claimerWallet)}</a>`;
-            lines.push(`🐙 ${claimerLink}`);
-        }
-
-        lines.push(`🏦 <b>${claimSol} SOL</b>${claimUsd}`);
-
-        // Launch → Claim time
-        if (token && token.createdTimestamp > 0 && event.timestamp > 0) {
-            const diff = event.timestamp - token.createdTimestamp;
-            if (diff >= 0) {
-                lines.push(`⏱ Launch→Claim: ${formatDuration(diff)}`);
-            }
-        }
-    }
-
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // GitHub
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // -- GitHub
     if (githubUser || githubRepo) {
         lines.push('');
-        lines.push(`━━ <b>GitHub</b> ━━`);
-
         if (githubUser) {
             const userLink = `<a href="${esc(githubUser.htmlUrl)}">${esc(githubUser.login)}</a>`;
             const nameTag = githubUser.name ? ` (${esc(githubUser.name)})` : '';
-            lines.push(`🐙 ${userLink}${nameTag}`);
-
-            const stats: string[] = [];
-            if (githubUser.publicRepos > 0) stats.push(`📦 ${githubUser.publicRepos} repos`);
-            if (githubUser.followers > 0) stats.push(`${githubUser.followers} followers`);
-            if (githubUser.following > 0) stats.push(`${githubUser.following} following`);
-            if (stats.length > 0) lines.push(stats.join(' · '));
+            const ghStats: string[] = [];
+            if (githubUser.publicRepos > 0) ghStats.push(`📦 ${githubUser.publicRepos}`);
+            if (githubUser.followers > 0) ghStats.push(`${githubUser.followers} fol`);
+            if (githubUser.createdAt) ghStats.push(timeAgo(new Date(githubUser.createdAt).getTime() / 1000));
+            lines.push(`🐙 ${userLink}${nameTag}${ghStats.length > 0 ? ' · ' + ghStats.join(' · ') : ''}`);
 
             if (githubUser.bio) {
-                const bio = githubUser.bio.length > 100 ? githubUser.bio.slice(0, 97) + '...' : githubUser.bio;
-                lines.push(`<i>${esc(bio)}</i>`);
+                const bio = githubUser.bio.length > 80 ? githubUser.bio.slice(0, 77) + '...' : githubUser.bio;
+                lines.push(`  <i>${esc(bio)}</i>`);
             }
 
-            const socials: string[] = [];
-            if (githubUser.twitterUsername) socials.push(`<a href="https://x.com/${esc(githubUser.twitterUsername)}">𝕏 ${esc(githubUser.twitterUsername)}</a>`);
-            if (githubUser.blog) socials.push(`<a href="${esc(githubUser.blog)}">🌐 Site</a>`);
-            if (githubUser.company) socials.push(`🏢 ${esc(githubUser.company)}`);
-            if (githubUser.location) socials.push(`📍 ${esc(githubUser.location)}`);
-            if (socials.length > 0) lines.push(socials.join(' · '));
-
-            if (githubUser.createdAt) {
-                const acctAge = timeAgo(new Date(githubUser.createdAt).getTime() / 1000);
-                lines.push(`🕐 Account: ${acctAge}`);
-            }
+            // GitHub user socials — one compact line
+            const ghSocials: string[] = [];
+            if (githubUser.twitterUsername) ghSocials.push(`<a href="https://x.com/${esc(githubUser.twitterUsername)}">𝕏 ${esc(githubUser.twitterUsername)}</a>`);
+            if (githubUser.blog) ghSocials.push(`<a href="${esc(githubUser.blog)}">🌐</a>`);
+            if (githubUser.company) ghSocials.push(`🏢 ${esc(githubUser.company)}`);
+            if (githubUser.location) ghSocials.push(`📍 ${esc(githubUser.location)}`);
+            if (ghSocials.length > 0) lines.push(`  ↳ ${ghSocials.join(' · ')}`);
         }
 
         if (githubRepo) {
-            lines.push('');
             const repoLink = `<a href="${esc(githubRepo.htmlUrl)}">${esc(githubRepo.fullName)}</a>`;
-            lines.push(`📁 ${repoLink}`);
-
             const repoStats: string[] = [];
             if (githubRepo.language) repoStats.push(esc(githubRepo.language));
-            if (githubRepo.stars > 0) repoStats.push(`⭐ ${githubRepo.stars}`);
-            if (githubRepo.forks > 0) repoStats.push(`🍴 ${githubRepo.forks}`);
-            if (githubRepo.isFork) repoStats.push('⚠️ Fork');
-            if (repoStats.length > 0) lines.push(repoStats.join(' · '));
-
-            if (githubRepo.lastPushAgo) {
-                lines.push(`Last push: ${githubRepo.lastPushAgo}`);
-            }
+            if (githubRepo.stars > 0) repoStats.push(`⭐${githubRepo.stars}`);
+            if (githubRepo.forks > 0) repoStats.push(`🍴${githubRepo.forks}`);
+            if (githubRepo.isFork) repoStats.push('⚠️Fork');
+            if (githubRepo.lastPushAgo) repoStats.push(githubRepo.lastPushAgo);
+            lines.push(`📁 ${repoLink}${repoStats.length > 0 ? ' · ' + repoStats.join('·') : ''}`);
             if (githubRepo.description) {
-                const desc = githubRepo.description.length > 100 ? githubRepo.description.slice(0, 97) + '...' : githubRepo.description;
-                lines.push(`<i>${esc(desc)}</i>`);
+                const desc = githubRepo.description.length > 80 ? githubRepo.description.slice(0, 77) + '...' : githubRepo.description;
+                lines.push(`  <i>${esc(desc)}</i>`);
             }
             if (githubRepo.topics.length > 0) {
-                lines.push(`🏷 ${githubRepo.topics.map((t) => esc(t)).join(' · ')}`);
+                lines.push(`  🏷 ${githubRepo.topics.map((t) => esc(t)).join('·')}`);
             }
         }
     } else if (token?.githubUrls && token.githubUrls.length > 0) {
         lines.push('');
-        lines.push(`━━ <b>GitHub</b> ━━`);
-        const ghLinks = token.githubUrls.slice(0, 2).map((u) => `<a href="${esc(u)}">GitHub</a>`).join(' · ');
-        lines.push(`🐙 ${ghLinks}`);
+        lines.push(`🐙 ${token.githubUrls.slice(0, 2).map((u) => `<a href="${esc(u)}">GitHub</a>`).join(' · ')}`);
     }
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // Token Socials
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // -- Token Socials — compact
     {
-        const hasSocials = token?.twitter || token?.telegram || token?.website;
-        const hasDesc = token?.description;
+        const socials: string[] = [];
+        if (token?.twitter) {
+            const handle = extractTwitterHandle(token.twitter);
+            socials.push(`<a href="${esc(token.twitter)}">𝕏${handle ? ' ' + esc(handle) : ''}</a>`);
+        }
+        if (token?.telegram) socials.push(`<a href="${esc(token.telegram)}">💬 TG</a>`);
+        if (token?.website) socials.push(`<a href="${esc(token.website)}">🌐 Web</a>`);
+        if (creator && creator.followers > 0) socials.push(`${formatCompact(creator.followers)} fol`);
+        if (socials.length > 0) lines.push(`🔗 ${socials.join(' · ')}`);
 
-        if (hasSocials || hasDesc) {
-            lines.push('');
-            lines.push(`━━ <b>Token Socials</b> ━━`);
-
-            // Twitter — show as "Status by @handle" with description as blockquote
-            if (token?.twitter) {
-                const handle = extractTwitterHandle(token.twitter);
-                if (handle) {
-                    lines.push(`🐦 <a href="${esc(token.twitter)}">Status</a> by <a href="${esc(token.twitter)}">${esc(handle)}</a>`);
-                } else {
-                    lines.push(`🐦 <a href="${esc(token.twitter)}">Twitter</a>`);
-                }
-            }
-
-            // Description as blockquote (like tweet content)
-            if (token?.description) {
-                const desc = token.description.length > 200
-                    ? token.description.slice(0, 197) + '...'
-                    : token.description;
-                lines.push(`<blockquote>${esc(desc)}</blockquote>`);
-            }
-
-            // Creator followers from PumpFun profile
-            if (creator && creator.followers > 0) {
-                lines.push(`${formatCompact(creator.followers)} Followers`);
-            }
-
-            // Other socials
-            const otherLinks: string[] = [];
-            if (token?.telegram) otherLinks.push(`<a href="${esc(token.telegram)}">💬 TG</a>`);
-            if (token?.website) otherLinks.push(`<a href="${esc(token.website)}">🌐 Site</a>`);
-            if (otherLinks.length > 0) lines.push(otherLinks.join(' · '));
+        if (token?.description) {
+            const desc = token.description.length > 120 ? token.description.slice(0, 117) + '...' : token.description;
+            lines.push(`  <i>${esc(desc)}</i>`);
         }
     }
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // Market Data
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    {
-        const hasMarketData = token || (trades && trades.recentTradeCount > 0) || (holders && holders.totalHolders > 0);
-        if (hasMarketData) {
-            lines.push('');
-            lines.push(`━━ <b>Market</b> ━━`);
-
-            if (token) {
-                // Price
-                if (token.priceSol > 0) {
-                    const usdPrice = solUsdPrice > 0 ? ` · $${formatPriceUsd(token.priceSol * solUsdPrice)}` : '';
-                    lines.push(`💰 ${formatPriceSol(token.priceSol)} SOL${usdPrice}`);
-                }
-
-                // Status
-                const curve = token.complete
-                    ? '⭐ Graduated'
-                    : `📈 Curve: ${token.curveProgress.toFixed(1)}%`;
-                lines.push(curve);
-            }
-
-            const stats: string[] = [];
-            if (trades && trades.recentVolumeSol > 0) stats.push(`Vol: ${formatCompact(trades.recentVolumeSol)} SOL`);
-            if (trades && trades.recentTradeCount > 0) stats.push(`${trades.recentTradeCount} trades`);
-            if (holders && holders.totalHolders > 0) stats.push(`👥 ${holders.totalHolders} holders`);
-            if (token && token.createdTimestamp > 0) stats.push(`Age: ${timeAgo(token.createdTimestamp)}`);
-            if (stats.length > 0) lines.push(stats.join(' · '));
-        }
-    }
-
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // AI Summary
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // -- AI Summary
     if (aiSummary) {
         lines.push('');
         lines.push(`🤖 <i>${esc(aiSummary)}</i>`);
     }
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // Links
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // -- Links: trade + explore
     lines.push('');
-    const linkParts: string[] = [];
-    if (event.tokenMint) {
-        linkParts.push(`<a href="https://gmgn.ai/sol/token/${event.tokenMint}&ref=nichxbt">GMGN</a>`);
-        linkParts.push(`<a href="https://pump.fun/coin/${event.tokenMint}">Pump</a>`);
-        linkParts.push(`<a href="https://axiom.trade/@nich/${event.tokenMint}">Axiom</a>`);
+    if (mint) {
+        lines.push(`💹 <a href="https://pump.fun/coin/${mint}">Pump</a> · <a href="https://gmgn.ai/sol/token/${mint}&ref=nichxbt">GMGN</a> · <a href="https://axiom.trade/@nich/${mint}">Axiom</a> · <a href="https://dexscreener.com/solana/${mint}">DEX</a> · <a href="https://photon-sol.tinyastro.io/en/lp/${mint}">Photon</a> · <a href="https://bullx.io/terminal?chainId=1399811149&address=${mint}">BullX</a>`);
     }
-    if (event.txSignature) linkParts.push(`<a href="https://solscan.io/tx/${event.txSignature}">TX</a>`);
-    if (linkParts.length > 0) lines.push(`🔗 ${linkParts.join(' · ')}`);
-
-    // Timestamp
+    if (event.txSignature) {
+        lines.push(`🔍 <a href="https://solscan.io/tx/${event.txSignature}">TX</a> · <a href="https://solscan.io/token/${mint}">Solscan</a>`);
+    }
     lines.push(`🕐 ${formatTime(event.timestamp)}`);
 
     const imageUrl = token?.imageUri || null;
     return { imageUrl, caption: lines.join('\n') };
 }
+
 
 // ============================================================================
 // Token Launch
