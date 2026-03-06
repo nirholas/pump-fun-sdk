@@ -2,8 +2,8 @@
  * PumpFun Channel Bot — Entry Point
  *
  * A read-only Telegram channel feed that broadcasts:
- *   - GitHub social fee PDA first-claims
- *   - Token graduations (bonding curve complete / AMM migration)
+ *   - GitHub social fee PDA first-claims  (FEED_CLAIMS=true)
+ *   - Token graduations                    (FEED_GRADUATIONS=true)
  *
  * Run:
  *   npm run dev          (hot reload)
@@ -31,7 +31,7 @@ async function main(): Promise<void> {
     setLogLevel(config.logLevel);
 
     // Load persisted first-claim set to survive restarts
-    loadPersistedClaims();
+    if (config.feed.claims) loadPersistedClaims();
 
     log.info('PumpFun Channel Bot starting...');
     log.info('  Channel: %s', config.channelId);
@@ -104,7 +104,9 @@ async function main(): Promise<void> {
     }, 60_000);
 
     // ── Claim Monitor ────────────────────────────────────────────────
-    const claimMonitor = new ClaimMonitor(config, async (event: FeeClaimEvent) => {
+    let claimMonitor: ClaimMonitor | null = null;
+    if (config.feed.claims) {
+      claimMonitor = new ClaimMonitor(config, async (event: FeeClaimEvent) => {
       try {
         pipeline.total++;
 
@@ -156,6 +158,7 @@ async function main(): Promise<void> {
         log.error('Claim handler error: %s', err);
       }
     });
+    }
 
     // ── Graduation Monitor ─────────────────────────────────────────────
     let eventMonitor: EventMonitor | null = null;
@@ -211,7 +214,7 @@ async function main(): Promise<void> {
 
     // ── Start ─────────────────────────────────────────────────────────
     if (config.feed.claims) {
-        await claimMonitor.start();
+        await claimMonitor!.start();
         log.info('Claim monitor started');
     }
     if (eventMonitor) {
@@ -232,14 +235,14 @@ async function main(): Promise<void> {
         getStats: () => ({
             channel: config.channelId,
             messagesPosted: pipeline.posted,
-            claimMonitor: claimMonitor.getMetrics(),
+            ...(claimMonitor ? { claimMonitor: claimMonitor.getMetrics() } : {}),
         }),
     });
 
     // ── Graceful shutdown ────────────────────────────────────────────
     const shutdown = () => {
         log.info('Shutting down...');
-        claimMonitor.stop();
+        claimMonitor?.stop();
         eventMonitor?.stop();
         stopHealthServer();
         process.exit(0);
