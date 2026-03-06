@@ -94,6 +94,13 @@ function sleep(ms: number): Promise<void> {
     return new Promise((r) => setTimeout(r, ms));
 }
 
+function formatUptime(ms: number): string {
+    const s = Math.floor(ms / 1000);
+    if (s < 60) return `${s}s`;
+    if (s < 3600) return `${Math.floor(s / 60)}m`;
+    return `${Math.floor(s / 3600)}h${Math.floor((s % 3600) / 60)}m`;
+}
+
 // ============================================================================
 // Monitor
 // ============================================================================
@@ -116,6 +123,8 @@ export class ClaimMonitor {
     private claimsDetected = 0;
     private lastWsEventTime = 0;
     private wsHeartbeatTimer?: ReturnType<typeof setInterval>;
+    private wsEventsReceived = 0;
+    private claimTxProcessed = 0;
 
     constructor(config: ChannelBotConfig, onClaim: (event: FeeClaimEvent) => void) {
         this.config = config;
@@ -198,6 +207,7 @@ export class ClaimMonitor {
                 pubkey,
                 async (logInfo: Logs) => {
                     this.lastWsEventTime = Date.now();
+                    this.wsEventsReceived++;
                     try { await this.handleLogEvent(logInfo); }
                     catch (err) { log.error('Log event error:', err); }
                 },
@@ -213,6 +223,10 @@ export class ClaimMonitor {
             if (elapsed > WS_HEARTBEAT_TIMEOUT_MS) {
                 log.warn('Claim monitor WS silent for %ds — reconnecting...', Math.floor(elapsed / 1000));
                 this.reconnectWebSocket();
+            } else {
+                log.info('WS heartbeat: %d events, %d claims queued, %d posted (uptime %s)',
+                    this.wsEventsReceived, this.claimTxProcessed, this.claimsDetected,
+                    formatUptime(Date.now() - this.startedAt));
             }
         }, WS_HEARTBEAT_INTERVAL_MS);
     }
@@ -258,6 +272,7 @@ export class ClaimMonitor {
         });
 
         if (hasClaimIx) {
+            this.claimTxProcessed++;
             this.rpcQueue.enqueue(signature);
         }
     }
