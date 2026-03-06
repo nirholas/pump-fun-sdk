@@ -54,8 +54,10 @@ export interface CreatorProfile {
     followers: number;
     /** Number of tokens this creator has launched */
     totalLaunches: number;
+    /** Estimated scam/rug count — non-graduated coins with near-zero MC */
+    scamEstimate: number;
     /** Names of recent coins created */
-    recentCoins: Array<{ name: string; symbol: string; mint: string; complete: boolean }>;
+    recentCoins: Array<{ name: string; symbol: string; mint: string; complete: boolean; usdMarketCap: number }>;
 }
 
 // ============================================================================
@@ -177,6 +179,7 @@ export async function fetchCreatorProfile(wallet: string): Promise<CreatorProfil
         profileImage: '',
         followers: 0,
         totalLaunches: 0,
+        scamEstimate: 0,
         recentCoins: [],
     };
 
@@ -205,11 +208,17 @@ export async function fetchCreatorProfile(wallet: string): Promise<CreatorProfil
         if (coinsResp.ok) {
             const coins = (await coinsResp.json()) as Array<Record<string, unknown>>;
             profile.totalLaunches = coins.length;
+            // Estimate scams/rugs: non-graduated coins with very low market cap
+            profile.scamEstimate = coins.filter((c) => {
+                const mc = Number(c.usd_market_cap ?? 0);
+                return !Boolean(c.complete) && mc < 500;
+            }).length;
             profile.recentCoins = coins.slice(0, 5).map((c) => ({
                 mint: String(c.mint ?? ''),
                 name: String(c.name ?? 'Unknown'),
                 symbol: String(c.symbol ?? '???'),
                 complete: Boolean(c.complete),
+                usdMarketCap: Number(c.usd_market_cap ?? 0),
             }));
         }
     } catch (err) {

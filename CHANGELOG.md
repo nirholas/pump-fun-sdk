@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.30.0] — 2026-03-06
+
+### Added
+
+- **Platform enum** — Type-safe `Platform` enum (`Pump`, `X`, `GitHub`) with `SUPPORTED_SOCIAL_PLATFORMS`, `stringToPlatform()`, and `platformToString()` helpers for social fee sharing
+- **Social fee PDA validation** — `createSocialFeePdaInstruction` now validates platform against `SUPPORTED_SOCIAL_PLATFORMS` and explicitly provides `socialFeePda` account
+- **`normalizeSocialShareholders()`** — Resolves social handles (userId + platform) to PDAs and collects any that need on-chain creation
+- **`updateSharingConfigWithSocialRecipients()`** — Wrapper that creates missing social fee PDAs then updates fee shares in a single instruction batch
+- **`createSharingConfigWithSocialRecipients()`** — Wrapper that creates fee sharing config + resolves social recipients in one call
+
+### Changed
+
+- `createSocialFeePdaInstruction` and `claimSocialFeePdaInstruction` now accept `Platform` enum instead of raw `number`
+- Synced with upstream `@pump-fun/pump-sdk@1.30.0` (npm)
+
 ## [1.29.0] — 2026-03-06
 
 ### Added

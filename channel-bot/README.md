@@ -120,3 +120,78 @@ channel-bot/
 - A Telegram bot token (via [@BotFather](https://t.me/BotFather))
 - A Telegram channel with the bot added as admin
 - Solana RPC endpoint (public mainnet works, dedicated RPC recommended for production)
+
+## Example Messages
+
+The bot posts HTML-formatted messages to your Telegram channel. Here's what each feed looks like:
+
+### Token Launch
+```
+🚀 New Token Launch
+Name: SolPump (SPMP)
+Mint: 7xKXt...p3Bz
+Creator: 3qHn...8kJv
+🔗 pump.fun/7xKXt...p3Bz
+```
+
+### Graduation
+```
+🎓 Token Graduated!
+SolPump (SPMP) has graduated to PumpAMM
+Final market cap: 85.2 SOL
+Pool: pAMM...x9Kz
+```
+
+### Whale Trade
+```
+🐋 Whale Buy Detected
+Token: SolPump (SPMP)
+Amount: 25.5 SOL
+Buyer: 8mNp...4rWz
+```
+
+### Fee Claim
+```
+💰 Creator Fee Claimed
+Creator: 3qHn...8kJv
+Amount: 1.23 SOL
+```
+
+## Troubleshooting
+
+### Bot Not Posting Messages
+
+1. **Check bot permissions** — The bot must be an admin in the channel with "Post Messages" permission
+2. **Verify CHANNEL_ID** — Use `@channel_name` for public channels or the numeric ID (e.g., `-100xxx`) for private channels. To find the numeric ID, forward a message from the channel to [@userinfobot](https://t.me/userinfobot)
+3. **Check logs** — Set `LOG_LEVEL=debug` to see all events the bot processes
+
+### Rate Limiting
+
+Telegram limits bots to ~30 messages per second to a channel. If the bot monitors a high-traffic period:
+- The grammY framework handles rate limiting automatically
+- Messages may be delayed but won't be dropped
+- For very high activity, increase `POLL_INTERVAL_SECONDS` to reduce event volume
+
+### RPC Connection Issues
+
+- Public RPC endpoints have rate limits — for production use a dedicated RPC (Helius, Quicknode, Triton)
+- If WebSocket disconnects, the bot falls back to HTTP polling at `POLL_INTERVAL_SECONDS`
+- Set `LOG_LEVEL=debug` to see connection status
+
+### Missing Events
+
+- **Whale trades not showing?** — Check `WHALE_THRESHOLD_SOL`. Default is 10 SOL — lower it for less active tokens
+- **Feed disabled?** — Verify the feed toggle env vars are set to `true`
+- **Events from wrong program?** — The bot monitors both Pump and PumpAMM. You can't filter by program currently
+
+## Local Development
+
+```bash
+# Install dependencies
+npm install
+
+# Run with hot reload
+npm run dev
+```
+
+To test without a real Telegram channel, set `LOG_LEVEL=debug` — all events are logged to stdout regardless of whether they're posted to Telegram.

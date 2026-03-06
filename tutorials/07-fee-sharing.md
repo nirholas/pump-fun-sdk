@@ -166,6 +166,86 @@ const usesFeeSharing = isCreatorUsingSharingConfig({
 console.log("Uses fee sharing:", usesFeeSharing);
 ```
 
+## Authority Management
+
+The creator (authority) of a fee sharing config can transfer control, reset the config, or permanently revoke their authority.
+
+### Transfer Authority
+
+Hand admin control to a new address (e.g., a multisig or DAO):
+
+```typescript
+const transferIx = await PUMP_SDK.transferFeeSharingAuthorityInstruction({
+  authority: creator.publicKey,
+  mint,
+  newAdmin: new PublicKey("NEW_ADMIN_ADDRESS"),
+});
+```
+
+### Reset Fee Sharing Config
+
+Wipe the existing shareholders and reassign admin. Useful when restructuring a team:
+
+```typescript
+const resetIx = await PUMP_SDK.resetFeeSharingConfigInstruction({
+  authority: creator.publicKey,
+  mint,
+  newAdmin: new PublicKey("NEW_ADMIN_ADDRESS"),
+});
+// After reset, set up new shareholders with updateFeeShares
+```
+
+### Revoke Authority (Irreversible)
+
+Permanently lock the fee sharing config so no one can change shareholders again:
+
+```typescript
+const revokeIx = await PUMP_SDK.revokeFeeSharingAuthorityInstruction({
+  authority: creator.publicKey,
+  mint,
+});
+```
+
+> **Warning:** Revoking authority is permanent. The shareholder split becomes immutable. Do this only when you're confident the config is final.
+
+## Updating Existing Shareholders
+
+When updating an existing config, pass the current shareholders so the SDK can compute the correct account diffs:
+
+```typescript
+const currentShareholders = [
+  new PublicKey("Wallet1..."),
+  new PublicKey("Wallet2..."),
+  new PublicKey("Wallet3..."),
+];
+
+const updateIx = await PUMP_SDK.updateFeeShares({
+  authority: creator.publicKey,
+  mint,
+  currentShareholders,  // Pass existing addresses
+  newShareholders: [
+    { address: new PublicKey("Wallet1..."), shareBps: 3000 }, // Changed from 50% to 30%
+    { address: new PublicKey("Wallet4..."), shareBps: 7000 }, // New shareholder
+  ],
+});
+```
+
+## Graduated Tokens
+
+For tokens that have graduated to the AMM, pass the pool address when creating the config:
+
+```typescript
+import { canonicalPumpPoolPda } from "@pump-fun/pump-sdk";
+
+const pool = canonicalPumpPoolPda(mint);
+
+const configIx = await PUMP_SDK.createFeeSharingConfig({
+  creator: creator.publicKey,
+  mint,
+  pool, // Required for graduated tokens
+});
+```
+
 ## What's Next?
 
 - [Tutorial 8: Token Incentives and Rewards](./08-token-incentives.md)

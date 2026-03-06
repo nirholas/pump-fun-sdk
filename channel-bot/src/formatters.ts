@@ -34,32 +34,26 @@ export interface ClaimFeedContext {
 }
 
 /**
- * Compact first-claim card with sectioned layout + image.
+ * Compact first-claim card — glanceable, dense, clickable.
  * Returns { imageUrl, caption } so caller can send photo or text.
  */
 export function formatClaimFeed(ctx: ClaimFeedContext): { imageUrl: string | null; caption: string } {
     const { event, token, creator, claimRecord, holders, trades, solUsdPrice, githubRepo, githubUser, aiSummary } = ctx;
     const lines: string[] = [];
-
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // Header
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    lines.push(`🐙 <b>GITHUB CLAIM DETECTED</b>`);
-    lines.push('');
+    const mint = event.tokenMint;
 
     const coinName = token?.name ?? event.tokenName ?? 'Unknown';
     const coinTicker = token?.symbol ?? event.tokenSymbol ?? '???';
-    const pumpLink = event.tokenMint
-        ? `<a href="https://pump.fun/coin/${event.tokenMint}">${esc(coinName)}</a>`
+    const pumpLink = mint
+        ? `<a href="https://pump.fun/coin/${mint}">${esc(coinName)}</a>`
         : esc(coinName);
 
-    lines.push(`🐙 <b>$${esc(coinTicker)}</b> (${pumpLink})`);
-    if (event.tokenMint) {
-        lines.push(`<code>${event.tokenMint}</code>`);
-    }
-    if (token?.usdMarketCap) {
-        lines.push(`💰 MC: $${formatCompact(token.usdMarketCap)}`);
-    }
+    // ── Header: token + status at a glance ───────────────────────────
+    const statusBadge = token?.complete ? ' ⭐' : token?.curveProgress ? ` 📈${token.curveProgress.toFixed(0)}%` : '';
+    const mcapTag = token?.usdMarketCap ? ` [$${formatCompact(token.usdMarketCap)}]` : '';
+    const ageTag = token?.createdTimestamp ? ` · ${timeAgo(token.createdTimestamp)}` : '';
+
+    lines.push(`🐙 <b>${pumpLink}</b> $${esc(coinTicker)}${mcapTag}${statusBadge}`);
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // Creator
@@ -74,27 +68,25 @@ export function formatClaimFeed(ctx: ClaimFeedContext): { imageUrl: string | nul
 
         if (creator) {
             const parts: string[] = [];
-            if (creator.totalLaunches > 0) parts.push(`🚀 ${creator.totalLaunches} deploys`);
-            const graduated = creator.recentCoins.filter((c) => c.complete).length;
-            if (graduated > 0) parts.push(`🎓 ${graduated} graduated`);
-            if (creator.followers > 0) parts.push(`${creator.followers} followers`);
+            if (creator.totalLaunches > 0) parts.push(`� ${creator.totalLaunches} deploys`);
+            if (creator.scamEstimate > 0) parts.push(`⚠️ ${creator.scamEstimate} scams`);
             if (parts.length > 0) lines.push(parts.join(' · '));
 
-            // Top coin by creator
-            if (creator.recentCoins.length > 0) {
-                const top = creator.recentCoins
-                    .filter((c) => c.mint !== event.tokenMint)
-                    .slice(0, 1)[0];
+            // Top coin by creator (highest MC, excluding current)
+            const otherCoins = creator.recentCoins.filter((c) => c.mint !== event.tokenMint);
+            if (otherCoins.length > 0) {
+                const top = otherCoins.sort((a, b) => b.usdMarketCap - a.usdMarketCap)[0];
                 if (top) {
                     const topLink = `<a href="https://pump.fun/coin/${top.mint}">${esc(top.name)} (${esc(top.symbol)})</a>`;
-                    lines.push(`📊 TOP: ${topLink}`);
+                    const mcStr = top.usdMarketCap > 0 ? ` ($${formatCompact(top.usdMarketCap)})` : '';
+                    lines.push(`📊 TOP: ${topLink}${mcStr}`);
                 }
             }
         }
     }
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // Fee Claim
+    // Fee Recipient
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     lines.push('');
     {
@@ -105,14 +97,23 @@ export function formatClaimFeed(ctx: ClaimFeedContext): { imageUrl: string | nul
 
         // Claimer identity
         const isSelf = token?.creator === event.claimerWallet;
-        const claimerLabel = isSelf ? 'Self-claim' : '3rd-party';
 
-        const programLabel = event.programId?.includes('pAMM') ? 'PumpSwap' : 'Pump';
-        lines.push(`━━ <b>Fee Claim</b> (${claimerLabel} · ${programLabel}) ━━`);
+        // Fee share label — for GitHub claims it's typically 100%
+        const shareLabel = '100%';
+        const claimCountLabel = claimRecord.claimCount > 1 ? ` · ${claimRecord.claimCount}x` : '';
+
+        lines.push(`━━ <b>Fee Recipient</b> (${shareLabel}${claimCountLabel}) ━━`);
+
+        // Show GitHub username if available, otherwise wallet
+        if (githubUser) {
+            const ghLink = `<a href="${esc(githubUser.htmlUrl)}">${esc(githubUser.login)}</a>`;
+            lines.push(`🐙 ${ghLink}`);
+        } else {
+            const claimerLink = `<a href="https://pump.fun/profile/${event.claimerWallet}">${shortAddr(event.claimerWallet)}</a>`;
+            lines.push(`🐙 ${claimerLink}`);
+        }
+
         lines.push(`🏦 <b>${claimSol} SOL</b>${claimUsd}`);
-
-        const claimerLink = `<a href="https://pump.fun/profile/${event.claimerWallet}">${shortAddr(event.claimerWallet)}</a>`;
-        lines.push(`👤 ${claimerLink}`);
 
         // Launch → Claim time
         if (token && token.createdTimestamp > 0 && event.timestamp > 0) {
@@ -200,22 +201,34 @@ export function formatClaimFeed(ctx: ClaimFeedContext): { imageUrl: string | nul
             lines.push('');
             lines.push(`━━ <b>Token Socials</b> ━━`);
 
+            // Twitter — show as "Status by @handle" with description as blockquote
             if (token?.twitter) {
-                lines.push(`🐦 <a href="${esc(token.twitter)}">Twitter</a>`);
-            }
-            if (token?.telegram) {
-                lines.push(`💬 <a href="${esc(token.telegram)}">Telegram</a>`);
-            }
-            if (token?.website) {
-                lines.push(`🌐 <a href="${esc(token.website)}">Website</a>`);
+                const handle = extractTwitterHandle(token.twitter);
+                if (handle) {
+                    lines.push(`🐦 <a href="${esc(token.twitter)}">Status</a> by <a href="${esc(token.twitter)}">${esc(handle)}</a>`);
+                } else {
+                    lines.push(`🐦 <a href="${esc(token.twitter)}">Twitter</a>`);
+                }
             }
 
+            // Description as blockquote (like tweet content)
             if (token?.description) {
-                const desc = token.description.length > 150
-                    ? token.description.slice(0, 147) + '...'
+                const desc = token.description.length > 200
+                    ? token.description.slice(0, 197) + '...'
                     : token.description;
-                lines.push(`<i>${esc(desc)}</i>`);
+                lines.push(`<blockquote>${esc(desc)}</blockquote>`);
             }
+
+            // Creator followers from PumpFun profile
+            if (creator && creator.followers > 0) {
+                lines.push(`${formatCompact(creator.followers)} Followers`);
+            }
+
+            // Other socials
+            const otherLinks: string[] = [];
+            if (token?.telegram) otherLinks.push(`<a href="${esc(token.telegram)}">💬 TG</a>`);
+            if (token?.website) otherLinks.push(`<a href="${esc(token.website)}">🌐 Site</a>`);
+            if (otherLinks.length > 0) lines.push(otherLinks.join(' · '));
         }
     }
 
@@ -265,9 +278,9 @@ export function formatClaimFeed(ctx: ClaimFeedContext): { imageUrl: string | nul
     lines.push('');
     const linkParts: string[] = [];
     if (event.tokenMint) {
-        linkParts.push(`<a href="https://gmgn.ai/sol/token/${event.tokenMint}">GMGN</a>`);
+        linkParts.push(`<a href="https://gmgn.ai/sol/token/${event.tokenMint}&ref=nichxbt">GMGN</a>`);
         linkParts.push(`<a href="https://pump.fun/coin/${event.tokenMint}">Pump</a>`);
-        linkParts.push(`<a href="https://dexscreener.com/solana/${event.tokenMint}">DEX</a>`);
+        linkParts.push(`<a href="https://axiom.trade/@nich/${event.tokenMint}">Axiom</a>`);
     }
     if (event.txSignature) linkParts.push(`<a href="https://solscan.io/tx/${event.txSignature}">TX</a>`);
     if (linkParts.length > 0) lines.push(`🔗 ${linkParts.join(' · ')}`);

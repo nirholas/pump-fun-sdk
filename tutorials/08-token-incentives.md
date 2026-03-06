@@ -121,6 +121,48 @@ Day 2: totalTokenSupply[1] = 900,000 PUMP
         Your share           = 15/300 × 900,000 = 45,000 PUMP
 ```
 
+## Step 5: Initialize Your Volume Accumulator
+
+Before you can earn rewards, your user volume accumulator account must exist on-chain. If it doesn't, the claim will fail:
+
+```typescript
+import { PUMP_SDK, userVolumeAccumulatorPda } from "@pump-fun/pump-sdk";
+
+// Check if accumulator already exists
+const accPda = userVolumeAccumulatorPda(userKeypair.publicKey);
+const accInfo = await connection.getAccountInfo(accPda);
+
+if (!accInfo) {
+  // First time — initialize volume tracking
+  const initIx = await PUMP_SDK.initUserVolumeAccumulator({
+    payer: userKeypair.publicKey,
+    user: userKeypair.publicKey,
+  });
+
+  const { blockhash } = await connection.getLatestBlockhash("confirmed");
+  const message = new TransactionMessage({
+    payerKey: userKeypair.publicKey,
+    recentBlockhash: blockhash,
+    instructions: [initIx],
+  }).compileToV0Message();
+
+  const tx = new VersionedTransaction(message);
+  tx.sign([userKeypair]);
+  await connection.sendTransaction(tx);
+  console.log("Volume accumulator initialized!");
+}
+```
+
+### Close the Accumulator (Reclaim Rent)
+
+When you're done tracking volume, close the account to reclaim rent:
+
+```typescript
+const closeIx = await PUMP_SDK.closeUserVolumeAccumulator(userKeypair.publicKey);
+```
+
+> **Warning:** Closing the accumulator forfeits any unclaimed tokens. Always claim first.
+
 ## Fetching Volume Statistics
 
 ```typescript
@@ -129,6 +171,46 @@ console.log("Total unclaimed:", stats.totalUnclaimedTokens.toString());
 console.log("Total claimed:", stats.totalClaimedTokens.toString());
 console.log("Current SOL volume:", stats.currentSolVolume.toString());
 ```
+
+## Edge Cases & Troubleshooting
+
+### No Accumulator Account
+
+If `fetchUserVolumeAccumulator` or `claimTokenIncentives` fails with an account-not-found error, the user hasn't initialized their volume accumulator yet. See Step 5 above.
+
+### Nothing to Claim
+
+If `getTotalUnclaimedTokens` returns zero, either:
+- The user hasn't traded since their last claim
+- The daily allocation hasn't been updated yet (try syncing first)
+- All tokens for the day have already been distributed
+
+Always check the unclaimed amount before building a claim transaction:
+
+```typescript
+const unclaimed = await onlineSdk.getTotalUnclaimedTokensBothPrograms(user);
+if (unclaimed.gtn(0)) {
+  const claimIxs = await onlineSdk.claimTokenIncentivesBothPrograms(user);
+  // ... send transaction
+} else {
+  console.log("Nothing to claim yet — keep trading!");
+}
+```
+
+### Stale Volume Data
+
+If your rewards seem lower than expected, your accumulator may be out of date. Sync it to pull in the latest global state:
+
+```typescript
+const syncIxs = await onlineSdk.syncUserVolumeAccumulatorBothPrograms(
+  userKeypair.publicKey
+);
+// Send sync transaction, then check unclaimed again
+```
+
+### AMM vs Bonding Curve Volume
+
+Volume from bonding curve trades and AMM pool trades are tracked separately. Use the `BothPrograms` methods to see combined totals. If you only check one program, you may be missing rewards from the other.
 
 ## What's Next?
 

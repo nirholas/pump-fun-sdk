@@ -71,9 +71,48 @@ console.log("Sharing config:", sharingConfig.toBase58());
 ### Creator Vault
 
 ```typescript
-const vault = creatorVaultPda(sharingConfig);
+const vault = creatorVaultPda(creator);
 console.log("Creator vault:", vault.toBase58());
-// Seeds: ["creator-vault", sharingConfigAddress]
+// Seeds: ["creator-vault", creator]
+// Program: Pump
+```
+
+### AMM Creator Vault
+
+After graduation, creator fees accumulate in a separate AMM vault:
+
+```typescript
+import { ammCreatorVaultPda } from "@pump-fun/pump-sdk";
+
+const ammVault = ammCreatorVaultPda(creator);
+console.log("AMM creator vault:", ammVault.toBase58());
+// Seeds: ["creator-vault", creator]
+// Program: PumpAMM
+```
+
+### Fee Program Global
+
+```typescript
+import { feeProgramGlobalPda } from "@pump-fun/pump-sdk";
+
+const feeGlobal = feeProgramGlobalPda();
+console.log("Fee program global:", feeGlobal.toBase58());
+// Program: PumpFees
+```
+
+## Social Fee PDAs
+
+Social fee PDAs link off-chain user identities (e.g., Telegram user IDs) to on-chain fee accounts:
+
+```typescript
+import { socialFeePda } from "@pump-fun/pump-sdk";
+
+const userId = "user123";
+const platform = 1; // platform identifier (e.g., 1 = Telegram)
+const socialPda = socialFeePda(userId, platform);
+console.log("Social fee PDA:", socialPda.toBase58());
+// Seeds: ["social-fee", userId, platform]
+// Program: PumpFees
 ```
 
 ## Volume Tracking PDAs
@@ -85,6 +124,20 @@ const user = new PublicKey("USER_WALLET");
 const userVolume = userVolumeAccumulatorPda(user);
 console.log("User volume accumulator:", userVolume.toBase58());
 // Seeds: ["user-volume-accumulator", user]
+// Program: Pump
+```
+
+### AMM User Volume Accumulator
+
+Volume on the AMM is tracked separately:
+
+```typescript
+import { ammUserVolumeAccumulatorPda } from "@pump-fun/pump-sdk";
+
+const ammUserVolume = ammUserVolumeAccumulatorPda(user);
+console.log("AMM volume accumulator:", ammUserVolume.toBase58());
+// Seeds: ["user-volume-accumulator", user]
+// Program: PumpAMM
 ```
 
 ## Mayhem Mode PDAs
@@ -108,12 +161,49 @@ console.log("Token vault:", tokenVault.toBase58());
 These PDAs are the same for every user — they're computed once:
 
 ```typescript
-import { GLOBAL_PDA, PUMP_FEE_CONFIG_PDA, GLOBAL_VOLUME_ACCUMULATOR_PDA } from "@pump-fun/pump-sdk";
+import {
+  GLOBAL_PDA,
+  AMM_GLOBAL_PDA,
+  PUMP_FEE_CONFIG_PDA,
+  AMM_FEE_CONFIG_PDA,
+  GLOBAL_VOLUME_ACCUMULATOR_PDA,
+  AMM_GLOBAL_VOLUME_ACCUMULATOR_PDA,
+  AMM_GLOBAL_CONFIG_PDA,
+  PUMP_EVENT_AUTHORITY_PDA,
+  PUMP_AMM_EVENT_AUTHORITY_PDA,
+  PUMP_FEE_EVENT_AUTHORITY_PDA,
+} from "@pump-fun/pump-sdk";
 
-console.log("Global:", GLOBAL_PDA.toBase58());
+console.log("Pump global:", GLOBAL_PDA.toBase58());
+console.log("AMM global:", AMM_GLOBAL_PDA.toBase58());
 console.log("Fee config:", PUMP_FEE_CONFIG_PDA.toBase58());
+console.log("AMM fee config:", AMM_FEE_CONFIG_PDA.toBase58());
 console.log("Volume accumulator:", GLOBAL_VOLUME_ACCUMULATOR_PDA.toBase58());
+console.log("AMM volume accumulator:", AMM_GLOBAL_VOLUME_ACCUMULATOR_PDA.toBase58());
+console.log("AMM global config:", AMM_GLOBAL_CONFIG_PDA.toBase58());
 ```
+
+## V2 PDAs (v1.29.0+)
+
+V2 PDAs use updated seed derivation. These are required for new tokens created after the V2 upgrade:
+
+```typescript
+import { bondingCurveV2Pda, poolV2Pda } from "@pump-fun/pump-sdk";
+
+const mint = new PublicKey("YOUR_MINT");
+
+const bcV2 = bondingCurveV2Pda(mint);
+console.log("Bonding curve V2:", bcV2.toBase58());
+// Seeds: ["bonding-curve-v2", mint]
+// Program: Pump
+
+const poolV2 = poolV2Pda(mint);
+console.log("Pool V2:", poolV2.toBase58());
+// Seeds: ["pool-v2", mint]
+// Program: PumpAMM
+```
+
+> **Note:** V1 PDAs (`bondingCurvePda`, `canonicalPumpPoolPda`) still work for tokens created before V2. Use V2 for new tokens.
 
 ## Building an Account Explorer
 
