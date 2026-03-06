@@ -23,3 +23,4 @@ export const getAuthor = (url) => {
   if (domains[1] === 'vercel') return domains[0];
   return domains.length > 2 ? domains[1] : domains[0];
 };
+
