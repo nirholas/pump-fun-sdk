@@ -166,3 +166,4 @@ bun dev
 - **GitHub Issues:** [github.com/nirholas/plugins/issues](https://github.com/nirholas/plugin.delivery/issues)
 - **Twitter/X:** [@nichxbt](https://x.com/nichxbt)
 - **Example Plugin:** [CoinGecko](../src/coingecko.json)
+
