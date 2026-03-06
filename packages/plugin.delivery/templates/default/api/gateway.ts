@@ -8,3 +8,4 @@ export const config = {
 // This is only needed for local development
 // In production, requests go directly to your API endpoints
 export default createSperaxPluginGateway();
+
