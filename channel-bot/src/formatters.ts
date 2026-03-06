@@ -37,6 +37,7 @@ export function formatGitHubClaimFeed(ctx: ClaimFeedContext): { imageUrl: string
     const { event, solUsdPrice, githubUser, xProfile } = ctx;
     const L: string[] = [];
     const mint = event.tokenMint?.trim() || '';
+    const aff = ctx.affiliates;
 
     // ━━ HEADER ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     L.push(`🐙 <b>GitHub Dev Claimed Fees</b>`);
@@ -46,90 +47,66 @@ export function formatGitHubClaimFeed(ctx: ClaimFeedContext): { imageUrl: string
         githubUser?.followers ?? 0,
         xProfile?.followers ?? null,
     );
-    if (tier) {
-        L.push(`${influencerLabel(tier)}`);
-    }
+    if (tier) L.push(influencerLabel(tier));
 
-    // ━━ AMOUNT ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // ━━ AMOUNT + RECIPIENT ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     L.push('');
     const claimSol = event.amountSol.toFixed(4);
     const claimUsd = solUsdPrice > 0 ? ` ($${(event.amountSol * solUsdPrice).toFixed(2)})` : '';
     L.push(`🏦 <b>${claimSol} SOL</b>${claimUsd}`);
+    const recipient = event.recipientWallet ?? event.claimerWallet;
+    if (recipient) {
+        const recipientLink = `<a href="https://pump.fun/profile/${recipient}">${shortAddr(recipient)}</a>`;
+        L.push(`  ↳ ${recipientLink}`);
+    }
 
-    // ━━ GITHUB USER ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // ━━ GITHUB PROFILE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     L.push('');
     if (githubUser) {
         const userLink = `<a href="${esc(githubUser.htmlUrl)}">${esc(githubUser.login)}</a>`;
         const nameTag = githubUser.name ? ` (${esc(githubUser.name)})` : '';
         L.push(`👤 ${userLink}${nameTag}`);
-        if (githubUser.publicRepos > 0) L.push(`📦 Repos: ${githubUser.publicRepos}`);
-        if (githubUser.followers > 0) L.push(`👁 Followers: ${githubUser.followers}`);
-        if (githubUser.createdAt) L.push(`📅 Joined: ${timeAgo(new Date(githubUser.createdAt).getTime() / 1000)}`);
+
+        // Compact meta row
+        const meta: string[] = [];
+        if (githubUser.publicRepos > 0) meta.push(`📦 ${githubUser.publicRepos}`);
+        if (githubUser.followers > 0) meta.push(`👁 ${githubUser.followers}`);
+        if (githubUser.createdAt) meta.push(`📅 ${timeAgo(new Date(githubUser.createdAt).getTime() / 1000)}`);
+        if (meta.length > 0) L.push(`  ↳ ${meta.join(' · ')}`);
+
         if (githubUser.bio) {
             const bio = githubUser.bio.length > 80 ? githubUser.bio.slice(0, 77) + '...' : githubUser.bio;
             L.push(`  <i>${esc(bio)}</i>`);
         }
         if (githubUser.twitterUsername) {
             const xLink = `<a href="https://x.com/${esc(githubUser.twitterUsername)}">${esc(githubUser.twitterUsername)}</a>`;
-            if (xProfile && xProfile.followers > 0) {
-                L.push(`𝕏 ${xLink} · ${formatFollowerCount(xProfile.followers)} followers`);
-            } else {
-                L.push(`𝕏 ${xLink}`);
-            }
+            const xFollowers = xProfile && xProfile.followers > 0 ? ` · ${formatFollowerCount(xProfile.followers)}` : '';
+            L.push(`𝕏 ${xLink}${xFollowers}`);
         }
-        if (githubUser.blog) L.push(`🌐 <a href="${esc(githubUser.blog)}">${esc(githubUser.blog.replace(/^https?:\/\//, '').slice(0, 40))}</a>`);
         if (githubUser.location) L.push(`📍 ${esc(githubUser.location)}`);
+        if (githubUser.blog) L.push(`🌐 <a href="${esc(githubUser.blog)}">${esc(githubUser.blog.replace(/^https?:\/\//, '').slice(0, 40))}</a>`);
     } else {
         L.push(`👤 GitHub ID: ${esc(event.githubUserId ?? 'unknown')}`);
-    }
-
-    // ━━ RECIPIENT ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    const recipient = event.recipientWallet ?? event.claimerWallet;
-    if (recipient) {
-        L.push('');
-        const recipientLink = `<a href="https://pump.fun/profile/${recipient}">${shortAddr(recipient)}</a>`;
-        L.push(`💼 Recipient: ${recipientLink}`);
     }
 
     // ━━ CA + TRADING LINKS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     L.push('');
     if (mint) {
-        // Click-to-copy CA (tapping <code> in Telegram copies to clipboard)
-        L.push(`🧬 <b>CA</b>`);
         L.push(`<code>${mint}</code>`);
-
-        // Trading links row
-        const aff = ctx.affiliates;
-        const pfUrl   = `https://pump.fun/coin/${mint}`;
-        const axiomUrl = aff?.axiom
-            ? `https://axiom.trade/t/${mint}?ref=${encodeURIComponent(aff.axiom)}`
-            : `https://axiom.trade/t/${mint}`;
-        const gmgnUrl  = aff?.gmgn
-            ? `https://gmgn.ai/sol/token/${mint}?ref=${encodeURIComponent(aff.gmgn)}`
-            : `https://gmgn.ai/sol/token/${mint}`;
-        const padreUrl = aff?.padre
-            ? `https://t.me/padre_trading_bot?start=token_${mint}_ref_${encodeURIComponent(aff.padre)}`
-            : `https://t.me/padre_trading_bot?start=token_${mint}`;
-        L.push(
-            `<a href="${pfUrl}">Pump.fun</a>` +
-            ` · <a href="${axiomUrl}">Axiom</a>` +
-            ` · <a href="${gmgnUrl}">GMGN</a>` +
-            ` · <a href="${padreUrl}">Padre</a>`,
-        );
+        const axiomUrl = `https://axiom.trade/t/${mint}?ref=${encodeURIComponent(aff?.axiom ?? 'nich')}`;
+        const gmgnUrl  = `https://gmgn.ai/sol/token/${mint}?ref=${encodeURIComponent(aff?.gmgn ?? 'nichxbt')}`;
+        const padreUrl = `https://t.me/padre_trading_bot?start=token_${mint}_ref_${encodeURIComponent(aff?.padre ?? 'nichxbt')}`;
+        L.push(`<a href="${axiomUrl}">Axiom</a> · <a href="${gmgnUrl}">GMGN</a> · <a href="${padreUrl}">Padre</a>`);
     } else {
-        // Index not yet populated — show PDA so user can cross-reference
-        L.push(`🧬 <b>CA:</b> <i>resolving…</i>`);
-        if (event.socialFeePda) {
-            L.push(`🧾 <code>${event.socialFeePda}</code>`);
-        }
+        L.push(`<i>CA resolving…</i>`);
     }
 
-    // ━━ TX ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // ━━ FOOTER ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     L.push('');
-    if (event.txSignature) {
-        L.push(`🔍 <a href="https://solscan.io/tx/${event.txSignature}">TX</a>`);
-    }
-    L.push(`🕐 ${formatTime(event.timestamp)}`);
+    const txLink = event.txSignature
+        ? `<a href="https://solscan.io/tx/${event.txSignature}">TX</a>`
+        : null;
+    L.push(`${txLink ? `🔍 ${txLink} · ` : ''}🕐 ${formatTime(event.timestamp)}`);
 
     const imageUrl = githubUser?.avatarUrl || null;
     return { imageUrl, caption: L.join('\n') };
@@ -444,19 +421,11 @@ export function formatGraduationFeed(
 
     // ━━ TRADING LINKS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     L.push('');
-    const bots: Array<{ abbr: string; url: string }> = [
-        { abbr: 'PH', url: `https://photon-sol.tinyastro.io/en/lp/${mint}` },
-        { abbr: 'AX', url: `https://axiom.trade/t/${mint}` },
-        { abbr: 'TJ', url: `https://t.me/paris_trojanbot?start=r-pumpdotfun-${mint}` },
-        { abbr: 'BA', url: `https://t.me/BananaGunSolana_bot?start=${mint}` },
-        { abbr: 'PR', url: `https://t.me/padre_bot?start=${mint}` },
-        { abbr: 'BL', url: `https://t.me/bloom_trading_bot?start=${mint}` },
-        { abbr: 'MA', url: `https://t.me/maestro?start=${mint}` },
-        { abbr: 'MT', url: `https://t.me/MaestroProBot?start=${mint}` },
-        { abbr: 'NE', url: `https://t.me/solana_bullx_bot?start=${mint}` },
-        { abbr: 'XX', url: `https://pump.fun/coin/${mint}` },
-    ];
-    L.push(bots.map(b => `<a href="${b.url}">${b.abbr}</a>`).join(' | '));
+    L.push(
+        `<a href="https://t.me/padre_bot?start=${mint}">Padre</a>` +
+        `  ·  <a href="https://axiom.trade/t/${mint}">Axiom</a>` +
+        `  ·  <a href="https://gmgn.ai/sol/token/${mint}">GMGN</a>`,
+    );
 
     // ━━ FOOTER ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     L.push('');
