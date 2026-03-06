@@ -228,3 +228,4 @@ self.onconnect = (event) => {
 };
 
 console.debug('bare-mux-worker: initialized with built-in BareFetchTransport');
+
