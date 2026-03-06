@@ -72,3 +72,4 @@ PumpOS uses [OpenBare](https://github.com/nirholas/openbare) as its proxy backen
 
 - Some sites have additional protections
 - Check OpenBare logs for errors
+
