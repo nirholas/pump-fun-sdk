@@ -36,10 +36,16 @@ const sellState = await onlineSdk.fetchSellState(mint, seller.publicKey);
 ```typescript
 const tokensToSell = new BN("1000000000"); // Amount of tokens to sell
 
+// Fetch global + feeConfig alongside sellState for the math
+const [global, feeConfig] = await Promise.all([
+  onlineSdk.fetchGlobal(),
+  onlineSdk.fetchFeeConfig(),
+]);
+
 const solYouGet = getSellSolAmountFromTokenAmount({
-  global: sellState.global,
-  feeConfig: sellState.feeConfig,
-  mintSupply: sellState.mintSupply,
+  global,
+  feeConfig,
+  mintSupply: sellState.bondingCurve.tokenTotalSupply,
   bondingCurve: sellState.bondingCurve,
   amount: tokensToSell,
 });
@@ -50,16 +56,16 @@ console.log("SOL you'll receive:", solYouGet.toNumber() / 1e9, "SOL");
 
 ## Step 3: Build the Sell Instructions
 
+`OnlinePumpSdk.sellInstructions()` fetches `global` internally, so you only need to spread the `sellState`:
+
 ```typescript
-const sellIxs = await PUMP_SDK.sellInstructions({
-  global: sellState.global,
-  bondingCurveAccountInfo: sellState.bondingCurveAccountInfo,
-  bondingCurve: sellState.bondingCurve,
+const sellIxs = await onlineSdk.sellInstructions({
+  ...sellState,
   mint,
   user: seller.publicKey,
   amount: tokensToSell,
+  solAmount: solYouGet,
   slippage: 0.05,  // 5% slippage tolerance
-  tokenProgram: sellState.tokenProgram,
 });
 ```
 
@@ -87,7 +93,7 @@ console.log("Sold tokens! Tx:", signature);
 
 ```typescript
 import { Connection, Keypair, PublicKey, TransactionMessage, VersionedTransaction } from "@solana/web3.js";
-import { OnlinePumpSdk, PUMP_SDK, getSellSolAmountFromTokenAmount } from "@pump-fun/pump-sdk";
+import { OnlinePumpSdk, getSellSolAmountFromTokenAmount } from "@pump-fun/pump-sdk";
 import BN from "bn.js";
 
 async function sellTokens() {
@@ -96,8 +102,12 @@ async function sellTokens() {
   const seller = Keypair.generate(); // Use your funded keypair
   const mint = new PublicKey("YOUR_TOKEN_MINT_ADDRESS");
 
-  // Fetch state
-  const sellState = await onlineSdk.fetchSellState(mint, seller.publicKey);
+  // Fetch state in parallel
+  const [sellState, global, feeConfig] = await Promise.all([
+    onlineSdk.fetchSellState(mint, seller.publicKey),
+    onlineSdk.fetchGlobal(),
+    onlineSdk.fetchFeeConfig(),
+  ]);
 
   // Check if bonding curve is still active
   if (sellState.bondingCurve.complete) {
@@ -109,24 +119,22 @@ async function sellTokens() {
   // Calculate SOL out
   const tokensToSell = new BN("1000000000");
   const solOut = getSellSolAmountFromTokenAmount({
-    global: sellState.global,
-    feeConfig: sellState.feeConfig,
-    mintSupply: sellState.mintSupply,
+    global,
+    feeConfig,
+    mintSupply: sellState.bondingCurve.tokenTotalSupply,
     bondingCurve: sellState.bondingCurve,
     amount: tokensToSell,
   });
   console.log(`Selling tokens → ${solOut.toNumber() / 1e9} SOL`);
 
-  // Build sell instructions
-  const sellIxs = await PUMP_SDK.sellInstructions({
-    global: sellState.global,
-    bondingCurveAccountInfo: sellState.bondingCurveAccountInfo,
-    bondingCurve: sellState.bondingCurve,
+  // Build sell instructions (fetches global internally)
+  const sellIxs = await onlineSdk.sellInstructions({
+    ...sellState,
     mint,
     user: seller.publicKey,
     amount: tokensToSell,
+    solAmount: solOut,
     slippage: 0.05,
-    tokenProgram: sellState.tokenProgram,
   });
 
   // Send

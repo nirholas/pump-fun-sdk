@@ -65,3 +65,23 @@ screenshots/
 
 # Sectbot
 *sectbot*
+
+# Swarm / swarm-bot
+swarm/
+swarm-bot/
+
+# Workspace prompts (local agent prompts, not for version control)
+prompts/
+
+# Site build output
+site/
+
+# Local bots / services (not published)
+outsiders-bot/
+dashboard/
+telegram-bot/
+claim-bot/
+channel-bot/
+
+# Security audits (kept local)
+security/

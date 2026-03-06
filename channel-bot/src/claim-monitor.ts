@@ -17,6 +17,11 @@ import bs58 from 'bs58';
 import type { ChannelBotConfig } from './config.js';
 import { log } from './logger.js';
 import { RpcFallback } from './rpc-fallback.js';
+import {
+    SocialFeeIndex,
+    CREATE_FEE_SHARING_CONFIG_EVENT_DISC,
+    UPDATE_FEE_SHARES_EVENT_DISC,
+} from './social-fee-index.js';
 import type { FeeClaimEvent, ClaimType } from './types.js';
 import {
     CLAIM_INSTRUCTIONS,
@@ -121,6 +126,7 @@ export class ClaimMonitor {
     private wsEventsReceived = 0;
     private claimTxProcessed = 0;
     private claimsByType = new Map<string, number>();
+    private socialFeeIndex = new SocialFeeIndex();
 
     constructor(config: ChannelBotConfig, onClaim: (event: FeeClaimEvent) => void) {
         this.config = config;
@@ -143,6 +149,11 @@ export class ClaimMonitor {
         this.startedAt = Date.now();
 
         log.info('Claim monitor: monitoring %d programs', this.programPubkeys.length);
+
+        // Bootstrap social fee index from on-chain SharingConfig accounts (non-blocking)
+        this.socialFeeIndex.bootstrap(this.rpc).catch((err) => {
+            log.warn('SocialFeeIndex bootstrap error: %s', err);
+        });
 
         if (this.config.solanaWsUrl && process.env.SOLANA_WS_URL) {
             try {
@@ -259,18 +270,28 @@ export class ClaimMonitor {
         this.processedSignatures.add(signature);
         this.trimProcessedCache();
 
-        // Only queue transactions with SocialFeePdaClaimed event (disc 3212c141edd2eaec)
+        // Scan all log lines for relevant events
         const SOCIAL_FEE_CLAIMED_DISC = '3212c141edd2eaec';
-        const hasClaimIx = logs.some((line) => {
-            if (!line.includes('Program data:')) return false;
+        let hasClaimIx = false;
+
+        for (const line of logs) {
+            if (!line.includes('Program data:')) continue;
             const b64 = line.split('Program data: ')[1]?.trim();
-            if (!b64) return false;
+            if (!b64) continue;
             try {
                 const bytes = Buffer.from(b64, 'base64');
+                if (bytes.length < 8) continue;
                 const disc = Buffer.from(bytes.subarray(0, 8)).toString('hex');
-                return disc === SOCIAL_FEE_CLAIMED_DISC;
-            } catch { return false; }
-        });
+
+                if (disc === SOCIAL_FEE_CLAIMED_DISC) {
+                    hasClaimIx = true;
+                } else if (disc === CREATE_FEE_SHARING_CONFIG_EVENT_DISC) {
+                    this.socialFeeIndex.updateFromCreateEvent(bytes);
+                } else if (disc === UPDATE_FEE_SHARES_EVENT_DISC) {
+                    this.socialFeeIndex.updateFromUpdateSharesEvent(bytes);
+                }
+            } catch { /* ignore unparseable */ }
+        }
 
         if (hasClaimIx) {
             this.claimTxProcessed++;
@@ -410,6 +431,7 @@ export class ClaimMonitor {
         }
         // collect_creator_fee, claim_cashback, collect_coin_creator_fee
         // are wallet-level claims with no token mint — tokenMint stays empty
+        // claim_social_fee_pda: mint is resolved via the SocialFeeIndex below
 
         // Parse event data from CPI log lines for amount
         let amountLamports = 0;
@@ -535,6 +557,11 @@ export class ClaimMonitor {
 
         // Skip dust amounts
         if (amountLamports < 1000) return null;
+
+        // For social fee PDA claims, resolve mint from the index
+        if (def.claimType === 'claim_social_fee_pda' && socialFeePda && !tokenMint) {
+            tokenMint = this.socialFeeIndex.lookup(socialFeePda) ?? '';
+        }
 
         return {
             txSignature: signature,

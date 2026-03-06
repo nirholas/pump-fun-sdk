@@ -182,7 +182,7 @@ export class EventMonitor {
         });
     }
 
-    private async handleLogEvent(logInfo: Logs): Promise<void> {
+    private async handleLogEvent(logInfo: Logs, blockTime?: number | null): Promise<void> {
         const { signature, logs: logLines, err } = logInfo;
         if (err) return;
         if (this.processedSignatures.has(signature)) return;
@@ -202,7 +202,7 @@ export class EventMonitor {
                 if (disc === CREATE_V2_DISCRIMINATOR || disc === CREATE_DISCRIMINATOR) {
                     this.decodeLaunch(bytes, disc, signature);
                 } else if (disc === COMPLETE_EVENT_DISCRIMINATOR || disc === COMPLETE_AMM_MIGRATION_DISCRIMINATOR) {
-                    this.decodeGraduation(bytes, disc, signature);
+                    this.decodeGraduation(bytes, disc, signature, blockTime);
                 } else if (disc === TRADE_EVENT_DISCRIMINATOR) {
                     this.decodeTrade(bytes, signature);
                 } else if (disc === DISTRIBUTE_FEES_EVENT_DISCRIMINATOR) {
@@ -257,7 +257,7 @@ export class EventMonitor {
                 signature,
                 logs: logMessages,
                 err: null,
-            });
+            }, tx.blockTime);
         } catch (err) {
             log.debug('Failed to fetch tx %s: %s', signature.slice(0, 8), err);
         }
@@ -336,7 +336,7 @@ export class EventMonitor {
         }
     }
 
-    private decodeGraduation(bytes: Buffer, disc: string, signature: string): void {
+    private decodeGraduation(bytes: Buffer, disc: string, signature: string, blockTime?: number | null): void {
         try {
             // CompleteEvent layout after 8-byte discriminator:
             // user: Pubkey (32), mint: Pubkey (32), bondingCurve: Pubkey (32)
@@ -350,7 +350,7 @@ export class EventMonitor {
             const event: GraduationEvent = {
                 txSignature: signature,
                 slot: 0,
-                timestamp: Math.floor(Date.now() / 1000),
+                timestamp: blockTime ?? Math.floor(Date.now() / 1000),
                 mintAddress: mint,
                 user,
                 bondingCurve,

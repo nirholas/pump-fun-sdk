@@ -33,6 +33,12 @@ export interface ChannelBotConfig {
     requireGithub: boolean;
     /** Minimum SOL for whale alerts */
     whaleThresholdSol: number;
+    /** Affiliate ref codes for trading links */
+    affiliates: {
+        axiom: string;
+        gmgn: string;
+        padre: string;
+    };
 }
 
 export function loadConfig(): ChannelBotConfig {
@@ -100,7 +106,14 @@ export function loadConfig(): ChannelBotConfig {
         process.env.WHALE_THRESHOLD_SOL || '10',
     );
 
+    const affiliates = {
+        axiom: process.env.AXIOM_REF ?? '',
+        gmgn:  process.env.GMGN_REF  ?? '',
+        padre: process.env.PADRE_REF  ?? '',
+    };
+
     return {
+        affiliates,
         channelId,
         feed,
         logLevel,

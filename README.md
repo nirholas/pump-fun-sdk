@@ -169,13 +169,19 @@ import BN from "bn.js";
 import { getSellSolAmountFromTokenAmount, OnlinePumpSdk } from "@pump-fun/pump-sdk";
 
 const sdk = new OnlinePumpSdk(connection);
-const sellState = await sdk.fetchSellState(mint, user);
+
+// Fetch required state in parallel
+const [sellState, global, feeConfig] = await Promise.all([
+  sdk.fetchSellState(mint, user),
+  sdk.fetchGlobal(),
+  sdk.fetchFeeConfig(),
+]);
 
 const tokenAmount = new BN(1_000_000); // 1 token (6 decimals)
 const expectedSol = getSellSolAmountFromTokenAmount({
-  global: sellState.global,
-  feeConfig: sellState.feeConfig,
-  mintSupply: sellState.mintSupply,
+  global,
+  feeConfig,
+  mintSupply: sellState.bondingCurve.tokenTotalSupply,
   bondingCurve: sellState.bondingCurve,
   amount: tokenAmount,
 });

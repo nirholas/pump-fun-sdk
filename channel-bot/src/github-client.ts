@@ -251,28 +251,58 @@ export async function fetchGitHubUser(username: string): Promise<GitHubUserInfo 
         }
 
         const raw = (await resp.json()) as Record<string, unknown>;
-
-        const info: GitHubUserInfo = {
-            login: String(raw.login ?? username),
-            name: raw.name ? String(raw.name) : null,
-            bio: raw.bio ? String(raw.bio) : null,
-            htmlUrl: String(raw.html_url ?? `https://github.com/${username}`),
-            avatarUrl: String(raw.avatar_url ?? ''),
-            publicRepos: Number(raw.public_repos ?? 0),
-            followers: Number(raw.followers ?? 0),
-            following: Number(raw.following ?? 0),
-            company: raw.company ? String(raw.company) : null,
-            location: raw.location ? String(raw.location) : null,
-            blog: raw.blog ? String(raw.blog) : null,
-            twitterUsername: raw.twitter_username ? String(raw.twitter_username) : null,
-            createdAt: String(raw.created_at ?? ''),
-            hireable: Boolean(raw.hireable),
-        };
+        const info = parseUserResponse(raw, username);
 
         setCache(userCache, key, info, REPO_CACHE_TTL);
         return info;
     } catch (err) {
         log.error('GitHub user fetch failed for %s: %s', username, err);
+        return null;
+    }
+}
+
+/** Parse a raw GitHub API user response into GitHubUserInfo. */
+function parseUserResponse(raw: Record<string, unknown>, fallbackLogin = ''): GitHubUserInfo {
+    return {
+        login: String(raw.login ?? fallbackLogin),
+        name: raw.name ? String(raw.name) : null,
+        bio: raw.bio ? String(raw.bio) : null,
+        htmlUrl: String(raw.html_url ?? ''),
+        avatarUrl: String(raw.avatar_url ?? ''),
+        publicRepos: Number(raw.public_repos ?? 0),
+        followers: Number(raw.followers ?? 0),
+        following: Number(raw.following ?? 0),
+        company: raw.company ? String(raw.company) : null,
+        location: raw.location ? String(raw.location) : null,
+        blog: raw.blog ? String(raw.blog) : null,
+        twitterUsername: raw.twitter_username ? String(raw.twitter_username) : null,
+        createdAt: String(raw.created_at ?? ''),
+        hireable: Boolean(raw.hireable),
+    };
+}
+
+/**
+ * Fallback: resolve a numeric GitHub user ID to a username via the public
+ * list-users endpoint (GET /users?since=<id-1>&per_page=1).
+ * No auth required, but only returns login/id/avatar — then we fetch full profile.
+ */
+async function resolveUserIdViaList(userId: string): Promise<GitHubUserInfo | null> {
+    const numId = Number(userId);
+    if (!Number.isInteger(numId) || numId <= 0) return null;
+
+    try {
+        const since = numId - 1;
+        const resp = await fetch(`${GITHUB_API}/users?since=${since}&per_page=1`, {
+            headers: authHeaders(),
+            signal: AbortSignal.timeout(8_000),
+        });
+        if (!resp.ok) return null;
+        const list = (await resp.json()) as Array<Record<string, unknown>>;
+        const match = list.find((u) => Number(u.id) === numId);
+        if (!match?.login) return null;
+        // Now fetch the full profile by username (public endpoint)
+        return await fetchGitHubUser(String(match.login));
+    } catch {
         return null;
     }
 }
@@ -284,6 +314,7 @@ export async function fetchGitHubUserById(userId: string): Promise<GitHubUserInf
     if (cached !== undefined) return cached;
 
     try {
+        // GET /user/{account_id} requires authentication
         const resp = await fetch(`${GITHUB_API}/user/${encodeURIComponent(userId)}`, {
             headers: authHeaders(),
             signal: AbortSignal.timeout(8_000),
@@ -296,29 +327,23 @@ export async function fetchGitHubUserById(userId: string): Promise<GitHubUserInf
             }
             if (resp.status === 403 || resp.status === 429) {
                 log.warn('GitHub API rate limited (%d) for user ID %s', resp.status, userId);
-                setCache(userCache, cacheKey, null, 30_000); // short cooldown to avoid hammering
+                setCache(userCache, cacheKey, null, 30_000);
                 return null;
             }
-            return null;
+            // 401 = no/bad token, 422 = invalid ID format, other unexpected errors
+            log.warn('GitHub API %d for user ID %s — falling back to list endpoint (token set: %s)',
+                resp.status, userId, GITHUB_TOKEN ? 'yes' : 'no');
+
+            // Fallback: resolve via public list-users endpoint
+            const fallback = await resolveUserIdViaList(userId);
+            if (fallback) {
+                setCache(userCache, cacheKey, fallback, REPO_CACHE_TTL);
+            }
+            return fallback;
         }
 
         const raw = (await resp.json()) as Record<string, unknown>;
-        const info: GitHubUserInfo = {
-            login: String(raw.login ?? ''),
-            name: raw.name ? String(raw.name) : null,
-            bio: raw.bio ? String(raw.bio) : null,
-            htmlUrl: String(raw.html_url ?? ''),
-            avatarUrl: String(raw.avatar_url ?? ''),
-            publicRepos: Number(raw.public_repos ?? 0),
-            followers: Number(raw.followers ?? 0),
-            following: Number(raw.following ?? 0),
-            company: raw.company ? String(raw.company) : null,
-            location: raw.location ? String(raw.location) : null,
-            blog: raw.blog ? String(raw.blog) : null,
-            twitterUsername: raw.twitter_username ? String(raw.twitter_username) : null,
-            createdAt: String(raw.created_at ?? ''),
-            hireable: Boolean(raw.hireable),
-        };
+        const info = parseUserResponse(raw);
 
         setCache(userCache, cacheKey, info, REPO_CACHE_TTL);
         return info;

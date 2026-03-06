@@ -26,6 +26,7 @@ export interface ClaimFeedContext {
     solUsdPrice: number;
     githubUser: GitHubUserInfo | null;
     xProfile: XProfile | null;
+    affiliates?: { axiom: string; gmgn: string; padre: string };
 }
 
 /**
@@ -90,15 +91,37 @@ export function formatGitHubClaimFeed(ctx: ClaimFeedContext): { imageUrl: string
         L.push(`💼 Recipient: ${recipientLink}`);
     }
 
-    // ━━ CA / CLAIM ACCOUNT ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // ━━ CA + TRADING LINKS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     L.push('');
     if (mint) {
-        L.push(`🧬 CA: <code>${mint}</code>`);
+        // Click-to-copy CA (tapping <code> in Telegram copies to clipboard)
+        L.push(`🧬 <b>CA</b>`);
+        L.push(`<code>${mint}</code>`);
+
+        // Trading links row
+        const aff = ctx.affiliates;
+        const pfUrl   = `https://pump.fun/coin/${mint}`;
+        const axiomUrl = aff?.axiom
+            ? `https://axiom.trade/t/${mint}?ref=${encodeURIComponent(aff.axiom)}`
+            : `https://axiom.trade/t/${mint}`;
+        const gmgnUrl  = aff?.gmgn
+            ? `https://gmgn.ai/sol/token/${mint}?ref=${encodeURIComponent(aff.gmgn)}`
+            : `https://gmgn.ai/sol/token/${mint}`;
+        const padreUrl = aff?.padre
+            ? `https://t.me/padre_trading_bot?start=token_${mint}_ref_${encodeURIComponent(aff.padre)}`
+            : `https://t.me/padre_trading_bot?start=token_${mint}`;
+        L.push(
+            `<a href="${pfUrl}">Pump.fun</a>` +
+            ` · <a href="${axiomUrl}">Axiom</a>` +
+            ` · <a href="${gmgnUrl}">GMGN</a>` +
+            ` · <a href="${padreUrl}">Padre</a>`,
+        );
     } else {
-        L.push(`🧬 CA: <i>N/A (social fee claim is wallet-level)</i>`);
-    }
-    if (event.socialFeePda) {
-        L.push(`🧾 Social Fee PDA: <code>${event.socialFeePda}</code>`);
+        // Index not yet populated — show PDA so user can cross-reference
+        L.push(`🧬 <b>CA:</b> <i>resolving…</i>`);
+        if (event.socialFeePda) {
+            L.push(`🧾 <code>${event.socialFeePda}</code>`);
+        }
     }
 
     // ━━ TX ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -271,238 +294,177 @@ export function formatGraduationFeed(
     enrichment?: GraduationEnrichment,
 ): { imageUrl: string | null; caption: string } {
     const L: string[] = [];
+    const mint = event.mintAddress;
 
-    // ━━ HEADER ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    L.push(`🎓 <b>TOKEN GRADUATED</b>`);
-    L.push('');
-
-    // ━━ LINE 1: TOKEN IDENTITY ━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // ━━ LINE 1: TOKEN IDENTITY + SPEED EMOJI ━━━━━━━━━━━━
     const coinName = token?.name ?? 'Unknown';
     const coinTicker = token?.symbol ?? '???';
-    const pumpLink = `<a href="https://pump.fun/coin/${event.mintAddress}">${esc(coinName)}</a>`;
-    
-    // Speed emojis based on time in bonding curve
+
+    // Speed emoji + label based on bonding curve duration
     let speedEmoji = '';
-    let timeSpent = '';
-    if (token && token.createdTimestamp > 0) {
+    let timeLabel = '';
+    if (token && token.createdTimestamp > 0 && event.timestamp > token.createdTimestamp) {
         const seconds = event.timestamp - token.createdTimestamp;
         const minutes = Math.floor(seconds / 60);
         const hours = Math.floor(minutes / 60);
         const days = Math.floor(hours / 24);
-        
         if (seconds < 30) {
             speedEmoji = '⚡️⚡️⚡️';
-            timeSpent = `${seconds}s`;
+            timeLabel = `${seconds}s`;
         } else if (seconds < 60) {
             speedEmoji = '⚡️⚡️';
-            timeSpent = `${seconds}s`;
+            timeLabel = `${seconds}s`;
         } else if (seconds < 120) {
             speedEmoji = '⚡️';
-            timeSpent = `${minutes}m`;
+            timeLabel = `${minutes}m`;
         } else if (days > 3) {
             speedEmoji = '💤';
-            timeSpent = days > 0 ? `${days}d ${hours % 24}h` : `${hours}h ${minutes % 60}m`;
+            timeLabel = `${days}d`;
         } else if (hours > 0) {
-            timeSpent = `${hours}h ${minutes % 60}m`;
+            timeLabel = `${hours}h${minutes % 60 > 0 ? ` ${minutes % 60}m` : ''}`;
         } else {
-            timeSpent = `${minutes}m`;
+            timeLabel = `${minutes}m`;
         }
     }
-    
-    const launchpadEmoji = '💊'; // Pump launchpad
-    L.push(`${launchpadEmoji} ${speedEmoji} <b>${pumpLink}</b>  <code>$${esc(coinTicker)}</code>`.trim());
 
-    // ━━ LINE 2: CONTRACT ADDRESS ━━━━━━━━━━━━━━━━━━━━━━━
-    L.push(`CA: <code>${event.mintAddress}</code>`);
-    if (timeSpent) {
-        L.push(`     Bonding Curve: ${timeSpent}`);
-    }
-    if (token && token.createdTimestamp > 0) {
-        L.push(`     Launched ${timeAgo(token.createdTimestamp)}`);
+    // 💊 ⚡️⚡️⚡️ $TICKER — Name [0m]
+    const nameLink = `<a href="https://pump.fun/coin/${mint}">${esc(coinName)}</a>`;
+    const headerPrefix = ['💊', speedEmoji].filter(Boolean).join(' ');
+    L.push(`${headerPrefix} <b>$${esc(coinTicker)}</b> — ${nameLink}${timeLabel ? ` [${timeLabel}]` : ''}`);
+
+    // ━━ LINE 2: CONTRACT ADDRESS + MARKET CAP ━━━━━━━━━━
+    L.push(`<code>${mint}</code>`);
+    if (token && (token.usdMarketCap > 0 || token.marketCapSol > 0)) {
+        const mcStr = token.usdMarketCap > 0
+            ? `$${formatCompact(token.usdMarketCap)}`
+            : `~${token.marketCapSol.toFixed(1)} SOL`;
+        L.push(`💹 MC: ${mcStr}`);
     }
 
-    // ━━ LINE 3: MIGRATION DETAILS ━━━━━━━━━━━━━━━━━━━━━━
+    // ━━ STATS BLOCK (tree-style ├ / └) ━━━━━━━━━━━━━━━━━
     L.push('');
-    L.push(`📈 <b>Type:</b> ${event.isMigration ? 'AMM Migration' : 'Bonding Curve Complete'}`);
-    if (event.isMigration && event.solAmount != null) {
-        const solMigrated = event.solAmount.toFixed(2);
-        const usdMigrated = solUsdPrice > 0 ? ` ($${(event.solAmount * solUsdPrice).toFixed(0)})` : '';
-        L.push(`     SOL Migrated: ${solMigrated} SOL${usdMigrated}`);
-    }
-    if (event.poolMigrationFee != null) {
-        L.push(`     Migration Fee: ${event.poolMigrationFee.toFixed(4)} SOL`);
-    }
-    if (event.poolAddress) {
-        const poolLink = `<a href="https://solscan.io/account/${event.poolAddress}">${shortAddr(event.poolAddress)}</a>`;
-        L.push(`     Pool: ${poolLink}`);
-    }
-    const userLink = `<a href="https://pump.fun/profile/${event.user}">${shortAddr(event.user)}</a>`;
-    L.push(`     Triggered by: ${userLink}`);
+    L.push('📊 <b>Stats:</b>');
 
-    // ━━ LINE 4: MARKET INFO ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    if (token) {
-        L.push('');
-        if (token.usdMarketCap > 0) {
-            L.push(`💹 <b>Market Cap:</b> $${formatCompact(token.usdMarketCap)}`);
-        } else if (token.marketCapSol > 0) {
-            L.push(`💹 <b>Market Cap:</b> ~${token.marketCapSol.toFixed(1)} SOL`);
-        }
-        if (token.priceSol > 0) {
-            const priceStr = token.priceSol < 0.000001 
-                ? token.priceSol.toExponential(2) 
-                : token.priceSol.toFixed(9).replace(/\.?0+$/, '');
-            L.push(`     Price: ${priceStr} SOL`);
-        }
-        if (token.athMarketCap > 0 && token.athMarketCap > token.usdMarketCap) {
-            L.push(`     ATH: $${formatCompact(token.athMarketCap)}`);
-        }
-        if (token.kothTimestamp > 0) {
-            L.push(`     👑 KotH: ${timeAgo(token.kothTimestamp)}`);
-        }
-    }
+    // Accumulate stat lines — rendered with ├/└ prefixes at the end
+    const stats: string[] = [];
 
-    // ━━ LINE 5: HOLDERS DETAILS ━━━━━━━━━━━━━━━━━━━━━━━━
+    // 4.1 Holders count
     const holderData = enrichment?.holders;
     if (holderData && holderData.totalHolders > 0) {
-        L.push('');
-        L.push(`👥 <b>Holders:</b> ${holderData.totalHolders.toLocaleString()}`);
-        
+        stats.push(`👥: ${holderData.totalHolders.toLocaleString()}`);
+
+        // 4.2 Top-10% + top-5 individual breakdown
         if (holderData.top10Pct > 0) {
-            L.push(`     Top 10: ${holderData.top10Pct.toFixed(1)}%`);
-        }
-        
-        // Show top 5 holders (excluding pool/bonding curve)
-        const topNonPool = holderData.topHolders.filter(h => !h.isPool).slice(0, 5);
-        if (topNonPool.length > 0) {
-            const holderStrs = topNonPool.map((h, i) => {
-                const addr = `<a href="https://pump.fun/profile/${h.address}">${shortAddr(h.address)}</a>`;
-                return `${i + 1}. ${addr} ${h.pct.toFixed(1)}%`;
-            });
-            L.push(`     ${holderStrs.join(' · ')}`);
+            const nonPool = holderData.topHolders.filter(h => !h.isPool);
+            const top5 = nonPool.slice(0, 5).map(h => `${h.pct.toFixed(2)}%`).join(', ');
+            const top10Str = top5
+                ? `${holderData.top10Pct.toFixed(0)}% [${top5}]`
+                : `${holderData.top10Pct.toFixed(0)}%`;
+            stats.push(`🔟: ${top10Str}`);
         }
     }
 
-    // ━━ LINE 6: VOLUME / ACTIVITY ━━━━━━━━━━━━━━━━━━━━━━
-    if (enrichment?.trades && enrichment.trades.recentTradeCount > 0) {
-        L.push('');
-        const volStr = enrichment.trades.recentVolumeSol >= 1
-            ? `${enrichment.trades.recentVolumeSol.toFixed(1)} SOL`
-            : `${enrichment.trades.recentVolumeSol.toFixed(4)} SOL`;
-        L.push(`📊 <b>Recent Volume:</b> ${volStr} (${enrichment.trades.recentTradeCount} trades)`);
-        if (token && token.replyCount > 0) {
-            L.push(`     💬 Community Replies: ${token.replyCount}`);
-        }
-    } else if (token && token.replyCount > 0) {
-        L.push('');
-        L.push(`💬 Community Replies: ${token.replyCount}`);
+    // 5.1 Dev token supply %
+    const dw = enrichment?.devWallet;
+    if (dw && dw.tokenSupplyPct > 0.001) {
+        stats.push(`👨‍💻 Dev: ${dw.tokenSupplyPct.toFixed(2)}%`);
     }
 
-    // ━━ LINE 7: DEV DETAILS ━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    if (token && token.creator) {
-        L.push('');
-        const devLink = `<a href="https://pump.fun/profile/${token.creator}">${shortAddr(token.creator)}</a>`;
-        L.push(`👤 <b>Dev:</b> ${devLink}`);
-        
-        if (creator) {
-            if (creator.username) L.push(`     Name: ${esc(creator.username)}`);
-            if (creator.totalLaunches > 0) {
-                L.push(`     🚀 Launches: ${creator.totalLaunches}`);
-            }
-            if (creator.scamEstimate > 0) {
-                L.push(`     ⚠️ Rugs: ${creator.scamEstimate}`);
-            }
-            
-            // Dev's past successful launches
-            const graduated = creator.recentCoins.filter(c => c.complete && c.usdMarketCap > 0);
-            if (graduated.length > 0) {
-                L.push(`     🎓 Past Graduations: ${graduated.length}`);
-                const topLaunch = graduated.reduce((max, c) => c.usdMarketCap > max.usdMarketCap ? c : max, graduated[0]);
-                if (topLaunch && topLaunch.usdMarketCap > 1000) {
-                    const coinLink = `<a href="https://pump.fun/coin/${topLaunch.mint}">${esc(topLaunch.symbol)}</a>`;
-                    L.push(`     Best: ${coinLink} ATH $${formatCompact(topLaunch.usdMarketCap)}`);
-                }
-            }
-        }
-
-        // Dev wallet balance
-        if (enrichment?.devWallet) {
-            const dw = enrichment.devWallet;
-            if (dw.solBalance > 0) {
-                const solStr = dw.solBalance >= 1 
-                    ? dw.solBalance.toFixed(2) 
-                    : dw.solBalance.toFixed(4);
-                const usdStr = solUsdPrice > 0 ? ` ($${(dw.solBalance * solUsdPrice).toFixed(0)})` : '';
-                L.push(`     💰 Wallet: ${solStr} SOL${usdStr}`);
-            }
-            if (dw.tokenSupplyPct > 0.01) {
-                L.push(`     🏦 Holds: ${dw.tokenSupplyPct.toFixed(2)}% supply`);
-            }
-        }
+    // 5.2 Dev wallet SOL balance
+    if (dw) {
+        const devSolStr = dw.solBalance >= 1 ? dw.solBalance.toFixed(2) : dw.solBalance.toFixed(4);
+        const devUsdStr = solUsdPrice > 0 ? ` [$${(dw.solBalance * solUsdPrice).toFixed(0)}]` : '';
+        stats.push(`👜: ${devSolStr} SOL${devUsdStr}`);
     }
 
-    // ━━ LINE 8: SOCIALS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 5.3 Dev history: launch count + best ATH + rug estimate
+    if (creator && creator.totalLaunches > 0) {
+        const graduated = creator.recentCoins.filter(c => c.complete && c.usdMarketCap > 0);
+        const topLaunch = graduated.length > 0
+            ? graduated.reduce((max, c) => c.usdMarketCap > max.usdMarketCap ? c : max, graduated[0])
+            : null;
+        let devLine = `🚀 ${creator.totalLaunches} launch${creator.totalLaunches !== 1 ? 'es' : ''}`;
+        if (topLaunch && topLaunch.usdMarketCap > 1000) {
+            const coinLink = `<a href="https://pump.fun/coin/${topLaunch.mint}">$${esc(topLaunch.symbol)}</a>`;
+            devLine += ` | Best: ${coinLink} ATH $${formatCompact(topLaunch.usdMarketCap)}`;
+        }
+        if (creator.scamEstimate > 0) {
+            devLine += ` | ⚠️ ${creator.scamEstimate} rug${creator.scamEstimate !== 1 ? 's' : ''}`;
+        }
+        stats.push(devLine);
+    }
+
+    // 6.1 Socials row
     if (token) {
-        const socials: string[] = [];
-        if (token.website) socials.push(`<a href="${esc(token.website)}">Website</a>`);
-        if (token.twitter) {
-            const twitterHandle = token.twitter.replace(/.*twitter\.com\/|.*x\.com\//, '').replace(/\/+$/, '');
-            socials.push(`<a href="${esc(token.twitter)}">𝕏 @${esc(twitterHandle)}</a>`);
-        }
-        if (token.telegram) socials.push(`<a href="${esc(token.telegram)}">Telegram</a>`);
+        const socialParts: string[] = [];
+        if (token.twitter) socialParts.push(`<a href="${esc(token.twitter)}">Twitter</a>`);
+        if (token.website) socialParts.push(`<a href="${esc(token.website)}">Website</a>`);
+        if (token.telegram) socialParts.push(`<a href="${esc(token.telegram)}">Telegram</a>`);
         if (token.githubUrls && token.githubUrls.length > 0) {
-            socials.push(`<a href="${esc(token.githubUrls[0])}">GitHub</a>`);
+            socialParts.push(`<a href="${esc(token.githubUrls[0])}">GitHub</a>`);
         }
-        
-        if (socials.length > 0) {
-            L.push('');
-            L.push(`🔗 <b>Socials:</b> ${socials.join(' · ')}`);
-        }
-
-        // X/Twitter enrichment: account age + follower count
-        if (enrichment?.xProfile) {
-            const xp = enrichment.xProfile;
-            const parts: string[] = [];
-            if (xp.followers > 0) parts.push(`${formatFollowerCount(xp.followers)} followers`);
-            if (xp.verified) parts.push('✅ Verified');
-            if (xp.createdAt) {
-                const xAge = new Date(xp.createdAt);
-                if (!isNaN(xAge.getTime())) {
-                    const months = Math.floor((Date.now() - xAge.getTime()) / (30 * 24 * 60 * 60 * 1000));
-                    if (months >= 12) {
-                        parts.push(`${Math.floor(months / 12)}y old`);
-                    } else {
-                        parts.push(`${months}mo old`);
-                    }
-                }
-            }
-            if (xp.tweetCount > 0) parts.push(`${formatFollowerCount(xp.tweetCount)} tweets`);
-            if (parts.length > 0) {
-                L.push(`     𝕏 ${parts.join(' · ')}`);
-            }
+        if (socialParts.length > 0) {
+            stats.push(`Links: ${socialParts.join(' || ')}`);
         }
     }
 
-    // ━━ LINE 9: TRADING BOT QUICK LINKS ━━━━━━━━━━━━━━━━
-    L.push('');
-    const mint = event.mintAddress;
-    const quickBots = [
-        `<a href="https://axiom.trade/t/${mint}">Axiom</a>`,
-        `<a href="https://photon-sol.tinyastro.io/en/lp/${mint}">Photon</a>`,
-        `<a href="https://t.me/bloom_trading_bot?start=${mint}">Bloom</a>`,
-        `<a href="https://t.me/paris_trojanbot?start=r-pumpdotfun-${mint}">Trojan</a>`,
-        `<a href="https://t.me/BananaGunSolana_bot?start=${mint}">Banana</a>`,
-        `<a href="https://t.me/maestro?start=${mint}">Maestro</a>`,
-        `<a href="https://t.me/solana_bullx_bot?start=${mint}">BullX</a>`,
-    ];
-    L.push(`🤖 ${quickBots.join(' · ')}`);
+    // 6.2–6.3 Twitter handle [followers] ✅ + account age
+    if (enrichment?.xProfile) {
+        const xp = enrichment.xProfile;
+        const twitterUrl = token?.twitter ?? xp.url;
+        const handle = token?.twitter
+            ? token.twitter.replace(/.*twitter\.com\/|.*x\.com\//, '').replace(/\/+$/, '')
+            : xp.username;
+        const handleLink = `<a href="${esc(twitterUrl)}">@${esc(handle)}</a>`;
+        const followerStr = xp.followers > 0 ? ` [${formatFollowerCount(xp.followers)}]` : '';
+        const verifiedStr = xp.verified ? ' ✅' : '';
+        stats.push(`🔍 ${handleLink}${followerStr}${verifiedStr}`);
 
-    // ━━ LINE 10: TRANSACTION LINKS ━━━━━━━━━━━━━━━━━━━━━
+        if (xp.createdAt) {
+            const xAge = new Date(xp.createdAt);
+            if (!isNaN(xAge.getTime())) {
+                const months = Math.floor((Date.now() - xAge.getTime()) / (30 * 24 * 60 * 60 * 1000));
+                const ageStr = months >= 12 ? `${Math.floor(months / 12)}y` : `${months}mo`;
+                stats.push(`Created: ${ageStr} ago`);
+            }
+        }
+    } else if (token?.twitter) {
+        const handle = token.twitter.replace(/.*twitter\.com\/|.*x\.com\//, '').replace(/\/+$/, '');
+        stats.push(`🔍 <a href="${esc(token.twitter)}">@${esc(handle)}</a>`);
+    }
+
+    // Triggered by
+    const userLink = `<a href="https://pump.fun/profile/${event.user}">${shortAddr(event.user)}</a>`;
+    stats.push(`Triggered by: ${userLink}`);
+
+    // Render stats with ├ on all lines except └ on the last
+    for (let i = 0; i < stats.length; i++) {
+        L.push(`${i === stats.length - 1 ? '└' : '├'} ${stats[i]}`);
+    }
+
+    // ━━ LINE 7: TRADING BOT QUICK LINKS ━━━━━━━━━━━━━━━━
+    L.push('');
+    const bots: Array<{ abbr: string; url: string }> = [
+        { abbr: 'PH', url: `https://photon-sol.tinyastro.io/en/lp/${mint}` },
+        { abbr: 'AX', url: `https://axiom.trade/t/${mint}` },
+        { abbr: 'TJ', url: `https://t.me/paris_trojanbot?start=r-pumpdotfun-${mint}` },
+        { abbr: 'BA', url: `https://t.me/BananaGunSolana_bot?start=${mint}` },
+        { abbr: 'PR', url: `https://t.me/padre_bot?start=${mint}` },
+        { abbr: 'BL', url: `https://t.me/bloom_trading_bot?start=${mint}` },
+        { abbr: 'MA', url: `https://t.me/maestro?start=${mint}` },
+        { abbr: 'MT', url: `https://t.me/MaestroProBot?start=${mint}` },
+        { abbr: 'NE', url: `https://t.me/solana_bullx_bot?start=${mint}` },
+        { abbr: 'XX', url: `https://pump.fun/coin/${mint}` },
+    ];
+    L.push(bots.map(b => `<a href="${b.url}">${b.abbr}</a>`).join(' | '));
+
+    // ━━ LINE 8: TX LINKS + TIMESTAMP ━━━━━━━━━━━━━━━━━━━
     L.push('');
     const txLink = `<a href="https://solscan.io/tx/${event.txSignature}">TX</a>`;
-    const pfLink = `<a href="https://pump.fun/coin/${event.mintAddress}">Pump.fun</a>`;
-    const solscanLink = `<a href="https://solscan.io/token/${event.mintAddress}">Solscan</a>`;
-    const dexLink = `<a href="https://dexscreener.com/solana/${event.mintAddress}">DexScreener</a>`;
-    L.push(`🔍 ${txLink} · ${pfLink} · ${solscanLink} · ${dexLink}`);
+    const pfLink = `<a href="https://pump.fun/coin/${mint}">pump.fun</a>`;
+    const solscanLink = `<a href="https://solscan.io/token/${mint}">Solscan</a>`;
+    const dexLink = `<a href="https://dexscreener.com/solana/${mint}">DexScreener</a>`;
+    L.push(`🔗 ${txLink} · ${pfLink} · ${solscanLink} · ${dexLink}`);
     L.push(`🕐 ${formatTime(event.timestamp)}`);
 
     return {
@@ -619,6 +581,7 @@ export function esc(text: string): string {
 }
 
 function formatTime(unixSeconds: number): string {
+    if (!unixSeconds || unixSeconds < 1_000_000) return 'unknown';
     return new Date(unixSeconds * 1000)
         .toISOString()
         .replace('T', ' ')

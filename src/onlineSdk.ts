@@ -14,6 +14,7 @@ import {
   TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
 import {
+  AccountInfo,
   Connection,
   PublicKey,
   PublicKeyInitData,
@@ -185,6 +186,97 @@ export class OnlinePumpSdk {
 
     const bondingCurve = PUMP_SDK.decodeBondingCurve(bondingCurveAccountInfo);
     return { bondingCurveAccountInfo, bondingCurve };
+  }
+
+  /**
+   * Fetch required state and build instructions to buy tokens on the bonding curve.
+   *
+   * Convenience wrapper that calls `fetchGlobal()` and delegates to `PUMP_SDK.buyInstructions()`.
+   * Use this when you already have the result of `fetchBuyState()`.
+   *
+   * @param params - Buy parameters (spread fetchBuyState result + mint, user, amount, solAmount, slippage)
+   * @returns TransactionInstruction[] — compose into a transaction and send
+   */
+  async buyInstructions({
+    bondingCurveAccountInfo,
+    bondingCurve,
+    associatedUserAccountInfo,
+    mint,
+    user,
+    amount,
+    solAmount,
+    slippage,
+    tokenProgram = TOKEN_PROGRAM_ID,
+  }: {
+    bondingCurveAccountInfo: AccountInfo<Buffer>;
+    bondingCurve: BondingCurve;
+    associatedUserAccountInfo: AccountInfo<Buffer> | null;
+    mint: PublicKey;
+    user: PublicKey;
+    amount: BN;
+    solAmount: BN;
+    slippage: number;
+    tokenProgram?: PublicKey;
+  }): Promise<TransactionInstruction[]> {
+    const global = await this.fetchGlobal();
+    return PUMP_SDK.buyInstructions({
+      global,
+      bondingCurveAccountInfo,
+      bondingCurve,
+      associatedUserAccountInfo,
+      mint,
+      user,
+      amount,
+      solAmount,
+      slippage,
+      tokenProgram,
+    });
+  }
+
+  /**
+   * Fetch required state and build instructions to sell tokens on the bonding curve.
+   *
+   * Convenience wrapper that calls `fetchGlobal()` and delegates to `PUMP_SDK.sellInstructions()`.
+   * Use this when you already have the result of `fetchSellState()`.
+   *
+   * @param params - Sell parameters (spread fetchSellState result + mint, user, amount, solAmount, slippage)
+   * @returns TransactionInstruction[] — compose into a transaction and send
+   */
+  async sellInstructions({
+    bondingCurveAccountInfo,
+    bondingCurve,
+    mint,
+    user,
+    amount,
+    solAmount,
+    slippage,
+    tokenProgram = TOKEN_PROGRAM_ID,
+    cashback = false,
+  }: {
+    bondingCurveAccountInfo: AccountInfo<Buffer>;
+    bondingCurve: BondingCurve;
+    mint: PublicKey;
+    user: PublicKey;
+    amount: BN;
+    solAmount: BN;
+    slippage: number;
+    tokenProgram?: PublicKey;
+    cashback?: boolean;
+  }): Promise<TransactionInstruction[]> {
+    const global = await this.fetchGlobal();
+    return PUMP_SDK.sellInstructions({
+      global,
+      bondingCurveAccountInfo,
+      bondingCurve,
+      mint,
+      user,
+      amount,
+      solAmount,
+      slippage,
+      tokenProgram,
+      mayhemMode: bondingCurve.isMayhemMode,
+      cashback,
+    });
   }
 
   async fetchGlobalVolumeAccumulator(): Promise<GlobalVolumeAccumulator> {

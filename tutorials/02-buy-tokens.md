@@ -47,10 +47,16 @@ Use the bonding curve math to preview your purchase:
 ```typescript
 const solToSpend = new BN(100_000_000); // 0.1 SOL (in lamports)
 
+// Fetch global + feeConfig alongside buyState for the math
+const [global, feeConfig] = await Promise.all([
+  onlineSdk.fetchGlobal(),
+  onlineSdk.fetchFeeConfig(),
+]);
+
 const tokensYouGet = getBuyTokenAmountFromSolAmount({
-  global: buyState.global,
-  feeConfig: buyState.feeConfig,
-  mintSupply: buyState.mintSupply,
+  global,
+  feeConfig,
+  mintSupply: buyState.bondingCurve.tokenTotalSupply,
   bondingCurve: buyState.bondingCurve,
   amount: solToSpend,
 });
@@ -60,18 +66,16 @@ console.log("Tokens you'll receive:", tokensYouGet.toString());
 
 ## Step 3: Build the Buy Instructions
 
+`OnlinePumpSdk.buyInstructions()` fetches `global` internally, so you only need to spread the `buyState`:
+
 ```typescript
-const buyIxs = await PUMP_SDK.buyInstructions({
-  global: buyState.global,
-  bondingCurveAccountInfo: buyState.bondingCurveAccountInfo,
-  bondingCurve: buyState.bondingCurve,
-  associatedUserAccountInfo: buyState.associatedUserAccountInfo,
+const buyIxs = await onlineSdk.buyInstructions({
+  ...buyState,
   mint,
   user: buyer.publicKey,
-  amount: tokensYouGet,         // Min tokens you want
-  solAmount: solToSpend,        // SOL you're spending
-  slippage: 0.05,               // 5% slippage tolerance
-  tokenProgram: buyState.tokenProgram,
+  amount: tokensYouGet,  // Min tokens you want
+  solAmount: solToSpend, // SOL you're spending
+  slippage: 0.05,        // 5% slippage tolerance
 });
 ```
 
@@ -106,7 +110,7 @@ console.log("Buy successful! Tx:", signature);
 
 ```typescript
 import { Connection, Keypair, PublicKey, TransactionMessage, VersionedTransaction } from "@solana/web3.js";
-import { OnlinePumpSdk, PUMP_SDK, getBuyTokenAmountFromSolAmount } from "@pump-fun/pump-sdk";
+import { OnlinePumpSdk, getBuyTokenAmountFromSolAmount } from "@pump-fun/pump-sdk";
 import BN from "bn.js";
 
 async function buyTokens() {
@@ -115,32 +119,32 @@ async function buyTokens() {
   const buyer = Keypair.generate(); // Use your funded keypair
   const mint = new PublicKey("YOUR_TOKEN_MINT_ADDRESS");
 
-  // Fetch state
-  const buyState = await onlineSdk.fetchBuyState(mint, buyer.publicKey);
+  // Fetch state in parallel
+  const [buyState, global, feeConfig] = await Promise.all([
+    onlineSdk.fetchBuyState(mint, buyer.publicKey),
+    onlineSdk.fetchGlobal(),
+    onlineSdk.fetchFeeConfig(),
+  ]);
 
   // Calculate tokens
   const solToSpend = new BN(100_000_000); // 0.1 SOL
   const tokensOut = getBuyTokenAmountFromSolAmount({
-    global: buyState.global,
-    feeConfig: buyState.feeConfig,
-    mintSupply: buyState.mintSupply,
+    global,
+    feeConfig,
+    mintSupply: buyState.bondingCurve.tokenTotalSupply,
     bondingCurve: buyState.bondingCurve,
     amount: solToSpend,
   });
   console.log(`Spending 0.1 SOL → ${tokensOut.toString()} tokens`);
 
-  // Build buy instructions
-  const buyIxs = await PUMP_SDK.buyInstructions({
-    global: buyState.global,
-    bondingCurveAccountInfo: buyState.bondingCurveAccountInfo,
-    bondingCurve: buyState.bondingCurve,
-    associatedUserAccountInfo: buyState.associatedUserAccountInfo,
+  // Build buy instructions (fetches global internally)
+  const buyIxs = await onlineSdk.buyInstructions({
+    ...buyState,
     mint,
     user: buyer.publicKey,
     amount: tokensOut,
     solAmount: solToSpend,
     slippage: 0.05,
-    tokenProgram: buyState.tokenProgram,
   });
 
   // Send
