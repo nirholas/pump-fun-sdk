@@ -62,3 +62,4 @@ describe('createErrorResponse', () => {
     expect(await response.text()).toEqual(JSON.stringify({ body, errorType: 400 }));
   });
 });
+
