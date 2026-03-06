@@ -1,0 +1,203 @@
+/**
+ * PumpFun Channel Bot — Social Fee Index
+ *
+ * Maintains a map of socialFeePdaAddress → tokenMint by:
+ *  1. Scanning all SharingConfig accounts at startup (GPA bootstrap)
+ *  2. Updating live from CreateFeeSharingConfigEvent and UpdateFeeSharesEvent logs
+ *
+ * SharingConfig account layout (after 8-byte discriminator):
+ *   bump:          u8   (1)
+ *   version:       u8   (1)
+ *   status:        u8   (1)  — enum, 1 byte
+ *   mint:          pubkey (32)  ← offset 11
+ *   admin:         pubkey (32)  ← offset 43
+ *   admin_revoked: bool  (1)
+ *   shareholders:  vec<Shareholder>  ← offset 76
+ *     count: u32 LE (4)
+ *     each:  address(32) + share_bps(u16=2) = 34 bytes
+ *
+ * CreateFeeSharingConfigEvent layout (after 8-byte discriminator):
+ *   timestamp:           i64 (8)
+ *   mint:                pubkey (32)  ← offset 16
+ *   bonding_curve:       pubkey (32)
+ *   pool:                Option<pubkey> — 1 byte tag + optional 32
+ *   sharing_config:      pubkey (32)
+ *   admin:               pubkey (32)
+ *   initial_shareholders: vec<Shareholder>
+ *   status:              u8
+ *
+ * UpdateFeeSharesEvent layout (after 8-byte discriminator):
+ *   timestamp:        i64 (8)
+ *   mint:             pubkey (32)  ← offset 16
+ *   sharing_config:   pubkey (32)
+ *   admin:            pubkey (32)
+ *   new_shareholders: vec<Shareholder>
+ */
+
+import { PublicKey } from '@solana/web3.js';
+import type { RpcFallback } from './rpc-fallback.js';
+import { log } from './logger.js';
+
+// ── Constants ────────────────────────────────────────────────────────────────
+
+/** SharingConfig account discriminator (from IDL: [216,74,9,0,56,140,93,75]) */
+const SHARING_CONFIG_DISC = Buffer.from([216, 74, 9, 0, 56, 140, 93, 75]);
+
+/** CreateFeeSharingConfigEvent discriminator (from IDL: [133,105,170,200,184,116,251,88]) */
+export const CREATE_FEE_SHARING_CONFIG_EVENT_DISC = '8569aac8b874fb58';
+
+/** UpdateFeeSharesEvent discriminator (from IDL: [21,186,196,184,91,228,225,203]) */
+export const UPDATE_FEE_SHARES_EVENT_DISC = '15bac4b85be4e1cb';
+
+const PUMP_FEE_PROGRAM_ID = 'pfeeUxB6jkeY1Hxd7CsFCAjcbHA9rWtchMGdZ6VojVZ';
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+function readPubkey(buf: Buffer, offset: number): string {
+    if (buf.length < offset + 32) return '';
+    return new PublicKey(buf.subarray(offset, offset + 32)).toBase58();
+}
+
+/**
+ * Parse shareholder addresses from a Borsh-encoded vec<Shareholder>.
+ * Each Shareholder = address(32) + share_bps(u16=2) = 34 bytes.
+ * Returns the list of address strings.
+ */
+function parseShareholderAddresses(buf: Buffer, offset: number): string[] {
+    if (buf.length < offset + 4) return [];
+    const count = buf.readUInt32LE(offset);
+    offset += 4;
+
+    if (count > 20 || buf.length < offset + count * 34) return []; // sanity check
+
+    const addresses: string[] = [];
+    for (let i = 0; i < count; i++) {
+        const addr = readPubkey(buf, offset);
+        if (addr) addresses.push(addr);
+        offset += 34; // 32 (pubkey) + 2 (share_bps u16)
+    }
+    return addresses;
+}
+
+// ── Index ────────────────────────────────────────────────────────────────────
+
+export class SocialFeeIndex {
+    /** socialFeePdaAddress → mint */
+    private index = new Map<string, string>();
+    private bootstrapped = false;
+
+    /** Number of entries in the index. */
+    get size(): number {
+        return this.index.size;
+    }
+
+    /**
+     * Bootstrap the index by scanning ALL SharingConfig accounts on-chain.
+     * Runs once at startup so historical configs are covered.
+     */
+    async bootstrap(rpc: RpcFallback): Promise<void> {
+        if (this.bootstrapped) return;
+        try {
+            log.info('SocialFeeIndex: bootstrapping from on-chain SharingConfig accounts...');
+            const accounts = await rpc.withFallback((conn) =>
+                conn.getProgramAccounts(new PublicKey(PUMP_FEE_PROGRAM_ID), {
+                    commitment: 'confirmed',
+                    filters: [
+                        {
+                            memcmp: {
+                                offset: 0,
+                                bytes: SHARING_CONFIG_DISC.toString('base64'),
+                                encoding: 'base64',
+                            },
+                        },
+                    ],
+                }),
+            ) as unknown as Array<{ pubkey: PublicKey; account: { data: Buffer } }>;
+
+            let indexed = 0;
+            for (const { account } of accounts) {
+                const data = account.data as Buffer;
+                // Layout: disc(8) + bump(1) + version(1) + status(1) + mint(32) + admin(32) + admin_revoked(1) + shareholders(4+n*34)
+                if (data.length < 76) continue;
+
+                const mint = readPubkey(data, 11); // offset: 8+1+1+1 = 11
+                if (!mint) continue;
+
+                const shareholders = parseShareholderAddresses(data, 76);
+                for (const addr of shareholders) {
+                    this.index.set(addr, mint);
+                    indexed++;
+                }
+            }
+
+            this.bootstrapped = true;
+            log.info('SocialFeeIndex: bootstrapped %d mappings from %d SharingConfig accounts', indexed, accounts.length);
+        } catch (err) {
+            log.warn('SocialFeeIndex: bootstrap failed (will rely on live events): %s', err);
+            this.bootstrapped = true; // don't retry on every restart
+        }
+    }
+
+    /**
+     * Update from a CreateFeeSharingConfigEvent log line body (bytes including discriminator).
+     * Layout: disc(8) + timestamp(8) + mint(32) + bonding_curve(32) + pool(Option<pubkey>) + sharing_config(32) + admin(32) + shareholders(vec)
+     */
+    updateFromCreateEvent(bytes: Buffer): void {
+        try {
+            if (bytes.length < 48) return;
+            const mint = readPubkey(bytes, 16); // disc(8)+timestamp(8) = 16
+            if (!mint) return;
+
+            // Skip bonding_curve(32) then pool (Option: 1 byte + optional 32)
+            let offset = 48 + 32; // 16 + 32 (mint) + 32 (bonding_curve) = 80
+            if (bytes.length < offset + 1) return;
+            const hasPool = bytes[offset] === 1;
+            offset += 1 + (hasPool ? 32 : 0);
+
+            // sharing_config(32) + admin(32)
+            offset += 32 + 32;
+
+            const shareholders = parseShareholderAddresses(bytes, offset);
+            for (const addr of shareholders) {
+                this.index.set(addr, mint);
+            }
+            if (shareholders.length > 0) {
+                log.debug('SocialFeeIndex: indexed %d shareholders for mint %s', shareholders.length, mint.slice(0, 8));
+            }
+        } catch (err) {
+            log.debug('SocialFeeIndex: CreateFeeSharingConfigEvent parse error: %s', err);
+        }
+    }
+
+    /**
+     * Update from an UpdateFeeSharesEvent log line body (bytes including discriminator).
+     * Layout: disc(8) + timestamp(8) + mint(32) + sharing_config(32) + admin(32) + shareholders(vec)
+     */
+    updateFromUpdateSharesEvent(bytes: Buffer): void {
+        try {
+            if (bytes.length < 48) return;
+            const mint = readPubkey(bytes, 16); // disc(8)+timestamp(8) = 16
+            if (!mint) return;
+
+            // sharing_config(32) + admin(32)
+            const offset = 16 + 32 + 32 + 32; // 112
+            const shareholders = parseShareholderAddresses(bytes, offset);
+            for (const addr of shareholders) {
+                this.index.set(addr, mint);
+            }
+            if (shareholders.length > 0) {
+                log.debug('SocialFeeIndex: updated %d shareholders for mint %s', shareholders.length, mint.slice(0, 8));
+            }
+        } catch (err) {
+            log.debug('SocialFeeIndex: UpdateFeeSharesEvent parse error: %s', err);
+        }
+    }
+
+    /**
+     * Look up the mint for a given social fee PDA address.
+     * Returns undefined if not indexed yet.
+     */
+    lookup(socialFeePdaAddress: string): string | undefined {
+        return this.index.get(socialFeePdaAddress);
+    }
+}
