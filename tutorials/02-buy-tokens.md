@@ -172,3 +172,4 @@ The fee tier depends on the bonding curve's market cap. See [Tutorial 9: Underst
 
 - [Tutorial 3: Sell Tokens Back to the Curve](./03-sell-tokens.md)
 - [Tutorial 5: Bonding Curve Math Deep Dive](./05-bonding-curve-math.md)
+
