@@ -1,5 +1,4 @@
-import { Connection } from "@solana/web3.js";
-import { OnlinePumpSdk } from "@pump-fun/pump-sdk";
+import { OnlinePumpSdk, createFallbackConnection, parseEndpoints } from "@pump-fun/pump-sdk";
 import type { ToolResult, ServerState } from "../types.js";
 import { error } from "../types.js";
 
@@ -512,8 +511,11 @@ let _onlineSdk: OnlinePumpSdk | null = null;
 
 function getOnlineSdk(): OnlinePumpSdk {
   if (_onlineSdk) return _onlineSdk;
-  const rpcUrl = process.env.SOLANA_RPC_URL ?? "https://api.mainnet-beta.solana.com";
-  const connection = new Connection(rpcUrl, "confirmed");
+  const endpoints = parseEndpoints(
+    process.env.SOLANA_RPC_URLS ?? process.env.SOLANA_RPC_URL,
+    "https://api.mainnet-beta.solana.com",
+  );
+  const connection = createFallbackConnection(endpoints, { commitment: "confirmed" });
   _onlineSdk = new OnlinePumpSdk(connection);
   return _onlineSdk;
 }

@@ -4,17 +4,7 @@
  * Used for ENS namehash computation.
  */
 
-/* Keccak-f[1600] round constants */
-const RC = [
-  0x00000001n, 0x00008082n, 0x0000808an, 0x80008000n,
-  0x0000808bn, 0x80000001n, 0x80008081n, 0x00008009n,
-  0x0000008an, 0x00000088n, 0x80008009n, 0x8000000an,
-  0x8000808bn, 0x000000008bn, 0x00008089n, 0x00008003n,
-  0x00008002n, 0x00000080n, 0x0000800an, 0x8000000an,
-  0x80008081n, 0x00008080n, 0x80000001n, 0x80008008n,
-].map(v => BigInt.asUintN(64, v));
-
-// Precomputed 64-bit round constants
+// Precomputed 64-bit round constants for Keccak-f[1600]
 const RC64: bigint[] = [
   0x0000000000000001n, 0x0000000000008082n, 0x800000000000808An, 0x8000000080008000n,
   0x000000000000808Bn, 0x0000000080000001n, 0x8000000080008081n, 0x8000000000008009n,
@@ -25,6 +15,24 @@ const RC64: bigint[] = [
 ];
 
 const MASK64 = (1n << 64n) - 1n;
+
+// ρ rotation offsets indexed by linear position (x + 5y)
+const RHO = [
+   0,  1, 62, 28, 27,
+  36, 44,  6, 55, 20,
+   3, 10, 43, 25, 39,
+  41, 45, 15, 21,  8,
+  18,  2, 61, 56, 14,
+];
+
+// π permutation: piLane[src] = dest, where src = x + 5y, dest = y + 5*((2x+3y) % 5)
+const PI_LANE = [
+   0, 10, 20,  5, 15,
+  16,  1, 11, 21,  6,
+   7, 17,  2, 12, 22,
+  23,  8, 18,  3, 13,
+  14, 24,  9, 19,  4,
+];
 
 function rotl64(x: bigint, n: number): bigint {
   return ((x << BigInt(n)) | (x >> BigInt(64 - n))) & MASK64;

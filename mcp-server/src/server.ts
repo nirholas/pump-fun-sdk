@@ -1,6 +1,6 @@
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { Connection } from "@solana/web3.js";
+import { createFallbackConnection, parseEndpoints } from "@pump-fun/pump-sdk";
 import { MCP_VERSION, type ServerState } from "./types.js";
 import { registerToolHandlers } from "./handlers/tools.js";
 import { registerResourceHandlers } from "./handlers/resources.js";
@@ -35,10 +35,14 @@ export class SolanaWalletMCPServer {
   }
 
   private registerHandlers(): void {
-    // Lazy SDK factory — only created when an SDK tool is actually called
+    // Lazy SDK factory — only created when an SDK tool is actually called.
+    // Supports comma-separated SOLANA_RPC_URLS for automatic failover.
     const getConnection = () => {
-      const rpcUrl = process.env.SOLANA_RPC_URL ?? "https://api.mainnet-beta.solana.com";
-      return new Connection(rpcUrl, "confirmed");
+      const endpoints = parseEndpoints(
+        process.env.SOLANA_RPC_URLS ?? process.env.SOLANA_RPC_URL,
+        "https://api.mainnet-beta.solana.com",
+      );
+      return createFallbackConnection(endpoints, { commitment: "confirmed" });
     };
 
     registerToolHandlers(this.server, this.state, getConnection);
