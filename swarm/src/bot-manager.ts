@@ -7,11 +7,12 @@
 
 import { spawn, type ChildProcess } from 'node:child_process';
 import { resolve } from 'node:path';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { createLogger } from './logger.js';
 import { EventBus } from './event-bus.js';
 import type {
   BotDefinition,
+  BotEnvConfig,
   BotHealth,
   BotId,
   BotMetrics,
@@ -72,6 +73,18 @@ export const BOT_DEFINITIONS: Record<BotId, BotDefinition> = {
     envFile: '.env',
     requiredEnvVars: [],
     optionalEnvVars: ['PORT', 'SOLANA_RPC_WS'],
+  },
+  'swarm-bot': {
+    id: 'swarm-bot',
+    name: 'Trading Bot Swarm',
+    description: 'Multi-strategy trading bots: sniper, momentum, graduation, market-maker. Real-time position tracking.',
+    directory: resolve(PROJECT_ROOT, 'swarm-bot'),
+    startCommand: 'node dist/index.js',
+    healthEndpoint: '/health',
+    port: 3100,
+    envFile: '.env',
+    requiredEnvVars: ['SOLANA_RPC_URL'],
+    optionalEnvVars: ['MAX_POSITION_SOL_PER_BOT', 'MAX_TOTAL_POSITION_SOL', 'DEFAULT_SLIPPAGE_BPS', 'DB_PATH', 'PORT'],
   },
 };
 
@@ -496,6 +509,89 @@ export class BotManager {
       message,
       timestamp: ts,
     });
+  }
+
+  // ── Env Config Management ───────────────────────────────────────
+
+  /** Read the current .env file for a bot (values masked for secrets) */
+  getEnvConfig(botId: BotId): BotEnvConfig {
+    const def = BOT_DEFINITIONS[botId];
+    if (!def) throw new Error(`Unknown bot: ${botId}`);
+
+    const envFile = resolve(def.directory, def.envFile);
+    const current: Record<string, string> = {};
+
+    if (existsSync(envFile)) {
+      const content = readFileSync(envFile, 'utf-8');
+      for (const line of content.split('\n')) {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed.startsWith('#')) continue;
+        const eqIdx = trimmed.indexOf('=');
+        if (eqIdx === -1) continue;
+        const key = trimmed.slice(0, eqIdx).trim();
+        let value = trimmed.slice(eqIdx + 1).trim();
+        if ((value.startsWith('"') && value.endsWith('"')) ||
+            (value.startsWith("'") && value.endsWith("'"))) {
+          value = value.slice(1, -1);
+        }
+        current[key] = value;
+      }
+    }
+
+    return {
+      botId,
+      current,
+      required: def.requiredEnvVars,
+      optional: def.optionalEnvVars,
+    };
+  }
+
+  /** Write env vars to a bot's .env file. Merges with existing values. */
+  setEnvConfig(botId: BotId, updates: Record<string, string>): void {
+    const def = BOT_DEFINITIONS[botId];
+    if (!def) throw new Error(`Unknown bot: ${botId}`);
+
+    // Validate keys - only allow alphanumeric + underscore
+    for (const key of Object.keys(updates)) {
+      if (!/^[A-Z_][A-Z0-9_]*$/i.test(key)) {
+        throw new Error(`Invalid env var name: ${key}`);
+      }
+    }
+
+    const envFile = resolve(def.directory, def.envFile);
+    const existing = this.getEnvConfig(botId).current;
+    const merged = { ...existing, ...updates };
+
+    // Remove keys with empty values
+    for (const [key, value] of Object.entries(merged)) {
+      if (value === '' || value === undefined) {
+        delete merged[key];
+      }
+    }
+
+    const lines = Object.entries(merged).map(([key, value]) => {
+      // Quote values that contain spaces or special chars
+      if (/[\s#"']/.test(value)) {
+        return `${key}="${value}"`;
+      }
+      return `${key}=${value}`;
+    });
+
+    writeFileSync(envFile, lines.join('\n') + '\n', { mode: 0o600 });
+    log.info(`Updated env config for ${botId} (${Object.keys(updates).length} vars)`);
+    this.emitBotEvent(botId, 'bot:log', {
+      botId,
+      level: 'info',
+      message: `Env config updated: ${Object.keys(updates).join(', ')}`,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  /** Check if a bot directory has a dist/ folder (is built) */
+  isBotBuilt(botId: BotId): boolean {
+    const def = BOT_DEFINITIONS[botId];
+    if (!def) return false;
+    return existsSync(resolve(def.directory, 'dist'));
   }
 
   /** Emit a typed bot event */

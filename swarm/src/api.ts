@@ -21,7 +21,7 @@ import { WebSocketServer, WebSocket } from 'ws';
 import { createLogger } from './logger.js';
 import { BotManager } from './bot-manager.js';
 import { EventBus } from './event-bus.js';
-import type { ApiResponse, BotId, SwarmConfig, SwarmMetrics, DashboardState } from './types.js';
+import type { ApiResponse, BotId, SwarmConfig, SwarmMetrics, DashboardState, BatchResult } from './types.js';
 import { getDashboardHtml } from './dashboard.js';
 
 const log = createLogger('api');
@@ -252,6 +252,56 @@ export class SwarmApi {
           this.sendJson(res, 200, { ok: true, data: logs, timestamp: new Date().toISOString() });
           return;
         }
+
+        // GET /api/v1/bots/:id/env
+        if (action === 'env' && method === 'GET') {
+          const config = this.botManager.getEnvConfig(botId);
+          this.sendJson(res, 200, { ok: true, data: config, timestamp: new Date().toISOString() });
+          return;
+        }
+
+        // PUT /api/v1/bots/:id/env
+        if (action === 'env' && method === 'PUT') {
+          const body = await this.readBody(req);
+          const updates = JSON.parse(body);
+          if (typeof updates !== 'object' || Array.isArray(updates)) {
+            this.sendJson(res, 400, { ok: false, error: 'Body must be a JSON object of key-value pairs', timestamp: new Date().toISOString() });
+            return;
+          }
+          this.botManager.setEnvConfig(botId, updates);
+          this.sendJson(res, 200, { ok: true, data: { message: `${botId} env updated` }, timestamp: new Date().toISOString() });
+          return;
+        }
+      }
+
+      // ── Batch Operations ──────────────────────────────────────
+
+      // POST /api/v1/swarm/start-all
+      if (path === '/api/v1/swarm/start-all' && method === 'POST') {
+        const results = await this.batchOperation('start');
+        this.sendJson(res, 200, { ok: true, data: results, timestamp: new Date().toISOString() });
+        return;
+      }
+
+      // POST /api/v1/swarm/stop-all
+      if (path === '/api/v1/swarm/stop-all' && method === 'POST') {
+        const results = await this.batchOperation('stop');
+        this.sendJson(res, 200, { ok: true, data: results, timestamp: new Date().toISOString() });
+        return;
+      }
+
+      // POST /api/v1/swarm/restart-all
+      if (path === '/api/v1/swarm/restart-all' && method === 'POST') {
+        const results = await this.batchOperation('restart');
+        this.sendJson(res, 200, { ok: true, data: results, timestamp: new Date().toISOString() });
+        return;
+      }
+
+      // POST /api/v1/swarm/build-all
+      if (path === '/api/v1/swarm/build-all' && method === 'POST') {
+        const results = await this.batchOperation('build');
+        this.sendJson(res, 200, { ok: true, data: results, timestamp: new Date().toISOString() });
+        return;
       }
 
       // GET /api/v1/events

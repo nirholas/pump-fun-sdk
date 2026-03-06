@@ -62,7 +62,7 @@ export function createFallbackConnection(
   }
 
   if (endpoints.length === 1) {
-    return new Connection(endpoints[0], connectionConfig);
+    return new Connection(endpoints[0]!, connectionConfig);
   }
 
   const config = { ...DEFAULT_CONFIG, ...fallbackConfig };
@@ -79,7 +79,7 @@ export function createFallbackConnection(
     // Try all endpoints starting from current
     for (let i = 0; i < endpoints.length; i++) {
       const idx = (currentIndex + i) % endpoints.length;
-      const ep = endpoints[idx];
+      const ep = endpoints[idx]!;
       const h = health.get(ep)!;
 
       // Endpoint is healthy or cooldown has elapsed
@@ -95,14 +95,14 @@ export function createFallbackConnection(
     let bestIdx = 0;
     let oldestFailure = Infinity;
     for (let i = 0; i < endpoints.length; i++) {
-      const h = health.get(endpoints[i])!;
+      const h = health.get(endpoints[i]!)!;
       if (h.lastFailureAt < oldestFailure) {
         oldestFailure = h.lastFailureAt;
         bestIdx = i;
       }
     }
     currentIndex = bestIdx;
-    return endpoints[bestIdx];
+    return endpoints[bestIdx]!;
   }
 
   function markFailure(ep: string): void {
@@ -118,7 +118,7 @@ export function createFallbackConnection(
 
   // Build a Connection pointing to the first endpoint, then proxy its
   // internal fetch to support failover.
-  const connection = new Connection(endpoints[0], connectionConfig);
+  const connection = new Connection(endpoints[0]!, connectionConfig);
 
   // Wrap the RPC request method to add failover logic
   const originalRpcRequest = (connection as any)._rpcRequest;

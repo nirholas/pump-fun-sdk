@@ -104,6 +104,7 @@ export async function buildSellInstructions(
       amount,
       solAmount,
       slippage: params.slippage,
+      tokenProgram: TOKEN_PROGRAM_ID,
       mayhemMode: false,
     });
 
@@ -278,6 +279,7 @@ export async function buildMigrateInstructions(
       withdrawAuthority,
       mint,
       user,
+      tokenProgram: TOKEN_PROGRAM_ID,
     });
 
     return success({

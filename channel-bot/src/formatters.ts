@@ -461,6 +461,12 @@ function formatTime(unixSeconds: number): string {
         .slice(0, 19) + ' UTC';
 }
 
+function formatDateTime(unixSeconds: number): string {
+    const d = new Date(unixSeconds * 1000);
+    const mon = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getUTCMonth()];
+    return `${d.getUTCDate()} ${mon} ${d.getUTCFullYear()} ${String(d.getUTCHours()).padStart(2,'0')}:${String(d.getUTCMinutes()).padStart(2,'0')} UTC`;
+}
+
 function timeAgo(unixSeconds: number): string {
     const now = Math.floor(Date.now() / 1000);
     const diff = now - unixSeconds;

@@ -11,7 +11,10 @@ import WebSocket from 'ws';
 import type { TokenLaunchEvent } from './types.js';
 
 const PUMP_PROGRAM = '6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P';
-const PUMP_API = 'https://frontend-api-v3.pump.fun';
+const PUMP_API_URLS = [
+  'https://frontend-api-v3.pump.fun',
+  'https://frontend-api-v2.pump.fun',
+];
 const POLL_INTERVAL = 5000;     // 5s between polls
 const POLL_LIMIT = 50;          // coins per page
 
@@ -68,18 +71,30 @@ export class SolanaMonitor {
 
   private async pollPumpApi(): Promise<void> {
     try {
-      // Primary: /coins?sort=created_timestamp (confirmed working, returns full data)
-      const url = `${PUMP_API}/coins?offset=0&limit=${POLL_LIMIT}&sort=created_timestamp&order=DESC&includeNsfw=true`;
-      const resp = await fetch(url, {
-        headers: {
-          'Accept': 'application/json',
-          'User-Agent': 'PumpFun-SDK/1.0',
-        },
-        signal: AbortSignal.timeout(10000),
-      });
+      const path = `/coins?offset=0&limit=${POLL_LIMIT}&sort=created_timestamp&order=DESC&includeNsfw=true`;
+      let resp: Response | null = null;
+      let lastErr: unknown;
 
-      if (!resp.ok) {
-        console.error(`[pump] API HTTP ${resp.status}`);
+      // Try each API URL in order until one succeeds
+      for (const baseUrl of PUMP_API_URLS) {
+        try {
+          resp = await fetch(`${baseUrl}${path}`, {
+            headers: {
+              'Accept': 'application/json',
+              'User-Agent': 'PumpFun-SDK/1.0',
+            },
+            signal: AbortSignal.timeout(10000),
+          });
+          if (resp.ok) break;
+          lastErr = new Error(`HTTP ${resp.status} from ${baseUrl}`);
+          resp = null;
+        } catch (err) {
+          lastErr = err;
+        }
+      }
+
+      if (!resp || !resp.ok) {
+        console.error(`[pump] All API endpoints failed: ${lastErr instanceof Error ? lastErr.message : String(lastErr)}`);
         return;
       }
 
