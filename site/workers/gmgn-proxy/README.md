@@ -95,3 +95,4 @@ If GMGN proxy is unreliable, the Smart Money service also supports:
 - **Helius API**: `SmartMoneyService.config.helius.apiKey = 'your-key'`
 
 These provide similar wallet tracking data with proper API access.
+
