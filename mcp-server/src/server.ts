@@ -1,5 +1,6 @@
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { Connection } from "@solana/web3.js";
 import { MCP_VERSION, type ServerState } from "./types.js";
 import { registerToolHandlers } from "./handlers/tools.js";
 import { registerResourceHandlers } from "./handlers/resources.js";
@@ -34,7 +35,13 @@ export class SolanaWalletMCPServer {
   }
 
   private registerHandlers(): void {
-    registerToolHandlers(this.server, this.state);
+    // Lazy SDK factory — only created when an SDK tool is actually called
+    const getConnection = () => {
+      const rpcUrl = process.env.SOLANA_RPC_URL ?? "https://api.mainnet-beta.solana.com";
+      return new Connection(rpcUrl, "confirmed");
+    };
+
+    registerToolHandlers(this.server, this.state, getConnection);
     registerResourceHandlers(this.server, this.state);
     registerPromptHandlers(this.server, this.state);
   }
@@ -63,6 +70,7 @@ export class SolanaWalletMCPServer {
     // Log to stderr — stdout is reserved for MCP JSON-RPC
     console.error("Pump Fun MCP Server started");
     console.error(`Protocol version: ${MCP_VERSION}`);
+    console.error(`Tools: 53 (wallet, quoting, trading, fees, analytics, AMM, social, metadata, incentives)`);
   }
 
   async shutdown(): Promise<void> {

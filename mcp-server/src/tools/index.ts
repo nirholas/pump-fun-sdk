@@ -1,5 +1,6 @@
-import type { OnlinePumpSdk } from "@pump-fun/pump-sdk";
-import type { ToolResult } from "../types.js";
+import { Connection } from "@solana/web3.js";
+import { OnlinePumpSdk } from "@pump-fun/pump-sdk";
+import type { ToolResult, ServerState } from "../types.js";
 import { error } from "../types.js";
 
 // Quoting tools
@@ -73,6 +74,8 @@ import {
   validateAddressSchema, validateAddress,
   estimateVanityTimeSchema, estimateVanityTime,
   restoreKeypairSchema, restoreKeypair,
+  signMessageSchema, signMessage,
+  verifySignatureSchema, verifySignature,
 } from "./wallet.js";
 
 // Token incentives tools
@@ -428,6 +431,18 @@ export const ALL_TOOLS: ToolDefinition[] = [
     inputSchema: zodToJsonSchema(restoreKeypairSchema),
     handler: walletToolHandler(restoreKeypair),
   },
+  {
+    name: "sign_message",
+    description: "Sign an arbitrary message with a private key (Ed25519 detached signature). Key is zeroized after use.",
+    inputSchema: zodToJsonSchema(signMessageSchema),
+    handler: walletToolHandler(signMessage),
+  },
+  {
+    name: "verify_signature",
+    description: "Verify an Ed25519 message signature against a Solana public key",
+    inputSchema: zodToJsonSchema(verifySignatureSchema),
+    handler: walletToolHandler(verifySignature),
+  },
 
   // ── Token Incentives (5) ──
   {
@@ -481,3 +496,40 @@ export const ALL_TOOLS: ToolDefinition[] = [
     handler: getTokenSocials,
   },
 ];
+
+// ── MCP Protocol Exports ──
+
+/**
+ * Tool definitions in the format expected by the MCP ListTools handler.
+ */
+export const TOOL_DEFINITIONS = ALL_TOOLS.map((t) => ({
+  name: t.name,
+  description: t.description,
+  inputSchema: t.inputSchema,
+}));
+
+let _onlineSdk: OnlinePumpSdk | null = null;
+
+function getOnlineSdk(): OnlinePumpSdk {
+  if (_onlineSdk) return _onlineSdk;
+  const rpcUrl = process.env.SOLANA_RPC_URL ?? "https://api.mainnet-beta.solana.com";
+  const connection = new Connection(rpcUrl, "confirmed");
+  _onlineSdk = new OnlinePumpSdk(connection);
+  return _onlineSdk;
+}
+
+/**
+ * Dispatch a tool call by name. Called by the MCP CallTool handler.
+ */
+export async function handleToolCall(
+  name: string,
+  args: Record<string, unknown>,
+  _state: ServerState,
+): Promise<ToolResult> {
+  const tool = ALL_TOOLS.find((t) => t.name === name);
+  if (!tool) {
+    return error(`Unknown tool: ${name}`);
+  }
+  const sdk = getOnlineSdk();
+  return tool.handler(sdk, args);
+}

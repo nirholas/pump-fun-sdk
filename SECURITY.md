@@ -1,130 +1,150 @@
 # Security Policy
 
-## Overview
+## Supported Versions
 
-pump-fun-sdk is an unofficial community PumpFun SDK for the Pump protocol on Solana. It handles bonding curve trading, fee management, keypair generation, and AI agent integration. Security is foundational — not optional.
+| Version | Supported |
+|---------|-----------|
+| 1.x.x (latest) | :white_check_mark: Active security updates |
+| < 1.0.0 | :x: No longer supported |
 
 ---
 
 ## Reporting a Vulnerability
 
-If you discover a security issue, please report it responsibly:
+**Do NOT report security vulnerabilities through public GitHub issues.**
 
-1. **Do NOT** open a public issue
-2. **Use GitHub's private security advisory**: Go to the [Security tab](https://github.com/nirholas/pump-fun-sdk/security/advisories) → "Report a vulnerability"
-3. **Or email**: Contact the maintainer directly via GitHub profile
-4. **Include**:
-   - Steps to reproduce the vulnerability
-   - Potential impact assessment
-   - Suggested fix (if you have one)
-5. **Allow** reasonable time (up to 90 days) for a fix before disclosure
+To report a vulnerability, please email:
 
-We take every report seriously and will respond within 48 hours.
+**security@pump.fun** (or open a [private security advisory](https://github.com/nirholas/pump-fun-sdk/security/advisories/new) on GitHub)
 
----
+### What to Include
 
-## Supported Versions
+- Description of the vulnerability
+- Steps to reproduce
+- Affected version(s)
+- Potential impact assessment
+- Suggested fix (if you have one)
 
-| Version | Supported |
-|---------|-----------|
-| 1.x (latest) | ✅ Active |
-| < 1.0 | ❌ Not supported |
+### Response Timeline
 
----
+| Stage | Expected Time |
+|-------|---------------|
+| Acknowledgment | Within 48 hours |
+| Initial assessment | Within 1 week |
+| Patch development | Varies by severity |
+| Public disclosure | After fix is released |
 
-## Security Principles
-
-### 1. Official Libraries Only
-
-We use **ONLY** official Solana Labs cryptographic libraries:
-
-| Language | Library | Source |
-|----------|---------|--------|
-| Rust | `solana-sdk` | [github.com/solana-labs/solana](https://github.com/solana-labs/solana) |
-| TypeScript | `@solana/web3.js` | [github.com/solana-labs/solana-web3.js](https://github.com/solana-labs/solana-web3.js) |
-| Shell | `solana-keygen` | Official Solana CLI |
-
-**No third-party cryptographic code is used. Ever.**
-
-### 2. Key Material Handling
-
-- Private keys are **zeroized from memory** after use
-- Keypair files are created with **0600 permissions** (owner read/write only)
-- Private keys are **never logged**, printed, or written to stdout
-- The MCP server never exposes private keys through resources
-
-### 3. Input Validation
-
-- All public key inputs are validated as proper Base58
-- Vanity patterns are validated against the Base58 character set
-- BN amounts are bounds-checked to prevent overflow
-- Slippage parameters are validated for reasonable ranges
-
-### 4. No Network During Key Generation
-
-Key generation is fully offline. No network calls are made during:
-- Keypair creation
-- Vanity address searching
-- Key file writing
-- Signature creation
-
----
-
-## Security Audits
-
-Internal security audits are documented in the `security/` directory:
-
-| Audit | Scope | Document |
-|-------|-------|----------|
-| CLI Operations | Shell scripts, file I/O | [audit-cli.md](security/audit-cli.md) |
-| Rust Generator | Key generation, memory safety | [audit-rust.md](security/audit-rust.md) |
-| TypeScript Generator | Key generation, file permissions | [audit-typescript.md](security/audit-typescript.md) |
-| Full Checklist | 60+ item security checklist | [SECURITY_CHECKLIST.md](security/SECURITY_CHECKLIST.md) |
-
----
-
-## CI/CD Security
-
-- **npm audit** runs on every PR and weekly
-- **cargo audit** checks Rust dependencies for known vulnerabilities
-- **CodeQL** performs static analysis on TypeScript code
-- **Dependency review** blocks PRs that introduce high-severity vulnerabilities
-- **Keypair detection** prevents accidental commit of private key files
-
----
-
-## Best Practices for Users
-
-1. **Never commit keypair files** to version control
-2. **Store backups** of keypair files in secure, offline locations
-3. **Test on devnet** before mainnet
-4. **Review transactions** before signing
-5. **Keep dependencies updated** — run `npm audit` regularly
-6. **Use the security checklist** in `security/SECURITY_CHECKLIST.md`
+We follow [responsible disclosure](https://en.wikipedia.org/wiki/Responsible_disclosure). We will credit reporters in the changelog (unless you prefer anonymity).
 
 ---
 
 ## Scope
 
-The following are in scope for security reports:
+### In Scope
 
-- Core SDK (`src/`)
-- Rust vanity generator (`rust/`)
-- TypeScript vanity generator (`typescript/`)
-- MCP server (`mcp-server/`)
-- Shell scripts (`scripts/`)
-- CI/CD configurations
+- Vulnerabilities in the `src/` SDK code
+- Instruction building logic that could produce malicious transactions
+- Private key exposure risks
+- Dependency vulnerabilities in production packages
+- PDA derivation correctness (wrong accounts could lead to fund loss)
+- Fee calculation errors that could cause financial loss
 
-The following are out of scope:
+### Out of Scope
 
-- Third-party dependencies (report upstream)
-- The Pumpfun on-chain programs themselves
-- Phishing or social engineering attacks
+- Vulnerabilities in the Pump.fun on-chain programs themselves (report to Pump.fun directly)
+- Issues in the Rust or TypeScript vanity generators (these are offline tools)
+- Social engineering attacks
+- Denial of service against RPC endpoints
 
 ---
 
-## Acknowledgments
+## Security Considerations
 
-We appreciate security researchers who help keep pump-fun-sdk safe. Reporters of valid vulnerabilities will be credited in [ACKNOWLEDGMENTS.md](ACKNOWLEDGMENTS.md) (with permission).
+### Private Key Handling
 
+The SDK **never handles private keys** directly. All instruction builders return `TransactionInstruction[]` — signing is always external to the SDK. However, applications using the SDK should:
 
+- **Never log or transmit private keys**
+- **Use hardware wallets** for production signing
+- **Zeroize key material** after use (fill key arrays with zeros)
+- **Set file permissions to `0600`** for any keypair files
+
+### RPC Trust
+
+`OnlinePumpSdk` trusts the RPC endpoint to return correct account data. A malicious RPC could return fabricated state, causing the SDK to build instructions with incorrect parameters. Mitigations:
+
+- **Use trusted RPC providers** (official Solana endpoints, reputable third-party providers)
+- **Validate critical state** before executing high-value transactions
+- **Compare state** from multiple RPC endpoints for high-value operations
+- **Sign transactions offline** after verifying instruction contents
+
+### Financial Math
+
+All financial calculations use `BN` (bn.js) for arbitrary-precision arithmetic. **Never** convert to JavaScript `number` for intermediate calculations:
+
+```typescript
+// DANGEROUS — precision loss above 2^53
+const amount = Number(bnValue); // DON'T
+
+// SAFE — arbitrary precision
+const amount = bnValue.mul(otherBn); // DO
+```
+
+### Slippage Protection
+
+Always set appropriate slippage when building buy/sell instructions. The SDK computes slippage-adjusted bounds, but setting slippage to 0 or 1.0 (100%) exposes you to front-running:
+
+```typescript
+// DANGEROUS — no slippage protection
+slippage: 1.0  // accepts any price
+
+// RECOMMENDED — 1-5% for most trades
+slippage: 0.05  // 5% maximum price movement
+```
+
+### Fee Sharing Validation
+
+The SDK validates fee sharing configurations client-side before building instructions:
+
+- Shareholders: 1–10
+- Share BPS: each > 0
+- Total: exactly 10,000 BPS (100%)
+- No duplicate addresses
+
+These checks prevent common configuration errors. However, the on-chain program performs its own validation — the SDK checks are a convenience, not a security boundary.
+
+### Dependency Supply Chain
+
+The SDK depends only on well-established, audited packages:
+
+| Dependency | Source | Trust |
+|-----------|--------|-------|
+| `@solana/web3.js` | Solana Labs | Official |
+| `@solana/spl-token` | Solana Labs | Official |
+| `@coral-xyz/anchor` | Coral/Anchor | Official |
+| `bn.js` | indutny | Widely used, audited |
+| `@pump-fun/pump-swap-sdk` | Pump.fun | Official |
+
+**No third-party crypto libraries are used.** All cryptographic operations go through official Solana Labs packages.
+
+### What the SDK Does NOT Do
+
+- **Does not generate keypairs** — Use `@solana/web3.js` `Keypair.generate()` or `solana-keygen`
+- **Does not sign transactions** — Signing is your application's responsibility
+- **Does not send transactions** — RPC submission is external
+- **Does not store state** — All state is fetched fresh from RPC
+- **Does not make network calls** (in `PumpSdk` mode) — Fully offline
+
+---
+
+## Security Checklist for SDK Users
+
+- [ ] Use `BN` for all financial amounts — never JavaScript `number`
+- [ ] Set slippage to a reasonable value (1–10%) — never 100%
+- [ ] Check `bondingCurve.complete` before choosing bonding curve vs AMM instructions
+- [ ] Verify fee sharing shares total exactly 10,000 BPS
+- [ ] Use trusted RPC endpoints
+- [ ] Never log private keys or mnemonics
+- [ ] Zeroize key material after use
+- [ ] Keep dependencies updated (`npm audit`)
+- [ ] Review transaction instructions before signing

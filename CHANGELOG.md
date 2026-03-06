@@ -5,150 +5,238 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
-
-## [1.30.0] — 2026-03-06
+## [1.30.0] - 2026-03-06
 
 ### Added
 
-- **Platform enum** — Type-safe `Platform` enum (`Pump`, `X`, `GitHub`) with `SUPPORTED_SOCIAL_PLATFORMS`, `stringToPlatform()`, and `platformToString()` helpers for social fee sharing
-- **Social fee PDA validation** — `createSocialFeePdaInstruction` now validates platform against `SUPPORTED_SOCIAL_PLATFORMS` and explicitly provides `socialFeePda` account
-- **`normalizeSocialShareholders()`** — Resolves social handles (userId + platform) to PDAs and collects any that need on-chain creation
-- **`updateSharingConfigWithSocialRecipients()`** — Wrapper that creates missing social fee PDAs then updates fee shares in a single instruction batch
-- **`createSharingConfigWithSocialRecipients()`** — Wrapper that creates fee sharing config + resolves social recipients in one call
+- MCP server initial implementation with validation schemas and tutorial documentation
+- New tools for token metadata, social fees, and wallet management
+- New tools for analytics, fees, metadata, token incentives
+- Screenshot automation for sectbot pages using Playwright
+- Release workflow for automated deployment and testing
+- Comprehensive documentation for RPC best practices, plugin delivery, error handling, and AMM liquidity operations
+- Tutorials for advanced analytics, event parsing, cross-program trading, DeFi agents integration, live dashboard deployment, cashback, and social fee PDAs
+- Fee sharing setup and error handling to create-and-buy tutorial
 
 ### Changed
 
-- `createSocialFeePdaInstruction` and `claimSocialFeePdaInstruction` now accept `Platform` enum instead of raw `number`
-- Synced with upstream `@pump-fun/pump-sdk@1.30.0` (npm)
-
-## [1.29.0] — 2026-03-06
-
-### Added
-
-- **Bonding Curve V2 PDA** — `bondingCurveV2Pda(mint)` derives the new required `bonding-curve-v2` PDA (seeds: `["bonding-curve-v2", mint]`, program: Pump)
-- **Pool V2 PDA** — `poolV2Pda(baseMint)` derives the new required `pool-v2` PDA (seeds: `["pool-v2", base_mint]`, program: PumpAMM)
-- **Cashback support for AMM instructions** — `ammBuyInstruction`, `ammBuyExactQuoteInInstruction`, and `ammSellInstruction` now accept an optional `cashback` parameter
-
-### Changed
-
-- **Bonding Curve buy/buyExactSolIn** — appends `bonding_curve_v2` (readonly) as a required remaining account
-- **Bonding Curve sell** — appends `bonding_curve_v2` (readonly) after optional `user_volume_accumulator` for cashback coins
-- **PumpAMM buy** — appends `pool_v2` (readonly); for cashback coins also prepends `user_volume_accumulator_wsol_ata` (mutable)
-- **PumpAMM buyExactQuoteIn** — appends `pool_v2` (readonly); for cashback coins also prepends `user_volume_accumulator_wsol_ata` (mutable)
-- **PumpAMM sell** — appends `pool_v2` (readonly); for cashback coins also prepends `user_volume_accumulator_wsol_ata` (mutable) and `user_volume_accumulator` (mutable)
+- Updated `package.json` to require Node.js 18 or higher
+- Enhanced claim feed formatting with additional token holder and trade info
+- Enhanced token info with GitHub URLs and token holder/trade info fetching
+- Enhanced user experience with pulse animation on logo for first-time visitors
 
 ### Fixed
 
-- Compliance with Pump program upgrade requiring `bonding_curve_v2` and `pool_v2` accounts on all buy/sell instructions
+- Channel-bot: fixed corrupted `formatters.ts`, fixed Dockerfile (`npm ci` -> `npm install` for missing lock file)
+
+## [1.29.0]
+
+### Added
+
+- x402 payment protocol — HTTP 402 micropayments with Solana USDC
+  - Client, server, and facilitator implementations
+  - Example code for all three roles
+- Channel-bot — Telegram channel monitoring bot
+  - Axiom/@nich referral, GMGN referral
+  - Scam count, Fee Recipient section
+  - Status by @handle, blockquote description, top coin MC
+  - Dockerfile, Railway deployment config
 
 ## [1.28.0]
 
 ### Added
 
-- **DeFi agents** (`packages/defi-agents/`) — 43 production-ready AI agent definitions with 18-language i18n support, covering trading, analytics, risk management, and portfolio strategies
-- **Plugin.delivery** (`packages/plugin.delivery/`) — AI Plugin Index for SperaxOS function-call plugins and tools
-- **19 tutorials** (`tutorials/`) — step-by-step guides from token creation to CoinGecko integration, covering the full SDK surface
-- **Social fee PDAs** — `createSocialFeePdaInstruction`, `claimSocialFeePdaInstruction`, `fetchSocialFeePda`, `decodeSocialFeePdaAccount` for platform-based fee collection (userId + platform identifiers)
-- **Social fee events** — `SocialFeePdaCreatedEvent`, `SocialFeePdaClaimedEvent` exported from state
-- **WebSocket relay server** (`websocket-server/`) — PumpFun API → SolanaMonitor → WebSocket relay → browsers; deployed on Railway (`pump-fun-websocket-production.up.railway.app`)
-- **PumpEventMonitor** (`telegram-bot/src/pump-event-monitor.ts`) — Anchor event decoder for graduation, whale trades, and fee distribution events via WebSocket or HTTP polling
-- **Live trades dashboard** (`website/live.html`) — real-time token launch + trade feed with volume charts, buy/sell ratio, whale alerts, top tokens, and demo mode
-- **PumpOS Pump-Store** — 169 installable apps including bonding-curve-calc, fee-tier-explorer, token-launch-sim, migration-tracker, token-incentives, creator-fee-sharing, pump-sdk-reference, smart-money, alpha terminal, and more
-- **Lair-TG** (`lair-tg/`) — unified Telegram bot platform for DeFi intelligence, wallet management, and token launching
-- **Standalone live pages** (`live/`) — `index.html` (token launches) and `trades.html` (trade feed) with separate Vercel deployment
-- **AMM trade events** — `AmmBuyEvent`, `AmmSellEvent`, `DepositEvent`, `WithdrawEvent`, `CreatePoolEvent` exported from state
-- **Fee sharing events** — `CreateFeeSharingConfigEvent`, `UpdateFeeSharesEvent`, `ResetFeeSharingConfigEvent`, `RevokeFeeSharingAuthorityEvent`, `TransferFeeSharingAuthorityEvent`
-- **Graduation/whale/fee formatters** (`telegram-bot/src/formatters.ts`) — rich HTML notification formatting for graduation events, whale trades, and fee distributions
-- **Analytics module** (`src/analytics.ts`) — price impact, graduation progress, token price, bonding curve summary
-- **Telegram bot REST API** — scalable HTTP API with auth, rate limiting, SSE streaming, webhooks
-  - `GET /api/v1/health` — health check (no auth)
-  - `GET /api/v1/openapi` — OpenAPI 3.0 spec (no auth)
-  - `GET /api/v1/status` — detailed monitor/watch/claim stats
-  - `GET /api/v1/claims` — paginated claim history with filtering
-  - `GET /api/v1/claims/stream` — real-time SSE claim stream
-  - `CRUD /api/v1/watches` — per-client watch management
-- **Telegram bot token launch monitor** — real-time detection of new PumpFun token launches with `/monitor` and `/stopmonitor` commands
-- **CTO (creator takeover) alerts** — detect creator fee redirection events
-- **Telegram bot pump event monitor** — `PumpEventMonitor` class for on-chain event tracking via Anchor discriminator matching
-  - **Graduation alerts** — notifications when a token completes its bonding curve or migrates to PumpAMM pool
-  - **Whale trade alerts** — configurable SOL threshold for large buy/sell notifications with visual bonding curve progress bar
-  - **Fee distribution alerts** — tracks `DistributeCreatorFees` events with shareholder breakdown and share percentages
-  - **Cashback coin flag** — token launch notifications now show whether cashback is enabled
-  - New env vars: `ENABLE_GRADUATION_ALERTS`, `ENABLE_TRADE_ALERTS`, `WHALE_THRESHOLD_SOL`, `ENABLE_FEE_DISTRIBUTION_ALERTS`
-- **HMAC-SHA256 webhook signatures** — `X-PumpFun-Signature` header for webhook payload verification
-- **Request logging** — method, path, status, duration for all API requests
-- **Security headers** — `X-Content-Type-Options`, `X-Frame-Options`, `X-Request-Id` on all API responses
-- **Graceful API shutdown** — connection draining with 10s force-close timeout
-- **Docker HEALTHCHECK** — `wget`-based health probe against `/api/v1/health`
-- **PumpOS web desktop** — static HTML/CSS/JS website with app launcher, widgets, and wallet connect
-- **Solana wallet app** — in-browser wallet management in PumpOS Store
-- **`tsup` build config** — CJS + ESM dual builds with sourcemaps and `.d.ts`
-- ROADMAP.md — public roadmap with quarterly milestones
-- VISION.md — project vision and principles
-- GOVERNANCE.md — BDFL governance model
-- SUPPORT.md — how to get help
-- FAQ.md — frequently asked questions
-- ADOPTERS.md — who's using pump-fun-sdk
-- ACKNOWLEDGMENTS.md — credits and thanks
-- docs/TROUBLESHOOTING.md — common issues and fixes
-- docs/MIGRATION.md — version upgrade guide
-- GitHub Actions CI workflow — build, test, lint across Node 18/20/22
-- GitHub Actions release workflow — npm publish and Rust binary releases
-- GitHub Actions security workflow — npm audit, cargo audit, CodeQL, dependency review
-- GitHub Actions stale issue management
-- **x402 payment protocol** (`x402/`) — HTTP 402 micropayments with Solana USDC, `x402Paywall()` server middleware and `X402Client` auto-pay client
-- **MCP server expanded to 53 tools** — quoting, building TXs, fees, analytics, AMM ops, social fees, wallet; deploys to Railway, Cloudflare Workers, or Vercel
-- **28 agent skill documents** (`skills/`) — covering every domain from SDK core to security
-- Discussion templates — Ideas, Q&A, Show & Tell
-- Issue template config with contact links
-- Documentation improvement issue template
-- Question issue template
-- .all-contributorsrc for contributor tracking
-- Comprehensive CONTRIBUTING.md with code style, commit conventions, testing guide
-- Upgraded SECURITY.md with full security policy
-- Upgraded PR template with detailed checklist
+- TypeScript vanity address generator (educational reference implementation)
+  - Generator, matcher, security, validation modules
+  - Format utilities and base58 encoding
+  - Comprehensive test suite (generator, integration, matcher, security, validation)
+  - Basic usage and batch generation examples
+  - Worker threads support
 
-### Changed
+## [1.27.0]
 
-- Live page WebSocket endpoints updated — removed public Solana RPCs, now uses PumpPortal + Railway relay server
-- Telegram bot version bumped to 1.1.0
-- `TELEGRAM_BOT_TOKEN` now optional in API-only mode
-- Railway `healthcheckPath` set to `/api/v1/health`
-- Dockerfile: added OCI labels, `EXPOSE 3000`, `HEALTHCHECK`, `API_PORT` env
-- SolanaMonitor refactored to use PumpFun API for real-time token launches
+### Added
 
-### Fixed
+- 19 hands-on tutorial guides covering the full SDK
+  - Token creation, buying, selling, analytics
+  - Fee sharing, migration, token incentives
+  - Working with PDAs, trading bot patterns
+  - Offline vs online SDK, vanity addresses
+  - x402 paywalled APIs, decoding accounts
+  - Monitoring claims, monitoring website
+  - Telegram bot integration, CoinGecko integration
 
-- Fixed missing `errorsEncountered` in token launch monitor state initialization
-- Fixed missing `description` field in `TokenLaunchEvent` construction
-- Fixed `.well-known/agent.json` PumpFees program ID mismatch
-- Fixed all docs incorrectly describing website as "Next.js" (it's static HTML/CSS/JS)
-- Removed 'Transfer' keyword from Telegram bot WS filter (matched every tx)
-- Fixed WebSocket multi-endpoint failover for live dashboard
-- Fixed `$btnConnect is not defined` ReferenceError in live token launch monitor — added missing button element and DOM ref
-- Fixed relay message type mismatch — `'launch'` → `'token-launch'` to match actual relay server output
+## [1.26.0]
 
-## [1.0.0] - 2026-02-11
+### Added
+
+- Social fee PDA support — referral fee accounts linked to social identities
+- `createSocialFeePdaInstruction` for creating social referral accounts
+- `claimSocialFeePdaInstruction` for claiming accumulated social fees
+- `normalizeSocialShareholders` for resolving social IDs to PDA addresses
+- `Platform` enum (`Pump`, `X`, `GitHub`)
+
+## [1.25.0]
+
+### Added
+
+- Cashback feature — fee rebates on trades
+- `claimCashbackInstruction` for claiming accumulated cashback
+- `ammClaimCashbackInstruction` for AMM cashback claims
+- `cashback` parameter on `createV2Instruction`, `sellInstructions`, AMM instructions
+- `toggleCashbackEnabledInstruction` admin control
+
+## [1.24.0]
+
+### Added
+
+- Mayhem Mode — randomized bonding curve parameters
+- `toggleMayhemModeInstruction` admin control
+- `setMayhemVirtualParamsInstruction` for setting mayhem parameters
+- Mayhem-specific PDAs (`getGlobalParamsPda`, `getMayhemStatePda`, `getSolVaultPda`, `getTokenVaultPda`)
+
+## [1.23.0]
+
+### Added
+
+- Token incentives — volume-based $PUMP token rewards
+- `initUserVolumeAccumulator`, `syncUserVolumeAccumulator`, `closeUserVolumeAccumulator`
+- `claimTokenIncentives`, `claimTokenIncentivesBothPrograms`
+- `getTotalUnclaimedTokens`, `getTotalUnclaimedTokensBothPrograms`
+- `getCurrentDayTokens`, `getCurrentDayTokensBothPrograms`
+- `totalUnclaimedTokens()` and `currentDayTokens()` pure calculation functions
+- Admin `adminUpdateTokenIncentives` and `adminUpdateTokenIncentivesBothPrograms`
+
+## [1.22.0]
+
+### Added
+
+- Analytics module (`analytics.ts`)
+  - `calculateBuyPriceImpact` — price impact for buy trades
+  - `calculateSellPriceImpact` — price impact for sell trades
+  - `getGraduationProgress` — bonding curve completion percentage
+  - `getTokenPrice` — current buy/sell price per token
+  - `getBondingCurveSummary` — complete bonding curve overview
+- Online SDK analytics fetchers (`fetchBondingCurveSummary`, `fetchGraduationProgress`, `fetchTokenPrice`, `fetchBuyPriceImpact`, `fetchSellPriceImpact`)
+
+## [1.21.0]
+
+### Added
+
+- Fee sharing system (PumpFees program integration)
+  - `createFeeSharingConfig` — create fee distribution config
+  - `updateFeeShares` — update shareholder allocations
+  - `distributeCreatorFees` — distribute accumulated fees
+  - `getMinimumDistributableFee` — check distribution threshold
+  - `buildDistributeCreatorFeesInstructions` — convenience builder
+- Custom error types for fee validation (`NoShareholdersError`, `TooManyShareholdersError`, `ZeroShareError`, `InvalidShareTotalError`, `DuplicateShareholderError`, `PoolRequiredForGraduatedError`, `ShareCalculationOverflowError`)
+
+## [1.20.0]
+
+### Added
+
+- PumpAMM integration — trading on graduated pools
+  - `ammBuyInstruction`, `ammBuyExactQuoteInInstruction`, `ammSellInstruction`
+  - `ammDepositInstruction`, `ammWithdrawInstruction` (LP operations)
+  - `ammCollectCoinCreatorFeeInstruction`
+  - `ammMigratePoolCoinCreatorInstruction`, `ammSetCoinCreatorInstruction`
+  - `ammTransferCreatorFeesToPumpInstruction`
+- Pool state decoding (`decodePool`, `decodeAmmGlobalConfig`)
+
+## [1.19.0]
+
+### Added
+
+- Tiered fee system based on market cap thresholds
+- `FeeConfig` and `FeeTier` types
+- `calculateFeeTier` for tier lookup
+- `computeFeesBps` for current fee rate calculation
+
+## [1.18.0]
+
+### Added
+
+- `createV2Instruction` with `mayhemMode` support
+- `buyExactSolInInstruction` for exact-SOL-input buys
+
+### Deprecated
+
+- `createInstruction` (v1) — use `createV2Instruction` instead
+
+## [1.17.0]
+
+### Added
+
+- Creator fee collection
+  - `collectCoinCreatorFeeInstructions`
+  - `getCreatorVaultBalance`, `getCreatorVaultBalanceBothPrograms`
+- `setCreator` and `migrateBondingCurveCreatorInstruction`
+- `adminSetCoinCreatorInstructions`
+
+## [1.16.0]
+
+### Added
+
+- `isGraduated` convenience method
+- `sellAllInstructions` to sell entire token balance
+- `getTokenBalance` helper
+
+## [1.15.0]
+
+### Added
+
+- `OnlinePumpSdk` — RPC-dependent extension of PumpSdk
+  - `fetchGlobal`, `fetchFeeConfig`, `fetchBondingCurve`
+  - `fetchBuyState`, `fetchSellState` (batch state fetching)
+  - `fetchPool`, `fetchPoolByAddress`
+
+## [1.14.0]
+
+### Added
+
+- Event decoders for all Pump, PumpAMM, and PumpFees program events
+  - Trade, Create, Complete, Migration, SetCreator events
+  - AMM Buy, Sell, Deposit, Withdraw, CreatePool events
+  - Fee sharing config events
+
+## [1.13.0]
+
+### Added
+
+- Comprehensive PDA module (`pda.ts`)
+  - All static PDAs (GLOBAL_PDA, AMM_GLOBAL_PDA, etc.)
+  - Derived PDAs (bondingCurvePda, creatorVaultPda, canonicalPumpPoolPda, etc.)
+
+## [1.12.0]
+
+### Added
+
+- Bonding curve math module (`bondingCurve.ts`)
+  - `getBuyTokenAmountFromSolAmount`
+  - `getBuySolAmountFromTokenAmount`
+  - `getSellSolAmountFromTokenAmount`
+  - `bondingCurveMarketCap`
+  - `newBondingCurve`
+
+## [1.11.0]
+
+### Added
+
+- Core `PumpSdk` class with offline instruction builders
+  - `createInstruction` (v1)
+  - `buyInstructions`, `sellInstructions`
+  - `migrateInstruction`
+  - Account decoders
+- `PUMP_SDK` singleton
+- State types (`Global`, `BondingCurve`, `Pool`)
+- Anchor IDL integration (Pump, PumpAMM, PumpFees)
+
+## [1.0.0]
 
 ### Added
 
 - Initial release
-- Core TypeScript SDK (`PumpSdk` and `OnlinePumpSdk`)
-- Bonding curve math — buy/sell quoting, market cap calculation
-- Fee system — tiered fees based on market cap, creator fees
-- Fee sharing — distribute creator fees to up to 10 shareholders
-- Token incentives — volume-based reward calculation and claiming
-- PDA derivation utilities for all three programs
-- Full TypeScript state types for on-chain accounts
-- Rust vanity address generator with Rayon multi-threading
-- TypeScript vanity address generator with programmatic API
-- MCP server for AI agent wallet operations
-- Shell scripts for batch generation and verification
-- Security audits for CLI, Rust, and TypeScript
-- Comprehensive test suite (unit, integration, fuzz, stress, benchmark)
-- Documentation: getting started, architecture, API reference, examples
-- GitHub templates: bug report, feature request, PR template
-- CI/CD configuration
-
-
+- Pump program instruction builders
+- Basic bonding curve math
+- PDA derivation
+- TypeScript types for all account state

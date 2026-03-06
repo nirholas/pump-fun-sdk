@@ -1,4 +1,5 @@
 {
     "telemetry.feedback.enabled": false,
-    "telemetry.editStats.enabled": false
+    "telemetry.editStats.enabled": false,
+    "chat.editing.autoOpenFileOnApply": "never"
 }

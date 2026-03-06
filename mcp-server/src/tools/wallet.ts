@@ -1,5 +1,7 @@
 import { z } from "zod";
 import { Keypair, PublicKey } from "@solana/web3.js";
+import bs58 from "bs58";
+import nacl from "tweetnacl";
 import { publicKeySchema } from "../utils/validation.js";
 import { success, error } from "../types.js";
 import type { ToolResult } from "../types.js";
@@ -189,5 +191,72 @@ export async function restoreKeypair(
     if (keypair) {
       keypair.secretKey.fill(0);
     }
+  }
+}
+
+// ── sign_message ──
+export const signMessageSchema = z.object({
+  message: z.string().min(1).describe("The message to sign"),
+  privateKey: z
+    .string()
+    .describe("Base58-encoded 64-byte private key"),
+});
+
+export async function signMessage(
+  params: z.infer<typeof signMessageSchema>
+): Promise<ToolResult> {
+  let secretKey: Uint8Array | null = null;
+  try {
+    secretKey = bs58.decode(params.privateKey);
+    if (secretKey.length !== 64) {
+      return error(`Invalid private key length: expected 64 bytes, got ${secretKey.length}`);
+    }
+
+    const keypair = Keypair.fromSecretKey(secretKey);
+    const publicKeyStr = keypair.publicKey.toBase58();
+    const messageBytes = new TextEncoder().encode(params.message);
+    const signature = nacl.sign.detached(messageBytes, secretKey);
+    const signatureBase58 = bs58.encode(signature);
+
+    return success({
+      publicKey: publicKeyStr,
+      message: params.message,
+      signature: signatureBase58,
+      note: "Use verify_signature to verify this signature.",
+    });
+  } catch (e: any) {
+    return error(`Signing failed: ${e.message}`);
+  } finally {
+    if (secretKey) {
+      secretKey.fill(0);
+    }
+  }
+}
+
+// ── verify_signature ──
+export const verifySignatureSchema = z.object({
+  message: z.string().min(1).describe("The original message"),
+  signature: z.string().min(1).describe("Base58-encoded signature"),
+  publicKey: publicKeySchema.describe("Signer's public key"),
+});
+
+export async function verifySignature(
+  params: z.infer<typeof verifySignatureSchema>
+): Promise<ToolResult> {
+  try {
+    const messageBytes = new TextEncoder().encode(params.message);
+    const signatureBytes = bs58.decode(params.signature);
+    const pubKeyBytes = new PublicKey(params.publicKey).toBytes();
+
+    const isValid = nacl.sign.detached.verify(messageBytes, signatureBytes, pubKeyBytes);
+
+    return success({
+      valid: isValid,
+      publicKey: params.publicKey,
+      message: params.message,
+      signaturePrefix: params.signature.substring(0, 20) + "...",
+    });
+  } catch (e: any) {
+    return error(`Verification failed: ${e.message}`);
   }
 }
