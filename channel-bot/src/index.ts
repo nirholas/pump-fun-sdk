@@ -109,19 +109,11 @@ async function main(): Promise<void> {
     }
 
     // ── Pipeline Counters ─────────────────────────────────────────────
-    const pipeline = { total: 0, creatorClaims: 0, socialClaims: 0, firstClaim: 0, posted: 0 };
+    const pipeline = { total: 0, socialClaims: 0, firstClaim: 0, posted: 0 };
     setInterval(() => {
-        log.info('Pipeline: %d total → %d creator → %d social → %d first → %d posted',
-            pipeline.total, pipeline.creatorClaims, pipeline.socialClaims, pipeline.firstClaim, pipeline.posted);
+        log.info('Pipeline: %d total → %d social → %d first → %d posted',
+            pipeline.total, pipeline.socialClaims, pipeline.firstClaim, pipeline.posted);
     }, 60_000);
-
-    /** Creator claim types we always post about (first per wallet). */
-    const CREATOR_CLAIM_TYPES = new Set([
-        'collect_creator_fee',
-        'collect_coin_creator_fee',
-        'distribute_creator_fees',
-        'transfer_creator_fees_to_pump',
-    ]);
 
     // ── Claim Monitor ────────────────────────────────────────────────
     const claimMonitor = new ClaimMonitor(config, async (event: FeeClaimEvent) => {
@@ -176,51 +168,7 @@ async function main(): Promise<void> {
             return;
         }
 
-        // ── Path B: Creator fee claims (all types) ───────────────────
-        if (!CREATOR_CLAIM_TYPES.has(event.claimType)) return;
-        pipeline.creatorClaims++;
-
-        // Only post the first claim by each wallet to avoid spam
-        if (!isFirstClaimByWallet(event.claimerWallet)) return;
-        pipeline.firstClaim++;
-
-        log.info('📤 First creator claim by %s — %.4f SOL (%s)',
-            event.claimerWallet.slice(0, 8), event.amountSol, event.claimType);
-
-        const [creator, solUsdPrice] = await Promise.all([
-            fetchCreatorProfile(event.claimerWallet),
-            fetchSolUsdPrice(),
-        ]);
-
-        // Try to fetch token info if we have a mint
-        const token = event.tokenMint ? await fetchTokenInfo(event.tokenMint) : null;
-
-        const record = recordClaim(
-            event.claimerWallet, event.tokenMint || 'unknown',
-            event.amountSol, event.timestamp,
-        );
-
-        const ctx: ClaimFeedContext = {
-            event,
-            token,
-            creator,
-            claimRecord: record,
-            holders: null,
-            trades: null,
-            solUsdPrice,
-            githubRepo: null,
-            githubUser: null,
-            aiSummary: '',
-        };
-
-        const { imageUrl, caption } = formatClaimFeed(ctx);
-        if (imageUrl) {
-            await postPhotoToChannel(imageUrl, caption);
-        } else {
-            await postToChannel(caption);
-        }
-        pipeline.posted++;
-        log.info('✅ Posted creator claim by %s to %s', event.claimerWallet.slice(0, 8), config.channelId);
+        // All other claim types: ignore
       } catch (err) {
         log.error('Claim handler error: %s', err);
       }
