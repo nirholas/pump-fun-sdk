@@ -63,3 +63,4 @@ To finish off your change, test PumpOS by trying to open file of that type.
 
 Join our discord for help, [here](https://discord.gg/NhC8N2Mxta).
 {% endhint %}
+
