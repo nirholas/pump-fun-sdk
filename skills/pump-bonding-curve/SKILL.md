@@ -123,3 +123,4 @@ interface BondingCurve {
 - Market cap calculation uses `mintSupply` not `tokenTotalSupply`
 - The fee stripping formula subtracts 1 from the amount first — this is intentional
 - `getBuySolAmountFromTokenAmountQuote` adds `+ 1` to the result to ensure sufficient SOL
+
