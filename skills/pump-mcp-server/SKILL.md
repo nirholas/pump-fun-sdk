@@ -93,3 +93,4 @@ class SolanaWalletMCPServer {
 - `generate_vanity` is single-threaded — long prefixes will be slow
 - `sign_message` requires an active session keypair — `generate_keypair` first
 - Resource URIs are case-sensitive
+
