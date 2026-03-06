@@ -170,3 +170,4 @@ console.log("Uses fee sharing:", usesFeeSharing);
 
 - [Tutorial 8: Token Incentives and Rewards](./08-token-incentives.md)
 - [Tutorial 9: Understanding the Fee System](./09-fee-system.md)
+
