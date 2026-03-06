@@ -76,3 +76,4 @@ export default class WebGLVisualizer {
         this.gl.deleteProgram(this.program);
     }
 }
+
