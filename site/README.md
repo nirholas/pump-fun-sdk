@@ -91,3 +91,4 @@ See [SECURITY.md](SECURITY.md) for security policies and reporting vulnerabiliti
 ## License
 
 This project is licensed under the MIT License - see [license.md](license.md) for details.
+
