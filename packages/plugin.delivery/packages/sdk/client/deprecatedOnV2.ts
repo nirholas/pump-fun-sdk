@@ -31,3 +31,4 @@ export const fetchPluginPayload = speraxOS.getPluginPayload;
  * @deprecated
  */
 export const fetchPluginSettings = speraxOS.getPluginSettings;
+
