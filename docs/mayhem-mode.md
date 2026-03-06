@@ -133,3 +133,4 @@ import { MAYHEM_PROGRAM_ID } from "@pump-fun/pump-sdk";
 - [Bonding Curve Math](./bonding-curve-math.md) — Price calculation formulas
 - [Fee Tiers](./fee-tiers.md) — Market-cap-based fee rates
 - [API Reference](./api-reference.md) — Full function signatures
+
