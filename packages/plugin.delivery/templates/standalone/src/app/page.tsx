@@ -111,3 +111,4 @@ export default function StandalonePlugin() {
     </Card>
   );
 }
+
