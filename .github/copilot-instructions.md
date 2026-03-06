@@ -41,3 +41,4 @@ See `.github/skills/` for 28 detailed skill documents.
 - If a terminal appears unresponsive, kill it and create a new one rather than retrying in the same terminal
 - **Failure to kill terminals is a blocking violation** — treat it as seriously as a security issue
 
+
