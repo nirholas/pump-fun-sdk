@@ -29,6 +29,7 @@ import {
 import type { ClaimFeedContext } from './formatters.js';
 import { log, setLogLevel } from './logger.js';
 import { startHealthServer, stopHealthServer } from './health.js';
+import { maskUrl } from './rpc-fallback.js';
 import type {
     FeeClaimEvent,
     GraduationEvent,
@@ -46,7 +47,7 @@ async function main(): Promise<void> {
 
     log.info('PumpFun Channel Bot starting...');
     log.info('  Channel: %s', config.channelId);
-    log.info('  RPC: %s', config.solanaRpcUrl);
+    log.info('  RPC: %s', maskUrl(config.solanaRpcUrl));
     log.info('  Feed: claims=%s launches=%s graduations=%s whales=%s fees=%s',
         config.feed.claims, config.feed.launches, config.feed.graduations,
         config.feed.whales, config.feed.feeDistributions,

@@ -147,7 +147,7 @@ export class RpcFallback {
     }
 }
 
-function maskUrl(url: string): string {
+export function maskUrl(url: string): string {
     try {
         const u = new URL(url);
         const path = u.pathname.length > 1 ? u.pathname.slice(0, 12) + '…' : '';
