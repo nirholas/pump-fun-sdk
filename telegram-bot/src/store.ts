@@ -141,3 +141,4 @@ export function findMatchingWatches(claimerWallet: string): WatchEntry[] {
         (w) => w.active && w.recipientWallet.toLowerCase() === lower,
     );
 }
+
