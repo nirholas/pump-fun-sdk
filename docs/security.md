@@ -228,3 +228,4 @@ See [SECURITY.md](../SECURITY.md) for the full policy.
 - [SECURITY_CHECKLIST.md](../security/SECURITY_CHECKLIST.md) — 60+ item pre-release checklist
 - [Testing Guide](./testing.md) — Security test commands
 - [Architecture](./architecture.md) — System design overview
+
