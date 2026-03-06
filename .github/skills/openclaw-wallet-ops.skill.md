@@ -150,3 +150,4 @@ interface ServerState {
 - Forgetting that restore_keypair does NOT support seed phrases (defers to Solana CLI)
 - Assuming `isOnCurve` means the address is a wallet — PDAs are valid addresses but not on curve
 - Not zeroing temporary `Uint8Array` buffers created during signing operations
+
