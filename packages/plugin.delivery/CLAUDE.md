@@ -12,3 +12,4 @@
 - In GitHub Codespaces, agent-spawned terminals may be hidden — they still work. Do not assume a terminal is broken if you cannot see it
 - If a terminal appears unresponsive, kill it and create a new one rather than retrying in the same terminal
 - **Failure to kill terminals is a blocking violation** — treat it as seriously as a security issue
+
