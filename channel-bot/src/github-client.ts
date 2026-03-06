@@ -317,44 +317,11 @@ export async function fetchGitHubUserById(userId: string): Promise<GitHubUserInf
     const cached = getCached(userCache, cacheKey);
     if (cached !== undefined) return cached;
 
-    try {
-        // GET /user/{account_id} requires authentication
-        const resp = await fetch(`${GITHUB_API}/user/${encodeURIComponent(userId)}`, {
-            headers: authHeaders(),
-            signal: AbortSignal.timeout(8_000),
-        });
-
-        if (!resp.ok) {
-            if (resp.status === 404) {
-                setCache(userCache, cacheKey, null, REPO_CACHE_TTL);
-                return null;
-            }
-            if (resp.status === 403 || resp.status === 429) {
-                log.warn('GitHub API rate limited (%d) for user ID %s', resp.status, userId);
-                setCache(userCache, cacheKey, null, 30_000);
-                return null;
-            }
-            // 401 = no/bad token, 422 = invalid ID format, other unexpected errors
-            log.warn('GitHub API %d for user ID %s — falling back to list endpoint (token set: %s)',
-                resp.status, userId, GITHUB_TOKEN ? 'yes' : 'no');
-
-            // Fallback: resolve via public list-users endpoint
-            const fallback = await resolveUserIdViaList(userId);
-            if (fallback) {
-                setCache(userCache, cacheKey, fallback, REPO_CACHE_TTL);
-            }
-            return fallback;
-        }
-
-        const raw = (await resp.json()) as Record<string, unknown>;
-        const info = parseUserResponse(raw);
-
-        setCache(userCache, cacheKey, info, REPO_CACHE_TTL);
-        return info;
-    } catch (err) {
-        log.error('GitHub user fetch by ID failed for %s: %s', userId, err);
-        return null;
-    }
+    // GitHub REST API GET /user/{account_id} expects a node_id (base64 string),
+    // not a numeric integer ID — so we go straight to the list-based lookup.
+    const result = await resolveUserIdViaList(userId);
+    setCache(userCache, cacheKey, result, result ? REPO_CACHE_TTL : 60_000);
+    return result;
 }
 
 // ============================================================================
