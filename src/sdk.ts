@@ -6,7 +6,6 @@ import {
 import {
   createAssociatedTokenAccountIdempotentInstruction,
   getAssociatedTokenAddressSync,
-  ASSOCIATED_TOKEN_PROGRAM_ID,
   NATIVE_MINT,
   TOKEN_2022_PROGRAM_ID,
   TOKEN_PROGRAM_ID,
@@ -47,13 +46,9 @@ import {
   feeSharingConfigPda,
   userVolumeAccumulatorPda,
   ammUserVolumeAccumulatorPda,
-  feeProgramGlobalPda,
   socialFeePda as socialFeePdaHelper,
   bondingCurveV2Pda,
   poolV2Pda,
-  AMM_GLOBAL_CONFIG_PDA,
-  AMM_FEE_CONFIG_PDA,
-  PUMP_AMM_EVENT_AUTHORITY_PDA,
 } from "./pda";
 import {
   BondingCurve,

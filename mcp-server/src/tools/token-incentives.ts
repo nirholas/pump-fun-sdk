@@ -69,9 +69,9 @@ export async function getVolumeStats(
 
     return success({
       user: params.user,
-      totalVolume: formatBN(stats.totalVolume),
-      totalClaimed: formatBN(stats.totalClaimed),
-      totalUnclaimed: formatBN(stats.totalUnclaimed),
+      currentSolVolume: formatBN(stats.currentSolVolume),
+      totalClaimedTokens: formatBN(stats.totalClaimedTokens),
+      totalUnclaimedTokens: formatBN(stats.totalUnclaimedTokens),
     });
   } catch (e: unknown) {
     return error(`Failed to get volume stats: ${getErrorMessage(e)}`);
@@ -113,7 +113,7 @@ export async function buildClaimCashback(
 ): Promise<ToolResult> {
   try {
     const user = new PublicKey(params.user);
-    const instruction = PUMP_SDK.claimCashbackInstruction({ user });
+    const instruction = await PUMP_SDK.claimCashbackInstruction({ user });
 
     return success({
       instructions: instructionsToJson([instruction]),

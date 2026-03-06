@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { Keypair, PublicKey } from "@solana/web3.js";
 import bs58 from "bs58";
-import nacl from "tweetnacl";
+import { ed25519 } from "@noble/curves/ed25519";
 import { publicKeySchema } from "../utils/validation.js";
 import { success, error, getErrorMessage } from "../types.js";
 import type { ToolResult } from "../types.js";
@@ -215,7 +215,7 @@ export async function signMessage(
     const keypair = Keypair.fromSecretKey(secretKey);
     const publicKeyStr = keypair.publicKey.toBase58();
     const messageBytes = new TextEncoder().encode(params.message);
-    const signature = nacl.sign.detached(messageBytes, secretKey);
+    const signature = ed25519.sign(messageBytes, secretKey.subarray(0, 32));
     const signatureBase58 = bs58.encode(signature);
 
     return success({
@@ -248,7 +248,7 @@ export async function verifySignature(
     const signatureBytes = bs58.decode(params.signature);
     const pubKeyBytes = new PublicKey(params.publicKey).toBytes();
 
-    const isValid = nacl.sign.detached.verify(messageBytes, signatureBytes, pubKeyBytes);
+    const isValid = ed25519.verify(signatureBytes, messageBytes, pubKeyBytes);
 
     return success({
       valid: isValid,
