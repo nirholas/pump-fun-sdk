@@ -275,3 +275,4 @@ cargo run --release -- -p A -o /tmp/test.json     # Real generation
 - Using `Mutex` instead of atomics for hot-path counters creates contention
 - Case-insensitive matching changes effective alphabet from 58 to ~34 unique characters
 
+
