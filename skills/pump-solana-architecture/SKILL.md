@@ -90,3 +90,4 @@ const extendIx = await PUMP_SDK.extendAccountInstruction({
 - `canonicalPumpPoolPda` uses the external pump-swap-sdk, not the Pump program
 - Mayhem PDAs are on a separate program (`MAyhSm...`)
 - PDA derivation failures indicate an invalid bump — the address is off the Ed25519 curve
+
