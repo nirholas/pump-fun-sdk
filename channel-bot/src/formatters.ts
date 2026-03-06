@@ -341,60 +341,48 @@ export function formatGraduationFeed(
         L.push(`💹 MC: ${mcStr}`);
     }
 
-    // ━━ STATS BLOCK (tree-style ├ / └) ━━━━━━━━━━━━━━━━━
+    // ━━ STATS BLOCK ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     L.push('');
-    L.push('📊 <b>Stats:</b>');
 
-    // Accumulate stat lines — rendered with ├/└ prefixes at the end
-    const stats: string[] = [];
-
-    // 4.1 Holders count
+    // Holders + top-10 on one line
     const holderData = enrichment?.holders;
     if (holderData && holderData.totalHolders > 0) {
-        stats.push(`👥: ${holderData.totalHolders.toLocaleString()}`);
-
-        // 4.2 Top-10% + top-5 individual breakdown
+        let holderLine = `👥 ${holderData.totalHolders.toLocaleString()}`;
         if (holderData.top10Pct > 0) {
             const nonPool = holderData.topHolders.filter(h => !h.isPool);
-            const top5 = nonPool.slice(0, 5).map(h => `${h.pct.toFixed(2)}%`).join(', ');
-            const top10Str = top5
-                ? `${holderData.top10Pct.toFixed(0)}% [${top5}]`
-                : `${holderData.top10Pct.toFixed(0)}%`;
-            stats.push(`🔟: ${top10Str}`);
+            const top5 = nonPool.slice(0, 5).map(h => `${h.pct.toFixed(1)}%`).join(', ');
+            holderLine += `  ·  🔟 ${holderData.top10Pct.toFixed(0)}%${top5 ? ` [${top5}]` : ''}`;
         }
+        L.push(holderLine);
     }
 
-    // 5.1 Dev token supply %
+    // Dev % + SOL balance on one line
     const dw = enrichment?.devWallet;
-    if (dw && dw.tokenSupplyPct > 0.001) {
-        stats.push(`👨‍💻 Dev: ${dw.tokenSupplyPct.toFixed(2)}%`);
-    }
-
-    // 5.2 Dev wallet SOL balance
+    const devParts: string[] = [];
+    if (dw && dw.tokenSupplyPct > 0.001) devParts.push(`👨‍💻 ${dw.tokenSupplyPct.toFixed(2)}%`);
     if (dw) {
         const devSolStr = dw.solBalance >= 1 ? dw.solBalance.toFixed(2) : dw.solBalance.toFixed(4);
         const devUsdStr = solUsdPrice > 0 ? ` [$${(dw.solBalance * solUsdPrice).toFixed(0)}]` : '';
-        stats.push(`👜: ${devSolStr} SOL${devUsdStr}`);
+        devParts.push(`👜 ${devSolStr} SOL${devUsdStr}`);
     }
+    if (devParts.length > 0) L.push(devParts.join('  ·  '));
 
-    // 5.3 Dev history: launch count + best ATH + rug estimate
+    // Launch history
     if (creator && creator.totalLaunches > 0) {
         const graduated = creator.recentCoins.filter(c => c.complete && c.usdMarketCap > 0);
         const topLaunch = graduated.length > 0
             ? graduated.reduce((max, c) => c.usdMarketCap > max.usdMarketCap ? c : max, graduated[0])
             : null;
-        let devLine = `🚀 ${creator.totalLaunches} launch${creator.totalLaunches !== 1 ? 'es' : ''}`;
+        let histLine = `🚀 ${creator.totalLaunches} launch${creator.totalLaunches !== 1 ? 'es' : ''}`;
         if (topLaunch && topLaunch.usdMarketCap > 1000) {
             const coinLink = `<a href="https://pump.fun/coin/${topLaunch.mint}">$${esc(topLaunch.symbol)}</a>`;
-            devLine += ` | Best: ${coinLink} ATH $${formatCompact(topLaunch.usdMarketCap)}`;
+            histLine += `  ·  Best: ${coinLink} ATH $${formatCompact(topLaunch.usdMarketCap)}`;
         }
-        if (creator.scamEstimate > 0) {
-            devLine += ` | ⚠️ ${creator.scamEstimate} rug${creator.scamEstimate !== 1 ? 's' : ''}`;
-        }
-        stats.push(devLine);
+        if (creator.scamEstimate > 0) histLine += `  ·  ⚠️ ${creator.scamEstimate} rug${creator.scamEstimate !== 1 ? 's' : ''}`;
+        L.push(histLine);
     }
 
-    // 6.1 Socials row
+    // Socials links
     if (token) {
         const socialParts: string[] = [];
         if (token.twitter) socialParts.push(`<a href="${esc(token.twitter)}">Twitter</a>`);
@@ -403,62 +391,45 @@ export function formatGraduationFeed(
         if (token.githubUrls && token.githubUrls.length > 0) {
             socialParts.push(`<a href="${esc(token.githubUrls[0])}">GitHub</a>`);
         }
-        if (socialParts.length > 0) {
-            stats.push(`Links: ${socialParts.join(' || ')}`);
-        }
+        if (socialParts.length > 0) L.push(socialParts.join('  ·  '));
     }
 
-    // 6.2–6.3 Twitter handle [followers] ✅ + account age
+    // X/Twitter profile — guard against community/i/ URLs which aren't usernames
     if (enrichment?.xProfile) {
         const xp = enrichment.xProfile;
-        const twitterUrl = token?.twitter ?? xp.url;
-        const handle = token?.twitter
+        const rawHandle = token?.twitter
             ? token.twitter.replace(/.*twitter\.com\/|.*x\.com\//, '').replace(/\/+$/, '')
-            : xp.username;
-        const handleLink = `<a href="${esc(twitterUrl)}">@${esc(handle)}</a>`;
+            : null;
+        const isRealHandle = rawHandle != null && !rawHandle.includes('/');
+        const twitterUrl = isRealHandle && token?.twitter ? token.twitter : (xp.url ?? `https://x.com/${xp.username}`);
+        const handle = isRealHandle ? rawHandle : xp.username;
         const followerStr = xp.followers > 0 ? ` [${formatFollowerCount(xp.followers)}]` : '';
         const verifiedStr = xp.verified ? ' ✅' : '';
-        stats.push(`🔍 ${handleLink}${followerStr}${verifiedStr}`);
-
-        if (xp.createdAt) {
-            const xAge = new Date(xp.createdAt);
-            if (!isNaN(xAge.getTime())) {
-                const months = Math.floor((Date.now() - xAge.getTime()) / (30 * 24 * 60 * 60 * 1000));
-                const ageStr = months >= 12 ? `${Math.floor(months / 12)}y` : `${months}mo`;
-                stats.push(`Created: ${ageStr} ago`);
-            }
-        }
+        L.push(`𝕏 <a href="${esc(twitterUrl)}">@${esc(handle)}</a>${followerStr}${verifiedStr}`);
     } else if (token?.twitter) {
-        const handle = token.twitter.replace(/.*twitter\.com\/|.*x\.com\//, '').replace(/\/+$/, '');
-        stats.push(`🔍 <a href="${esc(token.twitter)}">@${esc(handle)}</a>`);
+        const rawHandle = token.twitter.replace(/.*twitter\.com\/|.*x\.com\//, '').replace(/\/+$/, '');
+        if (!rawHandle.includes('/')) {
+            L.push(`𝕏 <a href="${esc(token.twitter)}">@${esc(rawHandle)}</a>`);
+        }
     }
 
-    // Triggered by
-    const userLink = `<a href="https://pump.fun/profile/${event.user}">${shortAddr(event.user)}</a>`;
-    stats.push(`Triggered by: ${userLink}`);
-
-    // Render stats with ├ on all lines except └ on the last
-    for (let i = 0; i < stats.length; i++) {
-        L.push(`${i === stats.length - 1 ? '└' : '├'} ${stats[i]}`);
-    }
-
-    // ━━ LINE 7: TRADING BOT QUICK LINKS ━━━━━━━━━━━━━━━━
+    // ━━ TRADING LINKS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     L.push('');
-    const bots: Array<{ abbr: string; url: string }> = [
-        { abbr: 'Axiom', url: `https://axiom.trade/t/${mint}?ref=nich` },
-        { abbr: 'GMGN',  url: `https://gmgn.ai/sol/token/${mint}?ref=nichxbt` },
-        { abbr: 'Padre', url: `https://t.me/padre_trading_bot?start=token_${mint}_ref_nichxbt` },
-    ];
-    L.push(bots.map(b => `<a href="${b.url}">${b.abbr}</a>`).join(' | '));
+    L.push(
+        `<a href="https://axiom.trade/t/${mint}?ref=nich">Axiom</a>` +
+        `  ·  <a href="https://gmgn.ai/sol/token/${mint}?ref=nichxbt">GMGN</a>` +
+        `  ·  <a href="https://t.me/padre_trading_bot?start=token_${mint}_ref_nichxbt">Padre</a>`,
+    );
 
-    // ━━ LINE 8: TX LINKS + TIMESTAMP ━━━━━━━━━━━━━━━━━━━
+    // ━━ FOOTER ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     L.push('');
     const txLink = `<a href="https://solscan.io/tx/${event.txSignature}">TX</a>`;
     const pfLink = `<a href="https://pump.fun/coin/${mint}">pump.fun</a>`;
     const solscanLink = `<a href="https://solscan.io/token/${mint}">Solscan</a>`;
     const dexLink = `<a href="https://dexscreener.com/solana/${mint}">DexScreener</a>`;
-    L.push(`🔗 ${txLink} · ${pfLink} · ${solscanLink} · ${dexLink}`);
-    L.push(`🕐 ${formatTime(event.timestamp)}`);
+    L.push(`🔗 ${txLink}  ·  ${pfLink}  ·  ${solscanLink}  ·  ${dexLink}`);
+    const userLink = `<a href="https://pump.fun/profile/${event.user}">${shortAddr(event.user)}</a>`;
+    L.push(`by ${userLink}  ·  🕐 ${formatTime(event.timestamp)}`);
 
     return {
         imageUrl: token?.imageUri || null,
