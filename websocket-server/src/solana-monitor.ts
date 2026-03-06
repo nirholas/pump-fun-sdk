@@ -114,7 +114,8 @@ export class SolanaMonitor {
     }
   }
 
-  private processPumpCoins(coins: Record<string, unknown>[]): void {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private processPumpCoins(coins: Record<string, any>[]): void {
     let newCount = 0;
 
     for (const coin of coins) {
@@ -170,7 +171,8 @@ export class SolanaMonitor {
     }
   }
 
-  private extractGithubUrls(coin: Record<string, unknown>): string[] {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private extractGithubUrls(coin: Record<string, any>): string[] {
     const urls = new Set<string>();
     const ghPattern = /https?:\/\/(www\.)?github\.com\/[^\s"'<>)]+/gi;
 
@@ -223,7 +225,8 @@ export class SolanaMonitor {
     });
 
     this.ws.on('message', (data) => {
-      let msg: Record<string, unknown>;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let msg: Record<string, any>;
       try { msg = JSON.parse(data.toString()); } catch { return; }
 
       if (msg.id === 1 && msg.result !== undefined) {

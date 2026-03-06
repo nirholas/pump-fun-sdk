@@ -71,6 +71,10 @@ export interface XProfile {
     description: string | null;
     /** Profile URL */
     url: string;
+    /** Account creation date (ISO string from Twitter) */
+    createdAt: string | null;
+    /** Tweet count */
+    tweetCount: number;
 }
 
 export type InfluencerTier = 'mega' | 'influencer' | 'notable' | null;
@@ -193,6 +197,8 @@ export async function fetchXProfile(username: string): Promise<XProfile | null> 
             verified: Boolean(legacy.verified || userResult.is_blue_verified),
             description: legacy.description ? String(legacy.description) : null,
             url: `https://x.com/${encodeURIComponent(String(legacy.screen_name ?? username))}`,
+            createdAt: legacy.created_at ? String(legacy.created_at) : null,
+            tweetCount: parseInt(String(legacy.statuses_count ?? '0'), 10) || 0,
         };
 
         setCache(username, profile);
