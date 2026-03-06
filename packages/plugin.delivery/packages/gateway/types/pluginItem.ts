@@ -34,3 +34,4 @@ export interface PluginItem<Result = any, RunnerParams = any> {
  * @returns 运行结果的 Promise
  */
 export type PluginRunner<Params = object, Result = any> = (params: Params) => Promise<Result>;
+
