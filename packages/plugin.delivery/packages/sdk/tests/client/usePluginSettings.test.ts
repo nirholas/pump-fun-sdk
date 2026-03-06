@@ -59,3 +59,4 @@ describe('usePluginSettings', () => {
     expect(setPluginSettingsSpy).toHaveBeenCalledWith(updatedSettings);
   });
 });
+
