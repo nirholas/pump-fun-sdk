@@ -78,3 +78,4 @@ done
 echo "=== Done ==="
 echo "Published: $SUCCESS"
 echo "Failed: $FAILED"
+
