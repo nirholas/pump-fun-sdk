@@ -164,3 +164,4 @@ const privateKeySchema = z.string().min(64).max(128);
 - Test shutdown zeroization by inspecting memory after SIGINT
 - Integration test: connect a real MCP client to the server over stdio
 
+
