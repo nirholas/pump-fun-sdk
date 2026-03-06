@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PySphere - An Online Python Interpreter</title>
+    <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/theme/eclipse.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/addon/hint/show-hint.min.css">
+    <style>
+        body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #ffffff; /* Set background to white */
+        color: #333;
+    }
+
+        .container {
+            max-width: 90%;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #fff;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+
+        h1 {
+            font-size: 24px;
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .CodeMirror {
+            height: auto;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        .button-container {
+            text-align: right;
+            margin-top: 20px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            color: #fff;
+            background-color: #007BFF;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        #output {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #f0f0f0;
+            border: solid 1px #ddd;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>PySphere - An Online Python Interpreter</h1>
+        <textarea id="code" name="code"></textarea>
+        <div class="button-container">
+            <button id="runButton">Run Locally</button>
+            <button id="saveButton">Save</button>
+        </div>
+        <pre id="output"></pre>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/python/python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/addon/hint/show-hint.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/addon/hint/python-hint.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/skulpt@1.0.0/dist/skulpt.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/skulpt@1.0.0/dist/skulpt-stdlib.js"></script>
+    <script>
+        var editor = CodeMirror.fromTextArea(document.getElementById('code'), {
+            mode: "python",
+            theme: "eclipse",
+            lineNumbers: true,
+            autoCloseBrackets: true,
+            matchBrackets: true,
+            showCursorWhenSelecting: true,
+            extraKeys: {"Ctrl-Space": "autocomplete"}
+        });
+
+        function builtinRead(x) {
+            if (Sk.builtinFiles === undefined || Sk.builtinFiles["files"][x] === undefined)
+                throw "File not found: '" + x + "'";
+            return Sk.builtinFiles["files"][x];
+        }
+
+        function runCode() {
+            var prog = editor.getValue();
+            var mypre = document.getElementById("output");
+            mypre.innerHTML = '';
+            Sk.pre = "output";
+            Sk.configure({ output: outf, read: builtinRead });
+            var myPromise = Sk.misceval.asyncToPromise(function() {
+                return Sk.importMainWithBody("<stdin>", false, prog, true);
+            });
+            myPromise.then(function(mod) {
+                console.log('success');
+            },
+                function(err) {
+                    mypre.innerHTML = err.toString();
+                });
+        }
+
+        function outf(text) {
+            var mypre = document.getElementById("output");
+            mypre.innerHTML += text;
+        }
+
+        document.getElementById("runButton").onclick = runCode;
+        document.getElementById("saveButton").onclick = function() {
+            localStorage.setItem('pythonCode', editor.getValue());
+        };
+
+        function loadCode() {
+            var storedCode = localStorage.getItem('pythonCode');
+            if (storedCode) {
+                editor.setValue(storedCode);
+            }
+        }
+
+        window.onload = loadCode;
+    </script>
+</body>
+</html>

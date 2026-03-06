@@ -1,0 +1,20 @@
+{
+  "author": "SperaxOS",
+  "createdAt": "2025-01-01",
+  "homepage": "https://github.com/nirholas/plugin.delivery",
+  "identifier": "dexscreener",
+  "manifest": "https://plugin.delivery/dexscreener/manifest.json",
+  "meta": {
+    "avatar": "📈",
+    "description": "Real-time DEX pair data, new listings, trending pairs across all chains",
+    "tags": [
+      "dex",
+      "prices",
+      "trading",
+      "pairs"
+    ],
+    "title": "DexScreener",
+    "category": "stocks-finance"
+  },
+  "schemaVersion": 1
+}

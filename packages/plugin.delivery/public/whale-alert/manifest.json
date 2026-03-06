@@ -1,0 +1,30 @@
+{
+  "$schema": "https://plugin.delivery/schema.json",
+  "identifier": "whale-alert",
+  "openapi": "https://api.whale-alert.io/openapi.json",
+  "settings": {
+    "type": "object",
+    "required": [
+      "WHALE_ALERT_API_KEY"
+    ],
+    "properties": {
+      "WHALE_ALERT_API_KEY": {
+        "title": "API Key",
+        "description": "Your Whale Alert API key",
+        "type": "string",
+        "format": "password"
+      }
+    }
+  },
+  "meta": {
+    "avatar": "🐋",
+    "title": "Whale Alert",
+    "description": "Track large cryptocurrency transactions over $1M across blockchains",
+    "tags": [
+      "whale",
+      "transactions",
+      "alerts"
+    ]
+  },
+  "version": "1"
+}

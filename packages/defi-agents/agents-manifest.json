@@ -1,0 +1,311 @@
+{
+  "accessPatterns": {
+    "getAllAgents": "GET /index.json",
+    "getAgentsByLanguage": "GET /index.{locale}.json",
+    "getSingleAgent": "GET /{agent-id}.json",
+    "getSingleAgentLocalized": "GET /{agent-id}.{locale}.json",
+    "getManifest": "GET /agents-manifest.json"
+  },
+  "agents": {
+    "sperax": {
+      "count": 23,
+      "description": "Sperax ecosystem agents for portfolio management, trading, analytics, and DeFi",
+      "agents": [
+        {
+          "id": "sperax-dashboard",
+          "name": "Sperax Portfolio Dashboard",
+          "description": "Portfolio overview dashboard with total value, allocation, and performance metrics",
+          "category": "portfolio",
+          "tags": ["portfolio", "dashboard", "overview"]
+        },
+        {
+          "id": "sperax-assets-tracker",
+          "name": "Sperax Assets Tracker",
+          "description": "Asset tracking and analytics for portfolio positions and valuations",
+          "category": "portfolio",
+          "tags": ["assets", "tracking", "analytics"]
+        },
+        {
+          "id": "sperax-analytics-expert",
+          "name": "Sperax Analytics Expert",
+          "description": "Performance analytics and insights for portfolio optimization",
+          "category": "portfolio",
+          "tags": ["analytics", "performance", "insights"]
+        },
+        {
+          "id": "sperax-wallet-manager",
+          "name": "Sperax Wallet Manager",
+          "description": "Wallet management and configuration assistance",
+          "category": "portfolio",
+          "tags": ["wallet", "management", "security"]
+        },
+        {
+          "id": "sperax-trading-assistant",
+          "name": "Sperax Trading Assistant",
+          "description": "Trade execution helper with market analysis",
+          "category": "trading",
+          "tags": ["trading", "execution", "assistant"]
+        },
+        {
+          "id": "sperax-ai-trading-bot",
+          "name": "Sperax AI Trading Bot",
+          "description": "AI-powered trading strategies and automation",
+          "category": "trading",
+          "tags": ["trading", "bot", "ai", "automation"]
+        },
+        {
+          "id": "sperax-signal-bot",
+          "name": "Sperax Signal Bot",
+          "description": "Trading signals and market alerts",
+          "category": "trading",
+          "tags": ["signals", "alerts", "trading"]
+        },
+        {
+          "id": "sperax-dca-bot",
+          "name": "Sperax DCA Bot",
+          "description": "Dollar-cost averaging automation and strategies",
+          "category": "trading",
+          "tags": ["dca", "automation", "strategy"]
+        },
+        {
+          "id": "sperax-arbitrage-bot",
+          "name": "Sperax Arbitrage Bot",
+          "description": "Arbitrage opportunity detection and execution",
+          "category": "trading",
+          "tags": ["arbitrage", "opportunities", "trading"]
+        },
+        {
+          "id": "sperax-pump-screener",
+          "name": "Sperax Pump Screener",
+          "description": "Momentum screening and trend analysis",
+          "category": "trading",
+          "tags": ["screening", "momentum", "trends"]
+        },
+        {
+          "id": "sperax-defi-center",
+          "name": "Sperax DeFi Center",
+          "description": "DeFi protocol aggregator and explorer",
+          "category": "defi",
+          "tags": ["defi", "protocols", "aggregator"]
+        },
+        {
+          "id": "sperax-defi-protocols",
+          "name": "Sperax DeFi Protocols",
+          "description": "DeFi protocol information and comparison",
+          "category": "defi",
+          "tags": ["defi", "protocols", "comparison"]
+        },
+        {
+          "id": "sperax-strategies-marketplace",
+          "name": "Sperax Strategies Marketplace",
+          "description": "Trading strategy discovery and management",
+          "category": "trading",
+          "tags": ["strategies", "marketplace", "trading"]
+        },
+        {
+          "id": "sperax-bot-templates",
+          "name": "Sperax Bot Templates",
+          "description": "Bot template library and customization",
+          "category": "trading",
+          "tags": ["templates", "bots", "automation"]
+        },
+        {
+          "id": "sperax-settings-manager",
+          "name": "Sperax Settings Manager",
+          "description": "Settings and configuration management",
+          "category": "portfolio",
+          "tags": ["settings", "configuration"]
+        },
+        {
+          "id": "sperax-help-center",
+          "name": "Sperax Help Center",
+          "description": "Help and documentation for Sperax ecosystem",
+          "category": "education",
+          "tags": ["help", "documentation", "support"]
+        },
+        {
+          "id": "sperax-yield-aggregator",
+          "name": "Sperax Yield Aggregator",
+          "description": "Yield farming opportunities and strategies",
+          "category": "defi",
+          "tags": ["yield", "farming", "strategies"]
+        },
+        {
+          "id": "sperax-liquidity-strategist",
+          "name": "Sperax Liquidity Strategist",
+          "description": "Liquidity provision and optimization",
+          "category": "defi",
+          "tags": ["liquidity", "strategies", "optimization"]
+        },
+        {
+          "id": "sperax-portfolio-tracker",
+          "name": "Sperax Portfolio Tracker",
+          "description": "Advanced portfolio tracking and management",
+          "category": "portfolio",
+          "tags": ["portfolio", "tracking", "management"]
+        },
+        {
+          "id": "sperax-risk-monitor",
+          "name": "Sperax Risk Monitor",
+          "description": "Risk monitoring and alerts for portfolios",
+          "category": "security",
+          "tags": ["risk", "monitoring", "alerts"]
+        },
+        {
+          "id": "sperax-governance-guide",
+          "name": "Sperax Governance Guide",
+          "description": "Governance participation and voting guidance",
+          "category": "education",
+          "tags": ["governance", "voting", "guide"]
+        },
+        {
+          "id": "sperax-onboarding-guide",
+          "name": "Sperax Onboarding Guide",
+          "description": "Getting started guide for new users",
+          "category": "education",
+          "tags": ["onboarding", "guide", "education"]
+        },
+        {
+          "id": "sperax-bridge-assistant",
+          "name": "Sperax Bridge Assistant",
+          "description": "Cross-chain bridge assistance and guidance",
+          "category": "defi",
+          "tags": ["bridge", "crosschain", "assistance"]
+        }
+      ]
+    },
+    "defi": {
+      "count": 35,
+      "description": "DeFi and crypto analysis agents for yield, risk, security, and trading",
+      "subcategories": {
+        "yield": {
+          "agents": [
+            "defi-yield-farmer",
+            "staking-rewards-calculator",
+            "yield-sustainability-analyst",
+            "yield-dashboard-builder"
+          ]
+        },
+        "risk": {
+          "agents": [
+            "liquidation-risk-manager",
+            "defi-risk-scoring-engine",
+            "defi-insurance-advisor",
+            "impermanent-loss-calculator"
+          ]
+        },
+        "trading": {
+          "agents": [
+            "dex-aggregator-optimizer",
+            "gas-optimization-expert",
+            "mev-protection-advisor",
+            "airdrop-hunter"
+          ]
+        },
+        "security": {
+          "agents": ["smart-contract-auditor", "bridge-security-analyst", "wallet-security-advisor"]
+        },
+        "analysis": {
+          "agents": [
+            "protocol-revenue-analyst",
+            "protocol-treasury-analyst",
+            "governance-proposal-analyst",
+            "narrative-trend-analyst"
+          ]
+        },
+        "education": {
+          "agents": [
+            "defi-onboarding-mentor",
+            "apy-vs-apr-educator",
+            "defi-protocol-comparator",
+            "stablecoin-comparator",
+            "layer2-comparison-guide"
+          ]
+        },
+        "other": {
+          "agents": [
+            "alpha-leak-detector",
+            "crypto-tax-strategist",
+            "liquidity-pool-analyzer",
+            "nft-liquidity-advisor",
+            "portfolio-rebalancing-advisor",
+            "pump-fun-sdk-expert",
+            "spa-tokenomics-analyst",
+            "token-unlock-tracker",
+            "usds-stablecoin-expert",
+            "vespa-optimizer",
+            "whale-watcher"
+          ]
+        }
+      }
+    }
+  },
+  "apiVersion": "1.0",
+  "categories": ["trading", "defi", "portfolio", "security", "education"],
+  "description": "Production-ready AI agent definitions API - 58 specialized agents for DeFi, portfolio management, trading, and Web3 workflows",
+  "documentation": "https://sperax.click/docs/API.md",
+  "endpoints": {
+    "allAgentsEnglish": "https://sperax.click/index.json",
+    "allAgentsByLanguage": "https://sperax.click/index.{locale}.json",
+    "singleAgent": "https://sperax.click/{agent-id}.json",
+    "singleAgentByLanguage": "https://sperax.click/{agent-id}.{locale}.json",
+    "manifest": "https://sperax.click/agents-manifest.json",
+    "schema": "https://sperax.click/schema/speraxAgentSchema_v1.json"
+  },
+  "features": [
+    "58 specialized AI agents",
+    "18 language translations",
+    "RESTful JSON API",
+    "No rate limiting",
+    "GitHub Pages CDN",
+    "Open source (MIT)",
+    "Universal compatibility",
+    "No vendor lock-in",
+    "Machine-readable indexes",
+    "Automated i18n workflow"
+  ],
+  "homepage": "https://github.com/nirholas/defi-agents",
+  "license": "MIT",
+  "name": "DeFi Agents API",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nirholas/defi-agents.git"
+  },
+  "schemaVersion": 1,
+  "stats": {
+    "totalAgents": 58,
+    "supportedLanguages": 18,
+    "categories": 5,
+    "speraxAgents": 23,
+    "defiAgents": 35
+  },
+  "supportedLanguages": [
+    "en-US",
+    "ar",
+    "bg-BG",
+    "zh-CN",
+    "zh-TW",
+    "de-DE",
+    "es-ES",
+    "fa-IR",
+    "fr-FR",
+    "it-IT",
+    "ja-JP",
+    "ko-KR",
+    "nl-NL",
+    "pl-PL",
+    "pt-BR",
+    "ru-RU",
+    "tr-TR",
+    "vi-VN"
+  ],
+  "updated": "2025-12-21",
+  "usage": {
+    "curl": "curl https://sperax.click/index.json",
+    "python": "import requests; agents = requests.get('https://sperax.click/index.json').json()",
+    "javascript": "const agents = await fetch('https://sperax.click/index.json').then(r => r.json())",
+    "documentation": "https://github.com/nirholas/defi-agents/blob/main/docs/API.md"
+  },
+  "version": "1.0.0"
+}
+

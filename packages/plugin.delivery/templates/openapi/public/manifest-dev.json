@@ -1,0 +1,14 @@
+{
+  "$schema": "https://plugin.delivery/schema.json",
+  "identifier": "openapi-plugin-template",
+  "api": [],
+  "openapi": "http://localhost:3400/openapi.json",
+  "gateway": "http://localhost:3400/api/gateway",
+  "meta": {
+    "avatar": "📄",
+    "title": "OpenAPI Plugin",
+    "description": "A plugin using OpenAPI specification",
+    "tags": ["openapi", "template"]
+  },
+  "version": "1"
+}

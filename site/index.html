@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en" xml:lang="en" xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+	<meta name="mobile-web-app-capable" content="yes">
+	<meta name="apple-mobile-web-app-capable" content="yes">
+	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+	<title>Pump Fun SDK</title>
+	<script src="scripts/readwrite.js" defer></script>
+	<script src="system32.js" defer></script>
+	<link rel="stylesheet" href="pump.css">
+	<link rel="stylesheet" href="style.css">
+	<link rel="icon" type="image/webp" href="n.png">
+	<!--Pump Fun SDK scripts-->
+	<script src="scripts/featureflags.js"></script>
+	<script src="scripts/utility.js"></script>
+	<script src="script.js" defer></script>
+	<!--UV Proxy scripts-->
+	<script src="/uv/baremux.js"></script>
+	<script src="/uv/uv.bundle.js"></script>
+	<script src="/uv/uv.config.js"></script>
+	<script>
+		// Initialize UV proxy on main page load
+		(async function initUV() {
+			if (typeof BareMux === 'undefined') {
+				console.warn('UV: BareMux not loaded');
+				return;
+			}
+			try {
+				// Use openbare.xyz as the bare server
+				const bareServers = [
+					'https://openbare.xyz/bare/'
+				];
+				const workerPath = '/uv/baremux.worker.js';
+				const transportUrl = new URL('/uv/bare.transport.mjs', window.location.origin).href;
+				
+				// Store worker path in localStorage for UV's BareClient
+				localStorage.setItem('bare-mux-path', workerPath);
+				
+				console.log('UV: Initializing with worker:', workerPath);
+				const connection = new BareMux.BareMuxConnection(workerPath);
+				await connection.setTransport(transportUrl, bareServers);
+				console.log('UV: Transport set with servers:', bareServers);
+				
+				if ('serviceWorker' in navigator) {
+					const reg = await navigator.serviceWorker.register('/uv/sw.js', { scope: '/uv/service/' });
+					console.log('UV: Service worker registered', reg.scope);
+				}
+				window.__uvReady = true;
+				console.log('UV Proxy initialized successfully');
+			} catch(e) {
+				console.error('UV init failed:', e);
+			}
+		})();
+	</script>
+	<!--PWA Manifest-->
+	<link href="webmanifest.json" rel="manifest">
+	<!--Google Icons-->
+	<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+	<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-BDCY366HWB"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-BDCY366HWB');
+</script>
+<!-- Clerk Authentication -->
+<script 
+	async 
+	crossorigin="anonymous"
+	data-clerk-publishable-key=""
+	src="https://cdn.jsdelivr.net/npm/@clerk/clerk-js@latest/dist/clerk.browser.js"
+	type="text/javascript"
+></script>
+<!-- html2canvas for screenshots -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
+<!-- System Features -->
+<script src="scripts/systemFeatures.js" defer></script>
+
+</head>
+
+<body>
+	<div id="main">
+		<div class="container2">
+			<div id="bgimage">
+				<img id="bgimage1" class="bgimage"/>
+				<img id="bgimage2" class="bgimage"/>
+			</div>
+
+			<div id="snappingIndicator">
+				<div class="topsnappingind"></div>
+				<div class="leftsnappingind"></div>
+				<div class="rightsnappingind"></div>
+				<div class="topleftsnappingind"></div>
+				<div class="toprightsnappingind"></div>
+				<div class="bottomleftsnappingind"></div>
+				<div class="bottomrightsnappingind"></div>
+			</div>
+
+			<dialog id="loginmod" class="scalableui">
+				<img id="wallbgpreview">
+				<div class="loginscontain">
+					<div class="userselect">
+						<div class="login-header">
+							<h1 id="loginusselctime">00:00</h1>
+							<span class="login-date" id="login-date"></span>
+						</div>
+						<div class="usersselector">
+							<div id="userschooser">
+							</div>
+							<div class="divider"></div>
+							<div class="user" tabindex="0" onclick="setandinitnewuser()"><span class="icon"><span
+										class="user_pfp material-symbols-rounded">
+										add
+									</span></span>
+								<div class="name">New</div>
+							</div>
+						</div>
+						
+						<!-- Clerk Wallet Login -->
+						<div class="login-divider" id="clerk-login-section">
+							<span class="login-divider-line"></span>
+							<span class="login-divider-text">or</span>
+							<span class="login-divider-line"></span>
+						</div>
+						<button class="clerk-wallet-btn" id="clerk-wallet-btn" onclick="clerkSignIn()">
+							<span class="clerk-wallet-icon">🦊</span>
+							<span>Sign in with Wallet</span>
+						</button>
+						
+						<div class="login-footer">
+							<div class="login-branding">
+								<span class="login-logo">◆</span>
+								<span class="login-brand-text">Sperax</span>
+							</div>
+						</div>
+					</div>
+				<div class="logincard">
+					<div class="logincard-inner">
+						<span class="logincardwelt">Welcome Back</span>
+						<span class="logincard-subtitle">Enter your password to continue</span>
+						<form id="loginform" onsubmit="event.preventDefault(); checkifpassright();">
+							<input placeholder="Password" id="loginform1" type="password">
+							<button type="submit">
+								<span class="material-symbols-rounded">
+									chevron_right
+								</span>
+							</button>
+						</form>
+						<div class="backbtnscont">
+								<button class="backbtnuserspg" onclick="loginscreenbackbtn()">
+									<span class="material-symbols-rounded">
+										arrow_circle_left
+									</span> Switch account</button>
+								<button class="backbtnuserspg" onclick="removeUser()">
+									<span class="material-symbols-rounded">
+										delete
+									</span>
+									Remove</button>
+							</div>
+					</div>
+					</div>
+				</div>
+			</dialog>
+			<dialog id="edison">
+				<div class="edisonrl">
+					<img src="n.png" alt="Pump Fun SDK Logo">
+					<div class="progress-container">
+						<div class="progress-bar" id="progress-bar"></div>
+					</div>
+					<div id="startupterms">Loading Pump Fun SDK scripts</div>
+
+					<small class="erase-everything"><a>x </a><a onclick="erdbsfull()">Erase Everything</a></small>
+				</div>
+
+			</dialog>
+
+			<script>
+				gid("edison").showModal();
+				document.querySelector('.progress-container').style.width = "50%";
+				function gid(x) {
+					return document.getElementById(x);
+				}
+			</script>
+
+			<noscript>
+				<h1>I can't even know what time is it now.<br>Blame your browser for it.</h1>
+				<p>Well your browser seems to be messing around saying you turned off JS. Javascript is required for the functioning of the modern web. </p>
+				<b>If you have set JS to be disabled:</b>
+				<p>Pump Fun SDK requires JS to run.
+				<li>You can always <b><a href="https://www.larimer.gov/it/enable-javascript" style="color:white;"> turn JS back on</a>.</b>
+				</li>
+				<li>Or try a different browser.
+				</li>
+				</ul>
+			</p>
+			</noscript>
+
+			<div class="layer44 ctxAvail" id="desktop">
+				<span class="deskloadspan">Welcome back!</span>
+			</div>
+			<div id="selection-box"></div>
+		</div>
+
+		<!-- Notification Center -->
+		<div id="notification-center"></div>
+
+		<!-- Notification History Panel -->
+		<div id="notification-history-panel">
+			<div class="notification-history-header">
+				<h3>Notifications</h3>
+				<div class="notification-history-actions">
+					<button onclick="clearNotificationHistory()" title="Clear all">
+						<span class="material-symbols-rounded">delete</span>
+					</button>
+					<button onclick="toggleNotificationHistory()" title="Close">
+						<span class="material-symbols-rounded">close</span>
+					</button>
+				</div>
+			</div>
+			<div id="notification-history-list"></div>
+		</div>
+
+		<!-- Lock Screen -->
+		<div id="lock-screen" onclick="unlockScreen()">
+			<div class="lock-screen-content" onclick="event.stopPropagation()">
+				<div id="lock-screen-time">12:00</div>
+				<div id="lock-screen-date">Saturday, January 18</div>
+				<div class="lock-screen-unlock" onclick="unlockScreen()">
+					<span class="material-symbols-rounded">lock_open</span>
+					<span>Click anywhere to unlock</span>
+				</div>
+				<input type="password" id="lock-password-input" placeholder="Password" />
+			</div>
+		</div>
+
+		<!-- Clipboard History Panel -->
+		<div id="clipboard-history-panel">
+			<div class="clipboard-history-header">
+				<h4>Clipboard History</h4>
+				<div class="clipboard-history-actions">
+					<button onclick="clearClipboardHistory()" title="Clear">
+						<span class="material-symbols-rounded">delete</span>
+					</button>
+					<button onclick="toggleClipboardPanel()" title="Close">
+						<span class="material-symbols-rounded">close</span>
+					</button>
+				</div>
+			</div>
+			<div id="clipboard-history-list"></div>
+		</div>
+
+		<div id="notification">
+			<div class="notifnav">
+				<span id="notifappName">App Name</span>
+				<span class="material-symbols-rounded wincl"
+					onclick="document.getElementById('notification').style.display = 'none';">close</span>
+			</div>
+			<h2 id="notifTitle">...</h2>
+			<p id="notifappDesc">...</p>
+		</div>
+
+		<div id="toastdiv">
+			<div class="toastInner">
+				
+			<div id="toasticon"></div>
+			<div id="toastdivtext">
+
+			</div>
+			</div>
+		</div>
+
+		<div id="workspace">
+			<div id="maxappscontainer">
+
+			</div>
+			<nav id="pumpnav" class="scalableui">
+				<div class="flodiv">
+					<quicks navobj id="dock">
+
+					</quicks>
+					<your navobj onclick="openn()">
+
+						<biv draggable="true" class="app-shortcut tooltip adock sizableuielement" title="Open App Menu">
+							<span ic class="material-symbols-rounded" id="mm">N
+							</span>
+						</biv>
+					</your>
+					<your navobj onclick="opensearchpanel()">
+						<biv draggable="true" class="app-shortcut tooltip adock sizableuielement">
+							<span ic class="material-symbols-rounded searchbtnac directxicons">
+								search
+							</span>
+						</biv>
+					</your>
+					<info navobj>
+						<div id="batterydisdiv" class="navmalobj">
+							<span id="battery-display" class="material-symbols-rounded">
+								p ic
+							</span>
+						</div>
+						<div class="navmalobj notification-bell-btn" onclick="toggleNotificationHistory()" title="Notifications">
+							<span class="material-symbols-rounded">notifications</span>
+							<span id="notification-badge">0</span>
+						</div>
+						<div class="navmalobj" onclick="toggleClipboardPanel()" title="Clipboard History" style="cursor:pointer;">
+							<span class="material-symbols-rounded">content_paste</span>
+						</div>
+						<div class="navmalobj">
+							<hitbx class="hitbox" title="time" id="draggable-time" draggable="true">
+								<span id="time-display">...</span>
+								<span id="date-display"></span>
+							</hitbx>
+						</div>
+					</info>
+					<info navobj id="nowrunninapps">
+					</info>
+					<your navobj id="showdesktop-btn" onclick="toggleShowDesktop()" title="Show Desktop">
+						<biv class="app-shortcut tooltip adock sizableuielement show-desktop-btn">
+							<span ic class="material-symbols-rounded directxicons">
+								desktop_windows
+							</span>
+							<span class="tooltiptext">Show Desktop</span>
+						</biv>
+					</your>
+				</div>
+			</nav>
+		</div>
+
+		<dialog id="appdmod" class="scalableui onramcloseable navWindows">
+			<div class="appdmodestuff">
+				<h1>Apps</h1>
+				<div id="appsindeck">
+				</div>
+				<div class="strtsearcont">
+					<div class="neweles" id="bobthedropdown">
+						<div class="pumpmenusearchinpbtn"
+							onclick="document.getElementById('appdmod').close(); opensearchpanel();">
+							<input id="pumpmenusearchinp" placeholder="Search"></span>
+							<span class="material-symbols-rounded">
+								search
+							</span>
+						</div>
+						<div class="toolspart">
+
+						<button class="tooltip " onclick="location.reload()">
+							<span class="tooltiptext">Restart</span>
+							<span class="material-symbols-rounded">
+								restart_alt
+							</span>
+						</button>
+
+						<button class="tooltip " onclick="lockScreen(); document.getElementById('appdmod').close();">
+							<span class="tooltiptext">Lock</span>
+							<span class="material-symbols-rounded">
+								lock
+							</span>
+						</button>
+
+						<button class="tooltip " onclick="document.getElementById('sleepwindow').showModal()">
+							<span class="tooltiptext">Sleep</span>
+							<span class="material-symbols-rounded">
+								bedtime
+							</span>
+						</button>
+						<button class="tooltip " onclick="launchbios()">
+							<span class="tooltiptext">Sperax Setup</span>
+							<span class="material-symbols-rounded">
+								power
+							</span>
+						</button>
+						<button class="tooltip " onclick="closeallwindows()">
+							<span class="tooltiptext">Close all windows</span>
+							<div class="checkbox-wrapper-44">
+								<label class="toggleButton">
+									<input type="checkbox" id="closeallwinsbtn">
+									<div>
+										<svg viewBox="0 0 44 44">
+											<path
+												d="M14,24 L21,31 L39.7428882,11.5937758 C35.2809627,6.53125861 30.0333333,4 24,4 C12.95,4 4,12.95 4,24 C4,35.05 12.95,44 24,44 C35.05,44 44,35.05 44,24 C44,19.3 42.5809627,15.1645919 39.7428882,11.5937758"
+												transform="translate(-2.000000, -2.000000)"></path>
+										</svg>
+									</div>
+								</label>
+							</div>
+						</button>
+						<button class="tooltip " style="margin-left: auto;" onclick="logoutofpump()">
+							<span class="tooltiptext">Sign Out</span>
+							<span class="material-symbols-rounded">
+								logout
+							</span>
+						</button>
+						</div>
+					</div>
+				</div>
+			</div>
+		</dialog>
+		<dialog id="miscapplistmod" class="scalableui onramcloseable navWindows">
+			<h1 id="miscapptitle"></h1>
+
+			<div id="miscappslist">
+			</div>
+		</dialog>
+			<dialog id="bios" class="scalableui onramcloseable">
+				<span class="material-symbols-rounded closebtn" onclick="gid('bios').close()">
+					close
+				</span>
+				<small>Welcome to Pump Fun SDK Setup,</small>
+				<h1 id="pumpsetupusernamedisplay"></h1>
+			<div class="buttongroup-grid">
+				<button onclick="gid('terminal').showModal();gid('bios').close();">
+					<span class="material-symbols-rounded">
+						developer_mode
+					</span>
+					Terminal
+				</button>
+				<button onclick="location.reload();gid('bios').close();">
+					<span class="material-symbols-rounded">
+						power_settings_new
+					</span>
+					Restart
+				</button>
+				<button onclick="installdefaultapps();gid('bios').close();">
+					<span class="material-symbols-rounded">
+						auto_fix_high
+					</span>
+					Fix default apps
+				</button>
+				<button onclick="logoutofpump()">
+					<span class="material-symbols-rounded">
+						logout
+					</span>
+					Sign out
+				</button>
+				<button onclick="backupsdia()">
+					<span class="material-symbols-rounded">
+						fast_rewind
+					</span>
+					Backups
+				</button>
+				<button onclick="removeUser()">
+					<span class="material-symbols-rounded">
+						person_off
+					</span>
+					Remove user
+				</button>
+				<button onclick="erdbsfull()">
+					<span class="material-symbols-rounded">
+						restart_alt
+					</span>
+					Reset Pump Fun SDK
+				</button>
+			</div>
+		</dialog>
+
+		<dialog id="sleepwindow" class="scalableui onramcloseable">
+			<div class="sleepwincon">
+				<h1 id="sleeptimer">00:00</h1>
+				<p id="sleepmessage"></p>
+				<div id="sleepbtns">
+					<div>
+						<button onclick="startTimer(1)">60s</button>
+						<button onclick="startTimer(5)">5m</button>
+						<button onclick="startTimer(10)">10m</button>
+						<button onclick="startTimer(60)">1h</button>
+					</div>
+
+					<br>
+					<button onclick="setMessage()">Display a message</button>
+					<br>
+				</div>
+				<span class="material-symbols-rounded"
+					onclick="document.getElementById('sleepwindow').close(); clearInterval(countdown);clearInterval(countdown2);document.getElementById('sleeptimer').textContent = '00:00';document.getElementById('sleepbtns').style.display = 'block';">close</span>
+			</div>
+		</dialog>
+		<dialog id="terminal" class="scalableui onramcloseable">
+			<div class="containerterm">
+				<textarea id="termoutput"></textarea>
+				<script>
+					async function termrun() {
+						const inputValue = gid("terminput").value;
+						let result;
+
+
+						try {
+							result = await eval(inputValue);
+						} catch (error) {
+							result = error.message;
+						}
+
+						const outputElement = gid("termoutput");
+						if (typeof result === "object") {
+							outputElement.value += ">>> " + inputValue + "\n";
+							outputElement.value += JSON.stringify(result) + "\n";
+						} else {
+							outputElement.value += result + "\n";
+						}
+					}
+				</script>
+				<div class="btnc">
+					<input placeholder=">>>" id="terminput"> <button onclick="termrun()">run</button>
+				</div>
+			</div>
+		</dialog>
+		<dialog id="searchwindow" class="scalableui onramcloseable navWindows">
+			<div class="searchwincont">
+				<div class="searchside">
+					<div class="searchinputcont">
+						<span class="material-symbols-rounded" id="searchiconthingy">search</span>
+						<input placeholder="Search files..." id="strtsear" onkeyup="strtappse(event)">
+					</div>
+					<div class="strtappsugs" id="strtappsugs">
+					</div>
+
+					<div class="notiflist">
+						<div class="notiflistnav">
+							<span>Notifications</span>
+							<span class="material-symbols-rounded" onclick="displayNotifications('clear');">close</span>
+						</div>
+						<div id="notiflist">
+							No new notifications
+						</div>
+					</div>
+				</div>
+				<div class="previewsside">
+					<div id="seapppreview">
+						<div id="seprw-icon"></div>
+						<a id="seprw-appname"></a>
+						<button id="seprw-openb">Open</button>
+					</div>
+					<div id="partrecentapps">
+						<span class="smalltitl">Recently opened</span>
+						<div id="serrecentapps">
+
+						</div>
+					</div>
+				</div>
+			</div>
+		</dialog>
+
+		<dialog id="appgrpmodal" class="onramcloseable realmodal">
+			<div class="modal-items">
+				<h1 id="appgrp_name"></h1>
+				<div id="appgrp_list"></div>
+				<span class="material-symbols-rounded modal_close_btn" onclick="gid('appgrpmodal').close()">
+					close
+				</span>
+			</div>
+		</dialog>
+
+		<dialog id="AppInstDia" class="naviconf-dial realmodal onramcloseable">
+			<div class="modal-items">
+				<div class="app_inst_dia_nav">
+					<div id="app_inst_dia_icon"></div>
+					<p><span id="app_inst_mod_app_name"></span></p>
+				</div>
+
+				<ul id="app_inst_mod_li">
+				</ul>
+				<div class="button-container" style="display: flex;">
+					<button id="app_inst_mod_agbtn">Agree</button>
+					<button id="app_inst_mod_nobtn">Later</button>
+				</div>
+			</div>
+		</dialog>
+	</div>
+
+	<dialog id="nich">
+		<h1 id="nich-title">Nich</h1>
+		<span>Pump Fun SDK is being installed...</span>
+	</dialog>
+</body>
+
+</html>

@@ -1,0 +1,16 @@
+{
+  "$schema": "https://plugin.delivery/schema.json",
+  "identifier": "bitcoin-stats",
+  "openapi": "https://mempool.space/api/openapi.json",
+  "meta": {
+    "avatar": "₿",
+    "title": "Bitcoin Stats",
+    "description": "Bitcoin network stats, mempool, and fee estimates",
+    "tags": [
+      "bitcoin",
+      "mempool",
+      "fees"
+    ]
+  },
+  "version": "1"
+}

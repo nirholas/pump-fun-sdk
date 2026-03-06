@@ -1,0 +1,30 @@
+{
+  "$schema": "https://plugin.delivery/schema.json",
+  "identifier": "audit-checker",
+  "openapi": "https://api.de.fi/v1/openapi.json",
+  "settings": {
+    "type": "object",
+    "required": [
+      "DEFI_API_KEY"
+    ],
+    "properties": {
+      "DEFI_API_KEY": {
+        "title": "De.Fi API Key",
+        "description": "Your De.Fi API key for accessing audit data",
+        "type": "string",
+        "format": "password"
+      }
+    }
+  },
+  "meta": {
+    "avatar": "📋",
+    "title": "Audit Checker",
+    "description": "Aggregates audit reports from De.Fi security database",
+    "tags": [
+      "audit",
+      "security",
+      "reports"
+    ]
+  },
+  "version": "1"
+}

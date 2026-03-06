@@ -1,0 +1,13 @@
+{
+  "version": 2,
+  "framework": null,
+  "buildCommand": "",
+  "installCommand": "",
+  "outputDirectory": "website",
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "rewrites": [
+    { "source": "/((?!chart|live|trades|vanity).*)", "destination": "/index.html" }
+  ]
+}
+

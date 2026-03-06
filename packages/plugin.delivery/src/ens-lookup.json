@@ -1,0 +1,19 @@
+{
+  "author": "SperaxOS",
+  "createdAt": "2025-01-01",
+  "homepage": "https://github.com/nirholas/plugin.delivery",
+  "identifier": "ens-lookup",
+  "manifest": "https://plugin.delivery/ens-lookup/manifest.json",
+  "meta": {
+    "avatar": "🏷️",
+    "description": "ENS name resolution and availability checker",
+    "tags": [
+      "ens",
+      "domains",
+      "ethereum"
+    ],
+    "title": "ENS Lookup",
+    "category": "tools"
+  },
+  "schemaVersion": 1
+}

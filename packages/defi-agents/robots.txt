@@ -1,0 +1,36 @@
+# DeFi Agents API - robots.txt
+# Allow all crawlers to index our JSON API and documentation
+
+User-agent: *
+Allow: /
+Allow: /index.json
+Allow: /index.*.json
+Allow: /*.json
+Allow: /docs/
+Allow: /schema/
+Disallow: /node_modules/
+Disallow: /.git/
+Disallow: /scripts/
+
+# Specific crawler permissions
+User-agent: GPTBot
+Allow: /
+
+User-agent: CCBot
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+# Sitemap
+Sitemap: https://sperax.click/sitemap.xml
+

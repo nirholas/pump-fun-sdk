@@ -1,0 +1,345 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`createGatewayOnEdgeRuntime > Error > should return PluginApiNotFound error when apiName is not found in manifest 1`] = `
+{
+  "body": {
+    "manifest": {
+      "api": [
+        {
+          "description": "",
+          "name": "test-api",
+          "parameters": {
+            "properties": {},
+            "type": "object",
+          },
+          "url": "https://test-api-url.com",
+        },
+      ],
+      "identifier": "abc",
+      "meta": {},
+    },
+    "message": "[plugin] api not found",
+    "request": {
+      "apiName": "unknown-api",
+      "identifier": "test-plugin",
+    },
+  },
+  "errorType": "PluginApiNotFound",
+}
+`;
+
+exports[`createGatewayOnEdgeRuntime > Error > should return PluginApiParamsError when api parameters are invalid 1`] = `
+{
+  "body": {
+    "api": {
+      "description": "",
+      "name": "test-api",
+      "parameters": {
+        "properties": {
+          "a": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "a",
+        ],
+        "type": "object",
+      },
+      "url": "https://test-api-url.com",
+    },
+    "error": [
+      {
+        "error": "Instance does not have required property \\"a\\".",
+        "instanceLocation": "#",
+        "keyword": "required",
+        "keywordLocation": "#/required",
+      },
+    ],
+    "message": "[plugin] args is invalid with plugin manifest api schema",
+    "request": {
+      "invalid": "params",
+    },
+  },
+  "errorType": "PluginApiParamsError",
+}
+`;
+
+exports[`createGatewayOnEdgeRuntime > Error > should return PluginApiParamsError when api url is missing 1`] = `
+{
+  "body": {
+    "api": {
+      "description": "",
+      "name": "test-api",
+      "parameters": {
+        "properties": {},
+        "type": "object",
+      },
+    },
+    "message": "[plugin] missing api url",
+  },
+  "errorType": "PluginApiParamsError",
+}
+`;
+
+exports[`createGatewayOnEdgeRuntime > Error > should return PluginManifestInvalid error when plugin manifest is invalid 1`] = `
+{
+  "body": {
+    "error": {
+      "issues": [
+        {
+          "code": "invalid_type",
+          "expected": "array",
+          "message": "Required",
+          "path": [
+            "api",
+          ],
+          "received": "undefined",
+        },
+        {
+          "code": "invalid_type",
+          "expected": "string",
+          "message": "Required",
+          "path": [
+            "identifier",
+          ],
+          "received": "undefined",
+        },
+        {
+          "code": "invalid_type",
+          "expected": "object",
+          "message": "Required",
+          "path": [
+            "meta",
+          ],
+          "received": "undefined",
+        },
+      ],
+      "name": "ZodError",
+    },
+    "manifest": {
+      "invalid": "manifest",
+    },
+    "message": "[plugin] plugin manifest is invalid",
+  },
+  "errorType": "PluginManifestInvalid",
+}
+`;
+
+exports[`createGatewayOnEdgeRuntime > Error > should return PluginManifestNotFound error when plugin manifest is unreachable 1`] = `
+{
+  "body": {
+    "manifestUrl": "https://test-plugin-url.com/manifest.json",
+    "message": "[plugin] plugin manifest not found",
+  },
+  "errorType": "PluginManifestNotFound",
+}
+`;
+
+exports[`createGatewayOnEdgeRuntime > Error > should return PluginMarketIndexInvalid error when market index is invalid 1`] = `
+{
+  "body": {
+    "error": {
+      "issues": [
+        {
+          "code": "invalid_type",
+          "expected": "array",
+          "message": "Required",
+          "path": [
+            "plugins",
+          ],
+          "received": "undefined",
+        },
+        {
+          "code": "invalid_type",
+          "expected": "number",
+          "message": "Required",
+          "path": [
+            "schemaVersion",
+          ],
+          "received": "undefined",
+        },
+      ],
+      "name": "ZodError",
+    },
+    "indexUrl": "https://test-market-index-url.com",
+    "marketIndex": {
+      "invalid": "index",
+    },
+    "message": "[gateway] plugin market index is invalid",
+  },
+  "errorType": "PluginMarketIndexInvalid",
+}
+`;
+
+exports[`createGatewayOnEdgeRuntime > Error > should return PluginMarketIndexNotFound error when market index is unreachable 1`] = `
+{
+  "body": {
+    "indexUrl": "https://plugin.delivery",
+    "message": "[gateway] plugin market index not found",
+  },
+  "errorType": "PluginMarketIndexNotFound",
+}
+`;
+
+exports[`createGatewayOnEdgeRuntime > Error > should return PluginMetaInvalid error when plugin meta is invalid 1`] = `
+{
+  "body": {
+    "error": {
+      "issues": [
+        {
+          "code": "invalid_type",
+          "expected": "string",
+          "message": "Required",
+          "path": [
+            "author",
+          ],
+          "received": "undefined",
+        },
+        {
+          "code": "invalid_type",
+          "expected": "string",
+          "message": "Required",
+          "path": [
+            "createdAt",
+          ],
+          "received": "undefined",
+        },
+        {
+          "code": "invalid_type",
+          "expected": "string",
+          "message": "Required",
+          "path": [
+            "homepage",
+          ],
+          "received": "undefined",
+        },
+        {
+          "code": "invalid_type",
+          "expected": "string",
+          "message": "Required",
+          "path": [
+            "manifest",
+          ],
+          "received": "undefined",
+        },
+        {
+          "code": "invalid_type",
+          "expected": "object",
+          "message": "Required",
+          "path": [
+            "meta",
+          ],
+          "received": "undefined",
+        },
+        {
+          "code": "invalid_type",
+          "expected": "number",
+          "message": "Required",
+          "path": [
+            "schemaVersion",
+          ],
+          "received": "undefined",
+        },
+      ],
+      "name": "ZodError",
+    },
+    "message": "[plugin] plugin meta is invalid",
+    "pluginMeta": {
+      "identifier": "test-plugin",
+      "invalidMeta": true,
+    },
+  },
+  "errorType": "PluginMetaInvalid",
+}
+`;
+
+exports[`createGatewayOnEdgeRuntime > Error > should return PluginSettingsInvalid error when provided empty settings 1`] = `
+{
+  "body": {
+    "error": [
+      {
+        "error": "Instance does not have required property \\"abc\\".",
+        "instanceLocation": "#",
+        "keyword": "required",
+        "keywordLocation": "#/required",
+      },
+    ],
+    "message": "[plugin] your settings is invalid with plugin manifest setting schema",
+  },
+  "errorType": "PluginSettingsInvalid",
+}
+`;
+
+exports[`createGatewayOnEdgeRuntime > Error > should return PluginSettingsInvalid error when provided settings are invalid 1`] = `
+{
+  "body": {
+    "error": [
+      {
+        "error": "Instance does not have required property \\"abc\\".",
+        "instanceLocation": "#",
+        "keyword": "required",
+        "keywordLocation": "#/required",
+      },
+    ],
+    "message": "[plugin] your settings is invalid with plugin manifest setting schema",
+    "settings": {
+      "invalid": "settings",
+    },
+  },
+  "errorType": "PluginSettingsInvalid",
+}
+`;
+
+exports[`createGatewayOnEdgeRuntime > OpenAPI Auth > should return PluginGatewayError when not return status 1`] = `
+{
+  "body": {
+    "apiName": "test-api",
+    "authorizations": {},
+    "message": "[plugin] there are problem with sending openapi request, please contact with Sperax Team",
+    "openapi": "https://test-openapi-url.com",
+    "parameters": {},
+  },
+  "errorType": "PluginGatewayError",
+}
+`;
+
+exports[`createGatewayOnEdgeRuntime > OpenAPI Auth > should return PluginServerError when OpenAPI request returns non-200 status 1`] = `
+{
+  "body": {
+    "error": {
+      "status": 400,
+      "text": "Bad Request",
+    },
+  },
+  "errorType": "PluginServerError",
+}
+`;
+
+exports[`createGatewayOnEdgeRuntime > OpenAPI Auth > should return PluginSettingsInvalid when OpenAPI request fails with 401 1`] = `
+{
+  "errorType": "PluginSettingsInvalid",
+}
+`;
+
+exports[`createGatewayOnEdgeRuntime > OpenAPI Error > should return PluginOpenApiInitError error when openapi client init fails 1`] = `
+{
+  "body": {
+    "error": {},
+    "message": "[plugin] openapi client init error",
+    "openapi": "https://test-openapi-url.com",
+  },
+  "errorType": "PluginOpenApiInitError",
+}
+`;
+
+exports[`createGatewayOnEdgeRuntime > OpenAPI Error > should return error response when OpenAPI request fails 1`] = `
+{
+  "body": {
+    "error": {
+      "status": 500,
+      "text": "Internal Server Error",
+    },
+  },
+  "errorType": "PluginServerError",
+}
+`;

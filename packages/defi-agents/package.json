@@ -1,0 +1,65 @@
+{
+  "name": "@nirholas/ai-agents-library",
+  "version": "1.42.0",
+  "description": "General Agent Index and library of specialized AI agents for general use, DeFi, portfolio management, yield optimization, trading, and blockchain automation. Supports linting, automated translation, and CI auto-build for seamless plugin discovery via index.json. Github Pages compatible.",
+  "homepage": "https://github.com/nirholas/ai-agents-library",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nirholas/ai-agents-library.git"
+  },
+  "license": "MIT",
+  "author": "nich <nirholasi@github.io>",
+  "type": "module",
+  "main": "public/index.json",
+  "files": [
+    "public"
+  ],
+  "scripts": {
+    "awesome": "bun scripts/commands/build.ts && bun scripts/commands/update-awesome.ts",
+    "build": "bun scripts/commands/build.ts",
+    "format": "bun scripts/commands/format.ts",
+    "i18n:clean": "bun scripts/commands/validate-language.ts --delete",
+    "i18n:fix": "bun scripts/commands/validate-language.ts --fix",
+    "i18n:validate": "bun scripts/commands/validate-language.ts",
+    "lint": "eslint \"scripts/**/*.ts\" --fix",
+    "lint:i18n": "bun scripts/commands/validate-language.ts",
+    "lint:md": "remark . --quiet --output",
+    "prettier": "prettier -c --write \"**/*.{json,ts,md}\"",
+    "release": "semantic-release",
+    "submit": "bun scripts/commands/auto-submit.ts",
+    "test": "bun scripts/commands/test.ts",
+    "test:locale": "bun scripts/commands/test-locale.ts",
+    "type-check": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@lobehub/lint": "^1.25.5",
+    "@octokit/rest": "^20.1.1",
+    "@types/fs-extra": "^11.0.4",
+    "@types/lodash-es": "^4.17.12",
+    "@types/node": "^20.17.16",
+    "@yutengjing/eld": "^0.0.2",
+    "consola": "^3.4.0",
+    "dayjs": "^1.11.13",
+    "dirty-json": "^0.9.2",
+    "dotenv": "^16.4.7",
+    "eslint": "^8.57.1",
+    "fs-extra": "^11.3.0",
+    "gpt-tokenizer": "^3.0.0",
+    "lodash-es": "^4.17.21",
+    "openai": "^5.1.1",
+    "p-map": "^7.0.3",
+    "prettier": "^3.4.2",
+    "remark": "^15.0.1",
+    "remark-cli": "^12.0.1",
+    "remark-pangu": "^2.2.0",
+    "semantic-release": "^21.1.2",
+    "typescript": "^5.7.3",
+    "zod": "^3.24.1",
+    "zod-to-json-schema": "^3.24.1"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  }
+}
+

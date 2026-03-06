@@ -1,0 +1,30 @@
+{
+  "$schema": "https://plugin.delivery/schema.json",
+  "identifier": "base-ecosystem",
+  "openapi": "https://api.basescan.org/openapi.json",
+  "settings": {
+    "type": "object",
+    "required": [
+      "BASESCAN_API_KEY"
+    ],
+    "properties": {
+      "BASESCAN_API_KEY": {
+        "title": "API Key",
+        "description": "Your Base Ecosystem API key",
+        "type": "string",
+        "format": "password"
+      }
+    }
+  },
+  "meta": {
+    "avatar": "🔵",
+    "title": "Base Ecosystem",
+    "description": "Base chain statistics and top dApps",
+    "tags": [
+      "base",
+      "coinbase",
+      "l2"
+    ]
+  },
+  "version": "1"
+}

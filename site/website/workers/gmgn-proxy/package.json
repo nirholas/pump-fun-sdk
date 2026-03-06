@@ -1,0 +1,13 @@
+{
+  "name": "gmgn-proxy",
+  "version": "1.0.0",
+  "description": "Cloudflare Worker proxy for GMGN API",
+  "main": "index.js",
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev"
+  },
+  "devDependencies": {
+    "wrangler": "^3.0.0"
+  }
+}

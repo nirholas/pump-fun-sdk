@@ -1,0 +1,60 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.nirholas/defi-agents",
+  "title": "DeFi Agents Library",
+  "description": "AI Agents library for DeFi, trading, portfolio management, yield optimization, and blockchain automation. Index of specialized agents.",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "nich",
+      "url": "https://github.com/nirholas"
+    }
+  ],
+  "repository": {
+    "url": "https://github.com/nirholas/defi-agents",
+    "source": "github"
+  },
+  "version": "1.42.0",
+  "links": {
+    "homepage": "https://github.com/nirholas/defi-agents",
+    "bugs": "https://github.com/nirholas/defi-agents/issues",
+    "npm": "https://www.npmjs.com/package/@nirholas/ai-agents-library"
+  },
+  "icons": [
+    {
+      "url": "https://raw.githubusercontent.com/nirholas/g1t/d9a0ee206b8136472c04384905999369f198b3c9/milady.svg",
+      "type": "svg"
+    }
+  ],
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "@nirholas/ai-agents-library",
+      "version": "1.42.0",
+      "runtimeHint": "npx",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": []
+    }
+  ],
+  "_meta": {
+    "io.modelcontextprotocol.registry/publisher-provided": {
+      "keywords": [
+        "defi",
+        "agents",
+        "ai-agents",
+        "trading",
+        "portfolio",
+        "yield",
+        "automation",
+        "blockchain",
+        "crypto",
+        "mcp",
+        "ai"
+      ],
+      "category": "DeFi"
+    }
+  }
+}
+

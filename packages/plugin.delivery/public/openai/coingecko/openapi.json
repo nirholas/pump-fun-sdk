@@ -1,0 +1,448 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "CoinGecko Crypto Data",
+    "description": "Real-time cryptocurrency market data powered by CoinGecko's free public API. Access prices, trends, market rankings, and detailed token analytics for over 1 million cryptocurrencies.",
+    "version": "v1"
+  },
+  "servers": [
+    {
+      "url": "https://api.coingecko.com/api/v3"
+    }
+  ],
+  "paths": {
+    "/simple/price": {
+      "get": {
+        "operationId": "getPrice",
+        "summary": "Get current price for cryptocurrencies",
+        "description": "Returns current prices for specified tokens in the requested currency. Use this for quick price checks.",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "ids",
+            "schema": {
+              "type": "string",
+              "example": "bitcoin,ethereum,solana"
+            },
+            "required": true,
+            "description": "Comma-separated CoinGecko token IDs (e.g., bitcoin, ethereum, binancecoin, solana)"
+          },
+          {
+            "in": "query",
+            "name": "vs_currencies",
+            "schema": {
+              "type": "string",
+              "default": "usd"
+            },
+            "required": true,
+            "description": "Comma-separated target currencies (e.g., usd, eur, btc)"
+          },
+          {
+            "in": "query",
+            "name": "include_24hr_change",
+            "schema": {
+              "type": "boolean",
+              "default": true
+            },
+            "description": "Include 24h price change percentage"
+          },
+          {
+            "in": "query",
+            "name": "include_market_cap",
+            "schema": {
+              "type": "boolean",
+              "default": true
+            },
+            "description": "Include market cap"
+          },
+          {
+            "in": "query",
+            "name": "include_24hr_vol",
+            "schema": {
+              "type": "boolean",
+              "default": true
+            },
+            "description": "Include 24h trading volume"
+          },
+          {
+            "in": "query",
+            "name": "include_last_updated_at",
+            "schema": {
+              "type": "boolean",
+              "default": true
+            },
+            "description": "Include last updated timestamp"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Token prices returned successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "object",
+                    "properties": {
+                      "usd": { "type": "number" },
+                      "usd_24h_change": { "type": "number" },
+                      "usd_market_cap": { "type": "number" },
+                      "usd_24h_vol": { "type": "number" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/search/trending": {
+      "get": {
+        "operationId": "getTrending",
+        "summary": "Get trending cryptocurrencies",
+        "description": "Returns the top trending coins based on search popularity in the last 24 hours. Great for discovering what's hot in crypto.",
+        "responses": {
+          "200": {
+            "description": "Trending tokens returned successfully"
+          }
+        }
+      }
+    },
+    "/coins/markets": {
+      "get": {
+        "operationId": "getMarkets",
+        "summary": "Get market data for top cryptocurrencies",
+        "description": "Returns comprehensive market data including prices, market caps, volumes, and price changes for cryptocurrencies ranked by market cap.",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "vs_currency",
+            "schema": {
+              "type": "string",
+              "default": "usd"
+            },
+            "required": true,
+            "description": "Target currency for prices (usd, eur, btc, etc.)"
+          },
+          {
+            "in": "query",
+            "name": "order",
+            "schema": {
+              "type": "string",
+              "default": "market_cap_desc",
+              "enum": ["market_cap_desc", "market_cap_asc", "volume_desc", "volume_asc", "id_asc", "id_desc"]
+            },
+            "description": "Sort order for results"
+          },
+          {
+            "in": "query",
+            "name": "per_page",
+            "schema": {
+              "type": "integer",
+              "default": 10,
+              "minimum": 1,
+              "maximum": 250
+            },
+            "description": "Number of results per page (1-250)"
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            },
+            "description": "Page number for pagination"
+          },
+          {
+            "in": "query",
+            "name": "sparkline",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            },
+            "description": "Include 7-day sparkline data"
+          },
+          {
+            "in": "query",
+            "name": "price_change_percentage",
+            "schema": {
+              "type": "string",
+              "example": "1h,24h,7d"
+            },
+            "description": "Include price change percentages for specified intervals (1h, 24h, 7d, 14d, 30d, 200d, 1y)"
+          },
+          {
+            "in": "query",
+            "name": "ids",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by specific coin IDs (comma-separated)"
+          },
+          {
+            "in": "query",
+            "name": "category",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by category (e.g., decentralized-finance-defi, stablecoins, meme-token)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Market data returned successfully"
+          }
+        }
+      }
+    },
+    "/coins/{id}": {
+      "get": {
+        "operationId": "getCoinDetails",
+        "summary": "Get detailed information about a cryptocurrency",
+        "description": "Returns comprehensive data about a specific coin including description, links, market data, community stats, and developer info.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "description": "CoinGecko coin ID (e.g., bitcoin, ethereum, solana)"
+          },
+          {
+            "in": "query",
+            "name": "localization",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            },
+            "description": "Include localized languages"
+          },
+          {
+            "in": "query",
+            "name": "tickers",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            },
+            "description": "Include exchange tickers"
+          },
+          {
+            "in": "query",
+            "name": "market_data",
+            "schema": {
+              "type": "boolean",
+              "default": true
+            },
+            "description": "Include market data"
+          },
+          {
+            "in": "query",
+            "name": "community_data",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            },
+            "description": "Include community data"
+          },
+          {
+            "in": "query",
+            "name": "developer_data",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            },
+            "description": "Include developer data"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Coin details returned successfully"
+          }
+        }
+      }
+    },
+    "/coins/{id}/market_chart": {
+      "get": {
+        "operationId": "getMarketChart",
+        "summary": "Get historical price chart data",
+        "description": "Returns historical market data including price, market cap, and volume for charting and analysis.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "description": "CoinGecko coin ID"
+          },
+          {
+            "in": "query",
+            "name": "vs_currency",
+            "schema": {
+              "type": "string",
+              "default": "usd"
+            },
+            "required": true,
+            "description": "Target currency"
+          },
+          {
+            "in": "query",
+            "name": "days",
+            "schema": {
+              "type": "string",
+              "default": "7",
+              "enum": ["1", "7", "14", "30", "90", "180", "365", "max"]
+            },
+            "required": true,
+            "description": "Data range in days (1, 7, 14, 30, 90, 180, 365, or max)"
+          },
+          {
+            "in": "query",
+            "name": "interval",
+            "schema": {
+              "type": "string",
+              "enum": ["daily"]
+            },
+            "description": "Data interval (daily for ranges > 90 days)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Historical data returned successfully"
+          }
+        }
+      }
+    },
+    "/search": {
+      "get": {
+        "operationId": "searchCoins",
+        "summary": "Search for cryptocurrencies",
+        "description": "Search for coins, exchanges, and categories by name or symbol. Useful when you don't know the exact CoinGecko ID.",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "description": "Search query (coin name or symbol)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Search results returned successfully"
+          }
+        }
+      }
+    },
+    "/coins/categories": {
+      "get": {
+        "operationId": "getCategories",
+        "summary": "Get all cryptocurrency categories",
+        "description": "Returns list of all coin categories with market data. Useful for exploring sectors like DeFi, NFT, Layer 1, etc.",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "order",
+            "schema": {
+              "type": "string",
+              "default": "market_cap_desc",
+              "enum": ["market_cap_desc", "market_cap_asc", "name_desc", "name_asc", "market_cap_change_24h_desc", "market_cap_change_24h_asc"]
+            },
+            "description": "Sort order"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Categories returned successfully"
+          }
+        }
+      }
+    },
+    "/global": {
+      "get": {
+        "operationId": "getGlobalData",
+        "summary": "Get global cryptocurrency market data",
+        "description": "Returns global cryptocurrency statistics including total market cap, total volume, BTC dominance, and number of active cryptocurrencies.",
+        "responses": {
+          "200": {
+            "description": "Global data returned successfully"
+          }
+        }
+      }
+    },
+    "/global/decentralized_finance_defi": {
+      "get": {
+        "operationId": "getDeFiGlobal",
+        "summary": "Get global DeFi market data",
+        "description": "Returns global decentralized finance statistics including DeFi market cap, trading volume, and dominance.",
+        "responses": {
+          "200": {
+            "description": "DeFi global data returned successfully"
+          }
+        }
+      }
+    },
+    "/exchanges": {
+      "get": {
+        "operationId": "getExchanges",
+        "summary": "Get cryptocurrency exchanges",
+        "description": "Returns list of cryptocurrency exchanges ranked by trading volume with trust scores.",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "per_page",
+            "schema": {
+              "type": "integer",
+              "default": 10
+            },
+            "description": "Number of results per page"
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            },
+            "description": "Page number"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Exchanges returned successfully"
+          }
+        }
+      }
+    },
+    "/coins/list": {
+      "get": {
+        "operationId": "getCoinsList",
+        "summary": "Get list of all supported coins",
+        "description": "Returns list of all supported coins with id, symbol, and name. Use this to find the correct CoinGecko ID for any cryptocurrency.",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "include_platform",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            },
+            "description": "Include platform contract addresses"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Coins list returned successfully"
+          }
+        }
+      }
+    }
+  }
+}

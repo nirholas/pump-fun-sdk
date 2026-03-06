@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="pump-include" content="pump.css">
+    <meta name="capabilities" content="sdk_reference">
+    <meta name="pump-icon" content="menu_book">
+    <meta name="pump-perms" content="none" />
+    <title>Pump SDK Reference</title>
+    <style>
+        :root {
+            --bg1:#0a0a0f; --bg2:#141420; --bg3:#1e1e30;
+            --txt1:#fff; --txt2:#9ca3af;
+            --accent:#00e87b; --accent2:#00c868;
+            --blue:#60a5fa; --purple:#a78bfa; --yellow:#fbbf24; --orange:#fb923c; --pink:#f472b6;
+            --radius:12px;
+        }
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg1);color:var(--txt1);min-height:100vh;padding:16px;overflow-y:auto}
+        .app{max-width:700px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+        .header{display:flex;align-items:center;gap:10px}
+        .header h1{font-size:1.2em}
+        .badge{font-size:.65em;background:var(--accent);color:#000;padding:2px 8px;border-radius:20px;font-weight:600}
+        .card{background:var(--bg2);border:1px solid rgba(255,255,255,.06);border-radius:var(--radius);padding:18px}
+        .card-title{font-size:.9em;font-weight:500;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+
+        .search-bar{display:flex;gap:8px;align-items:center}
+        .search-bar input{flex:1;background:var(--bg3);border:1px solid rgba(255,255,255,.08);color:var(--txt1);padding:10px 14px;border-radius:8px;font-size:.9em;outline:none}
+        .search-bar input:focus{border-color:var(--accent)}
+        .search-bar input::placeholder{color:var(--txt2)}
+
+        .nav-tabs{display:flex;gap:4px;overflow-x:auto;padding-bottom:4px}
+        .nav-tab{padding:8px 14px;background:var(--bg3);border:1px solid rgba(255,255,255,.06);border-radius:8px;color:var(--txt2);cursor:pointer;font-size:.82em;white-space:nowrap;transition:all .2s}
+        .nav-tab:hover{border-color:rgba(255,255,255,.15);color:var(--txt1)}
+        .nav-tab.active{background:var(--accent);color:#000;border-color:var(--accent);font-weight:600}
+
+        .method-list{display:flex;flex-direction:column;gap:6px}
+        .method-card{background:var(--bg3);border:1px solid rgba(255,255,255,.04);border-radius:10px;overflow:hidden;transition:all .2s}
+        .method-card:hover{border-color:rgba(255,255,255,.1)}
+        .method-header{padding:12px 14px;cursor:pointer;display:flex;align-items:center;gap:10px}
+        .method-name{font-family:monospace;font-size:.88em;font-weight:600;color:var(--accent)}
+        .method-tag{font-size:.65em;padding:2px 6px;border-radius:4px;font-weight:500}
+        .tag-offline{background:rgba(0,232,123,.12);color:var(--accent)}
+        .tag-online{background:rgba(96,165,250,.12);color:var(--blue)}
+        .tag-util{background:rgba(167,139,250,.12);color:var(--purple)}
+        .tag-type{background:rgba(251,191,36,.12);color:var(--yellow)}
+        .method-arrow{margin-left:auto;color:var(--txt2);transition:transform .2s;font-size:.8em}
+        .method-card.open .method-arrow{transform:rotate(90deg)}
+        .method-body{display:none;padding:0 14px 14px;border-top:1px solid rgba(255,255,255,.04);margin-top:0}
+        .method-card.open .method-body{display:block}
+        .method-desc{font-size:.82em;color:var(--txt2);margin:10px 0}
+        .method-params{font-size:.8em}
+        .param-table{width:100%;border-collapse:collapse;margin-top:8px}
+        .param-table th{text-align:left;font-size:.72em;color:var(--txt2);text-transform:uppercase;padding:4px 8px;border-bottom:1px solid rgba(255,255,255,.06)}
+        .param-table td{padding:6px 8px;font-size:.82em;border-bottom:1px solid rgba(255,255,255,.03)}
+        .param-table td:first-child{font-family:monospace;color:var(--accent);font-weight:500}
+        .param-table td:nth-child(2){font-family:monospace;color:var(--yellow)}
+        .returns{margin-top:10px;font-size:.82em}
+        .returns-type{font-family:monospace;color:var(--blue);font-weight:500}
+
+        .code-block{background:var(--bg1);border-radius:6px;padding:10px 12px;font-family:monospace;font-size:.78em;line-height:1.5;overflow-x:auto;color:var(--accent);margin-top:8px}
+
+        .program-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+        .program-box{background:var(--bg3);border-radius:8px;padding:12px;text-align:center}
+        .program-box .name{font-size:.85em;font-weight:600;margin-bottom:4px}
+        .program-box .id{font-size:.62em;font-family:monospace;color:var(--txt2);word-break:break-all}
+        .program-box .purpose{font-size:.72em;color:var(--txt2);margin-top:6px}
+
+        .count-badge{font-size:.72em;background:var(--bg1);padding:2px 8px;border-radius:10px;color:var(--txt2)}
+    </style>
+</head>
+<body>
+<div class="app">
+    <div class="header">
+        <span style="font-size:28px">📚</span>
+        <h1>Pump SDK Reference</h1>
+        <span class="badge">v1.0</span>
+    </div>
+
+    <!-- Programs -->
+    <div class="card">
+        <div class="card-title">On-Chain Programs</div>
+        <div class="program-grid">
+            <div class="program-box">
+                <div class="name" style="color:var(--accent)">Pump</div>
+                <div class="id">6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P</div>
+                <div class="purpose">Bonding curve ops</div>
+            </div>
+            <div class="program-box">
+                <div class="name" style="color:var(--blue)">PumpAMM</div>
+                <div class="id">pAMMBay6oceH9fJKBRHGP5D4bD4sWpmSwMn52FMfXEA</div>
+                <div class="purpose">Graduated AMM pools</div>
+            </div>
+            <div class="program-box">
+                <div class="name" style="color:var(--purple)">PumpFees</div>
+                <div class="id">pfeeUxB6jkeY1Hxd7CsFCAjcbHA9rWtchMGdZ6VojVZ</div>
+                <div class="purpose">Fee sharing</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search -->
+    <div class="search-bar">
+        <input type="text" id="searchInput" placeholder="Search methods, types, PDAs..." oninput="filterMethods()">
+    </div>
+
+    <!-- Category Tabs -->
+    <div class="nav-tabs">
+        <div class="nav-tab active" onclick="setCategory('all')">All <span class="count-badge" id="countAll"></span></div>
+        <div class="nav-tab" onclick="setCategory('offline')">PumpSdk (Offline)</div>
+        <div class="nav-tab" onclick="setCategory('online')">OnlinePumpSdk</div>
+        <div class="nav-tab" onclick="setCategory('math')">Math/Utils</div>
+        <div class="nav-tab" onclick="setCategory('pda')">PDAs</div>
+        <div class="nav-tab" onclick="setCategory('types')">Types</div>
+    </div>
+
+    <!-- Method List -->
+    <div class="method-list" id="methodList"></div>
+</div>
+
+<script>
+const METHODS = [
+    // PumpSdk (offline)
+    { name: 'createV2Instruction', cat: 'offline', tag: 'PumpSdk',
+      desc: 'Build instruction to create a new token with bonding curve (v2). Replaces deprecated createInstruction.',
+      params: [
+        { name: 'creator', type: 'PublicKey', desc: 'Token creator wallet' },
+        { name: 'mint', type: 'PublicKey', desc: 'New token mint keypair' },
+        { name: 'name', type: 'string', desc: 'Token name (max 32 chars)' },
+        { name: 'symbol', type: 'string', desc: 'Token symbol (max 10 chars)' },
+        { name: 'uri', type: 'string', desc: 'Metadata URI (IPFS/Arweave)' },
+      ],
+      returns: 'TransactionInstruction',
+      example: `const ix = PUMP_SDK.createV2Instruction(\n  creator, mint, "PumpCoin", "PUMP", uri\n);` },
+    { name: 'buyInstructions', cat: 'offline', tag: 'PumpSdk',
+      desc: 'Build buy instructions for purchasing tokens from the bonding curve.',
+      params: [
+        { name: 'buyer', type: 'PublicKey', desc: 'Buyer wallet' },
+        { name: 'mint', type: 'PublicKey', desc: 'Token mint' },
+        { name: 'buyAmountSol', type: 'BN', desc: 'SOL amount in lamports' },
+        { name: 'minTokenAmount', type: 'BN', desc: 'Min tokens received (slippage)' },
+        { name: 'bondingCurveAccountInfo', type: 'AccountInfo', desc: 'Bonding curve state' },
+      ],
+      returns: 'TransactionInstruction[]',
+      example: `const ixs = PUMP_SDK.buyInstructions({\n  buyer, mint,\n  buyAmountSol: new BN(1e9),\n  minTokenAmount: new BN(0),\n  bondingCurveAccountInfo\n});` },
+    { name: 'sellInstructions', cat: 'offline', tag: 'PumpSdk',
+      desc: 'Build sell instructions for selling tokens back to the bonding curve.',
+      params: [
+        { name: 'seller', type: 'PublicKey', desc: 'Seller wallet' },
+        { name: 'mint', type: 'PublicKey', desc: 'Token mint' },
+        { name: 'sellTokenAmount', type: 'BN', desc: 'Tokens to sell (with decimals)' },
+        { name: 'minSolAmount', type: 'BN', desc: 'Min SOL received (slippage)' },
+      ],
+      returns: 'TransactionInstruction[]',
+      example: `const ixs = PUMP_SDK.sellInstructions({\n  seller, mint,\n  sellTokenAmount: new BN(1000000e6),\n  minSolAmount: new BN(0)\n});` },
+    { name: 'createV2AndBuyInstructions', cat: 'offline', tag: 'PumpSdk',
+      desc: 'Atomically create a token and buy in the same transaction.',
+      params: [
+        { name: 'creator', type: 'PublicKey', desc: 'Creator wallet' },
+        { name: 'mint', type: 'PublicKey', desc: 'New token mint' },
+        { name: 'name/symbol/uri', type: 'string', desc: 'Token metadata' },
+        { name: 'buyAmountSol', type: 'BN', desc: 'SOL to spend on initial buy' },
+      ],
+      returns: 'TransactionInstruction[]',
+      example: `const ixs = PUMP_SDK.createV2AndBuyInstructions({\n  creator, mint, name, symbol, uri,\n  buyAmountSol: new BN(5e9)\n});` },
+    { name: 'migrateInstruction', cat: 'offline', tag: 'PumpSdk',
+      desc: 'Build migration instruction to move graduated token from bonding curve to PumpAMM pool. Permissionless — anyone can call.',
+      params: [
+        { name: 'mint', type: 'PublicKey', desc: 'Graduated token mint' },
+        { name: 'mintAccountInfo', type: 'AccountInfo', desc: 'Mint account data' },
+        { name: 'bondingCurveAccountInfo', type: 'AccountInfo', desc: 'Bonding curve data' },
+      ],
+      returns: 'TransactionInstruction',
+      example: `const ix = PUMP_SDK.migrateInstruction(\n  mint, mintAccountInfo, bondingCurveAccountInfo\n);` },
+    { name: 'syncUserVolumeAccumulator', cat: 'offline', tag: 'PumpSdk',
+      desc: 'Sync volume tracking for token incentive rewards.',
+      params: [{ name: 'user', type: 'PublicKey', desc: 'User wallet' }],
+      returns: 'TransactionInstruction',
+      example: `const ix = PUMP_SDK.syncUserVolumeAccumulator(user);` },
+    { name: 'setCreator', cat: 'offline', tag: 'PumpSdk',
+      desc: 'Set the creator for a bonding curve (enables creator fee earning).',
+      params: [
+        { name: 'creator', type: 'PublicKey', desc: 'Creator wallet' },
+        { name: 'mint', type: 'PublicKey', desc: 'Token mint' },
+      ],
+      returns: 'TransactionInstruction',
+      example: `const ix = PUMP_SDK.setCreator(creator, mint);` },
+
+    // OnlinePumpSdk
+    { name: 'fetchGlobal', cat: 'online', tag: 'OnlinePumpSdk',
+      desc: 'Fetch the global configuration account from the Pump program.',
+      params: [],
+      returns: 'Promise<Global>',
+      example: `const global = await sdk.fetchGlobal();` },
+    { name: 'fetchFeeConfig', cat: 'online', tag: 'OnlinePumpSdk',
+      desc: 'Fetch the fee configuration with tiered fee schedule.',
+      params: [],
+      returns: 'Promise<FeeConfig>',
+      example: `const feeConfig = await sdk.fetchFeeConfig();` },
+    { name: 'fetchBondingCurve', cat: 'online', tag: 'OnlinePumpSdk',
+      desc: 'Fetch bonding curve state for a specific token mint.',
+      params: [{ name: 'mint', type: 'PublicKeyInitData', desc: 'Token mint address' }],
+      returns: 'Promise<BondingCurve>',
+      example: `const bc = await sdk.fetchBondingCurve(mint);\nif (bc.complete) console.log('Graduated!');` },
+    { name: 'fetchBuyState', cat: 'online', tag: 'OnlinePumpSdk',
+      desc: 'Fetch bonding curve + user token account for buy operations.',
+      params: [
+        { name: 'mint', type: 'PublicKey', desc: 'Token mint' },
+        { name: 'user', type: 'PublicKey', desc: 'Buyer wallet' },
+      ],
+      returns: 'Promise<{ bondingCurve, associatedUserAccountInfo }>',
+      example: `const state = await sdk.fetchBuyState(mint, buyer);` },
+    { name: 'fetchSellState', cat: 'online', tag: 'OnlinePumpSdk',
+      desc: 'Fetch bonding curve + user token account for sell operations.',
+      params: [
+        { name: 'mint', type: 'PublicKey', desc: 'Token mint' },
+        { name: 'user', type: 'PublicKey', desc: 'Seller wallet' },
+      ],
+      returns: 'Promise<{ bondingCurve }>',
+      example: `const state = await sdk.fetchSellState(mint, seller);` },
+    { name: 'getCreatorVaultBalance', cat: 'online', tag: 'OnlinePumpSdk',
+      desc: 'Get the SOL balance in creator fee vault.',
+      params: [{ name: 'mint', type: 'PublicKey', desc: 'Token mint' }],
+      returns: 'Promise<BN>',
+      example: `const balance = await sdk.getCreatorVaultBalance(mint);` },
+    { name: 'collectCoinCreatorFeeInstructions', cat: 'online', tag: 'OnlinePumpSdk',
+      desc: 'Build instructions to collect creator fees from both Pump + PumpAMM.',
+      params: [
+        { name: 'mint', type: 'PublicKey', desc: 'Token mint' },
+        { name: 'creator', type: 'PublicKey', desc: 'Creator wallet' },
+      ],
+      returns: 'Promise<TransactionInstruction[]>',
+      example: `const ixs = await sdk.collectCoinCreatorFeeInstructions(mint, creator);` },
+    { name: 'buildDistributeCreatorFeesInstructions', cat: 'online', tag: 'OnlinePumpSdk',
+      desc: 'Distribute collected creator fees to shareholders per sharing config.',
+      params: [
+        { name: 'mint', type: 'PublicKey', desc: 'Token mint' },
+        { name: 'creator', type: 'PublicKey', desc: 'Creator/admin' },
+        { name: 'shareholders', type: 'Shareholder[]', desc: 'Revenue split (total = 10K BPS)' },
+      ],
+      returns: 'Promise<DistributeCreatorFeeResult>',
+      example: `const result = await sdk.buildDistributeCreatorFeesInstructions(\n  mint, creator, shareholders\n);` },
+    { name: 'claimTokenIncentives', cat: 'online', tag: 'OnlinePumpSdk',
+      desc: 'Claim PUMP token rewards from volume-based incentive program.',
+      params: [{ name: 'user', type: 'PublicKey', desc: 'User wallet' }],
+      returns: 'Promise<TransactionInstruction[]>',
+      example: `const ixs = await sdk.claimTokenIncentives(user);` },
+    { name: 'getTotalUnclaimedTokens', cat: 'online', tag: 'OnlinePumpSdk',
+      desc: 'Calculate total unclaimed PUMP token rewards for a user.',
+      params: [{ name: 'user', type: 'PublicKey', desc: 'User wallet' }],
+      returns: 'Promise<BN>',
+      example: `const unclaimed = await sdk.getTotalUnclaimedTokens(user);` },
+
+    // Math/Utils
+    { name: 'getBuyTokenAmountFromSolAmount', cat: 'math', tag: 'Util',
+      desc: 'Calculate how many tokens you receive for a given SOL amount on the bonding curve.',
+      params: [
+        { name: 'global', type: 'Global', desc: 'Global config' },
+        { name: 'feeConfig', type: 'FeeConfig | null', desc: 'Fee tiers' },
+        { name: 'bondingCurve', type: 'BondingCurve | null', desc: 'Current curve state' },
+        { name: 'amount', type: 'BN', desc: 'SOL amount in lamports' },
+      ],
+      returns: 'BN',
+      example: `const tokens = getBuyTokenAmountFromSolAmount({\n  global, feeConfig, mintSupply,\n  bondingCurve, amount: new BN(1e9)\n});` },
+    { name: 'getSellSolAmountFromTokenAmount', cat: 'math', tag: 'Util',
+      desc: 'Calculate SOL received after selling tokens (with fees deducted).',
+      params: [
+        { name: 'amount', type: 'BN', desc: 'Token amount to sell' },
+        { name: 'bondingCurve', type: 'BondingCurve', desc: 'Curve state' },
+      ],
+      returns: 'BN',
+      example: `const sol = getSellSolAmountFromTokenAmount({\n  global, feeConfig, mintSupply,\n  bondingCurve, amount: tokenAmount\n});` },
+    { name: 'computeFeesBps', cat: 'math', tag: 'Util',
+      desc: 'Compute protocol + creator fee basis points for current market cap tier.',
+      params: [
+        { name: 'global', type: 'Global', desc: 'Global config' },
+        { name: 'feeConfig', type: 'FeeConfig | null', desc: 'Fee tier config' },
+        { name: 'virtualSolReserves', type: 'BN', desc: 'Current SOL reserves' },
+        { name: 'virtualTokenReserves', type: 'BN', desc: 'Current token reserves' },
+      ],
+      returns: '{ protocolFeeBps: BN, creatorFeeBps: BN }',
+      example: `const { protocolFeeBps, creatorFeeBps } = computeFeesBps({\n  global, feeConfig, mintSupply,\n  virtualSolReserves, virtualTokenReserves\n});` },
+    { name: 'bondingCurveMarketCap', cat: 'math', tag: 'Util',
+      desc: 'Calculate bonding curve market cap in lamports.',
+      params: [
+        { name: 'mintSupply', type: 'BN', desc: 'Total token supply' },
+        { name: 'virtualSolReserves', type: 'BN', desc: 'SOL reserves' },
+        { name: 'virtualTokenReserves', type: 'BN', desc: 'Token reserves' },
+      ],
+      returns: 'BN',
+      example: `const mcap = bondingCurveMarketCap({\n  mintSupply, virtualSolReserves, virtualTokenReserves\n});` },
+    { name: 'totalUnclaimedTokens', cat: 'math', tag: 'Util',
+      desc: 'Pure calculation of unclaimed incentive tokens from accumulator data.',
+      params: [
+        { name: 'globalVolumeAccumulator', type: 'GlobalVolumeAccumulator', desc: 'Global volume data' },
+        { name: 'userVolumeAccumulator', type: 'UserVolumeAccumulator', desc: 'User volume data' },
+      ],
+      returns: 'BN',
+      example: `const unclaimed = totalUnclaimedTokens(\n  globalAcc, userAcc\n);` },
+    { name: 'getFee', cat: 'math', tag: 'Util',
+      desc: 'Calculate total fee (protocol + creator) for a trade amount.',
+      params: [
+        { name: 'amount', type: 'BN', desc: 'Trade amount in lamports' },
+        { name: 'bondingCurve', type: 'BondingCurve', desc: 'Curve state' },
+      ],
+      returns: 'BN',
+      example: `const fee = getFee({\n  global, feeConfig, mintSupply,\n  bondingCurve, amount, isNewBondingCurve\n});` },
+
+    // PDAs
+    { name: 'bondingCurvePda', cat: 'pda', tag: 'PDA',
+      desc: 'Derive bonding curve PDA from token mint.',
+      params: [{ name: 'mint', type: 'PublicKeyInitData', desc: 'Token mint address' }],
+      returns: 'PublicKey',
+      example: `const pda = bondingCurvePda(mint);` },
+    { name: 'canonicalPumpPoolPda', cat: 'pda', tag: 'PDA',
+      desc: 'Derive canonical PumpAMM pool PDA for a graduated token.',
+      params: [{ name: 'mint', type: 'PublicKeyInitData', desc: 'Token mint' }],
+      returns: 'PublicKey',
+      example: `const poolPda = canonicalPumpPoolPda(mint);` },
+    { name: 'creatorVaultPda', cat: 'pda', tag: 'PDA',
+      desc: 'Derive creator fee vault PDA.',
+      params: [{ name: 'mint', type: 'PublicKeyInitData', desc: 'Token mint' }],
+      returns: 'PublicKey',
+      example: `const vault = creatorVaultPda(mint);` },
+    { name: 'feeSharingConfigPda', cat: 'pda', tag: 'PDA',
+      desc: 'Derive fee sharing configuration PDA.',
+      params: [{ name: 'mint', type: 'PublicKeyInitData', desc: 'Token mint' }],
+      returns: 'PublicKey',
+      example: `const config = feeSharingConfigPda(mint);` },
+    { name: 'userVolumeAccumulatorPda', cat: 'pda', tag: 'PDA',
+      desc: 'Derive user volume accumulator PDA for incentive tracking.',
+      params: [{ name: 'user', type: 'PublicKeyInitData', desc: 'User wallet' }],
+      returns: 'PublicKey',
+      example: `const acc = userVolumeAccumulatorPda(user);` },
+
+    // Types
+    { name: 'Global', cat: 'types', tag: 'Type',
+      desc: 'Global program configuration. Contains initial reserves, fee basis points, authorities.',
+      params: [
+        { name: 'initialVirtualTokenReserves', type: 'BN', desc: 'Starting virtual token pool' },
+        { name: 'initialVirtualSolReserves', type: 'BN', desc: 'Starting virtual SOL pool' },
+        { name: 'tokenTotalSupply', type: 'BN', desc: 'Total token supply (1B × 1e6)' },
+        { name: 'feeBasisPoints', type: 'BN', desc: 'Default protocol fee' },
+        { name: 'creatorFeeBasisPoints', type: 'BN', desc: 'Default creator fee' },
+      ],
+      returns: 'interface', example: '' },
+    { name: 'BondingCurve', cat: 'types', tag: 'Type',
+      desc: 'Bonding curve state. complete=true means graduated. virtualTokenReserves=0 means migrated.',
+      params: [
+        { name: 'virtualTokenReserves', type: 'BN', desc: 'Current virtual token pool' },
+        { name: 'virtualSolReserves', type: 'BN', desc: 'Current virtual SOL pool' },
+        { name: 'realTokenReserves', type: 'BN', desc: 'Remaining tokens to sell' },
+        { name: 'complete', type: 'boolean', desc: 'true = graduated to AMM' },
+        { name: 'creator', type: 'PublicKey', desc: 'Token creator (earns fees)' },
+      ],
+      returns: 'interface', example: '' },
+    { name: 'Shareholder', cat: 'types', tag: 'Type',
+      desc: 'Revenue sharing participant. Total of all shareBps must equal 10,000.',
+      params: [
+        { name: 'address', type: 'PublicKey', desc: 'Shareholder wallet' },
+        { name: 'shareBps', type: 'number', desc: 'Basis points (max total: 10,000)' },
+      ],
+      returns: 'interface', example: '' },
+    { name: 'FeeConfig', cat: 'types', tag: 'Type',
+      desc: 'Fee configuration with tiered fee schedule based on market cap.',
+      params: [
+        { name: 'admin', type: 'PublicKey', desc: 'Fee admin authority' },
+        { name: 'feeTiers', type: 'FeeTier[]', desc: 'Market cap threshold → fees' },
+      ],
+      returns: 'interface', example: '' },
+    { name: 'UserVolumeAccumulator', cat: 'types', tag: 'Type',
+      desc: 'Tracks user trading volume for PUMP token incentive rewards.',
+      params: [
+        { name: 'totalUnclaimedTokens', type: 'BN', desc: 'Unclaimed PUMP rewards' },
+        { name: 'totalClaimedTokens', type: 'BN', desc: 'Already claimed rewards' },
+        { name: 'currentSolVolume', type: 'BN', desc: 'Volume in current period' },
+      ],
+      returns: 'interface', example: '' },
+];
+
+let currentCategory = 'all';
+
+function tagClass(tag) {
+    const map = { PumpSdk: 'tag-offline', OnlinePumpSdk: 'tag-online', Util: 'tag-util', PDA: 'tag-util', Type: 'tag-type' };
+    return map[tag] || 'tag-util';
+}
+
+function renderMethods(methods) {
+    const list = document.getElementById('methodList');
+    list.innerHTML = '';
+
+    methods.forEach((m, i) => {
+        const card = document.createElement('div');
+        card.className = 'method-card';
+        card.dataset.idx = i;
+
+        let paramsHTML = '';
+        if (m.params.length > 0) {
+            paramsHTML = `<div class="method-params"><table class="param-table"><thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead><tbody>` +
+                m.params.map(p => `<tr><td>${p.name}</td><td>${p.type}</td><td>${p.desc}</td></tr>`).join('') +
+                '</tbody></table></div>';
+        }
+
+        let exampleHTML = '';
+        if (m.example) {
+            exampleHTML = `<div class="code-block">${m.example}</div>`;
+        }
+
+        card.innerHTML = `
+            <div class="method-header" onclick="toggleMethod(this)">
+                <span class="method-name">${m.name}${m.returns !== 'interface' ? '()' : ''}</span>
+                <span class="method-tag ${tagClass(m.tag)}">${m.tag}</span>
+                <span class="method-arrow">▶</span>
+            </div>
+            <div class="method-body">
+                <div class="method-desc">${m.desc}</div>
+                ${paramsHTML}
+                <div class="returns">Returns: <span class="returns-type">${m.returns}</span></div>
+                ${exampleHTML}
+            </div>
+        `;
+        list.appendChild(card);
+    });
+
+    document.getElementById('countAll').textContent = methods.length;
+}
+
+function toggleMethod(header) {
+    header.parentElement.classList.toggle('open');
+}
+
+function setCategory(cat) {
+    currentCategory = cat;
+    document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+    event.target.classList.add('active');
+    filterMethods();
+}
+
+function filterMethods() {
+    const search = document.getElementById('searchInput').value.toLowerCase();
+    let filtered = METHODS;
+
+    if (currentCategory !== 'all') {
+        filtered = filtered.filter(m => m.cat === currentCategory);
+    }
+    if (search) {
+        filtered = filtered.filter(m =>
+            m.name.toLowerCase().includes(search) ||
+            m.desc.toLowerCase().includes(search) ||
+            m.tag.toLowerCase().includes(search) ||
+            m.params.some(p => p.name.toLowerCase().includes(search) || p.type.toLowerCase().includes(search))
+        );
+    }
+
+    renderMethods(filtered);
+}
+
+renderMethods(METHODS);
+</script>
+</body>
+</html>

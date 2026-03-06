@@ -1,0 +1,16 @@
+cff-version: 1.2.0
+message: "If you use plugin.delivery, please cite it as below."
+type: software
+title: "plugin.delivery"
+abstract: "AI plugin marketplace. SDK, gateway & developer tools for building function-calling plugins. OpenAPI compatible, multi-language support, Vercel edge deployment. Build chat plugins, AI tools & extensions. Primary use in cryptocurrency, DeFI, crypto trading, and blockchain analytics."
+authors:
+  - alias: nirholas
+    name: nirholas
+repository-code: "https://github.com/nirholas/plugin.delivery"
+url: "https://github.com/nirholas/plugin.delivery"
+license: MIT
+version: "1.0.0"
+date-released: "2026-02-11"
+keywords:
+  - open-source
+  - nirholas

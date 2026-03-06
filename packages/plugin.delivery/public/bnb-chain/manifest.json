@@ -1,0 +1,30 @@
+{
+  "$schema": "https://plugin.delivery/schema.json",
+  "identifier": "bnb-chain",
+  "openapi": "https://api.bscscan.com/openapi.json",
+  "settings": {
+    "type": "object",
+    "required": [
+      "BSCSCAN_API_KEY"
+    ],
+    "properties": {
+      "BSCSCAN_API_KEY": {
+        "title": "API Key",
+        "description": "Your BNB Chain API key",
+        "type": "string",
+        "format": "password"
+      }
+    }
+  },
+  "meta": {
+    "avatar": "💛",
+    "title": "BNB Chain",
+    "description": "BNB Smart Chain statistics and validators",
+    "tags": [
+      "bnb",
+      "bsc",
+      "binance"
+    ]
+  },
+  "version": "1"
+}

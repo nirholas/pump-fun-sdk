@@ -1,0 +1,435 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`OpenAPIConvertor > convertOpenAPIToPluginSchema > ChatWithPDF 1`] = `
+[
+  {
+    "description": "Load a PDF document",
+    "name": "loadPdf",
+    "parameters": {
+      "properties": {
+        "_requestBody": {
+          "properties": {
+            "pdf_url": {
+              "description": "The temporary URL of the PDF document to load.",
+              "format": "uri",
+              "type": "string",
+            },
+          },
+          "required": [
+            "pdf_url",
+          ],
+          "type": "object",
+        },
+      },
+      "type": "object",
+    },
+  },
+  {
+    "description": "Query a loaded PDF document",
+    "name": "queryPdf",
+    "parameters": {
+      "properties": {
+        "_requestBody": {
+          "properties": {
+            "pdf_url": {
+              "description": "The temporary URL of the PDF document that is already loaded.",
+              "format": "uri",
+              "type": "string",
+            },
+            "query": {
+              "description": "The query or question to ask based on the PDF document.",
+              "type": "string",
+            },
+          },
+          "required": [
+            "query",
+            "pdf_url",
+          ],
+          "type": "object",
+        },
+      },
+      "type": "object",
+    },
+  },
+]
+`;
+
+exports[`OpenAPIConvertor > convertOpenAPIToPluginSchema > can convert OpenAPI v2 MJ openAPI 1`] = `
+[
+  {
+    "description": "查询所有账号",
+    "name": "listUsingGET",
+    "parameters": {
+      "properties": {},
+      "type": "object",
+    },
+  },
+  {
+    "description": "指定ID获取账号",
+    "name": "fetchUsingGET",
+    "parameters": {
+      "properties": {
+        "id": {
+          "description": "账号ID",
+          "type": "string",
+        },
+      },
+      "type": "object",
+    },
+  },
+  {
+    "description": "提交Blend任务",
+    "name": "blendUsingPOST",
+    "parameters": {
+      "properties": {
+        "base64Array": {
+          "description": "图片base64数组",
+          "example": [
+            "data:image/png;base64,xxx1",
+            "data:image/png;base64,xxx2",
+          ],
+          "items": {
+            "type": "string",
+          },
+          "refType": "string",
+          "type": "array",
+        },
+        "dimensions": {
+          "description": "比例: PORTRAIT(2:3); SQUARE(1:1); LANDSCAPE(3:2)",
+          "enum": [
+            "PORTRAIT",
+            "SQUARE",
+            "LANDSCAPE",
+          ],
+          "example": "SQUARE",
+          "refType": null,
+          "type": "string",
+        },
+        "notifyHook": {
+          "description": "回调地址, 为空时使用全局notifyHook",
+          "refType": null,
+          "type": "string",
+        },
+        "state": {
+          "description": "自定义参数",
+          "refType": null,
+          "type": "string",
+        },
+      },
+      "required": [
+        "base64Array",
+      ],
+      "type": "object",
+    },
+  },
+  {
+    "description": "绘图变化",
+    "name": "changeUsingPOST",
+    "parameters": {
+      "properties": {
+        "action": {
+          "description": "UPSCALE(放大); VARIATION(变换); REROLL(重新生成)",
+          "enum": [
+            "UPSCALE",
+            "VARIATION",
+            "REROLL",
+          ],
+          "example": "UPSCALE",
+          "type": "string",
+        },
+        "index": {
+          "description": "序号(1~4), action为UPSCALE,VARIATION时必传",
+          "example": 1,
+          "exclusiveMaximum": false,
+          "exclusiveMinimum": false,
+          "format": "int32",
+          "maximum": 4,
+          "minimum": 1,
+          "type": "integer",
+        },
+        "notifyHook": {
+          "description": "回调地址, 为空时使用全局notifyHook",
+          "type": "string",
+        },
+        "state": {
+          "description": "自定义参数",
+          "type": "string",
+        },
+        "taskId": {
+          "description": "任务ID",
+          "example": "1320098173412546",
+          "type": "string",
+        },
+      },
+      "required": [
+        "action",
+        "taskId",
+      ],
+      "type": "object",
+    },
+  },
+  {
+    "description": "提交Describe任务",
+    "name": "describeUsingPOST",
+    "parameters": {
+      "properties": {
+        "base64": {
+          "description": "图片base64",
+          "example": "data:image/png;base64,xxx",
+          "type": "string",
+        },
+        "notifyHook": {
+          "description": "回调地址, 为空时使用全局notifyHook",
+          "type": "string",
+        },
+        "state": {
+          "description": "自定义参数",
+          "type": "string",
+        },
+      },
+      "required": [
+        "base64",
+      ],
+      "type": "object",
+    },
+  },
+  {
+    "description": "提交Imagine任务",
+    "name": "imagineUsingPOST",
+    "parameters": {
+      "properties": {
+        "base64Array": {
+          "description": "垫图base64数组",
+          "items": {
+            "type": "string",
+          },
+          "type": "array",
+        },
+        "notifyHook": {
+          "description": "回调地址, 为空时使用全局notifyHook",
+          "type": "string",
+        },
+        "prompt": {
+          "description": "提示词",
+          "example": "Cat",
+          "type": "string",
+        },
+        "state": {
+          "description": "自定义参数",
+          "type": "string",
+        },
+      },
+      "required": [
+        "prompt",
+      ],
+      "type": "object",
+    },
+  },
+  {
+    "description": "绘图变化-simple",
+    "name": "simpleChangeUsingPOST",
+    "parameters": {
+      "properties": {
+        "content": {
+          "description": "变化描述: ID $action$index",
+          "example": "1320098173412546 U2",
+          "type": "string",
+        },
+        "notifyHook": {
+          "description": "回调地址, 为空时使用全局notifyHook",
+          "type": "string",
+        },
+        "state": {
+          "description": "自定义参数",
+          "type": "string",
+        },
+      },
+      "required": [
+        "content",
+      ],
+      "type": "object",
+    },
+  },
+  {
+    "description": "查询所有任务",
+    "name": "listUsingGET_1",
+    "parameters": {
+      "properties": {},
+      "type": "object",
+    },
+  },
+  {
+    "description": "根据ID列表查询任务",
+    "name": "listByIdsUsingPOST",
+    "parameters": {
+      "properties": {
+        "ids": {
+          "items": {
+            "type": "string",
+          },
+          "type": "array",
+        },
+      },
+      "type": "object",
+    },
+  },
+  {
+    "description": "查询任务队列",
+    "name": "queueUsingGET",
+    "parameters": {
+      "properties": {},
+      "type": "object",
+    },
+  },
+  {
+    "description": "指定ID获取任务",
+    "name": "fetchUsingGET_1",
+    "parameters": {
+      "properties": {
+        "id": {
+          "description": "任务ID",
+          "type": "string",
+        },
+      },
+      "type": "object",
+    },
+  },
+]
+`;
+
+exports[`OpenAPIConvertor > convertOpenAPIToPluginSchema > can convert OpenAPI v3.0.2 openAPI 1`] = `
+[
+  {
+    "description": "Download Pdf",
+    "name": "download_pdf_api_download_pdf_post",
+    "parameters": {
+      "properties": {
+        "url": {
+          "title": "Url",
+          "type": "string",
+        },
+      },
+      "required": [
+        "url",
+      ],
+      "type": "object",
+    },
+  },
+  {
+    "description": "Perform Query",
+    "name": "perform_query_query_post",
+    "parameters": {
+      "properties": {
+        "_requestBody": {
+          "properties": {
+            "doc_id": {
+              "title": "Doc Id",
+              "type": "string",
+            },
+            "query": {
+              "title": "Query",
+              "type": "string",
+            },
+          },
+          "required": [
+            "doc_id",
+            "query",
+          ],
+          "title": "InputData",
+          "type": "object",
+        },
+      },
+      "type": "object",
+    },
+  },
+]
+`;
+
+exports[`OpenAPIConvertor > convertOpenAPIToPluginSchema > can convert OpenAPI v3.1 to sperax apis 1`] = `
+[
+  {
+    "description": "Read Course Segments",
+    "name": "read_course_segments_course_segments__get",
+    "parameters": {
+      "properties": {},
+      "type": "object",
+    },
+  },
+  {
+    "description": "Read Problem Set Item",
+    "name": "read_problem_set_item_problem_set__problem_set_id___question_number__get",
+    "parameters": {
+      "properties": {
+        "problem_set_id": {
+          "title": "Problem Set Id",
+          "type": "integer",
+        },
+        "question_number": {
+          "title": "Question Number",
+          "type": "integer",
+        },
+      },
+      "required": [
+        "problem_set_id",
+        "question_number",
+      ],
+      "type": "object",
+    },
+  },
+  {
+    "description": "Read Random Problem Set Items",
+    "name": "read_random_problem_set_items_problem_set_random__problem_set_id___n_items__get",
+    "parameters": {
+      "properties": {
+        "n_items": {
+          "title": "N Items",
+          "type": "integer",
+        },
+        "problem_set_id": {
+          "title": "Problem Set Id",
+          "type": "integer",
+        },
+      },
+      "required": [
+        "problem_set_id",
+        "n_items",
+      ],
+      "type": "object",
+    },
+  },
+  {
+    "description": "Read Range Of Problem Set Items",
+    "name": "read_range_of_problem_set_items_problem_set_range__problem_set_id___start___end__get",
+    "parameters": {
+      "properties": {
+        "end": {
+          "title": "End",
+          "type": "integer",
+        },
+        "problem_set_id": {
+          "title": "Problem Set Id",
+          "type": "integer",
+        },
+        "start": {
+          "title": "Start",
+          "type": "integer",
+        },
+      },
+      "required": [
+        "problem_set_id",
+        "start",
+        "end",
+      ],
+      "type": "object",
+    },
+  },
+  {
+    "description": "Read User Id",
+    "name": "read_user_id_user__get",
+    "parameters": {
+      "properties": {},
+      "type": "object",
+    },
+  },
+]
+`;

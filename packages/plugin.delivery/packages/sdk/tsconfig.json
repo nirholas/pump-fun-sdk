@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "sourceMap": true,
+    "skipDefaultLibCheck": true,
+    "jsx": "react-jsx",
+    "baseUrl": ".",
+    "target": "ESNext",
+    "lib": ["ESNext", "DOM"],
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "declaration": true,
+    "moduleResolution": "node",
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "paths": {
+      "@/*": ["./*"]
+    }
+  },
+  "include": ["*.ts", "schema/**/*", "types/**/*", "client/**/*", "openapi/**/*"]
+}

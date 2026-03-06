@@ -1,0 +1,407 @@
+{
+  "expires": [
+    "assetOvi",
+    "GifApi",
+    "stackoverflow_plus",
+    "socialsearch",
+    "nftguru",
+    "TokenInsights",
+    "web_search",
+    "speak",
+    "mintbasesearch",
+    "diagrams_show_me",
+    "make_an_excel_sheet",
+    "boolio",
+    "astrodaily",
+    "scholarly",
+    "todo",
+    "domatron",
+    "ResearchAI",
+    "nba_stats",
+    "Bardeen",
+    "diceroller",
+    "factcheck",
+    "ImageSearch",
+    "Space",
+    "ssfineart",
+    "uberchord",
+    "MediumGPTPlugin",
+    "askyourpdf",
+    "earthquake",
+    "Charts_and_Diagrams"
+  ],
+  "plugins": [
+    {
+      "author": "orrenprunckun",
+      "homepage": "https://seo-plugin.orrenprunckun.com",
+      "identifier": "SEO",
+      "manifest": "https://openai-collections.chat-plugin.sperax.com/seo/manifest.json",
+      "meta": {
+        "avatar": "https://openai-collections.chat-plugin.sperax.com/seo/logo.webp",
+        "description": "Enter any URL and keyword and get an On-Page SEO analysis & insights!",
+        "tags": [
+          "seo"
+        ],
+        "title": "SEO"
+      },
+      "schemaVersion": 1
+    },
+    {
+      "author": "savvytrader",
+      "homepage": "https://savvytrader.com",
+      "identifier": "savvy_trader_ai",
+      "manifest": "https://openai-collections.chat-plugin.sperax.com/savvy-trader/manifest.json",
+      "meta": {
+        "avatar": "https://openai-collections.chat-plugin.sperax.com/savvy-trader/logo.webp",
+        "description": "Realtime stock, crypto and other investment data.",
+        "tags": [
+          "stock",
+          "analyze"
+        ],
+        "title": "Savvy Trader AI"
+      },
+      "schemaVersion": 1
+    },
+    {
+      "author": "getchange",
+      "homepage": "https://api.getchange.io",
+      "identifier": "nonprofits",
+      "manifest": "https://openai-collections.chat-plugin.sperax.com/getchange/manifest.json",
+      "meta": {
+        "avatar": "https://openai-collections.chat-plugin.sperax.com/getchange/logo.webp",
+        "description": "Discover impactful nonprofits to support in your community and beyond.",
+        "tags": [
+          "charity"
+        ],
+        "title": "Change"
+      },
+      "schemaVersion": 1
+    },
+    {
+      "author": "onrender",
+      "homepage": "https://llamawrapper-prod.onrender.com",
+      "identifier": "defillama",
+      "manifest": "https://openai-collections.chat-plugin.sperax.com/defillama/manifest.json",
+      "meta": {
+        "avatar": "https://openai-collections.chat-plugin.sperax.com/defillama/logo.webp",
+        "description": "Retrieve data on DeFi protocols and blockchains.",
+        "tags": [
+          "crypto",
+          "DeFi"
+        ],
+        "title": "Defillama"
+      },
+      "schemaVersion": 1
+    },
+    {
+      "author": "tapapis",
+      "homepage": "https://openai.tapapis.com",
+      "identifier": "GameSight",
+      "manifest": "https://openai-collections.chat-plugin.sperax.com/game-sight/manifest.json",
+      "meta": {
+        "avatar": "https://openai-collections.chat-plugin.sperax.com/game-sight/logo.webp",
+        "description": "Discover games, game-related content, get recommendations, and compare games based on player reviews.",
+        "tags": [
+          "game",
+          "search"
+        ],
+        "title": "GameSight"
+      },
+      "schemaVersion": 1
+    },
+    {
+      "author": "steven-tey",
+      "homepage": "https://github.com/steven-tey/weathergpt",
+      "identifier": "WeatherGPT",
+      "manifest": "https://openai-collections.chat-plugin.sperax.com/weather-gpt/manifest.json",
+      "meta": {
+        "avatar": "https://openai-collections.chat-plugin.sperax.com/weather-gpt/logo.webp",
+        "description": "Get current weather information for a specific location.",
+        "tags": [
+          "weather"
+        ],
+        "title": "WeatherGPT"
+      },
+      "schemaVersion": 1
+    },
+    {
+      "author": "yunwei37",
+      "homepage": "https://github.com/yunwei37/ChatGPT-github-stat-plugin",
+      "identifier": "gitUserRepoStats",
+      "manifest": "https://openai-collections.chat-plugin.sperax.com/github-stats/manifest.json",
+      "meta": {
+        "avatar": "https://openai-collections.chat-plugin.sperax.com/github-stats/logo.webp",
+        "description": "Dynamically generate and analyze stats and history for OSS repos and developers.",
+        "tags": [
+          "github",
+          "oss"
+        ],
+        "title": "Git OSS Stats"
+      },
+      "schemaVersion": 1
+    },
+    {
+      "author": "questmate",
+      "homepage": "https://chatgpt-plugin.questmate.com",
+      "identifier": "questmate",
+      "manifest": "https://openai-collections.chat-plugin.sperax.com/questmate/manifest.json",
+      "meta": {
+        "avatar": "https://openai-collections.chat-plugin.sperax.com/questmate/logo.webp",
+        "description": "Create forms, checklists and workflows (we call 'em Quests!) that you can assign, schedule or make public.",
+        "tags": [
+          "forms",
+          "checklists",
+          "productivity"
+        ],
+        "title": "Questmate Forms"
+      },
+      "schemaVersion": 1
+    },
+    {
+      "author": "litmaps",
+      "homepage": "https://api.litmaps.com",
+      "identifier": "litmaps",
+      "manifest": "https://openai-collections.chat-plugin.sperax.com/litmaps/manifest.json",
+      "meta": {
+        "avatar": "https://openai-collections.chat-plugin.sperax.com/litmaps/logo.webp",
+        "description": "Get help exploring the scientific literature. Find relevant papers and generate mindmaps of the literature.",
+        "tags": [
+          "scientific-literature",
+          "search"
+        ],
+        "title": "Litmaps"
+      },
+      "schemaVersion": 1
+    },
+    {
+      "author": "travelmyth",
+      "homepage": "https://www.travelmyth.com",
+      "identifier": "travelmyth",
+      "manifest": "https://openai-collections.chat-plugin.sperax.com/travelmyth/manifest.json",
+      "meta": {
+        "avatar": "https://openai-collections.chat-plugin.sperax.com/travelmyth/logo.webp",
+        "description": "Unleash personalized hotel search with Travelmyth, offering 60 unique categories for the perfect match.",
+        "tags": [
+          "travel",
+          "hotel",
+          "search"
+        ],
+        "title": "Travelmyth"
+      },
+      "schemaVersion": 1
+    },
+    {
+      "author": "maila",
+      "homepage": "https://vcaption.maila.ai",
+      "identifier": "VideoCaptions",
+      "manifest": "https://openai-collections.chat-plugin.sperax.com/video-captions/manifest.json",
+      "meta": {
+        "avatar": "https://openai-collections.chat-plugin.sperax.com/video-captions/logo.webp",
+        "description": "Convert Youtube links into transcribed text, enable asking questions, create chapters, and summarize its content.",
+        "tags": [
+          "video-to-text",
+          "youtube"
+        ],
+        "title": "Video Captions"
+      },
+      "schemaVersion": 1
+    },
+    {
+      "author": "glarity",
+      "homepage": "https://glarity.app",
+      "identifier": "Video_summary",
+      "manifest": "https://openai-collections.chat-plugin.sperax.com/video-summary/manifest.json",
+      "meta": {
+        "avatar": "https://openai-collections.chat-plugin.sperax.com/video-summary/logo.webp",
+        "description": "Summarize YouTube video highlights. Generate summaries from YouTube video URLs.",
+        "tags": [
+          "video-to-text",
+          "youtube"
+        ],
+        "title": "Video Summary"
+      },
+      "schemaVersion": 1
+    },
+    {
+      "author": "accessplugins",
+      "homepage": "https://sheets.accessplugins.com",
+      "identifier": "access_google_sheets",
+      "manifest": "https://openai-collections.chat-plugin.sperax.com/access-google-sheets/manifest.json",
+      "meta": {
+        "avatar": "https://openai-collections.chat-plugin.sperax.com/access-google-sheets/logo.webp",
+        "description": "Ask your Google Sheets questions & chat with excel. Enter Google Drive link to start!",
+        "tags": [
+          "google",
+          "sheets",
+          "excel"
+        ],
+        "title": "Access Google Sheet"
+      },
+      "schemaVersion": 1
+    },
+    {
+      "author": "azurewebsites",
+      "homepage": "https://aladin-search-book.azurewebsites.net",
+      "identifier": "AladinSearchBooks",
+      "manifest": "https://openai-collections.chat-plugin.sperax.com/aladin-search-book/manifest.json",
+      "meta": {
+        "avatar": "https://openai-collections.chat-plugin.sperax.com/aladin-search-book/logo.webp",
+        "description": "Search for books on Aladin.",
+        "tags": [
+          "book",
+          "search"
+        ],
+        "title": "AladinBooks"
+      },
+      "schemaVersion": 1
+    },
+    {
+      "author": "pulsetic",
+      "homepage": "https://api.pulsetic.com",
+      "identifier": "uptime",
+      "manifest": "https://openai-collections.chat-plugin.sperax.com/uptime/manifest.json",
+      "meta": {
+        "avatar": "https://openai-collections.chat-plugin.sperax.com/uptime/logo.webp",
+        "description": "Insert your website URL to check the availability. Pulsetic tests the uptime, availability & performance of a website.",
+        "tags": [
+          "website",
+          "performance",
+          "test"
+        ],
+        "title": "Check Website Down"
+      },
+      "schemaVersion": 1
+    },
+    {
+      "author": "customplugin",
+      "homepage": "https://levinbot.customplugin.ai",
+      "identifier": "levinbot",
+      "manifest": "https://openai-collections.chat-plugin.sperax.com/levinbot/manifest.json",
+      "meta": {
+        "avatar": "https://openai-collections.chat-plugin.sperax.com/levinbot/logo.webp",
+        "description": "Search research papers and transcripts of talks from Dr. Michael Levin's Lab.",
+        "tags": [
+          "research-paper",
+          "search"
+        ],
+        "title": "LevinBot"
+      },
+      "schemaVersion": 1
+    },
+    {
+      "author": "mixerbox",
+      "homepage": "https://podcasts.mixerbox.com",
+      "identifier": "MixerBox_Podcasts",
+      "manifest": "https://openai-collections.chat-plugin.sperax.com/mixer-box-podcasts/manifest.json",
+      "meta": {
+        "avatar": "https://openai-collections.chat-plugin.sperax.com/mixer-box-podcasts/logo.webp",
+        "description": "Search podcasts easily! Explore podcasts covering society, sports, business, news, music, and more!",
+        "tags": [
+          "podcast",
+          "search"
+        ],
+        "title": "MixerBox Podcasts"
+      },
+      "schemaVersion": 1
+    },
+    {
+      "author": "mixerbox",
+      "homepage": "https://translate.mixerbox.com",
+      "identifier": "MixerBox_Translate_AI_language_tutor",
+      "manifest": "https://openai-collections.chat-plugin.sperax.com/mixer-box-translate-ai-language-tutor/manifest.json",
+      "meta": {
+        "avatar": "https://openai-collections.chat-plugin.sperax.com/mixer-box-translate-ai-language-tutor/logo.webp",
+        "description": "Translate any language right away! Learn foreign languages easily by conversing with AI tutors!",
+        "tags": [
+          "translate"
+        ],
+        "title": "MixerBox Translate"
+      },
+      "schemaVersion": 1
+    },
+    {
+      "author": "mixerbox",
+      "homepage": "https://weather.mixerbox.com",
+      "identifier": "MixerBox_Weather",
+      "manifest": "https://openai-collections.chat-plugin.sperax.com/mixer-box-weather/manifest.json",
+      "meta": {
+        "avatar": "https://openai-collections.chat-plugin.sperax.com/mixer-box-weather/logo.webp",
+        "description": "Get real-time worldwide weather updates & forecasts, instantly!",
+        "tags": [
+          "weather"
+        ],
+        "title": "MixerBox Weather"
+      },
+      "schemaVersion": 1
+    },
+    {
+      "author": "portfoliometa",
+      "homepage": "https://portfoliometa.com",
+      "identifier": "StockData",
+      "manifest": "https://openai-collections.chat-plugin.sperax.com/stock-data/manifest.json",
+      "meta": {
+        "avatar": "https://openai-collections.chat-plugin.sperax.com/stock-data/logo.webp",
+        "description": "Analyze stocks and get comprehensive real-time investment data and analytics.",
+        "tags": [
+          "stock"
+        ],
+        "title": "PortfolioMeta"
+      },
+      "schemaVersion": 1
+    },
+    {
+      "author": "webfx",
+      "homepage": "https://webfx.ai",
+      "identifier": "seo_assistant",
+      "manifest": "https://openai-collections.chat-plugin.sperax.com/seo-assistant/manifest.json",
+      "meta": {
+        "avatar": "https://openai-collections.chat-plugin.sperax.com/seo-assistant/logo.webp",
+        "description": "The SEO Assistant can generate search engine keyword information in order to aid the creation of content.",
+        "tags": [
+          "seo",
+          "keyword"
+        ],
+        "title": "SEO Assistant"
+      },
+      "schemaVersion": 1
+    },
+    {
+      "author": "shoppingtools",
+      "homepage": "https://shoppingtools.biz",
+      "identifier": "ShoppingTools",
+      "manifest": "https://openai-collections.chat-plugin.sperax.com/shopping-tools/manifest.json",
+      "meta": {
+        "avatar": "https://openai-collections.chat-plugin.sperax.com/shopping-tools/logo.webp",
+        "description": "Search for products on eBay & AliExpress, find eBay events & coupons. Get prompt examples.",
+        "tags": [
+          "shopping",
+          "eBay",
+          "AliExpress",
+          "coupons"
+        ],
+        "title": "Shopping tools"
+      },
+      "schemaVersion": 1
+    },
+    {
+      "author": "DeFiLlama",
+      "createdAt": "2025-12-29",
+      "homepage": "https://defillama.com",
+      "identifier": "defillama",
+      "manifest": "https://plugin.delivery/openai/defillama/manifest.json",
+      "meta": {
+        "avatar": "https://plugin.delivery/openai/defillama/logo.png",
+        "description": "DeFi analytics with TVL, yields, stablecoins, and protocol metrics. Track 3000+ protocols across 200+ chains. Free, no API key required.",
+        "tags": [
+          "defi",
+          "tvl",
+          "yields",
+          "analytics",
+          "protocols"
+        ],
+        "title": "DeFiLlama Analytics"
+      },
+      "schemaVersion": 1
+    }
+  ]
+}

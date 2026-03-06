@@ -1,0 +1,30 @@
+{
+  "$schema": "https://plugin.delivery/schema.json",
+  "identifier": "contract-scanner",
+  "openapi": "https://api.gopluslabs.io/openapi.json",
+  "settings": {
+    "type": "object",
+    "required": [
+      "GOPLUS_API_KEY"
+    ],
+    "properties": {
+      "GOPLUS_API_KEY": {
+        "title": "GoPlus API Key",
+        "description": "Your GoPlus Security API key",
+        "type": "string",
+        "format": "password"
+      }
+    }
+  },
+  "meta": {
+    "avatar": "🔒",
+    "title": "Contract Scanner",
+    "description": "Token security analysis and honeypot detection via GoPlus",
+    "tags": [
+      "security",
+      "scanner",
+      "honeypot"
+    ]
+  },
+  "version": "1"
+}

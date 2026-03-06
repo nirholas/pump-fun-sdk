@@ -1,0 +1,19 @@
+{
+  "author": "SperaxOS",
+  "createdAt": "2025-01-01",
+  "homepage": "https://github.com/nirholas/plugin.delivery",
+  "identifier": "audit-checker",
+  "manifest": "https://plugin.delivery/audit-checker/manifest.json",
+  "meta": {
+    "avatar": "📋",
+    "description": "Aggregates audit reports from multiple databases",
+    "tags": [
+      "audit",
+      "security",
+      "reports"
+    ],
+    "title": "Audit Checker",
+    "category": "tools"
+  },
+  "schemaVersion": 1
+}

@@ -1,0 +1,20 @@
+{
+  "author": "SperaxOS",
+  "createdAt": "2025-01-01",
+  "homepage": "https://github.com/nirholas/plugin.delivery",
+  "identifier": "gmx",
+  "manifest": "https://plugin.delivery/gmx/manifest.json",
+  "meta": {
+    "avatar": "📊",
+    "description": "GMX perpetual stats, GLP/GM data, and funding rates",
+    "tags": [
+      "gmx",
+      "perpetuals",
+      "defi",
+      "trading"
+    ],
+    "title": "GMX Stats",
+    "category": "stocks-finance"
+  },
+  "schemaVersion": 1
+}

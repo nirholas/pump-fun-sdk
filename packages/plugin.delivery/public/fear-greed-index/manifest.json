@@ -1,0 +1,16 @@
+{
+  "$schema": "https://plugin.delivery/schema.json",
+  "identifier": "fear-greed-index",
+  "openapi": "https://api.alternative.me/fng/openapi.json",
+  "meta": {
+    "avatar": "😱",
+    "title": "Fear & Greed Index",
+    "description": "Crypto market sentiment indicator from 0 (Extreme Fear) to 100 (Extreme Greed)",
+    "tags": [
+      "sentiment",
+      "market",
+      "indicator"
+    ]
+  },
+  "version": "1"
+}

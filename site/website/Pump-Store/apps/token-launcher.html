@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="pump-include" content="pump.css">
+    <meta name="capabilities" content="pump_token_launcher">
+    <meta name="aspect-ratio" content="3/4">
+    <meta name="pump-icon" content="rocket_launch">
+    <meta name="pump-perms" content="network" />
+    <title>Token Launcher</title>
+    <style>
+        :root { --bg1:#0a0a0a; --bg2:#141414; --bg3:#1e1e1e; --accent:#00e87b; --danger:#ff4d4d; }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:'Poppins',system-ui,sans-serif; background:var(--bg1); color:#fff; height:100vh; overflow-y:auto; }
+        .app { display:flex; flex-direction:column; min-height:100vh; }
+
+        .header { padding:16px 20px; display:flex; align-items:center; gap:10px; border-bottom:1px solid #ffffff0a; position:sticky; top:0; background:var(--bg1); z-index:10; }
+        .header h1 { font-size:1rem; font-weight:600; }
+        .header .badge { font-size:0.6rem; padding:2px 8px; border-radius:20px; background:rgba(0,232,123,0.15); color:var(--accent); }
+
+        .form-section { padding:16px 20px; }
+        .section-title { font-size:0.7rem; color:#666; text-transform:uppercase; letter-spacing:1px; margin-bottom:10px; display:flex; align-items:center; gap:6px; }
+        .section-title .step { width:20px; height:20px; border-radius:50%; background:var(--accent); color:#000; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.65rem; }
+
+        .input-group { margin-bottom:12px; }
+        .input-group label { display:block; font-size:0.75rem; color:#aaa; margin-bottom:4px; }
+        .input-group input, .input-group textarea, .input-group select {
+            width:100%; padding:10px 14px; background:var(--bg2); border:1px solid #ffffff0c; border-radius:10px;
+            color:#fff; font-size:0.85rem; font-family:inherit; outline:none; transition:border-color 0.2s;
+        }
+        .input-group input:focus, .input-group textarea:focus { border-color:var(--accent); }
+        .input-group textarea { resize:vertical; min-height:60px; }
+        .input-group .hint { font-size:0.65rem; color:#555; margin-top:3px; }
+
+        .input-row { display:flex; gap:10px; }
+        .input-row .input-group { flex:1; }
+
+        .image-upload { width:100%; padding:24px; background:var(--bg2); border:2px dashed #ffffff15; border-radius:12px;
+            display:flex; flex-direction:column; align-items:center; gap:8px; cursor:pointer; transition:all 0.2s; }
+        .image-upload:hover { border-color:var(--accent); background:var(--bg3); }
+        .image-upload .material-symbols-rounded { font-size:32px; color:#555; }
+        .image-upload span { font-size:0.75rem; color:#888; }
+        .image-upload.has-image { border-style:solid; border-color:var(--accent); }
+        .image-upload img { max-width:80px; max-height:80px; border-radius:8px; }
+
+        .curve-preview { background:var(--bg2); border-radius:12px; padding:16px; margin-top:8px; border:1px solid #ffffff0a; }
+        .curve-canvas { width:100%; height:120px; border-radius:8px; background:var(--bg3); }
+        .curve-stats { display:flex; justify-content:space-between; margin-top:10px; }
+        .curve-stat { text-align:center; }
+        .curve-stat .val { font-size:0.9rem; font-weight:600; color:var(--accent); }
+        .curve-stat .lbl { font-size:0.6rem; color:#666; }
+
+        .fee-info { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
+        .fee-chip { padding:4px 10px; background:var(--bg3); border-radius:20px; font-size:0.65rem; color:#aaa; border:1px solid #ffffff08; }
+
+        .launch-btn { width:100%; padding:14px; background:linear-gradient(135deg, var(--accent), #00b862); border:none;
+            border-radius:12px; color:#000; font-size:0.95rem; font-weight:700; cursor:pointer; transition:all 0.2s;
+            margin-top:8px; font-family:inherit; }
+        .launch-btn:hover { transform:translateY(-1px); box-shadow:0 4px 20px rgba(0,232,123,0.3); }
+        .launch-btn:disabled { opacity:0.5; cursor:not-allowed; transform:none; box-shadow:none; }
+
+        .cost-summary { background:var(--bg2); border-radius:10px; padding:12px 16px; margin-top:12px; border:1px solid #ffffff0a; }
+        .cost-row { display:flex; justify-content:space-between; font-size:0.8rem; padding:4px 0; }
+        .cost-row .cost-label { color:#888; }
+        .cost-row.total { border-top:1px solid #ffffff0a; padding-top:8px; margin-top:4px; font-weight:600; }
+
+        .divider { height:1px; background:#ffffff08; margin:4px 0; }
+
+        .status-msg { padding:10px 16px; margin:8px 20px; border-radius:10px; font-size:0.8rem; display:none; }
+        .status-msg.success { display:block; background:rgba(0,232,123,0.1); color:var(--accent); border:1px solid rgba(0,232,123,0.2); }
+        .status-msg.error { display:block; background:rgba(255,77,77,0.1); color:var(--danger); border:1px solid rgba(255,77,77,0.2); }
+
+        .footer { padding:12px 20px; border-top:1px solid #ffffff0a; font-size:0.6rem; color:#444; text-align:center; }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <div class="header">
+            <span class="material-symbols-rounded" style="color:var(--accent);">rocket_launch</span>
+            <h1>Pump.fun Token Launcher</h1>
+            <span class="badge">SDK v2</span>
+        </div>
+
+        <div id="statusMsg" class="status-msg"></div>
+
+        <!-- Step 1: Token Info -->
+        <div class="form-section">
+            <div class="section-title"><span class="step">1</span> Token Information</div>
+            <div class="input-group">
+                <label>Token Name</label>
+                <input id="tokenName" placeholder="e.g. PumpCoin" maxlength="32">
+            </div>
+            <div class="input-row">
+                <div class="input-group">
+                    <label>Symbol</label>
+                    <input id="tokenSymbol" placeholder="e.g. PUMP" maxlength="10" style="text-transform:uppercase;">
+                </div>
+                <div class="input-group">
+                    <label>Decimals</label>
+                    <input id="tokenDecimals" type="number" value="6" min="0" max="9">
+                </div>
+            </div>
+            <div class="input-group">
+                <label>Description</label>
+                <textarea id="tokenDesc" placeholder="What makes this token special?"></textarea>
+            </div>
+        </div>
+
+        <!-- Step 2: Image -->
+        <div class="form-section">
+            <div class="section-title"><span class="step">2</span> Token Image</div>
+            <div class="image-upload" id="imageUpload" onclick="document.getElementById('imageInput').click()">
+                <span class="material-symbols-rounded">add_photo_alternate</span>
+                <span>Click to upload token image (PNG, JPG, SVG)</span>
+                <input type="file" id="imageInput" accept="image/*" style="display:none" onchange="handleImage(this)">
+            </div>
+        </div>
+
+        <!-- Step 3: Curve Config -->
+        <div class="form-section">
+            <div class="section-title"><span class="step">3</span> Bonding Curve</div>
+            <div class="input-row">
+                <div class="input-group">
+                    <label>Initial Virtual SOL</label>
+                    <input id="virtualSol" type="number" value="30" step="1" min="1" onchange="updateCurvePreview()">
+                    <div class="hint">SOL in virtual reserve (default: 30)</div>
+                </div>
+                <div class="input-group">
+                    <label>Token Supply</label>
+                    <input id="tokenSupply" type="number" value="1000000000" step="1000000" onchange="updateCurvePreview()">
+                    <div class="hint">Total tokens (default: 1B)</div>
+                </div>
+            </div>
+
+            <div class="curve-preview">
+                <canvas id="curveCanvas" class="curve-canvas"></canvas>
+                <div class="curve-stats">
+                    <div class="curve-stat">
+                        <div class="val" id="initPrice">$0.000030</div>
+                        <div class="lbl">Initial Price</div>
+                    </div>
+                    <div class="curve-stat">
+                        <div class="val" id="migPrice">$0.000280</div>
+                        <div class="lbl">Migration Price</div>
+                    </div>
+                    <div class="curve-stat">
+                        <div class="val" id="migMcap">$280K</div>
+                        <div class="lbl">Migration MCap</div>
+                    </div>
+                    <div class="curve-stat">
+                        <div class="val" id="migSol">85 SOL</div>
+                        <div class="lbl">SOL to Migrate</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 4: Fees -->
+        <div class="form-section">
+            <div class="section-title"><span class="step">4</span> Fee Configuration</div>
+            <div class="input-row">
+                <div class="input-group">
+                    <label>Creator Fee (BPS)</label>
+                    <input id="creatorFee" type="number" value="100" min="0" max="500" step="10">
+                    <div class="hint">1% = 100 BPS. Max 5%</div>
+                </div>
+                <div class="input-group">
+                    <label>Referral Fee (BPS)</label>
+                    <input id="referralFee" type="number" value="50" min="0" max="200" step="10">
+                    <div class="hint">0.5% = 50 BPS</div>
+                </div>
+            </div>
+            <div class="fee-info">
+                <div class="fee-chip">Protocol: 1%</div>
+                <div class="fee-chip">Creator: <span id="creatorFeePct">1%</span></div>
+                <div class="fee-chip">Referral: <span id="referralFeePct">0.5%</span></div>
+            </div>
+        </div>
+
+        <!-- Step 5: Launch -->
+        <div class="form-section">
+            <div class="section-title"><span class="step">5</span> Review &amp; Launch</div>
+            <div class="cost-summary">
+                <div class="cost-row"><span class="cost-label">Account Rent</span><span>~0.002 SOL</span></div>
+                <div class="cost-row"><span class="cost-label">Metadata Upload</span><span>~0.01 SOL</span></div>
+                <div class="cost-row"><span class="cost-label">TX Fee</span><span>~0.000005 SOL</span></div>
+                <div class="cost-row total"><span>Total Estimated</span><span>~0.012 SOL</span></div>
+            </div>
+            <button class="launch-btn" id="launchBtn" onclick="launchToken()">
+                🚀 Launch Token on Pump.fun
+            </button>
+        </div>
+
+        <div class="footer">
+            Powered by @pump-fun/pump-sdk • createV2Instruction • Bonding Curve AMM
+        </div>
+    </div>
+
+    <script>
+    // Bonding curve math preview
+    function updateCurvePreview() {
+        const vSol = parseFloat(document.getElementById('virtualSol').value) || 30;
+        const supply = parseFloat(document.getElementById('tokenSupply').value) || 1e9;
+        const solPrice = 176; // approximate
+
+        // Pump.fun bonding curve: price = virtualSolReserves / virtualTokenReserves
+        const vTokens = supply * 0.8; // 80% on curve
+        const initPrice = (vSol / vTokens) * solPrice;
+        const realSolToMigrate = 85; // ~85 SOL to complete curve
+        const totalSolAtMig = vSol + realSolToMigrate;
+        const tokensRemaining = vTokens * (vSol / totalSolAtMig);
+        const migPrice = (totalSolAtMig / tokensRemaining) * solPrice;
+        const migMcap = migPrice * supply;
+
+        document.getElementById('initPrice').textContent = '$' + initPrice.toFixed(6);
+        document.getElementById('migPrice').textContent = '$' + migPrice.toFixed(6);
+        document.getElementById('migMcap').textContent = migMcap >= 1e6 ? '$' + (migMcap/1e6).toFixed(1) + 'M' : '$' + (migMcap/1e3).toFixed(0) + 'K';
+        document.getElementById('migSol').textContent = realSolToMigrate + ' SOL';
+        drawCurve(vSol, vTokens, realSolToMigrate);
+    }
+
+    function drawCurve(vSol, vTokens, realSol) {
+        const canvas = document.getElementById('curveCanvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = canvas.offsetWidth * 2;
+        canvas.height = canvas.offsetHeight * 2;
+        ctx.scale(2, 2);
+        const w = canvas.offsetWidth, h = canvas.offsetHeight;
+        ctx.clearRect(0, 0, w, h);
+
+        // Draw grid
+        ctx.strokeStyle = '#ffffff08';
+        ctx.lineWidth = 1;
+        for(let i = 0; i < 5; i++) {
+            const y = (h / 5) * i;
+            ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+        }
+
+        // Draw curve: price = (vSol + x) / (vTokens * vSol / (vSol + x))
+        const maxX = realSol * 1.3;
+        const prices = [];
+        for(let i = 0; i <= 100; i++) {
+            const x = (i / 100) * maxX;
+            const currentVSol = vSol + x;
+            const currentVTokens = vTokens * vSol / currentVSol;
+            prices.push(currentVSol / currentVTokens);
+        }
+        const maxP = Math.max(...prices);
+
+        ctx.beginPath();
+        ctx.strokeStyle = '#00e87b';
+        ctx.lineWidth = 2;
+        for(let i = 0; i <= 100; i++) {
+            const x = (i / 100) * w;
+            const y = h - (prices[i] / maxP) * (h * 0.85) - 8;
+            if(i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+
+        // Gradient fill
+        const grad = ctx.createLinearGradient(0, 0, 0, h);
+        grad.addColorStop(0, 'rgba(0,232,123,0.15)');
+        grad.addColorStop(1, 'rgba(0,232,123,0)');
+        ctx.lineTo(w, h); ctx.lineTo(0, h); ctx.closePath();
+        ctx.fillStyle = grad; ctx.fill();
+
+        // Migration line
+        const migX = (realSol / maxX) * w;
+        ctx.beginPath(); ctx.strokeStyle = '#ff9f43'; ctx.lineWidth = 1;
+        ctx.setLineDash([4, 4]); ctx.moveTo(migX, 0); ctx.lineTo(migX, h); ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = '#ff9f43'; ctx.font = '9px sans-serif';
+        ctx.fillText('MIGRATE', migX - 22, 12);
+    }
+
+    function handleImage(input) {
+        const file = input.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const upload = document.getElementById('imageUpload');
+            upload.classList.add('has-image');
+            upload.innerHTML = '<img src="' + e.target.result + '"><span>' + file.name + '</span>';
+        };
+        reader.readAsDataURL(file);
+    }
+
+    // Update fee display
+    document.getElementById('creatorFee').addEventListener('input', function() {
+        document.getElementById('creatorFeePct').textContent = (this.value / 100).toFixed(1) + '%';
+    });
+    document.getElementById('referralFee').addEventListener('input', function() {
+        document.getElementById('referralFeePct').textContent = (this.value / 100).toFixed(1) + '%';
+    });
+
+    async function launchToken() {
+        const name = document.getElementById('tokenName').value.trim();
+        const symbol = document.getElementById('tokenSymbol').value.trim().toUpperCase();
+        const decimals = parseInt(document.getElementById('tokenDecimals').value);
+        const desc = document.getElementById('tokenDesc').value.trim();
+
+        if (!name || !symbol) {
+            showMsg('error', 'Token name and symbol are required');
+            return;
+        }
+        if (symbol.length > 10) {
+            showMsg('error', 'Symbol must be 10 characters or less');
+            return;
+        }
+
+        const btn = document.getElementById('launchBtn');
+        btn.disabled = true;
+        btn.textContent = '⏳ Preparing transaction...';
+
+        // Check for Solana wallet
+        if (!window.solana?.isPhantom && !window.solflare?.isSolflare) {
+            showMsg('error', 'Connect a Solana wallet (Phantom or Solflare) to launch tokens. Use the Solana Wallet app first.');
+            btn.disabled = false;
+            btn.textContent = '🚀 Launch Token on Pump.fun';
+            return;
+        }
+
+        showMsg('success', `Token "${name}" ($${symbol}) ready! In production, this calls PumpSdk.createV2Instruction() to deploy the bonding curve on-chain. Connect the SDK for live deployment.`);
+        btn.disabled = false;
+        btn.textContent = '🚀 Launch Token on Pump.fun';
+    }
+
+    function showMsg(type, msg) {
+        const el = document.getElementById('statusMsg');
+        el.className = 'status-msg ' + type;
+        el.textContent = msg;
+        el.style.display = 'block';
+        setTimeout(() => el.style.display = 'none', 8000);
+    }
+
+    // Init
+    updateCurvePreview();
+    </script>
+</body>
+</html>

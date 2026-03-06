@@ -1,0 +1,120 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "OpenAPI Plugin Template",
+    "description": "Template API for plugin development",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3400",
+      "description": "Development server"
+    }
+  ],
+  "paths": {
+    "/api/greet": {
+      "post": {
+        "operationId": "greet",
+        "summary": "Send a greeting to someone",
+        "description": "Returns a personalized greeting message",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name"],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "description": "Name of the person to greet"
+                  },
+                  "language": {
+                    "type": "string",
+                    "enum": ["en", "es", "fr", "de", "ja", "zh"],
+                    "default": "en",
+                    "description": "Language for the greeting"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Greeting response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "greeting": {
+                      "type": "string"
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/calculate": {
+      "post": {
+        "operationId": "calculate",
+        "summary": "Perform a calculation",
+        "description": "Evaluates a mathematical expression",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["operation", "a", "b"],
+                "properties": {
+                  "operation": {
+                    "type": "string",
+                    "enum": ["add", "subtract", "multiply", "divide"],
+                    "description": "Mathematical operation to perform"
+                  },
+                  "a": {
+                    "type": "number",
+                    "description": "First operand"
+                  },
+                  "b": {
+                    "type": "number",
+                    "description": "Second operand"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Calculation result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": {
+                      "type": "number"
+                    },
+                    "expression": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

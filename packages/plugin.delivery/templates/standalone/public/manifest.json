@@ -1,0 +1,17 @@
+{
+  "$schema": "https://plugin.delivery/schema.json",
+  "identifier": "standalone-template",
+  "type": "standalone",
+  "author": "Your Name",
+  "homepage": "https://github.com/yourname/standalone-template",
+  "ui": {
+    "url": "http://localhost:3400",
+    "height": 400
+  },
+  "meta": {
+    "avatar": "🎮",
+    "title": "Standalone Template",
+    "description": "An interactive standalone plugin",
+    "tags": ["interactive", "standalone", "template"]
+  }
+}

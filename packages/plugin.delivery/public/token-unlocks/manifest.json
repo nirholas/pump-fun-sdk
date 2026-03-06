@@ -1,0 +1,30 @@
+{
+  "$schema": "https://plugin.delivery/schema.json",
+  "identifier": "token-unlocks",
+  "openapi": "https://token.unlocks.app/api/openapi.json",
+  "settings": {
+    "type": "object",
+    "required": [
+      "TOKEN_UNLOCKS_API_KEY"
+    ],
+    "properties": {
+      "TOKEN_UNLOCKS_API_KEY": {
+        "title": "API Key",
+        "description": "Your Token Unlocks API key",
+        "type": "string",
+        "format": "password"
+      }
+    }
+  },
+  "meta": {
+    "avatar": "🔓",
+    "title": "Token Unlocks",
+    "description": "Track vesting schedules and upcoming token unlock events",
+    "tags": [
+      "vesting",
+      "unlocks",
+      "tokenomics"
+    ]
+  },
+  "version": "1"
+}

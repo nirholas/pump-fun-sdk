@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width">
+	<title>Textame - The text editor</title>
+	<style>
+    html {
+  height: 100%;
+  width: 100%;
+}
+
+body {
+	margin: 0;
+	background-color: #b0b0b0;
+}
+
+.nav {
+	background-color: #e0e0e0;
+	padding: 5px 10px;
+	box-shadow: rgba(50, 50, 93, 0.25) 0px 2px 5px -1px, rgba(0, 0, 0, 0.3) 0px 1px 3px -1px;
+}
+
+.nav a {
+	float: right;
+	margin: 0 3px;
+}
+
+.tools {
+	background-color: #f5f5f5;
+	box-shadow: rgba(50, 50, 93, 0.25) 0px 2px 5px -1px, rgba(0, 0, 0, 0.3) 0px 1px 3px -1px;
+	padding: 3px 10px;
+	text-align: top;
+  overflow: auto;
+  white-space: nowrap;
+}
+
+.icobutton {
+	transform: scale(0.6) translate(-26px, 10px);
+    display: inline-block;
+    width: 108px;
+}
+
+::-webkit-scrollbar {
+	width: 3px;
+}
+
+::-webkit-scrollbar-track {
+	background: #525252;
+}
+
+::-webkit-scrollbar-thumb {
+	background: #888;
+	border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+	background: #878787;
+}
+
+.tools a {
+	padding: 2px;
+	background-color: white;
+	height: 20px;
+	box-shadow: rgba(50, 50, 93, 0.25) 0px 2px 5px -1px, rgba(0, 0, 0, 0.3) 0px 1px 3px -1px;
+	transition: 0.2s;
+	cursor: pointer;
+}
+
+.tools > a:hover {
+	transform: translateY(3px);
+	box-shadow: rgba(0, 0, 0, 0.19) 0px 10px 20px, rgba(0, 0, 0, 0.23) 0px 6px 6px;
+}
+
+.edit {
+	background-color: white;
+	margin: 10px auto;
+	width: 90vw;
+	height: calc(100vh - 120px);
+	padding: 10px;
+	font-family: Arial, Helvetica, sans-serif;
+	overflow: scroll;
+}
+
+[contenteditable]:focus {
+	outline: none;
+	box-shadow: rgba(50, 50, 93, 0.25) 0px 6px 12px -2px, rgba(0, 0, 0, 0.3) 0px 3px 7px -3px;
+}
+  </style>
+	<script defer>
+    var ver = '1.5'
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.getRegistrations().then(registrations => {
+      for (const registration of registrations) {
+        registration.unregister();
+      }
+      navigator.serviceWorker.register("service-worker.js")
+        .then(registration => {
+          console.log("Service Worker registered with scope:", registration.scope);
+        })
+        .catch(error => {
+          console.error("Service Worker registration failed:", error);
+        });
+    });
+  });
+}
+
+async function checkAndUpdate() {
+  try {
+	const response = await fetch('upd.json');
+	const data = await response.json();
+	const vdValue = data.vd;
+	const localVariable = ver;
+
+	if (vdValue < localVariable) {
+	  const userResponse = confirm(`A new version is available with features: ${data.dat}. Update now?`);
+
+	  if (userResponse) {
+		if ("serviceWorker" in navigator) {
+		  const registrations = await navigator.serviceWorker.getRegistrations();
+		  for (const registration of registrations) {
+			await registration.unregister();
+		  }
+
+		  const updatedDatValue = data.dat;
+
+		  const newRegistration = await navigator.serviceWorker.register("service-worker.js");
+		  console.log("Service Worker registered with scope:", newRegistration.scope);
+		  window.location.reload(true);
+		}
+	  }
+	}
+  } catch (error) {
+	console.error("Error checking and updating:", error);
+  }
+}
+
+checkAndUpdate();
+
+
+document.addEventListener("DOMContentLoaded", function() {
+	var selectElement = document.getElementById("selectFunction");
+	selectElement.addEventListener("change", insertstuff);
+	function insertstuff() {
+		document.getElementById("edit").value += selectElement.value;
+	}
+});
+
+// Function to open or create an IndexedDB database
+function openDB(databaseName, version) {
+	return new Promise((resolve, reject) => {
+		const request = indexedDB.open(databaseName, version);
+
+		request.onupgradeneeded = (event) => {
+			const db = event.target.result;
+			db.createObjectStore('store', { keyPath: 'key' });
+		};
+
+		request.onsuccess = () => {
+			resolve(request.result);
+		};
+
+		request.onerror = () => {
+			reject(request.error);
+		};
+	});
+}
+
+// Function to set a key-value pair in the database
+function setdb(databaseName, key, value) {
+	return openDB(databaseName, 1).then((db) => {
+		return new Promise((resolve, reject) => {
+			const transaction = db.transaction(['store'], 'readwrite');
+			const store = transaction.objectStore('store');
+			const request = store.put({ key, value });
+
+			request.onsuccess = () => {
+				resolve();
+			};
+
+			request.onerror = () => {
+				reject(request.error);
+			};
+		});
+	});
+}
+
+// Function to get a value by key from the database
+function getdb(databaseName, key) {
+	return openDB(databaseName, 1).then((db) => {
+		return new Promise((resolve, reject) => {
+			const transaction = db.transaction(['store'], 'readonly');
+			const store = transaction.objectStore('store');
+			const request = store.get(key);
+
+			request.onsuccess = () => {
+				const result = request.result;
+				if (result) {
+					resolve(result.value);
+				} else {
+					resolve(null); // Key not found
+				}
+			};
+
+			request.onerror = () => {
+				reject(request.error);
+			};
+		});
+	});
+}
+
+// Event listener for keypress on the element with id "edit"
+document.getElementById('edit').addEventListener('keydown', (event) => {
+	const content = event.target.innerHTML;
+	setdb('Textame App DB', 'textame', content)
+		.then(() => {
+			console.log('Content saved to IndexedDB');
+		})
+		.catch((error) => {
+			console.error('Error saving content to IndexedDB:', error);
+		});
+});
+
+// Retrieve the saved content from IndexedDB and set it as the innerHTML of the element with id "edit"
+document.addEventListener('DOMContentLoaded', () => {
+	getdb('Textame App DB', 'textame')
+		.then((savedContent) => {
+			if (savedContent !== null) {
+				document.getElementById('edit').innerHTML = savedContent;
+				console.log('Content retrieved from IndexedDB');
+			}
+		})
+		.catch((error) => {
+			console.error('Error retrieving content from IndexedDB:', error);
+		});
+});
+  </script>
+	<link rel="stylesheet"
+		href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@48,400,0,0" />
+</head>
+
+<body>
+	<input type="file" id="fileInput" accept=".html, .txt" style="display: none;">
+
+	<div class="nav">
+		<b>Textame</b> Text Editor
+
+		<a href="#" id="downloadHtmlLink" download="textame.html">.html</a>
+		<a href="#" id="downloadTxtLink" download="textame.txt">.txt</a>
+		<a>| Save as: </a>
+		<a href="#" id="openFileLink">Load File</a>
+
+	</div>
+	<div class="tools">
+		<div class="icobutton">
+			<button onclick="applyBold()"><span class="material-symbols-outlined">
+					format_bold
+				</span></button>
+			<button onclick="applyItalic()"><span class="material-symbols-outlined">
+					format_italic
+				</span></button>
+			<button onclick="applyUnderline()"><span class="material-symbols-outlined">
+					format_underlined
+				</span></button>
+			<button onclick="clearFormatting()"><span class="material-symbols-outlined">
+					format_clear
+				</span></button>
+		</div>
+		| Font Size:
+		<select id="fontSizeSelector" onchange="changeFontSize()">
+			<option value="1">Smallest</option>
+			<option value="2">Very small</option>
+			<option value="3">Small</option>
+			<option value="4">Normal</option>
+			<option value="5">Big</option>
+			<option value="6">Very big</option>
+			<option value="7">Massive</option>
+		</select>
+		| Font Family:
+		<select id="fontFamilySelector" onchange="changeFontFamily()">
+			<option value="Arial" style="font-family: Arial, Helvetica, sans-serif;">Arial</option>
+			<option value="Times New Roman"  style="font-family: 'Times New Roman', Times, serif;">Times New Roman</option>
+			<option value="Courier New" style="font-family: 'Courier New', Courier, monospace;">Courier New</option>
+    </select>
+	</div>
+	<div class="edit" id="edit" contenteditable="true">
+		<h1>Welcome to Textame!</h1>
+		Save, load html or txt, edit, manipulate, update, reset, add font, change size, bold, italic, underlined,
+		autocorrect, add images, remove images, paste attachments and save them as .html or .txt as your wish.
+		<br><br>This is <b>Textame</b> and this does it one single page, <b>even offline</b>.<br><br>
+		<h3>Select some text and use the tools on the top to get started!</h3>
+
+	</div>
+	<script>
+		function applyBold() {
+			document.execCommand("bold", false, null);
+		}
+
+		function applyItalic() {
+			document.execCommand("italic", false, null);
+		}
+		function applyUnderline() {
+			document.execCommand("underline", false, null);
+		}
+
+		function clearFormatting() {
+			document.execCommand("removeFormat", false, null);
+		}
+
+		function changeFontSize() {
+			const fontSize = document.getElementById("fontSizeSelector").value;
+			document.execCommand("fontSize", false, fontSize);
+		}
+
+		function changeFontFamily() {
+			const fontFamily = document.getElementById("fontFamilySelector").value;
+			document.execCommand("fontName", false, fontFamily);
+		}
+
+		const downloadHtmlLink = document.getElementById("downloadHtmlLink");
+		const downloadTxtLink = document.getElementById("downloadTxtLink");
+
+		function updateDownloadLinks() {
+			const divContent = document.getElementById("edit").innerHTML;
+
+			const htmlDataUri = 'data:text/html;charset=utf-8,' + encodeURIComponent(divContent);
+			downloadHtmlLink.setAttribute("href", htmlDataUri);
+
+			const txtDataUri = 'data:text/plain;charset=utf-8,' + encodeURIComponent(divContent);
+			downloadTxtLink.setAttribute("href", txtDataUri);
+		}
+
+		downloadHtmlLink.addEventListener("click", updateDownloadLinks);
+		downloadTxtLink.addEventListener("click", updateDownloadLinks);
+		const fileInput = document.getElementById("fileInput");
+		const openFileLink = document.getElementById("openFileLink");
+
+		// Function to handle file loading
+		function loadFileContent(file) {
+			const reader = new FileReader();
+			reader.onload = function (event) {
+				const fileContent = event.target.result;
+				document.getElementById("edit").innerHTML = fileContent;
+			};
+			reader.readAsText(file);
+		}
+
+		// Event listener for the file input change event
+		fileInput.addEventListener("change", function (event) {
+			const selectedFile = event.target.files[0];
+			if (selectedFile) {
+				loadFileContent(selectedFile);
+			}
+		});
+
+		// Event listener for the "Open File" link
+		openFileLink.addEventListener("click", function () {
+			fileInput.click();
+		});
+	</script>
+</body>
+
+</html>

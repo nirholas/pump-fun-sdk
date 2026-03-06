@@ -1,0 +1,21 @@
+{
+  "author": "The Graph Protocol",
+  "createdAt": "2025-01-08",
+  "homepage": "https://thegraph.com",
+  "identifier": "thegraph",
+  "manifest": "https://plugin.delivery/thegraph/manifest.json",
+  "meta": {
+    "avatar": "📊",
+    "description": "The Graph Protocol indexing layer. Query blockchain data from subgraphs for Uniswap, Aave, Compound, and thousands of protocols.",
+    "tags": [
+      "defi",
+      "indexing",
+      "data",
+      "subgraphs",
+      "analytics"
+    ],
+    "title": "The Graph",
+    "category": "stocks-finance"
+  },
+  "schemaVersion": 1
+}

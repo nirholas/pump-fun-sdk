@@ -1,0 +1,61 @@
+{
+  "name": "@sperax/plugin-sdk",
+  "version": "1.0.0",
+  "description": "SperaxOS Plugin SDK - Build plugins for SperaxOS",
+  "keywords": [
+    "sperax",
+    "speraxos",
+    "sdk",
+    "plugin",
+    "chat-plugin"
+  ],
+  "homepage": "https://github.com/nirholas/plugin.delivery",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nirholas/plugin.delivery.git"
+  },
+  "license": "MIT",
+  "author": "Sperax <contact@sperax.io>",
+  "sideEffects": false,
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "exports": {
+    ".": {
+      "import": "./index.ts",
+      "require": "./index.ts",
+      "types": "./index.ts"
+    },
+    "./client": {
+      "import": "./client/index.ts",
+      "types": "./client/index.ts"
+    },
+    "./schema": {
+      "import": "./schema/index.ts",
+      "types": "./schema/index.ts"
+    },
+    "./openapi": {
+      "import": "./openapi/index.ts",
+      "types": "./openapi/index.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@apidevtools/swagger-parser": "^10.1.0",
+    "@types/json-schema": "^7.0.14",
+    "openapi-jsonschema-parameters": "^12.1.3",
+    "openapi-types": "^12.1.3",
+    "zod": "^3.24.1",
+    "zod-to-json-schema": "^3.24.1"
+  },
+  "peerDependencies": {
+    "react": ">=18"
+  },
+  "devDependencies": {
+    "@types/react": "^18",
+    "typescript": "^5.7.3",
+    "vitest": "^3.2.4"
+  }
+}

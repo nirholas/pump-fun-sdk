@@ -1,0 +1,19 @@
+{
+  "author": "SperaxOS",
+  "createdAt": "2025-01-01",
+  "homepage": "https://github.com/nirholas/plugin.delivery",
+  "identifier": "address-labels",
+  "manifest": "https://plugin.delivery/address-labels/manifest.json",
+  "meta": {
+    "avatar": "🏷️",
+    "description": "Identify wallet owners using Arkham and other sources",
+    "tags": [
+      "labels",
+      "identity",
+      "arkham"
+    ],
+    "title": "Address Labels",
+    "category": "tools"
+  },
+  "schemaVersion": 1
+}

@@ -1,0 +1,16 @@
+{
+  "$schema": "https://plugin.delivery/schema.json",
+  "identifier": "funding-rates",
+  "openapi": "https://open-api.coinglass.com/openapi.json",
+  "meta": {
+    "avatar": "📊",
+    "title": "Funding Rates",
+    "description": "Perpetual futures funding rates from Coinglass across exchanges",
+    "tags": [
+      "funding",
+      "futures",
+      "perpetuals"
+    ]
+  },
+  "version": "1"
+}

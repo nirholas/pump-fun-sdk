@@ -1,0 +1,27 @@
+{
+  "$schema": "https://plugin.delivery/schema.json",
+  "api": [
+    {
+      "url": "https://plugin.delivery/api/beefy/vaults",
+      "name": "getVaults",
+      "description": "Get yield farming vaults with APY from Beefy Finance across all chains",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "chain": {
+            "type": "string",
+            "description": "Filter by chain (ethereum, bsc, polygon, arbitrum, optimism, etc.)"
+          }
+        }
+      }
+    }
+  ],
+  "identifier": "beefy",
+  "meta": {
+    "avatar": "🐄",
+    "title": "Beefy Finance",
+    "description": "Multi-chain yield optimizer with auto-compounding vaults across 20+ chains",
+    "tags": ["yield", "farming", "vaults", "defi", "auto-compound"]
+  },
+  "version": "1"
+}

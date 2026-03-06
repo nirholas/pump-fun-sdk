@@ -1,0 +1,30 @@
+{
+  "$schema": "https://plugin.delivery/schema.json",
+  "identifier": "gas-estimator",
+  "openapi": "https://api.blocknative.com/openapi.json",
+  "settings": {
+    "type": "object",
+    "required": [
+      "BLOCKNATIVE_API_KEY"
+    ],
+    "properties": {
+      "BLOCKNATIVE_API_KEY": {
+        "title": "Blocknative API Key",
+        "description": "Your Blocknative API key for gas estimation",
+        "type": "string",
+        "format": "password"
+      }
+    }
+  },
+  "meta": {
+    "avatar": "⛽",
+    "title": "Gas Estimator",
+    "description": "Transaction gas estimation using Blocknative",
+    "tags": [
+      "gas",
+      "estimation",
+      "blocknative"
+    ]
+  },
+  "version": "1"
+}

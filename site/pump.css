@@ -1,0 +1,213 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;800&display=swap');
+
+:root {
+	--font-size-base: 1rem;
+
+	/* basic colors */
+	--col-bg1: #0d0d0d;
+	--col-txt1: #FFFFFF;
+	--col-bg2: #1e1e1e;
+	--col-bg3: #2d2d2d;
+	--col-bgh: #44403C;
+	--col-txth: #FFFFFF;
+
+	--col-good: #5be45b;
+	--col-bad: #d44343;
+
+	/* sizing */
+	--sizing-normal: 0.5rem;
+	--sizing-huge: 1rem;
+	--sizing-nano: .3rem;
+
+	--siz-radius1: 0.5em;
+	--siz-radius2: 0.35em;
+	--siz-radius3: 0.2em;
+
+	--spacing-normal: 0.3rem;
+	--spacing-gap: 6px;
+
+	/* easing */
+	--time1: .3s cubic-bezier(0.36, 0.38, 0, 0.94);
+	--time2: .3s cubic-bezier(0.42, 1.67, 0.21, 0.90);
+
+	/* decor */
+	--box-crisp: 1px solid #ffffff0c;
+	--box-crisp-col: #ffffff0c;
+
+	/* Extended support */
+	--colors-accent: rgb(97, 121, 255);
+
+	--font-size-small: calc(var(--font-size-base) * 0.85);
+	--font-size-normal: var(--font-size-base);
+	--font-size-subheading: calc(var(--font-size-base) * 1.25);
+	--font-size-big: calc(var(--font-size-base) * 2);
+}
+
+/* ============ Mobile Optimizations ============ */
+@media (max-width: 768px) {
+	:root {
+		----time1: .5s;
+		--font-size-base: 0.95rem;
+		--spacing-normal: 0.4rem;
+	}
+}
+
+/* Safe area support for notched devices */
+@supports (padding: env(safe-area-inset-top)) {
+	body {
+		padding-top: env(safe-area-inset-top);
+		padding-bottom: env(safe-area-inset-bottom);
+		padding-left: env(safe-area-inset-left);
+		padding-right: env(safe-area-inset-right);
+	}
+}
+
+/* Touch device specific styles */
+html.touch-device {
+	/* Disable text selection on interactive elements */
+	button, [role="button"], .app-shortcut, nav, .taskbar {
+		-webkit-user-select: none;
+		user-select: none;
+		-webkit-touch-callout: none;
+	}
+	
+	/* Remove tap highlight */
+	* {
+		-webkit-tap-highlight-color: transparent;
+	}
+	
+	/* Larger scrollbars for touch */
+	::-webkit-scrollbar {
+		width: 8px;
+		height: 8px;
+	}
+}
+
+/* Small screen class-based styles */
+html.small-screen {
+	/* Can add JS-triggered mobile styles here */
+}
+
+::-webkit-scrollbar {
+	width: .5rem;
+	height: .5em;
+}
+
+::-webkit-scrollbar-track {
+	background: var(--col-bg2);
+	width: 5px;
+	border-radius: var(--siz-radius1);
+}
+
+@keyframes barExpandVert {
+	0% {
+		width: 0;
+	}
+	100% {
+		width: 100%;
+	}
+}
+
+::-webkit-scrollbar-thumb {
+	background-color: var(--col-bg3);
+	border-radius: var(--siz-radius1);
+	border: 1px solid #7a7a7a4a;
+	animation: barExpandVert var(--time2);
+}
+
+::-webkit-scrollbar-thumb:hover {
+	cursor: grab;
+}
+
+::-webkit-scrollbar-thumb:active {
+	cursor: grabbing;
+}
+
+html {
+	height: 100%;
+	width: 100%;
+	font-size: var(--font-size-base);
+}
+
+button,
+input,
+textarea,
+select {
+	outline: none;
+	font-family: inherit;
+	font-size: inherit;
+}
+
+button {
+	cursor: pointer;
+}
+
+body {
+	margin: 0;
+	background-color: var(--col-bg1);
+	color: var(--col-txt1);
+	user-select: none;
+	font-family: 'Poppins', sans-serif;
+}
+
+body * {
+	transition-timing-function: cubic-bezier(0.36, 0.38, 0, 0.94);
+}
+
+input::placeholder,
+textarea::placeholder {
+	color: var(--col-txt1);
+	opacity: .5;
+}
+
+.contextmenu {
+	position: absolute;
+	text-align: center;
+	background: var(--col-bg2);
+	border: 1px solid var(--col-bg2);
+	color: var(--col-txt1);
+	border-radius: 0.5rem;
+	box-shadow: 0px 3px 5px 0px #0000005c;
+	overflow: visible;
+	animation: pop3 .2s;
+	z-index: 99;
+	font-size: var(--font-size-small);
+	display: flex;
+	flex-direction: column;
+	align-items: stretch;
+	padding: 0.3rem;
+	gap: 0.3rem;
+}
+
+.ctxmenuitem {
+	text-align: left;
+	border-radius: 0.3rem;
+	display: flex;
+	align-items: center;
+	padding-left: 0.3rem !important;
+	gap: 0.5rem;
+}
+
+.ctxmenuitem .material-symbols-rounded {
+	font-size: 1rem;
+	opacity: 0.5;
+}
+
+.ctxmenuitem:hover {
+	background: var(--col-bg3);
+}
+
+@keyframes pop3 {
+	from {
+		filter: opacity(0%);
+		transform: scale(0.9);
+	}
+
+	to {
+		filter: opacity(100%);
+	}
+}
+
+.material-symbols-rounded {
+	font-weight: normal !important;
+}

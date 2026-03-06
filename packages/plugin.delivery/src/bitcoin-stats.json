@@ -1,0 +1,19 @@
+{
+  "author": "SperaxOS",
+  "createdAt": "2025-01-01",
+  "homepage": "https://github.com/nirholas/plugin.delivery",
+  "identifier": "bitcoin-stats",
+  "manifest": "https://plugin.delivery/bitcoin-stats/manifest.json",
+  "meta": {
+    "avatar": "₿",
+    "description": "Bitcoin network stats, mempool, and fee estimates",
+    "tags": [
+      "bitcoin",
+      "mempool",
+      "fees"
+    ],
+    "title": "Bitcoin Stats",
+    "category": "tools"
+  },
+  "schemaVersion": 1
+}

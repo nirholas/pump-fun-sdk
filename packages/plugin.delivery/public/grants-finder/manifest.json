@@ -1,0 +1,16 @@
+{
+  "$schema": "https://plugin.delivery/schema.json",
+  "identifier": "grants-finder",
+  "openapi": "https://api.gitcoin.co/openapi.json",
+  "meta": {
+    "avatar": "💰",
+    "title": "Grants Finder",
+    "description": "Web3 grants and funding opportunities via Gitcoin",
+    "tags": [
+      "grants",
+      "funding",
+      "gitcoin"
+    ]
+  },
+  "version": "1"
+}

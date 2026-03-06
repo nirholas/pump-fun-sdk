@@ -1,0 +1,213 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "DeFiLlama Analytics",
+    "description": "Comprehensive DeFi analytics API. Get TVL, yields, stablecoins, protocol fees, and more for 3000+ protocols across 200+ chains.",
+    "version": "v1"
+  },
+  "servers": [
+    {
+      "url": "https://api.llama.fi"
+    }
+  ],
+  "paths": {
+    "/protocols": {
+      "get": {
+        "operationId": "getProtocols",
+        "summary": "Get all DeFi protocols with TVL",
+        "description": "Returns a list of all tracked DeFi protocols with their current TVL, chains, and metadata. Results are sorted by TVL descending.",
+        "responses": {
+          "200": {
+            "description": "List of protocols with TVL data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": { "type": "string" },
+                      "symbol": { "type": "string" },
+                      "tvl": { "type": "number" },
+                      "chain": { "type": "string" },
+                      "chains": { "type": "array", "items": { "type": "string" } },
+                      "category": { "type": "string" },
+                      "url": { "type": "string" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/protocol/{protocol}": {
+      "get": {
+        "operationId": "getProtocol",
+        "summary": "Get detailed protocol data",
+        "description": "Returns detailed TVL data for a specific protocol including historical TVL, token breakdown, and chain distribution.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "protocol",
+            "schema": {
+              "type": "string",
+              "example": "aave"
+            },
+            "required": true,
+            "description": "Protocol slug (lowercase name with hyphens, e.g., 'aave', 'uniswap', 'lido')"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Detailed protocol information with TVL history"
+          }
+        }
+      }
+    },
+    "/v2/chains": {
+      "get": {
+        "operationId": "getChains",
+        "summary": "Get TVL for all chains",
+        "description": "Returns TVL for all tracked blockchain networks including Ethereum, BSC, Solana, Arbitrum, etc.",
+        "responses": {
+          "200": {
+            "description": "List of chains with TVL data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": { "type": "string" },
+                      "tvl": { "type": "number" },
+                      "tokenSymbol": { "type": "string" },
+                      "chainId": { "type": "integer" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v2/historicalChainTvl/{chain}": {
+      "get": {
+        "operationId": "getChainTvlHistory",
+        "summary": "Get historical TVL for a chain",
+        "description": "Returns historical TVL data for a specific blockchain over time.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "chain",
+            "schema": {
+              "type": "string",
+              "example": "Ethereum"
+            },
+            "required": true,
+            "description": "Chain name (e.g., 'Ethereum', 'BSC', 'Solana', 'Arbitrum')"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Historical TVL data points"
+          }
+        }
+      }
+    },
+    "/stablecoins": {
+      "get": {
+        "operationId": "getStablecoins",
+        "summary": "Get all stablecoins with market cap",
+        "description": "Returns a list of all tracked stablecoins with their current market cap, peg type, and chain distribution.",
+        "responses": {
+          "200": {
+            "description": "List of stablecoins with market data"
+          }
+        }
+      }
+    },
+    "/stablecoin/{stablecoin}": {
+      "get": {
+        "operationId": "getStablecoin",
+        "summary": "Get detailed stablecoin data",
+        "description": "Returns detailed information for a specific stablecoin including chain breakdown and historical market cap.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "stablecoin",
+            "schema": {
+              "type": "string",
+              "example": "1"
+            },
+            "required": true,
+            "description": "Stablecoin ID (numeric, e.g., '1' for USDT, '2' for USDC)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Detailed stablecoin information"
+          }
+        }
+      }
+    },
+    "/overview/fees": {
+      "get": {
+        "operationId": "getProtocolFees",
+        "summary": "Get protocol fees overview",
+        "description": "Returns fee and revenue data for DeFi protocols including daily fees, revenue, and historical data.",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "excludeTotalDataChart",
+            "schema": {
+              "type": "boolean",
+              "default": true
+            },
+            "description": "Exclude chart data for faster response"
+          },
+          {
+            "in": "query",
+            "name": "excludeTotalDataChartBreakdown",
+            "schema": {
+              "type": "boolean",
+              "default": true
+            },
+            "description": "Exclude breakdown chart data"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Protocol fees and revenue data"
+          }
+        }
+      }
+    },
+    "/overview/dexs": {
+      "get": {
+        "operationId": "getDexVolumes",
+        "summary": "Get DEX trading volumes",
+        "description": "Returns trading volume data for decentralized exchanges including daily and total volumes.",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "excludeTotalDataChart",
+            "schema": {
+              "type": "boolean",
+              "default": true
+            },
+            "description": "Exclude chart data for faster response"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "DEX volume data"
+          }
+        }
+      }
+    }
+  }
+}

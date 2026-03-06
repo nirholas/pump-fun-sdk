@@ -1,0 +1,19 @@
+# Code Owners for SperaxOS
+# These users will be automatically requested for review on PRs
+
+# Default owner for everything
+* @nirholas
+
+# Core system files
+/script.js @nirholas
+/system32.js @nirholas
+/scripts/kernel.js @nirholas
+/scripts/windman.js @nirholas
+/scripts/ntx.js @nirholas
+/scripts/readwrite.js @nirholas
+
+# Documentation
+/docs/ @nirholas
+
+# Store apps - can add app authors here
+# /Pump-Sdk/apps/specificapp.html @app-author

@@ -1,0 +1,75 @@
+{
+  "$schema": "https://plugin.delivery/schema.json",
+  "api": [
+    {
+      "url": "https://plugin.delivery/api/dexscreener/search",
+      "name": "searchTokens",
+      "description": "Search for tokens by name, symbol, or contract address across all DEXes and chains",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Token name, symbol, or contract address to search"
+          }
+        },
+        "required": ["query"]
+      }
+    },
+    {
+      "url": "https://plugin.delivery/api/dexscreener/pair",
+      "name": "getPair",
+      "description": "Get detailed info for a specific trading pair on a DEX including price, volume, liquidity",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "chainId": {
+            "type": "string",
+            "description": "Chain ID (ethereum, bsc, arbitrum, base, solana, etc.)"
+          },
+          "pairAddress": {
+            "type": "string",
+            "description": "The pair/pool contract address"
+          }
+        },
+        "required": ["chainId", "pairAddress"]
+      }
+    },
+    {
+      "url": "https://plugin.delivery/api/dexscreener/trending",
+      "name": "getTrending",
+      "description": "Get trending/hot tokens with the most activity and boosts across DEXes",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "chain": {
+            "type": "string",
+            "description": "Optional: Filter by chain (ethereum, bsc, arbitrum, base, solana)"
+          }
+        }
+      }
+    },
+    {
+      "url": "https://plugin.delivery/api/dexscreener/new-listings",
+      "name": "getNewListings",
+      "description": "Get recently listed tokens with new profiles across all chains",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "chain": {
+            "type": "string",
+            "description": "Optional: Filter by chain (ethereum, bsc, arbitrum, base, solana)"
+          }
+        }
+      }
+    }
+  ],
+  "identifier": "dexscreener",
+  "meta": {
+    "avatar": "📈",
+    "title": "DEX Screener",
+    "description": "Real-time DEX pair data, prices, volume, liquidity, trending tokens, and new listings across all chains",
+    "tags": ["dex", "prices", "trading", "pairs", "liquidity", "trending"]
+  },
+  "version": "1"
+}

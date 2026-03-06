@@ -1,0 +1,26 @@
+name: Auto Submit
+
+on:
+  issues:
+    types: [labeled]
+
+jobs:
+  autoflow:
+    runs-on: ubuntu-latest
+    if: github.event.label.name == '🤖 Agent PR'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install bun
+        uses: oven-sh/setup-bun@v1
+
+      - name: Install deps
+        run: bun i
+
+      - name: Auto submit
+        run: bun run submit
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_PROXY_URL: ${{ secrets.OPENAI_PROXY_URL }}

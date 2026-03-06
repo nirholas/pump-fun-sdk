@@ -1,0 +1,16 @@
+{
+  "$schema": "https://plugin.delivery/schema.json",
+  "identifier": "token-sniffer",
+  "openapi": "https://tokensniffer.com/api/v2/openapi.json",
+  "meta": {
+    "avatar": "🐕",
+    "title": "Token Sniffer",
+    "description": "Token security scoring and scam detection",
+    "tags": [
+      "security",
+      "score",
+      "scam"
+    ]
+  },
+  "version": "1"
+}

@@ -1,0 +1,30 @@
+{
+  "$schema": "https://plugin.delivery/schema.json",
+  "identifier": "magic-eden",
+  "openapi": "https://api-mainnet.magiceden.dev/v2/openapi.json",
+  "settings": {
+    "type": "object",
+    "required": [
+      "MAGIC_EDEN_API_KEY"
+    ],
+    "properties": {
+      "MAGIC_EDEN_API_KEY": {
+        "title": "API Key",
+        "description": "Your Magic Eden API key",
+        "type": "string",
+        "format": "password"
+      }
+    }
+  },
+  "meta": {
+    "avatar": "🧙",
+    "title": "Magic Eden",
+    "description": "Magic Eden NFT data for Solana and Bitcoin",
+    "tags": [
+      "magic-eden",
+      "solana",
+      "nft"
+    ]
+  },
+  "version": "1"
+}

@@ -1,0 +1,16 @@
+{
+  "$schema": "https://plugin.delivery/schema.json",
+  "identifier": "ordinals",
+  "openapi": "https://api.ordiscan.com/openapi.json",
+  "meta": {
+    "avatar": "🔶",
+    "title": "Ordinals",
+    "description": "Bitcoin ordinals inscriptions and collection data",
+    "tags": [
+      "ordinals",
+      "bitcoin",
+      "inscription"
+    ]
+  },
+  "version": "1"
+}

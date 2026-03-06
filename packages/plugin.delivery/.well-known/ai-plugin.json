@@ -1,0 +1,16 @@
+{
+    "schema_version": "v1",
+    "name_for_human": "plugin.delivery",
+    "name_for_model": "plugin_delivery",
+    "description_for_human": "AI plugin marketplace. SDK, gateway & developer tools for building function-calling plugins. OpenAPI compatible, multi-language support, Vercel edge deployment. Build chat plugins, AI tools & extensions. Primary use in cryptocurrency, DeFI, crypto trading, and blockchain analytics.",
+    "description_for_model": "AI plugin marketplace. SDK, gateway & developer tools for building function-calling plugins. OpenAPI compatible, multi-language support, Vercel edge deployment. Build chat plugins, AI tools & extensions. Primary use in cryptocurrency, DeFI, crypto trading, and blockchain analytics.",
+    "auth": {
+        "type": "none"
+    },
+    "api": {
+        "type": "none"
+    },
+    "logo_url": "https://github.com/nirholas.png",
+    "contact_email": "nirholas@users.noreply.github.com",
+    "legal_info_url": "https://github.com/nirholas/plugin.delivery/blob/main/LICENSE"
+}

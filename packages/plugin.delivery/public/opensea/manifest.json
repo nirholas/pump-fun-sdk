@@ -1,0 +1,30 @@
+{
+  "$schema": "https://plugin.delivery/schema.json",
+  "identifier": "opensea",
+  "openapi": "https://api.opensea.io/api/openapi.json",
+  "settings": {
+    "type": "object",
+    "required": [
+      "OPENSEA_API_KEY"
+    ],
+    "properties": {
+      "OPENSEA_API_KEY": {
+        "title": "API Key",
+        "description": "Your OpenSea API key",
+        "type": "string",
+        "format": "password"
+      }
+    }
+  },
+  "meta": {
+    "avatar": "🌊",
+    "title": "OpenSea",
+    "description": "NFT collection data, floor prices, and listings",
+    "tags": [
+      "opensea",
+      "nft",
+      "floor"
+    ]
+  },
+  "version": "1"
+}

@@ -1,0 +1,19 @@
+{
+  "author": "SperaxOS",
+  "createdAt": "2025-01-01",
+  "homepage": "https://github.com/nirholas/plugin.delivery",
+  "identifier": "delegate-tracker",
+  "manifest": "https://plugin.delivery/delegate-tracker/manifest.json",
+  "meta": {
+    "avatar": "👥",
+    "description": "Track DAO delegates and voting power via Karma",
+    "tags": [
+      "delegates",
+      "voting",
+      "karma"
+    ],
+    "title": "Delegate Tracker",
+    "category": "social"
+  },
+  "schemaVersion": 1
+}

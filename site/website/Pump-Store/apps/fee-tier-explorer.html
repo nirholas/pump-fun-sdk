@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="pump-include" content="pump.css">
+    <meta name="capabilities" content="fee_explorer">
+    <meta name="pump-icon" content="payments">
+    <meta name="pump-perms" content="none" />
+    <title>Fee Tier Explorer</title>
+    <style>
+        :root {
+            --bg1:#0a0a0f; --bg2:#141420; --bg3:#1e1e30;
+            --txt1:#fff; --txt2:#9ca3af;
+            --accent:#00e87b; --accent2:#00c868;
+            --blue:#60a5fa; --purple:#a78bfa; --yellow:#fbbf24; --orange:#fb923c; --pink:#f472b6;
+            --radius:12px;
+        }
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg1);color:var(--txt1);min-height:100vh;padding:16px;overflow-y:auto}
+        .app{max-width:620px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+        .header{display:flex;align-items:center;gap:10px}
+        .header h1{font-size:1.2em}
+        .badge{font-size:.65em;background:var(--accent);color:#000;padding:2px 8px;border-radius:20px;font-weight:600}
+        .card{background:var(--bg2);border:1px solid rgba(255,255,255,.06);border-radius:var(--radius);padding:18px}
+        .card-title{font-size:.9em;font-weight:500;margin-bottom:12px}
+        .info-box{padding:12px 16px;background:rgba(0,232,123,.06);border-radius:8px;font-size:.8em;color:var(--txt2);display:flex;gap:8px;align-items:flex-start}
+
+        .tier-table{width:100%;border-collapse:collapse;font-size:.82em}
+        .tier-table th{text-align:left;padding:8px 10px;color:var(--txt2);font-weight:500;text-transform:uppercase;font-size:.72em;letter-spacing:.5px;border-bottom:1px solid rgba(255,255,255,.08)}
+        .tier-table td{padding:10px;border-bottom:1px solid rgba(255,255,255,.04)}
+        .tier-table tr:last-child td{border-bottom:none}
+        .tier-table tr.active-tier{background:rgba(0,232,123,.08);border-radius:6px}
+        .tier-table tr.active-tier td:first-child{border-left:3px solid var(--accent);padding-left:7px}
+        .tier-badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:.75em;font-weight:600}
+
+        .slider-group{display:flex;flex-direction:column;gap:6px}
+        .slider-group label{font-size:.75em;color:var(--txt2);text-transform:uppercase}
+        .slider-row{display:flex;align-items:center;gap:12px}
+        .slider-row input[type=range]{flex:1;accent-color:var(--accent)}
+        .slider-val{min-width:80px;font-size:.9em;font-weight:500;text-align:right}
+
+        .fee-breakdown{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+        .fee-box{background:var(--bg3);border-radius:8px;padding:12px;text-align:center}
+        .fee-box .val{font-size:1.3em;font-weight:700}
+        .fee-box .lbl{font-size:.68em;color:var(--txt2);text-transform:uppercase;margin-top:4px}
+
+        .chart-container{width:100%;height:180px;position:relative}
+        canvas{width:100%;height:100%}
+
+        .example-calc{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:center;text-align:center}
+        .calc-box{background:var(--bg3);border-radius:8px;padding:14px}
+        .calc-box .big{font-size:1.2em;font-weight:600}
+        .calc-box .small{font-size:.72em;color:var(--txt2);margin-top:2px}
+        .calc-arrow{font-size:1.5em;color:var(--accent)}
+
+        .code-block{background:var(--bg3);border-radius:8px;padding:14px;font-family:monospace;font-size:.78em;line-height:1.6;overflow-x:auto;color:var(--accent)}
+    </style>
+</head>
+<body>
+<div class="app">
+    <div class="header">
+        <span style="font-size:28px">💰</span>
+        <h1>Fee Tier Explorer</h1>
+        <span class="badge">SDK</span>
+    </div>
+
+    <div class="info-box">
+        <span>💡</span>
+        <div>Pump uses <strong>tiered fees</strong> based on bonding curve market cap. Higher market cap = lower fees. Fees apply to both buys and sells.</div>
+    </div>
+
+    <!-- Market Cap Slider -->
+    <div class="card">
+        <div class="card-title">Market Cap Simulator</div>
+        <div class="slider-group">
+            <label>Bonding Curve Market Cap</label>
+            <div class="slider-row">
+                <input type="range" id="mcapSlider" min="0" max="400" value="28" step="0.5" oninput="update()">
+                <span class="slider-val" id="mcapVal">28.0 SOL</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:.68em;color:var(--txt2)">
+                <span>0 SOL (new token)</span>
+                <span>~85 SOL (graduation)</span>
+                <span>400 SOL</span>
+            </div>
+        </div>
+        <div class="slider-group" style="margin-top:12px">
+            <label>Trade Amount (SOL)</label>
+            <div class="slider-row">
+                <input type="range" id="tradeSlider" min="0.01" max="100" value="1" step="0.01" oninput="update()">
+                <span class="slider-val" id="tradeVal">1.00 SOL</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Current Fee Breakdown -->
+    <div class="card">
+        <div class="card-title">Current Fee Breakdown</div>
+        <div class="fee-breakdown">
+            <div class="fee-box">
+                <div class="val" id="protocolBps" style="color:var(--accent)">100</div>
+                <div class="lbl">Protocol Fee (bps)</div>
+            </div>
+            <div class="fee-box">
+                <div class="val" id="creatorBps" style="color:var(--blue)">100</div>
+                <div class="lbl">Creator Fee (bps)</div>
+            </div>
+            <div class="fee-box">
+                <div class="val" id="totalBps" style="color:var(--yellow)">200</div>
+                <div class="lbl">Total Fee (bps)</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Trade Example -->
+    <div class="card">
+        <div class="card-title">Trade Example</div>
+        <div class="example-calc">
+            <div class="calc-box">
+                <div class="big" id="tradeInput">1.000 SOL</div>
+                <div class="small">Trade Amount</div>
+            </div>
+            <div class="calc-arrow">→</div>
+            <div class="calc-box">
+                <div class="big" id="tradeAfterFee" style="color:var(--accent)">0.980 SOL</div>
+                <div class="small">After Fees</div>
+            </div>
+        </div>
+        <div style="margin-top:10px;display:flex;justify-content:space-between;font-size:.78em;color:var(--txt2)">
+            <span>Protocol fee: <strong id="protocolFeeAmt">0.010 SOL</strong></span>
+            <span>Creator fee: <strong id="creatorFeeAmt">0.010 SOL</strong></span>
+        </div>
+    </div>
+
+    <!-- Fee Tiers Table -->
+    <div class="card">
+        <div class="card-title">Fee Tier Schedule</div>
+        <table class="tier-table">
+            <thead>
+                <tr><th>Tier</th><th>Market Cap Threshold</th><th>Protocol</th><th>Creator</th><th>LP</th><th>Total</th></tr>
+            </thead>
+            <tbody id="tierTableBody"></tbody>
+        </table>
+    </div>
+
+    <!-- Fee Chart -->
+    <div class="card">
+        <div class="card-title">Fee vs Market Cap</div>
+        <div class="chart-container"><canvas id="feeChart"></canvas></div>
+        <div style="display:flex;gap:16px;margin-top:8px;font-size:.72em">
+            <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:3px;background:var(--accent);border-radius:2px"></span>Protocol</span>
+            <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:3px;background:var(--blue);border-radius:2px"></span>Creator</span>
+            <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:3px;background:var(--yellow);border-radius:2px"></span>Total</span>
+        </div>
+    </div>
+
+    <!-- SDK Code -->
+    <div class="card">
+        <div class="card-title">SDK Usage</div>
+        <div class="code-block">
+<span style="color:var(--purple)">import</span> { computeFeesBps, calculateFeeTier } <span style="color:var(--purple)">from</span> <span style="color:var(--yellow)">'@pump-fun/pump-sdk'</span>;
+
+<span style="color:var(--txt2)">// Get fees for current market cap</span>
+<span style="color:var(--purple)">const</span> { protocolFeeBps, creatorFeeBps } = computeFeesBps({
+  global, feeConfig, mintSupply,
+  virtualSolReserves, virtualTokenReserves
+});
+
+<span style="color:var(--txt2)">// Calculate fee for a trade amount</span>
+<span style="color:var(--purple)">const</span> fee = getFee({
+  global, feeConfig, mintSupply,
+  bondingCurve, amount, isNewBondingCurve
+});
+        </div>
+    </div>
+</div>
+
+<script>
+const LAMPORTS = 1e9;
+
+// Fee tiers (based on Pump protocol defaults, market cap in SOL)
+const FEE_TIERS = [
+    { threshold: 0,   protocolBps: 150, creatorBps: 150, lpBps: 0,  label: 'Micro',  color: '#ff4d6a' },
+    { threshold: 10,  protocolBps: 100, creatorBps: 100, lpBps: 0,  label: 'Small',  color: '#fb923c' },
+    { threshold: 30,  protocolBps: 100, creatorBps: 100, lpBps: 0,  label: 'Medium', color: '#fbbf24' },
+    { threshold: 60,  protocolBps: 75,  creatorBps: 50,  lpBps: 0,  label: 'Large',  color: '#00e87b' },
+    { threshold: 100, protocolBps: 50,  creatorBps: 50,  lpBps: 25, label: 'XL',     color: '#60a5fa' },
+    { threshold: 200, protocolBps: 25,  creatorBps: 25,  lpBps: 25, label: 'Whale',  color: '#a78bfa' },
+];
+
+function getTier(mcapSol) {
+    let tier = FEE_TIERS[0];
+    for (const t of FEE_TIERS) {
+        if (mcapSol >= t.threshold) tier = t;
+    }
+    return tier;
+}
+
+function ceilDiv(a, b) { return Math.ceil(a / b); }
+
+function renderTierTable(activeMcap) {
+    const tbody = document.getElementById('tierTableBody');
+    tbody.innerHTML = '';
+    const activeTier = getTier(activeMcap);
+
+    FEE_TIERS.forEach(t => {
+        const isActive = t === activeTier;
+        const tr = document.createElement('tr');
+        if (isActive) tr.className = 'active-tier';
+        const total = t.protocolBps + t.creatorBps + t.lpBps;
+        tr.innerHTML = `
+            <td><span class="tier-badge" style="background:${t.color}22;color:${t.color}">${t.label}</span></td>
+            <td>${t.threshold === 0 ? '< 10 SOL' : '≥ ' + t.threshold + ' SOL'}</td>
+            <td>${t.protocolBps} bps</td>
+            <td>${t.creatorBps} bps</td>
+            <td>${t.lpBps} bps</td>
+            <td style="font-weight:600">${total} bps (${(total/100).toFixed(1)}%)</td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function update() {
+    const mcap = parseFloat(document.getElementById('mcapSlider').value);
+    const trade = parseFloat(document.getElementById('tradeSlider').value);
+
+    document.getElementById('mcapVal').textContent = mcap.toFixed(1) + ' SOL';
+    document.getElementById('tradeVal').textContent = trade.toFixed(2) + ' SOL';
+
+    const tier = getTier(mcap);
+    const totalBps = tier.protocolBps + tier.creatorBps + tier.lpBps;
+
+    document.getElementById('protocolBps').textContent = tier.protocolBps;
+    document.getElementById('creatorBps').textContent = tier.creatorBps;
+    document.getElementById('totalBps').textContent = totalBps;
+
+    const tradeLamports = trade * LAMPORTS;
+    const pFee = ceilDiv(tradeLamports * tier.protocolBps, 10000) / LAMPORTS;
+    const cFee = ceilDiv(tradeLamports * tier.creatorBps, 10000) / LAMPORTS;
+    const afterFee = trade - pFee - cFee;
+
+    document.getElementById('tradeInput').textContent = trade.toFixed(3) + ' SOL';
+    document.getElementById('tradeAfterFee').textContent = afterFee.toFixed(6) + ' SOL';
+    document.getElementById('protocolFeeAmt').textContent = pFee.toFixed(6) + ' SOL';
+    document.getElementById('creatorFeeAmt').textContent = cFee.toFixed(6) + ' SOL';
+
+    renderTierTable(mcap);
+    drawChart(mcap);
+}
+
+function drawChart(activeMcap) {
+    const canvas = document.getElementById('feeChart');
+    const ctx = canvas.getContext('2d');
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.parentElement.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    ctx.scale(dpr, dpr);
+    canvas.style.width = rect.width + 'px';
+    canvas.style.height = rect.height + 'px';
+
+    const w = rect.width, h = rect.height, pad = 30;
+    ctx.clearRect(0, 0, w, h);
+
+    const maxMcap = 400, maxBps = 350;
+
+    // Grid
+    ctx.strokeStyle = 'rgba(255,255,255,.04)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i <= 4; i++) {
+        const y = pad + (h - pad * 2) * i / 4;
+        ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(w - pad, y); ctx.stroke();
+        ctx.fillStyle = 'rgba(255,255,255,.3)';
+        ctx.font = '10px Inter,sans-serif';
+        ctx.textAlign = 'right';
+        ctx.fillText(Math.round(maxBps * (1 - i / 4)) + ' bps', pad - 4, y + 3);
+    }
+
+    // Draw step functions
+    const colors = { protocol: '#00e87b', creator: '#60a5fa', total: '#fbbf24' };
+    const steps = 200;
+
+    ['total', 'protocol', 'creator'].forEach(type => {
+        ctx.beginPath();
+        ctx.strokeStyle = colors[type];
+        ctx.lineWidth = type === 'total' ? 2.5 : 1.5;
+
+        for (let i = 0; i <= steps; i++) {
+            const mcap = (i / steps) * maxMcap;
+            const tier = getTier(mcap);
+            let bps;
+            if (type === 'protocol') bps = tier.protocolBps;
+            else if (type === 'creator') bps = tier.creatorBps;
+            else bps = tier.protocolBps + tier.creatorBps + tier.lpBps;
+
+            const x = pad + (mcap / maxMcap) * (w - pad * 2);
+            const y = h - pad - (bps / maxBps) * (h - pad * 2);
+            i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+    });
+
+    // Active position marker
+    const ax = pad + (activeMcap / maxMcap) * (w - pad * 2);
+    ctx.setLineDash([3, 3]);
+    ctx.strokeStyle = 'rgba(255,255,255,.3)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(ax, pad); ctx.lineTo(ax, h - pad); ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Labels
+    ctx.fillStyle = 'var(--txt2)';
+    ctx.font = '10px Inter,sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Market Cap (SOL)', w / 2, h - 4);
+    FEE_TIERS.forEach(t => {
+        if (t.threshold > 0 && t.threshold < maxMcap) {
+            const x = pad + (t.threshold / maxMcap) * (w - pad * 2);
+            ctx.fillStyle = 'rgba(255,255,255,.2)';
+            ctx.fillText(t.threshold + '', x, h - pad + 14);
+        }
+    });
+}
+
+update();
+window.addEventListener('resize', () => update());
+</script>
+</body>
+</html>

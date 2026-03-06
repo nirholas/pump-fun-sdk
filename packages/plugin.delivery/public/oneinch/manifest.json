@@ -1,0 +1,40 @@
+{
+  "$schema": "https://plugin.delivery/schema.json",
+  "api": [
+    {
+      "url": "https://plugin.delivery/api/oneinch/quote",
+      "name": "getQuote",
+      "description": "Get swap quote from 1inch DEX aggregator (Note: requires API key for full functionality)",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "chainId": {
+            "type": "number",
+            "description": "Chain ID (1=Ethereum, 56=BSC, 137=Polygon, 42161=Arbitrum)"
+          },
+          "fromToken": {
+            "type": "string",
+            "description": "Source token address"
+          },
+          "toToken": {
+            "type": "string",
+            "description": "Destination token address"
+          },
+          "amount": {
+            "type": "string",
+            "description": "Amount in wei"
+          }
+        },
+        "required": ["fromToken", "toToken", "amount"]
+      }
+    }
+  ],
+  "identifier": "oneinch",
+  "meta": {
+    "avatar": "🦄",
+    "title": "1inch",
+    "description": "DEX aggregator for best swap rates across multiple exchanges",
+    "tags": ["dex", "swap", "aggregator", "trading"]
+  },
+  "version": "1"
+}

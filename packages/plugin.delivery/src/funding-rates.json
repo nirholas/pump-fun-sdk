@@ -1,0 +1,19 @@
+{
+  "author": "SperaxOS",
+  "createdAt": "2025-01-01",
+  "homepage": "https://github.com/nirholas/plugin.delivery",
+  "identifier": "funding-rates",
+  "manifest": "https://plugin.delivery/funding-rates/manifest.json",
+  "meta": {
+    "avatar": "📊",
+    "description": "Perpetual futures funding rates from Coinglass across exchanges",
+    "tags": [
+      "funding",
+      "futures",
+      "perpetuals"
+    ],
+    "title": "Funding Rates",
+    "category": "stocks-finance"
+  },
+  "schemaVersion": 1
+}

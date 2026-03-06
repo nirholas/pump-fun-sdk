@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="pump-include" content="pump.css">
+    <meta name="capabilities" content="fee_sharing">
+    <meta name="pump-icon" content="group">
+    <meta name="pump-perms" content="none" />
+    <title>Creator Fee Sharing</title>
+    <style>
+        :root {
+            --bg1:#0a0a0f; --bg2:#141420; --bg3:#1e1e30;
+            --txt1:#fff; --txt2:#9ca3af;
+            --accent:#00e87b; --accent2:#00c868;
+            --blue:#60a5fa; --purple:#a78bfa; --yellow:#fbbf24; --orange:#fb923c; --pink:#f472b6; --red:#ff4d6a;
+            --radius:12px;
+        }
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg1);color:var(--txt1);min-height:100vh;padding:16px;overflow-y:auto}
+        .app{max-width:600px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+        .header{display:flex;align-items:center;gap:10px}
+        .header h1{font-size:1.2em}
+        .badge{font-size:.65em;background:var(--accent);color:#000;padding:2px 8px;border-radius:20px;font-weight:600}
+        .card{background:var(--bg2);border:1px solid rgba(255,255,255,.06);border-radius:var(--radius);padding:18px}
+        .card-title{font-size:.9em;font-weight:500;margin-bottom:12px}
+        .info-box{padding:12px 16px;background:rgba(0,232,123,.06);border-radius:8px;font-size:.8em;color:var(--txt2);display:flex;gap:8px;align-items:flex-start}
+        .warn-box{background:rgba(255,77,106,.06);border:1px solid rgba(255,77,106,.15)}
+        .warn-box .icon{color:var(--red)}
+
+        label{font-size:.72em;color:var(--txt2);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px}
+        input{background:var(--bg3);border:1px solid rgba(255,255,255,.08);color:var(--txt1);padding:10px 12px;border-radius:8px;width:100%;font-size:.9em;outline:none}
+        input:focus{border-color:var(--accent)}
+
+        .shareholder-list{display:flex;flex-direction:column;gap:8px}
+        .shareholder-row{display:flex;gap:8px;align-items:center;background:var(--bg3);border-radius:8px;padding:10px 12px;position:relative}
+        .shareholder-row .sh-color{width:4px;height:36px;border-radius:2px;flex-shrink:0}
+        .shareholder-row .sh-info{flex:1;min-width:0}
+        .shareholder-row .sh-name{font-size:.85em;font-weight:500}
+        .shareholder-row .sh-addr{font-size:.72em;color:var(--txt2);font-family:monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+        .shareholder-row .sh-bps{font-size:1.1em;font-weight:600;min-width:70px;text-align:right}
+        .shareholder-row .sh-pct{font-size:.72em;color:var(--txt2);text-align:right}
+        .sh-remove{background:none;border:none;color:var(--red);cursor:pointer;font-size:1.2em;padding:4px;opacity:.5}
+        .sh-remove:hover{opacity:1}
+
+        .add-btn{width:100%;padding:10px;background:var(--bg3);border:1px dashed rgba(255,255,255,.12);border-radius:8px;color:var(--txt2);cursor:pointer;font-size:.85em;transition:all .2s}
+        .add-btn:hover{border-color:var(--accent);color:var(--accent)}
+
+        .pie-container{width:220px;height:220px;margin:0 auto;position:relative}
+        canvas{width:100%;height:100%}
+        .pie-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center}
+        .pie-center .val{font-size:1.5em;font-weight:700}
+        .pie-center .lbl{font-size:.72em;color:var(--txt2)}
+
+        .total-bar{display:flex;align-items:center;gap:12px;padding:12px;background:var(--bg3);border-radius:8px}
+        .total-bar .total-label{font-size:.8em;color:var(--txt2)}
+        .total-bar .total-value{font-size:1.1em;font-weight:600;margin-left:auto}
+        .total-bar .total-pct{font-size:.8em;color:var(--txt2)}
+        .total-bar.valid .total-value{color:var(--accent)}
+        .total-bar.invalid .total-value{color:var(--red)}
+
+        .progress-bar{flex:1;height:8px;background:var(--bg1);border-radius:4px;overflow:hidden}
+        .progress-fill{height:100%;border-radius:4px;transition:width .3s}
+
+        .distribution-section{display:flex;flex-direction:column;gap:8px}
+        .dist-row{display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--bg3);border-radius:6px}
+        .dist-row .sh-color{width:4px;height:24px;border-radius:2px;flex-shrink:0}
+        .dist-row .name{flex:1;font-size:.85em}
+        .dist-row .amount{font-size:.9em;font-weight:500;color:var(--accent)}
+
+        .slider-row{display:flex;align-items:center;gap:12px}
+        .slider-row input[type=range]{flex:1;accent-color:var(--accent)}
+        .slider-val{min-width:80px;font-size:.9em;font-weight:500;text-align:right}
+
+        .code-block{background:var(--bg3);border-radius:8px;padding:14px;font-family:monospace;font-size:.78em;line-height:1.6;overflow-x:auto;color:var(--accent)}
+    </style>
+</head>
+<body>
+<div class="app">
+    <div class="header">
+        <span style="font-size:28px">👥</span>
+        <h1>Creator Fee Sharing</h1>
+        <span class="badge">SDK</span>
+    </div>
+
+    <div class="info-box">
+        <span>💡</span>
+        <div>Token creators can share their fees with up to <strong>4 shareholders</strong>. Total shares must equal exactly <strong>10,000 BPS</strong> (100%). Configure the split below.</div>
+    </div>
+
+    <!-- Revenue Input -->
+    <div class="card">
+        <div class="card-title">Revenue Simulator</div>
+        <div class="slider-row">
+            <label style="margin:0;min-width:100px">Creator Vault Balance</label>
+            <input type="range" id="vaultBalance" min="0" max="1000" value="50" step="0.1" oninput="recalculate()">
+            <span class="slider-val" id="vaultVal">50.0 SOL</span>
+        </div>
+    </div>
+
+    <!-- Shareholders -->
+    <div class="card">
+        <div class="card-title">Shareholders <span style="font-size:.72em;color:var(--txt2);font-weight:400">(max 4)</span></div>
+        <div class="shareholder-list" id="shareholderList"></div>
+        <button class="add-btn" id="addBtn" onclick="addShareholder()">+ Add Shareholder</button>
+
+        <!-- Total -->
+        <div class="total-bar" id="totalBar" style="margin-top:12px">
+            <span class="total-label">Total Allocation</span>
+            <div class="progress-bar">
+                <div class="progress-fill" id="totalProgress" style="width:0%;background:var(--accent)"></div>
+            </div>
+            <span class="total-value" id="totalBps">0</span>
+            <span class="total-pct" id="totalPct">/ 10,000 BPS</span>
+        </div>
+    </div>
+
+    <!-- Pie Chart -->
+    <div class="card">
+        <div class="card-title">Share Distribution</div>
+        <div class="pie-container">
+            <canvas id="pieChart"></canvas>
+            <div class="pie-center">
+                <div class="val" id="pieTotal">0%</div>
+                <div class="lbl">Allocated</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Distribution Preview -->
+    <div class="card">
+        <div class="card-title">Distribution Preview</div>
+        <div class="distribution-section" id="distSection"></div>
+    </div>
+
+    <!-- Validation -->
+    <div id="validationBox" class="info-box warn-box" style="display:none">
+        <span class="icon">⚠️</span>
+        <div id="validationMsg"></div>
+    </div>
+
+    <!-- SDK Code -->
+    <div class="card">
+        <div class="card-title">SDK Usage</div>
+        <div class="code-block">
+<span style="color:var(--purple)">import</span> { OnlinePumpSdk, PUMP_SDK, Shareholder } <span style="color:var(--purple)">from</span> <span style="color:var(--yellow)">'@pump-fun/pump-sdk'</span>;
+
+<span style="color:var(--txt2)">// Configure fee sharing (total = 10,000 BPS)</span>
+<span style="color:var(--purple)">const</span> shareholders: Shareholder[] = [
+  { address: creator,    shareBps: 5000 }, <span style="color:var(--txt2)">// 50%</span>
+  { address: partner,    shareBps: 3000 }, <span style="color:var(--txt2)">// 30%</span>
+  { address: marketing,  shareBps: 2000 }, <span style="color:var(--txt2)">// 20%</span>
+];
+
+<span style="color:var(--txt2)">// Get creator vault balance</span>
+<span style="color:var(--purple)">const</span> balance = <span style="color:var(--purple)">await</span> sdk.getCreatorVaultBalance(mint);
+
+<span style="color:var(--txt2)">// Distribute fees to shareholders</span>
+<span style="color:var(--purple)">const</span> ixs = <span style="color:var(--purple)">await</span> sdk.buildDistributeCreatorFeesInstructions(
+  mint, creator, shareholders
+);
+
+<span style="color:var(--txt2)">// Collect from both Pump + PumpAMM</span>
+<span style="color:var(--purple)">const</span> ixs = <span style="color:var(--purple)">await</span> sdk.collectCoinCreatorFeeInstructions(
+  mint, creator
+);
+        </div>
+    </div>
+</div>
+
+<script>
+const SH_COLORS = ['#00e87b', '#60a5fa', '#a78bfa', '#fbbf24', '#fb923c', '#f472b6'];
+const MAX_SHAREHOLDERS = 4;
+const TOTAL_BPS = 10000;
+
+let shareholders = [
+    { name: 'Creator', address: 'Creat...ABC123', bps: 5000 },
+    { name: 'Partner', address: 'Partn...XYZ789', bps: 3000 },
+    { name: 'Marketing', address: 'Marke...DEF456', bps: 2000 },
+];
+
+function render() {
+    const list = document.getElementById('shareholderList');
+    list.innerHTML = '';
+
+    shareholders.forEach((sh, i) => {
+        const row = document.createElement('div');
+        row.className = 'shareholder-row';
+        row.innerHTML = `
+            <div class="sh-color" style="background:${SH_COLORS[i]}"></div>
+            <div class="sh-info">
+                <input value="${sh.name}" placeholder="Name" style="padding:4px 8px;font-size:.85em;margin-bottom:4px" oninput="shareholders[${i}].name=this.value;recalculate()">
+                <input value="${sh.address}" placeholder="Solana address..." style="padding:4px 8px;font-size:.75em;font-family:monospace" oninput="shareholders[${i}].address=this.value">
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px">
+                <input type="number" value="${sh.bps}" min="0" max="10000" step="100" style="width:80px;padding:6px 8px;text-align:right;font-weight:600" oninput="shareholders[${i}].bps=parseInt(this.value)||0;recalculate()">
+                <div class="sh-pct">${(sh.bps / 100).toFixed(1)}%</div>
+            </div>
+            <button class="sh-remove" onclick="removeShareholder(${i})" title="Remove">✕</button>
+        `;
+        list.appendChild(row);
+    });
+
+    document.getElementById('addBtn').style.display = shareholders.length >= MAX_SHAREHOLDERS ? 'none' : 'block';
+    recalculate();
+}
+
+function addShareholder() {
+    if (shareholders.length >= MAX_SHAREHOLDERS) return;
+    const remaining = TOTAL_BPS - shareholders.reduce((s, sh) => s + sh.bps, 0);
+    shareholders.push({ name: `Shareholder ${shareholders.length + 1}`, address: '', bps: Math.max(0, remaining) });
+    render();
+}
+
+function removeShareholder(i) {
+    shareholders.splice(i, 1);
+    render();
+}
+
+function recalculate() {
+    const total = shareholders.reduce((s, sh) => s + sh.bps, 0);
+    const vault = parseFloat(document.getElementById('vaultBalance').value);
+    document.getElementById('vaultVal').textContent = vault.toFixed(1) + ' SOL';
+
+    // Total bar
+    const totalBar = document.getElementById('totalBar');
+    document.getElementById('totalBps').textContent = total.toLocaleString();
+    document.getElementById('totalProgress').style.width = Math.min(100, (total / TOTAL_BPS) * 100) + '%';
+    totalBar.className = `total-bar ${total === TOTAL_BPS ? 'valid' : 'invalid'}`;
+    document.getElementById('totalProgress').style.background = total === TOTAL_BPS ? 'var(--accent)' : total > TOTAL_BPS ? 'var(--red)' : 'var(--orange)';
+    document.getElementById('pieTotal').textContent = (total / 100).toFixed(0) + '%';
+
+    // Validation
+    const vBox = document.getElementById('validationBox');
+    const vMsg = document.getElementById('validationMsg');
+    const errors = [];
+    if (total !== TOTAL_BPS) errors.push(`Total must be exactly 10,000 BPS. Currently: ${total.toLocaleString()} (${total > TOTAL_BPS ? 'over' : 'under'} by ${Math.abs(TOTAL_BPS - total)})`);
+    if (shareholders.length === 0) errors.push('At least one shareholder required');
+    if (shareholders.some(sh => sh.bps === 0)) errors.push('All shareholders must have > 0 share');
+    const addrs = shareholders.map(sh => sh.address).filter(a => a);
+    if (new Set(addrs).size !== addrs.length) errors.push('Duplicate addresses detected');
+
+    if (errors.length > 0) {
+        vBox.style.display = 'flex';
+        vMsg.innerHTML = errors.join('<br>');
+    } else {
+        vBox.style.display = 'none';
+    }
+
+    // Distribution preview
+    const dist = document.getElementById('distSection');
+    dist.innerHTML = '';
+    shareholders.forEach((sh, i) => {
+        const amount = (sh.bps / TOTAL_BPS) * vault;
+        const row = document.createElement('div');
+        row.className = 'dist-row';
+        row.innerHTML = `
+            <div class="sh-color" style="background:${SH_COLORS[i]}"></div>
+            <span class="name">${sh.name || 'Unnamed'}</span>
+            <span style="font-size:.75em;color:var(--txt2)">${sh.bps.toLocaleString()} BPS (${(sh.bps/100).toFixed(1)}%)</span>
+            <span class="amount">${amount.toFixed(4)} SOL</span>
+        `;
+        dist.appendChild(row);
+    });
+
+    drawPie();
+}
+
+function drawPie() {
+    const canvas = document.getElementById('pieChart');
+    const ctx = canvas.getContext('2d');
+    const dpr = window.devicePixelRatio || 1;
+    const size = 220;
+    canvas.width = size * dpr;
+    canvas.height = size * dpr;
+    ctx.scale(dpr, dpr);
+    canvas.style.width = size + 'px';
+    canvas.style.height = size + 'px';
+
+    const cx = size / 2, cy = size / 2, r = 90, innerR = 55;
+    ctx.clearRect(0, 0, size, size);
+
+    const total = shareholders.reduce((s, sh) => s + sh.bps, 0);
+    if (total === 0) return;
+
+    let angle = -Math.PI / 2;
+    shareholders.forEach((sh, i) => {
+        const sweep = (sh.bps / Math.max(total, TOTAL_BPS)) * Math.PI * 2;
+        ctx.beginPath();
+        ctx.moveTo(cx + innerR * Math.cos(angle), cy + innerR * Math.sin(angle));
+        ctx.arc(cx, cy, r, angle, angle + sweep);
+        ctx.arc(cx, cy, innerR, angle + sweep, angle, true);
+        ctx.closePath();
+        ctx.fillStyle = SH_COLORS[i];
+        ctx.fill();
+        angle += sweep;
+    });
+
+    // Unallocated
+    if (total < TOTAL_BPS) {
+        const sweep = ((TOTAL_BPS - total) / TOTAL_BPS) * Math.PI * 2;
+        ctx.beginPath();
+        ctx.moveTo(cx + innerR * Math.cos(angle), cy + innerR * Math.sin(angle));
+        ctx.arc(cx, cy, r, angle, angle + sweep);
+        ctx.arc(cx, cy, innerR, angle + sweep, angle, true);
+        ctx.closePath();
+        ctx.fillStyle = 'rgba(255,255,255,0.05)';
+        ctx.fill();
+    }
+}
+
+render();
+</script>
+</body>
+</html>

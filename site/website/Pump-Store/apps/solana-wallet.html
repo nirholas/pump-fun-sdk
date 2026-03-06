@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="pump-include" content="pump.css">
+    <meta name="capabilities" content="solana_wallet">
+    <meta name="aspect-ratio" content="3/4">
+    <meta name="pump-icon" content='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"><defs><linearGradient id="sg" x1="0" y1="0" x2="24" y2="24"><stop offset="0%" stop-color="#00FFA3"/><stop offset="100%" stop-color="#DC1FFF"/></linearGradient></defs><path d="M4 17.5h13.5l2.5-2.5H6.5L4 17.5zm0-5.5h13.5l2.5-2.5H6.5L4 12zm16-3H6.5L4 6.5h13.5L20 9z" fill="url(#sg)"/></svg>'>
+    <meta name="pump-perms" content="network" />
+    <title>Solana Wallet</title>
+    <style>
+        :root {
+            --col-bg1: #0a0a0a;
+            --col-bg2: #141414;
+            --col-bg3: #1e1e1e;
+            --accent: #00e87b;
+            --sol-purple: #9945FF;
+            --sol-green: #14F195;
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:'Poppins',system-ui,sans-serif; background:var(--col-bg1); color:#fff; height:100vh; overflow:hidden; }
+        .app-container { display:flex; flex-direction:column; height:100vh; }
+
+        /* Header */
+        .header { padding:16px 20px; display:flex; align-items:center; gap:12px; border-bottom:1px solid #ffffff0a; }
+        .header svg { width:28px; height:28px; }
+        .header h1 { font-size:1.1rem; font-weight:600; }
+        .header .network-badge { margin-left:auto; font-size:0.7rem; padding:3px 10px; border-radius:20px; background:rgba(0,232,123,0.1); color:var(--accent); border:1px solid rgba(0,232,123,0.2); }
+
+        /* Connection Section */
+        .connect-section { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:20px; gap:16px; }
+        .connect-section.hidden { display:none; }
+        .sol-logo { width:80px; height:80px; border-radius:50%; background:linear-gradient(135deg, #9945FF, #14F195); display:flex; align-items:center; justify-content:center; }
+        .sol-logo svg { width:44px; height:44px; fill:#fff; }
+        .connect-title { font-size:1.2rem; font-weight:600; }
+        .connect-subtitle { font-size:0.8rem; color:#888; text-align:center; max-width:280px; }
+        .wallet-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; width:100%; max-width:320px; margin-top:8px; }
+        .wallet-option { display:flex; flex-direction:column; align-items:center; gap:8px; padding:16px 12px; background:var(--col-bg2); border:1px solid #ffffff0a; border-radius:12px; cursor:pointer; transition:all 0.2s; }
+        .wallet-option:hover { border-color:var(--accent); background:var(--col-bg3); transform:translateY(-2px); }
+        .wallet-option img, .wallet-option .wicon { width:40px; height:40px; border-radius:10px; }
+        .wallet-option .wicon { display:flex; align-items:center; justify-content:center; font-size:1.5rem; }
+        .wallet-option span { font-size:0.75rem; color:#aaa; }
+
+        /* Connected View */
+        .connected-section { flex:1; display:flex; flex-direction:column; overflow-y:auto; }
+        .connected-section.hidden { display:none; }
+
+        .balance-card { margin:16px 20px; padding:24px 20px; background:linear-gradient(135deg, #1a1a2e, #16213e); border-radius:16px; border:1px solid #ffffff0a; text-align:center; }
+        .balance-label { font-size:0.7rem; color:#888; text-transform:uppercase; letter-spacing:1px; }
+        .balance-value { font-size:2rem; font-weight:800; margin:4px 0; background:linear-gradient(90deg, #14F195, #9945FF); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; color:transparent; }
+        .balance-usd { font-size:0.85rem; color:#888; }
+        .wallet-address { font-size:0.7rem; color:#666; margin-top:8px; cursor:pointer; }
+        .wallet-address:hover { color:var(--accent); }
+
+        .action-row { display:flex; gap:10px; padding:0 20px; margin-bottom:16px; }
+        .action-btn { flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; padding:12px; background:var(--col-bg2); border:1px solid #ffffff0a; border-radius:12px; cursor:pointer; color:#fff; font-size:0.7rem; transition:all 0.15s; }
+        .action-btn:hover { background:var(--col-bg3); border-color:var(--accent); }
+        .action-btn .material-symbols-rounded { font-size:20px; color:var(--accent); }
+
+        .tokens-header { padding:0 20px; font-size:0.75rem; color:#666; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px; }
+        .token-list { flex:1; overflow-y:auto; padding:0 20px 20px; }
+        .token-item { display:flex; align-items:center; gap:12px; padding:12px; background:var(--col-bg2); border-radius:10px; margin-bottom:6px; border:1px solid #ffffff06; }
+        .token-icon { width:36px; height:36px; border-radius:50%; background:var(--col-bg3); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.8rem; }
+        .token-info { flex:1; }
+        .token-name { font-size:0.85rem; font-weight:500; }
+        .token-amount { font-size:0.7rem; color:#888; }
+        .token-value { text-align:right; }
+        .token-price { font-size:0.85rem; font-weight:500; }
+        .token-change { font-size:0.7rem; }
+        .token-change.up { color:var(--accent); }
+        .token-change.down { color:#ff4d4d; }
+
+        .disconnect-btn { margin:12px 20px; padding:10px; background:rgba(255,77,77,0.1); border:1px solid rgba(255,77,77,0.2); border-radius:10px; color:#ff4d4d; cursor:pointer; font-size:0.8rem; text-align:center; transition:all 0.15s; }
+        .disconnect-btn:hover { background:rgba(255,77,77,0.2); }
+
+        /* Status bar */
+        .status-bar { padding:8px 20px; border-top:1px solid #ffffff0a; font-size:0.65rem; color:#555; display:flex; justify-content:space-between; }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="header">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+                <defs><linearGradient id="sg2" x1="0" y1="0" x2="24" y2="24"><stop offset="0%" stop-color="#00FFA3"/><stop offset="100%" stop-color="#DC1FFF"/></linearGradient></defs>
+                <path d="M4 17.5h13.5l2.5-2.5H6.5L4 17.5zm0-5.5h13.5l2.5-2.5H6.5L4 12zm16-3H6.5L4 6.5h13.5L20 9z" fill="url(#sg2)"/>
+            </svg>
+            <h1>Solana Wallet</h1>
+            <span class="network-badge" id="networkBadge">Mainnet-Beta</span>
+        </div>
+
+        <!-- Not Connected -->
+        <div class="connect-section" id="connectView">
+            <div class="sol-logo">
+                <svg viewBox="0 0 24 24"><path d="M4 17.5h13.5l2.5-2.5H6.5L4 17.5zm0-5.5h13.5l2.5-2.5H6.5L4 12zm16-3H6.5L4 6.5h13.5L20 9z"/></svg>
+            </div>
+            <div class="connect-title">Connect Solana Wallet</div>
+            <div class="connect-subtitle">Connect your Solana wallet to view balances, send tokens, and interact with Pump.fun</div>
+            <div class="wallet-grid">
+                <div class="wallet-option" onclick="connectWallet('phantom')">
+                    <div class="wicon" style="background:linear-gradient(135deg,#AB9FF2,#7B61FF);border-radius:10px;">👻</div>
+                    <span>Phantom</span>
+                </div>
+                <div class="wallet-option" onclick="connectWallet('solflare')">
+                    <div class="wicon" style="background:linear-gradient(135deg,#FC8E03,#FCD535);border-radius:10px;">🔥</div>
+                    <span>Solflare</span>
+                </div>
+                <div class="wallet-option" onclick="connectWallet('backpack')">
+                    <div class="wicon" style="background:linear-gradient(135deg,#E33E3F,#E87040);border-radius:10px;">🎒</div>
+                    <span>Backpack</span>
+                </div>
+                <div class="wallet-option" onclick="connectWallet('demo')">
+                    <div class="wicon" style="background:var(--col-bg3);">🔑</div>
+                    <span>Demo Mode</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Connected View -->
+        <div class="connected-section hidden" id="connectedView">
+            <div class="balance-card">
+                <div class="balance-label">Total Balance</div>
+                <div class="balance-value" id="totalBalance">0.00 SOL</div>
+                <div class="balance-usd" id="totalUsd">≈ $0.00</div>
+                <div class="wallet-address" id="walletAddr" onclick="copyAddress()" title="Click to copy">Loading...</div>
+            </div>
+            <div class="action-row">
+                <button class="action-btn" onclick="showSend()">
+                    <span class="material-symbols-rounded">arrow_upward</span>Send
+                </button>
+                <button class="action-btn" onclick="showReceive()">
+                    <span class="material-symbols-rounded">arrow_downward</span>Receive
+                </button>
+                <button class="action-btn" onclick="openSwap()">
+                    <span class="material-symbols-rounded">swap_horiz</span>Swap
+                </button>
+                <button class="action-btn" onclick="refreshBalance()">
+                    <span class="material-symbols-rounded">refresh</span>Refresh
+                </button>
+            </div>
+            <div class="tokens-header">Token Holdings</div>
+            <div class="token-list" id="tokenList">
+                <div class="token-item">
+                    <div class="token-icon" style="background:linear-gradient(135deg,#9945FF,#14F195);">◎</div>
+                    <div class="token-info">
+                        <div class="token-name">Solana</div>
+                        <div class="token-amount">0.00 SOL</div>
+                    </div>
+                    <div class="token-value">
+                        <div class="token-price">$0.00</div>
+                        <div class="token-change up">+0.0%</div>
+                    </div>
+                </div>
+            </div>
+            <div class="disconnect-btn" onclick="disconnectWallet()">Disconnect Wallet</div>
+        </div>
+
+        <div class="status-bar">
+            <span id="statusText">Not connected</span>
+            <span>Solana RPC</span>
+        </div>
+    </div>
+
+    <script>
+    const RPC = 'https://api.mainnet-beta.solana.com';
+    let connected = false;
+    let walletAddress = null;
+
+    async function connectWallet(type) {
+        if (type === 'phantom' && window.solana?.isPhantom) {
+            try {
+                const resp = await window.solana.connect();
+                walletAddress = resp.publicKey.toString();
+                onConnected(walletAddress);
+            } catch (e) { showStatus('Phantom: ' + e.message); }
+        } else if (type === 'solflare' && window.solflare?.isSolflare) {
+            try {
+                await window.solflare.connect();
+                walletAddress = window.solflare.publicKey.toString();
+                onConnected(walletAddress);
+            } catch (e) { showStatus('Solflare: ' + e.message); }
+        } else if (type === 'backpack' && window.backpack) {
+            try {
+                await window.backpack.connect();
+                walletAddress = window.backpack.publicKey.toString();
+                onConnected(walletAddress);
+            } catch (e) { showStatus('Backpack: ' + e.message); }
+        } else if (type === 'demo') {
+            walletAddress = 'DemoABC123...7xYz';
+            onConnected(walletAddress, true);
+        } else {
+            const names = { phantom:'Phantom', solflare:'Solflare', backpack:'Backpack' };
+            showStatus(`${names[type] || type} not detected. Install the extension.`);
+        }
+    }
+
+    function onConnected(addr, demo = false) {
+        connected = true;
+        document.getElementById('connectView').classList.add('hidden');
+        document.getElementById('connectedView').classList.remove('hidden');
+        const short = addr.length > 12 ? addr.slice(0, 6) + '...' + addr.slice(-4) : addr;
+        document.getElementById('walletAddr').textContent = short;
+        showStatus('Connected: ' + short);
+        if (!demo) fetchBalance(addr);
+        else showDemoData();
+    }
+
+    async function fetchBalance(addr) {
+        try {
+            const res = await fetch(RPC, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ jsonrpc:'2.0', id:1, method:'getBalance', params:[addr] })
+            });
+            const data = await res.json();
+            const sol = (data.result?.value || 0) / 1e9;
+            const priceRes = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd&include_24hr_change=true');
+            const priceData = await priceRes.json();
+            const price = priceData.solana?.usd || 0;
+            const change = priceData.solana?.usd_24h_change || 0;
+            document.getElementById('totalBalance').textContent = sol.toFixed(4) + ' SOL';
+            document.getElementById('totalUsd').textContent = '≈ $' + (sol * price).toFixed(2);
+            updateTokenList(sol, price, change);
+            fetchTokenAccounts(addr, price);
+        } catch (e) { showStatus('RPC error: ' + e.message); }
+    }
+
+    async function fetchTokenAccounts(addr, solPrice) {
+        try {
+            const res = await fetch(RPC, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    jsonrpc:'2.0', id:2, method:'getTokenAccountsByOwner',
+                    params:[addr, { programId:'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' }, { encoding:'jsonParsed' }]
+                })
+            });
+            const data = await res.json();
+            const accounts = data.result?.value || [];
+            const list = document.getElementById('tokenList');
+            accounts.forEach(acc => {
+                const info = acc.account.data.parsed.info;
+                const amount = info.tokenAmount?.uiAmount || 0;
+                if (amount <= 0) return;
+                const mint = info.mint;
+                const short = mint.slice(0,4) + '...' + mint.slice(-4);
+                const el = document.createElement('div');
+                el.className = 'token-item';
+                el.innerHTML = `
+                    <div class="token-icon" style="background:hsl(${hashCode(mint)%360},50%,30%);">${short.slice(0,2)}</div>
+                    <div class="token-info">
+                        <div class="token-name">${short}</div>
+                        <div class="token-amount">${amount.toLocaleString()} tokens</div>
+                    </div>
+                    <div class="token-value">
+                        <div class="token-price" style="font-size:0.7rem;color:#888;">SPL Token</div>
+                    </div>`;
+                list.appendChild(el);
+            });
+            showStatus('Found ' + accounts.length + ' token accounts');
+        } catch(e) { /* token fetch optional */ }
+    }
+
+    function updateTokenList(sol, price, change) {
+        const list = document.getElementById('tokenList');
+        list.innerHTML = `
+            <div class="token-item">
+                <div class="token-icon" style="background:linear-gradient(135deg,#9945FF,#14F195);">◎</div>
+                <div class="token-info">
+                    <div class="token-name">Solana</div>
+                    <div class="token-amount">${sol.toFixed(4)} SOL</div>
+                </div>
+                <div class="token-value">
+                    <div class="token-price">$${(sol * price).toFixed(2)}</div>
+                    <div class="token-change ${change >= 0 ? 'up' : 'down'}">${change >= 0 ? '+' : ''}${change.toFixed(1)}%</div>
+                </div>
+            </div>`;
+    }
+
+    function showDemoData() {
+        document.getElementById('totalBalance').textContent = '12.4507 SOL';
+        document.getElementById('totalUsd').textContent = '≈ $2,193.28';
+        const list = document.getElementById('tokenList');
+        list.innerHTML = `
+            <div class="token-item">
+                <div class="token-icon" style="background:linear-gradient(135deg,#9945FF,#14F195);">◎</div>
+                <div class="token-info"><div class="token-name">Solana</div><div class="token-amount">12.4507 SOL</div></div>
+                <div class="token-value"><div class="token-price">$2,193.28</div><div class="token-change up">+3.2%</div></div>
+            </div>
+            <div class="token-item">
+                <div class="token-icon" style="background:linear-gradient(135deg,#2775ca,#1a5fb4);">$</div>
+                <div class="token-info"><div class="token-name">USDC</div><div class="token-amount">1,500.00 USDC</div></div>
+                <div class="token-value"><div class="token-price">$1,500.00</div><div class="token-change up">+0.0%</div></div>
+            </div>
+            <div class="token-item">
+                <div class="token-icon" style="background:linear-gradient(135deg,#00e87b,#00b862);">P</div>
+                <div class="token-info"><div class="token-name">PUMP</div><div class="token-amount">50,000 PUMP</div></div>
+                <div class="token-value"><div class="token-price">$425.00</div><div class="token-change up">+12.5%</div></div>
+            </div>
+            <div class="token-item">
+                <div class="token-icon" style="background:linear-gradient(135deg,#f7931a,#c77813);">B</div>
+                <div class="token-info"><div class="token-name">BONK</div><div class="token-amount">12,000,000 BONK</div></div>
+                <div class="token-value"><div class="token-price">$312.00</div><div class="token-change down">-1.8%</div></div>
+            </div>`;
+    }
+
+    function disconnectWallet() {
+        connected = false; walletAddress = null;
+        document.getElementById('connectView').classList.remove('hidden');
+        document.getElementById('connectedView').classList.add('hidden');
+        showStatus('Disconnected');
+        if (window.solana?.isPhantom) window.solana.disconnect().catch(()=>{});
+    }
+
+    function copyAddress() {
+        if (walletAddress) { navigator.clipboard.writeText(walletAddress); showStatus('Address copied!'); }
+    }
+
+    function showSend() { showStatus('Send: coming soon — use the SDK for direct transactions'); }
+    function showReceive() { if(walletAddress) { copyAddress(); showStatus('Address copied — share it to receive SOL/tokens'); } }
+    function openSwap() { showStatus('Opening Jupiter Swap...'); window.open('https://jup.ag', '_blank'); }
+    function refreshBalance() { if(walletAddress && walletAddress !== 'DemoABC123...7xYz') fetchBalance(walletAddress); else showDemoData(); }
+    function showStatus(msg) { document.getElementById('statusText').textContent = msg; }
+    function hashCode(s) { let h = 0; for(let i=0;i<s.length;i++) h = ((h << 5) - h) + s.charCodeAt(i); return Math.abs(h); }
+    </script>
+</body>
+</html>

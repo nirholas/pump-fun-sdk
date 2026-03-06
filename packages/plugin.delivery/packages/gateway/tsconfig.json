@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "module": "CommonJS",
+    "target": "ES5",
+    "lib": ["dom", "esnext"],
+    "declaration": true,
+    "sourceMap": true,
+    "skipDefaultLibCheck": true,
+    "baseUrl": ".",
+    "allowSyntheticDefaultImports": true,
+    "moduleResolution": "node",
+    "forceConsistentCasingInFileNames": true,
+    "noImplicitReturns": true,
+    "noUnusedLocals": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "paths": {
+      "@sperax/chat-plugins-gateway": ["src"]
+    }
+  },
+  "include": ["types", "api", "src", "*.ts", "tests"]
+}

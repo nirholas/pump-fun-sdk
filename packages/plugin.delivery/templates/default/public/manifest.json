@@ -1,0 +1,38 @@
+{
+  "$schema": "https://plugin.delivery/schema.json",
+  "identifier": "clothes-recommendation",
+  "api": [
+    {
+      "url": "https://your-plugin.vercel.app/api/clothes",
+      "name": "recommendClothes",
+      "description": "Recommend clothes to the user based on their mood and gender. Use this when the user asks what to wear or needs outfit suggestions.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "mood": {
+            "type": "string",
+            "enum": ["happy", "sad", "angry", "fearful", "surprised", "disgusted"],
+            "description": "The user's current mood. Ask the user how they're feeling if not provided."
+          },
+          "gender": {
+            "type": "string",
+            "enum": ["man", "woman"],
+            "description": "The user's gender. Ask the user for this information if not known."
+          }
+        },
+        "required": ["mood", "gender"]
+      }
+    }
+  ],
+  "ui": {
+    "url": "https://your-plugin.vercel.app",
+    "height": 200
+  },
+  "meta": {
+    "avatar": "👔",
+    "title": "Clothes Recommendation",
+    "description": "Get outfit suggestions based on your mood",
+    "tags": ["fashion", "recommendation", "lifestyle"]
+  },
+  "version": "1"
+}

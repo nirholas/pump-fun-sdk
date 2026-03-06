@@ -1,0 +1,16 @@
+{
+  "$schema": "https://plugin.delivery/schema.json",
+  "identifier": "ens-lookup",
+  "openapi": "https://api.ensideas.com/openapi.json",
+  "meta": {
+    "avatar": "🏷️",
+    "title": "ENS Lookup",
+    "description": "ENS name resolution and availability checker",
+    "tags": [
+      "ens",
+      "domains",
+      "ethereum"
+    ]
+  },
+  "version": "1"
+}

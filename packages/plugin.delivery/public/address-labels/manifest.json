@@ -1,0 +1,30 @@
+{
+  "$schema": "https://plugin.delivery/schema.json",
+  "identifier": "address-labels",
+  "openapi": "https://api.arkhamintelligence.com/openapi.json",
+  "settings": {
+    "type": "object",
+    "required": [
+      "ARKHAM_API_KEY"
+    ],
+    "properties": {
+      "ARKHAM_API_KEY": {
+        "title": "Arkham API Key",
+        "description": "Your Arkham Intelligence API key for address labeling",
+        "type": "string",
+        "format": "password"
+      }
+    }
+  },
+  "meta": {
+    "avatar": "🏷️",
+    "title": "Address Labels",
+    "description": "Identify wallet owners using Arkham Intelligence",
+    "tags": [
+      "labels",
+      "identity",
+      "arkham"
+    ]
+  },
+  "version": "1"
+}

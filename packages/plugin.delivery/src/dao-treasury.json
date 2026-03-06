@@ -1,0 +1,19 @@
+{
+  "author": "SperaxOS",
+  "createdAt": "2025-01-01",
+  "homepage": "https://github.com/nirholas/plugin.delivery",
+  "identifier": "dao-treasury",
+  "manifest": "https://plugin.delivery/dao-treasury/manifest.json",
+  "meta": {
+    "avatar": "🏦",
+    "description": "Track DAO treasury balances from DeepDAO",
+    "tags": [
+      "dao",
+      "treasury",
+      "deepdao"
+    ],
+    "title": "DAO Treasury",
+    "category": "social"
+  },
+  "schemaVersion": 1
+}

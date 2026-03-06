@@ -1,0 +1,30 @@
+{
+  "$schema": "https://plugin.delivery/schema.json",
+  "identifier": "token-terminal",
+  "openapi": "https://api.tokenterminal.com/v2/openapi.json",
+  "settings": {
+    "type": "object",
+    "required": [
+      "TOKEN_TERMINAL_API_KEY"
+    ],
+    "properties": {
+      "TOKEN_TERMINAL_API_KEY": {
+        "title": "API Key",
+        "description": "Your Token Terminal API key",
+        "type": "string",
+        "format": "password"
+      }
+    }
+  },
+  "meta": {
+    "avatar": "📊",
+    "title": "Token Terminal",
+    "description": "Protocol fundamentals, revenue, and financial metrics",
+    "tags": [
+      "fundamentals",
+      "revenue",
+      "metrics"
+    ]
+  },
+  "version": "1"
+}

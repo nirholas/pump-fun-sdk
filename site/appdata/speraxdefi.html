@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="permissions" content="unsandboxed">
+    <title>Pump DeFi</title>
+    <meta name="pump-icon" content="<svg width='232' height='232' viewBox='0 0 232 232' fill='none' xmlns='http://www.w3.org/2000/svg'><rect width='232' height='232' rx='40' fill='#0066ff'/><circle cx='90' cy='100' r='35' fill='none' stroke='#ffffff' stroke-width='8'/><circle cx='142' cy='132' r='35' fill='none' stroke='#ffffff' stroke-width='8'/></svg>">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body, html { width: 100%; height: 100%; overflow: hidden; background: #0a0a1a; }
+        #frame { width: 100%; height: 100%; border: none; }
+        .loading { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; flex-direction: column; background: linear-gradient(135deg, #0a0a1a 0%, #1a1a3e 100%); color: #fff; font-family: system-ui; }
+        .spinner { width: 50px; height: 50px; border: 3px solid rgba(255,255,255,0.2); border-top-color: #0066ff; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .status { font-size: 14px; opacity: 0.7; margin-top: 10px; }
+        .error { background: #1a0a0a; }
+        .error h2 { color: #ff4444; margin-bottom: 15px; }
+        .error p { opacity: 0.7; margin-bottom: 20px; }
+        .error button { background: #0066ff; color: #fff; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 14px; margin: 5px; }
+        .error button:hover { background: #0052cc; }
+        .error button.secondary { background: #333; }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+    <div class="loading" id="loading">
+        <div class="spinner"></div>
+        <p>Loading Pump DeFi...</p>
+        <p class="status" id="status">Initializing proxy...</p>
+    </div>
+    <div class="loading error hidden" id="error">
+        <h2>Unable to Load</h2>
+        <p id="errormsg">Failed to connect to proxy server.</p>
+        <button onclick="retry()">Try Again</button>
+        <button class="secondary" onclick="openExternal()">Open in New Tab</button>
+    </div>
+    <iframe id="frame" class="hidden"></iframe>
+    
+    <script>
+        const TARGET_URL = 'https://pump-fun-sdk.vercel.app/';
+        const frame = document.getElementById('frame');
+        const loading = document.getElementById('loading');
+        const error = document.getElementById('error');
+        const statusEl = document.getElementById('status');
+        
+        function setStatus(msg) { statusEl.textContent = msg; }
+        function showError(msg) { document.getElementById('errormsg').textContent = msg; loading.classList.add('hidden'); error.classList.remove('hidden'); }
+        function openExternal() { window.open(TARGET_URL, '_blank'); }
+        function retry() { error.classList.add('hidden'); loading.classList.remove('hidden'); init(); }
+        
+        // XOR encode function (matches UV codec - only XORs every OTHER character)
+        function xorEncode(str) {
+            let result = '';
+            for (let i = 0; i < str.length; i++) {
+                if (i % 2) {
+                    result += String.fromCharCode(str.charCodeAt(i) ^ 2);
+                } else {
+                    result += str.charAt(i);
+                }
+            }
+            return encodeURIComponent(result);
+        }
+        
+        // Get the base URL
+        function getBaseUrl() {
+            if (window.location.protocol === 'blob:') {
+                try { return window.parent.location.origin; } catch(e) {
+                    const match = window.location.href.match(/blob:(https?:\/\/[^/]+)/);
+                    return match ? match[1] : '';
+                }
+            }
+            return window.location.origin;
+        }
+        
+        const BASE_URL = getBaseUrl();
+        
+        async function init() {
+            try {
+                setStatus('Connecting through proxy...');
+                
+                // Wait for UV to be ready (initialized by main page)
+                let attempts = 0;
+                while (!window.parent.__uvReady && attempts < 30) {
+                    await new Promise(r => setTimeout(r, 100));
+                    attempts++;
+                }
+                
+                // Build proxied URL
+                const encoded = '/uv/service/' + xorEncode(TARGET_URL);
+                const proxyUrl = BASE_URL + encoded;
+                
+                setStatus('Loading pump-fun-sdk.vercel.app...');
+                frame.src = proxyUrl;
+                
+                frame.onload = () => {
+                    loading.classList.add('hidden');
+                    frame.classList.remove('hidden');
+                };
+                
+                frame.onerror = () => {
+                    showError('Failed to load through proxy.');
+                };
+                
+                // Timeout
+                setTimeout(() => {
+                    if (!frame.classList.contains('hidden')) return;
+                    if (!loading.classList.contains('hidden')) {
+                        showError('Loading timed out. The proxy server may be unavailable.');
+                    }
+                }, 30000);
+                
+            } catch (err) {
+                console.error('Init error:', err);
+                showError('Proxy error: ' + err.message);
+            }
+        }
+        
+        init();
+    </script>
+</body>
+</html>

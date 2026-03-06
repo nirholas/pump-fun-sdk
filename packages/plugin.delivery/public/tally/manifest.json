@@ -1,0 +1,16 @@
+{
+  "$schema": "https://plugin.delivery/schema.json",
+  "identifier": "tally",
+  "openapi": "https://api.tally.xyz/openapi.json",
+  "meta": {
+    "avatar": "🗳️",
+    "title": "Tally",
+    "description": "On-chain governance tracking and proposal data",
+    "tags": [
+      "tally",
+      "governance",
+      "onchain"
+    ]
+  },
+  "version": "1"
+}

@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="pump-include" content="pump.css">
+    <meta name="capabilities" content="fee_manager">
+    <meta name="aspect-ratio" content="16/10">
+    <meta name="pump-icon" content="payments">
+    <meta name="pump-perms" content="network" />
+    <title>Fee Manager</title>
+    <style>
+        :root { --bg1:#0a0a0a; --bg2:#111; --bg3:#1a1a1a; --accent:#00e87b; --purple:#9945FF; --red:#ff4d4d; --yellow:#ffd43b; --blue:#14F195; }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:'Poppins',system-ui,sans-serif; background:var(--bg1); color:#fff; height:100vh; overflow:hidden; }
+        .app { display:grid; grid-template-rows:auto auto 1fr; height:100vh; }
+
+        .header { padding:14px 16px; display:flex; align-items:center; gap:10px; border-bottom:1px solid #ffffff0a; }
+        .header h1 { font-size:0.95rem; font-weight:600; flex:1; }
+        .wallet-badge { display:flex; align-items:center; gap:6px; padding:5px 12px; border-radius:8px; background:var(--bg2); border:1px solid #ffffff0c; font-size:0.7rem; color:#aaa; cursor:pointer; }
+        .wallet-badge .dot { width:6px; height:6px; border-radius:50%; background:var(--accent); }
+        .wallet-badge:hover { color:#fff; border-color:var(--accent); }
+
+        /* Summary Cards */
+        .summary { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; padding:16px; border-bottom:1px solid #ffffff06; }
+        .sum-card { background:var(--bg2); border:1px solid #ffffff08; border-radius:12px; padding:14px; text-align:center; transition:all 0.2s; }
+        .sum-card:hover { border-color:#ffffff14; }
+        .sum-card .icon { font-size:1.4rem; margin-bottom:6px; }
+        .sum-card .label { font-size:0.6rem; color:#555; text-transform:uppercase; letter-spacing:0.5px; }
+        .sum-card .value { font-size:1.2rem; font-weight:700; margin-top:4px; }
+        .sum-card .sub { font-size:0.6rem; color:#666; margin-top:2px; }
+        .sum-card .value.green { color:var(--accent); }
+        .sum-card .value.purple { color:var(--purple); }
+        .sum-card .value.yellow { color:var(--yellow); }
+
+        .content { overflow-y:auto; padding:16px; }
+
+        /* Sections */
+        .section { margin-bottom:20px; }
+        .section-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+        .section-title { font-size:0.8rem; font-weight:600; display:flex; align-items:center; gap:6px; }
+        .section-title .material-symbols-rounded { font-size:18px; color:var(--accent); }
+        .claim-all-btn { padding:6px 14px; border-radius:8px; border:none; background:var(--accent); color:#000; font-weight:600; font-size:0.7rem; cursor:pointer; font-family:inherit; transition:all 0.15s; }
+        .claim-all-btn:hover { transform:translateY(-1px); }
+        .claim-all-btn:disabled { background:var(--bg3); color:#555; cursor:not-allowed; transform:none; }
+
+        /* Fee Token Rows */
+        .fee-table { background:var(--bg2); border:1px solid #ffffff08; border-radius:12px; overflow:hidden; }
+        .fee-row { display:flex; align-items:center; gap:12px; padding:12px 14px; border-bottom:1px solid #ffffff04; transition:background 0.15s; }
+        .fee-row:last-child { border:none; }
+        .fee-row:hover { background:var(--bg3); }
+        .fee-icon { width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.65rem; flex-shrink:0; }
+        .fee-info { flex:1; min-width:0; }
+        .fee-name { font-weight:600; font-size:0.8rem; }
+        .fee-desc { font-size:0.6rem; color:#555; }
+        .fee-amount { text-align:right; margin-right:8px; }
+        .fee-amount .sol { font-weight:600; font-size:0.85rem; }
+        .fee-amount .usd { font-size:0.6rem; color:#666; }
+        .fee-status { min-width:80px; text-align:center; }
+        .claim-btn { padding:6px 16px; border-radius:8px; border:none; font-weight:600; font-size:0.7rem; cursor:pointer; font-family:inherit; transition:all 0.15s; }
+        .claim-btn.claimable { background:var(--accent); color:#000; }
+        .claim-btn.claimable:hover { transform:scale(1.05); }
+        .claim-btn.claimed { background:var(--bg3); color:#555; cursor:default; }
+        .claim-btn.pending { background:var(--yellow); color:#000; }
+
+        /* History */
+        .history-row { display:flex; align-items:center; gap:10px; padding:10px 14px; font-size:0.75rem; border-bottom:1px solid #ffffff04; }
+        .history-row:last-child { border:none; }
+        .history-type { padding:3px 8px; border-radius:6px; font-size:0.6rem; font-weight:600; }
+        .history-type.creator { background:rgba(0,232,123,0.12); color:var(--accent); }
+        .history-type.cashback { background:rgba(153,69,255,0.12); color:var(--purple); }
+        .history-type.referral { background:rgba(255,212,59,0.12); color:var(--yellow); }
+        .history-type.incentive { background:rgba(20,241,149,0.12); color:var(--blue); }
+        .history-token { flex:1; }
+        .history-amount { font-weight:600; }
+        .history-time { color:#444; }
+
+        /* Vault Status */
+        .vault-card { background:var(--bg2); border:1px solid #ffffff08; border-radius:12px; padding:16px; }
+        .vault-row { display:flex; justify-content:space-between; align-items:center; padding:6px 0; font-size:0.75rem; border-bottom:1px solid #ffffff04; }
+        .vault-row:last-child { border:none; }
+        .vault-label { color:#888; }
+        .vault-value { font-weight:600; }
+
+        @media (max-width: 600px) {
+            .summary { grid-template-columns:1fr 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <div class="header">
+            <span class="material-symbols-rounded" style="color:var(--accent);">payments</span>
+            <h1>Fee Claim Manager</h1>
+            <div class="wallet-badge" onclick="connectWallet()">
+                <span class="dot"></span>
+                <span id="walletDisplay">Demo Mode</span>
+            </div>
+        </div>
+
+        <div class="summary">
+            <div class="sum-card">
+                <div class="icon">💰</div>
+                <div class="label">Total Unclaimed</div>
+                <div class="value green" id="totalUnclaimed">12.45 SOL</div>
+                <div class="sub">≈ $2,241</div>
+            </div>
+            <div class="sum-card">
+                <div class="icon">🏦</div>
+                <div class="label">Total Claimed</div>
+                <div class="value" id="totalClaimed">87.32 SOL</div>
+                <div class="sub">All time</div>
+            </div>
+            <div class="sum-card">
+                <div class="icon">🎯</div>
+                <div class="label">Creator Fees</div>
+                <div class="value purple" id="creatorFees">8.20 SOL</div>
+                <div class="sub">From 12 tokens</div>
+            </div>
+            <div class="sum-card">
+                <div class="icon">🎁</div>
+                <div class="label">Incentive Rewards</div>
+                <div class="value yellow" id="incentiveRewards">4.25 SOL</div>
+                <div class="sub">Volume-based</div>
+            </div>
+        </div>
+
+        <div class="content">
+            <!-- Claimable Fees -->
+            <div class="section">
+                <div class="section-header">
+                    <div class="section-title">
+                        <span class="material-symbols-rounded">redeem</span>
+                        Claimable Fees
+                    </div>
+                    <button class="claim-all-btn" onclick="claimAll()">Claim All (12.45 SOL)</button>
+                </div>
+                <div class="fee-table" id="claimableList"></div>
+            </div>
+
+            <!-- Vault Status -->
+            <div class="section">
+                <div class="section-header">
+                    <div class="section-title">
+                        <span class="material-symbols-rounded">account_balance</span>
+                        Fee Vault Status
+                    </div>
+                </div>
+                <div class="vault-card">
+                    <div class="vault-row">
+                        <span class="vault-label">Program</span>
+                        <span class="vault-value" style="font-family:monospace;font-size:0.7rem;">pfeeUxB6oceH9fJKBRHGP5D4bD4sWpmSwMn52FMfXEA</span>
+                    </div>
+                    <div class="vault-row">
+                        <span class="vault-label">Total Shares</span>
+                        <span class="vault-value">10,000 BPS</span>
+                    </div>
+                    <div class="vault-row">
+                        <span class="vault-label">Your Share</span>
+                        <span class="vault-value" style="color:var(--accent);">250 BPS (2.5%)</span>
+                    </div>
+                    <div class="vault-row">
+                        <span class="vault-label">Vault Balance</span>
+                        <span class="vault-value" style="color:var(--purple);">498.2 SOL</span>
+                    </div>
+                    <div class="vault-row">
+                        <span class="vault-label">Last Distribution</span>
+                        <span class="vault-value">2 hours ago</span>
+                    </div>
+                    <div class="vault-row">
+                        <span class="vault-label">Next Epoch</span>
+                        <span class="vault-value" style="color:var(--yellow);">~4h 22m</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Claim History -->
+            <div class="section">
+                <div class="section-header">
+                    <div class="section-title">
+                        <span class="material-symbols-rounded">history</span>
+                        Recent Claims
+                    </div>
+                </div>
+                <div class="fee-table" id="historyList"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    const CLAIMABLE_FEES = [
+        { name:'MOONCAT', symbol:'MOON', color:'#00e87b', type:'creator', sol:3.45, usd:621, status:'claimable' },
+        { name:'DEGENWIF', symbol:'DW', color:'#9945FF', type:'creator', sol:2.10, usd:378, status:'claimable' },
+        { name:'Cashback Rewards', symbol:'CB', color:'#14F195', type:'cashback', sol:1.85, usd:333, status:'claimable' },
+        { name:'SOLAPE', symbol:'SA', color:'#ff9800', type:'creator', sol:1.30, usd:234, status:'claimable' },
+        { name:'Referral Bonus', symbol:'RF', color:'#ffd43b', type:'referral', sol:1.20, usd:216, status:'claimable' },
+        { name:'Volume Incentive', symbol:'VI', color:'#00bcd4', type:'incentive', sol:1.05, usd:189, status:'claimable' },
+        { name:'FROGGY', symbol:'FG', color:'#8bc34a', type:'creator', sol:0.80, usd:144, status:'claimable' },
+        { name:'Trade Cashback', symbol:'TC', color:'#e91e63', type:'cashback', sol:0.70, usd:126, status:'claimable' },
+    ];
+
+    const HISTORY = [
+        { type:'creator', token:'PUMPIT', sol:4.20, time:'2h ago' },
+        { type:'cashback', token:'Trade Cashback', sol:0.95, time:'5h ago' },
+        { type:'referral', token:'Referral Bonus', sol:2.30, time:'12h ago' },
+        { type:'creator', token:'BONKINU', sol:6.10, time:'1d ago' },
+        { type:'incentive', token:'Volume Reward', sol:3.50, time:'1d ago' },
+        { type:'creator', token:'AIDOG', sol:1.80, time:'2d ago' },
+        { type:'cashback', token:'Trade Cashback', sol:1.20, time:'3d ago' },
+        { type:'referral', token:'Referral Bonus', sol:0.85, time:'3d ago' },
+        { type:'creator', token:'GALAXYFI', sol:5.40, time:'4d ago' },
+        { type:'incentive', token:'Volume Reward', sol:2.10, time:'5d ago' },
+    ];
+
+    function renderClaimable() {
+        const list = document.getElementById('claimableList');
+        list.innerHTML = CLAIMABLE_FEES.map((f, i) => `
+            <div class="fee-row">
+                <div class="fee-icon" style="background:${f.color}22;color:${f.color}">${f.symbol}</div>
+                <div class="fee-info">
+                    <div class="fee-name">${f.name}</div>
+                    <div class="fee-desc">${f.type === 'creator' ? 'Creator fee share' : f.type === 'cashback' ? 'Trading cashback' : f.type === 'referral' ? 'Referral earnings' : 'Volume incentive'}</div>
+                </div>
+                <div class="fee-amount">
+                    <div class="sol">${f.sol.toFixed(2)} SOL</div>
+                    <div class="usd">≈ $${f.usd}</div>
+                </div>
+                <div class="fee-status">
+                    <button class="claim-btn ${f.status}" onclick="claimFee(${i})">${f.status === 'claimable' ? 'Claim' : f.status === 'claimed' ? 'Claimed ✓' : 'Pending...'}</button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function renderHistory() {
+        const list = document.getElementById('historyList');
+        list.innerHTML = HISTORY.map(h => `
+            <div class="history-row">
+                <span class="history-type ${h.type}">${h.type}</span>
+                <span class="history-token">${h.token}</span>
+                <span class="history-amount" style="color:var(--accent);">+${h.sol.toFixed(2)} SOL</span>
+                <span class="history-time">${h.time}</span>
+            </div>
+        `).join('');
+    }
+
+    function claimFee(idx) {
+        const fee = CLAIMABLE_FEES[idx];
+        if (fee.status !== 'claimable') return;
+        fee.status = 'pending';
+        renderClaimable();
+        setTimeout(() => {
+            fee.status = 'claimed';
+            renderClaimable();
+            HISTORY.unshift({ type: fee.type, token: fee.name, sol: fee.sol, time: 'Just now' });
+            renderHistory();
+        }, 2000);
+    }
+
+    function claimAll() {
+        CLAIMABLE_FEES.forEach((f, i) => {
+            if (f.status === 'claimable') {
+                setTimeout(() => claimFee(i), i * 500);
+            }
+        });
+    }
+
+    function connectWallet() {
+        alert('Connect your Solana wallet to view real fee data.\n\nUses:\n• PumpSdk.getCreatorFees()\n• PumpSdk.getCashbackRewards()\n• PumpSdk.claimCreatorFeeInstruction()');
+    }
+
+    renderClaimable();
+    renderHistory();
+    </script>
+</body>
+</html>

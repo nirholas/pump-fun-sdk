@@ -1,0 +1,61 @@
+{
+  "$schema": "https://plugin.delivery/schema.json",
+  "identifier": "settings-template",
+  "api": [
+    {
+      "url": "https://your-plugin.vercel.app/api/search",
+      "name": "searchWithApiKey",
+      "description": "Search for information using the configured API service. Requires API key to be configured in settings.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "The search query"
+          },
+          "limit": {
+            "type": "number",
+            "description": "Maximum number of results",
+            "default": 10
+          }
+        },
+        "required": ["query"]
+      }
+    }
+  ],
+  "settings": {
+    "type": "object",
+    "required": ["API_KEY"],
+    "properties": {
+      "API_KEY": {
+        "title": "API Key",
+        "description": "Your API key for the search service. Get one at https://example.com/api-keys",
+        "type": "string",
+        "format": "password",
+        "minLength": 32,
+        "maxLength": 64
+      },
+      "DEFAULT_LIMIT": {
+        "title": "Default Result Limit",
+        "description": "Default number of results to return",
+        "type": "number",
+        "default": 10,
+        "minimum": 1,
+        "maximum": 100
+      },
+      "SAFE_SEARCH": {
+        "title": "Safe Search",
+        "description": "Enable safe search filtering",
+        "type": "boolean",
+        "default": true
+      }
+    }
+  },
+  "meta": {
+    "avatar": "🔑",
+    "title": "Settings Example",
+    "description": "Demonstrates plugin settings configuration",
+    "tags": ["settings", "authentication", "template"]
+  },
+  "version": "1"
+}

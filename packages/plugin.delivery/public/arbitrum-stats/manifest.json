@@ -1,0 +1,30 @@
+{
+  "$schema": "https://plugin.delivery/schema.json",
+  "identifier": "arbitrum-stats",
+  "openapi": "https://api.arbiscan.io/openapi.json",
+  "settings": {
+    "type": "object",
+    "required": [
+      "ARBISCAN_API_KEY"
+    ],
+    "properties": {
+      "ARBISCAN_API_KEY": {
+        "title": "API Key",
+        "description": "Your Arbitrum Stats API key",
+        "type": "string",
+        "format": "password"
+      }
+    }
+  },
+  "meta": {
+    "avatar": "🔷",
+    "title": "Arbitrum Stats",
+    "description": "Arbitrum network metrics and activity",
+    "tags": [
+      "arbitrum",
+      "l2",
+      "network"
+    ]
+  },
+  "version": "1"
+}

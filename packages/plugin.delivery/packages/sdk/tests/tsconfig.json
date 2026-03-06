@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "sourceMap": true,
+    "skipDefaultLibCheck": true,
+    "jsx": "react-jsx",
+    "baseUrl": "..",
+    "allowSyntheticDefaultImports": true,
+    "declaration": true,
+    "moduleResolution": "node",
+    "forceConsistentCasingInFileNames": true,
+    "noImplicitReturns": true,
+    "noUnusedLocals": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "paths": {
+      "@sperax/chat-plugin-sdk": ["./src"],
+      "@sperax/chat-plugin-sdk/client": ["./src/client"],
+      "@sperax/chat-plugin-sdk/openapi": ["./src/openapi"]
+    }
+  },
+  "include": ["./client", "./test-setup.ts"]
+}

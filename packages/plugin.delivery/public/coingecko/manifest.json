@@ -1,0 +1,41 @@
+{
+  "$schema": "https://plugin.delivery/schema.json",
+  "api": [
+    {
+      "url": "https://plugin.delivery/api/coingecko/price",
+      "name": "getPrice",
+      "description": "Get current price, 24h change, and market cap for cryptocurrencies",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "ids": {
+            "type": "string",
+            "description": "Comma-separated CoinGecko IDs (e.g., bitcoin,ethereum,solana)"
+          },
+          "vs_currencies": {
+            "type": "string",
+            "description": "Target currency (default: usd)"
+          }
+        },
+        "required": ["ids"]
+      }
+    },
+    {
+      "url": "https://plugin.delivery/api/coingecko/trending",
+      "name": "getTrending",
+      "description": "Get trending coins on CoinGecko in the last 24 hours",
+      "parameters": {
+        "type": "object",
+        "properties": {}
+      }
+    }
+  ],
+  "identifier": "coingecko",
+  "meta": {
+    "avatar": "🦎",
+    "title": "CoinGecko",
+    "description": "Cryptocurrency prices, market data, and trending coins from CoinGecko",
+    "tags": ["prices", "market-data", "trending", "crypto"]
+  },
+  "version": "1"
+}

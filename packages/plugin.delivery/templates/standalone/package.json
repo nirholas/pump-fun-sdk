@@ -1,0 +1,24 @@
+{
+  "name": "standalone-plugin-template",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3400",
+    "build": "next build",
+    "start": "next start -p 3400"
+  },
+  "dependencies": {
+    "@sperax/plugin-sdk": "^1.0.0",
+    "@sperax/ui": "^1.0.0",
+    "antd": "^5.0.0",
+    "next": "^14.0.0",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/react": "^18.0.0",
+    "@types/react-dom": "^18.0.0",
+    "typescript": "^5.0.0"
+  }
+}

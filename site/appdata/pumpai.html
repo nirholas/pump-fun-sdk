@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sperax AI</title>
+    <meta name="pump-icon" content="<svg width='232' height='232' viewBox='0 0 232 232' fill='none' xmlns='http://www.w3.org/2000/svg'><rect width='232' height='232' rx='40' fill='#0066ff'/><g transform='translate(36, 36) scale(5)'><path fill-rule='evenodd' clip-rule='evenodd' d='M25.4826 22.4474C18.6068 22.4474 13.0345 16.8766 13.0345 10.0101C13.0345 6.41505 10.1343 3.50009 6.5173 3.50009C2.93277 3.50009 0 6.41505 0 10.0101C0 13.6053 2.90014 16.5203 6.5173 16.5203H6.54981C13.3929 16.5203 18.9328 22.0911 18.9653 28.9575V28.9899C18.9653 32.585 21.8654 35.4999 25.4826 35.4999C29.0997 35.4999 31.9999 32.585 31.9999 28.9899C31.9672 25.3624 29.0671 22.4474 25.4826 22.4474Z' fill='#FAFAFA'/><path fill-rule='evenodd' clip-rule='evenodd' d='M6.55001 22.448C2.96548 22.448 0.0327148 25.3629 0.0327148 28.958C0.0327148 32.5532 2.93285 35.4682 6.55001 35.4682C10.1671 35.4682 13.0673 32.5532 13.0673 28.958C13.0347 25.3629 10.1345 22.448 6.55001 22.448Z' fill='#FAFAFA'/><path fill-rule='evenodd' clip-rule='evenodd' d='M25.4829 3.50013C29.0823 3.50013 32.0002 6.41473 32.0002 10.0102C32.0002 13.6056 29.0823 16.5203 25.4829 16.5203C21.8835 16.5203 18.9656 13.6056 18.9656 10.0102C18.9656 6.41473 21.8835 3.50013 25.4829 3.50013Z' fill='#FAFAFA'/></g></svg>">
+    <meta name="permissions" content="unsandboxed">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #000;
+        }
+        
+        #app-frame {
+            border: none;
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        
+        #loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #fff;
+            font-family: system-ui;
+            text-align: center;
+        }
+        
+        .spinner {
+            width: 40px;
+            height: 40px;
+            margin: 0 auto 20px;
+            border: 4px solid rgba(255,255,255,0.1);
+            border-top: 4px solid #fff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        #app-frame.loaded ~ #loading {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <iframe 
+        id="app-frame"
+        src="https://www.sperax.surf/chat"
+        allow="camera; microphone; clipboard-read; clipboard-write; geolocation"
+        referrerpolicy="origin-when-cross-origin"
+    ></iframe>
+    
+    <div id="loading">
+        <div class="spinner"></div>
+        <div>Loading Sperax AI...</div>
+    </div>
+    
+    <script>
+        const frame = document.getElementById('app-frame');
+        
+        // Hide loading when iframe loads
+        frame.addEventListener('load', () => {
+            frame.classList.add('loaded');
+        });
+        
+        // Optional: Message passing between Pump Fun SDK and Sperax AI
+        window.addEventListener('message', (event) => {
+            // Handle messages from Sperax AI iframe
+            if (event.origin === 'https://www.sperax.surf') {
+                console.log('Message from Sperax AI:', event.data);
+                
+                // Could trigger Pump Fun SDK actions, e.g.:
+                // if (event.data.action === 'openFile') {
+                //     window.parent.openFileDialog();
+                // }
+            }
+        });
+        
+        // Send messages to Sperax AI
+        function sendToChat(message) {
+            frame.contentWindow.postMessage(message, 'https://www.sperax.surf');
+        }
+        
+        // Make available globally for other Pump Fun SDK apps
+        window.sendToChat = sendToChat;
+    </script>
+</body>
+</html>

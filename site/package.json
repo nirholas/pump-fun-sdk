@@ -1,0 +1,38 @@
+{
+  "name": "pump-fun-sdk-os",
+  "version": "1.0.0",
+  "description": "A web-based operating system built for everything",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx serve . -p 3000",
+    "dev": "npx serve . -p 3000 --cors",
+    "serve": "python3 -m http.server 3000",
+    "lint": "echo 'No linter configured yet'",
+    "format": "echo 'No formatter configured yet'",
+    "test": "echo 'No tests configured yet'",
+    "build": "echo 'No build step required - static files'"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nirholas/pump-sdk.git"
+  },
+  "keywords": [
+    "web-os",
+    "operating-system",
+    "browser",
+    "pwa",
+    "spa",
+    "desktop",
+    "pump-fun-sdk"
+  ],
+  "author": "Nicholas Gibson",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/nirholas/pump-sdk/issues"
+  },
+  "homepage": "https://github.com/nirholas/pump-sdk#readme",
+  "devDependencies": {},
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

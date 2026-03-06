@@ -1,0 +1,52 @@
+# Gitignore for Sperax
+################################################################
+
+# general
+.DS_Store
+.idea
+.vscode
+.history
+.temp
+.env.local
+venv
+temp
+tmp
+
+# dependencies
+node_modules
+*.log
+*.lock
+package-lock.json
+
+# ci
+coverage
+.coverage
+.eslintcache
+.stylelintcache
+
+# production
+dist
+es
+lib
+logs
+test-output
+
+# umi
+.umi
+.umi-production
+.umi-test
+.dumi
+
+
+# husky
+.husky/prepare-commit-msg
+
+# misc
+# add other ignore file below
+
+client.d.ts
+client.js
+openapi.d.ts
+openapi.js
+bun.lockb
+schema.json

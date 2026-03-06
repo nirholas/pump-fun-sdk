@@ -1,0 +1,51 @@
+name: '🤖Submit Agent'
+description: 'Submit an agent setting'
+title: '[Agent] Replace it with your agent name'
+labels: ['🤖 Agent PR']
+body:
+  - type: textarea
+    attributes:
+      label: 'systemRole'
+      description: Agent `prompt`, If you need to use advanced configurations, please refer to the README and follow the PR process
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: 'identifier'
+      description:  Agent identifier should be unique and written in English, e.g. `web-development`
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: 'avatar'
+      description: Agent avatar should be emoji 🤯 or logo url
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: 'title'
+      description: Agent title, will auto generate i18n in workflow
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: 'description'
+      description: Agent short description, will auto generate i18n in workflow
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: 'tags'
+      description: Agent tags. split by `,`
+    validations:
+      required: true
+  - type: dropdown
+    attributes:
+      label: 'locale'
+      options:
+        - en-US
+        - zh-CN
+      description: You can set locale if you use other i18n language, default is `en-US`
+    validations:
+      required: true
+

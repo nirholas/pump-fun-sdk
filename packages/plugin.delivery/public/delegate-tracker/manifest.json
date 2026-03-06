@@ -1,0 +1,16 @@
+{
+  "$schema": "https://plugin.delivery/schema.json",
+  "identifier": "delegate-tracker",
+  "openapi": "https://api.karmahq.xyz/openapi.json",
+  "meta": {
+    "avatar": "👥",
+    "title": "Delegate Tracker",
+    "description": "Track DAO delegates and voting power via Karma",
+    "tags": [
+      "delegates",
+      "voting",
+      "karma"
+    ]
+  },
+  "version": "1"
+}

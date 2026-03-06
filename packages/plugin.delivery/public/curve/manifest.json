@@ -1,0 +1,17 @@
+{
+  "$schema": "https://plugin.delivery/schema.json",
+  "identifier": "curve",
+  "openapi": "https://api.curve.fi/v1/openapi.json",
+  "meta": {
+    "avatar": "🌀",
+    "title": "Curve Finance",
+    "description": "Curve pools, stablecoin APYs, and gauge weights",
+    "tags": [
+      "curve",
+      "stableswap",
+      "defi",
+      "yields"
+    ]
+  },
+  "version": "1"
+}

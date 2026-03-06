@@ -1,0 +1,19 @@
+{
+  "author": "SperaxOS",
+  "createdAt": "2025-01-01",
+  "homepage": "https://github.com/nirholas/plugin.delivery",
+  "identifier": "whale-alert",
+  "manifest": "https://plugin.delivery/whale-alert/manifest.json",
+  "meta": {
+    "avatar": "🐋",
+    "description": "Track large cryptocurrency transactions over $1M across blockchains",
+    "tags": [
+      "whale",
+      "transactions",
+      "alerts"
+    ],
+    "title": "Whale Alert",
+    "category": "stocks-finance"
+  },
+  "schemaVersion": 1
+}

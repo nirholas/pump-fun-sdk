@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="pump-include" content="pump.css">
+    <meta name="capabilities" content="token_launch_sim">
+    <meta name="pump-icon" content="rocket_launch">
+    <meta name="pump-perms" content="none" />
+    <title>Token Launch Simulator</title>
+    <style>
+        :root {
+            --bg1: #0a0a0f; --bg2: #141420; --bg3: #1e1e30;
+            --txt1: #fff; --txt2: #9ca3af;
+            --accent: #00e87b; --accent2: #00c868;
+            --sell: #ff4d6a; --warn: #f0b232; --blue: #60a5fa;
+            --radius: 12px;
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:'Inter',-apple-system,sans-serif; background:var(--bg1); color:var(--txt1); min-height:100vh; padding:16px; overflow-y:auto; }
+        .app { max-width:600px; margin:0 auto; display:flex; flex-direction:column; gap:14px; }
+        .header { display:flex; align-items:center; gap:10px; }
+        .header h1 { font-size:1.2em; }
+        .badge { font-size:.65em; background:var(--accent); color:#000; padding:2px 8px; border-radius:20px; font-weight:600; }
+        .card { background:var(--bg2); border:1px solid rgba(255,255,255,.06); border-radius:var(--radius); padding:18px; }
+        .card-title { font-size:.9em; font-weight:500; margin-bottom:12px; }
+        label { font-size:.72em; color:var(--txt2); text-transform:uppercase; letter-spacing:.5px; display:block; margin-bottom:4px; }
+        input,select { background:var(--bg3); border:1px solid rgba(255,255,255,.08); color:var(--txt1); padding:10px 12px; border-radius:8px; width:100%; font-size:.9em; outline:none; }
+        input:focus { border-color:var(--accent); }
+        .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+        .grid3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; }
+
+        .timeline { position:relative; padding-left:28px; }
+        .timeline::before { content:''; position:absolute; left:10px; top:0; bottom:0; width:2px; background:linear-gradient(var(--accent),var(--blue),var(--sell)); }
+        .phase { position:relative; padding:12px 0; }
+        .phase::before { content:''; position:absolute; left:-22px; top:16px; width:12px; height:12px; border-radius:50%; border:2px solid var(--accent); background:var(--bg1); z-index:1; }
+        .phase.active::before { background:var(--accent); box-shadow:0 0 8px var(--accent); }
+        .phase.graduated::before { border-color:var(--blue); background:var(--blue); }
+        .phase-title { font-size:.85em; font-weight:600; margin-bottom:4px; }
+        .phase-desc { font-size:.78em; color:var(--txt2); }
+        .phase-stats { display:flex; gap:12px; margin-top:6px; flex-wrap:wrap; }
+        .phase-stat { font-size:.75em; padding:3px 8px; background:var(--bg3); border-radius:4px; }
+
+        .sim-controls { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+        .btn { padding:10px 18px; border:none; border-radius:8px; cursor:pointer; font-size:.85em; font-weight:500; transition:all .2s; }
+        .btn-primary { background:var(--accent); color:#000; }
+        .btn-primary:hover { background:var(--accent2); }
+        .btn-secondary { background:var(--bg3); color:var(--txt2); border:1px solid rgba(255,255,255,.08); }
+        .btn-secondary:hover { border-color:var(--accent); color:var(--accent); }
+
+        .chart-area { width:100%; height:220px; position:relative; }
+        canvas { width:100%; height:100%; }
+
+        .stats-bar { display:flex; gap:8px; flex-wrap:wrap; }
+        .stat-chip { flex:1; min-width:100px; background:var(--bg3); border-radius:8px; padding:10px 12px; }
+        .stat-chip .val { font-size:1.1em; font-weight:600; }
+        .stat-chip .lbl { font-size:.68em; color:var(--txt2); text-transform:uppercase; margin-top:2px; }
+
+        .event-log { max-height:200px; overflow-y:auto; display:flex; flex-direction:column; gap:4px; font-family:monospace; font-size:.75em; }
+        .event { padding:6px 10px; background:var(--bg3); border-radius:6px; display:flex; gap:8px; align-items:center; }
+        .event .dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
+        .event .dot.buy { background:var(--accent); }
+        .event .dot.sell { background:var(--sell); }
+        .event .dot.create { background:var(--blue); }
+        .event .dot.migrate { background:var(--warn); }
+
+        .speed-control { display:flex; align-items:center; gap:8px; }
+        .speed-control input[type=range] { width:100px; accent-color:var(--accent); }
+    </style>
+</head>
+<body>
+<div class="app">
+    <div class="header">
+        <span style="font-size:28px">🚀</span>
+        <h1>Token Launch Simulator</h1>
+        <span class="badge">SDK</span>
+    </div>
+
+    <!-- Token Config -->
+    <div class="card">
+        <div class="card-title">Token Configuration</div>
+        <div class="grid2">
+            <div><label>Token Name</label><input id="tokenName" value="PumpCoin" maxlength="32"></div>
+            <div><label>Token Symbol</label><input id="tokenSymbol" value="PUMP" maxlength="10"></div>
+            <div><label>Initial Virtual SOL</label><input type="number" id="initVSol" value="30" step="1"></div>
+            <div><label>Token Supply</label><input type="number" id="simSupply" value="1000000000" step="1000000"></div>
+        </div>
+    </div>
+
+    <!-- Simulation Controls -->
+    <div class="card">
+        <div class="card-title">Simulation Controls</div>
+        <div class="sim-controls">
+            <button class="btn btn-primary" id="btnStart" onclick="startSim()">▶ Start</button>
+            <button class="btn btn-secondary" onclick="pauseSim()">⏸ Pause</button>
+            <button class="btn btn-secondary" onclick="resetSim()">↻ Reset</button>
+            <div class="speed-control">
+                <span style="font-size:.8em; color:var(--txt2);">Speed:</span>
+                <input type="range" id="simSpeed" min="1" max="10" value="5">
+                <span id="speedLabel" style="font-size:.8em;">5x</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Live Stats -->
+    <div class="stats-bar">
+        <div class="stat-chip"><div class="val" id="statPrice">0.000000028</div><div class="lbl">Price (SOL)</div></div>
+        <div class="stat-chip"><div class="val" id="statMcap">27.96</div><div class="lbl">Market Cap (SOL)</div></div>
+        <div class="stat-chip"><div class="val" id="statProgress">0%</div><div class="lbl">Curve Progress</div></div>
+        <div class="stat-chip"><div class="val" id="statTrades">0</div><div class="lbl">Total Trades</div></div>
+    </div>
+
+    <!-- Price Chart -->
+    <div class="card">
+        <div class="card-title">Price Action</div>
+        <div class="chart-area"><canvas id="priceChart"></canvas></div>
+    </div>
+
+    <!-- Timeline -->
+    <div class="card">
+        <div class="card-title">Token Lifecycle</div>
+        <div class="timeline">
+            <div class="phase active" id="phaseCreate">
+                <div class="phase-title">🎯 Token Created (createV2)</div>
+                <div class="phase-desc">Bonding curve deployed via Pump program</div>
+                <div class="phase-stats">
+                    <span class="phase-stat">Supply: 1B tokens</span>
+                    <span class="phase-stat">Virtual SOL: 30</span>
+                </div>
+            </div>
+            <div class="phase" id="phaseTrade">
+                <div class="phase-title">📊 Bonding Curve Trading</div>
+                <div class="phase-desc">Buy/sell via constant product AMM</div>
+                <div class="phase-stats">
+                    <span class="phase-stat" id="tradeStat1">Buys: 0</span>
+                    <span class="phase-stat" id="tradeStat2">Sells: 0</span>
+                    <span class="phase-stat" id="tradeStat3">Volume: 0 SOL</span>
+                </div>
+            </div>
+            <div class="phase" id="phaseGraduation">
+                <div class="phase-title">🎓 Graduation</div>
+                <div class="phase-desc">BondingCurve.complete = true → migrate to PumpAMM</div>
+                <div class="phase-stats">
+                    <span class="phase-stat">Target: ~85 SOL mcap</span>
+                    <span class="phase-stat">793.1M tokens sold</span>
+                </div>
+            </div>
+            <div class="phase" id="phaseAmm">
+                <div class="phase-title">🏊 PumpAMM Pool</div>
+                <div class="phase-desc">Full AMM liquidity with canonical pool</div>
+                <div class="phase-stats">
+                    <span class="phase-stat">LP tokens minted</span>
+                    <span class="phase-stat">Open market trading</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Event Log -->
+    <div class="card">
+        <div class="card-title">Event Log</div>
+        <div class="event-log" id="eventLog">
+            <div class="event"><span class="dot create"></span>Simulation ready — press Start</div>
+        </div>
+    </div>
+</div>
+
+<script>
+const LAMPORTS = 1e9, TDEC = 1e6;
+let sim = null, paused = false, priceHistory = [], events = [];
+let state = {};
+
+function resetState() {
+    const vSol = parseFloat(document.getElementById('initVSol').value) * LAMPORTS;
+    const supply = parseFloat(document.getElementById('simSupply').value) * TDEC;
+    const vToken = 1073000191 * TDEC;
+    const rToken = 793100000 * TDEC;
+    state = {
+        vSol, vToken, rToken, supply,
+        buys: 0, sells: 0, volume: 0, trades: 0,
+        graduated: false, tick: 0,
+    };
+    priceHistory = [];
+    events = [];
+}
+
+function getPrice() { return state.vSol / state.vToken; }
+function getMcap() { return (state.vSol * state.supply) / state.vToken / LAMPORTS; }
+function getProgress() { return Math.max(0, Math.min(100, (1 - state.rToken / (793100000 * TDEC)) * 100)); }
+
+function simulateBuy(solAmount) {
+    const feeBps = 200;
+    const afterFee = Math.floor((solAmount - 1) * 10000 / (feeBps + 10000));
+    const tokens = afterFee * state.vToken / (state.vSol + afterFee);
+    const actual = Math.min(tokens, state.rToken);
+    state.vSol += afterFee;
+    state.vToken -= actual;
+    state.rToken -= actual;
+    state.buys++;
+    state.trades++;
+    state.volume += solAmount / LAMPORTS;
+    return { sol: solAmount / LAMPORTS, tokens: actual / TDEC };
+}
+
+function simulateSell(tokenAmount) {
+    const tokens = Math.min(tokenAmount, (793100000 * TDEC) - state.rToken);
+    if (tokens <= 0) return null;
+    const solOut = tokens * state.vSol / (state.vToken + tokens);
+    const fee = Math.ceil(solOut * 200 / 10000);
+    state.vSol -= solOut;
+    state.vToken += tokens;
+    state.rToken += tokens;
+    state.sells++;
+    state.trades++;
+    state.volume += solOut / LAMPORTS;
+    return { sol: (solOut - fee) / LAMPORTS, tokens: tokens / TDEC };
+}
+
+function addEvent(type, text) {
+    events.unshift({ type, text });
+    const log = document.getElementById('eventLog');
+    const el = document.createElement('div');
+    el.className = 'event';
+    el.innerHTML = `<span class="dot ${type}"></span>${text}`;
+    log.prepend(el);
+    if (log.children.length > 50) log.lastChild.remove();
+}
+
+function tick() {
+    if (state.graduated) return;
+    state.tick++;
+
+    // Random trade: 70% buy, 30% sell bias during early phase
+    const buyBias = getProgress() < 50 ? 0.75 : 0.55;
+    const isBuy = Math.random() < buyBias;
+
+    if (isBuy) {
+        const solAmount = (0.1 + Math.random() * 5) * LAMPORTS;
+        const result = simulateBuy(solAmount);
+        addEvent('buy', `BUY ${result.sol.toFixed(2)} SOL → ${formatNum(result.tokens)} tokens`);
+    } else {
+        const tokenAmount = (10000 + Math.random() * 2000000) * TDEC;
+        const result = simulateSell(tokenAmount);
+        if (result) addEvent('sell', `SELL ${formatNum(result.tokens)} tokens → ${result.sol.toFixed(4)} SOL`);
+    }
+
+    // Check graduation
+    if (state.rToken <= 0 || getProgress() >= 100) {
+        state.graduated = true;
+        state.rToken = 0;
+        addEvent('migrate', `🎓 GRADUATED! Token migrated to PumpAMM pool`);
+        document.getElementById('phaseGraduation').classList.add('active');
+        document.getElementById('phaseAmm').classList.add('graduated');
+        pauseSim();
+    }
+
+    if (state.trades === 1) document.getElementById('phaseTrade').classList.add('active');
+
+    const price = getPrice();
+    priceHistory.push(price);
+    updateUI();
+    drawChart();
+}
+
+function updateUI() {
+    const price = getPrice() * TDEC / LAMPORTS;
+    document.getElementById('statPrice').textContent = price < 0.0001 ? price.toExponential(4) : price.toFixed(8);
+    document.getElementById('statMcap').textContent = getMcap().toFixed(2);
+    document.getElementById('statProgress').textContent = getProgress().toFixed(1) + '%';
+    document.getElementById('statTrades').textContent = state.trades;
+    document.getElementById('tradeStat1').textContent = 'Buys: ' + state.buys;
+    document.getElementById('tradeStat2').textContent = 'Sells: ' + state.sells;
+    document.getElementById('tradeStat3').textContent = 'Volume: ' + state.volume.toFixed(1) + ' SOL';
+}
+
+function drawChart() {
+    const canvas = document.getElementById('priceChart');
+    const ctx = canvas.getContext('2d');
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.parentElement.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    ctx.scale(dpr, dpr);
+    canvas.style.width = rect.width + 'px';
+    canvas.style.height = rect.height + 'px';
+
+    const w = rect.width, h = rect.height, pad = 20;
+    ctx.clearRect(0, 0, w, h);
+
+    if (priceHistory.length < 2) return;
+
+    const maxP = Math.max(...priceHistory) * 1.05;
+    const minP = Math.min(...priceHistory) * 0.95;
+    const range = maxP - minP || 1;
+
+    // Area fill
+    ctx.beginPath();
+    priceHistory.forEach((p, i) => {
+        const x = pad + (i / (priceHistory.length - 1)) * (w - pad * 2);
+        const y = h - pad - ((p - minP) / range) * (h - pad * 2);
+        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    const lastX = pad + (w - pad * 2);
+    ctx.lineTo(lastX, h - pad);
+    ctx.lineTo(pad, h - pad);
+    ctx.closePath();
+    const grad = ctx.createLinearGradient(0, pad, 0, h);
+    grad.addColorStop(0, 'rgba(0,232,123,0.2)');
+    grad.addColorStop(1, 'rgba(0,232,123,0)');
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    // Line
+    ctx.beginPath();
+    priceHistory.forEach((p, i) => {
+        const x = pad + (i / (priceHistory.length - 1)) * (w - pad * 2);
+        const y = h - pad - ((p - minP) / range) * (h - pad * 2);
+        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.strokeStyle = '#00e87b';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Current price label
+    const last = priceHistory[priceHistory.length - 1];
+    const ly = h - pad - ((last - minP) / range) * (h - pad * 2);
+    ctx.fillStyle = '#00e87b';
+    ctx.beginPath();
+    ctx.arc(lastX, ly, 4, 0, Math.PI * 2);
+    ctx.fill();
+}
+
+function startSim() {
+    if (sim) return;
+    if (state.graduated) resetSim();
+    paused = false;
+    const speed = parseInt(document.getElementById('simSpeed').value);
+    sim = setInterval(tick, 1000 / speed);
+    addEvent('create', '▶ Simulation started');
+}
+
+function pauseSim() {
+    if (sim) { clearInterval(sim); sim = null; }
+    paused = true;
+}
+
+function resetSim() {
+    pauseSim();
+    resetState();
+    document.getElementById('eventLog').innerHTML = '<div class="event"><span class="dot create"></span>Simulation reset — press Start</div>';
+    document.querySelectorAll('.phase').forEach(p => { p.classList.remove('active', 'graduated'); });
+    document.getElementById('phaseCreate').classList.add('active');
+    updateUI();
+    const canvas = document.getElementById('priceChart');
+    canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+}
+
+document.getElementById('simSpeed').addEventListener('input', function() {
+    document.getElementById('speedLabel').textContent = this.value + 'x';
+    if (sim) {
+        clearInterval(sim);
+        sim = setInterval(tick, 1000 / parseInt(this.value));
+    }
+});
+
+function formatNum(n) {
+    if (n >= 1e9) return (n/1e9).toFixed(2) + 'B';
+    if (n >= 1e6) return (n/1e6).toFixed(2) + 'M';
+    if (n >= 1e3) return (n/1e3).toFixed(2) + 'K';
+    return n.toFixed(2);
+}
+
+resetState();
+updateUI();
+</script>
+</body>
+</html>

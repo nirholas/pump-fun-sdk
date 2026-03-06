@@ -1,0 +1,55 @@
+{
+  "name": "plugin.delivery",
+  "version": "1.0.0",
+  "description": "AI Plugin Index - Function call plugins and tools for SperaxOS",
+  "homepage": "https://plugin.delivery",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nirholas/plugin.delivery.git"
+  },
+  "license": "MIT",
+  "author": "Sperax <contact@sperax.io>",
+  "type": "module",
+  "main": "public/index.json",
+  "files": [
+    "public"
+  ],
+  "workspaces": [
+    "packages/*",
+    "api/plugins/*"
+  ],
+  "scripts": {
+    "build": "bun scripts/build.ts",
+    "build:index": "bun scripts/build.ts",
+    "format": "bun scripts/format.ts",
+    "lint": "eslint \"scripts/**/*.ts\" --fix",
+    "test": "bun scripts/test.ts",
+    "dev": "vercel dev",
+    "deploy": "vercel --prod"
+  },
+  "dependencies": {
+    "@sperax/chat-plugins-gateway": "workspace:*",
+    "@sperax/plugin-sdk": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/fs-extra": "^11.0.4",
+    "@types/lodash-es": "^4.17.12",
+    "@types/node": "^20.17.16",
+    "@vercel/node": "^2",
+    "consola": "^3.4.0",
+    "dayjs": "^1.11.13",
+    "dirty-json": "^0.9.2",
+    "dotenv": "^16.4.7",
+    "eslint": "^8.57.1",
+    "fs-extra": "^11.3.0",
+    "langchain": "0.1.37",
+    "lodash-es": "^4.17.21",
+    "p-map": "^7.0.3",
+    "prettier": "^3.4.2",
+    "typescript": "^5.7.3",
+    "vercel": "^39.0.0",
+    "vitest": "^4.0.18",
+    "zod": "^3.24.1",
+    "zod-to-json-schema": "^3.24.1"
+  }
+}

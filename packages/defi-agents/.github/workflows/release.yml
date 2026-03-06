@@ -1,0 +1,102 @@
+# name: Build and Release
+
+# on:
+#   push:
+#     branches:
+#       - main
+
+# permissions:
+#   contents: write
+
+# jobs:
+#   build:
+#     name: Build
+#     runs-on: ubuntu-latest
+    
+#     steps:
+#       - name: Check if GitHub Pages deployment is configured
+#         id: check
+#         env:
+#           HAS_KEY: ${{ secrets.OPENAI_API_KEY != '' }}
+#         run: |
+#           if [ "$HAS_KEY" != "true" ]; then
+#             echo "## ⏭️ GitHub Pages Skipped" >> $GITHUB_STEP_SUMMARY
+#             echo "" >> $GITHUB_STEP_SUMMARY
+#             echo "No \`OPENAI_API_KEY\` secret configured." >> $GITHUB_STEP_SUMMARY
+#             echo "" >> $GITHUB_STEP_SUMMARY
+#             echo "### 🚀 Use Vercel instead:" >> $GITHUB_STEP_SUMMARY
+#             echo "1. Go to [vercel.com/new](https://vercel.com/new)" >> $GITHUB_STEP_SUMMARY
+#             echo "2. Import this repository" >> $GITHUB_STEP_SUMMARY
+#             echo "3. Build Command: \`bun run build\`" >> $GITHUB_STEP_SUMMARY
+#             echo "4. Output Directory: \`public\`" >> $GITHUB_STEP_SUMMARY
+#             echo "5. Add env: \`OPENAI_API_KEY\`" >> $GITHUB_STEP_SUMMARY
+#             echo "" >> $GITHUB_STEP_SUMMARY
+#             echo "### 📄 Or enable GitHub Pages:" >> $GITHUB_STEP_SUMMARY
+#             echo "Add \`OPENAI_API_KEY\` in Settings → Secrets → Actions" >> $GITHUB_STEP_SUMMARY
+#             echo "skip=true" >> $GITHUB_OUTPUT
+#           else
+#             echo "✅ GitHub Pages deployment configured"
+#             echo "skip=false" >> $GITHUB_OUTPUT
+#           fi
+          
+#       - uses: actions/checkout@v4
+#         if: steps.check.outputs.skip != 'true'
+#         with:
+#           fetch-depth: 0
+          
+#       - name: Install bun
+#         if: steps.check.outputs.skip != 'true'
+#         uses: oven-sh/setup-bun@v1
+        
+#       - name: Install deps
+#         if: steps.check.outputs.skip != 'true'
+#         run: bun i
+        
+#       - name: Test
+#         if: steps.check.outputs.skip != 'true'
+#         run: bun run test
+        
+#       - name: Format (translate agents)
+#         if: steps.check.outputs.skip != 'true'
+#         run: bun run format
+#         env:
+#           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+#           OPENAI_PROXY_URL: ${{ secrets.OPENAI_PROXY_URL }}
+          
+#       - name: Build
+#         if: steps.check.outputs.skip != 'true'
+#         run: bun run build
+          
+#       - name: Awesome
+#         if: steps.check.outputs.skip != 'true'
+#         run: bun run awesome
+#         continue-on-error: true
+        
+#       - name: Prettier
+#         if: steps.check.outputs.skip != 'true'
+#         run: |
+#           echo "module.exports = require('@lobehub/lint').remarklint;" >> .remarkrc.cjs
+#           echo "module.exports = require('@lobehub/lint').prettier;" >> .prettierrc.cjs
+#           bun run lint:md || true
+#           bun run prettier || true
+#           rm -f .remarkrc.cjs .prettierrc.cjs
+#         continue-on-error: true
+          
+#       - name: Commit changes
+#         if: steps.check.outputs.skip != 'true'
+#         run: |-
+#           git diff
+#           git config --global user.name "${{ github.actor }}"
+#           git config --global user.email "${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com"
+#           git add .
+#           git commit -m "🤖 chore: Auto format and build" || exit 0
+#           git push
+          
+#       - name: Deploy to GitHub Pages
+#         if: steps.check.outputs.skip != 'true'
+#         uses: peaceiris/actions-gh-pages@v3
+#         with:
+#           github_token: ${{ secrets.GITHUB_TOKEN }}
+#           publish_dir: ./public
+#           force_orphan: true
+

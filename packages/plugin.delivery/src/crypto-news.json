@@ -1,0 +1,21 @@
+{
+  "author": "Sperax",
+  "createdAt": "2026-01-02",
+  "homepage": "https://sperax.io",
+  "identifier": "crypto-news",
+  "manifest": "https://plugin.delivery/crypto-news/manifest.json",
+  "meta": {
+    "avatar": "📰",
+    "description": "Aggregated crypto news from CoinDesk, The Block, Decrypt, CoinTelegraph, Bitcoin Magazine, Blockworks, and The Defiant. Search, filter by source, and get breaking news. 100% free, no API keys required.",
+    "tags": [
+      "crypto",
+      "news",
+      "defi",
+      "bitcoin",
+      "market"
+    ],
+    "title": "Crypto News",
+    "category": "stocks-finance"
+  },
+  "schemaVersion": 1
+}

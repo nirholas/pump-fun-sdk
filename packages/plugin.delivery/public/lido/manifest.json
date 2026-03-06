@@ -1,0 +1,22 @@
+{
+  "$schema": "https://plugin.delivery/schema.json",
+  "api": [
+    {
+      "url": "https://plugin.delivery/api/lido/stats",
+      "name": "getStats",
+      "description": "Get Lido staking statistics including APR, total staked, and number of stakers",
+      "parameters": {
+        "type": "object",
+        "properties": {}
+      }
+    }
+  ],
+  "identifier": "lido",
+  "meta": {
+    "avatar": "🌊",
+    "title": "Lido Finance",
+    "description": "Liquid staking for ETH with stETH - earn staking rewards while staying liquid",
+    "tags": ["staking", "liquid-staking", "eth", "steth", "defi"]
+  },
+  "version": "1"
+}

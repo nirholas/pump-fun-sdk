@@ -1,0 +1,17 @@
+{
+  "$schema": "https://plugin.delivery/schema.json",
+  "identifier": "pendle",
+  "openapi": "https://api-v2.pendle.finance/sdk/openapi.json",
+  "meta": {
+    "avatar": "⏳",
+    "title": "Pendle Finance",
+    "description": "Pendle yield markets, PT/YT rates, and fixed yields",
+    "tags": [
+      "pendle",
+      "yield",
+      "defi",
+      "fixed-rate"
+    ]
+  },
+  "version": "1"
+}

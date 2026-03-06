@@ -1,0 +1,19 @@
+{
+  "author": "SperaxOS",
+  "createdAt": "2025-01-01",
+  "homepage": "https://github.com/nirholas/plugin.delivery",
+  "identifier": "contract-scanner",
+  "manifest": "https://plugin.delivery/contract-scanner/manifest.json",
+  "meta": {
+    "avatar": "🔒",
+    "description": "Aggregates GoPlus, De.Fi, and custom security checks",
+    "tags": [
+      "security",
+      "scanner",
+      "honeypot"
+    ],
+    "title": "Contract Scanner",
+    "category": "tools"
+  },
+  "schemaVersion": 1
+}

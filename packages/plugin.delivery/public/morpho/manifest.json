@@ -1,0 +1,16 @@
+{
+  "$schema": "https://plugin.delivery/schema.json",
+  "identifier": "morpho",
+  "openapi": "https://api.morpho.org/openapi.json",
+  "meta": {
+    "avatar": "🦋",
+    "title": "Morpho",
+    "description": "Morpho optimized lending rates and vault data",
+    "tags": [
+      "morpho",
+      "lending",
+      "optimization"
+    ]
+  },
+  "version": "1"
+}

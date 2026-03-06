@@ -1,0 +1,14 @@
+{
+  "outputDirectory": ".",
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Content-Security-Policy",
+          "value": "frame-ancestors 'self' https://*.sperax.io https://*.sperax.works https://*.pump-fun-sdk.vercel.app https://*.sperax.fun https://*.sperax.click https://sperax.io https://sperax.works https://pump-fun-sdk.vercel.app https://sperax.fun https://sperax.click http://localhost:* https://localhost:*"
+        }
+      ]
+    }
+  ]
+}

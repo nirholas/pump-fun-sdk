@@ -1,0 +1,16 @@
+{
+    "schema_version": "v1",
+    "name_for_human": "defi-agents",
+    "name_for_model": "defi_agents",
+    "description_for_human": "DeFi agent definitions JSON API + MCP - Production-ready agents for Web3, crypto trading, portfolio management, and blockchain automation. MCP compatible.",
+    "description_for_model": "DeFi agent definitions JSON API + MCP - Production-ready agents for Web3, crypto trading, portfolio management, and blockchain automation. MCP compatible.",
+    "auth": {
+        "type": "none"
+    },
+    "api": {
+        "type": "none"
+    },
+    "logo_url": "https://github.com/nirholas.png",
+    "contact_email": "nirholas@users.noreply.github.com",
+    "legal_info_url": "https://github.com/nirholas/defi-agents/blob/main/LICENSE"
+}

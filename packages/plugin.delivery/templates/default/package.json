@@ -1,0 +1,29 @@
+{
+  "name": "default-plugin-template",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Default type plugin template with API and optional UI",
+  "scripts": {
+    "dev": "next dev -p 3400",
+    "build": "next build",
+    "start": "next start -p 3400",
+    "lint": "eslint . --fix",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@sperax/plugin-sdk": "^1.0.0",
+    "@sperax/chat-plugins-gateway": "^1.0.0",
+    "antd": "^5.0.0",
+    "next": "^14.0.0",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/react": "^18.0.0",
+    "@types/react-dom": "^18.0.0",
+    "eslint": "^8.0.0",
+    "eslint-config-next": "^14.0.0",
+    "typescript": "^5.0.0"
+  }
+}

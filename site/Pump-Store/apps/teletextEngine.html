@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TeleEngine</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+        #canvas-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        canvas {
+            border: 1px solid black;
+        }
+        #color-picker {
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="canvas-container">
+        <canvas id="drawingCanvas"></canvas>
+        <div id="color-picker">
+            <label for="color">Select Color:</label>
+            <select id="color">
+                <option value="01">White</option>
+                <option value="02">Red</option>
+                <option value="03">Green</option>
+                <option value="04">Blue</option>
+                <option value="05">Yellow</option>
+                <option value="06">Cyan</option>
+                <option value="07">Magenta</option>
+                <option value="08">Orange</option>
+                <option value="09">Purple</option>
+                <option value="10">Brown</option>
+                <option value="11">Gray</option>
+                <option value="12">Black</option>
+            </select>
+        </div>
+    </div>
+    <script>
+        const canvas = document.getElementById('drawingCanvas');
+        const ctx = canvas.getContext('2d');
+        const colorPicker = document.getElementById('color');
+        const gridSize = 32;
+        const gridData = Array(gridSize).fill().map(() => Array(gridSize).fill('01'));
+
+        const undoStack = [];
+        const redoStack = [];
+        const maxHistory = 5;
+
+        let currentColor = colorPicker.value;
+        let isDrawing = false;
+        let currentDragChanges = [];
+
+        const resizeCanvas = () => {
+            const size = Math.min(window.innerWidth, window.innerHeight) * 0.9;
+            canvas.width = size;
+            canvas.height = size;
+            drawGrid();
+        };
+
+        function drawGrid() {
+            const pixelSize = canvas.width / gridSize;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            for (let y = 0; y < gridSize; y++) {
+                for (let x = 0; x < gridSize; x++) {
+                    ctx.fillStyle = getColorByCode(gridData[y][x]);
+                    ctx.fillRect(x * pixelSize, y * pixelSize, pixelSize, pixelSize);
+                    ctx.strokeRect(x * pixelSize, y * pixelSize, pixelSize, pixelSize);
+                }
+            }
+        }
+
+        function getColorByCode(code) {
+            const colors = {
+                "01": "#FFFFFF", "02": "#FF0000", "03": "#00FF00", "04": "#0000FF",
+                "05": "#FFFF00", "06": "#00FFFF", "07": "#FF00FF", "08": "#FFA500",
+                "09": "#800080", "10": "#A52A2A", "11": "#808080", "12": "#000000"
+            };
+            return colors[code];
+        }
+
+        function recordChange(changes) {
+            undoStack.push(changes);
+            if (undoStack.length > maxHistory) undoStack.shift();
+            redoStack.length = 0;
+        }
+
+        function undo() {
+            if (undoStack.length === 0) return;
+            const changes = undoStack.pop();
+            redoStack.push(changes);
+            changes.forEach(({ x, y, oldColor }) => {
+                gridData[y][x] = oldColor;
+            });
+            drawGrid();
+        }
+
+        function redo() {
+            if (redoStack.length === 0) return;
+            const changes = redoStack.pop();
+            undoStack.push(changes);
+            changes.forEach(({ x, y, newColor }) => {
+                gridData[y][x] = newColor;
+            });
+            drawGrid();
+        }
+
+        canvas.addEventListener('mousedown', (e) => {
+            isDrawing = true;
+            currentDragChanges = [];
+            paintPixel(e);
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (isDrawing) {
+                paintPixel(e);
+            }
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            if (isDrawing && currentDragChanges.length > 0) {
+                recordChange(currentDragChanges);
+            }
+            isDrawing = false;
+            currentDragChanges = [];
+        });
+
+        canvas.addEventListener('mouseleave', () => {
+            if (isDrawing && currentDragChanges.length > 0) {
+                recordChange(currentDragChanges);
+            }
+            isDrawing = false;
+            currentDragChanges = [];
+        });
+
+        function paintPixel(e) {
+            const rect = canvas.getBoundingClientRect();
+            const pixelSize = canvas.width / gridSize;
+            const x = Math.floor((e.clientX - rect.left) / pixelSize);
+            const y = Math.floor((e.clientY - rect.top) / pixelSize);
+            if (x >= 0 && x < gridSize && y >= 0 && y < gridSize) {
+                const oldColor = gridData[y][x];
+                if (oldColor !== currentColor) {
+                    gridData[y][x] = currentColor;
+                    currentDragChanges.push({ x, y, oldColor, newColor: currentColor });
+                    drawGrid();
+                }
+            }
+        }
+
+        colorPicker.addEventListener('change', () => {
+            currentColor = colorPicker.value;
+        });
+
+        window.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'z') {
+                e.preventDefault();
+                undo();
+            }
+            if (e.ctrlKey && e.key === 'y') {
+                e.preventDefault();
+                redo();
+            }
+        });
+
+        window.addEventListener('resize', resizeCanvas);
+
+        resizeCanvas();
+
+        function getCanvasData() {
+            return gridData.flat().join('');
+        }
+
+        function setCanvasData(data) {
+            const flattenedData = data.match(/.{1,2}/g);
+            for (let y = 0; y < gridSize; y++) {
+                for (let x = 0; x < gridSize; x++) {
+                    gridData[y][x] = flattenedData[y * gridSize + x];
+                }
+            }
+            drawGrid();
+        }
+    </script>
+</body>
+</html>

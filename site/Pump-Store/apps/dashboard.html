@@ -1,0 +1,1169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sperax Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 50%, #0f0f1a 100%);
+            color: #fff;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: 260px 1fr 320px;
+            grid-template-rows: 60px 1fr;
+            height: 100vh;
+            gap: 0;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            grid-row: 1 / -1;
+            background: rgba(15, 15, 25, 0.95);
+            border-right: 1px solid rgba(255, 255, 255, 0.06);
+            padding: 16px 12px;
+            display: flex;
+            flex-direction: column;
+            backdrop-filter: blur(20px);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            margin-bottom: 24px;
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 14px;
+        }
+
+        .logo-text {
+            font-size: 18px;
+            font-weight: 600;
+            background: linear-gradient(90deg, #fff, #a5b4fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .nav-section {
+            margin-bottom: 24px;
+        }
+
+        .nav-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.4);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 0 12px;
+            margin-bottom: 8px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.06);
+            color: #fff;
+        }
+
+        .nav-item.active {
+            background: linear-gradient(90deg, rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.1));
+            color: #a5b4fc;
+            border-left: 2px solid #6366f1;
+        }
+
+        .nav-item svg {
+            width: 18px;
+            height: 18px;
+            opacity: 0.8;
+        }
+
+        .nav-item.active svg {
+            opacity: 1;
+        }
+
+        .nav-badge {
+            margin-left: auto;
+            background: rgba(99, 102, 241, 0.3);
+            color: #a5b4fc;
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-weight: 600;
+        }
+
+        .nav-badge.new {
+            background: rgba(34, 197, 94, 0.2);
+            color: #4ade80;
+        }
+
+        .sidebar-footer {
+            margin-top: auto;
+            padding-top: 16px;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        /* Top Bar */
+        .topbar {
+            background: rgba(15, 15, 25, 0.8);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            padding: 0 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            backdrop-filter: blur(20px);
+        }
+
+        .search-box {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            padding: 8px 14px;
+            width: 300px;
+        }
+
+        .search-box input {
+            background: none;
+            border: none;
+            outline: none;
+            color: #fff;
+            font-size: 13px;
+            width: 100%;
+        }
+
+        .search-box input::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .topbar-actions {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .topbar-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .topbar-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+
+        .wallet-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: linear-gradient(90deg, #6366f1, #8b5cf6);
+            border: none;
+            border-radius: 8px;
+            padding: 8px 16px;
+            color: #fff;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .wallet-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.4);
+        }
+
+        /* Main Content */
+        .main-content {
+            padding: 24px;
+            overflow-y: auto;
+            background: linear-gradient(180deg, rgba(15, 15, 25, 0.5), transparent);
+        }
+
+        .content-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+        }
+
+        .content-title {
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .view-toggle {
+            display: flex;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 4px;
+            gap: 4px;
+        }
+
+        .view-btn {
+            padding: 6px 14px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: rgba(255, 255, 255, 0.6);
+            background: none;
+            border: none;
+        }
+
+        .view-btn.active {
+            background: rgba(99, 102, 241, 0.3);
+            color: #fff;
+        }
+
+        /* Portfolio Hero */
+        .portfolio-hero {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(139, 92, 246, 0.1));
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .portfolio-hero::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -20%;
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.2), transparent);
+            border-radius: 50%;
+        }
+
+        .portfolio-label {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 8px;
+        }
+
+        .portfolio-value {
+            font-size: 42px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            background: linear-gradient(90deg, #fff, #a5b4fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .portfolio-change {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+
+        .change-positive {
+            color: #4ade80;
+        }
+
+        .change-negative {
+            color: #f87171;
+        }
+
+        .portfolio-chart {
+            position: absolute;
+            right: 24px;
+            bottom: 24px;
+            width: 200px;
+            height: 80px;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 12px;
+            padding: 16px;
+            transition: all 0.2s ease;
+        }
+
+        .stat-card:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(99, 102, 241, 0.3);
+        }
+
+        .stat-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 12px;
+            font-size: 18px;
+        }
+
+        .stat-icon.blue { background: rgba(59, 130, 246, 0.2); }
+        .stat-icon.purple { background: rgba(139, 92, 246, 0.2); }
+        .stat-icon.green { background: rgba(34, 197, 94, 0.2); }
+        .stat-icon.orange { background: rgba(249, 115, 22, 0.2); }
+
+        .stat-label {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
+            margin-bottom: 4px;
+        }
+
+        .stat-value {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .stat-change {
+            font-size: 11px;
+            margin-top: 4px;
+        }
+
+        /* Assets Section */
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .section-link {
+            font-size: 13px;
+            color: #6366f1;
+            cursor: pointer;
+        }
+
+        .assets-table {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .assets-header {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr 100px;
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.03);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
+            font-weight: 500;
+        }
+
+        .asset-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr 100px;
+            padding: 14px 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            align-items: center;
+            transition: background 0.2s ease;
+        }
+
+        .asset-row:hover {
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .asset-row:last-child {
+            border-bottom: none;
+        }
+
+        .asset-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .asset-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #f7931a, #ffb347);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 14px;
+        }
+
+        .asset-name {
+            font-weight: 500;
+        }
+
+        .asset-symbol {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .asset-sparkline {
+            height: 30px;
+        }
+
+        /* Right Panel */
+        .right-panel {
+            grid-row: 1 / -1;
+            background: rgba(15, 15, 25, 0.95);
+            border-left: 1px solid rgba(255, 255, 255, 0.06);
+            padding: 16px;
+            overflow-y: auto;
+            backdrop-filter: blur(20px);
+        }
+
+        .panel-section {
+            margin-bottom: 24px;
+        }
+
+        .panel-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .panel-title .live {
+            width: 6px;
+            height: 6px;
+            background: #4ade80;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* News Feed */
+        .news-item {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .news-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(99, 102, 241, 0.3);
+        }
+
+        .news-source {
+            font-size: 10px;
+            color: #6366f1;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+
+        .news-title {
+            font-size: 13px;
+            font-weight: 500;
+            line-height: 1.4;
+            margin-bottom: 6px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .news-time {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        /* Fear & Greed */
+        .fear-greed {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+        }
+
+        .fg-value {
+            font-size: 48px;
+            font-weight: 700;
+            margin: 12px 0 8px;
+        }
+
+        .fg-value.extreme-fear { color: #f87171; }
+        .fg-value.fear { color: #fb923c; }
+        .fg-value.neutral { color: #fbbf24; }
+        .fg-value.greed { color: #a3e635; }
+        .fg-value.extreme-greed { color: #4ade80; }
+
+        .fg-label {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .fg-bar {
+            height: 6px;
+            background: linear-gradient(90deg, #f87171, #fbbf24, #4ade80);
+            border-radius: 3px;
+            position: relative;
+            margin-top: 12px;
+        }
+
+        .fg-indicator {
+            position: absolute;
+            top: -4px;
+            width: 14px;
+            height: 14px;
+            background: #fff;
+            border-radius: 50%;
+            border: 2px solid #1a1a2e;
+            transition: left 0.5s ease;
+        }
+
+        /* Gas Tracker */
+        .gas-tracker {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 12px;
+            padding: 16px;
+        }
+
+        .gas-speeds {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .gas-speed {
+            text-align: center;
+            padding: 10px 8px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+        }
+
+        .gas-speed-label {
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.5);
+            margin-bottom: 4px;
+        }
+
+        .gas-speed-value {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .gas-speed-unit {
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .gas-speed.slow .gas-speed-value { color: #4ade80; }
+        .gas-speed.standard .gas-speed-value { color: #fbbf24; }
+        .gas-speed.fast .gas-speed-value { color: #f87171; }
+
+        /* Loading States */
+        .skeleton {
+            background: linear-gradient(90deg, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.05) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            border-radius: 4px;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo">
+                <div class="logo-icon">S</div>
+                <span class="logo-text">Sperax</span>
+            </div>
+
+            <nav class="nav-section">
+                <div class="nav-label">Overview</div>
+                <div class="nav-item active" data-view="dashboard">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+                    Dashboard
+                </div>
+                <div class="nav-item" data-view="portfolio">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>
+                    Portfolio
+                </div>
+                <div class="nav-item" data-view="assets">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v12"/><path d="M8 10h8"/></svg>
+                    My Assets
+                </div>
+            </nav>
+
+            <nav class="nav-section">
+                <div class="nav-label">Trading</div>
+                <div class="nav-item" data-view="swap">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3l4 4-4 4"/><path d="M20 7H4"/><path d="M8 21l-4-4 4-4"/><path d="M4 17h16"/></svg>
+                    Swap
+                </div>
+                <div class="nav-item" data-view="smart-money">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                    Smart Money
+                    <span class="nav-badge new">Live</span>
+                </div>
+                <div class="nav-item" data-view="defi">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5Z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/></svg>
+                    DeFi Protocols
+                    <span class="nav-badge">12</span>
+                </div>
+                <div class="nav-item" data-view="screener">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+                    Pump Screener
+                    <span class="nav-badge new">New</span>
+                </div>
+            </nav>
+
+            <nav class="nav-section">
+                <div class="nav-label">Bots</div>
+                <div class="nav-item" data-view="ai-bot">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8V4H8"/><rect x="8" y="8" width="8" height="12" rx="2"/><path d="M10 12h4"/><path d="M12 16v4"/></svg>
+                    AI Bot
+                </div>
+                <div class="nav-item" data-view="dca-bot">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    DCA Bot
+                </div>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="nav-item" data-view="settings">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                    Settings
+                </div>
+            </div>
+        </aside>
+
+        <!-- Top Bar -->
+        <header class="topbar">
+            <div class="search-box">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" opacity="0.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                <input type="text" placeholder="Search tokens, protocols, wallets..." id="searchInput">
+            </div>
+            <div class="topbar-actions">
+                <button class="topbar-btn" title="Notifications">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                </button>
+                <button class="topbar-btn" title="Full Terminal" onclick="window.open('https://www.sperax.surf/terminal', '_blank')">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                </button>
+                <button class="wallet-btn" id="connectWallet">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>
+                    Connect Wallet
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content" id="mainContent">
+            <div class="content-header">
+                <h1 class="content-title">Dashboard</h1>
+                <div class="view-toggle">
+                    <button class="view-btn active">Overview</button>
+                    <button class="view-btn">Analytics</button>
+                    <button class="view-btn">History</button>
+                </div>
+            </div>
+
+            <!-- Portfolio Hero -->
+            <div class="portfolio-hero">
+                <div class="portfolio-label">Total Portfolio Value</div>
+                <div class="portfolio-value" id="portfolioValue">$0.00</div>
+                <div class="portfolio-change">
+                    <span class="change-positive" id="portfolioChange">+$0.00 (0.00%)</span>
+                    <span style="color: rgba(255,255,255,0.4)">24h</span>
+                </div>
+                <svg class="portfolio-chart" id="portfolioChart" viewBox="0 0 200 80"></svg>
+            </div>
+
+            <!-- Stats Grid -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon blue">💰</div>
+                    <div class="stat-label">Tokens</div>
+                    <div class="stat-value" id="tokenCount">-</div>
+                    <div class="stat-change change-positive">Across 3 chains</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon purple">📊</div>
+                    <div class="stat-label">DeFi Positions</div>
+                    <div class="stat-value" id="defiPositions">-</div>
+                    <div class="stat-change">$0 staked</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon green">📈</div>
+                    <div class="stat-label">Best Performer</div>
+                    <div class="stat-value" id="bestPerformer">-</div>
+                    <div class="stat-change change-positive" id="bestPerformerChange">-</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon orange">🔥</div>
+                    <div class="stat-label">Gas Spent (30d)</div>
+                    <div class="stat-value" id="gasSpent">-</div>
+                    <div class="stat-change">- transactions</div>
+                </div>
+            </div>
+
+            <!-- Assets Table -->
+            <div class="section-header">
+                <h2 class="section-title">Top Assets</h2>
+                <span class="section-link">View All →</span>
+            </div>
+            <div class="assets-table">
+                <div class="assets-header">
+                    <span>Asset</span>
+                    <span>Price</span>
+                    <span>Holdings</span>
+                    <span>Value</span>
+                    <span>24h</span>
+                </div>
+                <div id="assetsBody">
+                    <div class="asset-row">
+                        <div class="asset-info">
+                            <div class="skeleton" style="width: 36px; height: 36px; border-radius: 50%;"></div>
+                            <div>
+                                <div class="skeleton" style="width: 80px; height: 14px; margin-bottom: 4px;"></div>
+                                <div class="skeleton" style="width: 40px; height: 12px;"></div>
+                            </div>
+                        </div>
+                        <div class="skeleton" style="width: 60px; height: 14px;"></div>
+                        <div class="skeleton" style="width: 50px; height: 14px;"></div>
+                        <div class="skeleton" style="width: 70px; height: 14px;"></div>
+                        <div class="skeleton" style="width: 50px; height: 14px;"></div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Right Panel -->
+        <aside class="right-panel">
+            <!-- Fear & Greed -->
+            <div class="panel-section">
+                <div class="panel-title">
+                    <span>Fear & Greed Index</span>
+                </div>
+                <div class="fear-greed">
+                    <div class="fg-value neutral" id="fgValue">--</div>
+                    <div class="fg-label" id="fgLabel">Loading...</div>
+                    <div class="fg-bar">
+                        <div class="fg-indicator" id="fgIndicator" style="left: 50%;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Gas Tracker -->
+            <div class="panel-section">
+                <div class="panel-title">
+                    <span>⛽ ETH Gas</span>
+                    <span class="live"></span>
+                </div>
+                <div class="gas-tracker">
+                    <div class="gas-speeds">
+                        <div class="gas-speed slow">
+                            <div class="gas-speed-label">🐢 Slow</div>
+                            <div class="gas-speed-value" id="gasSlow">--</div>
+                            <div class="gas-speed-unit">gwei</div>
+                        </div>
+                        <div class="gas-speed standard">
+                            <div class="gas-speed-label">🚗 Standard</div>
+                            <div class="gas-speed-value" id="gasStandard">--</div>
+                            <div class="gas-speed-unit">gwei</div>
+                        </div>
+                        <div class="gas-speed fast">
+                            <div class="gas-speed-label">🚀 Fast</div>
+                            <div class="gas-speed-value" id="gasFast">--</div>
+                            <div class="gas-speed-unit">gwei</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Live News -->
+            <div class="panel-section">
+                <div class="panel-title">
+                    <span>📰 Live News</span>
+                    <span class="live"></span>
+                </div>
+                <div id="newsFeed">
+                    <div class="news-item">
+                        <div class="skeleton" style="width: 60px; height: 10px; margin-bottom: 8px;"></div>
+                        <div class="skeleton" style="width: 100%; height: 14px; margin-bottom: 4px;"></div>
+                        <div class="skeleton" style="width: 80%; height: 14px; margin-bottom: 8px;"></div>
+                        <div class="skeleton" style="width: 50px; height: 10px;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Smart Money Widget -->
+            <div class="panel-section">
+                <div id="smartMoneyWidget"></div>
+            </div>
+
+            <!-- Trending -->
+            <div class="panel-section">
+                <div class="panel-title">
+                    <span>🔥 Trending</span>
+                </div>
+                <div id="trendingCoins">
+                    <div class="skeleton" style="width: 100%; height: 40px; margin-bottom: 8px; border-radius: 8px;"></div>
+                    <div class="skeleton" style="width: 100%; height: 40px; margin-bottom: 8px; border-radius: 8px;"></div>
+                    <div class="skeleton" style="width: 100%; height: 40px; border-radius: 8px;"></div>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- Smart Money Scripts -->
+    <script src="../../scripts/smartmoney.js"></script>
+    <script src="../../scripts/smartmoney-widget.js"></script>
+
+    <script>
+        // API Endpoints
+        const NEWS_API = 'https://free-crypto-news.vercel.app';
+        const COINGECKO_API = 'https://api.coingecko.com/api/v3';
+        const ETHERSCAN_API = 'https://api.etherscan.io/api';
+
+        // State
+        let walletAddress = null;
+        let portfolioData = null;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Initialize Smart Money Widget (uses FREE APIs - no keys needed!)
+            if (window.SmartMoneyWidget) {
+                window.SmartMoneyWidget.init('smartMoneyWidget', {
+                    network: 'solana',
+                    refreshInterval: 30000 // 30 seconds
+                });
+            }
+
+            await Promise.all([
+                loadFearGreed(),
+                loadGasPrices(),
+                loadNews(),
+                loadTrending(),
+                loadDemoPortfolio()
+            ]);
+
+            // Auto-refresh
+            setInterval(loadGasPrices, 15000);
+            setInterval(loadNews, 60000);
+        });
+
+        // Fear & Greed Index
+        async function loadFearGreed() {
+            try {
+                const res = await fetch('https://api.alternative.me/fng/?limit=1');
+                const data = await res.json();
+                const fg = data.data[0];
+                
+                const value = parseInt(fg.value);
+                const fgValue = document.getElementById('fgValue');
+                const fgLabel = document.getElementById('fgLabel');
+                const fgIndicator = document.getElementById('fgIndicator');
+                
+                fgValue.textContent = value;
+                fgLabel.textContent = fg.value_classification;
+                fgIndicator.style.left = `${value}%`;
+                
+                // Color based on value
+                fgValue.className = 'fg-value';
+                if (value <= 25) fgValue.classList.add('extreme-fear');
+                else if (value <= 45) fgValue.classList.add('fear');
+                else if (value <= 55) fgValue.classList.add('neutral');
+                else if (value <= 75) fgValue.classList.add('greed');
+                else fgValue.classList.add('extreme-greed');
+            } catch (e) {
+                document.getElementById('fgValue').textContent = '--';
+                document.getElementById('fgLabel').textContent = 'Error';
+            }
+        }
+
+        // Gas Prices
+        async function loadGasPrices() {
+            try {
+                // Use free gas API
+                const res = await fetch('https://api.etherscan.io/api?module=gastracker&action=gasoracle');
+                const data = await res.json();
+                
+                if (data.status === '1') {
+                    document.getElementById('gasSlow').textContent = data.result.SafeGasPrice;
+                    document.getElementById('gasStandard').textContent = data.result.ProposeGasPrice;
+                    document.getElementById('gasFast').textContent = data.result.FastGasPrice;
+                }
+            } catch (e) {
+                console.log('Gas API error:', e);
+            }
+        }
+
+        // News Feed
+        async function loadNews() {
+            try {
+                const res = await fetch(`${NEWS_API}/api/breaking`);
+                const articles = await res.json();
+                
+                const newsFeed = document.getElementById('newsFeed');
+                newsFeed.innerHTML = articles.slice(0, 5).map(article => `
+                    <div class="news-item" onclick="window.open('${article.url}', '_blank')">
+                        <div class="news-source">${article.source}</div>
+                        <div class="news-title">${article.title}</div>
+                        <div class="news-time">${formatTime(article.publishedAt)}</div>
+                    </div>
+                `).join('');
+            } catch (e) {
+                document.getElementById('newsFeed').innerHTML = '<div class="news-item"><div class="news-title">Unable to load news</div></div>';
+            }
+        }
+
+        // Trending Coins
+        async function loadTrending() {
+            try {
+                const res = await fetch(`${COINGECKO_API}/search/trending`);
+                const data = await res.json();
+                
+                const trending = document.getElementById('trendingCoins');
+                trending.innerHTML = data.coins.slice(0, 5).map((item, i) => `
+                    <div class="news-item" style="display: flex; align-items: center; gap: 10px;">
+                        <span style="color: rgba(255,255,255,0.4); font-size: 12px;">#${i + 1}</span>
+                        <img src="${item.item.small}" style="width: 24px; height: 24px; border-radius: 50%;">
+                        <div style="flex: 1;">
+                            <div style="font-size: 13px; font-weight: 500;">${item.item.name}</div>
+                            <div style="font-size: 11px; color: rgba(255,255,255,0.5);">${item.item.symbol}</div>
+                        </div>
+                        <div style="font-size: 12px; color: rgba(255,255,255,0.5);">Rank #${item.item.market_cap_rank || '-'}</div>
+                    </div>
+                `).join('');
+            } catch (e) {
+                console.log('Trending error:', e);
+            }
+        }
+
+        // Demo Portfolio (when no wallet connected)
+        async function loadDemoPortfolio() {
+            // Load top coins for demo
+            try {
+                const res = await fetch(`${COINGECKO_API}/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=5&page=1&sparkline=true&price_change_percentage=24h`);
+                const coins = await res.json();
+                
+                // Demo holdings
+                const demoHoldings = {
+                    'bitcoin': 0.5,
+                    'ethereum': 2.5,
+                    'solana': 50,
+                    'binancecoin': 5,
+                    'ripple': 1000
+                };
+                
+                let totalValue = 0;
+                let totalChange = 0;
+                
+                const assetsBody = document.getElementById('assetsBody');
+                assetsBody.innerHTML = coins.map(coin => {
+                    const holdings = demoHoldings[coin.id] || 1;
+                    const value = holdings * coin.current_price;
+                    totalValue += value;
+                    totalChange += value * (coin.price_change_percentage_24h / 100);
+                    
+                    const changeClass = coin.price_change_percentage_24h >= 0 ? 'change-positive' : 'change-negative';
+                    const changePrefix = coin.price_change_percentage_24h >= 0 ? '+' : '';
+                    
+                    return `
+                        <div class="asset-row">
+                            <div class="asset-info">
+                                <img src="${coin.image}" style="width: 36px; height: 36px; border-radius: 50%;">
+                                <div>
+                                    <div class="asset-name">${coin.name}</div>
+                                    <div class="asset-symbol">${coin.symbol.toUpperCase()}</div>
+                                </div>
+                            </div>
+                            <div>$${formatNumber(coin.current_price)}</div>
+                            <div>${holdings} ${coin.symbol.toUpperCase()}</div>
+                            <div>$${formatNumber(value)}</div>
+                            <div class="${changeClass}">${changePrefix}${coin.price_change_percentage_24h.toFixed(2)}%</div>
+                        </div>
+                    `;
+                }).join('');
+                
+                // Update portfolio hero
+                document.getElementById('portfolioValue').textContent = `$${formatNumber(totalValue)}`;
+                const changeClass = totalChange >= 0 ? 'change-positive' : 'change-negative';
+                const changePrefix = totalChange >= 0 ? '+' : '';
+                document.getElementById('portfolioChange').className = changeClass;
+                document.getElementById('portfolioChange').textContent = `${changePrefix}$${formatNumber(Math.abs(totalChange))} (${changePrefix}${((totalChange / totalValue) * 100).toFixed(2)}%)`;
+                
+                // Update stats
+                document.getElementById('tokenCount').textContent = coins.length;
+                document.getElementById('defiPositions').textContent = '0';
+                
+                // Best performer
+                const best = coins.reduce((a, b) => a.price_change_percentage_24h > b.price_change_percentage_24h ? a : b);
+                document.getElementById('bestPerformer').textContent = best.symbol.toUpperCase();
+                document.getElementById('bestPerformerChange').textContent = `+${best.price_change_percentage_24h.toFixed(2)}%`;
+                
+                // Draw sparkline
+                drawSparkline(coins[0].sparkline_in_7d.price);
+                
+            } catch (e) {
+                console.log('Portfolio error:', e);
+            }
+        }
+
+        // Sparkline Chart
+        function drawSparkline(prices) {
+            const svg = document.getElementById('portfolioChart');
+            const width = 200;
+            const height = 80;
+            const padding = 5;
+            
+            const min = Math.min(...prices);
+            const max = Math.max(...prices);
+            const range = max - min;
+            
+            const points = prices.map((price, i) => {
+                const x = padding + (i / (prices.length - 1)) * (width - 2 * padding);
+                const y = height - padding - ((price - min) / range) * (height - 2 * padding);
+                return `${x},${y}`;
+            }).join(' ');
+            
+            const isPositive = prices[prices.length - 1] > prices[0];
+            const color = isPositive ? '#4ade80' : '#f87171';
+            
+            svg.innerHTML = `
+                <defs>
+                    <linearGradient id="sparkGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" style="stop-color:${color};stop-opacity:0.3"/>
+                        <stop offset="100%" style="stop-color:${color};stop-opacity:0"/>
+                    </linearGradient>
+                </defs>
+                <polygon points="${points} ${width - padding},${height - padding} ${padding},${height - padding}" fill="url(#sparkGradient)"/>
+                <polyline points="${points}" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            `;
+        }
+
+        // Helpers
+        function formatNumber(num) {
+            if (num >= 1000000) return (num / 1000000).toFixed(2) + 'M';
+            if (num >= 1000) return (num / 1000).toFixed(2) + 'K';
+            if (num >= 1) return num.toFixed(2);
+            return num.toFixed(6);
+        }
+
+        function formatTime(dateStr) {
+            const date = new Date(dateStr);
+            const now = new Date();
+            const diff = (now - date) / 1000 / 60;
+            
+            if (diff < 60) return `${Math.floor(diff)}m ago`;
+            if (diff < 1440) return `${Math.floor(diff / 60)}h ago`;
+            return `${Math.floor(diff / 1440)}d ago`;
+        }
+
+        // Wallet Connect (placeholder)
+        document.getElementById('connectWallet').addEventListener('click', () => {
+            alert('Wallet connection coming soon!\n\nThis will integrate with MetaMask, WalletConnect, and other providers.');
+        });
+
+        // Navigation
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', () => {
+                document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+                item.classList.add('active');
+                
+                const view = item.dataset.view;
+                if (view === 'portfolio' || view === 'defi' || view === 'screener' || view === 'ai-bot') {
+                    window.open('https://www.sperax.surf/terminal/' + (view === 'portfolio' ? 'portfolio-tracker' : view === 'defi' ? 'defi-center' : view === 'screener' ? 'pump-screener' : view), '_blank');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

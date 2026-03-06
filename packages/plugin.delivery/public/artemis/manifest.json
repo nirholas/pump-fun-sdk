@@ -1,0 +1,30 @@
+{
+  "$schema": "https://plugin.delivery/schema.json",
+  "identifier": "artemis",
+  "openapi": "https://api.artemis.xyz/openapi.json",
+  "settings": {
+    "type": "object",
+    "required": [
+      "ARTEMIS_API_KEY"
+    ],
+    "properties": {
+      "ARTEMIS_API_KEY": {
+        "title": "API Key",
+        "description": "Your Artemis API key",
+        "type": "string",
+        "format": "password"
+      }
+    }
+  },
+  "meta": {
+    "avatar": "🏹",
+    "title": "Artemis",
+    "description": "Developer activity and ecosystem metrics",
+    "tags": [
+      "artemis",
+      "developers",
+      "activity"
+    ]
+  },
+  "version": "1"
+}

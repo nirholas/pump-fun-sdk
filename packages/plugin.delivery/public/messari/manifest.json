@@ -1,0 +1,30 @@
+{
+  "$schema": "https://plugin.delivery/schema.json",
+  "identifier": "messari",
+  "openapi": "https://data.messari.io/api/openapi.json",
+  "settings": {
+    "type": "object",
+    "required": [
+      "MESSARI_API_KEY"
+    ],
+    "properties": {
+      "MESSARI_API_KEY": {
+        "title": "API Key",
+        "description": "Your Messari API key",
+        "type": "string",
+        "format": "password"
+      }
+    }
+  },
+  "meta": {
+    "avatar": "📑",
+    "title": "Messari",
+    "description": "Crypto research, asset profiles, and metrics",
+    "tags": [
+      "research",
+      "fundamentals",
+      "metrics"
+    ]
+  },
+  "version": "1"
+}

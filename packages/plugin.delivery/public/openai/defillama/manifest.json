@@ -1,0 +1,18 @@
+{
+  "api": {
+    "is_user_authenticated": false,
+    "type": "openapi",
+    "url": "https://plugin.delivery/openai/defillama/openapi.json"
+  },
+  "auth": {
+    "type": "none"
+  },
+  "contact_email": "contact@sperax.io",
+  "description_for_human": "DeFi analytics with TVL, yields, stablecoins, and protocol metrics. Track 3000+ protocols across 200+ chains. Free, no API key required.",
+  "description_for_model": "Access comprehensive DeFi analytics from DeFiLlama's free public API. Get Total Value Locked (TVL) for protocols and chains, find the best yield opportunities, track stablecoin metrics, analyze protocol fees and revenue. Covers 3000+ protocols across 200+ chains including Ethereum, BSC, Solana, Arbitrum, and more. Present TVL data in formatted tables with protocol names, chains, and USD values. For yield queries, show APY, TVL, and risk factors. Always include chain information and last update timestamps.",
+  "legal_info_url": "https://defillama.com/docs/api",
+  "logo_url": "https://defillama.com/defillama-press-kit/defi/PNG/defillama-dark.png",
+  "name_for_human": "DeFiLlama Analytics",
+  "name_for_model": "defillama",
+  "schema_version": "v1"
+}

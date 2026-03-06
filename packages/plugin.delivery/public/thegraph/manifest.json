@@ -1,0 +1,57 @@
+{
+  "$schema": "https://plugin.delivery/schema.json",
+  "identifier": "thegraph",
+  "api": [
+    {
+      "url": "https://plugin.delivery/api/thegraph/subgraphs",
+      "name": "getPopularSubgraphs",
+      "description": "Get popular subgraphs on The Graph including Uniswap, Aave, Compound, ENS, and other protocols. Shows query volume and indexing status.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "category": {
+            "type": "string",
+            "description": "Optional: Filter by category (defi, nft, dao, social)"
+          }
+        },
+        "required": []
+      }
+    },
+    {
+      "url": "https://plugin.delivery/api/thegraph/network-stats",
+      "name": "getGraphNetworkStats",
+      "description": "Get The Graph network statistics including total indexers, curators, delegators, and GRT staked.",
+      "parameters": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      }
+    },
+    {
+      "url": "https://plugin.delivery/api/thegraph/query",
+      "name": "querySubgraph",
+      "description": "Execute a GraphQL query against a specific subgraph. Use for custom data queries on Uniswap pools, Aave positions, etc.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "subgraphId": {
+            "type": "string",
+            "description": "Subgraph deployment ID or name (e.g., 'uniswap-v3-ethereum')"
+          },
+          "query": {
+            "type": "string",
+            "description": "GraphQL query string"
+          }
+        },
+        "required": ["subgraphId", "query"]
+      }
+    }
+  ],
+  "meta": {
+    "avatar": "📊",
+    "title": "The Graph",
+    "description": "The Graph Protocol for querying blockchain data. Access subgraph data for DeFi protocols.",
+    "tags": ["defi", "indexing", "data", "subgraphs", "analytics"]
+  },
+  "version": "1"
+}

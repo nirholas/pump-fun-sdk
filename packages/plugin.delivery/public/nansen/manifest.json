@@ -1,0 +1,30 @@
+{
+  "$schema": "https://plugin.delivery/schema.json",
+  "identifier": "nansen",
+  "openapi": "https://api.nansen.ai/openapi.json",
+  "settings": {
+    "type": "object",
+    "required": [
+      "NANSEN_API_KEY"
+    ],
+    "properties": {
+      "NANSEN_API_KEY": {
+        "title": "API Key",
+        "description": "Your Nansen Lite API key",
+        "type": "string",
+        "format": "password"
+      }
+    }
+  },
+  "meta": {
+    "avatar": "🔬",
+    "title": "Nansen Lite",
+    "description": "Smart money analytics and wallet labels",
+    "tags": [
+      "nansen",
+      "smart-money",
+      "labels"
+    ]
+  },
+  "version": "1"
+}

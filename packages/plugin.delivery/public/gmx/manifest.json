@@ -1,0 +1,17 @@
+{
+  "$schema": "https://plugin.delivery/schema.json",
+  "identifier": "gmx",
+  "openapi": "https://gmx-server.onrender.com/openapi.json",
+  "meta": {
+    "avatar": "📊",
+    "title": "GMX Stats",
+    "description": "GMX perpetual stats, GLP/GM data, and funding rates",
+    "tags": [
+      "gmx",
+      "perpetuals",
+      "defi",
+      "trading"
+    ]
+  },
+  "version": "1"
+}

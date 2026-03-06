@@ -1,0 +1,54 @@
+{
+  "$schema": "https://plugin.delivery/schema.json",
+  "identifier": "markdown-template",
+  "type": "markdown",
+  "author": "Your Name",
+  "homepage": "https://github.com/yourname/markdown-template",
+  "api": [
+    {
+      "url": "http://localhost:3400/api/time",
+      "name": "getCurrentTime",
+      "description": "Get the current time in a specific timezone",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "timezone": {
+            "type": "string",
+            "description": "Timezone (e.g., 'America/New_York', 'Europe/London', 'Asia/Tokyo')"
+          },
+          "format": {
+            "type": "string",
+            "enum": ["12h", "24h"],
+            "description": "Time format (12-hour or 24-hour)"
+          }
+        }
+      }
+    },
+    {
+      "url": "http://localhost:3400/api/date",
+      "name": "getFormattedDate",
+      "description": "Get the current date in a specific format",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "format": {
+            "type": "string",
+            "enum": ["short", "long", "iso"],
+            "description": "Date format style"
+          },
+          "locale": {
+            "type": "string",
+            "description": "Locale for formatting (e.g., 'en-US', 'ja-JP')"
+          }
+        }
+      }
+    }
+  ],
+  "gateway": "http://localhost:3400/api/gateway",
+  "meta": {
+    "avatar": "🕐",
+    "title": "Time & Date",
+    "description": "Get formatted time and date information",
+    "tags": ["time", "date", "utility"]
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "author": "SperaxOS",
+  "createdAt": "2025-01-01",
+  "homepage": "https://github.com/nirholas/plugin.delivery",
+  "identifier": "gas-estimator",
+  "manifest": "https://plugin.delivery/gas-estimator/manifest.json",
+  "meta": {
+    "avatar": "⛽",
+    "description": "Transaction gas estimation using Tenderly simulation",
+    "tags": [
+      "gas",
+      "estimation",
+      "tenderly"
+    ],
+    "title": "Gas Estimator",
+    "category": "tools"
+  },
+  "schemaVersion": 1
+}

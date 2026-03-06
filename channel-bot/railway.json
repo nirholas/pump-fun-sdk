@@ -1,0 +1,63 @@
+{
+    "$schema": "https://railway.com/railway.schema.json",
+    "build": {
+        "builder": "DOCKERFILE",
+        "dockerfilePath": "Dockerfile"
+    },
+    "deploy": {
+        "runtime": "V2",
+        "restartPolicyType": "ON_FAILURE",
+        "restartPolicyMaxRetries": 10,
+        "numReplicas": 1,
+        "envVars": {
+            "TELEGRAM_BOT_TOKEN": {
+                "description": "Telegram bot token from @BotFather for the channel bot",
+                "required": true
+            },
+            "CHANNEL_ID": {
+                "description": "Telegram channel to post to (@channelname or -100xxx)",
+                "required": true
+            },
+            "SOLANA_RPC_URL": {
+                "description": "Solana RPC endpoint (mainnet recommended)",
+                "required": true
+            },
+            "SOLANA_WS_URL": {
+                "description": "Solana WebSocket URL for real-time monitoring",
+                "required": false
+            },
+            "POLL_INTERVAL_SECONDS": {
+                "description": "Polling interval in seconds (default: 30)",
+                "required": false
+            },
+            "FEED_CLAIMS": {
+                "description": "Show fee claim events (default: true)",
+                "required": false
+            },
+            "FEED_LAUNCHES": {
+                "description": "Show new token launches (default: true)",
+                "required": false
+            },
+            "FEED_GRADUATIONS": {
+                "description": "Show graduation events (default: true)",
+                "required": false
+            },
+            "FEED_WHALES": {
+                "description": "Show whale trade alerts (default: true)",
+                "required": false
+            },
+            "FEED_FEE_DISTRIBUTIONS": {
+                "description": "Show fee distribution events (default: true)",
+                "required": false
+            },
+            "WHALE_THRESHOLD_SOL": {
+                "description": "Minimum SOL for whale alerts (default: 10)",
+                "required": false
+            },
+            "LOG_LEVEL": {
+                "description": "Log level: debug | info | warn | error",
+                "required": false
+            }
+        }
+    }
+}

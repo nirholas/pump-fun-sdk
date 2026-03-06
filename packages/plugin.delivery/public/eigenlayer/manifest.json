@@ -1,0 +1,16 @@
+{
+  "$schema": "https://plugin.delivery/schema.json",
+  "identifier": "eigenlayer",
+  "openapi": "https://api.eigenlayer.xyz/openapi.json",
+  "meta": {
+    "avatar": "🔄",
+    "title": "EigenLayer",
+    "description": "EigenLayer restaking TVL, operators, and AVS data",
+    "tags": [
+      "eigenlayer",
+      "restaking",
+      "avs"
+    ]
+  },
+  "version": "1"
+}

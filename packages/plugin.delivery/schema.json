@@ -1,0 +1,629 @@
+{
+  "$ref": "#/definitions/SperaxOSPluginManifest",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "definitions": {
+    "JSONSchema7": {
+      "additionalProperties": false,
+      "properties": {
+        "$comment": {
+          "type": "string"
+        },
+        "$defs": {
+          "additionalProperties": {
+            "$ref": "#/definitions/JSONSchema7Definition"
+          },
+          "type": "object"
+        },
+        "$id": {
+          "type": "string"
+        },
+        "$ref": {
+          "type": "string"
+        },
+        "$schema": {
+          "$ref": "#/definitions/JSONSchema7Version"
+        },
+        "additionalItems": {
+          "$ref": "#/definitions/JSONSchema7Definition"
+        },
+        "additionalProperties": {
+          "$ref": "#/definitions/JSONSchema7Definition"
+        },
+        "allOf": {
+          "items": {
+            "$ref": "#/definitions/JSONSchema7Definition"
+          },
+          "type": "array"
+        },
+        "anyOf": {
+          "items": {
+            "$ref": "#/definitions/JSONSchema7Definition"
+          },
+          "type": "array"
+        },
+        "const": {
+          "$ref": "#/definitions/JSONSchema7Type"
+        },
+        "contains": {
+          "$ref": "#/definitions/JSONSchema7Definition"
+        },
+        "contentEncoding": {
+          "type": "string"
+        },
+        "contentMediaType": {
+          "type": "string"
+        },
+        "default": {
+          "$ref": "#/definitions/JSONSchema7Type"
+        },
+        "definitions": {
+          "additionalProperties": {
+            "$ref": "#/definitions/JSONSchema7Definition"
+          },
+          "type": "object"
+        },
+        "dependencies": {
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "$ref": "#/definitions/JSONSchema7Definition"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            ]
+          },
+          "type": "object"
+        },
+        "description": {
+          "type": "string"
+        },
+        "else": {
+          "$ref": "#/definitions/JSONSchema7Definition"
+        },
+        "enum": {
+          "items": {
+            "$ref": "#/definitions/JSONSchema7Type"
+          },
+          "type": "array"
+        },
+        "examples": {
+          "$ref": "#/definitions/JSONSchema7Type"
+        },
+        "exclusiveMaximum": {
+          "type": "number"
+        },
+        "exclusiveMinimum": {
+          "type": "number"
+        },
+        "format": {
+          "type": "string"
+        },
+        "if": {
+          "$ref": "#/definitions/JSONSchema7Definition"
+        },
+        "items": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/JSONSchema7Definition"
+            },
+            {
+              "items": {
+                "$ref": "#/definitions/JSONSchema7Definition"
+              },
+              "type": "array"
+            }
+          ]
+        },
+        "maxItems": {
+          "type": "number"
+        },
+        "maxLength": {
+          "type": "number"
+        },
+        "maxProperties": {
+          "type": "number"
+        },
+        "maximum": {
+          "type": "number"
+        },
+        "minItems": {
+          "type": "number"
+        },
+        "minLength": {
+          "type": "number"
+        },
+        "minProperties": {
+          "type": "number"
+        },
+        "minimum": {
+          "type": "number"
+        },
+        "multipleOf": {
+          "type": "number"
+        },
+        "not": {
+          "$ref": "#/definitions/JSONSchema7Definition"
+        },
+        "oneOf": {
+          "items": {
+            "$ref": "#/definitions/JSONSchema7Definition"
+          },
+          "type": "array"
+        },
+        "pattern": {
+          "type": "string"
+        },
+        "patternProperties": {
+          "additionalProperties": {
+            "$ref": "#/definitions/JSONSchema7Definition"
+          },
+          "type": "object"
+        },
+        "properties": {
+          "additionalProperties": {
+            "$ref": "#/definitions/JSONSchema7Definition"
+          },
+          "type": "object"
+        },
+        "propertyNames": {
+          "$ref": "#/definitions/JSONSchema7Definition"
+        },
+        "readOnly": {
+          "type": "boolean"
+        },
+        "required": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "then": {
+          "$ref": "#/definitions/JSONSchema7Definition"
+        },
+        "title": {
+          "type": "string"
+        },
+        "type": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/JSONSchema7TypeName"
+            },
+            {
+              "items": {
+                "$ref": "#/definitions/JSONSchema7TypeName"
+              },
+              "type": "array"
+            }
+          ]
+        },
+        "uniqueItems": {
+          "type": "boolean"
+        },
+        "writeOnly": {
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "JSONSchema7Array": {
+      "items": {
+        "$ref": "#/definitions/JSONSchema7Type"
+      },
+      "type": "array"
+    },
+    "JSONSchema7Definition": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/JSONSchema7"
+        },
+        {
+          "type": "boolean"
+        }
+      ],
+      "description": "JSON Schema v7"
+    },
+    "JSONSchema7Object": {
+      "additionalProperties": {
+        "$ref": "#/definitions/JSONSchema7Type"
+      },
+      "type": "object"
+    },
+    "JSONSchema7Type": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "boolean"
+        },
+        {
+          "$ref": "#/definitions/JSONSchema7Object"
+        },
+        {
+          "$ref": "#/definitions/JSONSchema7Array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Primitive type"
+    },
+    "JSONSchema7TypeName": {
+      "description": "Primitive type",
+      "enum": [
+        "string",
+        "number",
+        "integer",
+        "boolean",
+        "object",
+        "array",
+        "null"
+      ],
+      "type": "string"
+    },
+    "JSONSchema7Version": {
+      "description": "Meta schema\n\nRecommended values:\n- 'http://json-schema.org/schema#'\n- 'http://json-schema.org/hyper-schema#'\n- 'http://json-schema.org/draft-07/schema#'\n- 'http://json-schema.org/draft-07/hyper-schema#'",
+      "type": "string"
+    },
+    "SperaxOSPluginApi": {
+      "additionalProperties": false,
+      "properties": {
+        "description": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "parameters": {
+          "$ref": "#/definitions/PluginSchema"
+        },
+        "url": {
+          "description": "Endpoint URL",
+          "type": "string"
+        }
+      },
+      "required": [
+        "description",
+        "name",
+        "parameters"
+      ],
+      "type": "object"
+    },
+    "SperaxOSPluginManifest": {
+      "additionalProperties": false,
+      "description": "Plugin manifest",
+      "properties": {
+        "$schema": {
+          "type": "string"
+        },
+        "api": {
+          "items": {
+            "$ref": "#/definitions/SperaxOSPluginApi"
+          },
+          "type": "array"
+        },
+        "author": {
+          "type": "string"
+        },
+        "createdAt": {
+          "description": "createAt",
+          "type": "string"
+        },
+        "gateway": {
+          "type": "string"
+        },
+        "homepage": {
+          "description": "homepage",
+          "type": "string"
+        },
+        "identifier": {
+          "description": "Plugin name",
+          "type": "string"
+        },
+        "meta": {
+          "$ref": "#/definitions/Meta",
+          "description": "metadata"
+        },
+        "openapi": {
+          "type": "string"
+        },
+        "settings": {
+          "$ref": "#/definitions/PluginSchema"
+        },
+        "systemRole": {
+          "description": "the plugin system role",
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/definitions/SperaxOSPluginType",
+          "default": "default",
+          "description": "plugin runtime type"
+        },
+        "ui": {
+          "additionalProperties": false,
+          "description": "plugin ui on user side",
+          "properties": {
+            "height": {
+              "type": "number"
+            },
+            "mode": {
+              "enum": [
+                "iframe",
+                "module"
+              ],
+              "type": "string"
+            },
+            "url": {
+              "description": "component url",
+              "type": "string"
+            },
+            "width": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "url"
+          ],
+          "type": "object"
+        },
+        "version": {
+          "const": "1",
+          "type": "string"
+        }
+      },
+      "required": [
+        "api",
+        "identifier",
+        "meta"
+      ],
+      "type": "object"
+    },
+    "SperaxOSPluginType": {
+      "enum": [
+        "default",
+        "standalone",
+        "markdown"
+      ],
+      "type": "string"
+    },
+    "Meta": {
+      "additionalProperties": false,
+      "description": "Meta",
+      "properties": {
+        "avatar": {
+          "description": "avatar",
+          "type": "string"
+        },
+        "description": {
+          "description": "description",
+          "type": "string"
+        },
+        "tags": {
+          "description": "tags",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "title": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "avatar",
+        "title"
+      ],
+      "type": "object"
+    },
+    "PluginSchema": {
+      "additionalProperties": false,
+      "description": "Plugin Schema",
+      "properties": {
+        "$comment": {
+          "type": "string"
+        },
+        "$defs": {
+          "additionalProperties": {
+            "$ref": "#/definitions/JSONSchema7Definition"
+          },
+          "type": "object"
+        },
+        "$id": {
+          "type": "string"
+        },
+        "$ref": {
+          "type": "string"
+        },
+        "$schema": {
+          "$ref": "#/definitions/JSONSchema7Version"
+        },
+        "additionalItems": {
+          "$ref": "#/definitions/JSONSchema7Definition"
+        },
+        "additionalProperties": {
+          "$ref": "#/definitions/JSONSchema7Definition"
+        },
+        "allOf": {
+          "items": {
+            "$ref": "#/definitions/JSONSchema7Definition"
+          },
+          "type": "array"
+        },
+        "anyOf": {
+          "items": {
+            "$ref": "#/definitions/JSONSchema7Definition"
+          },
+          "type": "array"
+        },
+        "const": {
+          "$ref": "#/definitions/JSONSchema7Type"
+        },
+        "contains": {
+          "$ref": "#/definitions/JSONSchema7Definition"
+        },
+        "contentEncoding": {
+          "type": "string"
+        },
+        "contentMediaType": {
+          "type": "string"
+        },
+        "default": {
+          "$ref": "#/definitions/JSONSchema7Type"
+        },
+        "definitions": {
+          "additionalProperties": {
+            "$ref": "#/definitions/JSONSchema7Definition"
+          },
+          "type": "object"
+        },
+        "dependencies": {
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "$ref": "#/definitions/JSONSchema7Definition"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            ]
+          },
+          "type": "object"
+        },
+        "description": {
+          "type": "string"
+        },
+        "else": {
+          "$ref": "#/definitions/JSONSchema7Definition"
+        },
+        "enum": {
+          "items": {
+            "$ref": "#/definitions/JSONSchema7Type"
+          },
+          "type": "array"
+        },
+        "examples": {
+          "$ref": "#/definitions/JSONSchema7Type"
+        },
+        "exclusiveMaximum": {
+          "type": "number"
+        },
+        "exclusiveMinimum": {
+          "type": "number"
+        },
+        "format": {
+          "type": "string"
+        },
+        "if": {
+          "$ref": "#/definitions/JSONSchema7Definition"
+        },
+        "items": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/JSONSchema7Definition"
+            },
+            {
+              "items": {
+                "$ref": "#/definitions/JSONSchema7Definition"
+              },
+              "type": "array"
+            }
+          ]
+        },
+        "maxItems": {
+          "type": "number"
+        },
+        "maxLength": {
+          "type": "number"
+        },
+        "maxProperties": {
+          "type": "number"
+        },
+        "maximum": {
+          "type": "number"
+        },
+        "minItems": {
+          "type": "number"
+        },
+        "minLength": {
+          "type": "number"
+        },
+        "minProperties": {
+          "type": "number"
+        },
+        "minimum": {
+          "type": "number"
+        },
+        "multipleOf": {
+          "type": "number"
+        },
+        "not": {
+          "$ref": "#/definitions/JSONSchema7Definition"
+        },
+        "oneOf": {
+          "items": {
+            "$ref": "#/definitions/JSONSchema7Definition"
+          },
+          "type": "array"
+        },
+        "pattern": {
+          "type": "string"
+        },
+        "patternProperties": {
+          "additionalProperties": {
+            "$ref": "#/definitions/JSONSchema7Definition"
+          },
+          "type": "object"
+        },
+        "properties": {
+          "additionalProperties": {
+            "$ref": "#/definitions/JSONSchema7"
+          },
+          "type": "object"
+        },
+        "propertyNames": {
+          "$ref": "#/definitions/JSONSchema7Definition"
+        },
+        "readOnly": {
+          "type": "boolean"
+        },
+        "required": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "then": {
+          "$ref": "#/definitions/JSONSchema7Definition"
+        },
+        "title": {
+          "type": "string"
+        },
+        "type": {
+          "const": "object",
+          "type": "string"
+        },
+        "uniqueItems": {
+          "type": "boolean"
+        },
+        "writeOnly": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "properties",
+        "type"
+      ],
+      "type": "object"
+    }
+  }
+}

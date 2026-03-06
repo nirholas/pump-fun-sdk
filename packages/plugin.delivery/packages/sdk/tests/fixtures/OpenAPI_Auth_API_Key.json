@@ -1,0 +1,147 @@
+{
+  "components": {
+    "schemas": {
+      "City": {
+        "type": "string",
+        "enum": ["new-york", "los-angeles", "chicago", "houston", "phoenix", "philadelphia"]
+      },
+      "GetWeatherResponse": {
+        "type": "object",
+        "properties": {
+          "cities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/City"
+            }
+          }
+        }
+      },
+      "GetCitiesResponse": {
+        "type": "object",
+        "properties": {
+          "temperature": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string",
+            "items": {
+              "$ref": "#/components/schemas/City"
+            }
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "apiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-OpenAPIHub-Key"
+      }
+    }
+  },
+  "info": {
+    "title": "Weather Forecast API",
+    "description": "# Introduction\nThis is a Weather Forecast API",
+    "version": "1.0.2"
+  },
+  "openapi": "3.0.0",
+  "paths": {
+    "/weather": {
+      "get": {
+        "operationId": "getWeatherByCity",
+        "tags": ["Weather Forecast"],
+        "summary": "Get weather forecast for a city",
+        "description": "Get weather forecast for a specific city",
+        "parameters": [
+          {
+            "name": "city",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/City"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetWeatherResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/cities": {
+      "get": {
+        "operationId": "getSupportedCities",
+        "tags": ["Weather Forecast"],
+        "summary": "Get list of supported cities",
+        "description": "Return list of supported cities",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetCitiesResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apiKeyAuth": []
+          }
+        ]
+      }
+    }
+  },
+  "servers": [
+    {
+      "url": "https://weather-api.plugin.delivery"
+    },
+    {
+      "url": "https://weather-api-dev.plugin.delivery"
+    }
+  ],
+  "tags": []
+}

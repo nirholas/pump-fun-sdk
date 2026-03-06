@@ -1,0 +1,19 @@
+{
+  "author": "SperaxOS",
+  "createdAt": "2025-01-01",
+  "homepage": "https://github.com/nirholas/plugin.delivery",
+  "identifier": "cow-swap",
+  "manifest": "https://plugin.delivery/cow-swap/manifest.json",
+  "meta": {
+    "avatar": "🐮",
+    "description": "MEV-protected trades via batch auctions",
+    "tags": [
+      "cow",
+      "mev",
+      "swap"
+    ],
+    "title": "CoW Swap",
+    "category": "stocks-finance"
+  },
+  "schemaVersion": 1
+}

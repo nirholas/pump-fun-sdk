@@ -1,0 +1,16 @@
+{
+  "$schema": "https://plugin.delivery/schema.json",
+  "identifier": "ico-calendar",
+  "openapi": "https://icodrops.com/api/openapi.json",
+  "meta": {
+    "avatar": "📅",
+    "title": "ICO Calendar",
+    "description": "Upcoming token sales from ICODrops",
+    "tags": [
+      "ico",
+      "ido",
+      "launchpad"
+    ]
+  },
+  "version": "1"
+}

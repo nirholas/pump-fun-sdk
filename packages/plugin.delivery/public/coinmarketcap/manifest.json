@@ -1,0 +1,31 @@
+{
+  "$schema": "https://plugin.delivery/schema.json",
+  "identifier": "coinmarketcap",
+  "openapi": "https://pro-api.coinmarketcap.com/swagger/v1/swagger.json",
+  "settings": {
+    "type": "object",
+    "required": [
+      "CMC_API_KEY"
+    ],
+    "properties": {
+      "CMC_API_KEY": {
+        "title": "API Key",
+        "description": "Your CoinMarketCap API key",
+        "type": "string",
+        "format": "password"
+      }
+    }
+  },
+  "meta": {
+    "avatar": "📊",
+    "title": "CoinMarketCap",
+    "description": "Cryptocurrency rankings, market cap data, and trending coins",
+    "tags": [
+      "crypto",
+      "prices",
+      "rankings",
+      "marketcap"
+    ]
+  },
+  "version": "1"
+}

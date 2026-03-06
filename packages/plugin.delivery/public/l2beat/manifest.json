@@ -1,0 +1,17 @@
+{
+  "$schema": "https://plugin.delivery/schema.json",
+  "identifier": "l2beat",
+  "openapi": "https://api.l2beat.com/api/openapi.json",
+  "meta": {
+    "avatar": "📊",
+    "title": "L2Beat",
+    "description": "Layer 2 TVL rankings and risk analysis",
+    "tags": [
+      "l2",
+      "tvl",
+      "risk",
+      "analysis"
+    ]
+  },
+  "version": "1"
+}

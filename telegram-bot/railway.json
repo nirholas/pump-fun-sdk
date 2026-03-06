@@ -1,0 +1,84 @@
+{
+    "$schema": "https://railway.com/railway.schema.json",
+    "build": {
+        "builder": "DOCKERFILE",
+        "dockerfilePath": "Dockerfile"
+    },
+    "deploy": {
+        "runtime": "V2",
+        "restartPolicyType": "ON_FAILURE",
+        "restartPolicyMaxRetries": 10,
+        "healthcheckPath": "/api/v1/health",
+        "numReplicas": 1,
+        "envVars": {
+            "TELEGRAM_BOT_TOKEN": {
+                "description": "Telegram bot token from @BotFather (optional in API-only mode)",
+                "required": false
+            },
+            "SOLANA_RPC_URL": {
+                "description": "Solana RPC endpoint (mainnet recommended)",
+                "required": true
+            },
+            "SOLANA_WS_URL": {
+                "description": "Solana WebSocket URL for real-time monitoring",
+                "required": false
+            },
+            "ENABLE_LAUNCH_MONITOR": {
+                "description": "Enable new token launch monitoring (true/false)",
+                "required": false
+            },
+            "GITHUB_ONLY_FILTER": {
+                "description": "Only notify for GitHub-linked tokens (true/false)",
+                "required": false
+            },
+            "ALLOWED_USER_IDS": {
+                "description": "Comma-separated Telegram user IDs to allow",
+                "required": false
+            },
+            "ENABLE_API": {
+                "description": "Enable the REST API server (true/false)",
+                "required": false
+            },
+            "API_ONLY": {
+                "description": "Run API without Telegram bot (true/false)",
+                "required": false
+            },
+            "API_PORT": {
+                "description": "HTTP port for the API server (default: 3000)",
+                "required": false
+            },
+            "API_KEYS": {
+                "description": "Comma-separated API keys for authentication",
+                "required": false
+            },
+            "WEBHOOK_SECRET": {
+                "description": "HMAC-SHA256 secret for signing webhook payloads",
+                "required": false
+            },
+            "CORS_ORIGINS": {
+                "description": "CORS allowed origins (* = all)",
+                "required": false
+            },
+            "ENABLE_GRADUATION_ALERTS": {
+                "description": "Enable graduation/migration alerts (true/false, default: true)",
+                "required": false
+            },
+            "ENABLE_TRADE_ALERTS": {
+                "description": "Enable whale trade alerts (true/false, default: false)",
+                "required": false
+            },
+            "WHALE_THRESHOLD_SOL": {
+                "description": "Minimum SOL for whale trade alert (default: 10)",
+                "required": false
+            },
+            "ENABLE_FEE_DISTRIBUTION_ALERTS": {
+                "description": "Enable creator fee distribution alerts (true/false, default: false)",
+                "required": false
+            },
+            "LOG_LEVEL": {
+                "description": "Log level: debug | info | warn | error (default: info)",
+                "required": false
+            }
+        }
+    }
+}

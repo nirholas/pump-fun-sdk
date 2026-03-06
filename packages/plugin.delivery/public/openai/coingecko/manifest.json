@@ -1,0 +1,18 @@
+{
+  "api": {
+    "is_user_authenticated": false,
+    "type": "openapi",
+    "url": "https://plugin.delivery/openai/coingecko/openapi.json"
+  },
+  "auth": {
+    "type": "none"
+  },
+  "contact_email": "contact@sperax.io",
+  "description_for_human": "Real-time crypto prices, market data, trending tokens, and analytics for 1M+ cryptocurrencies. No API key required.",
+  "description_for_model": "Access comprehensive cryptocurrency market data from CoinGecko's free public API. Get real-time prices with 24h changes, market caps, trading volumes, trending tokens, historical charts, and detailed coin information for over 1 million cryptocurrencies. Present results in well-formatted markdown tables. Always include 24h change percentages for price queries. Show top 10 results by default for market rankings. Use the search endpoint to find coin IDs when users provide coin names or symbols.",
+  "legal_info_url": "https://www.coingecko.com/en/terms",
+  "logo_url": "https://static.coingecko.com/s/coingecko-logo-8903d34ce19ca4be1c81f0db30e924154750d208683fad7ae6f2ce06c76d0a56.png",
+  "name_for_human": "CoinGecko Crypto",
+  "name_for_model": "coingecko",
+  "schema_version": "v1"
+}

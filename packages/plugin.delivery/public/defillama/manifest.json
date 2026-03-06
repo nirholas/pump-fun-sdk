@@ -1,0 +1,78 @@
+{
+  "$schema": "https://plugin.delivery/schema.json",
+  "identifier": "defillama",
+  "api": [
+    {
+      "url": "https://plugin.delivery/api/defillama/protocols",
+      "name": "getTopProtocols",
+      "description": "Get the top DeFi protocols by Total Value Locked (TVL). Returns the top 20 protocols with their TVL, chain, category, and 1d/7d changes. Use this to show market leaders and TVL rankings.",
+      "parameters": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      }
+    },
+    {
+      "url": "https://plugin.delivery/api/defillama/protocol",
+      "name": "getProtocolDetails",
+      "description": "Get detailed information about a specific DeFi protocol including TVL breakdown by chain, description, links, and category. Use protocol slug like 'aave', 'uniswap', 'lido', 'makerdao'.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "protocol": {
+            "type": "string",
+            "description": "Protocol slug (lowercase, e.g., 'aave', 'uniswap', 'lido', 'curve', 'makerdao')"
+          }
+        },
+        "required": ["protocol"]
+      }
+    },
+    {
+      "url": "https://plugin.delivery/api/defillama/chains",
+      "name": "getChainsTVL",
+      "description": "Get Total Value Locked (TVL) for all blockchain networks. Returns top 20 chains including Ethereum, BSC, Solana, Arbitrum, etc. with their TVL and native token.",
+      "parameters": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      }
+    },
+    {
+      "url": "https://plugin.delivery/api/defillama/stablecoins",
+      "name": "getStablecoins",
+      "description": "Get top stablecoins by market cap including USDT, USDC, DAI, etc. Shows circulating supply, peg type, mechanism, and supported chains.",
+      "parameters": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      }
+    },
+    {
+      "url": "https://plugin.delivery/api/defillama/yields",
+      "name": "getTopYields",
+      "description": "Get the best yield farming opportunities across DeFi. Returns top pools by APY with project, symbol, chain, TVL, and whether it's a stablecoin pool. Optionally filter by chain.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "chain": {
+            "type": "string",
+            "description": "Optional: Filter by chain name (e.g., 'Ethereum', 'BSC', 'Arbitrum', 'Solana')"
+          }
+        },
+        "required": []
+      }
+    }
+  ],
+  "meta": {
+    "avatar": "🦙",
+    "title": "DeFiLlama",
+    "description": "DeFi analytics with TVL, yields, stablecoins across 3000+ protocols",
+    "tags": [
+      "defi",
+      "tvl",
+      "yields",
+      "protocols"
+    ]
+  },
+  "version": "1"
+}

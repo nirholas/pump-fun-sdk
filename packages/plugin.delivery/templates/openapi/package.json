@@ -1,0 +1,19 @@
+{
+  "name": "openapi-plugin-template",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "vercel dev --listen 3400",
+    "build": "vercel build",
+    "deploy": "vercel --prod"
+  },
+  "dependencies": {
+    "@sperax/plugin-sdk": "^1.0.0",
+    "@sperax/chat-plugins-gateway": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0",
+    "vercel": "^33.0.0"
+  }
+}

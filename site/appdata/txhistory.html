@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transaction History</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Symbols+Outlined" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 50%, #0f0f1a 100%);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .header {
+            margin-bottom: 24px;
+        }
+
+        .header h1 {
+            font-size: 22px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            background: linear-gradient(90deg, #fff, #60a5fa);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header p {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 14px;
+        }
+
+        /* Search Bar */
+        .search-section {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 24px;
+            backdrop-filter: blur(20px);
+        }
+
+        .search-row {
+            display: flex;
+            gap: 12px;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 14px 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            color: #fff;
+            font-size: 14px;
+            font-family: 'SF Mono', 'Consolas', monospace;
+            outline: none;
+        }
+
+        .search-input::placeholder {
+            color: rgba(255, 255, 255, 0.3);
+        }
+
+        .search-input:focus {
+            border-color: rgba(96, 165, 250, 0.5);
+        }
+
+        .search-btn {
+            padding: 14px 24px;
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            border: none;
+            border-radius: 10px;
+            color: #fff;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .search-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(59, 130, 246, 0.3);
+        }
+
+        .search-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Filters */
+        .filters {
+            display: flex;
+            gap: 12px;
+            margin-top: 16px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .filter-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .filter-btn.active {
+            background: rgba(59, 130, 246, 0.2);
+            border-color: rgba(59, 130, 246, 0.5);
+            color: #60a5fa;
+        }
+
+        /* Transactions Table */
+        .tx-section {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            overflow: hidden;
+            backdrop-filter: blur(20px);
+        }
+
+        .tx-header {
+            display: grid;
+            grid-template-columns: 100px 1fr 120px 140px 80px;
+            padding: 14px 20px;
+            background: rgba(255, 255, 255, 0.03);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            font-size: 11px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.5);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .tx-list {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .tx-item {
+            display: grid;
+            grid-template-columns: 100px 1fr 120px 140px 80px;
+            padding: 16px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            align-items: center;
+            transition: background 0.2s;
+        }
+
+        .tx-item:hover {
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .tx-item:last-child {
+            border-bottom: none;
+        }
+
+        .tx-type {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .tx-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .tx-icon.send {
+            background: rgba(239, 68, 68, 0.15);
+            color: #ef4444;
+        }
+
+        .tx-icon.receive {
+            background: rgba(34, 197, 94, 0.15);
+            color: #22c55e;
+        }
+
+        .tx-icon.swap {
+            background: rgba(139, 92, 246, 0.15);
+            color: #8b5cf6;
+        }
+
+        .tx-icon.approve {
+            background: rgba(251, 191, 36, 0.15);
+            color: #fbbf24;
+        }
+
+        .tx-icon .material-symbols-outlined {
+            font-size: 18px;
+        }
+
+        .tx-type-label {
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .tx-hash {
+            font-family: 'SF Mono', 'Consolas', monospace;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .tx-hash a {
+            color: #60a5fa;
+            text-decoration: none;
+        }
+
+        .tx-hash a:hover {
+            text-decoration: underline;
+        }
+
+        .tx-amount {
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .tx-amount.negative {
+            color: #ef4444;
+        }
+
+        .tx-amount.positive {
+            color: #22c55e;
+        }
+
+        .tx-date {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .tx-status {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .status-dot.success {
+            background: #22c55e;
+        }
+
+        .status-dot.pending {
+            background: #fbbf24;
+            animation: pulse 1.5s infinite;
+        }
+
+        .status-dot.failed {
+            background: #ef4444;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        /* Pagination */
+        .pagination {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .page-info {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .page-btns {
+            display: flex;
+            gap: 8px;
+        }
+
+        .page-btn {
+            padding: 8px 14px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .page-btn:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .page-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        /* Loading & Empty States */
+        .loading-state,
+        .empty-state {
+            padding: 60px 20px;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .loading-state .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top-color: #3b82f6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .empty-state .material-symbols-outlined {
+            font-size: 48px;
+            margin-bottom: 12px;
+            opacity: 0.3;
+        }
+
+        .empty-state p {
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        .empty-state small {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.3);
+        }
+
+        /* Connected wallet indicator */
+        .connected-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 14px;
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            border-radius: 20px;
+            font-size: 12px;
+            color: #22c55e;
+            margin-bottom: 12px;
+        }
+
+        .connected-badge .dot {
+            width: 6px;
+            height: 6px;
+            background: #22c55e;
+            border-radius: 50%;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Transaction History</h1>
+            <p>View and filter your blockchain transactions</p>
+        </div>
+
+        <!-- Search Section -->
+        <div class="search-section">
+            <div id="connectedWallet"></div>
+            <div class="search-row">
+                <input 
+                    type="text" 
+                    class="search-input" 
+                    id="addressInput"
+                    placeholder="Enter wallet address (0x...)"
+                >
+                <button class="search-btn" id="searchBtn" onclick="fetchTransactions()">
+                    <span class="material-symbols-outlined">search</span>
+                    Search
+                </button>
+            </div>
+            <div class="filters">
+                <button class="filter-btn active" data-filter="all" onclick="setFilter('all')">All</button>
+                <button class="filter-btn" data-filter="send" onclick="setFilter('send')">Sent</button>
+                <button class="filter-btn" data-filter="receive" onclick="setFilter('receive')">Received</button>
+                <button class="filter-btn" data-filter="swap" onclick="setFilter('swap')">Swaps</button>
+                <button class="filter-btn" data-filter="approve" onclick="setFilter('approve')">Approvals</button>
+            </div>
+        </div>
+
+        <!-- Transactions -->
+        <div class="tx-section">
+            <div class="tx-header">
+                <div>Type</div>
+                <div>Transaction</div>
+                <div>Amount</div>
+                <div>Date</div>
+                <div>Status</div>
+            </div>
+            <div class="tx-list" id="txList">
+                <div class="empty-state">
+                    <span class="material-symbols-outlined">receipt_long</span>
+                    <p>Enter a wallet address to view transactions</p>
+                    <small>Supports Ethereum addresses</small>
+                </div>
+            </div>
+            <div class="pagination" id="pagination" style="display: none;">
+                <div class="page-info" id="pageInfo">Showing 1-10 of 50</div>
+                <div class="page-btns">
+                    <button class="page-btn" id="prevBtn" onclick="prevPage()">← Previous</button>
+                    <button class="page-btn" id="nextBtn" onclick="nextPage()">Next →</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // State
+        let transactions = [];
+        let filteredTx = [];
+        let currentFilter = 'all';
+        let currentPage = 1;
+        const perPage = 10;
+
+        // Mock transaction data (realistic demo data)
+        const mockTransactions = [
+            { hash: '0x8a7d391b...c4f2e8', type: 'receive', amount: '2.5 ETH', usd: 8250, from: '0x742d...3a9b', to: '0x1234...5678', date: '2026-01-18T14:23:00Z', status: 'success' },
+            { hash: '0x3e8f4a12...9b7c3d', type: 'swap', amount: '1.2 ETH → 3,960 USDC', usd: 3960, from: '0x1234...5678', to: 'Uniswap', date: '2026-01-18T12:15:00Z', status: 'success' },
+            { hash: '0x1c9e7b84...2d6a5f', type: 'send', amount: '-0.5 ETH', usd: 1650, from: '0x1234...5678', to: '0x9abc...def0', date: '2026-01-17T18:42:00Z', status: 'success' },
+            { hash: '0x7f3a2e91...8c4b0a', type: 'approve', amount: 'USDC', usd: 0, from: '0x1234...5678', to: 'Aave', date: '2026-01-17T16:30:00Z', status: 'success' },
+            { hash: '0x2b5d9c73...1e8f4a', type: 'receive', amount: '1,000 USDC', usd: 1000, from: '0xabcd...1234', to: '0x1234...5678', date: '2026-01-16T20:55:00Z', status: 'success' },
+            { hash: '0x6e1a4f82...3c9d7b', type: 'swap', amount: '500 USDC → 0.15 ETH', usd: 500, from: '0x1234...5678', to: 'Uniswap', date: '2026-01-16T09:12:00Z', status: 'success' },
+            { hash: '0x9c8b3d71...5a2e0f', type: 'send', amount: '-0.25 ETH', usd: 825, from: '0x1234...5678', to: '0x5678...9abc', date: '2026-01-15T22:08:00Z', status: 'success' },
+            { hash: '0x4a7e2c93...8f1b6d', type: 'receive', amount: '0.8 ETH', usd: 2640, from: '0xdef0...5678', to: '0x1234...5678', date: '2026-01-15T14:33:00Z', status: 'success' },
+            { hash: '0x8d2f5b04...7c3a1e', type: 'approve', amount: 'ETH', usd: 0, from: '0x1234...5678', to: 'Lido', date: '2026-01-14T11:20:00Z', status: 'success' },
+            { hash: '0x5c1e9a83...2d4f7b', type: 'swap', amount: '2,000 USDC → 0.6 ETH', usd: 2000, from: '0x1234...5678', to: '1inch', date: '2026-01-14T08:45:00Z', status: 'success' },
+            { hash: '0x1f4a8c72...9e3b0d', type: 'send', amount: '-1.0 ETH', usd: 3300, from: '0x1234...5678', to: '0x7890...abcd', date: '2026-01-13T19:17:00Z', status: 'success' },
+            { hash: '0x3b7d2e94...1c8a5f', type: 'receive', amount: '500 USDT', usd: 500, from: '0x2468...1357', to: '0x1234...5678', date: '2026-01-13T15:52:00Z', status: 'success' },
+            { hash: '0x2e9c4a81...7d3f6b', type: 'swap', amount: '0.3 ETH → 990 DAI', usd: 990, from: '0x1234...5678', to: 'Curve', date: '2026-01-12T12:28:00Z', status: 'pending' },
+        ];
+
+        // Check for connected wallet from parent
+        function checkConnectedWallet() {
+            const saved = localStorage.getItem('pump_wallet');
+            if (saved) {
+                const data = JSON.parse(saved);
+                const address = '0x1234...5678'; // Mock address
+                document.getElementById('connectedWallet').innerHTML = `
+                    <div class="connected-badge">
+                        <div class="dot"></div>
+                        Connected: ${address}
+                    </div>
+                `;
+                document.getElementById('addressInput').value = '0x1234567890abcdef1234567890abcdef12345678';
+            }
+        }
+
+        // Fetch transactions (mock for demo, would use Etherscan API)
+        async function fetchTransactions() {
+            const address = document.getElementById('addressInput').value.trim();
+            if (!address || !address.startsWith('0x')) {
+                alert('Please enter a valid Ethereum address');
+                return;
+            }
+
+            const btn = document.getElementById('searchBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner" style="width:16px;height:16px;border-width:2px;margin:0;"></span> Loading...';
+
+            document.getElementById('txList').innerHTML = `
+                <div class="loading-state">
+                    <div class="spinner"></div>
+                    <p>Fetching transactions...</p>
+                </div>
+            `;
+
+            // Simulate API delay
+            await new Promise(r => setTimeout(r, 1500));
+
+            // In production, would call:
+            // const response = await fetch(`https://api.etherscan.io/api?module=account&action=txlist&address=${address}&apikey=YOUR_KEY`);
+
+            transactions = mockTransactions;
+            filteredTx = [...transactions];
+            currentPage = 1;
+
+            renderTransactions();
+
+            btn.disabled = false;
+            btn.innerHTML = '<span class="material-symbols-outlined">search</span> Search';
+        }
+
+        // Set filter
+        function setFilter(filter) {
+            currentFilter = filter;
+            currentPage = 1;
+
+            // Update button states
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.filter === filter);
+            });
+
+            // Filter transactions
+            if (filter === 'all') {
+                filteredTx = [...transactions];
+            } else {
+                filteredTx = transactions.filter(tx => tx.type === filter);
+            }
+
+            renderTransactions();
+        }
+
+        // Render transactions
+        function renderTransactions() {
+            const container = document.getElementById('txList');
+            const pagination = document.getElementById('pagination');
+
+            if (filteredTx.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <span class="material-symbols-outlined">filter_list_off</span>
+                        <p>No transactions found</p>
+                        <small>Try a different filter or address</small>
+                    </div>
+                `;
+                pagination.style.display = 'none';
+                return;
+            }
+
+            // Paginate
+            const start = (currentPage - 1) * perPage;
+            const end = start + perPage;
+            const pageTx = filteredTx.slice(start, end);
+            const totalPages = Math.ceil(filteredTx.length / perPage);
+
+            container.innerHTML = pageTx.map(tx => {
+                const icons = {
+                    send: 'arrow_upward',
+                    receive: 'arrow_downward',
+                    swap: 'swap_horiz',
+                    approve: 'check_circle'
+                };
+
+                const labels = {
+                    send: 'Sent',
+                    receive: 'Received',
+                    swap: 'Swap',
+                    approve: 'Approval'
+                };
+
+                const date = new Date(tx.date);
+                const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                const timeStr = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+
+                const amountClass = tx.type === 'receive' ? 'positive' : (tx.type === 'send' ? 'negative' : '');
+
+                return `
+                    <div class="tx-item">
+                        <div class="tx-type">
+                            <div class="tx-icon ${tx.type}">
+                                <span class="material-symbols-outlined">${icons[tx.type]}</span>
+                            </div>
+                            <span class="tx-type-label">${labels[tx.type]}</span>
+                        </div>
+                        <div class="tx-hash">
+                            <a href="https://etherscan.io/tx/${tx.hash}" target="_blank" rel="noopener">
+                                ${tx.hash}
+                            </a>
+                        </div>
+                        <div class="tx-amount ${amountClass}">
+                            ${tx.amount}
+                        </div>
+                        <div class="tx-date">
+                            ${dateStr}<br>
+                            <small style="opacity: 0.6">${timeStr}</small>
+                        </div>
+                        <div class="tx-status">
+                            <div class="status-dot ${tx.status}"></div>
+                            ${tx.status.charAt(0).toUpperCase() + tx.status.slice(1)}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // Update pagination
+            pagination.style.display = 'flex';
+            document.getElementById('pageInfo').textContent = 
+                `Showing ${start + 1}-${Math.min(end, filteredTx.length)} of ${filteredTx.length}`;
+            document.getElementById('prevBtn').disabled = currentPage === 1;
+            document.getElementById('nextBtn').disabled = currentPage === totalPages;
+        }
+
+        function prevPage() {
+            if (currentPage > 1) {
+                currentPage--;
+                renderTransactions();
+            }
+        }
+
+        function nextPage() {
+            const totalPages = Math.ceil(filteredTx.length / perPage);
+            if (currentPage < totalPages) {
+                currentPage++;
+                renderTransactions();
+            }
+        }
+
+        // Allow Enter key to search
+        document.getElementById('addressInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                fetchTransactions();
+            }
+        });
+
+        // Initialize
+        checkConnectedWallet();
+    </script>
+</body>
+</html>

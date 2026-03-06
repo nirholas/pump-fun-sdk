@@ -1,0 +1,19 @@
+{
+  "author": "SperaxOS",
+  "createdAt": "2025-01-01",
+  "homepage": "https://github.com/nirholas/plugin.delivery",
+  "identifier": "token-sniffer",
+  "manifest": "https://plugin.delivery/token-sniffer/manifest.json",
+  "meta": {
+    "avatar": "🐕",
+    "description": "Token security scoring and scam detection",
+    "tags": [
+      "security",
+      "score",
+      "scam"
+    ],
+    "title": "Token Sniffer",
+    "category": "tools"
+  },
+  "schemaVersion": 1
+}

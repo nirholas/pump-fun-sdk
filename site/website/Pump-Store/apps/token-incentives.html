@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="pump-include" content="pump.css">
+    <meta name="capabilities" content="token_incentives">
+    <meta name="pump-icon" content="stars">
+    <meta name="pump-perms" content="none" />
+    <title>Token Incentives Tracker</title>
+    <style>
+        :root {
+            --bg1:#0a0a0f; --bg2:#141420; --bg3:#1e1e30;
+            --txt1:#fff; --txt2:#9ca3af;
+            --accent:#00e87b; --accent2:#00c868;
+            --blue:#60a5fa; --purple:#a78bfa; --yellow:#fbbf24; --orange:#fb923c;
+            --radius:12px;
+        }
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg1);color:var(--txt1);min-height:100vh;padding:16px;overflow-y:auto}
+        .app{max-width:600px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+        .header{display:flex;align-items:center;gap:10px}
+        .header h1{font-size:1.2em}
+        .badge{font-size:.65em;background:var(--accent);color:#000;padding:2px 8px;border-radius:20px;font-weight:600}
+        .card{background:var(--bg2);border:1px solid rgba(255,255,255,.06);border-radius:var(--radius);padding:18px}
+        .card-title{font-size:.9em;font-weight:500;margin-bottom:12px}
+        .info-box{padding:12px 16px;background:rgba(0,232,123,.06);border-radius:8px;font-size:.8em;color:var(--txt2);display:flex;gap:8px;align-items:flex-start}
+
+        .hero-stats{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+        .hero-stat{background:var(--bg3);border-radius:10px;padding:16px;border:1px solid rgba(255,255,255,.04)}
+        .hero-stat .val{font-size:1.6em;font-weight:700;margin-bottom:4px}
+        .hero-stat .lbl{font-size:.72em;color:var(--txt2);text-transform:uppercase;letter-spacing:.5px}
+        .hero-stat .sub{font-size:.75em;color:var(--txt2);margin-top:4px}
+        .hero-stat.accent .val{color:var(--accent)}
+        .hero-stat.blue .val{color:var(--blue)}
+        .hero-stat.purple .val{color:var(--purple)}
+        .hero-stat.yellow .val{color:var(--yellow)}
+
+        label{font-size:.72em;color:var(--txt2);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px}
+        input{background:var(--bg3);border:1px solid rgba(255,255,255,.08);color:var(--txt1);padding:10px 12px;border-radius:8px;width:100%;font-size:.9em;outline:none}
+        input:focus{border-color:var(--accent)}
+        .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+        .day-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+        .day-cell{background:var(--bg3);border-radius:6px;padding:8px 4px;text-align:center;font-size:.72em;position:relative}
+        .day-cell .day-num{font-weight:600;font-size:1em}
+        .day-cell .day-tokens{color:var(--accent);font-size:.85em;margin-top:2px}
+        .day-cell .day-vol{color:var(--txt2);font-size:.75em}
+        .day-cell.today{border:1px solid var(--accent);box-shadow:0 0 8px rgba(0,232,123,.2)}
+        .day-cell.past{opacity:.6}
+        .day-cell.future{opacity:.3}
+
+        .progress-container{margin-top:8px}
+        .progress-bar{height:10px;background:var(--bg3);border-radius:5px;overflow:hidden}
+        .progress-fill{height:100%;border-radius:5px;transition:width .3s}
+        .progress-labels{display:flex;justify-content:space-between;font-size:.7em;color:var(--txt2);margin-top:4px}
+
+        .chart-container{width:100%;height:180px;position:relative}
+        canvas{width:100%;height:100%}
+
+        .code-block{background:var(--bg3);border-radius:8px;padding:14px;font-family:monospace;font-size:.78em;line-height:1.6;overflow-x:auto;color:var(--accent)}
+
+        .formula-box{background:var(--bg3);border-radius:8px;padding:14px;font-size:.82em;line-height:1.8}
+        .formula-box code{background:rgba(0,232,123,.1);padding:2px 6px;border-radius:4px;color:var(--accent);font-family:monospace}
+
+        .claim-btn{width:100%;padding:14px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#000;border:none;border-radius:10px;font-size:.95em;font-weight:600;cursor:pointer;transition:all .2s}
+        .claim-btn:hover{transform:translateY(-1px);box-shadow:0 4px 20px rgba(0,232,123,.3)}
+        .claim-btn:disabled{opacity:.5;cursor:default;transform:none;box-shadow:none}
+    </style>
+</head>
+<body>
+<div class="app">
+    <div class="header">
+        <span style="font-size:28px">⭐</span>
+        <h1>Token Incentives Tracker</h1>
+        <span class="badge">SDK</span>
+    </div>
+
+    <div class="info-box">
+        <span>💡</span>
+        <div>Trade on Pump to earn <strong>PUMP tokens</strong> as rewards. Rewards are distributed daily based on your trading volume relative to total platform volume.</div>
+    </div>
+
+    <!-- User Config -->
+    <div class="card">
+        <div class="card-title">Simulation Parameters</div>
+        <div class="grid2">
+            <div><label>Your Daily Volume (SOL)</label><input type="number" id="userVolume" value="50" step="1" oninput="recalculate()"></div>
+            <div><label>Total Platform Volume (SOL)</label><input type="number" id="totalVolume" value="100000" step="1000" oninput="recalculate()"></div>
+            <div><label>Daily Token Supply</label><input type="number" id="dailyTokens" value="5000000" step="100000" oninput="recalculate()"></div>
+            <div><label>Program Duration (days)</label><input type="number" id="duration" value="30" step="1" min="1" max="365" oninput="recalculate()"></div>
+        </div>
+    </div>
+
+    <!-- Hero Stats -->
+    <div class="hero-stats">
+        <div class="hero-stat accent">
+            <div class="val" id="unclaimedTokens">0</div>
+            <div class="lbl">Unclaimed PUMP</div>
+            <div class="sub" id="unclaimedUsd"></div>
+        </div>
+        <div class="hero-stat blue">
+            <div class="val" id="claimedTokens">0</div>
+            <div class="lbl">Claimed PUMP</div>
+            <div class="sub" id="claimedUsd"></div>
+        </div>
+        <div class="hero-stat purple">
+            <div class="val" id="todayEarning">0</div>
+            <div class="lbl">Today's Earnings</div>
+            <div class="sub" id="todayPct"></div>
+        </div>
+        <div class="hero-stat yellow">
+            <div class="val" id="volumeShare">0%</div>
+            <div class="lbl">Volume Share</div>
+            <div class="sub" id="volumeRank"></div>
+        </div>
+    </div>
+
+    <!-- Claim Button -->
+    <button class="claim-btn" id="claimBtn" onclick="claimTokens()">
+        🎁 Claim PUMP Tokens
+    </button>
+
+    <!-- Progress -->
+    <div class="card">
+        <div class="card-title">Program Progress</div>
+        <div class="progress-container">
+            <div class="progress-bar">
+                <div class="progress-fill" id="programProgress" style="width:0%;background:linear-gradient(90deg,var(--accent),var(--blue))"></div>
+            </div>
+            <div class="progress-labels">
+                <span id="progStart">Day 1</span>
+                <span id="progCurrent">Day 1 of 30</span>
+                <span id="progEnd">Day 30</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Daily Volume Chart -->
+    <div class="card">
+        <div class="card-title">Daily Earnings Projection</div>
+        <div class="chart-container"><canvas id="earningsChart"></canvas></div>
+        <div style="display:flex;gap:16px;margin-top:8px;font-size:.72em">
+            <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:3px;background:var(--accent);border-radius:2px"></span>Daily Tokens</span>
+            <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:3px;background:var(--blue);border-radius:2px"></span>Cumulative</span>
+        </div>
+    </div>
+
+    <!-- Day Grid -->
+    <div class="card">
+        <div class="card-title">Daily Breakdown (First 14 Days)</div>
+        <div class="day-grid" id="dayGrid"></div>
+    </div>
+
+    <!-- Formula -->
+    <div class="card">
+        <div class="card-title">Reward Formula</div>
+        <div class="formula-box">
+            <div><strong>Daily Reward:</strong></div>
+            <div style="margin:8px 0;text-align:center;font-size:1.1em">
+                <code>userTokens = (userSolVolume × dailyTokenSupply) / totalSolVolume</code>
+            </div>
+            <div style="margin-top:12px;color:var(--txt2)">
+                <div>• <code>userSolVolume</code> — Your trading volume on that day</div>
+                <div>• <code>dailyTokenSupply</code> — PUMP tokens allocated for the day</div>
+                <div>• <code>totalSolVolume</code> — Total platform volume for the day</div>
+                <div>• Unclaimed tokens accumulate and can be claimed anytime</div>
+                <div>• <code>syncUserVolumeAccumulator</code> must be called to update</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SDK Code -->
+    <div class="card">
+        <div class="card-title">SDK Usage</div>
+        <div class="code-block">
+<span style="color:var(--purple)">import</span> { OnlinePumpSdk } <span style="color:var(--purple)">from</span> <span style="color:var(--yellow)">'@pump-fun/pump-sdk'</span>;
+
+<span style="color:var(--txt2)">// Initialize</span>
+<span style="color:var(--purple)">const</span> sdk = <span style="color:var(--purple)">new</span> OnlinePumpSdk(connection);
+
+<span style="color:var(--txt2)">// Get unclaimed tokens</span>
+<span style="color:var(--purple)">const</span> unclaimed = <span style="color:var(--purple)">await</span> sdk.getTotalUnclaimedTokens(user);
+
+<span style="color:var(--txt2)">// Get today's projected earnings</span>
+<span style="color:var(--purple)">const</span> today = <span style="color:var(--purple)">await</span> sdk.getCurrentDayTokens(user);
+
+<span style="color:var(--txt2)">// Claim tokens (both programs)</span>
+<span style="color:var(--purple)">const</span> ixs = <span style="color:var(--purple)">await</span> sdk.claimTokenIncentivesBothPrograms(user);
+
+<span style="color:var(--txt2)">// Sync volume accumulator</span>
+<span style="color:var(--purple)">const</span> syncIxs = PUMP_SDK.syncUserVolumeAccumulator(user);
+        </div>
+    </div>
+</div>
+
+<script>
+let simDay = 1;
+let claimed = 0, unclaimed = 0;
+let dailyHistory = [];
+
+function recalculate() {
+    const userVol = parseFloat(document.getElementById('userVolume').value) || 0;
+    const totalVol = parseFloat(document.getElementById('totalVolume').value) || 1;
+    const dailyTokens = parseFloat(document.getElementById('dailyTokens').value) || 0;
+    const duration = parseInt(document.getElementById('duration').value) || 30;
+
+    const volumeShare = userVol / totalVol;
+    const dailyEarning = volumeShare * dailyTokens;
+
+    // Reset and simulate up to current day
+    dailyHistory = [];
+    let cumUnclaimed = 0;
+    for (let d = 1; d <= duration; d++) {
+        // Add some variance
+        const variance = 0.8 + Math.random() * 0.4;
+        const dayVol = userVol * (d <= simDay ? variance : 1);
+        const dayTotal = totalVol * (0.9 + Math.random() * 0.2);
+        const dayTokens = (dayVol / dayTotal) * dailyTokens;
+        cumUnclaimed += dayTokens;
+        dailyHistory.push({
+            day: d,
+            tokens: dayTokens,
+            cumulative: cumUnclaimed,
+            userVol: dayVol,
+            totalVol: dayTotal,
+        });
+    }
+
+    // Current state
+    unclaimed = dailyHistory.slice(0, simDay).reduce((s, d) => s + d.tokens, 0) - claimed;
+    const todayEarning = dailyHistory[simDay - 1]?.tokens || 0;
+
+    // Update UI
+    document.getElementById('unclaimedTokens').textContent = formatNum(Math.max(0, unclaimed));
+    document.getElementById('claimedTokens').textContent = formatNum(claimed);
+    document.getElementById('todayEarning').textContent = formatNum(todayEarning);
+    document.getElementById('volumeShare').textContent = (volumeShare * 100).toFixed(4) + '%';
+    document.getElementById('volumeRank').textContent = `${userVol} / ${formatNum(totalVol)} SOL`;
+    document.getElementById('todayPct').textContent = `Day ${simDay}`;
+
+    // Progress
+    const progress = (simDay / duration) * 100;
+    document.getElementById('programProgress').style.width = progress + '%';
+    document.getElementById('progCurrent').textContent = `Day ${simDay} of ${duration}`;
+    document.getElementById('progEnd').textContent = `Day ${duration}`;
+
+    document.getElementById('claimBtn').disabled = unclaimed <= 0;
+    document.getElementById('claimBtn').textContent = unclaimed > 0
+        ? `🎁 Claim ${formatNum(unclaimed)} PUMP Tokens`
+        : '✅ No tokens to claim';
+
+    renderDayGrid(duration);
+    drawChart(duration);
+}
+
+function claimTokens() {
+    if (unclaimed <= 0) return;
+    claimed += unclaimed;
+    unclaimed = 0;
+    recalculate();
+}
+
+function renderDayGrid(duration) {
+    const grid = document.getElementById('dayGrid');
+    grid.innerHTML = '';
+    const show = Math.min(14, duration);
+    for (let d = 1; d <= show; d++) {
+        const data = dailyHistory[d - 1];
+        const cls = d === simDay ? 'today' : d < simDay ? 'past' : 'future';
+        const cell = document.createElement('div');
+        cell.className = `day-cell ${cls}`;
+        cell.innerHTML = `
+            <div class="day-num">D${d}</div>
+            <div class="day-tokens">${formatNum(data?.tokens || 0)}</div>
+            <div class="day-vol">${(data?.userVol || 0).toFixed(0)} SOL</div>
+        `;
+        cell.onclick = () => { simDay = d; recalculate(); };
+        cell.style.cursor = 'pointer';
+        grid.appendChild(cell);
+    }
+}
+
+function drawChart(duration) {
+    const canvas = document.getElementById('earningsChart');
+    const ctx = canvas.getContext('2d');
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.parentElement.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    ctx.scale(dpr, dpr);
+    canvas.style.width = rect.width + 'px';
+    canvas.style.height = rect.height + 'px';
+
+    const w = rect.width, h = rect.height, pad = 30;
+    ctx.clearRect(0, 0, w, h);
+
+    if (dailyHistory.length === 0) return;
+
+    const maxDaily = Math.max(...dailyHistory.map(d => d.tokens)) * 1.1;
+    const maxCum = Math.max(...dailyHistory.map(d => d.cumulative)) * 1.1;
+
+    // Grid
+    ctx.strokeStyle = 'rgba(255,255,255,.04)';
+    for (let i = 0; i <= 4; i++) {
+        const y = pad + (h - pad * 2) * i / 4;
+        ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(w - pad, y); ctx.stroke();
+    }
+
+    // Daily bars
+    const barW = Math.max(2, (w - pad * 2) / duration - 2);
+    dailyHistory.forEach((d, i) => {
+        const x = pad + (i / (duration - 1 || 1)) * (w - pad * 2) - barW / 2;
+        const barH = (d.tokens / maxDaily) * (h - pad * 2);
+        const y = h - pad - barH;
+
+        ctx.fillStyle = i < simDay ? 'rgba(0,232,123,0.6)' : 'rgba(0,232,123,0.15)';
+        ctx.fillRect(x, y, barW, barH);
+    });
+
+    // Cumulative line
+    ctx.beginPath();
+    ctx.strokeStyle = '#60a5fa';
+    ctx.lineWidth = 2;
+    dailyHistory.forEach((d, i) => {
+        const x = pad + (i / (duration - 1 || 1)) * (w - pad * 2);
+        const y = h - pad - (d.cumulative / maxCum) * (h - pad * 2);
+        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+
+    // Current day marker
+    if (simDay <= duration) {
+        const cx = pad + ((simDay - 1) / (duration - 1 || 1)) * (w - pad * 2);
+        ctx.setLineDash([3, 3]);
+        ctx.strokeStyle = 'rgba(255,255,255,.3)';
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(cx, pad); ctx.lineTo(cx, h - pad); ctx.stroke();
+        ctx.setLineDash([]);
+
+        ctx.fillStyle = '#fff';
+        ctx.font = '10px Inter,sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('Today', cx, pad - 4);
+    }
+}
+
+function formatNum(n) {
+    if (n >= 1e9) return (n/1e9).toFixed(2) + 'B';
+    if (n >= 1e6) return (n/1e6).toFixed(2) + 'M';
+    if (n >= 1e3) return (n/1e3).toFixed(2) + 'K';
+    return n.toFixed(n < 10 ? 2 : 0);
+}
+
+recalculate();
+window.addEventListener('resize', recalculate);
+</script>
+</body>
+</html>

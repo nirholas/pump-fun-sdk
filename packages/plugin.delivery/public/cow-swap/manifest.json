@@ -1,0 +1,16 @@
+{
+  "$schema": "https://plugin.delivery/schema.json",
+  "identifier": "cow-swap",
+  "openapi": "https://api.cow.fi/mainnet/api/v1/openapi.json",
+  "meta": {
+    "avatar": "🐮",
+    "title": "CoW Swap",
+    "description": "MEV-protected trades via batch auctions",
+    "tags": [
+      "cow",
+      "mev",
+      "swap"
+    ]
+  },
+  "version": "1"
+}

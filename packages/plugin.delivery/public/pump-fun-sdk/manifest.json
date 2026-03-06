@@ -1,0 +1,112 @@
+{
+  "$schema": "https://plugin.delivery/schema.json",
+  "api": [
+    {
+      "url": "https://plugin.delivery/api/pump-fun-sdk/bonding-curve",
+      "name": "getBondingCurve",
+      "description": "Get bonding curve state for a Pump.fun token — virtual reserves, real reserves, market cap, graduation status, and current price",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "mint": {
+            "type": "string",
+            "description": "Solana token mint address (base58)"
+          }
+        },
+        "required": ["mint"]
+      }
+    },
+    {
+      "url": "https://plugin.delivery/api/pump-fun-sdk/price-quote",
+      "name": "getPriceQuote",
+      "description": "Calculate buy/sell price quote using the bonding curve AMM formula. Returns token amount for a given SOL amount (buy) or SOL amount for a given token amount (sell)",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "mint": {
+            "type": "string",
+            "description": "Solana token mint address (base58)"
+          },
+          "side": {
+            "type": "string",
+            "enum": ["buy", "sell"],
+            "description": "Trade direction: buy (SOL→tokens) or sell (tokens→SOL)"
+          },
+          "amount": {
+            "type": "string",
+            "description": "Amount in lamports (for buy) or raw token units (for sell)"
+          }
+        },
+        "required": ["mint", "side", "amount"]
+      }
+    },
+    {
+      "url": "https://plugin.delivery/api/pump-fun-sdk/fee-tier",
+      "name": "getFeeTier",
+      "description": "Calculate the fee tier and fee BPS for a Pump.fun trade based on SOL amount. Returns the applicable fee percentage",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "solAmount": {
+            "type": "string",
+            "description": "Trade amount in SOL (e.g., '1.5')"
+          }
+        },
+        "required": ["solAmount"]
+      }
+    },
+    {
+      "url": "https://plugin.delivery/api/pump-fun-sdk/token-incentives",
+      "name": "getTokenIncentives",
+      "description": "Get PUMP token incentive rewards info — current day allocation, total unclaimed tokens, and volume accumulator data for a user wallet",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "wallet": {
+            "type": "string",
+            "description": "User wallet address (base58). Optional — omit for global incentive stats only"
+          }
+        }
+      }
+    },
+    {
+      "url": "https://plugin.delivery/api/pump-fun-sdk/market-cap",
+      "name": "getMarketCap",
+      "description": "Calculate the current market cap of a Pump.fun token in SOL and USD from its bonding curve state",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "mint": {
+            "type": "string",
+            "description": "Solana token mint address (base58)"
+          }
+        },
+        "required": ["mint"]
+      }
+    },
+    {
+      "url": "https://plugin.delivery/api/pump-fun-sdk/fee-sharing",
+      "name": "getFeeSharing",
+      "description": "Get fee sharing configuration for a token creator — shareholder splits, minimum distributable fee, and creator vault info",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "mint": {
+            "type": "string",
+            "description": "Solana token mint address (base58)"
+          }
+        },
+        "required": ["mint"]
+      }
+    }
+  ],
+  "identifier": "pump-fun-sdk",
+  "meta": {
+    "avatar": "🚀",
+    "title": "Pump Fun SDK",
+    "description": "Solana token launchpad SDK — bonding curve pricing, market cap, fee tiers, fee sharing, and PUMP token incentives for Pump.fun tokens",
+    "tags": ["pump", "solana", "bonding-curve", "token", "defi", "launchpad", "fees", "incentives"]
+  },
+  "systemRole": "You are a Pump.fun / Solana DeFi assistant. Use the Pump Fun SDK plugin to look up bonding curve data, calculate trade quotes, check fee tiers, query token incentives, and inspect fee sharing configs for Pump.fun tokens on Solana. All amounts in the API use lamports (1 SOL = 1,000,000,000 lamports) and raw token units (6 decimals). Convert to human-readable SOL and token amounts when presenting results.",
+  "version": "1"
+}

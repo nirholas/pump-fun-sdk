@@ -1,0 +1,111 @@
+{
+  "$schema": "https://plugin.delivery/schema.json",
+  "identifier": "crypto-news",
+  "api": [
+    {
+      "url": "https://plugin.delivery/api/crypto-news/latest",
+      "name": "getLatestNews",
+      "description": "Get the latest crypto news from all major sources. Returns headlines from CoinDesk, The Block, Decrypt, CoinTelegraph, Bitcoin Magazine, Blockworks, and The Defiant.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": "number",
+            "description": "Number of articles to return (default: 10, max: 50)"
+          },
+          "source": {
+            "type": "string",
+            "description": "Filter by specific source: 'coindesk', 'theblock', 'decrypt', 'cointelegraph', 'bitcoinmagazine', 'blockworks', 'defiant' (optional, returns all if not specified)"
+          }
+        },
+        "required": []
+      }
+    },
+    {
+      "url": "https://plugin.delivery/api/crypto-news/search",
+      "name": "searchNews",
+      "description": "Search crypto news for specific topics or keywords. Searches headlines and descriptions across all sources.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "keywords": {
+            "type": "string",
+            "description": "Comma-separated keywords to search for (e.g., 'ethereum,eth,vitalik' or 'bitcoin,etf,sec')"
+          },
+          "limit": {
+            "type": "number",
+            "description": "Number of articles to return (default: 10, max: 30)"
+          }
+        },
+        "required": ["keywords"]
+      }
+    },
+    {
+      "url": "https://plugin.delivery/api/crypto-news/defi",
+      "name": "getDefiNews",
+      "description": "Get DeFi-specific news from The Defiant and other DeFi-focused outlets. Includes yield farming, DEX, lending, and protocol news.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": "number",
+            "description": "Number of articles to return (default: 10)"
+          }
+        },
+        "required": []
+      }
+    },
+    {
+      "url": "https://plugin.delivery/api/crypto-news/bitcoin",
+      "name": "getBitcoinNews",
+      "description": "Get Bitcoin-specific news and analysis from Bitcoin Magazine and other sources. Includes halving, mining, Lightning Network, and ordinals news.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": "number",
+            "description": "Number of articles to return (default: 10)"
+          }
+        },
+        "required": []
+      }
+    },
+    {
+      "url": "https://plugin.delivery/api/crypto-news/breaking",
+      "name": "getBreakingNews",
+      "description": "Get breaking news and market-moving headlines from the last 2 hours.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": "number",
+            "description": "Number of articles to return (default: 5)"
+          }
+        },
+        "required": []
+      }
+    },
+    {
+      "url": "https://plugin.delivery/api/crypto-news/sources",
+      "name": "getSources",
+      "description": "List all available news sources with their current status.",
+      "parameters": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      }
+    }
+  ],
+  "gateway": "https://plugin.delivery/api/crypto-news",
+  "meta": {
+    "avatar": "📰",
+    "title": "Crypto News",
+    "description": "Aggregated crypto news from CoinDesk, The Block, Decrypt, CoinTelegraph, Bitcoin Magazine, Blockworks, and The Defiant. 100% free, no API keys required."
+  },
+  "version": "1",
+  "settings": {
+    "type": "object",
+    "properties": {},
+    "required": []
+  }
+}

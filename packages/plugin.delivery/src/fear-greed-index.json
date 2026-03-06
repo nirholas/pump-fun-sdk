@@ -1,0 +1,19 @@
+{
+  "author": "SperaxOS",
+  "createdAt": "2025-01-01",
+  "homepage": "https://github.com/nirholas/plugin.delivery",
+  "identifier": "fear-greed-index",
+  "manifest": "https://plugin.delivery/fear-greed-index/manifest.json",
+  "meta": {
+    "avatar": "😱",
+    "description": "Crypto market sentiment indicator from 0 (Extreme Fear) to 100 (Extreme Greed)",
+    "tags": [
+      "sentiment",
+      "market",
+      "indicator"
+    ],
+    "title": "Fear & Greed Index",
+    "category": "stocks-finance"
+  },
+  "schemaVersion": 1
+}

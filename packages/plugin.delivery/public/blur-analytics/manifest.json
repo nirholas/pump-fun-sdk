@@ -1,0 +1,16 @@
+{
+  "$schema": "https://plugin.delivery/schema.json",
+  "identifier": "blur-analytics",
+  "openapi": "https://api.blur.io/v1/openapi.json",
+  "meta": {
+    "avatar": "🟣",
+    "title": "Blur Analytics",
+    "description": "Blur NFT marketplace stats and bids",
+    "tags": [
+      "blur",
+      "nft",
+      "trading"
+    ]
+  },
+  "version": "1"
+}

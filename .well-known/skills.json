@@ -1,0 +1,165 @@
+{
+    "schema_version": "v1",
+    "name": "pump-fun-sdk",
+    "description": "Pump SDK — Solana token launchpad with bonding curve pricing, AMM migration, tiered fees, creator fee sharing, vanity address generation, and MCP server integration",
+    "repository": "https://github.com/nirholas/pump-fun-sdk",
+    "author": "nirholas",
+    "license": "MIT",
+    "skills": [
+        {
+            "id": "pump-sdk-core",
+            "name": "Pump SDK Core — Instruction Building & On-Chain Interaction",
+            "description": "Build, extend, and maintain the core Pump SDK — an offline-first TypeScript SDK that constructs Solana TransactionInstructions for token creation, buying, selling, migration, and creator fee collection across three on-chain programs (Pump, PumpAMM, PumpFees).",
+            "path": ".github/skills/pump-sdk-core.skill.md",
+            "tags": ["typescript", "solana", "sdk", "anchor", "instructions"]
+        },
+        {
+            "id": "bonding-curve",
+            "name": "Bonding Curve — Pricing & Quoting Engine",
+            "description": "Constant-product AMM bonding curve math for token pricing, buy/sell quoting, fee-aware calculations, and market cap computation.",
+            "path": ".github/skills/bonding-curve.skill.md",
+            "tags": ["math", "amm", "pricing", "trading", "typescript"]
+        },
+        {
+            "id": "bonding-curve-math",
+            "name": "Bonding Curve Mathematics — Constant-Product AMM Pricing",
+            "description": "Deep-dive into the constant-product AMM formula, virtual vs real reserves, fee stripping, ceiling division, and edge case handling for bonding curve operations.",
+            "path": ".github/skills/bonding-curve-math.skill.md",
+            "tags": ["math", "amm", "formula", "reserves", "edge-cases"]
+        },
+        {
+            "id": "token-lifecycle",
+            "name": "Token Lifecycle — Create, Trade, Migrate",
+            "description": "Full token lifecycle from creation through bonding curve trading, graduation detection, and AMM migration on Solana.",
+            "path": ".github/skills/token-lifecycle.skill.md",
+            "tags": ["tokens", "creation", "trading", "migration", "solana"]
+        },
+        {
+            "id": "fee-sharing",
+            "name": "Fee Sharing — Creator Fee Distribution",
+            "description": "Configure and distribute creator fees to multiple shareholders using the PumpFees program with validation and BPS-based share allocation.",
+            "path": ".github/skills/fee-sharing.skill.md",
+            "tags": ["fees", "creators", "distribution", "shareholders"]
+        },
+        {
+            "id": "fee-system",
+            "name": "Fee System — Tiered Fees, Creator Fees & Fee Sharing",
+            "description": "Complete fee system: tiered protocol fees based on market cap, creator fee collection across two programs, and fee sharing configuration for shareholder distribution.",
+            "path": ".github/skills/fee-system.skill.md",
+            "tags": ["fees", "tiered", "basis-points", "market-cap", "creator"]
+        },
+        {
+            "id": "token-incentives",
+            "name": "Token Incentives — Volume-Based PUMP Token Rewards",
+            "description": "Volume-based daily PUMP token reward system with day-indexed epochs, pro-rata distribution, accumulator tracking, and cross-program claiming.",
+            "path": ".github/skills/token-incentives.skill.md",
+            "tags": ["incentives", "rewards", "volume", "claiming", "epochs"]
+        },
+        {
+            "id": "solana-wallet",
+            "name": "Solana Wallet — Key Generation & Security",
+            "description": "Secure Solana wallet generation using official Solana Labs libraries with Ed25519 keys, memory zeroization, and offline-only operation.",
+            "path": ".github/skills/solana-wallet.skill.md",
+            "tags": ["wallet", "keypair", "ed25519", "security", "solana"]
+        },
+        {
+            "id": "solana-program-architecture",
+            "name": "Solana Program Architecture — PDAs, Accounts & Multi-Program Coordination",
+            "description": "Design, derive, and manage Program Derived Addresses (PDAs) and account layouts across the Pump ecosystem's four Solana programs with cross-program invocation patterns.",
+            "path": ".github/skills/solana-program-architecture.skill.md",
+            "tags": ["pda", "accounts", "programs", "architecture", "solana"]
+        },
+        {
+            "id": "rust-vanity-gen",
+            "name": "Rust Vanity Generator — High-Performance Address Mining",
+            "description": "Multi-threaded Rust vanity address generator using rayon and solana-sdk for parallel Base58 pattern matching with prefix/suffix support.",
+            "path": ".github/skills/rust-vanity-gen.skill.md",
+            "tags": ["rust", "vanity", "parallel", "rayon", "performance"]
+        },
+        {
+            "id": "rust-vanity-generator",
+            "name": "Rust Vanity Address Generator — Production-Grade Multi-Threaded Keypair Generation",
+            "description": "Production-grade Rust binary achieving 100K+ keys/second using Rayon parallel iterators with security-hardened file output and Solana CLI compatibility.",
+            "path": ".github/skills/rust-vanity-generator.skill.md",
+            "tags": ["rust", "vanity", "parallel", "rayon", "production", "criterion"]
+        },
+        {
+            "id": "typescript-vanity-generator",
+            "name": "TypeScript Vanity Address Generator — Educational Reference Implementation",
+            "description": "Single-threaded TypeScript vanity address generator using @solana/web3.js with async iteration, event-loop yielding, and streaming generator API.",
+            "path": ".github/skills/typescript-vanity-generator.skill.md",
+            "tags": ["typescript", "vanity", "async", "educational", "web3.js"]
+        },
+        {
+            "id": "mcp-server",
+            "name": "MCP Server — Model Context Protocol for Solana Wallet Operations",
+            "description": "Model Context Protocol server exposing 53 tools, 3 resource types, and 3 prompts for AI agent consumption over stdio transport with session keypair management.",
+            "path": ".github/skills/mcp-server.skill.md",
+            "tags": ["mcp", "ai", "tools", "server", "integration", "stdio"]
+        },
+        {
+            "id": "shell-scripting-cli",
+            "name": "Shell Scripting & CLI Tools — Production Bash Scripts",
+            "description": "Production-quality Bash scripts for vanity generation, keypair verification, batch operations, dependency auditing, and test orchestration with security-hardened patterns.",
+            "path": ".github/skills/shell-scripting-cli.skill.md",
+            "tags": ["bash", "shell", "cli", "scripts", "security", "production"]
+        },
+        {
+            "id": "security-practices",
+            "name": "Security Practices — Cryptographic Safety, Memory Zeroization & Hardened I/O",
+            "description": "Defense-in-depth security across Rust, TypeScript, and Bash: key handling, memory zeroization, secure file I/O, input validation, privilege management, and dependency auditing.",
+            "path": ".github/skills/security-practices.skill.md",
+            "tags": ["security", "zeroization", "crypto", "audit", "hardening"]
+        },
+        {
+            "id": "openclaw",
+            "name": "OpenClaw — AI Agent Skill Packaging & Discovery",
+            "description": "Design, package, and deploy OpenClaw-compatible skill packages for AI agent discovery, MCP runtime integration, SperaxOS agent teams, and plug-and-play deployment across Claude, Copilot, and other LLM agents.",
+            "path": ".github/skills/openclaw.skill.md",
+            "tags": ["openclaw", "ai", "agents", "mcp", "skills", "discovery"]
+        },
+        {
+            "id": "openclaw-wallet-ops",
+            "name": "OpenClaw Wallet Operations — Keypair Generation, Signing & Validation",
+            "description": "Generate Solana Ed25519 keypairs, sign and verify messages, validate addresses, and manage session-based key storage through MCP tools using official Solana Labs cryptographic libraries.",
+            "path": ".github/skills/openclaw-wallet-ops.skill.md",
+            "tags": ["openclaw", "wallet", "keypair", "signing", "ed25519"]
+        },
+        {
+            "id": "openclaw-token-creation",
+            "name": "OpenClaw Token Creation — Mint New Tokens on Pumpfun",
+            "description": "Create new tokens on the Pumpfun protocol using createV2Instruction with Token-2022, optional mayhem mode, initial buy bundling, and metadata URI configuration.",
+            "path": ".github/skills/openclaw-token-creation.skill.md",
+            "tags": ["openclaw", "token", "creation", "mint", "pumpfun"]
+        },
+        {
+            "id": "openclaw-token-trading",
+            "name": "OpenClaw Token Trading — Buy & Sell on Bonding Curves",
+            "description": "Buy and sell tokens on Pumpfun bonding curves with slippage protection, fee-aware quoting, and automatic ATA creation for both Token and Token-2022 programs.",
+            "path": ".github/skills/openclaw-token-trading.skill.md",
+            "tags": ["openclaw", "trading", "buy", "sell", "bonding-curve"]
+        },
+        {
+            "id": "openclaw-fee-management",
+            "name": "OpenClaw Fee Management — Creator Fee Collection & Distribution",
+            "description": "Collect accumulated creator fees, configure fee sharing among shareholders, and distribute earnings proportionally across Pump and PumpAMM programs.",
+            "path": ".github/skills/openclaw-fee-management.skill.md",
+            "tags": ["openclaw", "fees", "creator", "distribution", "shareholders"]
+        },
+        {
+            "id": "openclaw-vanity-address",
+            "name": "OpenClaw Vanity Address — Custom Solana Address Generation",
+            "description": "Generate Solana keypairs with custom Base58 prefix and suffix patterns using MCP tools, with Rust high-performance and TypeScript reference implementations.",
+            "path": ".github/skills/openclaw-vanity-address.skill.md",
+            "tags": ["openclaw", "vanity", "address", "generation", "base58"]
+        },
+        {
+            "id": "openclaw-market-data",
+            "name": "OpenClaw Market Data — Bonding Curve Quoting & Analytics",
+            "description": "Query bonding curve state, compute fee-aware buy/sell quotes, calculate market cap, detect graduation status, and read token incentive accumulators for informed trading decisions.",
+            "path": ".github/skills/openclaw-market-data.skill.md",
+            "tags": ["openclaw", "market-data", "quoting", "analytics", "pricing"]
+        }
+    ]
+}
+

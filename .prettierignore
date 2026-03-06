@@ -1,0 +1,10 @@
+dist/
+node_modules/
+coverage/
+website/
+rust/target/
+*.json
+*.svg
+*.png
+*.jpg
+package-lock.json

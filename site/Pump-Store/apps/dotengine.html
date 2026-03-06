@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dot Engine</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            height: 100vh;
+            margin: 0;
+            background-color: #121212;
+            display: flex;
+            color: white;
+            flex-direction: column;
+            user-select: none;
+        }
+
+        .grid-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            flex: 1;
+        }
+
+        svg {
+            background-color: #1c1c1c;
+            border-radius: 1rem;
+        }
+
+        line {
+            stroke: none;
+        }
+
+        .grid-point {
+            fill: #161616;
+            r: 12px;
+            cursor: pointer;
+        }
+
+        .grid-point.active {
+            animation: pop .2s;
+            fill: #ff5722;
+        }
+
+        @keyframes pop {
+            50% {
+                r: 15px;
+            }
+        }
+
+        .navigation {
+
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+            padding: 0.5rem;
+            background: #1f1f1f;
+        }
+
+        .navigation .side {
+            display: flex;
+            flex-direction: row;
+            gap: 0.3rem;
+            align-items: center;
+        }
+
+        logo {
+            margin: 0 0.7rem;
+            font-size: 1.2rem;
+            font-family: monospace;
+        }
+
+        .navigation button {
+            padding: 0.5rem;
+            font-size: 1rem;
+            color: white;
+            background-color: #333;
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+        }
+
+        .bottomnav {
+            background-color: #1f1f1f;
+            padding: 1rem;
+            display: flex;
+            flex-direction: row;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        #playbutton {
+            color: white;
+            background-color: #454545;
+            font-size: 1.5rem;
+            border: none;
+            display: flex;
+            padding: 0.8rem;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .setting {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .setting span {
+            display: flex;
+            font-size: 0.8rem;
+            opacity: 0.5;
+            margin: 0 4px;
+            flex-direction: row;
+            justify-content: space-between;
+        }
+
+        .setting kdb {
+            font-size: 0.6rem;
+            background: #080808;
+            padding: 2px 5px;
+            border-radius: 7px;
+        }
+
+        .grid-point.highlight {
+            stroke: rgb(95, 82, 64);
+            stroke-width: 5;
+        }
+
+        .settingbutton {
+            font-size: 1.5rem;
+            background: #2f2f2f;
+            padding: 0.5rem;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        dialog#waveeditor {
+            background: #1f1f1f;
+            border: none;
+            width: 80vw;
+            border-radius: 1rem;
+            box-shadow: 0 5px 1rem black;
+            padding: 0;
+            outline: none;
+        }
+
+        .editornav {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+            padding: 0.8rem 1rem;
+            background: #2f2f2f;
+            color: white;
+        }
+
+        svg#bezierCanvas {
+            cursor: grab;
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+</head>
+
+<body>
+    <nav class="navigation">
+        <div class="leftside side">
+            <logo>
+                <b>Dot </b><span>Engine</span>
+            </logo>
+            <button>File</button>
+        </div>
+        <div class="rightside side">
+            <button>Help</button>
+        </div>
+    </nav>
+    <div class="grid-container">
+        <svg id="grid" width="600" height="400">
+        </svg>
+    </div>
+    <div class="bottomnav">
+        <button id="playbutton" onclick="togglePlay()">
+            <ion-icon name="play-outline" id="playIcon"></ion-icon>
+        </button>
+        <div class="setting">
+            <span><a>Tempo</a>
+                <kdb id="tempometer">400</kdb>
+            </span>
+            <input type="range" min="50" max="500" id="tempoinput" value="400">
+        </div>
+        <div class="setting">
+            <span><a>Volume</a>
+                <kdb id="volumeDisplay">80</kdb>
+            </span>
+            <input type="range" min="0" max="100" id="volinput" value="80">
+        </div>
+        <div class="setting">
+            <ion-icon name="options-outline" class="settingbutton"
+                onclick="document.getElementById('waveeditor').showModal()"></ion-icon>
+        </div>
+
+        <dialog id="waveeditor">
+            <div class="editornav">
+                <span>Wave Editor</span>
+                <ion-icon name="close-outline" class="closebtn"
+                    onclick="document.getElementById('waveeditor').close()"></ion-icon>
+            </div>
+            <svg id="bezierCanvas" viewBox="0 0 800 400" preserveAspectRatio="xMidYMid meet">
+                <path id="bezierPath" fill="none" stroke="orange" stroke-width="4" />
+                <circle id="point1" cx="100" cy="300" r="13" fill="red" />
+                <circle id="point2" cx="200" cy="100" r="13" fill="red" />
+                <circle id="point3" cx="400" cy="100" r="13" fill="red" />
+                <circle id="point4" cx="600" cy="300" r="13" fill="red" />
+            </svg>
+        </dialog>
+    </div>
+
+    <script>
+        const svgWidth = 600;
+        const svgHeight = 400;
+        const numRows = 8;
+        const numCols = 16;
+        const padding = 20;
+        const pointRadius = 8;
+
+        let filterFreq = 300;
+        let QValue = 1
+
+        const svg = document.getElementById('grid');
+        const colWidth = (svgWidth - 2 * padding) / numCols;
+        const rowHeight = (svgHeight - 2 * padding) / numRows;
+
+
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const volumeDisplay = document.getElementById("volumeDisplay");
+        const volInput = document.getElementById("volinput");
+
+        volInput.addEventListener('input', function () {
+            volumeDisplay.textContent = volInput.value;
+        });
+
+        createGrid();
+        createGridPoints();
+        const beatGrid = Array(numRows).fill(null).map(() => Array(numCols).fill(0));
+
+        function createGridPoints() {
+            for (let row = 0; row < numRows; row++) {
+                for (let col = 0; col < numCols; col++) {
+                    const cx = padding + col * colWidth + colWidth / 2;
+                    const cy = padding + row * rowHeight + rowHeight / 2;
+
+                    const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                    circle.setAttribute("class", "grid-point");
+                    circle.setAttribute("cx", cx);
+                    circle.setAttribute("cy", cy);
+                    circle.setAttribute("r", 8);
+                    circle.addEventListener('click', () => togglePoint(circle, row, col));
+                    svg.appendChild(circle);
+                }
+            }
+        }
+
+        function togglePoint(circle, row, col) {
+            const isActive = circle.classList.contains('active');
+            beatGrid[row][col] = isActive ? 0 : 1;
+            circle.classList.toggle('active');
+        }
+
+        const tempometer = document.getElementById("tempometer");
+        const tempoinput = document.getElementById("tempoinput");
+
+        tempoinput.addEventListener('input', function () {
+            tempometer.textContent = tempoinput.value;
+        });
+
+        const playIcon = document.getElementById('playIcon');
+        let interval, currentStep = 0;
+
+        function togglePlay() {
+            if (interval) {
+                clearInterval(interval);
+                interval = null;
+                playIcon.setAttribute('name', 'play-outline');
+                currentStep = 0;
+                resetHighlights();
+            } else {
+                const tempo = parseInt(tempoinput.value);
+                const intervalDuration = 60000 / tempo;
+                playIcon.setAttribute('name', 'stop-outline');
+
+                interval = setInterval(() => {
+                    resetHighlights();
+                    highlightColumn(currentStep - 6);
+
+                    for (let row = 0; row < numRows; row++) {
+                        if (beatGrid[row][currentStep] === 1) {
+                            const frequency = (row / 8) * 800 + 100;
+
+                            const volume = Math.min(1, Math.max(0, parseInt(volInput.value) / 100));
+
+                            playMarimba(frequency, volume, filterFreq, QValue);
+                        }
+                    }
+
+                    currentStep++;
+                    if (currentStep >= numCols) {
+                        clearInterval(interval);
+                        interval = null;
+                        playIcon.setAttribute('name', 'play-outline');
+                        highlightColumn(currentStep - 4);
+                        currentStep = 0;
+                        resetHighlights();
+                    }
+                }, intervalDuration);
+            }
+        }
+
+        function highlightColumn(col) {
+            for (let row = 0; row < numRows + 2; row++) {
+                const circle = svg.querySelector(`.grid-point:nth-child(${row * numCols + col + 1})`);
+                if (circle) {
+                    circle.classList.add('highlight');
+                }
+            }
+        }
+
+        function resetHighlights() {
+            const highlightedCircles = svg.querySelectorAll('.grid-point.highlight');
+            highlightedCircles.forEach(circle => circle.classList.remove('highlight'));
+        }
+        createGridPoints();
+
+        function createGrid() {
+            for (let i = 0; i <= numRows; i++) {
+                let y = padding + i * rowHeight;
+                const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                line.setAttribute("x1", padding);
+                line.setAttribute("y1", y);
+                line.setAttribute("x2", svgWidth - padding);
+                line.setAttribute("y2", y);
+                line.setAttribute("stroke", "#555");
+                line.setAttribute("stroke-width", 1);
+                svg.appendChild(line);
+            }
+
+            for (let j = 0; j <= numCols; j++) {
+                // Draw vertical lines
+                let x = padding + j * colWidth;
+                const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                line.setAttribute("x1", x);
+                line.setAttribute("y1", padding);
+                line.setAttribute("x2", x);
+                line.setAttribute("y2", svgHeight - padding);
+                line.setAttribute("stroke", "#555");
+                line.setAttribute("stroke-width", 1);
+                svg.appendChild(line);
+            }
+        }
+
+        const wavesvg = document.getElementById('bezierCanvas');
+        const bezierPath = document.getElementById('bezierPath');
+        const points = [
+            { element: document.getElementById('point1'), x: 100, y: 300 },
+            { element: document.getElementById('point2'), x: 200, y: 100 },
+            { element: document.getElementById('point3'), x: 400, y: 100 },
+            { element: document.getElementById('point4'), x: 600, y: 300 }
+        ];
+
+        let activePoint = null;
+
+        function drawCurve() {
+            const d = `M ${points[0].x} ${points[0].y} C ${points[1].x} ${points[1].y}, ${points[2].x} ${points[2].y}, ${points[3].x} ${points[3].y}`;
+            bezierPath.setAttribute('d', d);
+        }
+
+        function getMousePosition(evt) {
+            const rect = wavesvg.getBoundingClientRect();
+            const scaleX = wavesvg.clientWidth / wavesvg.viewBox.baseVal.width;
+            const scaleY = wavesvg.clientHeight / wavesvg.viewBox.baseVal.height;
+
+            const x = (evt.clientX - rect.left) / scaleX;
+            const y = (evt.clientY - rect.top) / scaleY;
+
+            return { x, y };
+        }
+
+        function updatePoint(e) {
+            if (activePoint) {
+                const { x, y } = getMousePosition(e);
+
+                activePoint.x = x;
+                activePoint.y = y;
+                activePoint.element.setAttribute('cx', x);
+                activePoint.element.setAttribute('cy', y);
+                drawCurve();
+            }
+        }
+
+        points.forEach(point => {
+            point.element.addEventListener('mousedown', () => {
+                activePoint = point;
+                wavesvg.style.cursor = 'grabbing';
+            });
+
+            point.element.addEventListener('mouseenter', () => {
+                point.element.setAttribute('fill', 'orange');
+                wavesvg.style.cursor = 'pointer';
+            });
+
+            point.element.addEventListener('mouseleave', () => {
+                if (activePoint !== point) {
+                    point.element.setAttribute('fill', 'red');
+                }
+                wavesvg.style.cursor = 'default';
+            });
+        });
+
+        wavesvg.addEventListener('mouseup', () => {
+            activePoint = null;
+            wavesvg.style.cursor = 'default';
+            updateSound();
+        });
+
+        wavesvg.addEventListener('mousemove', updatePoint);
+
+        wavesvg.addEventListener('click', (e) => {
+            const { x, y } = getMousePosition(e);
+
+            // Find the nearest point
+            let nearestPoint = points[0];
+            let minDistance = Infinity;
+
+            points.forEach(point => {
+                const dx = point.x - x;
+                const dy = point.y - y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    nearestPoint = point;
+                }
+            });
+
+            nearestPoint.x = x;
+            nearestPoint.y = y;
+            nearestPoint.element.setAttribute('cx', x);
+            nearestPoint.element.setAttribute('cy', y);
+            drawCurve();
+        });
+
+        function updateSound() {
+            const frequency = 200 + (points[1].y / wavesvg.height.baseVal.value) * 800;
+            const volume = 1 - (points[0].y / wavesvg.height.baseVal.value);
+            filterFreq = Math.max(0, 300 + (points[2].y / wavesvg.height.baseVal.value) * 1200);
+            QValue = Math.max(1, 1 + (points[3].y / wavesvg.height.baseVal.value) * 9);
+
+            playMarimba(frequency, volume, filterFreq, QValue);
+        }
+
+        function playMarimba(frequency, volume, filterFreq, QValue) {
+            console.log(frequency, volume, filterFreq, QValue)
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            const filter = audioCtx.createBiquadFilter();
+
+            oscillator.type = 'square';
+            oscillator.frequency.setValueAtTime(frequency, audioCtx.currentTime);
+
+            gainNode.gain.setValueAtTime(volume, audioCtx.currentTime);
+            gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.3);
+
+            filter.type = 'bandpass';
+            filter.frequency.setValueAtTime(filterFreq, audioCtx.currentTime);
+            filter.Q.setValueAtTime(QValue, audioCtx.currentTime);
+
+            oscillator.connect(gainNode);
+            gainNode.connect(filter);
+            filter.connect(audioCtx.destination);
+
+            oscillator.start();
+            oscillator.stop(audioCtx.currentTime + 0.3);
+        }
+
+        drawCurve();
+    </script>
+</body>
+
+</html>

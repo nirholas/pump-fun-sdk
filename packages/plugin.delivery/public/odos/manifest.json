@@ -1,0 +1,16 @@
+{
+  "$schema": "https://plugin.delivery/schema.json",
+  "identifier": "odos",
+  "openapi": "https://api.odos.xyz/openapi.json",
+  "meta": {
+    "avatar": "🛤️",
+    "title": "Odos Router",
+    "description": "Multi-path swap router for optimal trades",
+    "tags": [
+      "odos",
+      "swap",
+      "routing"
+    ]
+  },
+  "version": "1"
+}

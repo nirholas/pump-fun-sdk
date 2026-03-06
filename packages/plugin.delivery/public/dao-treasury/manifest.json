@@ -1,0 +1,16 @@
+{
+  "$schema": "https://plugin.delivery/schema.json",
+  "identifier": "dao-treasury",
+  "openapi": "https://api.deepdao.io/openapi.json",
+  "meta": {
+    "avatar": "🏦",
+    "title": "DAO Treasury",
+    "description": "Track DAO treasury balances from DeepDAO",
+    "tags": [
+      "dao",
+      "treasury",
+      "deepdao"
+    ]
+  },
+  "version": "1"
+}
