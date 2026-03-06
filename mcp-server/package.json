@@ -1,0 +1,36 @@
+{
+  "name": "@pump-fun/mcp-server",
+  "version": "1.0.0",
+  "description": "Model Context Protocol server for the Pump SDK — 53 tools for token creation, trading, fees, analytics, and wallet management on Solana",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "pump-mcp": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsx src/index.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "@pump-fun/pump-sdk": "file:..",
+    "@solana/web3.js": "^1.98.0",
+    "bn.js": "^5.2.2",
+    "zod": "^3.22.0"
+  },
+  "devDependencies": {
+    "@types/bn.js": "^5.1.6",
+    "@types/node": "^22.0.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.6.0",
+    "vitest": "^2.0.0"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT"
+}
