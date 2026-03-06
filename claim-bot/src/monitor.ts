@@ -1,72 +1,44 @@
 /**
- * PumpFun Claim Bot — Solana Fee Claim Monitor
+ * PumpFun Claim Bot — WebSocket Relay Client
  *
- * Monitors Pump and PumpSwap programs for fee claim transactions.
- * Supports WebSocket (real-time) with HTTP polling fallback.
+ * Connects to the PumpFun WebSocket relay server and listens for
+ * fee-claim events. No direct Solana RPC connection needed — the relay
+ * handles all on-chain monitoring and broadcasts parsed events.
+ *
+ * Auto-reconnects on disconnect with exponential backoff.
  */
 
-import {
-    Connection,
-    LAMPORTS_PER_SOL,
-    PublicKey,
-    type Logs,
-    type SignaturesForAddressOptions,
-} from '@solana/web3.js';
-import bs58 from 'bs58';
+import WebSocket from 'ws';
 
-import type { BotConfig, FeeClaimEvent, ClaimType } from './types.js';
-import {
-    CLAIM_INSTRUCTIONS,
-    CLAIM_EVENT_DISCRIMINATORS,
-    MONITORED_PROGRAM_IDS,
-    PUMPFUN_FEE_ACCOUNT,
-} from './types.js';
+import type { BotConfig, FeeClaimEvent } from './types.js';
 import { log } from './logger.js';
 
 // ============================================================================
-// Rate limiter
+// Relay message types (subset — we only care about fee-claim and status)
 // ============================================================================
 
-const MAX_CONCURRENCY = 1;
-const MIN_REQUEST_INTERVAL_MS = 1_000;
-const MAX_QUEUE_SIZE = 50;
+interface RelayFeeClaimMessage {
+    type: 'fee-claim';
+    txSignature: string;
+    slot: number;
+    timestamp: number;
+    claimerWallet: string;
+    tokenMint: string;
+    tokenName?: string;
+    tokenSymbol?: string;
+    amountSol: number;
+    amountLamports: number;
+    claimType: string;
+    isCashback: boolean;
+    programId: string;
+    claimLabel: string;
+}
 
-class RpcQueue {
-    private queue: string[] = [];
-    private inFlight = 0;
-    private processing = false;
-    private lastRequestTime = 0;
-    private processFn: (sig: string) => Promise<void>;
-
-    constructor(processFn: (sig: string) => Promise<void>) {
-        this.processFn = processFn;
-    }
-
-    enqueue(signature: string): boolean {
-        if (this.queue.length >= MAX_QUEUE_SIZE) return false;
-        this.queue.push(signature);
-        this.drain();
-        return true;
-    }
-
-    private async drain(): Promise<void> {
-        if (this.processing) return;
-        this.processing = true;
-        while (this.queue.length > 0 && this.inFlight < MAX_CONCURRENCY) {
-            const elapsed = Date.now() - this.lastRequestTime;
-            if (elapsed < MIN_REQUEST_INTERVAL_MS) {
-                await new Promise((r) => setTimeout(r, MIN_REQUEST_INTERVAL_MS - elapsed));
-            }
-            const sig = this.queue.shift();
-            if (!sig) break;
-            this.lastRequestTime = Date.now();
-            this.inFlight++;
-            this.processFn(sig)
-                .catch((err) => log.debug('Queue item failed: %s', err))
-                .finally(() => { this.inFlight--; this.drain(); });
-        }
-        this.processing = false;
-    }
+interface RelayStatusMessage {
+    type: 'status';
+    connected: boolean;
+    totalClaims: number;
+    clients: number;
 }
 
 // ============================================================================
@@ -74,229 +46,114 @@ class RpcQueue {
 // ============================================================================
 
 export class ClaimMonitor {
-    private connection: Connection;
-    private wsConnection?: Connection;
+    private ws: WebSocket | null = null;
     private config: BotConfig;
     private onClaim: (event: FeeClaimEvent) => void;
-    private pollTimer?: ReturnType<typeof setInterval>;
-    private wsSubscriptionIds: number[] = [];
-    private lastSignatures = new Map<string, string | undefined>();
-    private programPubkeys: PublicKey[];
-    private processedSignatures = new Set<string>();
-    private readonly MAX_PROCESSED_CACHE = 10_000;
-    private rpcQueue: RpcQueue;
-    private isRunning = false;
+    private reconnectDelay = 1000;
+    private reconnectTimer?: ReturnType<typeof setTimeout>;
+    private alive = false;
     private startedAt = 0;
     public claimsDetected = 0;
-    private useWs = false;
+    private connected = false;
 
     constructor(config: BotConfig, onClaim: (event: FeeClaimEvent) => void) {
         this.config = config;
         this.onClaim = onClaim;
-        this.connection = new Connection(config.solanaRpcUrl, {
-            commitment: 'confirmed',
-            disableRetryOnRateLimit: true,
-        });
-        this.programPubkeys = MONITORED_PROGRAM_IDS.map((id) => new PublicKey(id));
-        this.rpcQueue = new RpcQueue((sig) => this.processTransaction(sig));
     }
 
     async start(): Promise<void> {
-        if (this.isRunning) return;
-        this.isRunning = true;
+        if (this.alive) return;
+        this.alive = true;
         this.startedAt = Date.now();
 
-        log.info('Claim monitor: monitoring %d programs', MONITORED_PROGRAM_IDS.length);
-
-        if (this.config.solanaWsUrl && process.env.SOLANA_WS_URL) {
-            try {
-                await this.startWebSocket();
-                this.useWs = true;
-                log.info('Claim monitor: WebSocket mode');
-                return;
-            } catch (err) {
-                log.warn('WS failed, falling back to polling: %s', err);
-            }
-        }
-
-        this.startPolling();
-        log.info('Claim monitor: polling mode (every %ds)', this.config.pollIntervalSeconds);
+        log.info('Connecting to relay: %s', this.config.relayWsUrl);
+        this.connect();
     }
 
     stop(): void {
-        this.isRunning = false;
-        if (this.wsConnection) {
-            for (const id of this.wsSubscriptionIds) {
-                this.wsConnection.removeOnLogsListener(id).catch(() => {});
-            }
-            this.wsSubscriptionIds = [];
+        this.alive = false;
+        if (this.reconnectTimer) {
+            clearTimeout(this.reconnectTimer);
+            this.reconnectTimer = undefined;
         }
-        if (this.pollTimer) {
-            clearInterval(this.pollTimer);
-            this.pollTimer = undefined;
+        if (this.ws) {
+            this.ws.close();
+            this.ws = null;
         }
         log.info('Claim monitor stopped');
     }
 
     getMode(): string {
-        return this.useWs ? 'websocket' : 'polling';
+        return this.connected ? 'relay (connected)' : 'relay (disconnected)';
     }
 
     getUptimeMs(): number {
         return this.startedAt ? Date.now() - this.startedAt : 0;
     }
 
-    // ── WebSocket ────────────────────────────────────────────────────
+    // ── WebSocket connection ─────────────────────────────────────────
 
-    private async startWebSocket(): Promise<void> {
-        const wsUrl = this.config.solanaWsUrl!;
-        this.wsConnection = new Connection(this.config.solanaRpcUrl, {
-            commitment: 'confirmed',
-            wsEndpoint: wsUrl,
+    private connect(): void {
+        if (!this.alive) return;
+
+        this.ws = new WebSocket(this.config.relayWsUrl);
+
+        this.ws.on('open', () => {
+            log.info('Connected to relay');
+            this.connected = true;
+            this.reconnectDelay = 1000;
         });
 
-        for (const programId of this.programPubkeys) {
-            const subId = this.wsConnection.onLogs(
-                programId,
-                (logInfo: Logs) => {
-                    if (logInfo.err) return;
-                    const sig = logInfo.signature;
-                    if (this.processedSignatures.has(sig)) return;
-
-                    // Check if any claim instruction present
-                    const logsStr = logInfo.logs.join(' ');
-                    const hasClaimLog = CLAIM_INSTRUCTIONS.some(
-                        (def) => logsStr.includes(def.discriminator) || logsStr.includes(def.label),
-                    );
-
-                    // Check event discriminators too
-                    const hasClaimEvent = Object.keys(CLAIM_EVENT_DISCRIMINATORS).some(
-                        (disc) => logsStr.includes(disc),
-                    );
-
-                    if (hasClaimLog || hasClaimEvent) {
-                        this.rpcQueue.enqueue(sig);
-                    }
-                },
-                'confirmed',
-            );
-            this.wsSubscriptionIds.push(subId);
-        }
-    }
-
-    // ── Polling ──────────────────────────────────────────────────────
-
-    private startPolling(): void {
-        // Initial poll
-        setTimeout(() => this.pollAll(), 1000);
-        this.pollTimer = setInterval(
-            () => this.pollAll(),
-            this.config.pollIntervalSeconds * 1000,
-        );
-    }
-
-    private async pollAll(): Promise<void> {
-        for (const programId of this.programPubkeys) {
+        this.ws.on('message', (data) => {
             try {
-                await this.pollProgram(programId);
-            } catch (err) {
-                log.debug('Poll error for %s: %s', programId.toBase58().slice(0, 8), err);
-            }
-            // Small delay between programs to avoid rate limits
-            await new Promise((r) => setTimeout(r, 500));
-        }
-    }
+                const msg = JSON.parse(data.toString()) as { type: string };
 
-    private async pollProgram(programId: PublicKey): Promise<void> {
-        const key = programId.toBase58();
-        const opts: SignaturesForAddressOptions = { limit: 20 };
+                if (msg.type === 'fee-claim') {
+                    const claim = msg as RelayFeeClaimMessage;
+                    const event: FeeClaimEvent = {
+                        txSignature: claim.txSignature,
+                        slot: claim.slot,
+                        timestamp: claim.timestamp,
+                        claimerWallet: claim.claimerWallet,
+                        tokenMint: claim.tokenMint,
+                        tokenName: claim.tokenName,
+                        tokenSymbol: claim.tokenSymbol,
+                        amountSol: claim.amountSol,
+                        amountLamports: claim.amountLamports,
+                        claimType: claim.claimType as FeeClaimEvent['claimType'],
+                        isCashback: claim.isCashback,
+                        programId: claim.programId,
+                        claimLabel: claim.claimLabel,
+                    };
 
-        const lastSig = this.lastSignatures.get(key);
-        if (lastSig) {
-            opts.until = lastSig;
-        }
-
-        const signatures = await this.connection.getSignaturesForAddress(programId, opts);
-        if (signatures.length === 0) return;
-
-        // Update last seen
-        const newest = signatures[0];
-        if (newest) {
-            this.lastSignatures.set(key, newest.signature);
-        }
-
-        for (const sigInfo of signatures) {
-            if (sigInfo.err) continue;
-            if (this.processedSignatures.has(sigInfo.signature)) continue;
-            this.rpcQueue.enqueue(sigInfo.signature);
-        }
-    }
-
-    // ── Transaction processing ───────────────────────────────────────
-
-    private async processTransaction(signature: string): Promise<void> {
-        if (this.processedSignatures.has(signature)) return;
-        this.processedSignatures.add(signature);
-
-        // Evict old entries
-        if (this.processedSignatures.size > this.MAX_PROCESSED_CACHE) {
-            const arr = [...this.processedSignatures];
-            this.processedSignatures = new Set(arr.slice(-5000));
-        }
-
-        try {
-            const tx = await this.connection.getTransaction(signature, {
-                commitment: 'confirmed',
-                maxSupportedTransactionVersion: 0,
-            });
-            if (!tx || !tx.meta || tx.meta.err) return;
-
-            const message = tx.transaction.message;
-            const accountKeys = message.getAccountKeys({
-                accountKeysFromLookups: tx.meta.loadedAddresses,
-            });
-
-            // Find claim instructions
-            const compiledInstructions = message.compiledInstructions;
-            for (const ix of compiledInstructions) {
-                const programKey = accountKeys.get(ix.programIdIndex);
-                if (!programKey) continue;
-                const programIdStr = programKey.toBase58();
-
-                // Check if this is a monitored program
-                if (!MONITORED_PROGRAM_IDS.includes(programIdStr as typeof MONITORED_PROGRAM_IDS[number])) {
-                    continue;
-                }
-
-                // Check instruction discriminator
-                const dataHex = Buffer.from(ix.data).toString('hex');
-                const disc8 = dataHex.slice(0, 16);
-
-                const matchedInstruction = CLAIM_INSTRUCTIONS.find(
-                    (def) => def.discriminator === disc8 && def.programId === programIdStr,
-                );
-
-                if (!matchedInstruction) continue;
-
-                // Extract claim details
-                const event = this.extractClaimEvent(
-                    signature,
-                    tx,
-                    matchedInstruction,
-                    accountKeys,
-                );
-
-                if (event) {
                     this.claimsDetected++;
-                    log.info('Fee claim: %s %.4f SOL (%s)',
+                    log.info('Relay claim: %s %.4f SOL (%s)',
                         event.claimType, event.amountSol, event.tokenMint.slice(0, 8));
                     this.onClaim(event);
                 }
+                // Ignore heartbeat, status, token-launch — we only care about claims
+            } catch {
+                // Ignore malformed messages
             }
-        } catch (err) {
-            log.debug('Failed to process tx %s: %s', signature.slice(0, 12), err);
-        }
+        });
+
+        this.ws.on('error', (err) => {
+            log.warn('Relay WS error: %s', err.message);
+        });
+
+        this.ws.on('close', (code) => {
+            log.warn('Relay disconnected (code=%d)', code);
+            this.connected = false;
+            this.ws = null;
+
+            if (this.alive) {
+                log.info('Reconnecting in %dms...', this.reconnectDelay);
+                this.reconnectTimer = setTimeout(() => this.connect(), this.reconnectDelay);
+                this.reconnectDelay = Math.min(this.reconnectDelay * 2, 30_000);
+            }
+        });
     }
+}
 
     private extractClaimEvent(
         signature: string,
