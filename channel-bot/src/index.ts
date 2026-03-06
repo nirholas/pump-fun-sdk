@@ -16,7 +16,7 @@ import { loadConfig } from './config.js';
 import { ClaimMonitor } from './claim-monitor.js';
 import { EventMonitor } from './event-monitor.js';
 import { recordClaim, isFirstClaimOnToken } from './claim-tracker.js';
-import { fetchTokenInfo, fetchCreatorProfile } from './pump-client.js';
+import { fetchTokenInfo, fetchCreatorProfile, fetchTokenHolders, fetchTokenTrades, fetchSolUsdPrice } from './pump-client.js';
 import {
     formatClaimFeed,
     formatLaunchFeed,
@@ -24,6 +24,7 @@ import {
     formatWhaleFeed,
     formatFeeDistributionFeed,
 } from './formatters.js';
+import type { ClaimFeedContext } from './formatters.js';
 import { log, setLogLevel } from './logger.js';
 import type {
     FeeClaimEvent,
@@ -62,6 +63,19 @@ async function main(): Promise<void> {
         }
     }
 
+    /** Send a photo with caption to the channel. Falls back to text if photo fails. */
+    async function postPhotoToChannel(imageUrl: string, caption: string): Promise<void> {
+        try {
+            await bot.api.sendPhoto(config.channelId, imageUrl, {
+                caption,
+                parse_mode: 'HTML',
+            });
+        } catch (err) {
+            log.warn('Photo send failed, falling back to text: %s', err);
+            await postToChannel(caption);
+        }
+    }
+
     // ── Claim Monitor ────────────────────────────────────────────────
     const claimMonitor = new ClaimMonitor(config, async (event: FeeClaimEvent) => {
         if (!config.feed.claims) return;
@@ -73,11 +87,20 @@ async function main(): Promise<void> {
         // Only post the first-ever claim on each token
         if (!isFirstClaimOnToken(mint)) return;
 
-        // Enrich with token info + creator profile
-        const [token, creator] = await Promise.all([
-            event.tokenMint ? fetchTokenInfo(event.tokenMint) : Promise.resolve(null),
+        // Enrich with all available data in parallel
+        const [token, creator, holders, trades, solUsdPrice] = await Promise.all([
+            fetchTokenInfo(event.tokenMint),
             event.claimerWallet ? fetchCreatorProfile(event.claimerWallet) : Promise.resolve(null),
+            fetchTokenHolders(event.tokenMint),
+            fetchTokenTrades(event.tokenMint),
+            fetchSolUsdPrice(),
         ]);
+
+        // Also fetch creator profile for the token creator if different from claimer
+        let creatorProfile = creator;
+        if (token?.creator && token.creator !== event.claimerWallet) {
+            creatorProfile = await fetchCreatorProfile(token.creator);
+        }
 
         // Record claim history
         const record = recordClaim(
@@ -87,8 +110,23 @@ async function main(): Promise<void> {
             event.timestamp,
         );
 
-        const message = formatClaimFeed(event, token, creator, record);
-        await postToChannel(message);
+        const ctx: ClaimFeedContext = {
+            event,
+            token,
+            creator: creatorProfile,
+            claimRecord: record,
+            holders,
+            trades,
+            solUsdPrice,
+        };
+
+        const { imageUrl, caption } = formatClaimFeed(ctx);
+
+        if (imageUrl) {
+            await postPhotoToChannel(imageUrl, caption);
+        } else {
+            await postToChannel(caption);
+        }
     });
 
     // ── Event Monitor (graduations, whales, fee distributions) ───────
