@@ -524,3 +524,4 @@ For most monitoring use cases, the free tier with caching is sufficient.
 - [Tutorial 17: Build a Monitoring Website](./17-monitoring-website.md) — the full web dashboard
 - [Tutorial 18: Telegram Bot](./18-telegram-bot.md) — alerts and commands
 - [Tutorial 05: Bonding Curve Math](./05-bonding-curve-math.md) — understand the pricing model
+
