@@ -92,104 +92,51 @@ async function main(): Promise<void> {
     }
 
     // ── Pipeline Counters ─────────────────────────────────────────────
-    const pipeline = { total: 0, creatorClaims: 0, socialClaims: 0, firstClaim: 0, posted: 0, skippedCashback: 0, skippedDust: 0 };
+    const pipeline = { total: 0, firstClaim: 0, posted: 0 };
     setInterval(() => {
-        log.info('Pipeline: %d total → %d creator/%d social → %d first → %d posted (skip: %d cashback, %d dust)',
-            pipeline.total, pipeline.creatorClaims, pipeline.socialClaims,
-            pipeline.firstClaim, pipeline.posted, pipeline.skippedCashback, pipeline.skippedDust);
+        log.info('Pipeline: %d total → %d first → %d posted',
+            pipeline.total, pipeline.firstClaim, pipeline.posted);
     }, 60_000);
 
-    /** Minimum SOL for creator fee claims to be posted. */
-    const MIN_CREATOR_CLAIM_SOL = 1.0;
-
-    /** Creator claim types we post about. */
-    const CREATOR_CLAIM_TYPES = new Set([
-        'collect_creator_fee',
-        'collect_coin_creator_fee',
-        'distribute_creator_fees',
-        'transfer_creator_fees_to_pump',
-    ] as const);
-
-    // ── Claim Monitor ────────────────────────────────────────────────
+    // ── Claim Monitor (GitHub social fee PDA first-claims ONLY) ──────
     const claimMonitor = new ClaimMonitor(config, async (event: FeeClaimEvent) => {
       try {
         pipeline.total++;
 
-        // Skip cashback claims (user refunds, not creator activity)
-        if (event.isCashback) {
-            pipeline.skippedCashback++;
-            return;
-        }
+        // Only GitHub social fee PDA claims (platform 2 = GitHub)
+        if (event.claimType !== 'claim_social_fee_pda') return;
+        if (event.socialPlatform !== 2) return;
+        if (!event.githubUserId) return;
 
-        // ── Path A: GitHub social fee PDA claim ──────────────────────
-        if (event.claimType === 'claim_social_fee_pda' && event.socialPlatform === 2 && event.githubUserId) {
-            pipeline.socialClaims++;
-
-            if (!isFirstClaimByGithubUser(event.githubUserId)) return;
-            pipeline.firstClaim++;
-
-            const githubUser = await fetchGitHubUserById(event.githubUserId);
-            const xProfile = githubUser?.twitterUsername
-                ? await fetchXProfile(githubUser.twitterUsername)
-                : null;
-            const solUsdPrice = await fetchSolUsdPrice();
-
-            log.info('📤 GitHub social fee claim by %s (%s) — %.4f SOL',
-                event.githubUserId, githubUser?.login ?? '?', event.amountSol);
-
-            const ctx: ClaimFeedContext = {
-                event,
-                solUsdPrice,
-                githubUser,
-                xProfile,
-            };
-
-            const { imageUrl, caption } = formatGitHubClaimFeed(ctx);
-            if (imageUrl) {
-                await postPhotoToChannel(imageUrl, caption);
-            } else {
-                await postToChannel(caption);
-            }
-            pipeline.posted++;
-            log.info('✅ Posted GitHub claim by %s (%s) to %s',
-                event.githubUserId, githubUser?.login ?? '?', config.channelId);
-            return;
-        }
-
-        // ── Path B: Creator fee claims (first per wallet, >= 1 SOL) ───
-        if (!CREATOR_CLAIM_TYPES.has(event.claimType as typeof CREATOR_CLAIM_TYPES extends Set<infer T> ? T : never)) return;
-        pipeline.creatorClaims++;
-
-        if (event.amountSol < MIN_CREATOR_CLAIM_SOL) {
-            pipeline.skippedDust++;
-            return;
-        }
-
-        if (!isFirstClaimByWallet(event.claimerWallet)) return;
+        // Only first-ever claim per GitHub user
+        if (!isFirstClaimByGithubUser(event.githubUserId)) return;
         pipeline.firstClaim++;
 
-        log.info('📤 First creator claim by %s — %.4f SOL (%s)',
-            event.claimerWallet.slice(0, 8), event.amountSol, event.claimType);
+        const githubUser = await fetchGitHubUserById(event.githubUserId);
+        const xProfile = githubUser?.twitterUsername
+            ? await fetchXProfile(githubUser.twitterUsername)
+            : null;
+        const solUsdPrice = await fetchSolUsdPrice();
 
-        const [creator, solUsdPrice] = await Promise.all([
-            fetchCreatorProfile(event.claimerWallet),
-            fetchSolUsdPrice(),
-        ]);
+        log.info('📤 GitHub social fee claim by %s (%s) — %.4f SOL',
+            event.githubUserId, githubUser?.login ?? '?', event.amountSol);
 
-        const creatorCtx: CreatorClaimContext = {
+        const ctx: ClaimFeedContext = {
             event,
             solUsdPrice,
-            creator,
+            githubUser,
+            xProfile,
         };
 
-        const { imageUrl: cImg, caption: cCaption } = formatCreatorClaimFeed(creatorCtx);
-        if (cImg) {
-            await postPhotoToChannel(cImg, cCaption);
+        const { imageUrl, caption } = formatGitHubClaimFeed(ctx);
+        if (imageUrl) {
+            await postPhotoToChannel(imageUrl, caption);
         } else {
-            await postToChannel(cCaption);
+            await postToChannel(caption);
         }
         pipeline.posted++;
-        log.info('✅ Posted creator claim by %s to %s', event.claimerWallet.slice(0, 8), config.channelId);
+        log.info('✅ Posted GitHub claim by %s (%s) to %s',
+            event.githubUserId, githubUser?.login ?? '?', config.channelId);
       } catch (err) {
         log.error('Claim handler error: %s', err);
       }
@@ -201,7 +148,7 @@ async function main(): Promise<void> {
     // Start bot (needed for the API, but no commands registered)
     await bot.init();
     log.info('Bot initialized: @%s', bot.botInfo.username);
-    log.info('Channel feed is live — creator claims + GitHub claims → %s', config.channelId);
+    log.info('Channel feed is live — GitHub claims only → %s', config.channelId);
 
     // ── Health check server ──────────────────────────────────────────
     const startedAt = Date.now();

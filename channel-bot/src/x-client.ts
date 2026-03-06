@@ -6,7 +6,7 @@
  * Degrades gracefully if credentials are missing.
  */
 
-import { Scraper } from 'xactions/client';
+import { Scraper } from 'xactions';
 import { log } from './logger.js';
 
 const X_AUTH_TOKEN = process.env.X_AUTH_TOKEN ?? '';

@@ -1,13 +1,19 @@
 /**
  * PumpFun Channel Bot — Formatters
  *
- * Claim feed cards: GitHub social fee PDA + creator fee first-claims.
+ * Claim feed cards: GitHub social fee PDA + other event feeds.
  * Every data point on its own line, clean emoji prefix.
  */
 
 import type { GitHubUserInfo } from './github-client.js';
-import type { CreatorProfile } from './pump-client.js';
-import type { FeeClaimEvent } from './types.js';
+import type { CreatorProfile, TokenInfo } from './pump-client.js';
+import type {
+    FeeClaimEvent,
+    FeeDistributionEvent,
+    GraduationEvent,
+    TokenLaunchEvent,
+    TradeAlertEvent,
+} from './types.js';
 import type { XProfile } from './x-client.js';
 import { getInfluencerTier, formatFollowerCount, influencerLabel } from './x-client.js';
 
@@ -103,160 +109,6 @@ export function formatGitHubClaimFeed(ctx: ClaimFeedContext): { imageUrl: string
     L.push(`🕐 ${formatTime(event.timestamp)}`);
 
     const imageUrl = githubUser?.avatarUrl || null;
-    return { imageUrl, caption: L.join('\n') };
-}
-
-
-// ============================================================================
-// Utilities
-// ============================================================================
-
-    // ━━ LAUNCH DATE & AGE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    if (token?.createdTimestamp && token.createdTimestamp > 0) {
-        L.push(`📅 Launched: ${formatDateTime(token.createdTimestamp)} (${timeAgo(token.createdTimestamp)})`);
-    }
-
-    // ━━ BONDING CURVE BAR ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    if (token && !token.complete && token.curveProgress > 0) {
-        const p = Math.min(99, Math.round(token.curveProgress));
-        const filled = Math.round(p / 10);
-        const bar = '█'.repeat(filled) + '░'.repeat(10 - filled);
-        L.push(`📈 [${bar}] ${p}%`);
-    } else if (token?.complete) {
-        L.push(`🎓 Graduated → AMM`);
-    }
-
-    // ━━ CA ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    L.push('');
-    if (mint) L.push(`<code>${mint}</code>`);
-
-    // ━━ FEE CLAIM ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    L.push('');
-    const claimSol = event.amountSol.toFixed(4);
-    const claimUsd = solUsdPrice > 0 ? ` ($${(event.amountSol * solUsdPrice).toFixed(2)})` : '';
-    L.push(`🏦 <b>${claimSol} SOL</b>${claimUsd}`);
-    L.push(`  ↳ Type: ${esc(event.claimLabel)}`);
-    const isSelf = token?.creator === event.claimerWallet;
-    const claimerTag = isSelf ? '👤 Creator' : '👻 3rd-party';
-    const claimerName = githubUser
-        ? `<a href="${esc(githubUser.htmlUrl)}">${esc(githubUser.login)}</a>`
-        : `<code>${shortAddr(event.claimerWallet)}</code>`;
-    L.push(`  ↳ Claimed by ${claimerName} (${claimerTag})`);
-    if (token && token.createdTimestamp > 0 && event.timestamp > 0) {
-        const diff = event.timestamp - token.createdTimestamp;
-        if (diff >= 0) L.push(`  ↳ ⏱ Launch→Claim: <b>${formatDuration(diff)}</b>`);
-    }
-
-    // ━━ CLAIM HISTORY ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    if (claimRecord.claimCount > 1) {
-        const totalUsd = solUsdPrice > 0 ? ` ($${(claimRecord.totalClaimedSol * solUsdPrice).toFixed(2)})` : '';
-        L.push(`  ↳ Claim #${claimRecord.claimCount} · Total: ${claimRecord.totalClaimedSol.toFixed(4)} SOL${totalUsd}`);
-    }
-    if (claimRecord.claimMcapUsd > 0) {
-        L.push(`  ↳ Mcap at claim: $${formatCompact(claimRecord.claimMcapUsd)}`);
-    }
-
-    // ━━ CREATOR ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    const creatorWallet = token?.creator ?? '';
-    if (creatorWallet) {
-        L.push('');
-        const profileLink = `<a href="https://pump.fun/profile/${creatorWallet}">${shortAddr(creatorWallet)}</a>`;
-        const uname = creator?.username ? ` @${esc(creator.username)}` : '';
-        L.push(`👤 ${profileLink}${uname}`);
-        if (creator && creator.totalLaunches > 0) L.push(`🚀 Launches: ${creator.totalLaunches}`);
-        if (creator) {
-            const graduated = creator.recentCoins.filter((c) => c.complete).length;
-            if (graduated > 0) L.push(`🎓 Graduated: ${graduated}`);
-        }
-        if (creator && creator.scamEstimate > 0) L.push(`⚠️ Rugs: ${creator.scamEstimate}`);
-        if (creator && creator.followers > 0) L.push(`👁 Followers: ${formatCompact(creator.followers)}`);
-        if (creator) {
-            const others = creator.recentCoins.filter((c) => c.mint !== mint).slice(0, 5);
-            if (others.length > 0) {
-                const tickers = others.map((c) => {
-                    const g = c.complete ? '⭐' : '';
-                    return `<a href="https://pump.fun/coin/${c.mint}">${esc(c.symbol)}</a>${g}`;
-                });
-                L.push(`  ↳ ${tickers.join('·')}`);
-            }
-        }
-    }
-
-    // ━━ GITHUB ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    if (githubUser) {
-        L.push('');
-        const userLink = `<a href="${esc(githubUser.htmlUrl)}">${esc(githubUser.login)}</a>`;
-        const nameTag = githubUser.name ? ` (${esc(githubUser.name)})` : '';
-        L.push(`🐙 ${userLink}${nameTag}`);
-        if (githubUser.publicRepos > 0) L.push(`📦 Repos: ${githubUser.publicRepos}`);
-        const ghFollow: string[] = [];
-        if (githubUser.followers > 0) ghFollow.push(`${githubUser.followers} followers`);
-        if (githubUser.following > 0) ghFollow.push(`${githubUser.following} following`);
-        if (ghFollow.length > 0) L.push(`👁 ${ghFollow.join(' · ')}`);
-        if (githubUser.createdAt) L.push(`📅 Joined: ${timeAgo(new Date(githubUser.createdAt).getTime() / 1000)}`);
-        if (githubUser.company) L.push(`🏢 ${esc(githubUser.company)}`);
-        if (githubUser.bio) {
-            const bio = githubUser.bio.length > 80 ? githubUser.bio.slice(0, 77) + '...' : githubUser.bio;
-            L.push(`  <i>${esc(bio)}</i>`);
-        }
-        const ghSocials: string[] = [];
-        if (githubUser.twitterUsername) ghSocials.push(`<a href="https://x.com/${esc(githubUser.twitterUsername)}">𝕏 ${esc(githubUser.twitterUsername)}</a>`);
-        if (githubUser.blog) ghSocials.push(`<a href="${esc(githubUser.blog)}">🌐 ${esc(githubUser.blog.replace(/^https?:\/\//, '').slice(0, 40))}</a>`);
-        if (githubUser.location) ghSocials.push(`📍 ${esc(githubUser.location)}`);
-        if (ghSocials.length > 0) L.push(`  ↳ ${ghSocials.join(' · ')}`);
-    }
-    if (githubRepo) {
-        const repoLink = `<a href="${esc(githubRepo.htmlUrl)}">${esc(githubRepo.fullName)}</a>`;
-        L.push(`📁 ${repoLink}`);
-        if (githubRepo.language) L.push(`🔤 ${esc(githubRepo.language)}`);
-        const repoStats: string[] = [];
-        if (githubRepo.stars > 0) repoStats.push(`⭐${githubRepo.stars}`);
-        if (githubRepo.forks > 0) repoStats.push(`🍴${githubRepo.forks}`);
-        if (githubRepo.openIssues > 0) repoStats.push(`🐛${githubRepo.openIssues}`);
-        if (githubRepo.commitCount && githubRepo.commitCount > 0) repoStats.push(`📝${githubRepo.commitCount} commits`);
-        if (repoStats.length > 0) L.push(`  ${repoStats.join(' · ')}`);
-        if (githubRepo.isFork) L.push(`  ⚠️ This is a fork`);
-        if (githubRepo.createdAt) L.push(`  📅 Repo created: ${timeAgo(new Date(githubRepo.createdAt).getTime() / 1000)}`);
-        if (githubRepo.lastPushAgo) L.push(`  🕐 Last push: ${githubRepo.lastPushAgo}`);
-        if (githubRepo.description) {
-            const desc = githubRepo.description.length > 80 ? githubRepo.description.slice(0, 77) + '...' : githubRepo.description;
-            L.push(`  <i>${esc(desc)}</i>`);
-        }
-    }
-
-    // ━━ SOCIALS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    if (token?.twitter || token?.telegram || token?.website) {
-        L.push('');
-        if (token.twitter) {
-            const handle = extractTwitterHandle(token.twitter);
-            L.push(`𝕏 <a href="${esc(token.twitter)}">${handle ? esc(handle) : 'Twitter'}</a>`);
-        }
-        if (token.telegram) L.push(`💬 <a href="${esc(token.telegram)}">Telegram</a>`);
-        if (token.website) L.push(`🌐 <a href="${esc(token.website)}">${esc(token.website.replace(/^https?:\/\//, '').slice(0, 40))}</a>`);
-    }
-    if (token?.description) {
-        const desc = token.description.length > 100 ? token.description.slice(0, 97) + '...' : token.description;
-        L.push(`  <i>${esc(desc)}</i>`);
-    }
-
-    // ━━ LINKS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    L.push('');
-    if (mint) {
-        L.push(
-            `<a href="https://pump.fun/coin/${mint}">PMP</a>` +
-            `·<a href="https://gmgn.ai/sol/token/${mint}&ref=nichxbt">GMG</a>` +
-            `·<a href="https://axiom.trade/@nich/${mint}">AXI</a>` +
-            `·<a href="https://dexscreener.com/solana/${mint}">DEX</a>` +
-            `·<a href="https://photon-sol.tinyastro.io/en/lp/${mint}"><b>PHO</b></a>` +
-            `·<a href="https://bullx.io/terminal?chainId=1399811149&address=${mint}">BLX</a>`,
-        );
-    }
-    if (event.txSignature) {
-        L.push(`🔍 <a href="https://solscan.io/tx/${event.txSignature}">TX</a> · <a href="https://solscan.io/token/${mint}">Solscan</a>`);
-    }
-    L.push(`🕐 ${formatTime(event.timestamp)}`);
-
-    const imageUrl = token?.imageUri || null;
     return { imageUrl, caption: L.join('\n') };
 }
 

@@ -17,7 +17,7 @@
     "bs58": "^6.0.0",
     "dotenv": "^16.4.7",
     "grammy": "^1.35.0",
-    "xactions": "^3.0.42"
+    "xactions": "github:nirholas/xactions"
   },
   "devDependencies": {
     "@types/node": "^22.13.0",
