@@ -394,21 +394,28 @@ export function formatGraduationFeed(
         if (socialParts.length > 0) L.push(socialParts.join('  ·  '));
     }
 
-    // X/Twitter profile — guard against community/i/ URLs which aren't usernames
+    // X/Twitter profile — show @handle or "Community" link depending on URL type
     if (enrichment?.xProfile) {
         const xp = enrichment.xProfile;
         const rawHandle = token?.twitter
             ? token.twitter.replace(/.*twitter\.com\/|.*x\.com\//, '').replace(/\/+$/, '')
             : null;
+        const isCommunity = rawHandle != null && rawHandle.startsWith('i/communities');
         const isRealHandle = rawHandle != null && !rawHandle.includes('/');
-        const twitterUrl = isRealHandle && token?.twitter ? token.twitter : (xp.url ?? `https://x.com/${xp.username}`);
-        const handle = isRealHandle ? rawHandle : xp.username;
-        const followerStr = xp.followers > 0 ? ` [${formatFollowerCount(xp.followers)}]` : '';
-        const verifiedStr = xp.verified ? ' ✅' : '';
-        L.push(`𝕏 <a href="${esc(twitterUrl)}">@${esc(handle)}</a>${followerStr}${verifiedStr}`);
+        if (isCommunity && token?.twitter) {
+            L.push(`𝕏 <a href="${esc(token.twitter)}">Community</a>`);
+        } else {
+            const twitterUrl = isRealHandle && token?.twitter ? token.twitter : (xp.url ?? `https://x.com/${xp.username}`);
+            const handle = isRealHandle ? rawHandle! : xp.username;
+            const followerStr = xp.followers > 0 ? ` [${formatFollowerCount(xp.followers)}]` : '';
+            const verifiedStr = xp.verified ? ' ✅' : '';
+            L.push(`𝕏 <a href="${esc(twitterUrl)}">@${esc(handle)}</a>${followerStr}${verifiedStr}`);
+        }
     } else if (token?.twitter) {
         const rawHandle = token.twitter.replace(/.*twitter\.com\/|.*x\.com\//, '').replace(/\/+$/, '');
-        if (!rawHandle.includes('/')) {
+        if (rawHandle.startsWith('i/communities')) {
+            L.push(`𝕏 <a href="${esc(token.twitter)}">Community</a>`);
+        } else if (!rawHandle.includes('/')) {
             L.push(`𝕏 <a href="${esc(token.twitter)}">@${esc(rawHandle)}</a>`);
         }
     }
