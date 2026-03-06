@@ -122,3 +122,4 @@ function transformCoin(row) {
 }
 
 module.exports = { sql, setCorsHeaders, transformCoin };
+
