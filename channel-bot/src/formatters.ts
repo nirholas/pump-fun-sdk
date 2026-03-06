@@ -38,7 +38,78 @@ export interface ClaimFeedContext {
  * Returns { imageUrl, caption } so caller can send photo or text.
  */
 export function formatClaimFeed(ctx: ClaimFeedContext): { imageUrl: string | null; caption: string } {
-    const { event, token, creator, claimRecord, holders, trades, solUsdPrice, githubRepo, githubUser, aiSummary } = ctx;
+    const { event, solUsdPrice, githubUser } = ctx;
+
+    // Social fee PDA claim by a GitHub user
+    if (event.claimType === 'claim_social_fee_pda' && event.githubUserId) {
+        return formatGitHubSocialClaim(ctx);
+    }
+
+    // Legacy fallback for non-GitHub claims (shouldn't happen with current filter)
+    return formatLegacyClaimFeed(ctx);
+}
+
+/**
+ * GitHub Social Fee Claim card — shows a GitHub developer claiming their
+ * fee share from the PumpFun social fee PDA.
+ */
+function formatGitHubSocialClaim(ctx: ClaimFeedContext): { imageUrl: string | null; caption: string } {
+    const { event, solUsdPrice, githubUser } = ctx;
+    const L: string[] = [];
+
+    // ━━ HEADER ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    L.push(`🐙 <b>GitHub Dev Claimed Fees</b>`);
+
+    // ━━ AMOUNT ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    L.push('');
+    const claimSol = event.amountSol.toFixed(4);
+    const claimUsd = solUsdPrice > 0 ? ` ($${(event.amountSol * solUsdPrice).toFixed(2)})` : '';
+    L.push(`🏦 <b>${claimSol} SOL</b>${claimUsd}`);
+
+    // ━━ GITHUB USER ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    L.push('');
+    if (githubUser) {
+        const userLink = `<a href="${esc(githubUser.htmlUrl)}">${esc(githubUser.login)}</a>`;
+        const nameTag = githubUser.name ? ` (${esc(githubUser.name)})` : '';
+        L.push(`👤 ${userLink}${nameTag}`);
+        if (githubUser.publicRepos > 0) L.push(`📦 Repos: ${githubUser.publicRepos}`);
+        if (githubUser.followers > 0) L.push(`👁 Followers: ${githubUser.followers}`);
+        if (githubUser.createdAt) L.push(`📅 Joined: ${timeAgo(new Date(githubUser.createdAt).getTime() / 1000)}`);
+        if (githubUser.bio) {
+            const bio = githubUser.bio.length > 80 ? githubUser.bio.slice(0, 77) + '...' : githubUser.bio;
+            L.push(`  <i>${esc(bio)}</i>`);
+        }
+        if (githubUser.twitterUsername) L.push(`𝕏 <a href="https://x.com/${esc(githubUser.twitterUsername)}">${esc(githubUser.twitterUsername)}</a>`);
+        if (githubUser.blog) L.push(`🌐 <a href="${esc(githubUser.blog)}">${esc(githubUser.blog.replace(/^https?:\/\//, '').slice(0, 40))}</a>`);
+        if (githubUser.location) L.push(`📍 ${esc(githubUser.location)}`);
+    } else {
+        L.push(`👤 GitHub ID: ${esc(event.githubUserId ?? 'unknown')}`);
+    }
+
+    // ━━ RECIPIENT ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    const recipient = event.recipientWallet ?? event.claimerWallet;
+    if (recipient) {
+        L.push('');
+        const recipientLink = `<a href="https://pump.fun/profile/${recipient}">${shortAddr(recipient)}</a>`;
+        L.push(`💼 Recipient: ${recipientLink}`);
+    }
+
+    // ━━ TX ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    L.push('');
+    if (event.txSignature) {
+        L.push(`🔍 <a href="https://solscan.io/tx/${event.txSignature}">TX</a>`);
+    }
+    L.push(`🕐 ${formatTime(event.timestamp)}`);
+
+    const imageUrl = githubUser?.avatarUrl || null;
+    return { imageUrl, caption: L.join('\n') };
+}
+
+/**
+ * Legacy claim card for non-social-fee claims (token-oriented).
+ */
+function formatLegacyClaimFeed(ctx: ClaimFeedContext): { imageUrl: string | null; caption: string } {
+    const { event, token, creator, holders, trades, solUsdPrice, githubRepo, githubUser, aiSummary } = ctx;
     const L: string[] = [];
     const mint = event.tokenMint;
 

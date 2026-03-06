@@ -63,8 +63,8 @@ The repository also includes:
 | Dynamic fee tiers | `docs/pump-official/FEE_PROGRAM_README.md` |
 | Cashback rewards | `docs/pump-official/PUMP_CASHBACK_README.md` |
 | CU optimization FAQ | `docs/pump-official/FAQ.md` |
-| create_v2, mayhem mode, Token2022, social fees | `docs/pump-official/README.md` |
-| Official IDL files | `docs/pump-official/idl/` |
+| create_v2, mayhem mode, Token2022, social fees | `docs/pump-official/OVERVIEW.md` |
+| Official IDL files | `docs/pump-official/idl/pump.json`, `pump_amm.json`, `pump_fees.json` |
 ## SDK Design
 
 - **`PumpSdk`** (offline) — Builds `TransactionInstruction[]` without a connection. Singleton: `PUMP_SDK`

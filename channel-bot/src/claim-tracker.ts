@@ -37,6 +37,9 @@ const tokenFirstClaim = new Set<string>();
 /** Tracks which wallets have ever claimed (key: wallet address) */
 const walletFirstClaim = new Set<string>();
 
+/** Tracks which GitHub user IDs have ever claimed their social fee PDA */
+const githubUserFirstClaim = new Set<string>();
+
 /** Max entries before eviction of oldest */
 const MAX_ENTRIES = 50_000;
 
@@ -45,6 +48,7 @@ const MAX_ENTRIES = 50_000;
 const DATA_DIR = process.env.DATA_DIR || join(process.cwd(), 'data');
 const FIRST_CLAIMS_FILE = join(DATA_DIR, 'first-claims.json');
 const WALLET_FIRST_CLAIMS_FILE = join(DATA_DIR, 'wallet-first-claims.json');
+const GITHUB_FIRST_CLAIMS_FILE = join(DATA_DIR, 'github-first-claims.json');
 const SAVE_DEBOUNCE_MS = 5_000;
 
 let saveTimer: ReturnType<typeof setTimeout> | null = null;
@@ -75,6 +79,16 @@ export function loadPersistedClaims(): void {
                 log.info('Loaded %d persisted first-claim wallets', walletFirstClaim.size);
             }
         }
+        if (existsSync(GITHUB_FIRST_CLAIMS_FILE)) {
+            const raw = readFileSync(GITHUB_FIRST_CLAIMS_FILE, 'utf8');
+            const users: unknown = JSON.parse(raw);
+            if (Array.isArray(users)) {
+                for (const u of users) {
+                    if (typeof u === 'string') githubUserFirstClaim.add(u);
+                }
+                log.info('Loaded %d persisted first-claim GitHub users', githubUserFirstClaim.size);
+            }
+        }
     } catch (err) {
         log.warn('Failed to load persisted claims: %s', err);
     }
@@ -97,7 +111,11 @@ function scheduleSave(): void {
             const walletToSave = walletArr.length > MAX_ENTRIES ? walletArr.slice(walletArr.length - MAX_ENTRIES) : walletArr;
             writeFileSync(WALLET_FIRST_CLAIMS_FILE, JSON.stringify(walletToSave), 'utf8');
 
-            log.debug('Persisted %d first-claim tokens + %d wallets to disk', toSave.length, walletToSave.length);
+            const ghArr = [...githubUserFirstClaim];
+            const ghToSave = ghArr.length > MAX_ENTRIES ? ghArr.slice(ghArr.length - MAX_ENTRIES) : ghArr;
+            writeFileSync(GITHUB_FIRST_CLAIMS_FILE, JSON.stringify(ghToSave), 'utf8');
+
+            log.debug('Persisted %d first-claim tokens + %d wallets + %d GitHub users to disk', toSave.length, walletToSave.length, ghToSave.length);
         } catch (err) {
             log.warn('Failed to persist claims: %s', err);
         }
@@ -198,6 +216,21 @@ export function isFirstClaimByWallet(wallet: string): boolean {
     if (walletFirstClaim.size > MAX_ENTRIES) {
         const first = walletFirstClaim.values().next().value;
         if (first) walletFirstClaim.delete(first);
+    }
+    return true;
+}
+
+/**
+ * Returns true if this is the first-ever claim by this GitHub user ID.
+ * Marks the user as seen so subsequent calls return false.
+ */
+export function isFirstClaimByGithubUser(githubUserId: string): boolean {
+    if (githubUserFirstClaim.has(githubUserId)) return false;
+    githubUserFirstClaim.add(githubUserId);
+    scheduleSave();
+    if (githubUserFirstClaim.size > MAX_ENTRIES) {
+        const first = githubUserFirstClaim.values().next().value;
+        if (first) githubUserFirstClaim.delete(first);
     }
     return true;
 }

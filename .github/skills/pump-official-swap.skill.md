@@ -1,5 +1,5 @@
 ---
-applyTo: "src/**"
+applyTo: "src/**,channel-bot/**,telegram-bot/**,mcp-server/**,tests/**,tutorials/**"
 ---
 # PumpSwap (AMM) Official Documentation
 

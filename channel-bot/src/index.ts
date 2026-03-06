@@ -15,10 +15,9 @@ import { Bot } from 'grammy';
 import { loadConfig } from './config.js';
 import { ClaimMonitor } from './claim-monitor.js';
 import { EventMonitor } from './event-monitor.js';
-import { recordClaim, isFirstClaimOnToken, loadPersistedClaims } from './claim-tracker.js';
-import type { ClaimPriceSnapshot } from './claim-tracker.js';
-import { fetchTokenInfo, fetchCreatorProfile, fetchTokenHolders, fetchTokenTrades, fetchSolUsdPrice } from './pump-client.js';
-import { fetchRepoFromUrls, fetchGitHubUserFromUrls } from './github-client.js';
+import { isFirstClaimByGithubUser, loadPersistedClaims } from './claim-tracker.js';
+import { fetchTokenInfo, fetchCreatorProfile, fetchSolUsdPrice } from './pump-client.js';
+import { fetchGitHubUserById } from './github-client.js';
 import {
     formatClaimFeed,
     formatLaunchFeed,
@@ -110,10 +109,10 @@ async function main(): Promise<void> {
     }
 
     // ── Pipeline Counters ─────────────────────────────────────────────
-    const pipeline = { total: 0, withMint: 0, withGithub: 0, firstClaim: 0, posted: 0 };
+    const pipeline = { total: 0, socialClaims: 0, githubClaims: 0, firstClaim: 0, posted: 0 };
     setInterval(() => {
-        log.info('Pipeline: %d callbacks → %d with mint → %d with GitHub → %d first-claim → %d posted',
-            pipeline.total, pipeline.withMint, pipeline.withGithub, pipeline.firstClaim, pipeline.posted);
+        log.info('Pipeline: %d total → %d social → %d github → %d first → %d posted',
+            pipeline.total, pipeline.socialClaims, pipeline.githubClaims, pipeline.firstClaim, pipeline.posted);
     }, 60_000);
 
     // ── Claim Monitor ────────────────────────────────────────────────
@@ -122,75 +121,45 @@ async function main(): Promise<void> {
         if (!config.feed.claims) return;
         pipeline.total++;
 
-        // Skip wallet-level claims with no token mint (cashback, collect_creator_fee)
-        const mint = event.tokenMint;
-        if (!mint) return;
-        pipeline.withMint++;
+        // ONLY care about claim_social_fee_pda events (GitHub users claiming fees)
+        if (event.claimType !== 'claim_social_fee_pda') return;
+        pipeline.socialClaims++;
 
-        // GitHub gate FIRST — fetch token and check for GitHub URLs
-        // before marking the token as seen. Non-GitHub claims must NOT
-        // consume the "first-ever" status.
-        const token = await fetchTokenInfo(mint);
-        if (config.requireGithub) {
-            if (!token?.githubUrls?.length) return;
-        }
-        pipeline.withGithub++;
+        // Must be a GitHub claim (platform === 2)
+        if (event.socialPlatform !== 2 || !event.githubUserId) return;
+        pipeline.githubClaims++;
 
-        // Only post the first-ever claim on each token (checked AFTER
-        // GitHub gate so non-GitHub claims don't burn the first-claim flag)
-        if (!isFirstClaimOnToken(mint)) return;
+        // Only post the first-ever claim by each GitHub user
+        if (!isFirstClaimByGithubUser(event.githubUserId)) return;
         pipeline.firstClaim++;
 
-        log.info('📤 First GitHub claim on %s $%s (%.4f SOL) by %s',
-            mint.slice(0, 8), token?.symbol ?? '???', event.amountSol,
-            event.claimerWallet?.slice(0, 8) ?? '?');
+        // Fetch GitHub user profile by numeric ID
+        const githubUser = await fetchGitHubUserById(event.githubUserId);
 
-        // Enrich with remaining data in parallel
-        const [creator, holders, trades, solUsdPrice] = await Promise.all([
-            event.claimerWallet ? fetchCreatorProfile(event.claimerWallet) : Promise.resolve(null),
-            fetchTokenHolders(event.tokenMint),
-            fetchTokenTrades(event.tokenMint),
-            fetchSolUsdPrice(),
-        ]);
+        log.info('📤 First GitHub social fee claim by user %s (%s) — %.4f SOL',
+            event.githubUserId, githubUser?.login ?? '?', event.amountSol);
 
-        // Also fetch creator profile for the token creator if different from claimer
-        let creatorProfile = creator;
-        if (token?.creator && token.creator !== event.claimerWallet) {
-            creatorProfile = await fetchCreatorProfile(token.creator);
-        }
-
-        // Fetch GitHub repo info + user profile if token has GitHub URLs
-        const [githubRepo, githubUser] = token?.githubUrls?.length
-            ? await Promise.all([
-                fetchRepoFromUrls(token.githubUrls),
-                fetchGitHubUserFromUrls(token.githubUrls),
-            ])
-            : [null, null];
-
-        // Record claim history with price snapshot for tracking
-        const priceSnapshot: ClaimPriceSnapshot = {
-            priceSol: token?.priceSol ?? 0,
-            priceUsd: (token?.priceSol ?? 0) * solUsdPrice,
-            mcapUsd: token?.usdMarketCap ?? 0,
-            curveProgress: token?.curveProgress ?? 0,
-        };
-        const record = recordClaim(
-            event.claimerWallet,
-            mint,
-            event.amountSol,
-            event.timestamp,
-            priceSnapshot,
-        );
+        // Fetch SOL/USD price
+        const solUsdPrice = await fetchSolUsdPrice();
 
         const ctx: ClaimFeedContext = {
             event,
-            token,
-            creator: creatorProfile,
-            claimRecord: record,
-            holders,
-            trades,
+            token: null,
+            creator: null,
+            claimRecord: {
+                claimCount: 1,
+                totalClaimedSol: event.amountSol,
+                firstClaimTimestamp: event.timestamp,
+                lastClaimTimestamp: event.timestamp,
+                claimPriceSol: 0,
+                claimPriceUsd: 0,
+                claimMcapUsd: 0,
+                claimCurveProgress: 0,
+            },
+            holders: null,
+            trades: null,
             solUsdPrice,
-            githubRepo,
+            githubRepo: null,
             githubUser,
             aiSummary: '',
         };
@@ -203,11 +172,10 @@ async function main(): Promise<void> {
             await postToChannel(caption);
         }
         pipeline.posted++;
-        log.info('✅ Posted to %s: %s $%s (%.4f SOL)',
-            config.channelId, token?.name ?? 'Unknown', token?.symbol ?? '???',
-            event.amountSol);
+        log.info('✅ Posted GitHub claim by %s (%s) to %s',
+            event.githubUserId, githubUser?.login ?? '?', config.channelId);
       } catch (err) {
-        log.error('Claim handler error for %s: %s', event.tokenMint ?? 'unknown', err);
+        log.error('Claim handler error: %s', err);
       }
     });
 

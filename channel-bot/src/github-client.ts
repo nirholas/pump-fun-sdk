@@ -275,6 +275,56 @@ export async function fetchGitHubUser(username: string): Promise<GitHubUserInfo 
     }
 }
 
+/** Fetch GitHub user profile by numeric user ID. Returns null if not found. */
+export async function fetchGitHubUserById(userId: string): Promise<GitHubUserInfo | null> {
+    const cacheKey = `id:${userId}`;
+    const cached = getCached(userCache, cacheKey);
+    if (cached !== undefined) return cached;
+
+    try {
+        const resp = await fetch(`${GITHUB_API}/user/${encodeURIComponent(userId)}`, {
+            headers: authHeaders(),
+            signal: AbortSignal.timeout(8_000),
+        });
+
+        if (!resp.ok) {
+            if (resp.status === 404) {
+                setCache(userCache, cacheKey, null, REPO_CACHE_TTL);
+                return null;
+            }
+            if (resp.status === 403 || resp.status === 429) {
+                log.warn('GitHub API rate limited (%d) for user ID %s', resp.status, userId);
+                return null;
+            }
+            return null;
+        }
+
+        const raw = (await resp.json()) as Record<string, unknown>;
+        const info: GitHubUserInfo = {
+            login: String(raw.login ?? ''),
+            name: raw.name ? String(raw.name) : null,
+            bio: raw.bio ? String(raw.bio) : null,
+            htmlUrl: String(raw.html_url ?? ''),
+            avatarUrl: String(raw.avatar_url ?? ''),
+            publicRepos: Number(raw.public_repos ?? 0),
+            followers: Number(raw.followers ?? 0),
+            following: Number(raw.following ?? 0),
+            company: raw.company ? String(raw.company) : null,
+            location: raw.location ? String(raw.location) : null,
+            blog: raw.blog ? String(raw.blog) : null,
+            twitterUsername: raw.twitter_username ? String(raw.twitter_username) : null,
+            createdAt: String(raw.created_at ?? ''),
+            hireable: Boolean(raw.hireable),
+        };
+
+        setCache(userCache, cacheKey, info, REPO_CACHE_TTL);
+        return info;
+    } catch (err) {
+        log.error('GitHub user fetch by ID failed for %s: %s', userId, err);
+        return null;
+    }
+}
+
 // ============================================================================
 // Utilities
 // ============================================================================

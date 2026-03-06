@@ -25,9 +25,9 @@ The Pump SDK (`@pump-fun/pump-sdk`) is a TypeScript SDK for the Pump protocol on
 - `docs/pump-official/PUMP_SWAP_CREATOR_FEE_README.md` — Creator fees on AMM pools
 - `docs/pump-official/PUMP_CASHBACK_README.md` — Cashback rewards & UserVolumeAccumulator
 - `docs/pump-official/PUMP_SWAP_SDK_README.md` — PumpSwap SDK method reference
-- `docs/pump-official/README.md` — create_v2, Token2022, mayhem mode, social fees
+- `docs/pump-official/OVERVIEW.md` — create_v2, Token2022, mayhem mode, social fees
 - `docs/pump-official/FAQ.md` — CU optimization tips
-- `docs/pump-official/idl/` — Official Anchor IDL files for all programs
+- `docs/pump-official/idl/` — Official Anchor IDL files (pump.json, pump_amm.json, pump_fees.json)
 
 ## SDK Pattern
 

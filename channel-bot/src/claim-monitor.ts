@@ -467,6 +467,40 @@ export class ClaimMonitor {
                         amountLamports = Number(view.getBigUint64(48, true));
                     }
                 }
+
+                // SocialFeePdaClaimed: disc=3212c141edd2eaec
+                // Layout: disc(8) + timestamp(i64=8) + user_id(string: 4-byte LE len + N) + platform(u8) + social_fee_pda(32) + recipient(32) + social_claim_authority(32) + amount_claimed(u64=8) + ...
+                if (disc === '3212c141edd2eaec' && def.claimType === 'claim_social_fee_pda') {
+                    let offset = 16; // skip disc(8) + timestamp(8)
+                    // user_id: Borsh string = 4-byte LE length prefix + UTF-8 bytes
+                    if (bytes.length >= offset + 4) {
+                        const uidLen = bytes.readUInt32LE(offset);
+                        offset += 4;
+                        if (bytes.length >= offset + uidLen) {
+                            githubUserId = Buffer.from(bytes.subarray(offset, offset + uidLen)).toString('utf8');
+                            offset += uidLen;
+                        }
+                    }
+                    // platform: u8
+                    if (bytes.length >= offset + 1) {
+                        socialPlatform = bytes[offset]!;
+                        offset += 1;
+                    }
+                    // social_fee_pda: pubkey(32) — skip
+                    offset += 32;
+                    // recipient: pubkey(32)
+                    if (bytes.length >= offset + 32) {
+                        recipientWallet = new PublicKey(bytes.subarray(offset, offset + 32)).toBase58();
+                        offset += 32;
+                    }
+                    // social_claim_authority: pubkey(32) — skip
+                    offset += 32;
+                    // amount_claimed: u64
+                    if (bytes.length >= offset + 8) {
+                        const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+                        amountLamports = Number(view.getBigUint64(offset, true));
+                    }
+                }
             } catch { /* skip unparseable log lines */ }
         }
 
@@ -514,6 +548,9 @@ export class ClaimMonitor {
             isCashback: !def.isCreatorClaim,
             programId: def.programId,
             claimLabel: def.label,
+            githubUserId,
+            socialPlatform,
+            recipientWallet,
         };
     }
 
