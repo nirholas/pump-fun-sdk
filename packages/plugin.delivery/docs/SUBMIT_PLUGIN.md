@@ -351,3 +351,4 @@ Learn from these official reference implementations:
 - [Quick Start Guide](./QUICK_START.md) - Build your first plugin
 - [Plugin Manifest Reference](./PLUGIN_MANIFEST.md) - Complete manifest documentation
 - [Plugin Development Guide](./PLUGIN_DEVELOPMENT_GUIDE.md) - Full development documentation
+
