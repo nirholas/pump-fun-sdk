@@ -80,3 +80,4 @@ The SDK randomly selects from `global.feeRecipients[]` (normal mode) or `global.
 - Test against devnet using `new Connection("https://api.devnet.solana.com", "confirmed")`
 - Mock Anchor programs for offline SDK tests; use real connections for online SDK integration tests
 
+
