@@ -236,7 +236,7 @@ async function main(): Promise<void> {
         ]);
 
         bot.start({
-            onStart: (info) => {
+            onStart: (info: { username: string }) => {
                 log.info('Bot started: @%s', info.username);
                 log.info('Send /start to the bot to begin!');
             },

@@ -69,6 +69,7 @@ export const DEFAULT_GRADUATION_SOL_THRESHOLD = 85;
 export type ClaimType =
     | 'collect_creator_fee'        // Pump: creator collects from creator_vault (native SOL)
     | 'claim_cashback'             // Pump + AMM: user claims cashback
+    | 'claim_social_fee_pda'       // Pump: claim social fee via PDA
     | 'collect_coin_creator_fee'   // AMM: creator collects WSOL from vault ATA
     | 'distribute_creator_fees'    // Pump: distribute fees to creator
     | 'transfer_creator_fees_to_pump'; // AMM: transfer fees to Pump program
@@ -279,6 +280,10 @@ export interface CreatorChangeEvent {
     newCreatorWallet: string;
     /** The token mint address affected */
     tokenMint: string;
+    /** Token symbol (if resolved) */
+    tokenSymbol?: string;
+    /** Token name (if resolved) */
+    tokenName?: string;
     /** Specific creator change type detected */
     changeType: CreatorChangeType;
     /** Which program processed this change */
