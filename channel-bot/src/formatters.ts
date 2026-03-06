@@ -205,12 +205,6 @@ export function formatClaimFeed(ctx: ClaimFeedContext): { imageUrl: string | nul
         L.push(`  <i>${esc(desc)}</i>`);
     }
 
-    // ━━ AI ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    if (aiSummary) {
-        L.push('');
-        L.push(`🤖 <i>"${esc(aiSummary)}"</i>`);
-    }
-
     // ━━ LINKS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     L.push('');
     if (mint) {
