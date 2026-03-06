@@ -76,3 +76,4 @@ module.exports = async function handler(req, res) {
     return res.status(502).json({ ok: false, error: 'Failed to fetch prices' });
   }
 };
+
