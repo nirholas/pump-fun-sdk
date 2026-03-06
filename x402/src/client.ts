@@ -316,3 +316,4 @@ export function createX402Client(options: X402ClientOptions): X402Client {
   return new X402Client(options);
 }
 
+
