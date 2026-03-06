@@ -138,7 +138,8 @@ export class ClaimMonitor {
         if (config.solanaRpcUrls.length > 1) {
             log.info('Claim monitor: %d RPC endpoints configured (fallback enabled)', config.solanaRpcUrls.length);
         }
-        this.programPubkeys = MONITORED_PROGRAM_IDS.map((id) => new PublicKey(id));
+        // Only monitor PUMP_FEE_PROGRAM_ID — the only program with claim_social_fee_pda
+        this.programPubkeys = [new PublicKey(PUMP_FEE_PROGRAM_ID)];
         this.rpcQueue = new RpcQueue((sig) => this.processTransaction(sig));
     }
 
@@ -264,7 +265,8 @@ export class ClaimMonitor {
         this.processedSignatures.add(signature);
         this.trimProcessedCache();
 
-        // Check for claim discriminators in logs
+        // Only queue transactions with SocialFeePdaClaimed event (disc 3212c141edd2eaec)
+        const SOCIAL_FEE_CLAIMED_DISC = '3212c141edd2eaec';
         const hasClaimIx = logs.some((line) => {
             if (!line.includes('Program data:')) return false;
             const b64 = line.split('Program data: ')[1]?.trim();
@@ -272,7 +274,7 @@ export class ClaimMonitor {
             try {
                 const bytes = Buffer.from(b64, 'base64');
                 const disc = Buffer.from(bytes.subarray(0, 8)).toString('hex');
-                return CLAIM_EVENT_DISCRIMINATORS[disc] !== undefined;
+                return disc === SOCIAL_FEE_CLAIMED_DISC;
             } catch { return false; }
         });
 
@@ -347,12 +349,12 @@ export class ClaimMonitor {
             const timestamp = tx.blockTime ?? Math.floor(Date.now() / 1000);
             const slot = tx.slot;
 
-            // Check top-level instructions for claim discriminators
+            // Only process claim_social_fee_pda instructions
             for (const ix of instructions) {
                 if (!('data' in ix) || !ix.data) continue;
                 const programId = ix.programId.toBase58();
                 const matchedDef = this.matchClaimInstruction(ix.data, programId);
-                if (!matchedDef) continue;
+                if (!matchedDef || matchedDef.claimType !== 'claim_social_fee_pda') continue;
 
                 const event = this.buildClaimEvent(
                     signature, slot, timestamp, tx, matchedDef, ix,

@@ -15,7 +15,7 @@ import { Bot } from 'grammy';
 import { loadConfig } from './config.js';
 import { ClaimMonitor } from './claim-monitor.js';
 import { EventMonitor } from './event-monitor.js';
-import { isFirstClaimByGithubUser, isFirstClaimByWallet, recordClaim, loadPersistedClaims } from './claim-tracker.js';
+import { isFirstClaimByGithubUser, loadPersistedClaims } from './claim-tracker.js';
 import { fetchTokenInfo, fetchCreatorProfile, fetchSolUsdPrice } from './pump-client.js';
 import { fetchGitHubUserById } from './github-client.js';
 import { fetchXProfile } from './x-client.js';
