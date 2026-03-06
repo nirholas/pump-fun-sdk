@@ -24,3 +24,4 @@ export default async (req: Request) => {
     `由于你的心情是${result.mood},我推荐你穿 ${result.clothes.map((c) => c.name).join('、')}。`,
   );
 };
+
