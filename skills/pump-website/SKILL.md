@@ -78,3 +78,4 @@ CSS custom properties in `pump.css`:
 - `system32.js` IPC requires apps to listen for `postMessage` events
 - Pump-Store app HTML must be self-contained (no external dependencies beyond libs/)
 - The `script.js` default app list controls first-launch pins — update it when adding built-in apps
+
