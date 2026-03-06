@@ -364,6 +364,20 @@ export function formatGraduationFeed(
         L.push(holderLine);
     }
 
+    // Buy/sell split + bundle
+    const tradeData = enrichment?.trades;
+    if (tradeData && (tradeData.buyCount > 0 || tradeData.sellCount > 0)) {
+        let tradeLine = `🅑 ${tradeData.buyCount}  ·  Ⓢ ${tradeData.sellCount}`;
+        if (enrichment?.bundle && enrichment.bundle.bundlePct > 0) {
+            const b = enrichment.bundle;
+            tradeLine += `  ·  📦 ${b.bundlePct.toFixed(1)}% (${b.bundleWallets}w)`;
+        }
+        L.push(tradeLine);
+    } else if (enrichment?.bundle && enrichment.bundle.bundlePct > 0) {
+        const b = enrichment.bundle;
+        L.push(`📦 Bundle: ${b.bundlePct.toFixed(1)}% (${b.bundleWallets} wallets)`);
+    }
+
     // Dev % + SOL balance on one line
     const dw = enrichment?.devWallet;
     const devParts: string[] = [];
@@ -430,11 +444,19 @@ export function formatGraduationFeed(
 
     // ━━ TRADING LINKS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     L.push('');
-    L.push(
-        `<a href="https://axiom.trade/t/${mint}?ref=nich">Axiom</a>` +
-        `  ·  <a href="https://gmgn.ai/sol/token/${mint}?ref=nichxbt">GMGN</a>` +
-        `  ·  <a href="https://t.me/padre_trading_bot?start=token_${mint}_ref_nichxbt">Padre</a>`,
-    );
+    const bots: Array<{ abbr: string; url: string }> = [
+        { abbr: 'PH', url: `https://photon-sol.tinyastro.io/en/lp/${mint}` },
+        { abbr: 'AX', url: `https://axiom.trade/t/${mint}` },
+        { abbr: 'TJ', url: `https://t.me/paris_trojanbot?start=r-pumpdotfun-${mint}` },
+        { abbr: 'BA', url: `https://t.me/BananaGunSolana_bot?start=${mint}` },
+        { abbr: 'PR', url: `https://t.me/padre_bot?start=${mint}` },
+        { abbr: 'BL', url: `https://t.me/bloom_trading_bot?start=${mint}` },
+        { abbr: 'MA', url: `https://t.me/maestro?start=${mint}` },
+        { abbr: 'MT', url: `https://t.me/MaestroProBot?start=${mint}` },
+        { abbr: 'NE', url: `https://t.me/solana_bullx_bot?start=${mint}` },
+        { abbr: 'XX', url: `https://pump.fun/coin/${mint}` },
+    ];
+    L.push(bots.map(b => `<a href="${b.url}">${b.abbr}</a>`).join(' | '));
 
     // ━━ FOOTER ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     L.push('');
