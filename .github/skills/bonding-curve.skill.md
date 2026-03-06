@@ -1,5 +1,5 @@
 ---
-applyTo: "src/**"
+applyTo: "src/**,channel-bot/**,telegram-bot/**,mcp-server/**,dashboard/**,tests/**,tutorials/**"
 ---
 # Bonding Curve — Pricing & Quoting Engine
 

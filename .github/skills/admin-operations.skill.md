@@ -1,5 +1,5 @@
 ---
-applyTo: "src/**"
+applyTo: "src/**,channel-bot/**,telegram-bot/**,mcp-server/**,dashboard/**,tests/**,tutorials/**"
 ---
 # Admin Operations — Protocol Governance & Authority Management
 

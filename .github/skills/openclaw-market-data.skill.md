@@ -1,5 +1,5 @@
 ---
-applyTo: "src/**"
+applyTo: "src/**,mcp-server/**,channel-bot/**,telegram-bot/**"
 ---
 # OpenClaw Market Data — Bonding Curve Quoting & Analytics
 

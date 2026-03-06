@@ -1,5 +1,5 @@
 ---
-applyTo: "src/**"
+applyTo: "src/**,mcp-server/**,channel-bot/**,telegram-bot/**"
 ---
 # OpenClaw Fee Management — Creator Fee Collection & Distribution
 
