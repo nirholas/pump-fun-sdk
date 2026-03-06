@@ -114,41 +114,30 @@ async function main(): Promise<void> {
       try {
         if (!config.feed.claims) return;
 
-        log.info('Claim event: type=%s wallet=%s mint=%s amount=%.4f SOL',
-            event.claimType, event.claimerWallet?.slice(0, 8) ?? '?',
-            event.tokenMint?.slice(0, 8) ?? '(none)', event.amountSol);
-
         // Skip wallet-level claims with no token mint (cashback, collect_creator_fee)
         const mint = event.tokenMint;
-        if (!mint) {
-            log.info('  → Skipped: no token mint (wallet-level %s claim)', event.claimType);
-            return;
-        }
+        if (!mint) return;
 
-        // Only post the first-ever claim by each wallet
         const wallet = event.claimerWallet;
-        if (!wallet) {
-            log.info('  → Skipped: no wallet address');
-            return;
-        }
-        if (!isFirstClaimByWallet(wallet)) {
-            log.info('  → Skipped: wallet %s already claimed before', wallet.slice(0, 8));
-            return;
-        }
+        if (!wallet) return;
 
-        log.info('  → ✅ First-ever claim by %s — proceeding to enrich & post', wallet.slice(0, 8));
-
-        // Fetch token info first — needed for the GitHub gate
-        const token = await fetchTokenInfo(event.tokenMint);
-
-        // GitHub gate: skip tokens with no GitHub URLs in description
+        // GitHub gate FIRST — fetch token and check for GitHub URLs
+        // before marking the wallet as seen. Non-GitHub claims must NOT
+        // consume the "first-ever" status.
+        const token = await fetchTokenInfo(mint);
         if (config.requireGithub) {
-            if (!token?.githubUrls?.length) {
-                log.info('  → Skipped: no GitHub URLs in token %s description (requireGithub=true)', mint.slice(0, 8));
-                return;
-            }
-            log.info('  → GitHub URLs found: %s', token.githubUrls.join(', '));
+            if (!token?.githubUrls?.length) return;
         }
+
+        // Only post the first-ever claim by each wallet (checked AFTER
+        // GitHub gate so non-GitHub claims don't burn the first-claim flag)
+        if (!isFirstClaimByWallet(wallet)) {
+            log.debug('Skipping claim by %s — wallet already claimed before', wallet.slice(0, 8));
+            return;
+        }
+
+        log.info('📤 First GitHub claim by %s on %s (%.4f SOL)',
+            wallet.slice(0, 8), mint.slice(0, 8), event.amountSol);
 
         // Enrich with remaining data in parallel
         const [creator, holders, trades, solUsdPrice] = await Promise.all([
