@@ -21,6 +21,10 @@ CA: 9PC4GtUXhUkoTCfzqkNj5jd3BnTfGfDb8eNJrPpppump
 💹 Market Cap: $15.2K
      Price: 0.000152000 SOL
      ATH: $18.5K
+     Holders: 342
+     Recent Volume: 125.3 SOL (50 trades)
+     Replies: 28
+     👑 KotH: 15m ago
 
 👤 Dev: 9wHk...xZ3f
      Name: devmaster
@@ -79,6 +83,10 @@ CA: 9PC4GtUXhUkoTCfzqkNj5jd3BnTfGfDb8eNJrPpppump
   - Falls back to SOL value if USD not available
 - **Price:** — current price per token in SOL
 - **ATH:** — all-time high market cap (only shown if > current market cap)
+- **Holders:** — number of unique token holders at graduation time
+- **Recent Volume:** — total SOL volume and number of recent trades (last 50)
+- **Replies:** — number of community replies on the token page
+- **👑 KotH:** — when the token hit King of the Hill (relative time)
 
 ### Lines 18-23: Developer Details
 - **Dev:** — creator wallet address (clickable link to Pump.fun profile)
@@ -131,6 +139,10 @@ Fields that may not appear in every graduation message:
 - Market Cap (if not available from API)
 - Price (if token reserves are invalid)
 - ATH (only if ATH > current market cap)
+- Holders (only if holder count > 0 and data available)
+- Recent Volume (only if recent trades exist)
+- Replies (only if reply count > 0)
+- KotH (only if token reached King of the Hill)
 - Dev Name (only if set in PumpFun profile)
 - Suspected Rugs (only if > 0)
 - Past Graduations (only if dev has graduated tokens)
