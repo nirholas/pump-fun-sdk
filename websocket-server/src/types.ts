@@ -40,3 +40,4 @@ export interface Heartbeat {
 }
 
 export type RelayMessage = TokenLaunchEvent | ServerStatus | Heartbeat;
+
