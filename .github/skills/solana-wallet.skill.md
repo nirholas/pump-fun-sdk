@@ -198,3 +198,4 @@ generate-vanity.sh → source utils.sh
 - Difficulty scales exponentially: each additional character multiplies search time by 58x
 - Prefix + suffix combined difficulty is multiplicative, not additive
 
+
