@@ -1467,3 +1467,4 @@ All errors extend `Error`.
 | `ShareCalculationOverflowError` | Share amount calculation would overflow |
 | `PoolRequiredForGraduatedError` | Pool param missing for graduated coin |
 
+
