@@ -48,3 +48,4 @@ export const createGatewayOnEdgeRuntime = (options: EdgeRuntimeGatewayOptions = 
 
   return async (req: Request) => cors(req, await handler(req), options.cors);
 };
+
