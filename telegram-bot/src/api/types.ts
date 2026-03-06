@@ -151,3 +151,4 @@ export interface ApiWatchEntry extends WatchEntry {
     /** Optional webhook URL to POST events to */
     webhookUrl?: string;
 }
+
