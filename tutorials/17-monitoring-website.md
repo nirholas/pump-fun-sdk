@@ -501,3 +501,4 @@ Set `SOLANA_RPC_URL` in your deployment environment to a production RPC endpoint
 
 - [Tutorial 18: Telegram Bot for Pump Tokens](./18-telegram-bot.md) — get alerts in Telegram
 - [Tutorial 19: CoinGecko Integration](./19-coingecko-integration.md) — price feeds and token discovery
+
