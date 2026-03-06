@@ -5,3 +5,4 @@ export const config = {
 };
 
 export default createSperaxPluginGateway();
+
