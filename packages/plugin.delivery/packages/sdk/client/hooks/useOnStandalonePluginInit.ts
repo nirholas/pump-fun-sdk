@@ -13,3 +13,4 @@ export const useOnStandalonePluginInit = <T = any>(
     });
   }, []);
 };
+
