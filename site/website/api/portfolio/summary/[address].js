@@ -146,3 +146,4 @@ function formatBalance(n) {
   if (n >= 0.0001) return n.toFixed(6);
   return n.toExponential(2);
 }
+
