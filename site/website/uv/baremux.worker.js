@@ -227,3 +227,4 @@ self.onconnect = (event) => {
 };
 
 console.debug("bare-mux: SharedWorker initialized");
+
