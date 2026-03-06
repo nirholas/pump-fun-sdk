@@ -10636,3 +10636,4 @@ After setting up both Cursor and MCP:
 3. Start building your Solana application with enhanced AI assistance
 
 
+
