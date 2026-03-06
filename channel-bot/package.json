@@ -16,7 +16,8 @@
     "@solana/web3.js": "^1.98.0",
     "bs58": "^6.0.0",
     "dotenv": "^16.4.7",
-    "grammy": "^1.35.0"
+    "grammy": "^1.35.0",
+    "xactions": "^3.0.42"
   },
   "devDependencies": {
     "@types/node": "^22.13.0",
@@ -24,4 +25,3 @@
     "typescript": "^5.7.0"
   }
 }
-

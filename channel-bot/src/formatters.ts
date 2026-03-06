@@ -1,62 +1,32 @@
 /**
  * PumpFun Channel Bot — Formatters
  *
- * Rick-bot style: every data point on its own line, clean emoji prefix,
- * neatly separated sections with blank-line breaks.
+ * Claim feed cards: GitHub social fee PDA + creator fee first-claims.
+ * Every data point on its own line, clean emoji prefix.
  */
 
-import type { ClaimRecord } from './claim-tracker.js';
-import type { GitHubRepoInfo, GitHubUserInfo } from './github-client.js';
-import type { CreatorProfile, TokenInfo, TokenHolderInfo, TokenTradeInfo } from './pump-client.js';
-import type {
-    FeeClaimEvent,
-    FeeDistributionEvent,
-    GraduationEvent,
-    TokenLaunchEvent,
-    TradeAlertEvent,
-} from './types.js';
+import type { GitHubUserInfo } from './github-client.js';
+import type { CreatorProfile } from './pump-client.js';
+import type { FeeClaimEvent } from './types.js';
 import type { XProfile } from './x-client.js';
 import { getInfluencerTier, formatFollowerCount, influencerLabel } from './x-client.js';
 
 // ============================================================================
-// Fee Claim — Rick-bot style first-claim card
+// GitHub Social Fee Claim Card
 // ============================================================================
 
 export interface ClaimFeedContext {
     event: FeeClaimEvent;
-    token: TokenInfo | null;
-    creator: CreatorProfile | null;
-    claimRecord: ClaimRecord;
-    holders: TokenHolderInfo | null;
-    trades: TokenTradeInfo | null;
     solUsdPrice: number;
-    githubRepo: GitHubRepoInfo | null;
     githubUser: GitHubUserInfo | null;
     xProfile: XProfile | null;
-    aiSummary: string;
-}
-
-/**
- * First-claim card — each data point on its own line.
- * Returns { imageUrl, caption } so caller can send photo or text.
- */
-export function formatClaimFeed(ctx: ClaimFeedContext): { imageUrl: string | null; caption: string } {
-    const { event, solUsdPrice, githubUser } = ctx;
-
-    // Social fee PDA claim by a GitHub user
-    if (event.claimType === 'claim_social_fee_pda' && event.githubUserId) {
-        return formatGitHubSocialClaim(ctx);
-    }
-
-    // Legacy fallback for non-GitHub claims (shouldn't happen with current filter)
-    return formatLegacyClaimFeed(ctx);
 }
 
 /**
  * GitHub Social Fee Claim card — shows a GitHub developer claiming their
- * fee share from the PumpFun social fee PDA.
+ * first fee share from the PumpFun social fee PDA.
  */
-function formatGitHubSocialClaim(ctx: ClaimFeedContext): { imageUrl: string | null; caption: string } {
+export function formatGitHubClaimFeed(ctx: ClaimFeedContext): { imageUrl: string | null; caption: string } {
     const { event, solUsdPrice, githubUser, xProfile } = ctx;
     const L: string[] = [];
     const mint = event.tokenMint?.trim() || '';
@@ -136,47 +106,10 @@ function formatGitHubSocialClaim(ctx: ClaimFeedContext): { imageUrl: string | nu
     return { imageUrl, caption: L.join('\n') };
 }
 
-/**
- * Legacy claim card for non-social-fee claims (token-oriented).
- */
-function formatLegacyClaimFeed(ctx: ClaimFeedContext): { imageUrl: string | null; caption: string } {
-    const { event, token, creator, claimRecord, holders, trades, solUsdPrice, githubRepo, githubUser, aiSummary } = ctx;
-    const L: string[] = [];
-    const mint = event.tokenMint;
 
-    const coinName = token?.name ?? event.tokenName ?? 'Unknown';
-    const coinTicker = token?.symbol ?? event.tokenSymbol ?? '???';
-    const pumpLink = mint
-        ? `<a href="https://pump.fun/coin/${mint}">${esc(coinName)}</a>`
-        : esc(coinName);
-
-    // ━━ HEADER ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    const mcap = token?.usdMarketCap ? formatCompact(token.usdMarketCap) : '';
-    const pct = token?.complete ? '' : token?.curveProgress ? `/${token.curveProgress.toFixed(0)}%` : '';
-    const badge = mcap ? ` [${mcap}${pct}]` : '';
-    const grad = token?.complete ? ' ⭐' : '';
-    L.push(`🐙 <b>${pumpLink}</b>${badge} <b>$${esc(coinTicker)}</b>${grad}`);
-
-    // ━━ MARKET ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    if (token?.priceSol && token.priceSol > 0) {
-        const usdStr = solUsdPrice > 0 ? `$${formatPriceUsd(token.priceSol * solUsdPrice)}` : '';
-        const solStr = `${formatPriceSol(token.priceSol)} SOL`;
-        L.push(`💲 Price: ${usdStr ? `${usdStr} (${solStr})` : solStr}`);
-    }
-    if (token?.usdMarketCap) {
-        const solMcap = token.marketCapSol > 0 ? ` (${formatCompact(token.marketCapSol)} SOL)` : '';
-        L.push(`💎 Mcap: $${formatCompact(token.usdMarketCap)}${solMcap}`);
-    }
-    if (trades && trades.recentVolumeSol > 0) {
-        const volUsd = solUsdPrice > 0 ? ` ($${formatCompact(trades.recentVolumeSol * solUsdPrice)})` : '';
-        L.push(`📊 Vol: ${formatCompact(trades.recentVolumeSol)} SOL${volUsd}`);
-    }
-    if (trades && trades.recentTradeCount > 0) {
-        L.push(`🔄 Trades: ${trades.recentTradeCount}`);
-    }
-    if (holders && holders.totalHolders > 0) {
-        L.push(`👥 Holders: ${holders.totalHolders}`);
-    }
+// ============================================================================
+// Utilities
+// ============================================================================
 
     // ━━ LAUNCH DATE & AGE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     if (token?.createdTimestamp && token.createdTimestamp > 0) {

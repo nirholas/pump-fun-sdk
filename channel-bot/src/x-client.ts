@@ -1,14 +1,16 @@
 /**
  * PumpFun Channel Bot — X/Twitter Profile Client
  *
- * Fetches X/Twitter profile data (follower counts) using Twitter API v2.
- * Requires TWITTER_BEARER_TOKEN env var. Degrades gracefully if unavailable.
+ * Fetches X/Twitter profile data (follower counts) via nirholas/xactions.
+ * Uses cookie-based auth (X_AUTH_TOKEN + X_CT0_TOKEN env vars).
+ * Degrades gracefully if credentials are missing.
  */
 
+import { Scraper } from 'xactions/client';
 import { log } from './logger.js';
 
-const TWITTER_BEARER_TOKEN = process.env.TWITTER_BEARER_TOKEN ?? '';
-const TWITTER_API = 'https://api.x.com/2';
+const X_AUTH_TOKEN = process.env.X_AUTH_TOKEN ?? '';
+const X_CT0_TOKEN = process.env.X_CT0_TOKEN ?? '';
 
 // ============================================================================
 // Types
@@ -23,7 +25,7 @@ export interface XProfile {
     followers: number;
     /** Following count */
     following: number;
-    /** Whether the account is verified */
+    /** Whether the account is verified (legacy or Blue) */
     verified: boolean;
     /** Profile description/bio */
     description: string | null;
@@ -32,6 +34,29 @@ export interface XProfile {
 }
 
 export type InfluencerTier = 'mega' | 'influencer' | 'notable' | null;
+
+// ============================================================================
+// Singleton Scraper (lazy init)
+// ============================================================================
+
+let scraper: Scraper | null = null;
+
+async function getScraper(): Promise<Scraper | null> {
+    if (!X_AUTH_TOKEN) return null;
+    if (scraper) return scraper;
+
+    const s = new Scraper();
+    const cookies = [
+        { name: 'auth_token', value: X_AUTH_TOKEN },
+    ];
+    if (X_CT0_TOKEN) {
+        cookies.push({ name: 'ct0', value: X_CT0_TOKEN });
+    }
+    await s.setCookies(cookies);
+    scraper = s;
+    log.info('xactions Scraper initialized with cookie auth');
+    return scraper;
+}
 
 // ============================================================================
 // Cache (10 min TTL, same pattern as github-client)
@@ -57,7 +82,6 @@ function getCached(username: string): XProfile | null | undefined {
 
 function setCache(username: string, data: XProfile | null, ttl: number = CACHE_TTL): void {
     profileCache.set(username.toLowerCase(), { data, expiresAt: Date.now() + ttl });
-    // Evict expired entries when cache grows too large
     if (profileCache.size > 300) {
         const now = Date.now();
         for (const [k, v] of profileCache) {
@@ -71,64 +95,39 @@ function setCache(username: string, data: XProfile | null, ttl: number = CACHE_T
 // ============================================================================
 
 /**
- * Fetch an X/Twitter profile by username.
- * Returns null if token is missing, user not found, or API error.
+ * Fetch an X/Twitter profile by username using xactions Scraper.
+ * Returns null if credentials are missing, user not found, or error.
  */
 export async function fetchXProfile(username: string): Promise<XProfile | null> {
-    if (!TWITTER_BEARER_TOKEN) {
-        return null;
-    }
-
     const cached = getCached(username);
     if (cached !== undefined) return cached;
 
+    const s = await getScraper();
+    if (!s) return null;
+
     try {
-        const url = `${TWITTER_API}/users/by/username/${encodeURIComponent(username)}?user.fields=public_metrics,verified,description`;
-        const resp = await fetch(url, {
-            headers: {
-                'Authorization': `Bearer ${TWITTER_BEARER_TOKEN}`,
-                'Accept': 'application/json',
-            },
-            signal: AbortSignal.timeout(5000),
-        });
+        const p = await s.getProfile(username);
 
-        if (!resp.ok) {
-            if (resp.status === 404) {
-                setCache(username, null);
-                return null;
-            }
-            if (resp.status === 429) {
-                log.warn('X API rate limited for @%s', username);
-                setCache(username, null, 30_000); // short cooldown to avoid hammering
-                return null;
-            }
-            log.warn('X API error %d for @%s', resp.status, username);
-            return null;
-        }
-
-        const body = (await resp.json()) as Record<string, unknown>;
-        const data = body.data as Record<string, unknown> | undefined;
-        if (!data) {
-            setCache(username, null);
-            return null;
-        }
-
-        const metrics = (data.public_metrics ?? {}) as Record<string, number>;
         const profile: XProfile = {
-            username: String(data.username ?? username),
-            name: String(data.name ?? ''),
-            followers: Number(metrics.followers_count ?? 0),
-            following: Number(metrics.following_count ?? 0),
-            verified: Boolean(data.verified),
-            description: data.description ? String(data.description) : null,
-            url: `https://x.com/${encodeURIComponent(String(data.username ?? username))}`,
+            username: p.username ?? username,
+            name: p.name ?? '',
+            followers: p.followersCount ?? 0,
+            following: p.followingCount ?? 0,
+            verified: Boolean(p.verified || p.isBlueVerified),
+            description: p.bio ?? null,
+            url: `https://x.com/${encodeURIComponent(p.username ?? username)}`,
         };
 
         setCache(username, profile);
         log.info('Fetched X profile @%s — %d followers', profile.username, profile.followers);
         return profile;
-    } catch (err) {
-        log.error('X profile fetch failed for @%s: %s', username, err);
+    } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        if (msg.includes('not found') || msg.includes('404')) {
+            setCache(username, null);
+        } else {
+            log.warn('X profile fetch failed for @%s: %s', username, msg);
+        }
         return null;
     }
 }
