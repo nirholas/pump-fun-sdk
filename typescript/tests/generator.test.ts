@@ -194,3 +194,4 @@ describe('generateVanityAddress', () => {
   });
 });
 
+
