@@ -188,3 +188,4 @@ The Mayhem program (`MAyhSmzXzV1pTf7LsNkrNwkWKTo4ougAJ1PPg47MD4e`) adds a gamifi
 - `claimCashback` is user-facing despite being in the admin-adjacent code area
 - Creator reassignment affects fee collection — the new creator receives all future fees
 - `isCreatorUsingSharingConfig()` returns `true` if the creator address has been replaced with the fee sharing config PDA — check this before assuming fees go to a wallet
+
