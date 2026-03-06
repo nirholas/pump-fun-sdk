@@ -143,8 +143,16 @@ export class OnlinePumpSdk {
   async fetchBuyState(
     mint: PublicKey,
     user: PublicKey,
-    tokenProgram: PublicKey = TOKEN_PROGRAM_ID,
+    tokenProgram?: PublicKey,
   ) {
+    // Auto-detect token program from mint account owner if not provided
+    if (!tokenProgram) {
+      const mintInfo = await this.connection.getAccountInfo(mint);
+      tokenProgram = mintInfo?.owner.equals(TOKEN_2022_PROGRAM_ID)
+        ? TOKEN_2022_PROGRAM_ID
+        : TOKEN_PROGRAM_ID;
+    }
+
     const [bondingCurveAccountInfo, associatedUserAccountInfo] =
       await this.connection.getMultipleAccountsInfo([
         bondingCurvePda(mint),
@@ -158,14 +166,22 @@ export class OnlinePumpSdk {
     }
 
     const bondingCurve = PUMP_SDK.decodeBondingCurve(bondingCurveAccountInfo);
-    return { bondingCurveAccountInfo, bondingCurve, associatedUserAccountInfo: associatedUserAccountInfo ?? null };
+    return { bondingCurveAccountInfo, bondingCurve, associatedUserAccountInfo: associatedUserAccountInfo ?? null, tokenProgram };
   }
 
   async fetchSellState(
     mint: PublicKey,
     user: PublicKey,
-    tokenProgram: PublicKey = TOKEN_PROGRAM_ID,
+    tokenProgram?: PublicKey,
   ) {
+    // Auto-detect token program from mint account owner if not provided
+    if (!tokenProgram) {
+      const mintInfo = await this.connection.getAccountInfo(mint);
+      tokenProgram = mintInfo?.owner.equals(TOKEN_2022_PROGRAM_ID)
+        ? TOKEN_2022_PROGRAM_ID
+        : TOKEN_PROGRAM_ID;
+    }
+
     const [bondingCurveAccountInfo, associatedUserAccountInfo] =
       await this.connection.getMultipleAccountsInfo([
         bondingCurvePda(mint),
@@ -185,7 +201,7 @@ export class OnlinePumpSdk {
     }
 
     const bondingCurve = PUMP_SDK.decodeBondingCurve(bondingCurveAccountInfo);
-    return { bondingCurveAccountInfo, bondingCurve };
+    return { bondingCurveAccountInfo, bondingCurve, tokenProgram };
   }
 
   /**

@@ -140,7 +140,7 @@ async function main() {
 
   // ── SELL ─────────────────────────────────────────────────────────────
   console.log("\nFetching post-buy sell state ...");
-  const sellState = await sdk.fetchSellState(mint, wallet.publicKey);
+  const sellState = await sdk.fetchSellState(mint, wallet.publicKey, buyState.tokenProgram);
 
   // Read actual token balance from the ATA
   const { TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync } = await import("@solana/spl-token");
