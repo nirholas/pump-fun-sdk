@@ -7,3 +7,4 @@ export const onReceiveData = <T>(e: MessageEvent, onData: (data: PluginRenderPro
     onData(props);
   }
 };
+
