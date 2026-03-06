@@ -69,3 +69,4 @@ Pump Fun SDK uses [OpenBare](https://github.com/nirholas/openbare) as its proxy 
 ### Page not loading
 - Some sites have additional protections
 - Check OpenBare logs for errors
+
