@@ -197,3 +197,4 @@ Built with **LLM compatibility** in mind, all agent definitions follow a **stand
 
 Whether building a crypto trading bot, DeFi dashboard, Web3 chatbot, or multi-agent orchestration system, this repository provides the **foundation for AI-powered blockchain applications**.
 
+
