@@ -198,3 +198,4 @@ export type ManifestAuth =
   | ManifestServiceHttpAuth
   | ManifestUserHttpAuth
   | ManifestOAuthAuth;
+
