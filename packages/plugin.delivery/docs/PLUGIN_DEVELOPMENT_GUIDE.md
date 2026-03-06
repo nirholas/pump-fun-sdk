@@ -1333,3 +1333,4 @@ vercel --prod
 ---
 
 *For MCP (Model Context Protocol) plugins, see the [MCP vs Plugins Guide](../SperaxOS/docs/MCP_VS_PLUGINS.md).*
+
