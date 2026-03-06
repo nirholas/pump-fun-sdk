@@ -491,3 +491,4 @@
     // ── Expose for external use ───────────────────────────────────
     window.PumpCommandPalette = { open: openPalette, close: closePalette, isOpen: isPaletteOpen };
 })();
+
