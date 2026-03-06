@@ -1,5 +1,5 @@
 ---
-applyTo: "src/**,channel-bot/**,telegram-bot/**,mcp-server/**,tests/**,tutorials/**"
+applyTo: "**"
 ---
 # Pump Official Program Documentation
 
