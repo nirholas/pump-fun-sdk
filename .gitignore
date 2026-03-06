@@ -11,6 +11,9 @@ Thumbs.db
 
 # Lock files
 package-lock.json
+bun.lock
+yarn.lock
+pnpm-lock.yaml
 
 # IDE
 .idea/

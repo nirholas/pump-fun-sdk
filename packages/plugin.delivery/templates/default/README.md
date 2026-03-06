@@ -160,3 +160,4 @@ Choose this template when:
   - Search plugins
   - Data lookup tools
   - API integrations
+
