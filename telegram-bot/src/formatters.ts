@@ -33,22 +33,32 @@ export function formatClaimNotification(
     // Program source
     const programLabel = event.programId?.includes('pAMM') ? 'PumpSwap AMM' : 'Pump';
 
+    // CA line
+    const mint = event.tokenMint?.trim() || '';
+    let caLine = '';
+    if (mint) {
+        caLine = `\n🧬 <b>CA:</b> <code>${mint}</code>`;
+    } else if (event.claimType === 'claim_social_fee_pda' || event.claimType === 'claim_cashback' || event.claimType === 'collect_creator_fee') {
+        caLine = `\n🧬 <b>CA:</b> <i>N/A (wallet-level claim)</i>`;
+    }
+    if (event.socialFeePda) {
+        caLine += `\n🧾 <b>Social PDA:</b> <code>${shortAddr(event.socialFeePda)}</code>`;
+    }
+
     const solscanTx = `https://solscan.io/tx/${event.txSignature}`;
     const solscanWallet = `https://solscan.io/account/${event.claimerWallet}`;
-    const pumpfunToken = event.tokenMint
-        ? `https://pump.fun/coin/${event.tokenMint}`
-        : '';
+    const pumpfunToken = mint ? `https://pump.fun/coin/${mint}` : null;
 
-    let links = `🔗 <a href="${solscanTx}">View TX</a> · <a href="${solscanWallet}">Wallet</a>`;
-    if (pumpfunToken) {
-        links += ` · <a href="${pumpfunToken}">pump.fun</a>`;
-    }
+    const links = pumpfunToken
+        ? `🔗 <a href="${solscanTx}">View TX</a> · <a href="${solscanWallet}">Wallet</a> · <a href="${pumpfunToken}">pump.fun</a>`
+        : `🔗 <a href="${solscanTx}">View TX</a> · <a href="${solscanWallet}">Wallet</a>`;
 
     return (
         `${emoji} <b>${typeLabel} Detected!</b>\n\n` +
         `👤 <b>Claimer:</b> <code>${shortWallet}</code>${labelLine}\n` +
         `💰 <b>Amount:</b> ${solAmount} SOL\n` +
-        `${tokenLine}\n` +
+        `${tokenLine}` +
+        `${caLine}\n` +
         `⚙️ <b>Program:</b> ${programLabel}\n` +
         `🕐 <b>Time:</b> ${formatTime(event.timestamp)}\n\n` +
         `${links}`
@@ -72,26 +82,27 @@ export function formatCreatorChangeNotification(
 
     const programLabel = event.programId?.includes('pAMM') ? 'PumpSwap AMM' : 'Pump';
 
-    const tokenLine = event.tokenMint
-        ? `<b>Token Mint:</b> <code>${event.tokenMint.slice(0, 12)}...${event.tokenMint.slice(-6)}</code>`
-        : '<b>Token:</b> <i>unknown</i>';
+    const mint = event.tokenMint?.trim() || '';
+    const tokenLine = event.tokenSymbol
+        ? `<b>Token:</b> ${escapeHtml(event.tokenSymbol)}${event.tokenName ? ` (${escapeHtml(event.tokenName)})` : ''}`
+        : mint
+            ? `<b>Token:</b> <code>${shortAddr(mint)}</code>`
+            : '<b>Token:</b> <i>unknown</i>';
+    const caLine = mint ? `\n🧬 <b>CA:</b> <code>${mint}</code>` : '';
 
     const solscanTx = `https://solscan.io/tx/${event.txSignature}`;
     const solscanSigner = `https://solscan.io/account/${event.signerWallet}`;
     const solscanNew = event.newCreatorWallet
         ? `https://solscan.io/account/${event.newCreatorWallet}`
         : '';
-    const pumpfunToken = event.tokenMint
-        ? `https://pump.fun/coin/${event.tokenMint}`
-        : '';
+    const pumpfunToken = mint ? `https://pump.fun/coin/${mint}` : null;
 
-    let links = `🔗 <a href="${solscanTx}">View TX</a> · <a href="${solscanSigner}">Signer</a>`;
-    if (solscanNew) {
-        links += ` · <a href="${solscanNew}">New Creator</a>`;
-    }
-    if (pumpfunToken) {
-        links += ` · <a href="${pumpfunToken}">pump.fun</a>`;
-    }
+    const links = pumpfunToken
+        ? `🔗 <a href="${solscanTx}">View TX</a> · <a href="${solscanSigner}">Signer</a>` +
+          (solscanNew ? ` · <a href="${solscanNew}">New Creator</a>` : '') +
+          ` · <a href="${pumpfunToken}">pump.fun</a>`
+        : `🔗 <a href="${solscanTx}">View TX</a> · <a href="${solscanSigner}">Signer</a>` +
+          (solscanNew ? ` · <a href="${solscanNew}">New Creator</a>` : '');
 
     // Determine relationship to watched wallet
     const watchedAddr = watch.recipientWallet.toLowerCase();
@@ -109,7 +120,8 @@ export function formatCreatorChangeNotification(
         `📝 <b>Type:</b> ${event.changeLabel}\n` +
         `👤 <b>Signer:</b> <code>${shortSigner}</code>${labelLine}\n` +
         `🆕 <b>New Creator:</b> <code>${shortNewCreator}</code>\n` +
-        `${tokenLine}\n` +
+        `${tokenLine}` +
+        `${caLine}\n` +
         `⚙️ <b>Program:</b> ${programLabel}\n` +
         `🕐 <b>Time:</b> ${formatTime(event.timestamp)}\n` +
         `${relationship}\n\n` +
@@ -288,7 +300,7 @@ export function formatTokenLaunchNotification(event: TokenLaunchEvent): string {
         `🚀 <b>New Token Launched!</b>\n\n` +
         `🪙 <b>Name:</b> ${name} (${symbol})\n` +
         `👤 <b>Creator:</b> <a href="${solscanCreator}"><code>${creator}</code></a>\n` +
-        `🔗 <b>Mint:</b> <a href="${solscanMint}"><code>${mint}</code></a>\n` +
+        `🧬 <b>CA:</b> <code>${event.mintAddress}</code>\n` +
         githubSection +
         `\n⚡ <b>Mayhem Mode:</b> ${mayhemIcon}\n` +
         `💸 <b>Cashback:</b> ${cashbackIcon}\n` +
@@ -373,7 +385,7 @@ export function formatGraduationNotification(event: GraduationEvent): string {
 
     return (
         `🎓 <b>Token Graduated!</b>\n\n` +
-        `🔗 <b>Mint:</b> <a href="${solscanMint}"><code>${mint}</code></a>\n` +
+        `🧬 <b>CA:</b> <code>${event.mintAddress}</code>\n` +
         `👤 <b>Triggered by:</b> <code>${user}</code>\n` +
         `📈 <b>Type:</b> ${event.isMigration ? 'AMM Migration' : 'Bonding Curve Complete'}\n` +
         details +
@@ -413,7 +425,7 @@ export function formatTradeAlertNotification(event: TradeAlertEvent): string {
     return (
         `🐋 <b>Whale ${action}!</b>\n\n` +
         `${emoji} <b>Amount:</b> ${event.solAmount.toFixed(2)} SOL\n` +
-        `🪙 <b>Token:</b> <a href="${solscanMint}"><code>${mint}</code></a>\n` +
+        `� <b>CA:</b> <code>${event.mintAddress}</code>\n` +
         `👤 <b>Trader:</b> <a href="${solscanTrader}"><code>${trader}</code></a>\n` +
         `💹 <b>Market Cap:</b> ~${event.marketCapSol.toFixed(1)} SOL\n` +
         `📊 <b>Graduation:</b> [${progressBar}] ${event.bondingCurveProgress.toFixed(1)}%\n` +

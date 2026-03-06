@@ -112,10 +112,8 @@ export interface TrackedItem {
 
 export interface BotConfig {
     telegramToken: string;
-    solanaRpcUrl: string;
-    solanaRpcUrls: string[];
-    solanaWsUrl?: string;
-    pollIntervalSeconds: number;
+    /** WebSocket relay URL (e.g. ws://localhost:3099/ws) */
+    relayWsUrl: string;
     logLevel: 'debug' | 'info' | 'warn' | 'error';
     twitterBearerToken?: string;
     twitterInfluencerIds: string[];

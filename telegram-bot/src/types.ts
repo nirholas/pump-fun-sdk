@@ -251,6 +251,14 @@ export interface FeeClaimEvent {
     programId: string;
     /** Human-readable label for the claim type */
     claimLabel: string;
+    /** GitHub numeric user ID (only for claim_social_fee_pda events) */
+    githubUserId?: string;
+    /** Platform enum (2 = GitHub) — only for claim_social_fee_pda events */
+    socialPlatform?: number;
+    /** Recipient wallet for social fee claims (may differ from signer) */
+    recipientWallet?: string;
+    /** Social fee PDA account for social claims */
+    socialFeePda?: string;
 }
 
 // ============================================================================

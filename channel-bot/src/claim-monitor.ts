@@ -142,7 +142,7 @@ export class ClaimMonitor {
         this.isRunning = true;
         this.startedAt = Date.now();
 
-        log.info('Claim monitor: monitoring %d programs', MONITORED_PROGRAM_IDS.length);
+        log.info('Claim monitor: monitoring %d programs', this.programPubkeys.length);
 
         if (this.config.solanaWsUrl && process.env.SOLANA_WS_URL) {
             try {
