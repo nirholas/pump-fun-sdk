@@ -158,3 +158,4 @@ If `virtualTokenReserves` is zero, the bonding curve has been fully migrated and
 
 - [Tutorial 4: Create and Buy in One Transaction](./04-create-and-buy.md)
 - [Tutorial 6: Token Migration to PumpAMM](./06-migration.md)
+
