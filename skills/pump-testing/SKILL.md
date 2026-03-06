@@ -88,3 +88,4 @@ tests/benchmarks/   # SDK benchmark tests
 - `cargo bench` requires release profile — debug builds give misleading numbers
 - Jest `ts-jest` may need explicit `tsconfig.test.json`
 - Python fuzz tests may run indefinitely — set timeouts
+
