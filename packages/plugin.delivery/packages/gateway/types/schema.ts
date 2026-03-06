@@ -20,3 +20,4 @@ export interface ChatCompletionFunctions {
     [key: string]: any;
   };
 }
+
