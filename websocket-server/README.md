@@ -238,3 +238,4 @@ SOLANA_RPC_WS=wss://your-rpc.example.com npm start
 - **Live Token Monitor** — [`live/index.html`](../live/index.html) (standalone browser client using PumpPortal WebSocket)
 - **Live Trade Dashboard** — [`live/trades.html`](../live/trades.html) (full trade analytics with whale alerts)
 - **PumpOS Integration** — [`website/live.html`](../website/live.html) (embedded in PumpOS desktop)
+
