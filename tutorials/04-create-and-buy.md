@@ -116,3 +116,4 @@ Since you're the first buyer on an atomic create-and-buy, you can use very tight
 
 - [Tutorial 5: Bonding Curve Math Deep Dive](./05-bonding-curve-math.md)
 - [Tutorial 7: Set Up Fee Sharing](./07-fee-sharing.md)
+
