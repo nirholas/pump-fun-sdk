@@ -10,6 +10,8 @@
     "dev": "tsx watch src/server.ts"
   },
   "dependencies": {
+    "@solana/web3.js": "^1.98.0",
+    "bs58": "^6.0.0",
     "ws": "^8.18.0"
   },
   "devDependencies": {

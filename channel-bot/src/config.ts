@@ -53,6 +53,11 @@ export function loadConfig(): ChannelBotConfig {
     const solanaRpcUrl =
         process.env.SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com';
 
+    // Validate primary RPC URL
+    try { new URL(solanaRpcUrl); } catch {
+        throw new Error(`Invalid SOLANA_RPC_URL: ${solanaRpcUrl}`);
+    }
+
     // Support comma-separated fallback RPC URLs — always include primary first
     const extraUrls = process.env.SOLANA_RPC_URLS
         ? process.env.SOLANA_RPC_URLS.split(',').map((s) => s.trim()).filter(Boolean)
@@ -75,7 +80,11 @@ export function loadConfig(): ChannelBotConfig {
         10,
     );
 
-    const logLevel = (process.env.LOG_LEVEL || 'info') as ChannelBotConfig['logLevel'];
+    const VALID_LOG_LEVELS = ['debug', 'info', 'warn', 'error'] as const;
+    const rawLogLevel = process.env.LOG_LEVEL || 'info';
+    const logLevel: ChannelBotConfig['logLevel'] = VALID_LOG_LEVELS.includes(rawLogLevel as typeof VALID_LOG_LEVELS[number])
+        ? (rawLogLevel as ChannelBotConfig['logLevel'])
+        : 'info';
 
     const feed = {
         claims: (process.env.FEED_CLAIMS || 'true').toLowerCase() === 'true',
