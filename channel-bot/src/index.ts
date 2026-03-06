@@ -19,8 +19,6 @@ import { recordClaim, isFirstClaimOnToken, loadPersistedClaims } from './claim-t
 import type { ClaimPriceSnapshot } from './claim-tracker.js';
 import { fetchTokenInfo, fetchCreatorProfile, fetchTokenHolders, fetchTokenTrades, fetchSolUsdPrice } from './pump-client.js';
 import { fetchRepoFromUrls, fetchGitHubUserFromUrls } from './github-client.js';
-import { generateClaimSummary } from './groq-client.js';
-import type { ClaimSummaryInput } from './groq-client.js';
 import {
     formatClaimFeed,
     formatLaunchFeed,
@@ -170,42 +168,6 @@ async function main(): Promise<void> {
             priceSnapshot,
         );
 
-        // Generate AI summary
-        const launchToClaimSeconds = (token?.createdTimestamp && event.timestamp)
-            ? event.timestamp - token.createdTimestamp
-            : -1;
-        const graduated = creatorProfile?.recentCoins.filter((c) => c.complete).length ?? 0;
-
-        const summaryInput: ClaimSummaryInput = {
-            tokenName: token?.name ?? event.tokenName ?? 'Unknown',
-            tokenSymbol: token?.symbol ?? event.tokenSymbol ?? '???',
-            tokenDescription: token?.description ?? '',
-            mcapUsd: token?.usdMarketCap ?? 0,
-            graduated: token?.complete ?? false,
-            curveProgress: token?.curveProgress ?? 0,
-            claimAmountSol: event.amountSol,
-            claimAmountUsd: solUsdPrice > 0 ? event.amountSol * solUsdPrice : 0,
-            launchToClaimSeconds,
-            isSelfClaim: token?.creator === event.claimerWallet,
-            creatorLaunches: creatorProfile?.totalLaunches ?? 0,
-            creatorGraduated: graduated,
-            creatorFollowers: creatorProfile?.followers ?? 0,
-            holderCount: holders?.totalHolders ?? 0,
-            recentTradeCount: trades?.recentTradeCount ?? 0,
-            githubRepoName: githubRepo?.fullName ?? null,
-            githubStars: githubRepo?.stars ?? null,
-            githubLanguage: githubRepo?.language ?? null,
-            githubLastPush: githubRepo?.lastPushAgo ?? null,
-            githubDescription: githubRepo?.description ?? null,
-            githubIsFork: githubRepo?.isFork ?? null,
-            githubUserLogin: githubUser?.login ?? null,
-            githubUserFollowers: githubUser?.followers ?? null,
-            githubUserRepos: githubUser?.publicRepos ?? null,
-            githubUserCreatedAt: githubUser?.createdAt ?? null,
-        };
-
-        const aiSummary = await generateClaimSummary(summaryInput);
-
         const ctx: ClaimFeedContext = {
             event,
             token,
@@ -216,7 +178,7 @@ async function main(): Promise<void> {
             solUsdPrice,
             githubRepo,
             githubUser,
-            aiSummary,
+            aiSummary: '',
         };
 
         const { imageUrl, caption } = formatClaimFeed(ctx);

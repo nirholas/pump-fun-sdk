@@ -187,7 +187,6 @@ export function formatClaimFeed(ctx: ClaimFeedContext): { imageUrl: string | nul
             const desc = githubRepo.description.length > 80 ? githubRepo.description.slice(0, 77) + '...' : githubRepo.description;
             L.push(`  <i>${esc(desc)}</i>`);
         }
-        if (githubRepo.topics.length > 0) L.push(`  🏷 ${githubRepo.topics.map((t) => esc(t)).join('·')}`);
     }
 
     // ━━ SOCIALS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
