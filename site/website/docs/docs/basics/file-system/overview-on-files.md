@@ -38,3 +38,4 @@ By default, Pump OS saves the timestamp metadata. This is its format:
 ```
 
 > ⚠ This saves the current date and time in the _system's_ local time zone. `datetime` is the same as `Date.now()` method in JavaScript.
+
