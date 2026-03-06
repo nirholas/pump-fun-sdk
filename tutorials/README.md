@@ -75,3 +75,4 @@ npm install @pump-fun/pump-sdk @solana/web3.js @coral-xyz/anchor bn.js
 - [SDK Source Code](../src/)
 - [API Reference (llms.txt)](../llms.txt)
 - [CONTRIBUTING.md](../CONTRIBUTING.md)
+
