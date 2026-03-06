@@ -99,11 +99,18 @@ function setCache<T>(cache: Map<string, CacheEntry<T>>, key: string, data: T, tt
 // API Calls
 // ============================================================================
 
-/** Fetch token info from the PumpFun public API. */
+/** Fetch token info: PumpFun API (primary) → DexScreener (fallback). */
 export async function fetchTokenInfo(mint: string): Promise<TokenInfo | null> {
     const cached = getCached(tokenCache, mint);
     if (cached) return cached;
 
+    const info = await fetchTokenInfoPump(mint) ?? await fetchTokenInfoDexScreener(mint);
+    if (info) setCache(tokenCache, mint, info, TOKEN_CACHE_TTL);
+    return info;
+}
+
+/** Primary: PumpFun public API. */
+async function fetchTokenInfoPump(mint: string): Promise<TokenInfo | null> {
     try {
         const resp = await fetch(`${PUMPFUN_API}/coins/${encodeURIComponent(mint)}`, {
             headers: { Accept: 'application/json' },
@@ -138,7 +145,7 @@ export async function fetchTokenInfo(mint: string): Promise<TokenInfo | null> {
         const description = String(raw.description ?? '');
         const githubUrls = extractGithubUrls(description);
 
-        const info: TokenInfo = {
+        return {
             mint: String(raw.mint ?? mint),
             name: String(raw.name ?? 'Unknown'),
             symbol: String(raw.symbol ?? '???'),
@@ -156,11 +163,55 @@ export async function fetchTokenInfo(mint: string): Promise<TokenInfo | null> {
             telegram: raw.telegram ? String(raw.telegram) : undefined,
             githubUrls,
         };
-
-        setCache(tokenCache, mint, info, TOKEN_CACHE_TTL);
-        return info;
     } catch (err) {
-        log.error('Failed to fetch token %s: %s', mint.slice(0, 8), err);
+        log.warn('PumpFun fetch failed for %s: %s', mint.slice(0, 8), err);
+        return null;
+    }
+}
+
+/** Fallback: DexScreener API (partial data — no description/creator/GitHub URLs). */
+async function fetchTokenInfoDexScreener(mint: string): Promise<TokenInfo | null> {
+    try {
+        const resp = await fetch(
+            `https://api.dexscreener.com/latest/dex/tokens/${encodeURIComponent(mint)}`,
+            { signal: AbortSignal.timeout(8_000) },
+        );
+        if (!resp.ok) return null;
+
+        const data = (await resp.json()) as { pairs?: Array<Record<string, unknown>> };
+        const pair = data.pairs?.[0];
+        if (!pair) return null;
+
+        const base = pair.baseToken as Record<string, unknown> | undefined;
+        const info = pair.info as Record<string, unknown> | undefined;
+        const socials = Array.isArray(info?.socials)
+            ? (info!.socials as Array<Record<string, string>>)
+            : [];
+
+        log.debug('DexScreener fallback used for %s', mint.slice(0, 8));
+
+        return {
+            mint,
+            name: String(base?.name ?? 'Unknown'),
+            symbol: String(base?.symbol ?? '???'),
+            description: '',
+            imageUri: String(info?.imageUrl ?? ''),
+            creator: '',
+            createdTimestamp: pair.pairCreatedAt
+                ? Math.floor(Number(pair.pairCreatedAt) / 1000)
+                : 0,
+            complete: true,
+            usdMarketCap: Number(pair.marketCap ?? pair.fdv ?? 0),
+            marketCapSol: 0,
+            priceSol: Number(pair.priceNative ?? 0),
+            curveProgress: 100,
+            website: (info?.websites as Array<Record<string, string>>)?.[0]?.url,
+            twitter: socials.find((s) => s.type === 'twitter')?.url,
+            telegram: socials.find((s) => s.type === 'telegram')?.url,
+            githubUrls: [],
+        };
+    } catch (err) {
+        log.debug('DexScreener fallback failed for %s: %s', mint.slice(0, 8), err);
         return null;
     }
 }
@@ -330,26 +381,68 @@ export async function fetchTokenTrades(mint: string): Promise<TokenTradeInfo> {
 let cachedSolPrice = 0;
 let solPriceExpiresAt = 0;
 
-/** Fetch current SOL/USD price from Jupiter price API. */
+/** Fetch SOL/USD price: Jupiter (primary) → CoinGecko → Binance. */
 export async function fetchSolUsdPrice(): Promise<number> {
     if (cachedSolPrice > 0 && Date.now() < solPriceExpiresAt) return cachedSolPrice;
+
+    const price =
+        (await fetchSolPriceJupiter()) ||
+        (await fetchSolPriceCoinGecko()) ||
+        (await fetchSolPriceBinance());
+
+    if (price > 0) {
+        cachedSolPrice = price;
+        solPriceExpiresAt = Date.now() + 60_000;
+    }
+    return cachedSolPrice;
+}
+
+/** Jupiter Price API v2 — primary SOL/USD source. */
+async function fetchSolPriceJupiter(): Promise<number> {
     try {
         const resp = await fetch(
             'https://api.jup.ag/price/v2?ids=So11111111111111111111111111111111111111112',
             { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(5_000) },
         );
-        if (resp.ok) {
-            const data = (await resp.json()) as Record<string, unknown>;
-            const priceData = (data as Record<string, Record<string, Record<string, unknown>>>)
-                ?.data?.['So11111111111111111111111111111111111111112'];
-            if (priceData?.price) {
-                cachedSolPrice = Number(priceData.price);
-                solPriceExpiresAt = Date.now() + 60_000; // cache 60s
-            }
-        }
-    } catch (err) {
-        log.debug('SOL price fetch failed: %s', err);
+        if (!resp.ok) return 0;
+        const data = (await resp.json()) as Record<string, Record<string, Record<string, unknown>>>;
+        return Number(data?.data?.['So11111111111111111111111111111111111111112']?.price ?? 0);
+    } catch {
+        return 0;
     }
-    return cachedSolPrice;
+}
+
+/** CoinGecko free API — first SOL/USD fallback. */
+async function fetchSolPriceCoinGecko(): Promise<number> {
+    try {
+        const resp = await fetch(
+            'https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd',
+            { signal: AbortSignal.timeout(5_000) },
+        );
+        if (!resp.ok) return 0;
+        const data = (await resp.json()) as Record<string, Record<string, number>>;
+        const price = data?.solana?.usd ?? 0;
+        if (price > 0) log.debug('SOL price from CoinGecko fallback: $%d', price);
+        return price;
+    } catch {
+        return 0;
+    }
+}
+
+/** Binance public API — second SOL/USD fallback. */
+async function fetchSolPriceBinance(): Promise<number> {
+    try {
+        const resp = await fetch(
+            'https://api.binance.com/api/v3/ticker/price?symbol=SOLUSDT',
+            { signal: AbortSignal.timeout(5_000) },
+        );
+        if (!resp.ok) return 0;
+        const data = (await resp.json()) as Record<string, string>;
+        const price = Number(data?.price ?? 0);
+        if (price > 0) log.debug('SOL price from Binance fallback: $%d', price);
+        return price;
+    } catch {
+        return 0;
+    }
 }
 

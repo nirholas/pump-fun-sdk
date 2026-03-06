@@ -83,7 +83,7 @@ The Pump SDK (`@pump-fun/pump-sdk`) is a TypeScript SDK for the Pump protocol on
 
 ## MCP Server Status
 
-The MCP server is **designed but not yet implemented**. Design docs in `prompts/mcp-server/`. Do not reference MCP tools as available.
+The MCP server is **implemented** in `mcp-server/`. It provides 55 tools, 4 resources, and 5 prompts via MCP v2024-11-05. See `mcp-server/README.md`.
 
 ### Terminal Management (MANDATORY)
 

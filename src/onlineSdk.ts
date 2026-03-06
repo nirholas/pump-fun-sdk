@@ -101,6 +101,30 @@ export class OnlinePumpSdk {
     this.pumpAmmAdminSdk = new PumpAmmAdminSdk(connection);
   }
 
+  /**
+   * Create an OnlinePumpSdk with automatic RPC failover.
+   *
+   * @example
+   * ```ts
+   * const sdk = OnlinePumpSdk.withFallback([
+   *   'https://my-primary-rpc.com',
+   *   'https://api.mainnet-beta.solana.com',
+   * ]);
+   * ```
+   */
+  static withFallback(
+    endpoints: string[],
+    connectionConfig?: import("@solana/web3.js").ConnectionConfig,
+    fallbackConfig?: FallbackConfig,
+  ): OnlinePumpSdk {
+    const connection = createFallbackConnection(
+      endpoints,
+      connectionConfig,
+      fallbackConfig,
+    );
+    return new OnlinePumpSdk(connection);
+  }
+
   async fetchGlobal(): Promise<Global> {
     return await this.pumpProgram.account.global.fetch(GLOBAL_PDA);
   }

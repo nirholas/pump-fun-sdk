@@ -48,7 +48,7 @@ When generating code, respect these measured performance characteristics:
 
 ## MCP Server Status
 
-The MCP server is **designed but not yet implemented**. Design docs are in `prompts/mcp-server/`. The `mcp-server/` directory does not exist. Do not reference MCP tools as available.
+The MCP server is **implemented** in `mcp-server/`. It provides 55 tools, 4 resources, and 5 prompts via the Model Context Protocol (v2024-11-05). See `mcp-server/README.md` for setup.
 
 ### Terminal Management (MANDATORY)
 
