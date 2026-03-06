@@ -196,3 +196,4 @@ echo "  - 6+ chars: Very long (days+)"
 echo ""
 echo "Note: Actual times depend on system performance and luck."
 
+
