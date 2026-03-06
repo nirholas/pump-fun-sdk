@@ -495,3 +495,4 @@ Start
 - [Plugin Manifest Reference](./PLUGIN_MANIFEST.md) - Complete manifest documentation
 - [SDK API Reference](./SDK_API_REFERENCE.md) - Client SDK for standalone plugins
 - [Quick Start](./QUICK_START.md) - Build your first plugin
+
