@@ -1,8 +1,10 @@
 /**
  * PumpFun Channel Bot — Entry Point
  *
- * A read-only Telegram channel feed that broadcasts ONLY GitHub social fee
- * PDA first-claims. No launches, graduations, whales, or other fee events.
+ * A read-only Telegram channel feed that broadcasts:
+ *   - GitHub social fee PDA first-claims
+ *   - Creator fee claims (>= 1 SOL, first per wallet)
+ *   - Token graduations (bonding curve complete / AMM migration)
  *
  * Run:
  *   npm run dev          (hot reload)
@@ -13,16 +15,17 @@ import { Bot } from 'grammy';
 
 import { loadConfig } from './config.js';
 import { ClaimMonitor } from './claim-monitor.js';
+import { EventMonitor } from './event-monitor.js';
 import { isFirstClaimByGithubUser, isFirstClaimByWallet, loadPersistedClaims } from './claim-tracker.js';
-import { fetchCreatorProfile, fetchSolUsdPrice } from './pump-client.js';
+import { fetchCreatorProfile, fetchTokenInfo, fetchTokenHolders, fetchTokenTrades, fetchSolUsdPrice } from './pump-client.js';
 import { fetchGitHubUserById } from './github-client.js';
 import { fetchXProfile } from './x-client.js';
-import { formatGitHubClaimFeed, formatCreatorClaimFeed } from './formatters.js';
+import { formatGitHubClaimFeed, formatCreatorClaimFeed, formatGraduationFeed } from './formatters.js';
 import type { ClaimFeedContext, CreatorClaimContext } from './formatters.js';
 import { log, setLogLevel } from './logger.js';
 import { startHealthServer, stopHealthServer } from './health.js';
 import { maskUrl } from './rpc-fallback.js';
-import type { FeeClaimEvent } from './types.js';
+import type { FeeClaimEvent, GraduationEvent } from './types.js';
 
 async function main(): Promise<void> {
     const config = loadConfig();
@@ -34,7 +37,9 @@ async function main(): Promise<void> {
     log.info('PumpFun Channel Bot starting...');
     log.info('  Channel: %s', config.channelId);
     log.info('  RPC: %s', maskUrl(config.solanaRpcUrl));
-    log.info('  Feed: GitHub social fee claims only');
+    const feeds: string[] = ['claims'];
+    if (config.feed.graduations) feeds.push('graduations');
+    log.info('  Feeds: %s', feeds.join(', '));
 
     const bot = new Bot(config.telegramToken);
 
@@ -195,13 +200,59 @@ async function main(): Promise<void> {
       }
     });
 
+    // ── Graduation Monitor ─────────────────────────────────────────────
+    let eventMonitor: EventMonitor | null = null;
+    if (config.feed.graduations) {
+        eventMonitor = new EventMonitor(
+            config,
+            () => {}, // launches — not used
+            async (event: GraduationEvent) => {
+                try {
+                    log.info('🎓 Graduation detected: %s (migration=%s)', event.mintAddress, event.isMigration);
+
+                    const [token, solUsdPrice] = await Promise.all([
+                        fetchTokenInfo(event.mintAddress),
+                        fetchSolUsdPrice(),
+                    ]);
+
+                    const [creator, holders, trades] = await Promise.all([
+                        token?.creator ? fetchCreatorProfile(token.creator) : Promise.resolve(null),
+                        fetchTokenHolders(event.mintAddress),
+                        fetchTokenTrades(event.mintAddress),
+                    ]);
+
+                    const { imageUrl, caption } = formatGraduationFeed(
+                        event, token, creator, solUsdPrice,
+                        { holders, trades },
+                    );
+
+                    if (imageUrl) {
+                        await postPhotoToChannel(imageUrl, caption);
+                    } else {
+                        await postToChannel(caption);
+                    }
+                    pipeline.posted++;
+                    log.info('✅ Posted graduation for %s to %s', event.mintAddress.slice(0, 8), config.channelId);
+                } catch (err) {
+                    log.error('Graduation handler error: %s', err);
+                }
+            },
+            () => {}, // whales — not used
+            () => {}, // fee distributions — not used
+        );
+    }
+
     // ── Start ─────────────────────────────────────────────────────────
     await claimMonitor.start();
+    if (eventMonitor) {
+        await eventMonitor.start();
+        log.info('Graduation monitor started');
+    }
 
     // Start bot (needed for the API, but no commands registered)
     await bot.init();
     log.info('Bot initialized: @%s', bot.botInfo.username);
-    log.info('Channel feed is live — creator claims + GitHub claims → %s', config.channelId);
+    log.info('Channel feed is live → %s', config.channelId);
 
     // ── Health check server ──────────────────────────────────────────
     const startedAt = Date.now();
@@ -219,6 +270,7 @@ async function main(): Promise<void> {
     const shutdown = () => {
         log.info('Shutting down...');
         claimMonitor.stop();
+        eventMonitor?.stop();
         stopHealthServer();
         process.exit(0);
     };
