@@ -353,3 +353,187 @@ cd typescript && npm install && npx ts-node src/cli.ts --prefix SOL
 # x402 payment server example
 cd x402 && npm install && npx ts-node examples/server.ts
 ```
+
+---
+
+## DeFi Agents
+
+**Directory:** `packages/defi-agents/` · **Count:** 43 agents · **Languages:** 18
+
+Production-ready AI agent definitions for DeFi workflows, compatible with SperaxOS and any function-calling LLM platform.
+
+### Agent Categories
+
+| Category | Count | Examples |
+|----------|-------|---------|
+| Master Agent | 1 | Sperax Portfolio (recommended starting point) |
+| Sperax Ecosystem | 7 | USD Management, Staking Optimizer, Governance, Bridge |
+| SperaxOS Specialists | 16 | Portfolio Tracker, Yield Farming, Gas Optimizer, NFT Analyst |
+| General DeFi | 8+ | Token Researcher, Whale Tracker, Airdrop Hunter |
+| Crypto News | 3+ | News Aggregator, Sentiment Analyzer |
+
+### API
+
+```
+GET https://nirholas.github.io/AI-Agents-Library/index.json    # Agent registry
+GET https://nirholas.github.io/AI-Agents-Library/{id}.en-US.json  # Agent definition
+```
+
+### Documentation
+
+- [packages/defi-agents/README.md](../packages/defi-agents/README.md) — full agent catalog, API endpoints, adding new agents
+- [Tutorial 25: DeFi Agents Integration](../tutorials/25-defi-agents-integration.md)
+
+---
+
+## PumpOS Web Desktop
+
+**Directory:** `site/` · **Language:** HTML/CSS/JavaScript · **Apps:** 169
+
+A web-based desktop environment with a full app store, file system, and windowed UI. Each app is a self-contained HTML file that can interact with the Pump SDK ecosystem.
+
+### Features
+
+| Feature | Description |
+|---------|-------------|
+| App Store | 169 installable apps covering DeFi, analytics, trading, utilities |
+| Window Manager | Draggable, resizable windows with taskbar |
+| File System | Virtual file system with localStorage persistence |
+| Themes | Light/dark mode, customizable wallpapers |
+| Service Worker | Offline-capable with caching |
+| PWA | Installable as a Progressive Web App |
+
+### Notable Apps
+
+| App | Category | Description |
+|-----|----------|-------------|
+| Fee Manager | DeFi | Claim fees, manage shareholders, view vault balances |
+| Token Creator | Trading | Launch tokens with metadata wizard |
+| Bonding Curve | Analytics | Visualize curve state and graduation progress |
+| Vanity Generator | Utilities | Browser-based vanity address generation |
+| Wallet | DeFi | View balances and transaction history |
+
+### Documentation
+
+- [site/README.md](../site/README.md) — setup, deployment, architecture
+- [PumpOS Platform Guide](./pumpos-guide.md) — user guide and app development
+
+---
+
+## Plugin Delivery Platform
+
+**Directory:** `packages/plugin.delivery/` · **Runtime:** Vercel Edge Functions
+
+AI plugin index and API gateway for SperaxOS function-calling plugins. Includes 40+ API endpoints across 12 plugin categories.
+
+### Plugin Types
+
+| Type | Description | Example |
+|------|-------------|---------|
+| Default | JSON → AI formats response | DeFiLlama analytics |
+| Markdown | Pre-formatted text response | Crypto news |
+| Standalone | React/HTML in iframe | Charts, dashboards |
+| OpenAPI | Auto-generated from spec | CoinGecko, 1inch |
+
+### Active Plugins
+
+| Plugin | Endpoints | Status |
+|--------|-----------|--------|
+| pump-fun-sdk | 6 | ✅ Working |
+| coingecko | 2 | ✅ Working |
+| defillama | 5 | ✅ Working |
+| dexscreener | 4 | ✅ Working |
+| beefy | 1 | ✅ Working |
+| lido | 1 | ✅ Working |
+| oneinch | 1 | ✅ Working |
+| thegraph | 3 | ✅ Working |
+| address-labels | 2 | 🚧 Stub |
+| audit-checker | 2 | 🚧 Stub |
+| contract-scanner | 2 | 🚧 Stub |
+| ens-lookup | 3 | 🚧 Stub |
+| gas-estimator | 2 | 🚧 Stub |
+| grants-finder | 2 | 🚧 Stub |
+| phishing-detector | 2 | 🚧 Stub |
+| sanctions-check | 1 | 🚧 Stub |
+
+### Documentation
+
+- [packages/plugin.delivery/README.md](../packages/plugin.delivery/README.md) — plugin creation guide, all 4 types, deployment
+
+---
+
+## Learning Paths
+
+### 🟢 Beginner: "I want to launch a token"
+
+1. [Getting Started](./getting-started.md) → Install SDK, connect to devnet
+2. [Tutorial 01: Create Token](../tutorials/01-create-token.md) → Launch your first token
+3. [Tutorial 02: Buy Tokens](../tutorials/02-buy-tokens.md) → Purchase from bonding curve
+4. [Tutorial 03: Sell Tokens](../tutorials/03-sell-tokens.md) → Sell back to curve
+5. [Tutorial 04: Create and Buy](../tutorials/04-create-and-buy.md) → Atomic launch + buy
+
+### 🟡 Intermediate: "I want to understand the math and fees"
+
+1. [Tutorial 05: Bonding Curve Math](../tutorials/05-bonding-curve-math.md) → Price mechanics
+2. [Tutorial 09: Fee System](../tutorials/09-fee-system.md) → How fees work
+3. [Tutorial 07: Fee Sharing](../tutorials/07-fee-sharing.md) → Split fees between shareholders
+4. [Tutorial 08: Token Incentives](../tutorials/08-token-incentives.md) → Volume rewards
+5. [Tutorial 10: Working with PDAs](../tutorials/10-working-with-pdas.md) → Program-derived addresses
+
+### 🔴 Advanced: "I want to build trading infrastructure"
+
+1. [Tutorial 11: Trading Bot](../tutorials/11-trading-bot.md) → Automated trading
+2. [Tutorial 16: Monitoring Claims](../tutorials/16-monitoring-claims.md) → Track fee events
+3. [Tutorial 18: Telegram Bot](../tutorials/18-telegram-bot.md) → Bot with notifications
+4. [Tutorial 22: Channel Bot](../tutorials/22-channel-bot-setup.md) → Broadcast feed
+5. [Tutorial 14: x402 Paywalled APIs](../tutorials/14-x402-paywalled-apis.md) → Monetize your API
+
+### 🤖 AI Developer: "I want to integrate with AI agents"
+
+1. [Tutorial 20: MCP Server](../tutorials/20-mcp-server-ai-agents.md) → AI agent integration
+2. [Tutorial 25: DeFi Agents](../tutorials/25-defi-agents-integration.md) → Agent definitions
+3. [Tutorial 29: Event Parsing](../tutorials/29-event-parsing-analytics.md) → Analytics pipeline
+4. [Prompt Templates](../prompts/README.md) → Ready-to-use AI prompts
+
+---
+
+## Component Dependencies
+
+```
+                    ┌─────────────────┐
+                    │   Core SDK      │
+                    │   (src/)        │
+                    └────┬──┬──┬─────┘
+                         │  │  │
+            ┌────────────┘  │  └────────────┐
+            ▼               ▼               ▼
+     ┌─────────────┐ ┌──────────┐ ┌────────────────┐
+     │ Telegram Bot │ │ Channel  │ │ MCP Server     │
+     │              │ │ Bot      │ │ (53 tools)     │
+     └──────────────┘ └──────────┘ └────────────────┘
+            │               │
+            ▼               ▼
+     ┌─────────────┐ ┌──────────┐
+     │ REST API    │ │ @pump    │
+     │ + Webhooks  │ │ funclaims│
+     └─────────────┘ └──────────┘
+
+     ┌──────────────┐ ┌──────────┐ ┌────────────────┐
+     │ WebSocket    │ │ Live     │ │ Vanity Gens    │
+     │ Relay        │◄│ Dash-    │ │ (Rust + TS)    │
+     │              │ │ boards   │ │                │
+     └──────────────┘ └──────────┘ └────────────────┘
+
+     ┌──────────────┐ ┌──────────┐ ┌────────────────┐
+     │ x402 Payments│ │ DeFi     │ │ Plugin         │
+     │              │ │ Agents   │ │ Delivery       │
+     └──────────────┘ └──────────┘ └────────────────┘
+```
+
+**Key connections:**
+- **Core SDK** is the foundation — everything imports from it
+- **Telegram Bot** and **Channel Bot** both monitor on-chain events but serve different audiences (interactive vs broadcast)
+- **WebSocket Relay** feeds the **Live Dashboards** with real-time data
+- **MCP Server** wraps the Core SDK for AI assistants
+- **DeFi Agents** and **Plugin Delivery** are independent packages that reference the SDK's API endpoints
+- **Vanity Generators** (Rust + TypeScript) are standalone — no SDK dependency
