@@ -58,3 +58,4 @@ describe('usePluginState', () => {
     expect(setPluginStateSpy).toHaveBeenCalledWith(key, newValue);
   });
 });
+
