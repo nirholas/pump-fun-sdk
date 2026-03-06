@@ -941,3 +941,4 @@ window.showScreenshotMenu = showScreenshotMenu;
 window.toggleClipboardPanel = toggleClipboardPanel;
 window.clearClipboardHistory = clearClipboardHistory;
 window.pasteFromHistory = pasteFromHistory;
+
