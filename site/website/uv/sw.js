@@ -49,3 +49,4 @@ self.addEventListener('fetch', (event) => {
   }
   // Otherwise, let it pass through (don't call respondWith)
 });
+
