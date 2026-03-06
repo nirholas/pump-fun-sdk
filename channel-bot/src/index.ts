@@ -1,9 +1,10 @@
 /**
  * PumpFun Channel Bot — Entry Point
  *
- * A read-only Telegram channel feed that broadcasts ONLY GitHub social fee
- * PDA first-claims. The person who got assigned rewards claims them, and we
- * post their first claim to the channel.
+ * A read-only Telegram channel feed that broadcasts:
+ *   - GitHub social fee PDA first-claims
+ *   - Creator fee claims (>= 1 SOL, first per wallet)
+ *   - Token graduations (bonding curve complete / AMM migration)
  *
  * Run:
  *   npm run dev          (hot reload)
@@ -14,16 +15,17 @@ import { Bot } from 'grammy';
 
 import { loadConfig } from './config.js';
 import { ClaimMonitor } from './claim-monitor.js';
-import { isFirstClaimByGithubUser, loadPersistedClaims } from './claim-tracker.js';
-import { fetchSolUsdPrice } from './pump-client.js';
+import { EventMonitor } from './event-monitor.js';
+import { isFirstClaimByGithubUser, isFirstClaimByWallet, loadPersistedClaims } from './claim-tracker.js';
+import { fetchCreatorProfile, fetchTokenInfo, fetchTokenHolders, fetchTokenTrades, fetchSolUsdPrice } from './pump-client.js';
 import { fetchGitHubUserById } from './github-client.js';
 import { fetchXProfile } from './x-client.js';
-import { formatGitHubClaimFeed } from './formatters.js';
-import type { ClaimFeedContext } from './formatters.js';
+import { formatGitHubClaimFeed, formatCreatorClaimFeed, formatGraduationFeed } from './formatters.js';
+import type { ClaimFeedContext, CreatorClaimContext } from './formatters.js';
 import { log, setLogLevel } from './logger.js';
 import { startHealthServer, stopHealthServer } from './health.js';
 import { maskUrl } from './rpc-fallback.js';
-import type { FeeClaimEvent } from './types.js';
+import type { FeeClaimEvent, GraduationEvent } from './types.js';
 
 async function main(): Promise<void> {
     const config = loadConfig();
@@ -35,7 +37,10 @@ async function main(): Promise<void> {
     log.info('PumpFun Channel Bot starting...');
     log.info('  Channel: %s', config.channelId);
     log.info('  RPC: %s', maskUrl(config.solanaRpcUrl));
-    log.info('  Feed: GitHub social fee first-claims only');
+    const feeds: string[] = [];
+    if (config.feed.claims) feeds.push('claims');
+    if (config.feed.graduations) feeds.push('graduations');
+    log.info('  Feeds: %s', feeds.join(', ') || 'none');
 
     const bot = new Bot(config.telegramToken);
 
@@ -93,63 +98,165 @@ async function main(): Promise<void> {
     }
 
     // ── Pipeline Counters ─────────────────────────────────────────────
-    const pipeline = { total: 0, firstClaim: 0, posted: 0 };
+    const pipeline = { total: 0, creatorClaims: 0, socialClaims: 0, firstClaim: 0, posted: 0, skippedCashback: 0, skippedDust: 0 };
     setInterval(() => {
-        log.info('Pipeline: %d total → %d first → %d posted',
-            pipeline.total, pipeline.firstClaim, pipeline.posted);
+        log.info('Pipeline: %d total → %d creator/%d social → %d first → %d posted (skip: %d cashback, %d dust)',
+            pipeline.total, pipeline.creatorClaims, pipeline.socialClaims,
+            pipeline.firstClaim, pipeline.posted, pipeline.skippedCashback, pipeline.skippedDust);
     }, 60_000);
 
-    // ── Claim Monitor (GitHub social fee PDA first-claims ONLY) ──────
+    /** Minimum SOL for creator fee claims to be posted. */
+    const MIN_CREATOR_CLAIM_SOL = 1.0;
+
+    /** Creator claim types we post about. */
+    const CREATOR_CLAIM_TYPES: ReadonlySet<string> = new Set([
+        'collect_creator_fee',
+        'collect_coin_creator_fee',
+        'distribute_creator_fees',
+        'transfer_creator_fees_to_pump',
+    ]);
+
+    // ── Claim Monitor ────────────────────────────────────────────────
     const claimMonitor = new ClaimMonitor(config, async (event: FeeClaimEvent) => {
       try {
         pipeline.total++;
 
-        // Only claim_social_fee_pda with platform=2 (GitHub)
-        if (event.claimType !== 'claim_social_fee_pda') return;
-        if (event.socialPlatform !== 2) return;
-        if (!event.githubUserId) return;
+        // Skip cashback claims (user refunds, not creator activity)
+        if (event.isCashback) {
+            pipeline.skippedCashback++;
+            return;
+        }
 
-        // Only the FIRST claim per GitHub user
-        if (!isFirstClaimByGithubUser(event.githubUserId)) return;
+        // ── Path A: GitHub social fee PDA claim ──────────────────────
+        if (event.claimType === 'claim_social_fee_pda' && event.socialPlatform === 2 && event.githubUserId) {
+            pipeline.socialClaims++;
+
+            if (!isFirstClaimByGithubUser(event.githubUserId)) return;
+            pipeline.firstClaim++;
+
+            const githubUser = await fetchGitHubUserById(event.githubUserId);
+            const xProfile = githubUser?.twitterUsername
+                ? await fetchXProfile(githubUser.twitterUsername)
+                : null;
+            const solUsdPrice = await fetchSolUsdPrice();
+
+            log.info('📤 GitHub social fee claim by %s (%s) — %.4f SOL',
+                event.githubUserId, githubUser?.login ?? '?', event.amountSol);
+
+            const ctx: ClaimFeedContext = {
+                event,
+                solUsdPrice,
+                githubUser,
+                xProfile,
+            };
+
+            const { imageUrl, caption } = formatGitHubClaimFeed(ctx);
+            if (imageUrl) {
+                await postPhotoToChannel(imageUrl, caption);
+            } else {
+                await postToChannel(caption);
+            }
+            pipeline.posted++;
+            log.info('✅ Posted GitHub claim by %s (%s) to %s',
+                event.githubUserId, githubUser?.login ?? '?', config.channelId);
+            return;
+        }
+
+        // ── Path B: Creator fee claims (first per wallet, >= 1 SOL) ──
+        if (!CREATOR_CLAIM_TYPES.has(event.claimType)) return;
+        pipeline.creatorClaims++;
+
+        if (event.amountSol < MIN_CREATOR_CLAIM_SOL) {
+            pipeline.skippedDust++;
+            return;
+        }
+
+        if (!isFirstClaimByWallet(event.claimerWallet)) return;
         pipeline.firstClaim++;
 
-        const githubUser = await fetchGitHubUserById(event.githubUserId);
-        const xProfile = githubUser?.twitterUsername
-            ? await fetchXProfile(githubUser.twitterUsername)
-            : null;
-        const solUsdPrice = await fetchSolUsdPrice();
+        log.info('📤 First creator claim by %s — %.4f SOL (%s)',
+            event.claimerWallet.slice(0, 8), event.amountSol, event.claimType);
 
-        log.info('📤 GitHub social fee claim by %s (%s) — %.4f SOL',
-            event.githubUserId, githubUser?.login ?? '?', event.amountSol);
+        const [creator, solUsdPrice] = await Promise.all([
+            fetchCreatorProfile(event.claimerWallet),
+            fetchSolUsdPrice(),
+        ]);
 
-        const ctx: ClaimFeedContext = {
+        const creatorCtx: CreatorClaimContext = {
             event,
             solUsdPrice,
-            githubUser,
-            xProfile,
+            creator,
         };
 
-        const { imageUrl, caption } = formatGitHubClaimFeed(ctx);
-        if (imageUrl) {
-            await postPhotoToChannel(imageUrl, caption);
+        const { imageUrl: cImg, caption: cCaption } = formatCreatorClaimFeed(creatorCtx);
+        if (cImg) {
+            await postPhotoToChannel(cImg, cCaption);
         } else {
-            await postToChannel(caption);
+            await postToChannel(cCaption);
         }
         pipeline.posted++;
-        log.info('✅ Posted GitHub claim by %s (%s) to %s',
-            event.githubUserId, githubUser?.login ?? '?', config.channelId);
+        log.info('✅ Posted creator claim by %s to %s', event.claimerWallet.slice(0, 8), config.channelId);
       } catch (err) {
         log.error('Claim handler error: %s', err);
       }
     });
 
+    // ── Graduation Monitor ─────────────────────────────────────────────
+    let eventMonitor: EventMonitor | null = null;
+    if (config.feed.graduations) {
+        eventMonitor = new EventMonitor(
+            config,
+            () => {}, // launches — not used
+            async (event: GraduationEvent) => {
+                try {
+                    log.info('🎓 Graduation detected: %s (migration=%s)', event.mintAddress, event.isMigration);
+
+                    const [token, solUsdPrice] = await Promise.all([
+                        fetchTokenInfo(event.mintAddress),
+                        fetchSolUsdPrice(),
+                    ]);
+
+                    const [creator, holders, trades] = await Promise.all([
+                        token?.creator ? fetchCreatorProfile(token.creator) : Promise.resolve(null),
+                        fetchTokenHolders(event.mintAddress),
+                        fetchTokenTrades(event.mintAddress),
+                    ]);
+
+                    const { imageUrl, caption } = formatGraduationFeed(
+                        event, token, creator, solUsdPrice,
+                        { holders, trades },
+                    );
+
+                    if (imageUrl) {
+                        await postPhotoToChannel(imageUrl, caption);
+                    } else {
+                        await postToChannel(caption);
+                    }
+                    pipeline.posted++;
+                    log.info('✅ Posted graduation for %s to %s', event.mintAddress.slice(0, 8), config.channelId);
+                } catch (err) {
+                    log.error('Graduation handler error: %s', err);
+                }
+            },
+            () => {}, // whales — not used
+            () => {}, // fee distributions — not used
+        );
+    }
+
     // ── Start ─────────────────────────────────────────────────────────
-    await claimMonitor.start();
+    if (config.feed.claims) {
+        await claimMonitor.start();
+        log.info('Claim monitor started');
+    }
+    if (eventMonitor) {
+        await eventMonitor.start();
+        log.info('Graduation monitor started');
+    }
 
     // Start bot (needed for the API, but no commands registered)
     await bot.init();
     log.info('Bot initialized: @%s', bot.botInfo.username);
-    log.info('Channel feed is live — GitHub claims only → %s', config.channelId);
+    log.info('Channel feed is live → %s', config.channelId);
 
     // ── Health check server ──────────────────────────────────────────
     const startedAt = Date.now();
@@ -167,6 +274,7 @@ async function main(): Promise<void> {
     const shutdown = () => {
         log.info('Shutting down...');
         claimMonitor.stop();
+        eventMonitor?.stop();
         stopHealthServer();
         process.exit(0);
     };
