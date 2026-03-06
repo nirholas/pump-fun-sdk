@@ -419,3 +419,4 @@ async function addShortcut(flid) {
 		toast("Shortcut created")
 	}
 }
+
