@@ -238,40 +238,13 @@ async function main(): Promise<void> {
             }
         }
 
-        // ── Path B: Creator fee claims (collect_creator_fee, collect_coin_creator_fee, distribute_creator_fees) ──
+        // ── Path B: Creator fee claims — disabled (only GitHub social fee first-claims are posted) ──
         else if (event.claimType === 'collect_creator_fee' ||
                  event.claimType === 'collect_coin_creator_fee' ||
                  (event.claimType === 'distribute_creator_fees' && config.feed.feeDistributions)) {
             pipeline.creatorClaims++;
-
-            const mint = event.tokenMint?.trim() || '';
-            const [tokenInfo, solUsdPrice, creator] = await Promise.all([
-                mint ? fetchTokenInfo(mint) : Promise.resolve(null),
-                fetchSolUsdPrice(),
-                fetchCreatorProfile(event.claimerWallet),
-            ]);
-
-            log.info('💰 Creator fee claim by %s — %s SOL (%s)',
+            log.debug('Skipping creator fee claim by %s — %s SOL (%s)',
                 event.claimerWallet.slice(0, 8), event.amountSol.toFixed(4), event.claimLabel);
-
-            const ctx: CreatorClaimContext = {
-                event,
-                solUsdPrice,
-                creator,
-            };
-
-            const { imageUrl, caption } = formatCreatorClaimFeed(ctx);
-            try {
-                if (imageUrl) {
-                    await postPhotoToChannel(imageUrl, caption);
-                } else {
-                    await postToChannel(caption);
-                }
-                pipeline.posted++;
-                log.info('✅ Posted creator claim by %s to %s', event.claimerWallet.slice(0, 8), config.channelId);
-            } catch (postErr) {
-                log.error('Failed to post creator claim by %s: %s', event.claimerWallet.slice(0, 8), postErr);
-            }
         }
       } catch (err) {
         log.error('Claim handler error: %s', err);
