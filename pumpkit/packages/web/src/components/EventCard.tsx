@@ -1,6 +1,10 @@
-import type { MonitorEvent } from '../types';
+import type { EventType } from '../types';
 
-interface FeedEvent extends MonitorEvent {
+export interface FeedEvent {
+  id: string;
+  type: EventType;
+  timestamp: string;
+  txSignature: string;
   tokenName: string;
   tokenSymbol: string;
   creator: string;
@@ -111,8 +115,6 @@ function EventContent({ event }: { event: FeedEvent }) {
       return null;
   }
 }
-
-export type { FeedEvent };
 
 export function EventCard({ event }: { event: FeedEvent }) {
   const { emoji, bg } = avatarConfig[event.type] ?? { emoji: '📋', bg: 'bg-tg-input' };

@@ -52,12 +52,12 @@ A single-page dashboard that connects to the `@pumpkit/monitor` REST API and dis
 **Event Card Types:**
 | Event | Icon | Color | Fields |
 |-------|------|-------|--------|
-| Fee Claim | 💰 | Green | creator, amount, token, signature, time |
-| Token Launch | 🚀 | Blue | name, symbol, creator, cashback, time |
-| Graduation | 🎓 | Purple | token, pool, liquidity, time |
-| Whale Trade | 🐋 | Orange | direction, amount, token, wallet, time |
-| CTO | 👑 | Red | old_creator, new_creator, token, time |
-| Fee Distribution | 💎 | Cyan | token, shareholders, amounts, time |
+| Fee Claim | 💰 | `pump-green` | creator, amount, token, signature, time |
+| Token Launch | 🚀 | `tg-blue` | name, symbol, creator, cashback, time |
+| Graduation | 🎓 | `pump-purple` | token, pool, liquidity, time |
+| Whale Trade | 🐋 | `pump-orange` | direction, amount, token, wallet, time |
+| CTO | 👑 | `pump-pink` | old_creator, new_creator, token, time |
+| Fee Distribution | 💎 | `pump-cyan` | token, shareholders, amounts, time |
 
 ### 3. Docs (`/docs`)
 
@@ -79,26 +79,41 @@ A single-page dashboard that connects to the `@pumpkit/monitor` REST API and dis
 
 ## Design Tokens
 
+Uses Tailwind custom colors defined in `tailwind.config.js`. Two palettes:
+
+### Telegram Palette (`tg-*`)
+| Token | Hex | Usage |
+|-------|-----|-------|
+| `tg-bg` | `#17212b` | Main background (dark mode) |
+| `tg-sidebar` | `#0e1621` | Sidebar / left panel |
+| `tg-chat` | `#0e1621` | Chat area background |
+| `tg-header` | `#17212b` | Top bar |
+| `tg-input` | `#242f3d` | Input fields, cards |
+| `tg-hover` | `#202b36` | Hover state |
+| `tg-border` | `#1c2733` | Subtle borders |
+| `tg-blue` | `#5eb5f7` | Links, accent (Telegram blue) |
+| `tg-green` | `#4fae4e` | Online / success |
+| `tg-bubble` | `#2b5278` | Outgoing message bubble |
+| `tg-bubble-in` | `#182533` | Incoming message bubble |
+
+### PumpFun Palette (`pump-*`)
+| Token | Hex | Usage |
+|-------|-----|-------|
+| `pump-green` | `#00e676` | Buy / success / launch |
+| `pump-pink` | `#ff6b9d` | Sell / hot |
+| `pump-yellow` | `#ffd54f` | Warnings / trending |
+| `pump-purple` | `#b388ff` | Graduation |
+| `pump-orange` | `#ff9100` | Whale |
+| `pump-cyan` | `#00e5ff` | Info |
+
+### Typography
 ```css
-/* Colors */
---bg-primary: #0a0a0f;
---bg-card: #12121a;
---bg-sidebar: #0e0e16;
---border: #1e1e2e;
---text-primary: #e4e4e7;
---text-secondary: #71717a;
---accent-green: #22c55e;
---accent-blue: #3b82f6;
---accent-purple: #a855f7;
---accent-orange: #f97316;
---accent-red: #ef4444;
---accent-cyan: #06b6d4;
+--font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+--font-mono: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace;
+```
 
-/* Typography */
---font-sans: 'Inter', system-ui, sans-serif;
---font-mono: 'JetBrains Mono', 'Fira Code', monospace;
-
-/* Spacing */
+### Spacing
+```css
 --radius: 8px;
 --card-padding: 16px;
 --sidebar-width: 280px;

@@ -79,13 +79,13 @@ All event cards share a common structure:
 - **Data**: `ClaimEvent` from SSE stream
 - **Primary**: Creator wallet + SOL amount
 - **Details**: Token name/symbol, claim type, tx signature
-- **Color accent**: Green (`--accent-green`)
+- **Color accent**: `pump-green`
 
 ### LaunchCard
 - **Data**: `LaunchEvent` from SSE stream
 - **Primary**: Token name + symbol
 - **Details**: Creator, cashback status
-- **Color accent**: Blue (`--accent-blue`)
+- **Color accent**: `tg-blue`
 
 ### WatchList
 - **Data**: `fetchWatches()` on mount, refresh on add/remove

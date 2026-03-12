@@ -128,6 +128,18 @@ export function Layout() {
         <main className="flex-1 overflow-y-auto bg-tg-chat">
           <Outlet />
         </main>
+
+        {/* Cosmetic Telegram input bar */}
+        <div className="shrink-0 bg-tg-header border-t border-tg-border px-4 py-2 flex items-center gap-3">
+          <button className="text-zinc-500 hover:text-zinc-300 transition text-xl">😊</button>
+          <div className="flex-1 bg-tg-input rounded-full px-4 py-2 text-sm text-zinc-500">
+            Message...
+          </div>
+          <button className="text-zinc-500 hover:text-tg-blue transition text-xl">📎</button>
+          <button className="w-9 h-9 rounded-full bg-tg-blue flex items-center justify-center text-white text-sm hover:bg-tg-blue/80 transition">
+            ▶
+          </button>
+        </div>
       </div>
     </div>
   );
