@@ -121,20 +121,21 @@ async function main(): Promise<void> {
         if (event.claimType === 'claim_social_fee_pda' && event.socialPlatform === 2 && event.githubUserId) {
             pipeline.socialClaims++;
 
+            const mint = event.tokenMint?.trim() || '';
+
             // Use on-chain lifetime data as ground truth: if lifetime lamports
             // significantly exceed this claim, the user has claimed before —
             // regardless of what our local persistence says (it resets on redeploy).
-            let isFirstClaim = !hasGithubUserClaimed(event.githubUserId);
+            // Tracked per user+mint so claiming coin A doesn't affect coin B.
+            let isFirstClaim = !hasGithubUserClaimed(event.githubUserId, mint);
             if (isFirstClaim && event.lifetimeClaimedLamports != null && event.lifetimeClaimedLamports > event.amountLamports * 1.01) {
                 // On-chain lifetime is larger than this single claim → not actually first
                 isFirstClaim = false;
                 // Backfill our local tracker so future claims aren't misclassified
-                markGithubUserClaimed(event.githubUserId);
+                markGithubUserClaimed(event.githubUserId, mint);
             }
             if (isFirstClaim) pipeline.firstClaim++;
             else pipeline.repeatClaim++;
-
-            const mint = event.tokenMint?.trim() || '';
             const [githubUser, tokenInfo, solUsdPrice] = await Promise.all([
                 fetchGitHubUserById(event.githubUserId),
                 mint ? fetchTokenInfo(mint) : Promise.resolve(null),
@@ -162,7 +163,7 @@ async function main(): Promise<void> {
                 : null;
 
             const isFake = event.isFake === true;
-            const claimNumber = isFake ? 0 : incrementGithubClaimCount(event.githubUserId);
+            const claimNumber = isFake ? 0 : incrementGithubClaimCount(event.githubUserId, mint);
             const emoji = isFake ? '⚠️' : isFirstClaim ? '🚨' : '📤';
             log.info('%s %sGitHub social fee claim by %s (%s) — %s SOL',
                 emoji, isFake ? 'FAKE ' : '',
@@ -196,7 +197,7 @@ async function main(): Promise<void> {
                 } else {
                     await postToChannel(caption);
                 }
-                if (!isFake && isFirstClaim) markGithubUserClaimed(event.githubUserId);
+                if (!isFake && isFirstClaim) markGithubUserClaimed(event.githubUserId, mint);
                 pipeline.posted++;
                 log.info('✅ Posted GitHub claim by %s (%s) to %s',
                     event.githubUserId, githubUser?.login ?? '?', config.channelId);
