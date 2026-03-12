@@ -167,9 +167,9 @@ test_rust_rapid() {
     done
     
     local end_time=$(date +%s.%N)
-    local duration=$(echo "$end_time - $start_time" | bc)
+    local duration=$(awk "BEGIN {printf \"%.3f\", $end_time - $start_time}")
     
-    echo "  Total time: ${duration}s ($(echo "scale=3; $duration / $NUM_KEYPAIRS" | bc)s per key)"
+    echo "  Total time: ${duration}s ($(awk "BEGIN {printf \"%.3f\", $duration / $NUM_KEYPAIRS}")s per key)"
     
     # Verify all keypairs
     echo "  Verifying generated keypairs..."
@@ -226,9 +226,9 @@ test_typescript_rapid() {
     done
     
     local end_time=$(date +%s.%N)
-    local duration=$(echo "$end_time - $start_time" | bc)
+    local duration=$(awk "BEGIN {printf \"%.3f\", $end_time - $start_time}")
     
-    echo "  Total time: ${duration}s ($(echo "scale=3; $duration / $NUM_KEYPAIRS" | bc)s per key)"
+    echo "  Total time: ${duration}s ($(awk "BEGIN {printf \"%.3f\", $duration / $NUM_KEYPAIRS}")s per key)"
     
     # Verify all keypairs
     echo "  Verifying generated keypairs..."

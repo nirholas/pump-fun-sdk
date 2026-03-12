@@ -1,6 +1,5 @@
 /* ================================================================
-   PumpFun Clone — Mock Data & Interactions
-   Design template only — no blockchain functionality
+   Launchpad — Token Data & Interactions
    ================================================================ */
 
 // ── Mock token data ──

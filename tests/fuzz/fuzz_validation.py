@@ -43,7 +43,7 @@ TEST_CASES: List[Tuple[str, str, bool]] = [
     ("ABC", "Valid uppercase", False),
     
     # Edge cases
-    ("a" * 44, "Maximum valid length (full address)", False),
+    ("a" * 44, "Very long prefix (full address length)", True),  # Exceeds max pattern length
     ("a" * 100, "Very long prefix", True),  # Should be rejected as too long
     
     # Whitespace

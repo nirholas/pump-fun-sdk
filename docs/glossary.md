@@ -75,7 +75,6 @@ Key terms and concepts used throughout the Pump SDK documentation.
 | **Telegram Bot** | An interactive Telegram bot with commands for watching wallets, monitoring events, and querying data. |
 | **WebSocket Relay** | A server that polls PumpFun's API and subscribes to Solana RPC logs, then broadcasts parsed events to browser clients. |
 | **x402** | HTTP 402 payment protocol — gate any API behind automated Solana USDC micropayments. |
-| **PumpOS** | The web-based desktop environment with 169 apps for interacting with the Pump ecosystem. |
 
 ## Vanity Generator Terms
 

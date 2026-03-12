@@ -25,11 +25,23 @@ import {
 import type { FeeClaimEvent, ClaimType } from './types.js';
 import {
     CLAIM_INSTRUCTIONS,
+    CLAIM_EVENT_DISCRIMINATORS,
     PUMP_PROGRAM_ID,
     PUMP_AMM_PROGRAM_ID,
     PUMP_FEE_PROGRAM_ID,
     type InstructionDef,
 } from './types.js';
+
+// Anchor PascalCase instruction names for all claim instruction types.
+// Derived from the snake_case claimTypes in CLAIM_INSTRUCTIONS.
+const CLAIM_IX_LOG_NAMES = new Set([
+    'ClaimSocialFeePda',
+    'CollectCreatorFee',
+    'DistributeCreatorFees',
+    'CollectCoinCreatorFee',
+    'ClaimCashback',
+    'TransferCreatorFeesToPump',
+]);
 
 // ============================================================================
 // Rate limiter
@@ -276,16 +288,19 @@ export class ClaimMonitor {
         this.processedSignatures.add(signature);
         this.trimProcessedCache();
 
-        // Scan all log lines for relevant events.
-        // NOTE: claim_social_fee_pda does NOT emit a CPI event — it returns a
-        // SocialFeePdaClaimed struct. Detect it via Anchor's instruction log line
-        // instead of a "Program data:" discriminator.
+        // Scan all log lines for claim instructions and relevant events.
+        // Detection paths:
+        //   1. Anchor instruction log: "Program log: Instruction: <Name>"
+        //   2. Claim event discriminator in "Program data:" lines
         let hasClaimIx = false;
 
         for (const line of logs) {
-            // Detect claim_social_fee_pda via Anchor instruction log
-            if (!hasClaimIx && line.includes('Program log: Instruction: ClaimSocialFeePda')) {
-                hasClaimIx = true;
+            // Detect ANY claim instruction via Anchor instruction log
+            if (!hasClaimIx && line.startsWith('Program log: Instruction: ')) {
+                const ixName = line.slice('Program log: Instruction: '.length);
+                if (CLAIM_IX_LOG_NAMES.has(ixName)) {
+                    hasClaimIx = true;
+                }
             }
 
             if (!line.includes('Program data:')) continue;
@@ -300,6 +315,8 @@ export class ClaimMonitor {
                     this.socialFeeIndex.updateFromCreateEvent(bytes);
                 } else if (disc === UPDATE_FEE_SHARES_EVENT_DISC) {
                     this.socialFeeIndex.updateFromUpdateSharesEvent(bytes);
+                } else if (!hasClaimIx && CLAIM_EVENT_DISCRIMINATORS[disc]) {
+                    hasClaimIx = true;
                 }
             } catch { /* ignore unparseable */ }
         }

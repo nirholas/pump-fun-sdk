@@ -42,7 +42,6 @@
 | On-chain analytics | ✅ Done | Price impact, graduation progress, token price, bonding curve summary |
 | x402 payment protocol | ✅ Done | HTTP 402 micropayments with Solana USDC |
 | 19 tutorials | ✅ Done | Step-by-step guides from token creation to CoinGecko integration |
-| PumpOS website | ✅ Done | Web desktop with 169 Pump-Store apps |
 | DeFi agents | ✅ Done | 43 production-ready AI agent definitions with 18-language i18n |
 | Lair-TG platform | ✅ Done | Unified Telegram bot for DeFi intelligence, wallet management, token launching |
 | SperaxOS integration | 🚧 In Progress | pump-fun-sdk as a native SperaxOS skill |

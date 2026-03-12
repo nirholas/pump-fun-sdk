@@ -21,7 +21,6 @@ Production deployment guide for every component in the Pump SDK ecosystem.
 - [Live Dashboards](#live-dashboards)
 - [x402 Payment Server](#x402-payment-server)
 - [Plugin Delivery Platform](#plugin-delivery-platform)
-- [PumpOS Website](#pumpos-website)
 - [Docker Compose (Local Development)](#docker-compose-local-development)
 - [Production Checklist](#production-checklist)
 - [RPC Provider Recommendations](#rpc-provider-recommendations)
@@ -633,23 +632,6 @@ bun install
 bun run build
 vercel --prod
 ```
-
----
-
-## PumpOS Website
-
-Web desktop UI with 169 Pump-Store apps.
-
-**Platform:** Vercel, GitHub Pages
-
-```bash
-cd site
-vercel --prod
-# Or serve locally:
-npx serve .
-```
-
-The root `vercel.json` serves the `website/` folder with SPA routing (rewrites all non-static paths to `/index.html`).
 
 ---
 

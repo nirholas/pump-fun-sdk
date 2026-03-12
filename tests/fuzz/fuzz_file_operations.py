@@ -113,8 +113,8 @@ class FileOperationTest:
                 log_fail(f"Rust: expected {'success' if should_succeed else 'failure'}, got {'success' if rust_success else 'failure'}")
                 self.failed += 1
             
-            # Clean up file if created
-            if os.path.exists(path):
+            # Clean up file if created by generation (not test fixtures)
+            if should_succeed and os.path.exists(path):
                 try:
                     os.remove(path)
                 except:
@@ -237,11 +237,11 @@ class FileOperationTest:
         )
         
         # 8. Very long filename
-        long_name = "a" * 200 + ".json"
+        long_name = "a" * 260 + ".json"
         self.test_path(
             "Very long filename",
             os.path.join(self.temp_base, long_name),
-            should_succeed=False  # Most filesystems limit to 255 chars
+            should_succeed=False  # Most filesystems limit to 255 bytes for filename
         )
         
         # 9. Path with unicode

@@ -68,13 +68,17 @@ if [[ "$SKIP_BUILD" -eq 0 ]]; then
     log_section "Building All Implementations"
     
     # Build Rust
-    echo "Building Rust implementation..."
-    if cd "$PROJECT_ROOT/rust" && cargo build --release 2>&1; then
-        log_pass "Rust build"
+    if command -v cargo &>/dev/null; then
+        echo "Building Rust implementation..."
+        if cd "$PROJECT_ROOT/rust" && cargo build --release 2>&1; then
+            log_pass "Rust build"
+        else
+            log_fail "Rust build"
+        fi
+        cd "$PROJECT_ROOT"
     else
-        log_fail "Rust build"
+        log_info "Rust toolchain not found, skipping Rust build"
     fi
-    cd "$PROJECT_ROOT"
     
     # Build TypeScript
     echo "Building TypeScript implementation..."
@@ -96,14 +100,18 @@ log_section "Running Unit Tests ($ITERATIONS iterations)"
 
 # Rust unit tests
 echo -e "${BOLD}--- Rust Unit Tests ---${NC}"
-for i in $(seq 1 $ITERATIONS); do
-    if cd "$PROJECT_ROOT/rust" && cargo test --release 2>&1 | tail -5; then
-        log_pass "Rust unit tests (run $i)"
-    else
-        log_fail "Rust unit tests (run $i)"
-    fi
-    cd "$PROJECT_ROOT"
-done
+if command -v cargo &>/dev/null; then
+    for i in $(seq 1 $ITERATIONS); do
+        if cd "$PROJECT_ROOT/rust" && cargo test --release 2>&1 | tail -5; then
+            log_pass "Rust unit tests (run $i)"
+        else
+            log_fail "Rust unit tests (run $i)"
+        fi
+        cd "$PROJECT_ROOT"
+    done
+else
+    log_info "Rust toolchain not found, skipping Rust unit tests"
+fi
 
 # TypeScript unit tests
 echo ""
