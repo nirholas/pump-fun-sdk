@@ -31,37 +31,37 @@ describe('Claim Tracker', () => {
   });
 
   it('detects first claim for a GitHub user', () => {
-    const result = tracker.recordGitHubClaim(
-      'user123',
-      'MintABC123456789012345678901234567890abc',
-      1.5,
-      0,
-      200,
-      0.000001,
-      50_000,
-      25,
-    );
+    const mint = 'MintABC123456789012345678901234567890abc';
+    const isFirst = tracker.isFirstClaimByGithubUser('user123');
+    const claimNumber = tracker.incrementGithubClaimCount('user123', mint);
+    tracker.markGithubUserClaimed('user123', mint);
 
-    expect(result.isFirstClaim).toBe(true);
-    expect(result.claimNumber).toBe(1);
+    expect(isFirst).toBe(true);
+    expect(claimNumber).toBe(1);
   });
 
   it('detects repeat claim for same GitHub user', () => {
     const mint = 'MintABC123456789012345678901234567890abc';
-    tracker.recordGitHubClaim('user456', mint, 1.0, 0, 150, 0.00001, 30_000, 20);
-    const result = tracker.recordGitHubClaim('user456', mint, 2.0, 0, 200, 0.00002, 60_000, 30);
+    tracker.incrementGithubClaimCount('user456', mint);
+    tracker.markGithubUserClaimed('user456', mint);
+    const isFirst = tracker.isFirstClaimByGithubUser('user456');
+    const claimNumber = tracker.incrementGithubClaimCount('user456', mint);
 
-    expect(result.isFirstClaim).toBe(false);
-    expect(result.claimNumber).toBe(2);
+    expect(isFirst).toBe(false);
+    expect(claimNumber).toBe(2);
   });
 
   it('tracks different GitHub users independently', () => {
     const mint = 'MintXYZ123456789012345678901234567890xyz';
-    const r1 = tracker.recordGitHubClaim('user_a', mint, 1.0, 0, 100, 0.00001, 20_000, 10);
-    const r2 = tracker.recordGitHubClaim('user_b', mint, 1.0, 0, 100, 0.00001, 20_000, 10);
+    const isFirstA = tracker.isFirstClaimByGithubUser('user_a');
+    tracker.incrementGithubClaimCount('user_a', mint);
+    tracker.markGithubUserClaimed('user_a', mint);
+    const isFirstB = tracker.isFirstClaimByGithubUser('user_b');
+    tracker.incrementGithubClaimCount('user_b', mint);
+    tracker.markGithubUserClaimed('user_b', mint);
 
-    expect(r1.isFirstClaim).toBe(true);
-    expect(r2.isFirstClaim).toBe(true);
+    expect(isFirstA).toBe(true);
+    expect(isFirstB).toBe(true);
   });
 });
 
@@ -129,12 +129,13 @@ describe('Formatters', () => {
       },
       solUsdPrice: 180,
       githubUser: {
-        id: 12345,
         login: 'testdev',
         name: 'Test Developer',
         avatarUrl: 'https://avatars.example.com/12345',
+        htmlUrl: 'https://github.com/testdev',
         bio: 'Building cool stuff',
         followers: 150,
+        following: 20,
         publicRepos: 30,
         createdAt: '2020-01-01T00:00:00Z',
         twitterUsername: 'testdev_x',
@@ -152,19 +153,26 @@ describe('Formatters', () => {
         usdMarketCap: 50_000,
         description: 'A test token',
         imageUri: 'https://img.example.com/token.png',
+        bannerUri: '',
         creator: 'CreatorAddr',
         complete: false,
         curveProgress: 25,
         createdTimestamp: 1699000000,
+        athTimestamp: 1699500000,
         lastTradeTimestamp: 1700000000,
+        lastReplyTimestamp: 1699900000,
         replyCount: 42,
         marketCapSol: 277,
         athMarketCap: 100_000,
         kothTimestamp: 0,
-        pumpSwapPool: null,
-        website: null,
+        pumpSwapPool: '',
+        program: 'pump',
+        isCashbackEnabled: false,
+        isNsfw: false,
+        isBanned: false,
+        isHackathon: false,
         twitter: 'https://x.com/testcoin',
-        telegram: null,
+        githubUrls: [],
       },
       isFirstClaim: true,
       isFake: false,
@@ -248,15 +256,16 @@ describe('RPC Fallback', () => {
     vi.restoreAllMocks();
   });
 
-  it('creates a fallback connection from multiple URLs', () => {
+  it('creates an RPC fallback from multiple URLs', () => {
     const urls = [
       'https://rpc1.example.com',
       'https://rpc2.example.com',
       'https://rpc3.example.com',
     ];
 
-    const conn = rpcFallback.createFallbackConnection(urls);
-    expect(conn).toBeDefined();
+    const fallback = new rpcFallback.RpcFallback(urls);
+    expect(fallback).toBeDefined();
+    expect(fallback.getConnection()).toBeDefined();
   });
 });
 
@@ -279,7 +288,7 @@ describe('Config', () => {
     const { loadConfig } = await import('../config.js');
     const config = loadConfig();
 
-    expect(config.telegramBotToken).toBe('test-token-123');
+    expect(config.telegramToken).toBe('test-token-123');
     expect(config.solanaRpcUrl).toBe('https://test-rpc.example.com');
 
     vi.unstubAllEnvs();
@@ -303,7 +312,8 @@ describe('Social Fee Index', () => {
     vi.restoreAllMocks();
   });
 
-  it('exports expected functions', () => {
-    expect(typeof index.resolveMintFromPda).toBe('function');
+  it('exports SocialFeeIndex class', () => {
+    expect(index.SocialFeeIndex).toBeDefined();
+    expect(typeof index.SocialFeeIndex).toBe('function');
   });
 });

@@ -282,12 +282,12 @@ describe('formatLaunchFeed', () => {
         const creator = {
             wallet: 'CreatorWallet111',
             username: 'creator1',
-            profileImage: null,
+            profileImage: '',
             followers: 500,
             totalLaunches: 10,
             scamEstimate: 1,
             recentCoins: [
-                { mint: 'Coin1', symbol: 'OLD', name: 'OldCoin', complete: true, usdMarketCap: 50000, createdTimestamp: 0 },
+                { mint: 'Coin1', symbol: 'OLD', name: 'OldCoin', complete: true, usdMarketCap: 50000 },
             ],
         };
         const result = formatLaunchFeed(event, creator);
@@ -312,8 +312,8 @@ describe('formatLaunchFeed', () => {
     it('handles first-time launcher', () => {
         const creator = {
             wallet: 'NewCreator111',
-            username: null,
-            profileImage: null,
+            username: '',
+            profileImage: '',
             followers: 0,
             totalLaunches: 1,
             scamEstimate: 0,
