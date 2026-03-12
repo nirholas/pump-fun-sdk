@@ -112,7 +112,7 @@ export async function getBuyQuote(
             bondingCurve,
             solAmount,
         });
-        return { tokens, priceImpact: impact.priceImpactPercent };
+        return { tokens, priceImpact: impact.impactBps / 100 };
     } catch {
         return null;
     }
@@ -142,7 +142,7 @@ export async function getSellQuote(
             bondingCurve,
             tokenAmount,
         });
-        return { sol, priceImpact: impact.priceImpactPercent };
+        return { sol, priceImpact: impact.impactBps / 100 };
     } catch {
         return null;
     }

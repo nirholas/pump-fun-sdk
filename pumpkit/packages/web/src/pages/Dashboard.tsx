@@ -12,7 +12,7 @@ let feedIdCounter = 0;
 
 function apiEventToFeedEvent(raw: BaseEvent, isNew: boolean): FeedEvent {
   const id = `sse-${++feedIdCounter}`;
-  const r = raw as Record<string, unknown>;
+  const r = raw as unknown as unknown as Record<string, unknown>;
   return {
     id,
     type: raw.type as FeedEvent['type'],

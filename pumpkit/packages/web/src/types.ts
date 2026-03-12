@@ -7,7 +7,8 @@
  * EventType is re-exported from lib/types.ts — the canonical definition.
  */
 
-export type { EventType } from './lib/types';
+import type { EventType } from './lib/types';
+export type { EventType };
 
 // ── Bot Health ──────────────────────────────────────────
 

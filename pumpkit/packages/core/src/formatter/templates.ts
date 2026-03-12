@@ -85,7 +85,7 @@ export function formatLaunch(event: LaunchEventData): string {
     const lines = [
         bold(`🚀 New Token Launch`),
         '',
-        `${bold(event.name)} (${code(`$${event.symbol}`)}`)`,
+        `${bold(event.name)} (${code(`$${event.symbol}`)}`,
         `Creator: ${code(shortenAddress(event.creator))}`,
         `Mint: ${code(shortenAddress(event.tokenMint))}`,
         '',

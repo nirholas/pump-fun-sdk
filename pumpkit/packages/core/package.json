@@ -25,6 +25,14 @@
   "dependencies": {
     "dotenv": "^16.4.7"
   },
+  "peerDependencies": {
+    "grammy": "^1.35.0"
+  },
+  "peerDependenciesMeta": {
+    "grammy": {
+      "optional": true
+    }
+  },
   "devDependencies": {
     "@types/node": "^22.13.0",
     "typescript": "^5.7.0",
