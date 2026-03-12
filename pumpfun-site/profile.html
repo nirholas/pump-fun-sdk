@@ -65,33 +65,25 @@
           <div style="width:100%;height:100%;background:linear-gradient(135deg,#7bff69,#00d4ff);display:flex;align-items:center;justify-content:center;font-size:36px;">🦍</div>
         </div>
         <div>
-          <div class="profile-name">degen_420.sol</div>
-          <div class="profile-addr">Fg7hK9mP2xLq8RnW5vBt3jYs6dAc4eNu7wZfX9KpQ1r</div>
-          <div class="profile-stats-row">
-            <span class="profile-stat">Tokens created: <strong>12</strong></span>
-            <span class="profile-stat">Tokens held: <strong>47</strong></span>
-            <span class="profile-stat">Total P&L: <strong class="green">+$12,847</strong></span>
-            <span class="profile-stat">Followers: <strong>284</strong></span>
+          <div class="profile-name" id="profileName">Connect wallet to view profile</div>
+          <div class="profile-addr" id="profileAddr">—</div>
+          <div class="profile-stats-row" id="profileStats">
+            <span class="profile-stat">Tokens created: <strong id="statCreated">—</strong></span>
           </div>
         </div>
       </div>
 
       <!-- Profile tabs -->
       <div class="tab-bar" style="margin-bottom:0;">
-        <button class="tab active" onclick="switchProfileTab(this, 'created')"><span class="tab-emoji">🪙</span> Created (12)</button>
-        <button class="tab" onclick="switchProfileTab(this, 'held')"><span class="tab-emoji">💰</span> Held (47)</button>
+        <button class="tab active" onclick="switchProfileTab(this, 'created')"><span class="tab-emoji">🪙</span> Created</button>
         <button class="tab" onclick="switchProfileTab(this, 'activity')"><span class="tab-emoji">📋</span> Activity</button>
-        <button class="tab" onclick="switchProfileTab(this, 'favorites')"><span class="tab-emoji">⭐</span> Favorites</button>
       </div>
 
       <!-- Created tokens -->
       <div id="profile-created">
-        <div class="token-grid" id="createdTokenGrid"></div>
-      </div>
-
-      <!-- Held tokens (hidden) -->
-      <div id="profile-held" style="display:none;">
-        <div class="token-grid" id="heldTokenGrid"></div>
+        <div class="token-grid" id="createdTokenGrid">
+          <div style="padding:40px;text-align:center;color:var(--text-muted);grid-column:1/-1;">Connect wallet to see created tokens</div>
+        </div>
       </div>
 
       <!-- Activity (hidden) -->
@@ -104,27 +96,15 @@
                   <th>Action</th>
                   <th>Token</th>
                   <th>Amount</th>
-                  <th>Price</th>
                   <th>Time</th>
                 </tr>
               </thead>
-              <tbody>
-                <tr><td><span class="tx-type buy">BUY</span></td><td style="font-weight:600;">PEPE25</td><td>5.00 SOL</td><td>$0.000184</td><td>2m ago</td></tr>
-                <tr><td><span class="tx-type sell">SELL</span></td><td style="font-weight:600;">DOGE42</td><td>2.30 SOL</td><td>$0.000092</td><td>15m ago</td></tr>
-                <tr><td><span class="tx-type buy">BUY</span></td><td style="font-weight:600;">MOON</td><td>1.00 SOL</td><td>$0.000341</td><td>1h ago</td></tr>
-                <tr><td style="color:var(--purple);font-weight:700;font-size:12px;">🪙 CREATE</td><td style="font-weight:600;">WAGMI</td><td>—</td><td>—</td><td>2h ago</td></tr>
-                <tr><td><span class="tx-type buy">BUY</span></td><td style="font-weight:600;">SOLAN</td><td>3.50 SOL</td><td>$0.000127</td><td>3h ago</td></tr>
-                <tr><td><span class="tx-type sell">SELL</span></td><td style="font-weight:600;">CAT</td><td>8.00 SOL</td><td>$0.000563</td><td>5h ago</td></tr>
-                <tr><td><span class="tx-type buy">BUY</span></td><td style="font-weight:600;">BONK2</td><td>0.50 SOL</td><td>$0.000018</td><td>6h ago</td></tr>
+              <tbody id="activityBody">
+                <tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:20px;">Connect wallet to see activity</td></tr>
               </tbody>
             </table>
           </div>
         </div>
-      </div>
-
-      <!-- Favorites (hidden) -->
-      <div id="profile-favorites" style="display:none;">
-        <div class="token-grid" id="favTokenGrid"></div>
       </div>
 
     </div>
@@ -145,18 +125,40 @@
 
   <script src="app.js"></script>
   <script>
-    generateTokenGrid(6, 'createdTokenGrid');
-    generateTokenGrid(8, 'heldTokenGrid');
-    generateTokenGrid(4, 'favTokenGrid');
-
     function switchProfileTab(btn, tab) {
       document.querySelectorAll('.tab-bar .tab').forEach(t => t.classList.remove('active'));
       btn.classList.add('active');
-      ['created','held','activity','favorites'].forEach(t => {
+      ['created','activity'].forEach(t => {
         const el = document.getElementById('profile-' + t);
         if (el) el.style.display = (t === tab) ? '' : 'none';
       });
     }
+
+    // Load profile from connected wallet or URL param
+    (async () => {
+      await new Promise(r => setTimeout(r, 500)); // Wait for wallet auto-reconnect
+      const params = new URLSearchParams(window.location.search);
+      const addr = params.get('address') || connectedWallet;
+      if (!addr) return;
+
+      document.getElementById('profileName').textContent = shortAddr(addr);
+      document.getElementById('profileAddr').textContent = addr;
+
+      // Fetch coins created by this address
+      try {
+        const res = await fetch(`${PUMP_API}/coins/user-created-coins/${encodeURIComponent(addr)}?limit=20&offset=0&includeNsfw=false`);
+        if (res.ok) {
+          const coins = await res.json();
+          if (Array.isArray(coins) && coins.length > 0) {
+            document.getElementById('statCreated').textContent = coins.length;
+            renderCoinCards(coins, 'createdTokenGrid');
+          } else {
+            document.getElementById('statCreated').textContent = '0';
+            document.getElementById('createdTokenGrid').innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-muted);grid-column:1/-1;">No tokens created</div>';
+          }
+        }
+      } catch (_) {}
+    })();
   </script>
 </body>
 </html>

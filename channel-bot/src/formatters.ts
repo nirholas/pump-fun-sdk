@@ -275,16 +275,17 @@ export function formatGitHubClaimFeed(ctx: ClaimFeedContext): { imageUrl: string
         const graduated = cp.recentCoins.filter(c => c.complete).length;
         if (graduated > 0) L.push(`🎓 Graduated: ${graduated}`);
         if (cp.scamEstimate > 0) L.push(`⚠️ Rugs: ${cp.scamEstimate}`);
-        if (cp.followers > 0) L.push(`👁 Followers: ${formatCompact(cp.followers)}`);
+        if (cp.followers > 0) L.push(`👁 Followers: ${formatCount(cp.followers)}`);
         // Recent coins
-        const coins = cp.recentCoins.slice(0, 5);
+        const coins = cp.recentCoins.slice(0, 3);
         if (coins.length > 0) {
             const tickers = coins.map(c => {
                 const g = c.complete ? '⭐' : '';
                 const mcap = c.usdMarketCap > 0 ? ` [${formatCompact(c.usdMarketCap)}]` : '';
                 return `<a href="https://pump.fun/coin/${c.mint}">${esc(c.symbol)}</a>${g}${mcap}`;
             });
-            L.push(`🪙 ${tickers.join(' · ')}`);
+            const more = cp.recentCoins.length > 3 ? ` … +${cp.recentCoins.length - 3}` : '';
+            L.push(`🪙 ${tickers.join(' · ')}${more}`);
         }
         L.push('');
     }
@@ -567,17 +568,18 @@ export function formatCreatorClaimFeed(ctx: CreatorClaimContext): { imageUrl: st
         const graduated = creator.recentCoins.filter((c) => c.complete).length;
         if (graduated > 0) L.push(`🎓 Graduated: ${graduated}`);
         if (creator.scamEstimate > 0) L.push(`⚠️ Rugs: ${creator.scamEstimate}`);
-        if (creator.followers > 0) L.push(`👁 Followers: ${formatCompact(creator.followers)}`);
+        if (creator.followers > 0) L.push(`👁 Followers: ${formatCount(creator.followers)}`);
 
         // Show recent coins
-        const coins = creator.recentCoins.slice(0, 5);
+        const coins = creator.recentCoins.slice(0, 3);
         if (coins.length > 0) {
             const tickers = coins.map((c) => {
                 const g = c.complete ? '⭐' : '';
                 const mcap = c.usdMarketCap > 0 ? ` [${formatCompact(c.usdMarketCap)}]` : '';
                 return `<a href="https://pump.fun/coin/${c.mint}">${esc(c.symbol)}</a>${g}${mcap}`;
             });
-            L.push(`🪙 ${tickers.join(' · ')}`);
+            const more = creator.recentCoins.length > 3 ? ` … +${creator.recentCoins.length - 3}` : '';
+            L.push(`🪙 ${tickers.join(' · ')}${more}`);
         }
     }
 
@@ -999,8 +1001,16 @@ function timeAgo(unixSeconds: number): string {
 }
 
 function formatCompact(n: number): string {
+    if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(2)}M`;
+    if (n >= 1_000) return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     if (n >= 1) return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     return n.toFixed(2);
+}
+
+function formatCount(n: number): string {
+    if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+    if (n >= 1_000) return n.toLocaleString('en-US');
+    return String(n);
 }
 
 function formatPriceSol(price: number): string {

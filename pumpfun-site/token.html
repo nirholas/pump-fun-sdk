@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>$PEPE25 — launchpad</title>
+  <title>Token — launchpad</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🟢</text></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -66,10 +66,10 @@
           <div class="chart-panel">
             <div class="chart-header">
               <div class="chart-token-info">
-                <div class="chart-token-img" style="background:linear-gradient(135deg,#6366f1,#a855f7);display:flex;align-items:center;justify-content:center;color:white;font-size:20px;font-weight:900;border-radius:8px;">🐸</div>
+                <div class="chart-token-img" id="tokenImg" style="background:linear-gradient(135deg,#6366f1,#a855f7);display:flex;align-items:center;justify-content:center;color:white;font-size:20px;font-weight:900;border-radius:8px;">🪙</div>
                 <div>
-                  <div class="chart-token-name">PEPE2025 <span class="chart-token-ticker">$PEPE25</span></div>
-                  <div class="chart-token-price">$0.0001847</div>
+                  <div class="chart-token-name" id="tokenName">Loading... <span class="chart-token-ticker" id="tokenTicker"></span></div>
+                  <div class="chart-token-price" id="tokenPrice">—</div>
                 </div>
               </div>
               <div class="chart-timeframes">
@@ -82,9 +82,9 @@
               </div>
             </div>
 
-            <!-- SVG chart placeholder -->
+            <!-- Real chart area -->
             <div class="chart-area">
-              <svg class="chart-placeholder" viewBox="0 0 800 400" preserveAspectRatio="none">
+              <svg id="priceChart" class="chart-placeholder" viewBox="0 0 800 400" preserveAspectRatio="none">
                 <defs>
                   <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stop-color="#7bff69" stop-opacity="0.3"/>
@@ -98,18 +98,13 @@
                   <line x1="0" y1="240" x2="800" y2="240"/>
                   <line x1="0" y1="320" x2="800" y2="320"/>
                 </g>
-                <!-- Candles -->
-                <g id="candles"></g>
-                <!-- Price line -->
-                <path d="M0 300 Q50 280, 80 290 T160 260 T240 200 T320 220 T400 180 T480 140 T520 160 T560 120 T600 130 T640 90 T700 100 T750 70 T800 80"
-                      fill="none" stroke="#7bff69" stroke-width="2"/>
-                <!-- Area fill -->
-                <path d="M0 300 Q50 280, 80 290 T160 260 T240 200 T320 220 T400 180 T480 140 T520 160 T560 120 T600 130 T640 90 T700 100 T750 70 T800 80 L800 400 L0 400 Z"
-                      fill="url(#chartGrad)"/>
-                <!-- Current price line -->
-                <line x1="0" y1="80" x2="800" y2="80" stroke="#7bff69" stroke-width="0.5" stroke-dasharray="4,4" opacity="0.5"/>
-                <rect x="740" y="72" width="60" height="18" rx="3" fill="#7bff69"/>
-                <text x="770" y="84" font-size="10" fill="#0e0e16" text-anchor="middle" font-weight="700">$0.000184</text>
+                <g id="chartCandles"></g>
+                <path id="chartLine" d="" fill="none" stroke="#7bff69" stroke-width="2"/>
+                <path id="chartArea" d="" fill="url(#chartGrad)"/>
+                <line id="chartPriceLine" x1="0" y1="0" x2="800" y2="0" stroke="#7bff69" stroke-width="0.5" stroke-dasharray="4,4" opacity="0.5"/>
+                <rect id="chartPriceRect" x="740" y="0" width="60" height="18" rx="3" fill="#7bff69"/>
+                <text id="chartPriceLabel" x="770" y="0" font-size="10" fill="#0e0e16" text-anchor="middle" font-weight="700">—</text>
+                <text id="chartLoading" x="400" y="200" font-size="14" fill="#888" text-anchor="middle">Loading chart...</text>
               </svg>
             </div>
           </div>
@@ -124,41 +119,7 @@
 
             <!-- Thread section -->
             <div class="thread-panel" id="tab-thread">
-              <div class="thread-message">
-                <div class="thread-avatar"><div style="width:100%;height:100%;background:linear-gradient(135deg,#f472b6,#a855f7);display:flex;align-items:center;justify-content:center;font-size:14px;">🦊</div></div>
-                <div class="thread-body">
-                  <div class="thread-user">degen_420.sol <span>2m ago</span></div>
-                  <div class="thread-text">LFG!! 🚀🚀🚀 just aped in 5 SOL. this is going to 100x no cap</div>
-                </div>
-              </div>
-              <div class="thread-message">
-                <div class="thread-avatar"><div style="width:100%;height:100%;background:linear-gradient(135deg,#facc15,#fb923c);display:flex;align-items:center;justify-content:center;font-size:14px;">🐵</div></div>
-                <div class="thread-body">
-                  <div class="thread-user">solana_whale.sol <span>5m ago</span></div>
-                  <div class="thread-text">dev is based, been following since mint. bonding curve filling fast 📈</div>
-                </div>
-              </div>
-              <div class="thread-message">
-                <div class="thread-avatar"><div style="width:100%;height:100%;background:linear-gradient(135deg,#3b82f6,#06b6d4);display:flex;align-items:center;justify-content:center;font-size:14px;">🐳</div></div>
-                <div class="thread-body">
-                  <div class="thread-user">crypto_chad <span>8m ago</span></div>
-                  <div class="thread-text">who's still holding? this dipped and recovered like a champ 💎🙌</div>
-                </div>
-              </div>
-              <div class="thread-message">
-                <div class="thread-avatar"><div style="width:100%;height:100%;background:linear-gradient(135deg,#22c55e,#16a34a);display:flex;align-items:center;justify-content:center;font-size:14px;">🐸</div></div>
-                <div class="thread-body">
-                  <div class="thread-user">pepe_maxi <span>12m ago</span></div>
-                  <div class="thread-text">the memes are too good on this one. community is actually building 🔥</div>
-                </div>
-              </div>
-              <div class="thread-message">
-                <div class="thread-avatar"><div style="width:100%;height:100%;background:linear-gradient(135deg,#ef4444,#f97316);display:flex;align-items:center;justify-content:center;font-size:14px;">👻</div></div>
-                <div class="thread-body">
-                  <div class="thread-user">anon_trader <span>15m ago</span></div>
-                  <div class="thread-text">just graduated to raydium. the real fun begins now 🎓🚀</div>
-                </div>
-              </div>
+              <div id="threadMessages" style="color:var(--text-muted);padding:16px;text-align:center;">Loading replies...</div>
             </div>
 
             <!-- Trades section (hidden) -->
@@ -168,37 +129,21 @@
                   <tr>
                     <th>Type</th>
                     <th>Amount (SOL)</th>
-                    <th>Amount (PEPE25)</th>
+                    <th>Amount (Token)</th>
                     <th>Time</th>
                     <th>Maker</th>
                   </tr>
                 </thead>
-                <tbody>
-                  <tr><td><span class="tx-type buy">BUY</span></td><td>5.00</td><td>27,041,382</td><td>2m ago</td><td style="font-family:var(--font-mono);font-size:12px;color:var(--text-muted);">Fg7h...x9Kp</td></tr>
-                  <tr><td><span class="tx-type sell">SELL</span></td><td>1.20</td><td>6,489,932</td><td>3m ago</td><td style="font-family:var(--font-mono);font-size:12px;color:var(--text-muted);">8kLm...nQ2r</td></tr>
-                  <tr><td><span class="tx-type buy">BUY</span></td><td>2.50</td><td>13,520,691</td><td>4m ago</td><td style="font-family:var(--font-mono);font-size:12px;color:var(--text-muted);">Dp3s...vW7t</td></tr>
-                  <tr><td><span class="tx-type buy">BUY</span></td><td>10.00</td><td>54,082,764</td><td>5m ago</td><td style="font-family:var(--font-mono);font-size:12px;color:var(--text-muted);">Yb6u...zA1x</td></tr>
-                  <tr><td><span class="tx-type sell">SELL</span></td><td>0.80</td><td>4,326,621</td><td>6m ago</td><td style="font-family:var(--font-mono);font-size:12px;color:var(--text-muted);">Jc9v...eD4y</td></tr>
-                  <tr><td><span class="tx-type buy">BUY</span></td><td>3.00</td><td>16,224,829</td><td>8m ago</td><td style="font-family:var(--font-mono);font-size:12px;color:var(--text-muted);">Mn2w...gF6z</td></tr>
-                  <tr><td><span class="tx-type buy">BUY</span></td><td>0.50</td><td>2,704,138</td><td>10m ago</td><td style="font-family:var(--font-mono);font-size:12px;color:var(--text-muted);">Qp5a...hG8b</td></tr>
-                  <tr><td><span class="tx-type sell">SELL</span></td><td>7.30</td><td>39,480,427</td><td>12m ago</td><td style="font-family:var(--font-mono);font-size:12px;color:var(--text-muted);">Rs8c...jK1d</td></tr>
+                <tbody id="tradesBody">
+                  <tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:20px;">Loading trades...</td></tr>
                 </tbody>
               </table>
             </div>
 
             <!-- Holders section (hidden) -->
             <div class="thread-panel" id="tab-holders" style="display:none;">
-              <div class="holder-list">
-                <div class="holder-row"><span class="holder-rank">1</span><span class="holder-addr">Bonding Curve (Locked)</span><span class="holder-pct green">42.3%</span><div class="holder-bar"><div class="holder-bar-fill" style="width:42.3%"></div></div></div>
-                <div class="holder-row"><span class="holder-rank">2</span><span class="holder-addr">Fg7h...x9Kp</span><span class="holder-pct">8.1%</span><div class="holder-bar"><div class="holder-bar-fill" style="width:8.1%"></div></div></div>
-                <div class="holder-row"><span class="holder-rank">3</span><span class="holder-addr">Yb6u...zA1x</span><span class="holder-pct">6.4%</span><div class="holder-bar"><div class="holder-bar-fill" style="width:6.4%"></div></div></div>
-                <div class="holder-row"><span class="holder-rank">4</span><span class="holder-addr">Dp3s...vW7t</span><span class="holder-pct">4.2%</span><div class="holder-bar"><div class="holder-bar-fill" style="width:4.2%"></div></div></div>
-                <div class="holder-row"><span class="holder-rank">5</span><span class="holder-addr">8kLm...nQ2r</span><span class="holder-pct">3.8%</span><div class="holder-bar"><div class="holder-bar-fill" style="width:3.8%"></div></div></div>
-                <div class="holder-row"><span class="holder-rank">6</span><span class="holder-addr">Mn2w...gF6z</span><span class="holder-pct">2.9%</span><div class="holder-bar"><div class="holder-bar-fill" style="width:2.9%"></div></div></div>
-                <div class="holder-row"><span class="holder-rank">7</span><span class="holder-addr">Qp5a...hG8b</span><span class="holder-pct">2.1%</span><div class="holder-bar"><div class="holder-bar-fill" style="width:2.1%"></div></div></div>
-                <div class="holder-row"><span class="holder-rank">8</span><span class="holder-addr">Jc9v...eD4y</span><span class="holder-pct">1.7%</span><div class="holder-bar"><div class="holder-bar-fill" style="width:1.7%"></div></div></div>
-                <div class="holder-row"><span class="holder-rank">9</span><span class="holder-addr">Rs8c...jK1d</span><span class="holder-pct">1.2%</span><div class="holder-bar"><div class="holder-bar-fill" style="width:1.2%"></div></div></div>
-                <div class="holder-row"><span class="holder-rank">10</span><span class="holder-addr">Others (4,811)</span><span class="holder-pct">27.3%</span><div class="holder-bar"><div class="holder-bar-fill" style="width:27.3%"></div></div></div>
+              <div class="holder-list" id="holderList">
+                <div style="text-align:center;color:var(--text-muted);padding:20px;">Loading holders...</div>
               </div>
             </div>
 
@@ -223,7 +168,7 @@
             <div class="trade-input-group">
               <div class="trade-input-label">
                 <span>Amount</span>
-                <span>Balance: 12.45 SOL</span>
+                <span id="balanceLabel">Balance: — SOL</span>
               </div>
               <div class="trade-input-wrap">
                 <input type="number" class="trade-input" placeholder="0.0" step="0.01" min="0">
@@ -259,52 +204,44 @@
             <div style="font-weight:700;font-size:15px;margin-bottom:12px;">Token Info</div>
             <div class="token-info-row">
               <span class="token-info-key">Market Cap</span>
-              <span class="token-info-val green">$847,293</span>
+              <span class="token-info-val green" id="infoMcap">—</span>
             </div>
             <div class="token-info-row">
-              <span class="token-info-key">24h Volume</span>
-              <span class="token-info-val">$2,103,847</span>
-            </div>
-            <div class="token-info-row">
-              <span class="token-info-key">Liquidity</span>
-              <span class="token-info-val">$423,910</span>
-            </div>
-            <div class="token-info-row">
-              <span class="token-info-key">Holders</span>
-              <span class="token-info-val">4,821</span>
+              <span class="token-info-key">Replies</span>
+              <span class="token-info-val" id="infoReplies">—</span>
             </div>
             <div class="token-info-row">
               <span class="token-info-key">Total Supply</span>
-              <span class="token-info-val">1,000,000,000</span>
+              <span class="token-info-val" id="infoSupply">—</span>
             </div>
             <div class="token-info-row">
               <span class="token-info-key">Creator</span>
-              <span class="token-info-val" style="font-family:var(--font-mono);font-size:12px;">Fg7h...x9Kp</span>
+              <span class="token-info-val" id="infoCreator" style="font-family:var(--font-mono);font-size:12px;">—</span>
             </div>
             <div class="token-info-row">
               <span class="token-info-key">Status</span>
-              <span class="token-info-val green">🟢 Active</span>
+              <span class="token-info-val green" id="infoStatus">—</span>
             </div>
 
             <!-- Bonding curve progress -->
             <div style="margin-top:16px;">
               <div class="bonding-progress-header">
                 <span>Bonding Curve Progress</span>
-                <span style="color:var(--green);font-weight:700;">72.4%</span>
+                <span style="color:var(--green);font-weight:700;" id="infoProgress">—</span>
               </div>
               <div class="bonding-progress-bar" style="height:6px;">
-                <div class="bonding-progress-fill" style="width:72.4%"></div>
+                <div class="bonding-progress-fill" id="infoProgressBar" style="width:0%"></div>
               </div>
               <p style="font-size:11px;color:var(--text-dim);margin-top:6px;">When 100% filled, liquidity migrates to Raydium and trading begins on AMM.</p>
             </div>
           </div>
 
           <!-- Social links -->
-          <div class="trade-card" style="padding:14px 16px;">
+          <div class="trade-card" style="padding:14px 16px;" id="socialLinks">
             <div style="display:flex;gap:8px;">
-              <a href="#" class="btn btn-ghost btn-sm" style="flex:1;justify-content:center;">🐦 Twitter</a>
-              <a href="#" class="btn btn-ghost btn-sm" style="flex:1;justify-content:center;">✈️ Telegram</a>
-              <a href="#" class="btn btn-ghost btn-sm" style="flex:1;justify-content:center;">🌐 Website</a>
+              <a href="#" class="btn btn-ghost btn-sm" id="socialTwitter" style="flex:1;justify-content:center;display:none;">🐦 Twitter</a>
+              <a href="#" class="btn btn-ghost btn-sm" id="socialTelegram" style="flex:1;justify-content:center;display:none;">✈️ Telegram</a>
+              <a href="#" class="btn btn-ghost btn-sm" id="socialWebsite" style="flex:1;justify-content:center;display:none;">🌐 Website</a>
             </div>
           </div>
         </div>
@@ -353,6 +290,219 @@
     function setAmount(val) {
       document.querySelector('.trade-input').value = val || '';
     }
+
+    // ── Load real token data ──
+    (async () => {
+      const params = new URLSearchParams(window.location.search);
+      const mint = params.get('mint');
+      if (!mint) return;
+
+      try {
+        const res = await fetch(`${PUMP_API}/coins/${encodeURIComponent(mint)}`);
+        if (!res.ok) throw new Error('API ' + res.status);
+        const coin = await res.json();
+
+        // Title
+        document.title = `$${coin.symbol || '???'} — launchpad`;
+
+        // Token header
+        const imgEl = document.getElementById('tokenImg');
+        if (imgEl && coin.image_uri) {
+          imgEl.innerHTML = `<img src="${coin.image_uri}" alt="${coin.symbol}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;">`;
+        }
+        const nameEl = document.getElementById('tokenName');
+        if (nameEl) nameEl.innerHTML = `${coin.name || 'Unknown'} <span class="chart-token-ticker">$${coin.symbol || '???'}</span>`;
+
+        // Market cap as price proxy
+        const mcap = coin.usd_market_cap || 0;
+        const priceStr = mcap > 0 ? formatMcap(mcap) : '—';
+        const priceEl = document.getElementById('tokenPrice');
+        if (priceEl) priceEl.textContent = 'MCap: ' + priceStr;
+        const chartLabel = document.getElementById('chartPriceLabel');
+        if (chartLabel) chartLabel.textContent = priceStr;
+
+        // Token info sidebar
+        const setText = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
+        setText('infoMcap', formatMcap(mcap));
+        setText('infoReplies', (coin.reply_count || 0).toLocaleString());
+        setText('infoSupply', Number(coin.total_supply || 1000000000).toLocaleString());
+        setText('infoCreator', shortAddr(coin.creator));
+        setText('infoStatus', coin.complete ? '🎓 Graduated' : '🟢 Active');
+
+        const progress = Math.min(100, Math.max(0, (coin.bonding_curve_progress || 0) * 100));
+        setText('infoProgress', progress.toFixed(1) + '%');
+        const bar = document.getElementById('infoProgressBar');
+        if (bar) bar.style.width = progress + '%';
+
+        // Social links
+        if (coin.twitter) { const el = document.getElementById('socialTwitter'); if (el) { el.href = coin.twitter; el.style.display = ''; } }
+        if (coin.telegram) { const el = document.getElementById('socialTelegram'); if (el) { el.href = coin.telegram; el.style.display = ''; } }
+        if (coin.website) { const el = document.getElementById('socialWebsite'); if (el) { el.href = coin.website; el.style.display = ''; } }
+
+        // Load replies
+        try {
+          const repliesRes = await fetch(`${PUMP_API}/replies/${encodeURIComponent(mint)}?limit=20&offset=0`);
+          if (repliesRes.ok) {
+            const replies = await repliesRes.json();
+            const container = document.getElementById('threadMessages');
+            if (container && Array.isArray(replies) && replies.length > 0) {
+              container.innerHTML = replies.map(r => `
+                <div class="thread-message">
+                  <div class="thread-avatar"><div style="width:100%;height:100%;background:linear-gradient(135deg,${randItem(GRADIENT_COLORS)});display:flex;align-items:center;justify-content:center;font-size:14px;">💬</div></div>
+                  <div class="thread-body">
+                    <div class="thread-user">${shortAddr(r.user)} <span>${r.timestamp ? timeAgo(r.timestamp) : ''}</span></div>
+                    <div class="thread-text">${(r.text || '').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
+                  </div>
+                </div>
+              `).join('');
+            } else if (container) {
+              container.innerHTML = '<div style="color:var(--text-muted);padding:16px;text-align:center;">No replies yet</div>';
+            }
+          }
+        } catch (_) {}
+
+        // Load trades + build chart from trade data
+        try {
+          const tradesRes = await fetch(`${PUMP_API}/trades/latest?mint=${encodeURIComponent(mint)}&limit=100&offset=0`);
+          if (tradesRes.ok) {
+            const trades = await tradesRes.json();
+            const tbody = document.getElementById('tradesBody');
+            if (tbody && Array.isArray(trades) && trades.length > 0) {
+              // Populate trades table (first 10)
+              tbody.innerHTML = trades.slice(0, 10).map(t => {
+                const isBuy = t.is_buy;
+                const sol = (t.sol_amount / 1e9).toFixed(2);
+                const tokens = Number(t.token_amount / 1e6).toLocaleString();
+                return `<tr>
+                  <td><span class="tx-type ${isBuy ? 'buy' : 'sell'}">${isBuy ? 'BUY' : 'SELL'}</span></td>
+                  <td>${sol}</td>
+                  <td>${tokens}</td>
+                  <td>${t.timestamp ? timeAgo(t.timestamp) : '—'}</td>
+                  <td style="font-family:var(--font-mono);font-size:12px;color:var(--text-muted);">${shortAddr(t.user)}</td>
+                </tr>`;
+              }).join('');
+
+              // Build price chart from trades
+              renderTradeChart(trades);
+            } else {
+              if (tbody) tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:20px;">No trades yet</td></tr>';
+              const loading = document.getElementById('chartLoading');
+              if (loading) loading.textContent = 'No trade data available';
+            }
+          }
+        } catch (_) {
+          const loading = document.getElementById('chartLoading');
+          if (loading) loading.textContent = 'Chart unavailable';
+        }
+
+      } catch (e) {
+        console.warn('Failed to load token data:', e.message);
+      }
+    })();
+
+    // ── Render real price chart from trade data ──
+    function renderTradeChart(trades) {
+      const W = 800, H = 400, PAD_TOP = 20, PAD_BOT = 20;
+      const loading = document.getElementById('chartLoading');
+      if (loading) loading.remove();
+
+      // Compute price per trade (SOL per token)
+      const points = trades
+        .filter(t => t.sol_amount > 0 && t.token_amount > 0)
+        .map(t => ({
+          time: t.timestamp || 0,
+          price: (t.sol_amount / 1e9) / (t.token_amount / 1e6),
+        }))
+        .reverse(); // oldest first
+
+      if (points.length === 0) return;
+
+      // Aggregate into candle buckets
+      const bucketCount = Math.min(points.length, 50);
+      const bucketSize = Math.max(1, Math.floor(points.length / bucketCount));
+      const candles = [];
+      for (let i = 0; i < points.length; i += bucketSize) {
+        const slice = points.slice(i, i + bucketSize);
+        const prices = slice.map(p => p.price);
+        candles.push({
+          open: prices[0],
+          close: prices[prices.length - 1],
+          high: Math.max(...prices),
+          low: Math.min(...prices),
+        });
+      }
+
+      const allPrices = candles.flatMap(c => [c.high, c.low]);
+      const minP = Math.min(...allPrices);
+      const maxP = Math.max(...allPrices);
+      const range = maxP - minP || maxP * 0.01 || 0.0001;
+
+      const yScale = (p) => PAD_TOP + (1 - (p - minP) / range) * (H - PAD_TOP - PAD_BOT);
+      const candleW = Math.max(2, (W - 20) / candles.length - 2);
+
+      // Draw candles
+      const candlesG = document.getElementById('chartCandles');
+      let candlesSvg = '';
+      candles.forEach((c, i) => {
+        const x = 10 + i * ((W - 20) / candles.length);
+        const isGreen = c.close >= c.open;
+        const color = isGreen ? '#7bff69' : '#ff4d4d';
+        const bodyTop = yScale(Math.max(c.open, c.close));
+        const bodyBot = yScale(Math.min(c.open, c.close));
+        const bodyH = Math.max(1, bodyBot - bodyTop);
+        const wickTop = yScale(c.high);
+        const wickBot = yScale(c.low);
+        const cx = x + candleW / 2;
+
+        candlesSvg += `<line x1="${cx}" y1="${wickTop}" x2="${cx}" y2="${wickBot}" stroke="${color}" stroke-width="1"/>`;
+        candlesSvg += `<rect x="${x}" y="${bodyTop}" width="${candleW}" height="${bodyH}" fill="${color}" rx="1"/>`;
+      });
+      candlesG.innerHTML = candlesSvg;
+
+      // Draw line chart (close prices)
+      const linePoints = candles.map((c, i) => {
+        const x = 10 + i * ((W - 20) / candles.length) + candleW / 2;
+        const y = yScale(c.close);
+        return `${x},${y}`;
+      });
+      const linePath = 'M' + linePoints.join(' L');
+      document.getElementById('chartLine').setAttribute('d', linePath);
+
+      // Area fill
+      const firstX = 10 + candleW / 2;
+      const lastX = 10 + (candles.length - 1) * ((W - 20) / candles.length) + candleW / 2;
+      document.getElementById('chartArea').setAttribute('d', linePath + ` L${lastX},${H} L${firstX},${H} Z`);
+
+      // Current price line + label
+      const lastPrice = candles[candles.length - 1].close;
+      const lastY = yScale(lastPrice);
+      document.getElementById('chartPriceLine').setAttribute('y1', lastY);
+      document.getElementById('chartPriceLine').setAttribute('y2', lastY);
+      document.getElementById('chartPriceRect').setAttribute('y', lastY - 9);
+      const label = document.getElementById('chartPriceLabel');
+      label.setAttribute('y', lastY + 4);
+      label.textContent = lastPrice < 0.001 ? lastPrice.toExponential(2) : '$' + lastPrice.toFixed(6);
+    }
+
+    // ── Timeframe switching reloads chart ──
+    let currentTfLimit = 100;
+    document.querySelectorAll('.chart-tf-btn').forEach(btn => {
+      btn.addEventListener('click', async function() {
+        const tf = this.textContent.trim();
+        const limits = { '1m': 30, '5m': 100, '15m': 200, '1h': 500, '4h': 500, '1D': 500 };
+        currentTfLimit = limits[tf] || 100;
+        const params = new URLSearchParams(window.location.search);
+        const mint = params.get('mint');
+        if (!mint) return;
+        try {
+          const res = await fetch(`${PUMP_API}/trades/latest?mint=${encodeURIComponent(mint)}&limit=${currentTfLimit}&offset=0`);
+          if (res.ok) {
+            const trades = await res.json();
+            if (Array.isArray(trades) && trades.length > 0) renderTradeChart(trades);
+          }
+        } catch (_) {}
+      });
+    });
   </script>
 </body>
 </html>

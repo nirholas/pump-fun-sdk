@@ -555,7 +555,7 @@ input, textarea, select { font-family: inherit; }
   align-items: center;
   justify-content: center;
 }
-/* Fake candlestick chart */
+/* Chart area */
 .chart-placeholder {
   width: 100%;
   height: 100%;
