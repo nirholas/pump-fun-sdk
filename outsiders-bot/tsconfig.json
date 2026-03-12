@@ -10,7 +10,7 @@
     "declaration": true,
     "sourceMap": true,
     "skipLibCheck": true,
-    "types": ["vitest/globals"],
+    "types": ["node"],
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true
   },

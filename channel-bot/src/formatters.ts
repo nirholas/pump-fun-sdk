@@ -137,14 +137,18 @@ export function formatGitHubClaimFeed(ctx: ClaimFeedContext): { imageUrl: string
 
     // ━━ ALL LINKED COINS (multi-token PDA) ━━━━━━━━━━━━━━
     if (ctx.allLinkedTokens && ctx.allLinkedTokens.length > 1) {
+        const MAX_LINKED = 3;
         L.push(`🪙 <b>All Linked Coins (${ctx.allLinkedTokens.length})</b>`);
-        for (const t of ctx.allLinkedTokens) {
+        for (const t of ctx.allLinkedTokens.slice(0, MAX_LINKED)) {
             const mc = t.usdMarketCap > 0 ? `$${formatCompact(t.usdMarketCap)}` : '?';
             const status = t.complete ? '🎓' : '📈';
             const shortMint = `${t.mint.slice(0, 6)}…`;
             const isPrimary = tokenInfo && t.mint === tokenInfo.mint;
             const tag = isPrimary ? ' ◂' : '';
             L.push(`${status} <a href="https://pump.fun/coin/${esc(t.mint)}">${esc(t.symbol)}</a> — ${mc} — ${shortMint}${tag}`);
+        }
+        if (ctx.allLinkedTokens.length > MAX_LINKED) {
+            L.push(`… +${ctx.allLinkedTokens.length - MAX_LINKED} more`);
         }
         L.push('');
     }
@@ -400,6 +404,7 @@ export function formatGitHubClaimFeed(ctx: ClaimFeedContext): { imageUrl: string
 
     // ━━ SAME-NAME TOKENS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     if (ctx.sameNameTokens && ctx.sameNameTokens.length > 0) {
+        const MAX_SAME_NAME = 3;
         const top = ctx.sameNameTokens[0]!;
         const isCopycat = tokenInfo && top.usdMarketCap > tokenInfo.usdMarketCap * 5;
         if (isCopycat) {
@@ -408,11 +413,14 @@ export function formatGitHubClaimFeed(ctx: ClaimFeedContext): { imageUrl: string
         } else {
             L.push(`🔍 <b>Same Name Tokens</b>`);
         }
-        for (const t of ctx.sameNameTokens) {
+        for (const t of ctx.sameNameTokens.slice(0, MAX_SAME_NAME)) {
             const mc = `$${formatCompact(t.usdMarketCap)}`;
             const age = t.age ? ` ${t.age}` : '';
             const shortMint = t.mint.length > 8 ? `${t.mint.slice(0, 6)}…` : t.mint;
             L.push(`• <a href="${esc(t.url)}">${esc(t.symbol)}</a> ${mc} — ${shortMint}${age}`);
+        }
+        if (ctx.sameNameTokens.length > MAX_SAME_NAME) {
+            L.push(`… +${ctx.sameNameTokens.length - MAX_SAME_NAME} more`);
         }
         L.push('');
     }
@@ -453,8 +461,6 @@ export function formatGitHubClaimFeed(ctx: ClaimFeedContext): { imageUrl: string
         const padreUrl = `https://trade.padre.gg/rk/${encodeURIComponent(aff?.padre ?? 'nichxbt')}`;
         L.push(`💹 Trade`);
         L.push(`<a href="${axiomUrl}">Axiom</a> | <a href="${gmgnUrl}">GMGN</a> | <a href="${padreUrl}">Padre</a>`);
-        L.push('');
-        L.push(`<code>${mint}</code>`);
     }
 
     // ━━ TLDR ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -484,21 +490,30 @@ export function formatGitHubClaimFeed(ctx: ClaimFeedContext): { imageUrl: string
     if (githubUser) {
         const nameTag = githubUser.name ? ` (${esc(githubUser.name)})` : '';
         L.push(`👨‍💻 Linked Dev`);
-        L.push(`${esc(githubUser.login)}${nameTag}`);
+        L.push(`<a href="${esc(githubUser.htmlUrl)}">${esc(githubUser.login)}</a>${nameTag}`);
         if (githubUser.publicRepos > 0) L.push(`📦 Repos: ${githubUser.publicRepos}`);
         if (githubUser.followers > 0) L.push(`👁 Followers: ${githubUser.followers}`);
         if (githubUser.createdAt) L.push(`📅 Account age: ${timeAgo(new Date(githubUser.createdAt).getTime() / 1000)}`);
+        if (githubUser.company) L.push(`🏢 Company: ${esc(githubUser.company)}`);
+        if (githubUser.blog) {
+            const blogDisplay = githubUser.blog.replace(/^https?:\/\//, '').replace(/\/+$/, '');
+            L.push(`🌐 <a href="${esc(githubUser.blog)}">${esc(blogDisplay)}</a>`);
+        }
+        if (githubUser.twitterUsername) {
+            const handle = cleanXHandle(githubUser.twitterUsername);
+            if (handle) L.push(`𝕏 <a href="https://x.com/${esc(handle)}">${esc(handle)}</a>`);
+        }
         L.push('');
     }
     if (ctx.repoInfo) {
         L.push(`📂 GitHub Linked`);
-        L.push(`${esc(ctx.repoInfo.fullName)}`);
+        L.push(`<a href="${esc(ctx.repoInfo.htmlUrl)}">${esc(ctx.repoInfo.fullName)}</a>`);
     } else if (tokenInfo?.githubUrls?.length) {
         const repoUrl = tokenInfo.githubUrls[0]!;
         const repoPath = repoUrl.replace(/^https?:\/\/github\.com\//, '').replace(/\/+$/, '');
         const isRepoUrl = repoPath.includes('/');
         L.push(`📂 ${isRepoUrl ? 'Repo Linked' : 'GitHub Linked'}`);
-        L.push(`${esc(repoPath)}`);
+        L.push(`<a href="${esc(repoUrl)}">${esc(repoPath)}</a>`);
         if (!isRepoUrl) L.push(`<i>Profile linked — no specific repo</i>`);
     }
     L.push('');

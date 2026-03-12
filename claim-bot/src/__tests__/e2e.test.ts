@@ -267,7 +267,17 @@ describe('Formatters', () => {
       claimLabel: 'Collect Creator Fee (Pump)',
     };
 
-    const html = formatters.formatClaimNotification(event);
+    const item: import('../types.js').TrackedItem = {
+      id: 'test-1',
+      chatId: 100,
+      addedBy: 1,
+      type: 'token',
+      value: 'TokenMint12345678901234567890123456789abcd',
+      label: 'TestToken',
+      createdAt: Date.now(),
+    };
+
+    const html = formatters.formatClaimNotification(event, item, null);
     expect(html).toContain('Collect Creator Fee');
     expect(html).toContain('1.25');
     expect(html).toContain('TestToken');
@@ -279,9 +289,9 @@ describe('Formatters', () => {
       isRunning: true,
       mode: 'websocket',
       claimsDetected: 42,
-      uptime: '2h 30m',
+      uptimeMs: 9_000_000,
       trackedTokens: 5,
-      trackedHandles: 3,
+      trackedXHandles: 3,
     };
 
     const html = formatters.formatStatus(status);
@@ -376,7 +386,16 @@ describe('Claim Event Matching Flow', () => {
     expect(matches[0]!.label).toBe('E2E Token');
 
     // Step 4: Format notification
-    const html = formatters.formatClaimNotification(event);
+    const item: import('../types.js').TrackedItem = {
+      id: matches[0]!.id,
+      chatId: matches[0]!.chatId,
+      addedBy: matches[0]!.addedBy,
+      type: matches[0]!.type,
+      value: matches[0]!.value,
+      label: matches[0]!.label,
+      createdAt: matches[0]!.createdAt,
+    };
+    const html = formatters.formatClaimNotification(event, item, null);
     expect(html).toContain('E2E Test Token');
     expect(html).toContain('Collect Creator Fee');
   });
