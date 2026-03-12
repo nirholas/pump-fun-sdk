@@ -6,7 +6,7 @@
  */
 
 import type { GitHubRepoInfo, GitHubUserInfo } from './github-client.js';
-import type { CreatorProfile, TokenInfo, TokenTradeInfo, HolderDetails, DevWalletInfo, PoolLiquidityInfo, BundleInfo } from './pump-client.js';
+import type { CreatorProfile, TokenInfo, TokenTradeInfo, HolderDetails, DevWalletInfo, PoolLiquidityInfo, BundleInfo, SameNameToken } from './pump-client.js';
 import type {
     FeeClaimEvent,
     FeeDistributionEvent,
@@ -50,6 +50,8 @@ export interface ClaimFeedContext {
     liquidity?: PoolLiquidityInfo | null;
     /** Coordinated early-buy (bundle) detection. */
     bundle?: BundleInfo | null;
+    /** Other tokens with the same name/symbol (copycat detection). */
+    sameNameTokens?: SameNameToken[] | null;
 }
 
 /**
@@ -349,6 +351,14 @@ export function formatGitHubClaimFeed(ctx: ClaimFeedContext): { imageUrl: string
             }
         }
 
+        // Copycat warning: higher-MC token with same name exists
+        if (ctx.sameNameTokens?.length && tokenInfo) {
+            const top = ctx.sameNameTokens[0]!;
+            if (top.usdMarketCap > tokenInfo.usdMarketCap * 5) {
+                signals.push(`🚩 Possible copycat — ${esc(top.symbol)} exists at $${formatCompact(top.usdMarketCap)}`);
+            }
+        }
+
         const warnings: string[] = [];
         if (githubUser?.createdAt) {
             const accountAgeDays = (Date.now() - new Date(githubUser.createdAt).getTime()) / 86_400_000;
@@ -385,6 +395,24 @@ export function formatGitHubClaimFeed(ctx: ClaimFeedContext): { imageUrl: string
             for (const s of all) L.push(s);
             L.push('');
         }
+    }
+
+    // ━━ SAME-NAME TOKENS (copycat detection) ━━━━━━━━━━━━━
+    if (ctx.sameNameTokens && ctx.sameNameTokens.length > 0) {
+        const top = ctx.sameNameTokens[0]!;
+        const isCopycat = tokenInfo && top.usdMarketCap > tokenInfo.usdMarketCap * 5;
+        if (isCopycat) {
+            L.push(`🚩 <b>Possible Copycat</b>`);
+            L.push(`Higher-MC tokens with same name exist:`);
+        } else {
+            L.push(`🔍 <b>Same Name Tokens</b>`);
+        }
+        for (const t of ctx.sameNameTokens) {
+            const mc = `$${formatCompact(t.usdMarketCap)}`;
+            const age = t.age ? ` (${t.age})` : '';
+            L.push(`• <a href="${esc(t.url)}">${esc(t.symbol)}</a> ${mc}${age}`);
+        }
+        L.push('');
     }
 
     // ━━ CHART ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

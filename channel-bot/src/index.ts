@@ -16,7 +16,7 @@ import { loadConfig } from './config.js';
 import { ClaimMonitor } from './claim-monitor.js';
 import { EventMonitor } from './event-monitor.js';
 import { hasGithubUserClaimed, markGithubUserClaimed, incrementGithubClaimCount, loadPersistedClaims } from './claim-tracker.js';
-import { fetchTokenInfo, fetchTopHolders, fetchTokenTrades, fetchDevWalletInfo, fetchSolUsdPrice, fetchPoolLiquidity, fetchBundleInfo, fetchCreatorProfile } from './pump-client.js';
+import { fetchTokenInfo, fetchTopHolders, fetchTokenTrades, fetchDevWalletInfo, fetchSolUsdPrice, fetchPoolLiquidity, fetchBundleInfo, fetchCreatorProfile, fetchSameNameTokens } from './pump-client.js';
 import { fetchGitHubUserById, fetchRepoFromUrls } from './github-client.js';
 import { fetchXProfile } from './x-client.js';
 import { formatGitHubClaimFeed, formatCreatorClaimFeed, formatGraduationFeed } from './formatters.js';
@@ -142,7 +142,7 @@ async function main(): Promise<void> {
                 fetchSolUsdPrice(),
             ]);
             // Second wave: depends on first-wave results
-            const [xProfile, repoInfo, creatorProfile, holders, trades, liquidity, bundle] = await Promise.all([
+            const [xProfile, repoInfo, creatorProfile, holders, trades, liquidity, bundle, sameNameTokens] = await Promise.all([
                 githubUser?.twitterUsername
                     ? fetchXProfile(githubUser.twitterUsername)
                     : Promise.resolve(null),
@@ -156,6 +156,7 @@ async function main(): Promise<void> {
                 mint ? fetchTokenTrades(mint) : Promise.resolve(null),
                 mint && tokenInfo ? fetchPoolLiquidity(mint, tokenInfo.usdMarketCap) : Promise.resolve(null),
                 mint ? fetchBundleInfo(mint) : Promise.resolve(null),
+                tokenInfo ? fetchSameNameTokens(tokenInfo.name, tokenInfo.symbol, mint) : Promise.resolve([]),
             ]);
             // Third wave: dev wallet needs RPC + creator address
             const devWallet = tokenInfo?.creator
@@ -191,6 +192,7 @@ async function main(): Promise<void> {
                 devWallet,
                 liquidity,
                 bundle,
+                sameNameTokens,
             };
 
             const { imageUrl, caption } = formatGitHubClaimFeed(ctx);

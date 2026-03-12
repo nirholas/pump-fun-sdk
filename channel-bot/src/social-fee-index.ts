@@ -82,13 +82,24 @@ function parseShareholderAddresses(buf: Buffer, offset: number): string[] {
 // ── Index ────────────────────────────────────────────────────────────────────
 
 export class SocialFeeIndex {
-    /** socialFeePdaAddress → mint */
-    private index = new Map<string, string>();
+    /** socialFeePdaAddress → set of mints (1:many — scammers can add the same PDA to multiple tokens) */
+    private index = new Map<string, Set<string>>();
     private bootstrapped = false;
 
-    /** Number of entries in the index. */
+    /** Number of PDA→mint mappings in the index. */
     get size(): number {
-        return this.index.size;
+        let count = 0;
+        for (const set of this.index.values()) count += set.size;
+        return count;
+    }
+
+    private addMapping(pdaAddress: string, mint: string): void {
+        let set = this.index.get(pdaAddress);
+        if (!set) {
+            set = new Set();
+            this.index.set(pdaAddress, set);
+        }
+        set.add(mint);
     }
 
     /**
@@ -125,7 +136,7 @@ export class SocialFeeIndex {
 
                 const shareholders = parseShareholderAddresses(data, 76);
                 for (const addr of shareholders) {
-                    this.index.set(addr, mint);
+                    this.addMapping(addr, mint);
                     indexed++;
                 }
             }
@@ -159,7 +170,7 @@ export class SocialFeeIndex {
 
             const shareholders = parseShareholderAddresses(bytes, offset);
             for (const addr of shareholders) {
-                this.index.set(addr, mint);
+                this.addMapping(addr, mint);
             }
             if (shareholders.length > 0) {
                 log.debug('SocialFeeIndex: indexed %d shareholders for mint %s', shareholders.length, mint.slice(0, 8));
@@ -183,7 +194,7 @@ export class SocialFeeIndex {
             const offset = 16 + 32 + 32 + 32; // 112
             const shareholders = parseShareholderAddresses(bytes, offset);
             for (const addr of shareholders) {
-                this.index.set(addr, mint);
+                this.addMapping(addr, mint);
             }
             if (shareholders.length > 0) {
                 log.debug('SocialFeeIndex: updated %d shareholders for mint %s', shareholders.length, mint.slice(0, 8));
@@ -195,9 +206,25 @@ export class SocialFeeIndex {
 
     /**
      * Look up the mint for a given social fee PDA address.
-     * Returns undefined if not indexed yet.
+     * Returns the first mint if only one exists, otherwise undefined
+     * (use lookupAll for disambiguation when multiple tokens share the same PDA).
      */
     lookup(socialFeePdaAddress: string): string | undefined {
-        return this.index.get(socialFeePdaAddress);
+        const set = this.index.get(socialFeePdaAddress);
+        if (!set || set.size === 0) return undefined;
+        if (set.size === 1) return set.values().next().value;
+        // Multiple mints — caller should use lookupAll + market cap disambiguation
+        return undefined;
+    }
+
+    /**
+     * Look up ALL mints associated with a social fee PDA address.
+     * When multiple tokens share the same PDA (scam vector), returns all
+     * candidates so the caller can disambiguate by market cap.
+     */
+    lookupAll(socialFeePdaAddress: string): string[] {
+        const set = this.index.get(socialFeePdaAddress);
+        if (!set) return [];
+        return [...set];
     }
 }

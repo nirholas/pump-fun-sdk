@@ -609,9 +609,19 @@ export class ClaimMonitor {
         // Skip non-social dust amounts (real social claims always emit event data)
         if (!isFake && amountLamports < 1000) return null;
 
-        // For social fee PDA claims, resolve mint from the index
+        // For social fee PDA claims, resolve mint from the index.
+        // When multiple tokens share the same PDA (scam vector), return all
+        // candidates so the caller can disambiguate by market cap.
+        let allCandidateMints: string[] | undefined;
         if (def.claimType === 'claim_social_fee_pda' && socialFeePda && !tokenMint) {
-            tokenMint = this.socialFeeIndex.lookup(socialFeePda) ?? '';
+            const candidates = this.socialFeeIndex.lookupAll(socialFeePda);
+            if (candidates.length === 1) {
+                tokenMint = candidates[0]!;
+            } else if (candidates.length > 1) {
+                allCandidateMints = candidates;
+                // Use first as fallback; caller should disambiguate
+                tokenMint = candidates[0]!;
+            }
         }
 
         return {
@@ -632,6 +642,7 @@ export class ClaimMonitor {
             socialFeePda,
             isFake,
             lifetimeClaimedLamports,
+            allCandidateMints,
         };
     }
 

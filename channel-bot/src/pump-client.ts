@@ -743,3 +743,93 @@ export async function fetchBundleInfo(mint: string): Promise<BundleInfo | null> 
     }
 }
 
+// ============================================================================
+// Same-Name Token Search (DexScreener)
+// ============================================================================
+
+export interface SameNameToken {
+    /** Token mint / contract address */
+    mint: string;
+    name: string;
+    symbol: string;
+    usdMarketCap: number;
+    /** Pair URL on DexScreener */
+    url: string;
+    /** Age label, e.g. "3d", "1mo" */
+    age: string;
+}
+
+/**
+ * Search DexScreener for other Solana tokens with the same name/symbol.
+ * Returns up to 5 results sorted by market cap (descending), excluding
+ * the provided `excludeMint`.
+ */
+export async function fetchSameNameTokens(
+    name: string,
+    symbol: string,
+    excludeMint: string,
+): Promise<SameNameToken[]> {
+    const query = symbol || name;
+    if (!query) return [];
+    try {
+        const resp = await fetch(
+            `https://api.dexscreener.com/latest/dex/search?q=${encodeURIComponent(query)}`,
+            { signal: AbortSignal.timeout(8_000) },
+        );
+        if (!resp.ok) return [];
+        const data = (await resp.json()) as { pairs?: Array<Record<string, unknown>> };
+        if (!data.pairs) return [];
+
+        const nameLower = name.toLowerCase();
+        const symbolLower = symbol.toLowerCase();
+        const excludeLower = excludeMint.toLowerCase();
+
+        const seen = new Set<string>();
+        const results: SameNameToken[] = [];
+
+        for (const pair of data.pairs) {
+            if (pair.chainId !== 'solana') continue;
+            const base = pair.baseToken as Record<string, unknown> | undefined;
+            if (!base) continue;
+            const pairName = String(base.name ?? '').toLowerCase();
+            const pairSymbol = String(base.symbol ?? '').toLowerCase();
+            const pairMint = String(base.address ?? '');
+            if (pairMint.toLowerCase() === excludeLower) continue;
+            if (seen.has(pairMint)) continue;
+
+            // Match on exact name or symbol (case-insensitive)
+            if (pairName !== nameLower && pairSymbol !== symbolLower) continue;
+
+            const mc = Number(pair.marketCap ?? pair.fdv ?? 0);
+            if (mc <= 0) continue;
+
+            seen.add(pairMint);
+            const createdAt = Number(pair.pairCreatedAt ?? 0);
+            results.push({
+                mint: pairMint,
+                name: String(base.name ?? ''),
+                symbol: String(base.symbol ?? ''),
+                usdMarketCap: mc,
+                url: String(pair.url ?? ''),
+                age: createdAt > 0 ? formatAge(createdAt) : '',
+            });
+        }
+
+        results.sort((a, b) => b.usdMarketCap - a.usdMarketCap);
+        return results.slice(0, 5);
+    } catch (err) {
+        log.debug('Same-name token search failed for %s: %s', query, err);
+        return [];
+    }
+}
+
+/** Format millisecond timestamp to compact age string. */
+function formatAge(msTimestamp: number): string {
+    const sec = (Date.now() - msTimestamp) / 1000;
+    if (sec < 60) return `${Math.floor(sec)}s`;
+    if (sec < 3600) return `${Math.floor(sec / 60)}m`;
+    if (sec < 86400) return `${Math.floor(sec / 3600)}h`;
+    if (sec < 2_592_000) return `${Math.floor(sec / 86400)}d`;
+    return `${Math.floor(sec / 2_592_000)}mo`;
+}
+
