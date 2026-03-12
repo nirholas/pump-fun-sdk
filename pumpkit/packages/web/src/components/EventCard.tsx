@@ -57,7 +57,7 @@ function InlineButtons({ labels, event }: { labels: string[]; event: FeedEvent }
           href={getButtonUrl(label, event)}
           target="_blank"
           rel="noopener noreferrer"
-          className="bg-tg-input text-tg-blue text-xs rounded-lg px-3 py-1.5 text-center hover:brightness-125 transition cursor-pointer"
+          className="bg-tg-input text-tg-blue text-xs rounded-lg px-3 py-1.5 text-center hover:brightness-125 transition active:scale-95 cursor-pointer"
         >
           {label}
         </a>
@@ -163,15 +163,15 @@ export function EventCard({ event }: { event: FeedEvent }) {
   const animClass = event.isNew ? 'animate-slide-in' : '';
 
   return (
-    <div className={`flex gap-2 items-start ${animClass}`}>
+    <div className={`flex gap-2 items-start ${animClass} group`}>
       {/* Channel avatar */}
       <div
-        className={`w-10 h-10 rounded-full ${bg} flex items-center justify-center text-lg shrink-0`}
+        className={`w-10 h-10 rounded-full ${bg} flex items-center justify-center text-lg shrink-0 transition-transform group-hover:scale-105`}
       >
         {emoji}
       </div>
       {/* Message bubble */}
-      <div className="bg-tg-bubble-in rounded-2xl rounded-tl-sm px-4 py-3 max-w-[85%]">
+      <div className="bg-tg-bubble-in rounded-2xl rounded-tl-sm px-4 py-3 max-w-[85%] transition-colors hover:bg-tg-bubble-in/80">
         <p className="text-tg-blue text-sm font-medium mb-1">PumpKit Live</p>
         <EventContent event={event} />
         <span className="text-[11px] text-zinc-500 block text-right mt-1">

@@ -1,4 +1,17 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
+
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <button
+      onClick={() => { navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
+      className="text-xs bg-tg-input/80 hover:bg-tg-input text-zinc-400 hover:text-tg-blue px-2 py-0.5 rounded transition ml-2"
+    >
+      {copied ? '✓' : '⎘'}
+    </button>
+  );
+}
 
 const packages = [
   {
@@ -84,7 +97,7 @@ const bot = createBot({
 
 export function Packages() {
   return (
-    <div className="flex flex-col gap-4 p-4 max-w-3xl mx-auto pb-24">
+    <div className="flex flex-col gap-4 p-4 max-w-3xl mx-auto pb-24 bubble-stagger">
       {/* Date separator */}
       <div className="text-center py-2">
         <span className="bg-tg-input/80 text-zinc-400 text-xs px-3 py-1 rounded-full">
@@ -118,7 +131,7 @@ export function Packages() {
           </div>
           <div className="flex-1 min-w-0">
             <span className="text-sm font-medium text-tg-blue">PumpKit</span>
-            <div className={`bg-tg-bubble-in rounded-2xl rounded-tl-sm px-4 py-3 mt-1 border-l-4 ${pkg.borderColor}`}>
+            <div className={`bg-tg-bubble-in rounded-2xl rounded-tl-sm px-4 py-3 mt-1 border-l-4 ${pkg.borderColor} card-hover`}>
               <p className="text-sm font-semibold text-zinc-100">
                 {pkg.emoji} {pkg.name}
               </p>
@@ -152,11 +165,14 @@ export function Packages() {
               )}
 
               {pkg.install && (
-                <p className="text-xs text-zinc-500 mt-3 font-mono">{pkg.install}</p>
+                <p className="text-xs text-zinc-500 mt-3 font-mono flex items-center">
+                  <span>{pkg.install}</span>
+                  <CopyButton text={pkg.install} />
+                </p>
               )}
 
               {pkg.code && (
-                <pre className="bg-[#1a2332] rounded-lg p-3 font-mono text-xs text-zinc-300 overflow-x-auto mt-3">
+                <pre className="bg-[#1a2332] rounded-lg p-3 font-mono text-xs text-zinc-300 overflow-x-auto mt-3 relative">
                   <code>{pkg.code}</code>
                 </pre>
               )}
@@ -174,16 +190,27 @@ export function Packages() {
           <div className="flex flex-wrap gap-2 mt-3">
             <Link
               to="/docs"
-              className="bg-tg-blue/20 text-tg-blue text-xs px-3 py-1.5 rounded-full hover:bg-tg-blue/30 transition"
+              className="bg-tg-blue/20 text-tg-blue text-xs px-3 py-1.5 rounded-full hover:bg-tg-blue/30 transition active:scale-95"
             >
               📖 Read the Docs
             </Link>
-
+            <Link
+              to="/create"
+              className="bg-tg-blue/20 text-tg-blue text-xs px-3 py-1.5 rounded-full hover:bg-tg-blue/30 transition active:scale-95"
+            >
+              🪙 Token Guide
+            </Link>
+            <Link
+              to="/dashboard"
+              className="bg-tg-blue/20 text-tg-blue text-xs px-3 py-1.5 rounded-full hover:bg-tg-blue/30 transition active:scale-95"
+            >
+              📡 Live Feed
+            </Link>
             <a
               href="https://github.com/nirholas/pumpkit"
               target="_blank"
               rel="noopener noreferrer"
-              className="bg-tg-blue/20 text-tg-blue text-xs px-3 py-1.5 rounded-full hover:bg-tg-blue/30 transition"
+              className="bg-tg-blue/20 text-tg-blue text-xs px-3 py-1.5 rounded-full hover:bg-tg-blue/30 transition active:scale-95"
             >
               ⭐ GitHub
             </a>

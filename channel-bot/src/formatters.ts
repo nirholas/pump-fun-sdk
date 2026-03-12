@@ -125,7 +125,8 @@ export function formatGitHubClaimFeed(ctx: ClaimFeedContext): { imageUrl: string
                 L.push(`🏊 Pool: <code>${tokenInfo.pumpSwapPool}</code>`);
             }
         } else if (tokenInfo.curveProgress > 0) {
-            L.push(`📈 Status: Bonding curve (${Math.round(tokenInfo.curveProgress)}%)`);
+            const pct = Math.round(tokenInfo.curveProgress);
+            L.push(`📈 Status: Bonding curve (${pct > 0 ? `${pct}%` : '<1%'})`);
         } else {
             L.push('📈 Status: Bonding curve');
         }
@@ -840,9 +841,10 @@ export function formatWhaleFeed(
     const mcap = token?.usdMarketCap
         ? `$${formatCompact(token.usdMarketCap)}`
         : `~${event.marketCapSol.toFixed(1)} SOL`;
+    const bcp = Math.round(event.bondingCurveProgress);
     const filled = Math.round(event.bondingCurveProgress / 10);
     const bar = '█'.repeat(filled) + '░'.repeat(10 - filled);
-    lines.push(`💹  Mcap: ${mcap}  ·  [${bar}] ${event.bondingCurveProgress.toFixed(0)}%`);
+    lines.push(`💹  Mcap: ${mcap}  ·  [${bar}] ${bcp > 0 ? `${bcp}%` : '<1%'}`);
     lines.push(`💰  Fee: ${event.fee.toFixed(4)} SOL  ·  Creator: ${event.creatorFee.toFixed(4)} SOL`);
 
     lines.push('');

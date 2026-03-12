@@ -132,7 +132,7 @@ export function Dashboard() {
   // Use SSE events when connected and receiving data, otherwise mock
   const isLive = status === 'connected' && sseEvents.length > 0;
   const feedEvents: FeedEvent[] = isLive
-    ? sseEvents.map(toFeedEvent)
+    ? sseEvents.map((e, i) => toFeedEvent(e, i))
     : mockEvents;
 
   const filtered = filter === 'all' ? feedEvents : feedEvents.filter((e) => e.type === filter);

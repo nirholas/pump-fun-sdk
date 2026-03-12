@@ -101,7 +101,8 @@ function buildFactString(input: ClaimSummaryInput): string {
     lines.push(`Token: ${input.tokenName} ($${input.tokenSymbol})`);
     if (input.tokenDescription) lines.push(`Description: ${input.tokenDescription.slice(0, 200)}`);
     lines.push(`Mcap: $${input.mcapUsd > 0 ? formatNum(input.mcapUsd) : 'unknown'}`);
-    lines.push(`Status: ${input.graduated ? 'Graduated to AMM' : `Bonding curve ${input.curveProgress.toFixed(0)}%`}`);
+    const pct = Math.round(input.curveProgress);
+    lines.push(`Status: ${input.graduated ? 'Graduated to AMM' : `Bonding curve ${pct > 0 ? `${pct}%` : '<1%'}`}`);
     lines.push(`Claim: ${input.claimAmountSol.toFixed(4)} SOL ($${input.claimAmountUsd.toFixed(2)})`);
 
     if (input.launchToClaimSeconds >= 0) {
