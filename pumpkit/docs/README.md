@@ -60,7 +60,6 @@ Deep dives into specific protocol topics:
 |-----|-------------|
 | [Migration](migration.md) | SDK version upgrade guide with breaking changes |
 | [Ecosystem](ecosystem.md) | Complete ecosystem overview — SDK, bots, dashboards, tools |
-| [PumpOS Guide](pumpos-guide.md) | PumpOS web desktop with 169 Pump-Store apps |
 | [Admin Operations](admin-operations.md) | Protocol admin operations |
 | [AMM Trading](amm-trading.md) | PumpSwap AMM trading guide |
 | [CLI Guide](cli-guide.md) | Command-line interface reference |

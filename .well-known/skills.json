@@ -207,14 +207,6 @@
             "tags": ["build", "release", "packaging", "tsup", "cargo"]
         },
         {
-            "id": "nextjs-website",
-            "name": "PumpOS Website — Static Web Desktop with 169 Apps",
-            "description": "Static HTML/CSS/JS web desktop (PumpOS) with DeFi dashboards, trading tools, and SDK documentation apps.",
-            "path": ".github/skills/nextjs-website.skill.md",
-            "applyTo": "website/**,site/**",
-            "tags": ["website", "html", "css", "desktop", "pumpos"]
-        },
-        {
             "id": "solana-development",
             "name": "Solana Development — Web3.js, Anchor, SPL Tokens & On-Chain Patterns",
             "description": "Solana development patterns using Web3.js, Anchor framework, SPL token programs, and on-chain interaction patterns.",

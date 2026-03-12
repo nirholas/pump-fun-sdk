@@ -104,8 +104,7 @@ Difficulty estimates:
 - x402/ - x402 payment protocol (HTTP 402 USDC micropayments)
 - lair-tg/ - Unified Telegram bot platform for DeFi intelligence
 - live/ - Standalone dashboards (token launches, trades, vanity generator)
-- website/ - PumpOS web desktop (169+ Pump-Store apps)
-- site/ - Documentation site
+- website/ - SDK documentation & marketing site
 - pumpfun-site/ - Landing pages (create, profile, token)
 - packages/defi-agents/ - AI agent definitions library
 - packages/plugin.delivery/ - OpenAPI-compatible plugin SDK and gateway
@@ -114,7 +113,6 @@ Difficulty estimates:
 - tools/ - Audit and verification utilities
 - tests/ - Integration, fuzz, stress, benchmark, and CLI tests
 - docs/ - Full documentation including official Pump protocol specs
-- website/ - PumpOS web desktop with 169 Pump-Store apps
 - packages/ - Companion packages (DeFi agents, plugin delivery)
 - packages/defi-agents/ - 43 production-ready AI agent definitions
 - packages/plugin.delivery/ - AI plugin index for SperaxOS

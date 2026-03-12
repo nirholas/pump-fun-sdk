@@ -190,7 +190,7 @@ interface Global {
 | `scripts/` | Bash wrappers for solana-keygen |
 | `docs/` | Documentation |
 | `tests/` | Integration tests |
-| `website/` | PumpOS web desktop |
+| `website/` | SDK documentation & marketing site |
 
 ## Build & Test Commands
 

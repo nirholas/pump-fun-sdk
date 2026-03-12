@@ -232,26 +232,6 @@ vercel --prod
 
 ---
 
-## PumpOS Website
-
-**Platform:** Vercel, GitHub Pages
-
-The `site/vercel.json` is pre-configured:
-
-```bash
-cd site
-vercel --prod
-```
-
-Or serve locally:
-
-```bash
-cd site
-npx serve .
-```
-
----
-
 ## Live Deployments
 
 Current production deployments and their hosting platforms:

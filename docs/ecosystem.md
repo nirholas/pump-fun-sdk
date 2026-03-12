@@ -386,40 +386,6 @@ GET https://nirholas.github.io/AI-Agents-Library/{id}.en-US.json  # Agent defini
 
 ---
 
-## PumpOS Web Desktop
-
-**Directory:** `site/` · **Language:** HTML/CSS/JavaScript · **Apps:** 169
-
-A web-based desktop environment with a full app store, file system, and windowed UI. Each app is a self-contained HTML file that can interact with the Pump SDK ecosystem.
-
-### Features
-
-| Feature | Description |
-|---------|-------------|
-| App Store | 169 installable apps covering DeFi, analytics, trading, utilities |
-| Window Manager | Draggable, resizable windows with taskbar |
-| File System | Virtual file system with localStorage persistence |
-| Themes | Light/dark mode, customizable wallpapers |
-| Service Worker | Offline-capable with caching |
-| PWA | Installable as a Progressive Web App |
-
-### Notable Apps
-
-| App | Category | Description |
-|-----|----------|-------------|
-| Fee Manager | DeFi | Claim fees, manage shareholders, view vault balances |
-| Token Creator | Trading | Launch tokens with metadata wizard |
-| Bonding Curve | Analytics | Visualize curve state and graduation progress |
-| Vanity Generator | Utilities | Browser-based vanity address generation |
-| Wallet | DeFi | View balances and transaction history |
-
-### Documentation
-
-- [site/README.md](../site/README.md) — setup, deployment, architecture
-- [PumpOS Platform Guide](./pumpos-guide.md) — user guide and app development
-
----
-
 ## Plugin Delivery Platform
 
 **Directory:** `packages/plugin.delivery/` · **Runtime:** Vercel Edge Functions

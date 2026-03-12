@@ -1,16 +1,15 @@
-<p align="center"> 
-  <h1 align="center">Pump SDK</h1>
-  <p align="center">
-    TypeScript SDK for the Pump protocol on Solana — token creation, bonding curves, AMM pools, fee sharing, and volume rewards.
-  </p>
+<p align="center">
+  <img src=".github/pill-banner.svg" alt="Pump SDK — Solana Token Launchpad SDK" width="800" />
 </p>
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/@nirholas/pump-sdk"><img src="https://img.shields.io/npm/v/@nirholas/pump-sdk.svg?style=flat-square&color=blue" alt="npm version" /></a>
-  <a href="https://github.com/nirholas/pump-fun-sdk/blob/main/LICENSE"><img src="https://img.shields.io/npm/l/@nirholas/pump-sdk.svg?style=flat-square" alt="license" /></a>
-  <a href="https://www.npmjs.com/package/@nirholas/pump-sdk"><img src="https://img.shields.io/npm/dm/@nirholas/pump-sdk.svg?style=flat-square" alt="downloads" /></a>
-  <img src="https://img.shields.io/badge/TypeScript-5.0+-blue?style=flat-square&logo=typescript" alt="TypeScript" />
-  <img src="https://img.shields.io/badge/Solana-1.98+-purple?style=flat-square&logo=solana" alt="Solana" />
+  <a href="https://www.npmjs.com/package/@nirholas/pump-sdk"><img src="https://img.shields.io/npm/v/@nirholas/pump-sdk.svg?style=flat-square&color=00ff88" alt="npm version" /></a>
+  <a href="https://github.com/nirholas/pump-fun-sdk/blob/main/LICENSE"><img src="https://img.shields.io/npm/l/@nirholas/pump-sdk.svg?style=flat-square&color=white" alt="license" /></a>
+  <a href="https://www.npmjs.com/package/@nirholas/pump-sdk"><img src="https://img.shields.io/npm/dm/@nirholas/pump-sdk.svg?style=flat-square&color=00ff88" alt="downloads" /></a>
+  <img src="https://img.shields.io/badge/TypeScript-5.0+-00ff88?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript" />
+  <img src="https://img.shields.io/badge/Solana-1.98+-white?style=flat-square&logo=solana&logoColor=00ff88" alt="Solana" />
+  <a href="https://github.com/nirholas/pump-fun-sdk/stargazers"><img src="https://img.shields.io/github/stars/nirholas/pump-fun-sdk?style=flat-square&color=00ff88" alt="Stars" /></a>
+  <a href="https://github.com/nirholas/pump-fun-sdk/issues"><img src="https://img.shields.io/badge/PRs-welcome-00ff88?style=flat-square" alt="PRs Welcome" /></a>
 </p>
 
 ---

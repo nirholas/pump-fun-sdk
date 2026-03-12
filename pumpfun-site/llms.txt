@@ -1,0 +1,36 @@
+# Solana Launchpad UI
+
+> Token launchpad UI template inspired by pump.fun — zero dependencies, pure HTML/CSS/JS
+
+## Overview
+
+Static design template for a Solana token launchpad. Dark theme, neon green accent, responsive. 4 pages: Board, Create, Trade, Profile. Mock data only — no blockchain integration.
+
+## Files
+
+- index.html — Token board with grid, tabs, King of the Hill banner, activity ticker
+- create.html — Token creation form with image upload and social links
+- token.html — Token detail with SVG chart, buy/sell panel, holders, thread
+- profile.html — User profile with portfolio and activity history
+- styles.css — Complete dark theme stylesheet with CSS custom properties
+- app.js — Mock token data and DOM interactions
+- vercel.json — Vercel deployment config with security headers
+
+## Tech
+
+Pure HTML5, CSS3, vanilla JavaScript. Zero npm dependencies. Google Fonts (Inter). Responsive breakpoints at 480px, 768px, 1024px.
+
+## Customization
+
+Edit CSS variables in styles.css :root — --green, --bg, --bg-card, --text, etc.
+Replace mock data arrays in app.js with real API calls.
+
+## Deploy
+
+Works on Vercel, Netlify, GitHub Pages, or any static host. No build step.
+
+## Links
+
+- Repository: https://github.com/nirholas/solana-launchpad-ui
+- Pump SDK: https://github.com/nirholas/pump-fun-sdk
+- Inspired by: https://pump.fun

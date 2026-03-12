@@ -168,7 +168,7 @@ Real-time token launch relay server:
 - One upstream connection to PumpFun, broadcasts parsed events to all connected browsers
 - Health check at `/health` returns connection status and client count
 - Deployed on Railway at `pump-fun-websocket-production.up.railway.app`
-- Powers live dashboards and website/live.html for real-time monitoring
+- Powers live dashboards for real-time monitoring
 - Message types: `token-launch`, `status`, `heartbeat`
 - Token metadata: name, symbol, mint, creator, marketCapSol, social links, GitHub URLs
 
@@ -222,13 +222,9 @@ Unified Telegram bot platform for DeFi intelligence. Docker-deployable with Rail
 
 AI Plugin Index for SperaxOS — Monorepo with gateway SDK, plugin SDK, Vercel deployment.
 
-### PumpOS Website (website/)
+### SDK Documentation Site (website/)
 
-Static HTML/CSS/JS web desktop with 169+ Pump-Store applications.
-
-### Documentation Site (site/)
-
-Documentation pages covering architecture, deployment, API reference, and examples.
+SDK documentation & marketing site — searchable docs, architecture diagrams, tool listings.
 
 ### Landing Pages (pumpfun-site/)
 

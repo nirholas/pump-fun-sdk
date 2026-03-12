@@ -1,0 +1,12 @@
+{
+  "schema_version": "v1",
+  "name_for_human": "Solana Launchpad UI",
+  "name_for_model": "solana_launchpad_ui",
+  "description_for_human": "Open-source token launchpad frontend template inspired by pump.fun. Dark theme, bonding curves, trading panel.",
+  "description_for_model": "A static HTML/CSS/JS token launchpad UI template with dark theme, mock data, and zero dependencies. Files: index.html (board), create.html (token creation), token.html (trading detail), profile.html (user profile), styles.css (theming), app.js (mock data).",
+  "auth": { "type": "none" },
+  "api": { "type": "none" },
+  "logo_url": "",
+  "contact_email": "",
+  "legal_info_url": "https://github.com/nirholas/solana-launchpad-ui/blob/main/LICENSE"
+}

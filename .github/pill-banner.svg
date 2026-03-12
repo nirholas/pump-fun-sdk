@@ -1,0 +1,205 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 220" fill="none">
+  <defs>
+    <!-- Pill glow green -->
+    <linearGradient id="pillGreen" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#00ff88" />
+      <stop offset="50%" style="stop-color:#00e676" />
+      <stop offset="100%" style="stop-color:#00c853" />
+    </linearGradient>
+    <!-- Pill highlight -->
+    <linearGradient id="pillHighlight" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffffff;stop-opacity:0.4" />
+      <stop offset="40%" style="stop-color:#ffffff;stop-opacity:0.1" />
+      <stop offset="100%" style="stop-color:#ffffff;stop-opacity:0" />
+    </linearGradient>
+    <!-- Background gradient -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0a0a0a" />
+      <stop offset="50%" style="stop-color:#0d1117" />
+      <stop offset="100%" style="stop-color:#0a0a0a" />
+    </linearGradient>
+    <!-- Green accent line -->
+    <linearGradient id="greenLine" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#00ff88;stop-opacity:0" />
+      <stop offset="20%" style="stop-color:#00ff88;stop-opacity:0.8" />
+      <stop offset="50%" style="stop-color:#ffffff;stop-opacity:1" />
+      <stop offset="80%" style="stop-color:#00ff88;stop-opacity:0.8" />
+      <stop offset="100%" style="stop-color:#00ff88;stop-opacity:0" />
+    </linearGradient>
+    <!-- Curve gradient -->
+    <linearGradient id="curveGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#00ff88;stop-opacity:0.1" />
+      <stop offset="50%" style="stop-color:#00ff88;stop-opacity:0.6" />
+      <stop offset="100%" style="stop-color:#ffffff;stop-opacity:0.9" />
+    </linearGradient>
+    <!-- Glow filter -->
+    <filter id="greenGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="6" result="blur"/>
+      <feFlood flood-color="#00ff88" flood-opacity="0.4" result="color"/>
+      <feComposite in="color" in2="blur" operator="in" result="shadow"/>
+      <feMerge>
+        <feMergeNode in="shadow"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <!-- Soft glow for pill -->
+    <filter id="pillGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feFlood flood-color="#00ff88" flood-opacity="0.3" result="color"/>
+      <feComposite in="color" in2="blur" operator="in" result="shadow"/>
+      <feMerge>
+        <feMergeNode in="shadow"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <!-- Text glow -->
+    <filter id="textGlow" x="-10%" y="-10%" width="120%" height="120%">
+      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feFlood flood-color="#00ff88" flood-opacity="0.3" result="color"/>
+      <feComposite in="color" in2="blur" operator="in" result="shadow"/>
+      <feMerge>
+        <feMergeNode in="shadow"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <style>
+    @keyframes pillPulse {
+      0%, 100% { opacity: 0.85; }
+      50% { opacity: 1; }
+    }
+    @keyframes curveTrace {
+      0% { stroke-dashoffset: 300; }
+      100% { stroke-dashoffset: 0; }
+    }
+    @keyframes dotFloat1 {
+      0%, 100% { transform: translateY(0px); opacity: 0.3; }
+      50% { transform: translateY(-8px); opacity: 0.7; }
+    }
+    @keyframes dotFloat2 {
+      0%, 100% { transform: translateY(0px); opacity: 0.2; }
+      50% { transform: translateY(-6px); opacity: 0.6; }
+    }
+    @keyframes dotFloat3 {
+      0%, 100% { transform: translateY(0px); opacity: 0.4; }
+      50% { transform: translateY(-10px); opacity: 0.8; }
+    }
+    @keyframes lineShimmer {
+      0% { opacity: 0.5; }
+      50% { opacity: 1; }
+      100% { opacity: 0.5; }
+    }
+    @keyframes glowPulse {
+      0%, 100% { opacity: 0.15; }
+      50% { opacity: 0.35; }
+    }
+    .pill-body { animation: pillPulse 3s ease-in-out infinite; }
+    .curve-line { 
+      stroke-dasharray: 300;
+      animation: curveTrace 4s ease-in-out infinite;
+    }
+    .dot-1 { animation: dotFloat1 4s ease-in-out infinite; }
+    .dot-2 { animation: dotFloat2 5s ease-in-out infinite 0.5s; }
+    .dot-3 { animation: dotFloat3 3.5s ease-in-out infinite 1s; }
+    .dot-4 { animation: dotFloat1 4.5s ease-in-out infinite 1.5s; }
+    .dot-5 { animation: dotFloat2 3s ease-in-out infinite 0.8s; }
+    .dot-6 { animation: dotFloat3 5s ease-in-out infinite 2s; }
+    .accent-line { animation: lineShimmer 3s ease-in-out infinite; }
+    .glow-ring { animation: glowPulse 3s ease-in-out infinite; }
+  </style>
+
+  <!-- Background -->
+  <rect width="800" height="220" rx="12" fill="url(#bgGrad)"/>
+
+  <!-- Subtle grid -->
+  <g opacity="0.03" stroke="#00ff88">
+    <line x1="100" y1="0" x2="100" y2="220" stroke-width="1"/>
+    <line x1="200" y1="0" x2="200" y2="220" stroke-width="1"/>
+    <line x1="300" y1="0" x2="300" y2="220" stroke-width="1"/>
+    <line x1="400" y1="0" x2="400" y2="220" stroke-width="1"/>
+    <line x1="500" y1="0" x2="500" y2="220" stroke-width="1"/>
+    <line x1="600" y1="0" x2="600" y2="220" stroke-width="1"/>
+    <line x1="700" y1="0" x2="700" y2="220" stroke-width="1"/>
+    <line x1="0" y1="55" x2="800" y2="55" stroke-width="1"/>
+    <line x1="0" y1="110" x2="800" y2="110" stroke-width="1"/>
+    <line x1="0" y1="165" x2="800" y2="165" stroke-width="1"/>
+  </g>
+
+  <!-- Accent line top -->
+  <rect class="accent-line" x="0" y="0" width="800" height="2" rx="1" fill="url(#greenLine)"/>
+
+  <!-- Ambient glow behind pill -->
+  <ellipse class="glow-ring" cx="105" cy="110" rx="70" ry="65" fill="#00ff88" opacity="0.15"/>
+
+  <!-- === PILL CAPSULE === -->
+  <g transform="translate(55, 55)" filter="url(#pillGlow)">
+    <!-- Pill shadow -->
+    <rect x="5" y="5" width="95" height="110" rx="47" fill="#000" opacity="0.3"/>
+    <!-- Pill body -->
+    <rect class="pill-body" x="0" y="0" width="95" height="110" rx="47" fill="url(#pillGreen)"/>
+    <!-- Pill divider line -->
+    <line x1="8" y1="55" x2="87" y2="55" stroke="#ffffff" stroke-width="2" opacity="0.5"/>
+    <!-- Pill top half highlight -->
+    <rect x="0" y="0" width="95" height="55" rx="47" fill="url(#pillHighlight)"/>
+    <!-- Pill shine spot -->
+    <ellipse cx="35" cy="30" rx="18" ry="14" fill="#ffffff" opacity="0.2"/>
+    <!-- Pump text on pill -->
+    <text x="47.5" y="42" font-family="'SF Mono', 'Fira Code', 'Cascadia Code', 'Courier New', monospace" font-size="16" font-weight="900" fill="#ffffff" text-anchor="middle" opacity="0.9">P</text>
+    <text x="47.5" y="82" font-family="'SF Mono', 'Fira Code', 'Cascadia Code', 'Courier New', monospace" font-size="12" font-weight="700" fill="#ffffff" text-anchor="middle" opacity="0.7">FUN</text>
+  </g>
+
+  <!-- === MAIN TITLE === -->
+  <text x="190" y="100" font-family="'SF Mono', 'Fira Code', 'Cascadia Code', 'Courier New', monospace" font-size="56" font-weight="900" fill="#ffffff" filter="url(#textGlow)">Pump SDK</text>
+
+  <!-- Subtitle -->
+  <text x="192" y="132" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="16" fill="#00ff88" letter-spacing="1" opacity="0.8">Solana Token Launchpad SDK</text>
+
+  <!-- Tag badges -->
+  <g transform="translate(192, 148)">
+    <rect width="80" height="20" rx="4" fill="#00ff88" opacity="0.12" stroke="#00ff88" stroke-width="0.5" stroke-opacity="0.3"/>
+    <text x="40" y="14" font-family="monospace" font-size="10" fill="#00ff88" text-anchor="middle">TypeScript</text>
+  </g>
+  <g transform="translate(282, 148)">
+    <rect width="95" height="20" rx="4" fill="#00ff88" opacity="0.12" stroke="#00ff88" stroke-width="0.5" stroke-opacity="0.3"/>
+    <text x="47.5" y="14" font-family="monospace" font-size="10" fill="#ffffff" text-anchor="middle">Bonding Curve</text>
+  </g>
+  <g transform="translate(387, 148)">
+    <rect width="50" height="20" rx="4" fill="#00ff88" opacity="0.12" stroke="#00ff88" stroke-width="0.5" stroke-opacity="0.3"/>
+    <text x="25" y="14" font-family="monospace" font-size="10" fill="#00ff88" text-anchor="middle">AMM</text>
+  </g>
+  <g transform="translate(447, 148)">
+    <rect width="45" height="20" rx="4" fill="#00ff88" opacity="0.12" stroke="#00ff88" stroke-width="0.5" stroke-opacity="0.3"/>
+    <text x="22.5" y="14" font-family="monospace" font-size="10" fill="#ffffff" text-anchor="middle">Fees</text>
+  </g>
+
+  <!-- === ANIMATED BONDING CURVE === -->
+  <g transform="translate(580, 45)">
+    <!-- Curve area fill -->
+    <path d="M0 130 Q15 128 30 120 Q50 108 70 85 Q85 60 100 35 Q110 18 125 8 L125 130 Z" fill="#00ff88" opacity="0.04"/>
+    <!-- Curve line -->
+    <path class="curve-line" d="M0 130 Q15 128 30 120 Q50 108 70 85 Q85 60 100 35 Q110 18 125 8" stroke="url(#curveGrad)" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <!-- Curve endpoint dot -->
+    <circle cx="125" cy="8" r="4" fill="#00ff88" filter="url(#greenGlow)"/>
+    <!-- Axis labels -->
+    <text x="60" y="150" font-family="monospace" font-size="8" fill="#00ff88" text-anchor="middle" opacity="0.4">price</text>
+    <line x1="0" y1="132" x2="125" y2="132" stroke="#00ff88" stroke-width="0.5" opacity="0.2"/>
+    <line x1="0" y1="8" x2="0" y2="132" stroke="#00ff88" stroke-width="0.5" opacity="0.2"/>
+  </g>
+
+  <!-- === FLOATING PARTICLES === -->
+  <circle class="dot-1" cx="550" cy="50" r="2" fill="#00ff88"/>
+  <circle class="dot-2" cx="570" cy="75" r="1.5" fill="#ffffff"/>
+  <circle class="dot-3" cx="735" cy="170" r="2.5" fill="#00ff88"/>
+  <circle class="dot-4" cx="755" cy="60" r="1.5" fill="#ffffff"/>
+  <circle class="dot-5" cx="520" cy="170" r="2" fill="#00ff88"/>
+  <circle class="dot-6" cx="760" cy="130" r="1" fill="#ffffff"/>
+
+  <!-- Extra scattered dots -->
+  <circle class="dot-2" cx="230" cy="195" r="1" fill="#00ff88" opacity="0.3"/>
+  <circle class="dot-4" cx="400" cy="40" r="1.5" fill="#00ff88" opacity="0.2"/>
+  <circle class="dot-1" cx="480" cy="190" r="1" fill="#ffffff" opacity="0.2"/>
+
+  <!-- Accent line bottom -->
+  <rect class="accent-line" x="0" y="218" width="800" height="2" rx="1" fill="url(#greenLine)"/>
+</svg>
