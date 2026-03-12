@@ -3,7 +3,6 @@ import { Outlet, Link, useLocation } from 'react-router-dom';
 
 const channels = [
   { path: '/', label: 'PumpKit', emoji: '🚀', preview: 'Create your own PumpFun bot', unread: false },
-  { path: '/create', label: 'Create Coin', emoji: '🪙', preview: 'Launch a token on PumpFun', unread: true },
   { path: '/dashboard', label: 'Live Feed', emoji: '📡', preview: 'Real-time token events', unread: true },
   { path: '/docs', label: 'Docs', emoji: '📖', preview: 'Guides, API reference, tutorials', unread: false },
   { path: '/packages', label: 'Packages', emoji: '📦', preview: 'core, monitor, tracker, claim…', unread: false },

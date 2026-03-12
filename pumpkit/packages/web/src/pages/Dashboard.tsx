@@ -17,7 +17,7 @@ const MOCK_TOKENS = [
   { name: 'WenLambo', symbol: 'WEN', creator: '6eJy...9cDp' },
 ];
 
-const EVENT_TYPES: EventType[] = ['launch', 'whale', 'graduation', 'claim', 'cto'];
+const EVENT_TYPES: EventType[] = ['launch', 'whale', 'graduation', 'claim', 'cto', 'distribution'];
 
 function randomElement<T>(arr: readonly T[]): T {
   return arr[Math.floor(Math.random() * arr.length)]!;
@@ -45,6 +45,12 @@ function generateEvent(timestamp: Date, isNew: boolean): FeedEvent {
     amountSol: type === 'whale' ? randomSol(10, 200) : randomSol(0.5, 15),
     direction: type === 'whale' ? (Math.random() > 0.4 ? 'buy' : 'sell') : undefined,
     newCreator: type === 'cto' ? randomElement(MOCK_TOKENS).creator : undefined,
+    shareholders: type === 'distribution'
+      ? Array.from({ length: 2 + Math.floor(Math.random() * 2) }, () => ({
+          address: randomElement(MOCK_TOKENS).creator,
+          amount: randomSol(0.1, 5),
+        }))
+      : undefined,
     isNew,
   };
 }
@@ -96,6 +102,7 @@ const FILTERS: { key: EventType | 'all'; label: string }[] = [
   { key: 'graduation', label: '🎓 Graduations' },
   { key: 'claim', label: '💰 Claims' },
   { key: 'cto', label: '👑 CTO' },
+  { key: 'distribution', label: '💎 Distributions' },
 ];
 
 // ── Dashboard ───────────────────────────────────────────
@@ -107,7 +114,7 @@ export function Dashboard() {
   const filtered = filter === 'all' ? events : events.filter((e) => e.type === filter);
 
   return (
-    <div className="flex flex-col h-[calc(100vh-65px)]">
+    <div className="flex flex-col h-[calc(100vh-3.5rem-2.75rem)]">
       {/* Filter bar */}
       <div className="sticky top-0 z-10 bg-tg-chat/95 backdrop-blur-sm border-b border-tg-border px-4 py-2">
         <div className="flex gap-2 overflow-x-auto max-w-3xl mx-auto">

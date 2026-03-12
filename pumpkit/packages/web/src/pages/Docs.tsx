@@ -57,12 +57,12 @@ const faqs = [
 ];
 
 const tutorials = [
-  'Set up your first monitor bot',
-  'Deploy to Railway in 5 minutes',
-  'Add custom event handlers',
-  'Build a channel feed bot',
-  'Create a call-tracking group bot',
-  'Integrate with PumpFun SDK',
+  { title: 'Set up your first monitor bot', anchor: 'getting-started' },
+  { title: 'Deploy to Railway in 5 minutes', anchor: 'architecture' },
+  { title: 'Add custom event handlers', anchor: 'api' },
+  { title: 'Build a channel feed bot', anchor: 'packages' },
+  { title: 'Create a call-tracking group bot', anchor: 'commands' },
+  { title: 'Integrate with PumpFun SDK', anchor: 'packages' },
 ];
 
 const commands = [
@@ -254,9 +254,16 @@ cd pumpkit && npm install`}</pre>
           <p className="font-semibold text-base mb-2">📚 Tutorials</p>
           <ol className="space-y-1">
             {tutorials.map((t, i) => (
-              <li key={t} className="text-sm">
+              <li key={t.anchor} className="text-sm">
                 <span className="text-zinc-500">{i + 1}.</span>{' '}
-                <a href="#" className="text-tg-blue hover:underline">{t}</a>
+                <a
+                  href={`https://github.com/nirholas/pumpkit/tree/main/docs/tutorials/${(i + 1).toString().padStart(2, '0')}-${t.title.toLowerCase().replace(/\s+/g, '-')}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-tg-blue hover:underline"
+                >
+                  {t.title}
+                </a>
               </li>
             ))}
           </ol>
@@ -296,17 +303,14 @@ cd pumpkit && npm install`}</pre>
               ⭐ GitHub
             </a>
             <a
-              href="#"
+              href="https://github.com/nirholas/pumpkit/discussions"
+              target="_blank"
+              rel="noopener noreferrer"
               className="bg-tg-input text-tg-blue text-xs rounded-lg px-3 py-1.5 text-center hover:brightness-110 transition"
             >
               💬 Telegram
             </a>
-            <Link
-              to="/create"
-              className="bg-tg-input text-tg-blue text-xs rounded-lg px-3 py-1.5 text-center hover:brightness-110 transition"
-            >
-              🪙 Create Coin
-            </Link>
+
           </div>
         </BotBubble>
       </div>

@@ -178,12 +178,7 @@ export function Packages() {
             >
               📖 Read the Docs
             </Link>
-            <Link
-              to="/create"
-              className="bg-tg-blue/20 text-tg-blue text-xs px-3 py-1.5 rounded-full hover:bg-tg-blue/30 transition"
-            >
-              🪙 Create Coin
-            </Link>
+
             <a
               href="https://github.com/nirholas/pumpkit"
               target="_blank"

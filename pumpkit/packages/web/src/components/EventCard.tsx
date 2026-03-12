@@ -11,6 +11,7 @@ export interface FeedEvent {
   amountSol: number;
   direction?: 'buy' | 'sell';
   newCreator?: string;
+  shareholders?: { address: string; amount: number }[];
   isNew?: boolean;
 }
 
@@ -20,6 +21,7 @@ const avatarConfig: Record<string, { emoji: string; bg: string }> = {
   graduation: { emoji: '🎓', bg: 'bg-pump-purple' },
   claim: { emoji: '💰', bg: 'bg-pump-green' },
   cto: { emoji: '👑', bg: 'bg-pump-pink' },
+  distribution: { emoji: '💎', bg: 'bg-pump-cyan' },
 };
 
 function formatTime(timestamp: string): string {
@@ -27,17 +29,38 @@ function formatTime(timestamp: string): string {
   return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
-function InlineButtons({ labels }: { labels: string[] }) {
+function getButtonUrl(label: string, event: FeedEvent): string {
+  const sig = event.txSignature;
+  switch (label) {
+    case 'View TX':
+    case 'Explorer':
+      return `https://solscan.io/tx/${sig}`;
+    case 'View on PumpFun':
+      return `https://pump.fun/coin/${event.tokenSymbol}`;
+    case 'View Pool':
+    case 'Trade':
+      return `https://pump.fun/coin/${event.tokenSymbol}`;
+    case 'Fee Config':
+      return `https://solscan.io/tx/${sig}`;
+    default:
+      return `https://solscan.io/tx/${sig}`;
+  }
+}
+
+function InlineButtons({ labels, event }: { labels: string[]; event: FeedEvent }) {
   const cols = labels.length >= 2 ? 'grid-cols-2' : 'grid-cols-1';
   return (
     <div className={`grid ${cols} gap-2 mt-2`}>
       {labels.map((label) => (
-        <span
+        <a
           key={label}
-          className="bg-tg-input text-tg-blue text-xs rounded-lg px-3 py-1.5 text-center select-none"
+          href={getButtonUrl(label, event)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="bg-tg-input text-tg-blue text-xs rounded-lg px-3 py-1.5 text-center hover:brightness-125 transition cursor-pointer"
         >
           {label}
-        </span>
+        </a>
       ))}
     </div>
   );
@@ -53,7 +76,7 @@ function EventContent({ event }: { event: FeedEvent }) {
             {event.tokenName} (<span className="text-zinc-400">${event.tokenSymbol}</span>)
           </p>
           <p className="text-xs text-zinc-400">Creator: {event.creator}</p>
-          <InlineButtons labels={['View on PumpFun', 'Explorer']} />
+          <InlineButtons labels={['View on PumpFun', 'Explorer']} event={event} />
         </>
       );
     case 'whale': {
@@ -70,7 +93,7 @@ function EventContent({ event }: { event: FeedEvent }) {
             {event.tokenName} (<span className="text-zinc-400">${event.tokenSymbol}</span>)
           </p>
           <p className="text-xs text-zinc-400">Wallet: {event.creator}</p>
-          <InlineButtons labels={['View TX']} />
+          <InlineButtons labels={['View TX']} event={event} />
         </>
       );
     }
@@ -82,7 +105,7 @@ function EventContent({ event }: { event: FeedEvent }) {
             {event.tokenName} (<span className="text-zinc-400">${event.tokenSymbol}</span>) migrated to PumpSwap AMM
           </p>
           <p className="text-xs text-zinc-400">Liquidity: {event.amountSol.toFixed(1)} SOL</p>
-          <InlineButtons labels={['View Pool', 'Trade']} />
+          <InlineButtons labels={['View Pool', 'Trade']} event={event} />
         </>
       );
     case 'claim':
@@ -95,7 +118,7 @@ function EventContent({ event }: { event: FeedEvent }) {
             Creator {event.creator} claimed fees from {event.tokenName} (
             <span className="text-zinc-400">${event.tokenSymbol}</span>)
           </p>
-          <InlineButtons labels={['View TX']} />
+          <InlineButtons labels={['View TX']} event={event} />
         </>
       );
     case 'cto':
@@ -108,7 +131,26 @@ function EventContent({ event }: { event: FeedEvent }) {
           <p className="text-xs text-zinc-400">
             From: {event.creator} → To: {event.newCreator}
           </p>
-          <InlineButtons labels={['View TX']} />
+          <InlineButtons labels={['View TX']} event={event} />
+        </>
+      );
+    case 'distribution':
+      return (
+        <>
+          <p className="text-sm text-zinc-200 font-medium">
+            💎 Fee Distribution — <span className="text-pump-cyan">{event.amountSol.toFixed(1)} SOL</span>
+          </p>
+          <p className="text-sm text-zinc-300 mt-1">
+            {event.tokenName} (<span className="text-zinc-400">${event.tokenSymbol}</span>)
+          </p>
+          {event.shareholders && event.shareholders.length > 0 && (
+            <div className="text-xs text-zinc-400 mt-1 space-y-0.5">
+              {event.shareholders.map((s) => (
+                <p key={s.address}>{s.address}: {s.amount.toFixed(2)} SOL</p>
+              ))}
+            </div>
+          )}
+          <InlineButtons labels={['View TX', 'Fee Config']} event={event} />
         </>
       );
     default:
@@ -118,7 +160,7 @@ function EventContent({ event }: { event: FeedEvent }) {
 
 export function EventCard({ event }: { event: FeedEvent }) {
   const { emoji, bg } = avatarConfig[event.type] ?? { emoji: '📋', bg: 'bg-tg-input' };
-  const animClass = event.isNew ? 'animate-[slideIn_0.3s_ease-out]' : '';
+  const animClass = event.isNew ? 'animate-slide-in' : '';
 
   return (
     <div className={`flex gap-2 items-start ${animClass}`}>

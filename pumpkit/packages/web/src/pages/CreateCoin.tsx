@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 function IncomingBubble({ children, time }: { children: React.ReactNode; time: string }) {
@@ -50,6 +50,30 @@ export function CreateCoin() {
   const [mayhemMode, setMayhemMode] = useState(false);
   const [cashback, setCashback] = useState(true);
   const [creatorFeeSharing, setCreatorFeeSharing] = useState(false);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageName, setImageName] = useState<string | null>(null);
+  const [submitted, setSubmitted] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFile = useCallback((file: File) => {
+    if (!file.type.startsWith('image/')) return;
+    setImageName(file.name);
+    const reader = new FileReader();
+    reader.onload = (e) => setImagePreview(e.target?.result as string);
+    reader.readAsDataURL(file);
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files[0];
+    if (file) handleFile(file);
+  }, [handleFile]);
+
+  const handleCreate = useCallback(() => {
+    if (!name.trim() || !symbol.trim()) return;
+    setSubmitted(true);
+    setTimeout(() => setSubmitted(false), 3000);
+  }, [name, symbol]);
 
   return (
     <div className="flex flex-col gap-3 p-4 max-w-3xl mx-auto pb-20">
@@ -114,9 +138,34 @@ export function CreateCoin() {
         <p className="text-sm">Upload a token image (optional)</p>
       </IncomingBubble>
       <OutgoingBubble time="14:04">
-        <div className="border-2 border-dashed border-tg-border rounded-xl p-8 text-center">
-          <p className="text-3xl mb-2">🖼️</p>
-          <p className="text-sm text-zinc-400">Drag &amp; drop or click to upload</p>
+        <div
+          className="border-2 border-dashed border-tg-border rounded-xl p-8 text-center cursor-pointer hover:border-tg-blue/40 transition"
+          onDrop={handleDrop}
+          onDragOver={(e) => e.preventDefault()}
+          onClick={() => fileInputRef.current?.click()}
+        >
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) handleFile(file);
+            }}
+          />
+          {imagePreview ? (
+            <div className="flex flex-col items-center gap-2">
+              <img src={imagePreview} alt="Token preview" className="w-20 h-20 rounded-lg object-cover" />
+              <p className="text-xs text-zinc-400">{imageName}</p>
+              <p className="text-xs text-tg-blue">Click to change</p>
+            </div>
+          ) : (
+            <>
+              <p className="text-3xl mb-2">🖼️</p>
+              <p className="text-sm text-zinc-400">Drag &amp; drop or click to upload</p>
+            </>
+          )}
         </div>
       </OutgoingBubble>
 
@@ -145,7 +194,11 @@ export function CreateCoin() {
           <span className="absolute top-2 right-2 text-[10px] bg-tg-input/80 text-zinc-400 px-2 py-0.5 rounded-full">
             Preview
           </span>
-          <p className="text-3xl mb-2">🪙</p>
+          {imagePreview ? (
+            <img src={imagePreview} alt="Token" className="w-12 h-12 rounded-lg object-cover mb-2" />
+          ) : (
+            <p className="text-3xl mb-2">🪙</p>
+          )}
           <p className="text-lg font-bold">
             {name || 'Token Name'}{' '}
             <span className="text-sm font-normal text-zinc-400">
@@ -172,14 +225,35 @@ export function CreateCoin() {
       <div className="max-w-[85%] ml-auto flex flex-col gap-1">
         <button
           type="button"
-          className="w-full bg-pump-green text-black font-bold rounded-lg py-3 text-center text-sm hover:brightness-110 transition"
+          onClick={handleCreate}
+          disabled={!name.trim() || !symbol.trim()}
+          className={`w-full font-bold rounded-lg py-3 text-center text-sm transition ${
+            !name.trim() || !symbol.trim()
+              ? 'bg-tg-input text-zinc-500 cursor-not-allowed'
+              : submitted
+                ? 'bg-pump-green/60 text-black'
+                : 'bg-pump-green text-black hover:brightness-110'
+          }`}
         >
-          🚀 Create Token
+          {submitted ? '✅ Token Created (Demo)' : '🚀 Create Token'}
         </button>
         <p className="text-[11px] text-zinc-500 text-center">
           This is a demo — use @pumpkit/monitor to build a real bot
         </p>
       </div>
+
+      {/* Success message */}
+      {submitted && (
+        <IncomingBubble time="14:08">
+          <p className="text-sm text-pump-green font-medium mb-1">✅ Token created successfully!</p>
+          <p className="text-sm text-zinc-300">
+            {name} (${symbol}) is now live on the bonding curve.
+          </p>
+          <p className="text-xs text-zinc-500 mt-1">
+            (This is a simulated demo — no real token was created)
+          </p>
+        </IncomingBubble>
+      )}
 
       {/* 9. Info Footer */}
       <IncomingBubble time="14:07">
