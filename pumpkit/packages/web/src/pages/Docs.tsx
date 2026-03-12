@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { tutorials as allTutorials } from '../lib/content';
 
 const sections = [
   { id: 'getting-started', label: 'Getting Started' },
@@ -10,8 +9,10 @@ const sections = [
   { id: 'api', label: 'API' },
   { id: 'documentation', label: 'Documentation' },
   { id: 'guides', label: 'Guides' },
+  { id: 'protocol', label: 'Protocol' },
   { id: 'reference', label: 'Reference' },
   { id: 'tutorials', label: 'Tutorials' },
+  { id: 'community', label: 'Community' },
   { id: 'faq', label: 'FAQ' },
 ];
 
@@ -92,6 +93,9 @@ const docs = [
   { title: 'Support', file: 'support' },
   { title: 'Testing', file: 'testing' },
   { title: 'Troubleshooting', file: 'troubleshooting' },
+  { title: 'Migration', file: 'migration' },
+  { title: 'Ecosystem', file: 'ecosystem' },
+  { title: 'PumpOS Guide', file: 'pumpos-guide' },
 ];
 
 const guides = [
@@ -113,6 +117,27 @@ const reference = [
   { title: 'Code Examples', file: 'examples' },
   { title: 'Glossary', file: 'glossary' },
   { title: 'RPC Best Practices', file: 'rpc-best-practices' },
+];
+
+const protocol = [
+  { title: 'Pump Program', desc: 'Bonding curve state, create/buy/sell instructions', file: 'PUMP_PROGRAM_README' },
+  { title: 'PumpSwap AMM', desc: 'Pool state, swap/deposit/withdraw', file: 'PUMP_SWAP_README' },
+  { title: 'Fee Program', desc: 'Dynamic fee tiers based on market cap', file: 'FEE_PROGRAM_README' },
+  { title: 'Creator Fees (Bonding Curve)', desc: 'Creator fee sharing on bonding curve', file: 'PUMP_CREATOR_FEE_README' },
+  { title: 'Creator Fees (AMM)', desc: 'Creator fee sharing on AMM pools', file: 'PUMP_SWAP_CREATOR_FEE_README' },
+  { title: 'Cashback Rewards', desc: 'Cashback & UserVolumeAccumulator', file: 'PUMP_CASHBACK_README' },
+  { title: 'PumpSwap SDK', desc: 'SDK method reference & autocomplete helpers', file: 'PUMP_SWAP_SDK_README' },
+  { title: 'Protocol Overview', desc: 'create_v2, Token2022, mayhem mode, social fees', file: 'OVERVIEW' },
+  { title: 'CU Optimization FAQ', desc: 'Compute unit tips & PDA bump effects', file: 'FAQ' },
+];
+
+const community = [
+  { title: 'Adopters', desc: 'Community members using PumpKit in production', file: 'adopters' },
+  { title: 'Governance', desc: 'BDFL governance model & decision process', file: 'governance' },
+  { title: 'Vision', desc: 'Project vision & AI agent thesis', file: 'vision' },
+  { title: 'Article: Pump Fun SDK', desc: 'Deep-dive article about the SDK ecosystem', file: 'article-pump-fun-sdk' },
+  { title: 'Solana Docs Reference', desc: '3,800+ Solana documentation links', file: 'solana-official-llms.txt' },
+  { title: 'SolanaAppKit', desc: 'Guide to mobile DeFi integration', file: 'solanaappkit' },
 ];
 
 const tutorials = [
@@ -363,20 +388,21 @@ cd pumpkit && npm install`}</pre>
         {/* 6. Documentation Index */}
         <BotBubble id="documentation">
           <p className="font-semibold text-base mb-2">📄 Documentation</p>
-          <p className="text-sm text-zinc-400 mb-2">All framework docs — click to view on GitHub:</p>
+          <p className="text-sm text-zinc-400 mb-2">All framework docs:</p>
           <div className="grid grid-cols-2 gap-1">
             {docs.map((d) => (
-              <a
+              <Link
                 key={d.file}
-                href={`https://github.com/nirholas/pumpkit/blob/main/docs/${d.file}.md`}
-                target="_blank"
-                rel="noopener noreferrer"
+                to={`/docs/browse/${d.file}`}
                 className="text-sm text-tg-blue hover:underline truncate"
               >
                 {d.title}
-              </a>
+              </Link>
             ))}
           </div>
+          <Link to="/docs/browse" className="inline-block mt-3 text-xs text-tg-blue hover:underline">
+            Browse all docs →
+          </Link>
         </BotBubble>
 
         {/* 7. Guides */}
@@ -386,14 +412,12 @@ cd pumpkit && npm install`}</pre>
           <ul className="space-y-1">
             {guides.map((g) => (
               <li key={g.file} className="text-sm">
-                <a
-                  href={`https://github.com/nirholas/pumpkit/blob/main/docs/guides/${g.file}.md`}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <Link
+                  to={`/docs/browse/${g.file}`}
                   className="text-tg-blue hover:underline"
                 >
                   {g.title}
-                </a>
+                </Link>
               </li>
             ))}
           </ul>
@@ -405,14 +429,33 @@ cd pumpkit && npm install`}</pre>
           <ul className="space-y-1">
             {reference.map((r) => (
               <li key={r.file} className="text-sm">
-                <a
-                  href={`https://github.com/nirholas/pumpkit/blob/main/docs/reference/${r.file}.md`}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <Link
+                  to={`/docs/browse/${r.file}`}
                   className="text-tg-blue hover:underline"
                 >
                   {r.title}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </BotBubble>
+
+        {/* 8b. Protocol */}
+        <BotBubble id="protocol">
+          <p className="font-semibold text-base mb-2">⛓️ Pump Protocol Reference</p>
+          <p className="text-sm text-zinc-400 mb-2">Official on-chain program documentation:</p>
+          <ul className="space-y-2">
+            {protocol.map((p) => (
+              <li key={p.file} className="text-sm">
+                <a
+                  href={`https://github.com/nicholasgasior/pump-fun-sdk/blob/main/docs/pump-official/${p.file}.md`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-tg-blue hover:underline font-medium"
+                >
+                  {p.title}
                 </a>
+                <span className="text-zinc-500 ml-1">— {p.desc}</span>
               </li>
             ))}
           </ul>
@@ -426,20 +469,40 @@ cd pumpkit && npm install`}</pre>
             {tutorials.map((t) => (
               <li key={t.num} className="text-sm">
                 <span className="text-zinc-500 font-mono">{t.num}.</span>{' '}
-                <a
-                  href={`https://github.com/nirholas/pumpkit/blob/main/tutorials/${t.file}.md`}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <Link
+                  to={`/tutorials/${t.file}`}
                   className="text-tg-blue hover:underline"
                 >
                   {t.title}
-                </a>
+                </Link>
               </li>
             ))}
           </ol>
+          <Link to="/tutorials" className="inline-block mt-3 text-xs text-tg-blue hover:underline">
+            View all {tutorials.length} tutorials →
+          </Link>
         </BotBubble>
 
-        {/* 10. FAQ */}
+        {/* 10b. Community & About */}
+        <BotBubble id="community">
+          <p className="font-semibold text-base mb-2">🌍 Community & About</p>
+          <p className="text-sm text-zinc-400 mb-2">Project governance, ecosystem, and resources:</p>
+          <ul className="space-y-2">
+            {community.map((c) => (
+              <li key={c.file} className="text-sm">
+                <Link
+                  to={`/docs/browse/${c.file}`}
+                  className="text-tg-blue hover:underline font-medium"
+                >
+                  {c.title}
+                </Link>
+                <span className="text-zinc-500 ml-1">— {c.desc}</span>
+              </li>
+            ))}
+          </ul>
+        </BotBubble>
+
+        {/* 11. FAQ */}
         <div id="faq" className="pt-4" />
         <div className="text-center">
           <span className="bg-tg-input/80 text-zinc-400 text-xs px-3 py-1 rounded-full">

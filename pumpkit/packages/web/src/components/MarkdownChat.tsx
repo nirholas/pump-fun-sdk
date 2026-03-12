@@ -183,9 +183,11 @@ function parseBlocks(markdown: string): Block[] {
 function BlockRenderer({ block }: { block: Block }) {
   switch (block.type) {
     case 'heading': {
-      const Tag = (block.level === 1 ? 'h2' : block.level === 2 ? 'h3' : 'h4') as keyof JSX.IntrinsicElements;
       const size = block.level === 1 ? 'text-base' : block.level === 2 ? 'text-[15px]' : 'text-sm';
-      return <Tag className={`font-semibold ${size} mt-2 mb-1`}>{parseInline(block.content)}</Tag>;
+      const content = parseInline(block.content);
+      if (block.level === 1) return <h2 className={`font-semibold ${size} mt-2 mb-1`}>{content}</h2>;
+      if (block.level === 2) return <h3 className={`font-semibold ${size} mt-2 mb-1`}>{content}</h3>;
+      return <h4 className={`font-semibold ${size} mt-2 mb-1`}>{content}</h4>;
     }
     case 'code':
       return (

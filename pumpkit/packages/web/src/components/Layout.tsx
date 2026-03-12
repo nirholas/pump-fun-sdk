@@ -18,7 +18,11 @@ export function Layout() {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [search, setSearch] = useState('');
-  const current = channels.find((c) => c.path === location.pathname) ?? channels[0]!;
+  const current = channels.find((c) =>
+    c.path === '/'
+      ? location.pathname === '/'
+      : location.pathname === c.path || location.pathname.startsWith(c.path + '/'),
+  ) ?? channels[0]!;
   const { watches, loading: watchesLoading, add: addWatch, remove: removeWatch } = useWatches();
   const { health } = useHealth();
 
@@ -98,7 +102,9 @@ export function Layout() {
             <p className="text-zinc-500 text-sm text-center py-8">No channels match</p>
           ) : (
             filteredChannels.map((ch) => {
-              const active = location.pathname === ch.path;
+              const active = ch.path === '/'
+                ? location.pathname === '/'
+                : location.pathname === ch.path || location.pathname.startsWith(ch.path + '/');
               return (
                 <Link
                   key={ch.path}
