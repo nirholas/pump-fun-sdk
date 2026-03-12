@@ -163,7 +163,10 @@ async function main(): Promise<void> {
                 : null;
 
             const isFake = event.isFake === true;
-            const claimNumber = isFake ? 0 : incrementGithubClaimCount(event.githubUserId, mint);
+            let claimNumber = isFake ? 0 : incrementGithubClaimCount(event.githubUserId, mint);
+            // If on-chain says not first claim but local counter is 1 (post-redeploy),
+            // use -1 as sentinel to display "#?" instead of a misleading "#1"
+            if (!isFirstClaim && claimNumber === 1) claimNumber = -1;
             const emoji = isFake ? '⚠️' : isFirstClaim ? '🚨' : '📤';
             log.info('%s %sGitHub social fee claim by %s (%s) — %s SOL',
                 emoji, isFake ? 'FAKE ' : '',

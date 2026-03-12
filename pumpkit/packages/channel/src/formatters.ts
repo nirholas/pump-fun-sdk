@@ -67,10 +67,6 @@ export function formatGitHubClaimFeed(ctx: ClaimFeedContext): { imageUrl: string
     const aff = ctx.affiliates;
 
     // ━━ HEADER BADGE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // Determine if on-chain lifetime proves this is a repeat even if local counter is 1
-    const isOnChainRepeat = !ctx.isFirstClaim
-        && ctx.lifetimeClaimedSol != null
-        && ctx.lifetimeClaimedSol > event.amountSol * 1.01;
     if (ctx.isFake) {
         L.push(`⚠️⚠️⚠️ <b>FAKE CLAIM</b>`);
         L.push(`<i>Instruction called but no fees were paid out</i>`);
@@ -78,8 +74,6 @@ export function formatGitHubClaimFeed(ctx: ClaimFeedContext): { imageUrl: string
         L.push(`🚨🚨🚨 <b>FIRST CREATOR FEE CLAIM</b>`);
     } else if (ctx.claimNumber && ctx.claimNumber > 1) {
         L.push(`🔄 <b>REPEAT CLAIM #${ctx.claimNumber}</b>`);
-    } else if (isOnChainRepeat) {
-        L.push(`🔄 <b>REPEAT CLAIM</b>`);
     } else {
         L.push(`💸 <b>CREATOR FEE CLAIM</b>`);
     }
@@ -148,11 +142,8 @@ export function formatGitHubClaimFeed(ctx: ClaimFeedContext): { imageUrl: string
 
     // ━━ CLAIM STATS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     L.push(`💸 <b>Claim Stats</b>`);
-    // Only show claim # when we trust it (not reset by redeploy)
-    if (ctx.claimNumber && ctx.claimNumber > 1) {
+    if (ctx.claimNumber && ctx.claimNumber > 0) {
         L.push(`Claim #${ctx.claimNumber}`);
-    } else if (ctx.isFirstClaim) {
-        L.push(`Claim #1`);
     }
     const claimSol = event.amountSol.toFixed(4);
     const claimUsd = solUsdPrice > 0 ? ` ($${(event.amountSol * solUsdPrice).toFixed(2)})` : '';
