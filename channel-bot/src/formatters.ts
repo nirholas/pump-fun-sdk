@@ -52,6 +52,8 @@ export interface ClaimFeedContext {
     bundle?: BundleInfo | null;
     /** Other tokens with the same name/symbol (copycat detection). */
     sameNameTokens?: SameNameToken[] | null;
+    /** All tokens this user earns social fees from (resolved from PDA → multiple SharingConfigs). */
+    allLinkedTokens?: TokenInfo[] | null;
 }
 
 /**
@@ -144,6 +146,20 @@ export function formatGitHubClaimFeed(ctx: ClaimFeedContext): { imageUrl: string
         }
         if (tokenInfo.kothTimestamp > 0) {
             L.push(`👑 KotH: ${timeAgo(tokenInfo.kothTimestamp)}`);
+        }
+        L.push('');
+    }
+
+    // ━━ ALL LINKED COINS (multi-token PDA) ━━━━━━━━━━━━━━
+    if (ctx.allLinkedTokens && ctx.allLinkedTokens.length > 1) {
+        L.push(`🪙 <b>All Linked Coins (${ctx.allLinkedTokens.length})</b>`);
+        for (const t of ctx.allLinkedTokens) {
+            const mc = t.usdMarketCap > 0 ? `$${formatCompact(t.usdMarketCap)}` : '?';
+            const status = t.complete ? '🎓' : '📈';
+            const shortMint = `${t.mint.slice(0, 6)}…`;
+            const isPrimary = tokenInfo && t.mint === tokenInfo.mint;
+            const tag = isPrimary ? ' ◂' : '';
+            L.push(`${status} <a href="https://pump.fun/coin/${esc(t.mint)}">${esc(t.symbol)}</a> — ${mc} — ${shortMint}${tag}`);
         }
         L.push('');
     }
@@ -397,20 +413,21 @@ export function formatGitHubClaimFeed(ctx: ClaimFeedContext): { imageUrl: string
         }
     }
 
-    // ━━ SAME-NAME TOKENS (copycat detection) ━━━━━━━━━━━━━
+    // ━━ SAME-NAME TOKENS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     if (ctx.sameNameTokens && ctx.sameNameTokens.length > 0) {
         const top = ctx.sameNameTokens[0]!;
         const isCopycat = tokenInfo && top.usdMarketCap > tokenInfo.usdMarketCap * 5;
         if (isCopycat) {
-            L.push(`🚩 <b>Possible Copycat</b>`);
-            L.push(`Higher-MC tokens with same name exist:`);
+            L.push(`🚩 <b>Same Name Tokens — possible copycat</b>`);
+            L.push(`This token: $${formatCompact(tokenInfo!.usdMarketCap)}`);
         } else {
             L.push(`🔍 <b>Same Name Tokens</b>`);
         }
         for (const t of ctx.sameNameTokens) {
             const mc = `$${formatCompact(t.usdMarketCap)}`;
-            const age = t.age ? ` (${t.age})` : '';
-            L.push(`• <a href="${esc(t.url)}">${esc(t.symbol)}</a> ${mc}${age}`);
+            const age = t.age ? ` ${t.age}` : '';
+            const shortMint = t.mint.length > 8 ? `${t.mint.slice(0, 6)}…` : t.mint;
+            L.push(`• <a href="${esc(t.url)}">${esc(t.symbol)}</a> ${mc} — ${shortMint}${age}`);
         }
         L.push('');
     }
@@ -448,7 +465,7 @@ export function formatGitHubClaimFeed(ctx: ClaimFeedContext): { imageUrl: string
     if (mint) {
         const axiomUrl = `https://axiom.trade/t/${mint}?ref=${encodeURIComponent(aff?.axiom ?? 'nich')}`;
         const gmgnUrl  = `https://gmgn.ai/sol/token/${mint}?ref=${encodeURIComponent(aff?.gmgn ?? 'nichxbt')}`;
-        const padreUrl = `https://t.me/padre_trading_bot?start=token_${mint}_ref_${encodeURIComponent(aff?.padre ?? 'nichxbt')}`;
+        const padreUrl = `https://trade.padre.gg/rk/${encodeURIComponent(aff?.padre ?? 'nichxbt')}`;
         L.push(`💹 Trade`);
         L.push(`<a href="${axiomUrl}">Axiom</a> | <a href="${gmgnUrl}">GMGN</a> | <a href="${padreUrl}">Padre</a>`);
     }

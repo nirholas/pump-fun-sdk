@@ -123,24 +123,23 @@ async function main(): Promise<void> {
 
             let mint = event.tokenMint?.trim() || '';
 
-            // When multiple tokens share the same social fee PDA (scam vector),
-            // disambiguate by fetching token info for each and picking highest market cap.
+            // When multiple tokens share the same social fee PDA,
+            // fetch token info for ALL candidates and pick highest MC as primary.
+            let allLinkedTokens: import('./pump-client.js').TokenInfo[] = [];
             if (event.allCandidateMints && event.allCandidateMints.length > 1) {
-                log.warn('PDA %s maps to %d tokens — disambiguating by market cap',
+                log.info('PDA %s maps to %d tokens — fetching all',
                     event.socialFeePda?.slice(0, 8) ?? '?', event.allCandidateMints.length);
-                const infos = await Promise.all(
-                    event.allCandidateMints.map(async (m) => {
-                        const info = await fetchTokenInfo(m);
-                        return { mint: m, mc: info?.usdMarketCap ?? 0 };
-                    }),
-                );
-                infos.sort((a, b) => b.mc - a.mc);
+                const infos = (await Promise.all(
+                    event.allCandidateMints.map((m) => fetchTokenInfo(m)),
+                )).filter((i): i is import('./pump-client.js').TokenInfo => i != null);
+                infos.sort((a, b) => b.usdMarketCap - a.usdMarketCap);
+                allLinkedTokens = infos;
                 const best = infos[0];
-                if (best && best.mc > 0) {
+                if (best && best.usdMarketCap > 0) {
                     mint = best.mint;
                     event.tokenMint = mint;
                     log.info('Resolved PDA to highest-MC token: %s ($%s)',
-                        mint.slice(0, 8), best.mc.toFixed(0));
+                        mint.slice(0, 8), best.usdMarketCap.toFixed(0));
                 }
             }
 
@@ -214,6 +213,7 @@ async function main(): Promise<void> {
                 liquidity,
                 bundle,
                 sameNameTokens,
+                allLinkedTokens: allLinkedTokens.length > 0 ? allLinkedTokens : undefined,
             };
 
             const { imageUrl, caption } = formatGitHubClaimFeed(ctx);
