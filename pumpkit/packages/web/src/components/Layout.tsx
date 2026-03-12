@@ -10,8 +10,8 @@ const channels = [
   { path: '/', label: 'PumpKit', emoji: '🚀', preview: 'Create your own PumpFun bot', unread: false },
   { path: '/dashboard', label: 'Live Feed', emoji: '📡', preview: 'Real-time token events', unread: true },
   { path: '/create', label: 'Token Launch', emoji: '🪙', preview: 'How tokens work on PumpFun', unread: false },
-  { path: '/docs', label: 'Docs', emoji: '📖', preview: '31 docs, 11 guides, 45 tutorials', unread: false },
-  { path: '/packages', label: 'Packages', emoji: '📦', preview: 'core, monitor, tracker, claim…', unread: false },
+  { path: '/docs', label: 'Docs', emoji: '📖', preview: '31 docs, 11 guides, 45 tutorials', unread: false },  { path: '/docs/browse', label: 'Browse Docs', emoji: '📄', preview: 'All guides & reference docs', unread: false },
+  { path: '/tutorials', label: 'Tutorials', emoji: '📚', preview: '45 hands-on coding tutorials', unread: false },  { path: '/packages', label: 'Packages', emoji: '📦', preview: 'core, monitor, tracker, claim…', unread: false },
 ];
 
 export function Layout() {

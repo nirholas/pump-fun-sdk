@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
+import { tutorials as allTutorials } from '../lib/content';
 
 const sections = [
   { id: 'getting-started', label: 'Getting Started' },

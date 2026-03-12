@@ -205,6 +205,9 @@
   .tag-grad { background: rgba(187,134,252,0.15); color: var(--purple); }
   .tag-whale { background: rgba(255,152,0,0.15); color: var(--orange); }
   .tag-launch { background: rgba(255,193,7,0.15); color: var(--yellow); }
+  .tag-cto { background: rgba(236,72,153,0.15); color: #ec4899; }
+  .tag-dist { background: rgba(168,85,247,0.15); color: #a855f7; }
+  .tag-migrate { background: rgba(34,197,94,0.15); color: #22c55e; }
 
   /* ── Buttons ──────────────────────────────────────────── */
   .btn {
@@ -432,24 +435,44 @@
     <div class="content page" id="page-dashboard">
       <div class="stats-grid">
         <div class="stat-card">
-          <div class="label">Bot Status</div>
+          <div class="label">Connection</div>
           <div class="value green" id="stat-bot-status">--</div>
-          <div class="sub" id="stat-bot-mode">--</div>
+          <div class="sub" id="stat-bot-mode">PumpPortal WS</div>
         </div>
         <div class="stat-card">
-          <div class="label">Active Watches</div>
-          <div class="value blue" id="stat-watches">0</div>
-          <div class="sub" id="stat-watches-sub">Bot + API</div>
+          <div class="label">🚀 Launches</div>
+          <div class="value yellow" id="stat-launches">0</div>
+          <div class="sub" id="stat-launches-sub">New tokens</div>
         </div>
         <div class="stat-card">
-          <div class="label">Claims Detected</div>
-          <div class="value yellow" id="stat-claims">0</div>
-          <div class="sub" id="stat-claims-sub">Since start</div>
+          <div class="label">🐋 Whales</div>
+          <div class="value orange" id="stat-whales">0</div>
+          <div class="sub" id="stat-whales-sub">&gt;5 SOL trades</div>
         </div>
         <div class="stat-card">
-          <div class="label">Uptime</div>
-          <div class="value" id="stat-uptime">--</div>
-          <div class="sub" id="stat-uptime-sub">--</div>
+          <div class="label">🎓 Graduations</div>
+          <div class="value purple" id="stat-graduations">0</div>
+          <div class="sub" id="stat-graduations-sub">Migrated to AMM</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">💰 Claims</div>
+          <div class="value blue" id="stat-claims">0</div>
+          <div class="sub" id="stat-claims-sub">Fee claims</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">👑 CTO</div>
+          <div class="value" style="color:#ec4899" id="stat-cto">0</div>
+          <div class="sub" id="stat-cto-sub">Creator sold</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">💎 Distributions</div>
+          <div class="value" style="color:#a855f7" id="stat-dist">0</div>
+          <div class="sub" id="stat-dist-sub">Fee payouts</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Total Events</div>
+          <div class="value" id="stat-total">0</div>
+          <div class="sub" id="stat-uptime">--</div>
         </div>
       </div>
 
@@ -473,10 +496,11 @@
       <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
         <button class="btn btn-sm filter-btn active" data-filter="all">All</button>
         <button class="btn btn-sm filter-btn" data-filter="launch">🚀 Launches</button>
-        <button class="btn btn-sm filter-btn" data-filter="trade">💱 Trades</button>
         <button class="btn btn-sm filter-btn" data-filter="whale">🐋 Whales</button>
         <button class="btn btn-sm filter-btn" data-filter="graduation">🎓 Graduations</button>
         <button class="btn btn-sm filter-btn" data-filter="claim">💰 Claims</button>
+        <button class="btn btn-sm filter-btn" data-filter="cto">👑 CTO</button>
+        <button class="btn btn-sm filter-btn" data-filter="distribution">💎 Distributions</button>
       </div>
 
       <div class="panel">
@@ -567,15 +591,23 @@
             </div>
             <div class="toggle-row">
               <div class="toggle-label">Whale Trade Alerts<div class="sub">Large buys/sells above threshold</div></div>
-              <input type="checkbox" class="toggle" id="alert-whale">
+              <input type="checkbox" class="toggle" id="alert-whale" checked>
             </div>
             <div class="toggle-row">
-              <div class="toggle-label">Fee Distribution Alerts<div class="sub">Creator fee claim events</div></div>
+              <div class="toggle-label">Fee Claim Alerts<div class="sub">Creator fee claim events</div></div>
               <input type="checkbox" class="toggle" id="alert-fees">
             </div>
             <div class="toggle-row">
               <div class="toggle-label">New Launch Alerts<div class="sub">New token creation events</div></div>
               <input type="checkbox" class="toggle" id="alert-launch">
+            </div>
+            <div class="toggle-row">
+              <div class="toggle-label">👑 CTO Alerts<div class="sub">Creator sells tokens — community takeover opportunity</div></div>
+              <input type="checkbox" class="toggle" id="alert-cto" checked>
+            </div>
+            <div class="toggle-row">
+              <div class="toggle-label">💎 Distribution Alerts<div class="sub">Fee distribution/payout events</div></div>
+              <input type="checkbox" class="toggle" id="alert-distribution">
             </div>
           </div>
         </div>
@@ -834,6 +866,21 @@
 //  PumpFun Bot Dashboard — Client Application
 // ═══════════════════════════════════════════════════════════════════════
 
+// ── PumpFun Live Data Endpoints ──────────────────────────────────────
+const PF_ENDPOINTS = [
+  { url: 'wss://pumpportal.fun/api/data', protocol: 'pumpportal', label: 'PumpPortal' },
+  { url: 'wss://pump-fun-websocket-production.up.railway.app/ws', protocol: 'relay', label: 'Relay Server' },
+];
+const WHALE_THRESHOLD_SOL = 5; // SOL threshold for whale detection
+let pfIndex = 0;
+let pfProtocol = null;
+let pfReconnectDelay = 1000;
+let pfReconnectTimer = null;
+let pfConnectAttempts = 0;
+
+// Track creators for CTO detection: mint -> creator pubkey
+const creatorMap = new Map();
+
 const state = {
   apiUrl: localStorage.getItem('pumpbot-api-url') || 'http://localhost:3000',
   wsUrl: localStorage.getItem('pumpbot-ws-url') || 'ws://localhost:8080',
@@ -841,6 +888,7 @@ const state = {
   rpcUrl: localStorage.getItem('pumpbot-rpc-url') || 'https://api.mainnet-beta.solana.com',
   currentPage: 'dashboard',
   ws: null,
+  relayWs: null,
   sse: null,
   feedItems: [],
   feedCount: 0,
@@ -849,6 +897,7 @@ const state = {
   feedPaused: false,
   vanityWorker: null,
   alertConfig: JSON.parse(localStorage.getItem('pumpbot-alerts') || '{}'),
+  stats: { launches: 0, whales: 0, graduations: 0, claims: 0, cto: 0, distributions: 0, total: 0 },
 };
 
 // ── Init ──────────────────────────────────────────────────────────────
@@ -867,6 +916,8 @@ document.addEventListener('DOMContentLoaded', () => {
   if (ac.whale !== undefined) document.getElementById('alert-whale').checked = ac.whale;
   if (ac.fees !== undefined) document.getElementById('alert-fees').checked = ac.fees;
   if (ac.launch !== undefined) document.getElementById('alert-launch').checked = ac.launch;
+  if (ac.cto !== undefined) document.getElementById('alert-cto').checked = ac.cto;
+  if (ac.distribution !== undefined) document.getElementById('alert-distribution').checked = ac.distribution;
   if (ac.whaleThreshold) document.getElementById('threshold-whale').value = ac.whaleThreshold;
   if (ac.claimThreshold) document.getElementById('threshold-claim').value = ac.claimThreshold;
 
@@ -892,12 +943,15 @@ document.addEventListener('DOMContentLoaded', () => {
     state.feedPaused = e.target.checked;
   });
 
-  // Connect
+  // Connect to real PumpFun data
   connectApi();
-  connectWebSocket();
+  connectPumpPortal();
+  connectRelay();
 
   // Update uptime every second
   setInterval(updateUptime, 1000);
+  state._uptimeAt = Date.now();
+  state._uptime = 0;
 });
 
 // ── Navigation ────────────────────────────────────────────────────────
@@ -974,22 +1028,13 @@ function updateApiStatus(status) {
 }
 
 function updateDashboard(health) {
+  // API health is optional - real data comes from PumpPortal WS
   if (!health) return;
-  const m = health.monitor || {};
-  document.getElementById('stat-bot-status').textContent = m.running ? 'Running' : 'Stopped';
-  document.getElementById('stat-bot-status').className = 'value ' + (m.running ? 'green' : 'red');
-  document.getElementById('stat-bot-mode').textContent = 'Mode: ' + (m.mode || 'unknown');
-  document.getElementById('stat-claims').textContent = (m.claimsDetected || 0).toLocaleString();
-  const w = health.watches || {};
-  document.getElementById('stat-watches').textContent = (w.total || w.active || 0).toString();
-
-  state._uptime = health.uptime || 0;
-  state._uptimeAt = Date.now();
 }
 
 function updateUptime() {
   if (!state._uptimeAt) return;
-  const elapsed = state._uptime + (Date.now() - state._uptimeAt);
+  const elapsed = Date.now() - state._uptimeAt;
   const h = Math.floor(elapsed / 3600000);
   const m = Math.floor((elapsed % 3600000) / 60000);
   const s = Math.floor((elapsed % 60000) / 1000);
@@ -1007,63 +1052,258 @@ async function apiFetch(path, options = {}) {
   return fetch(url, { ...options, headers });
 }
 
-// ── WebSocket Connection ──────────────────────────────────────────────
+// ── PumpPortal WebSocket (Real Live PumpFun Data) ───────────────────
 
-function connectWebSocket() {
-  if (state.ws) {
-    state.ws.close();
-    state.ws = null;
-  }
+function connectPumpPortal() {
+  if (state.ws) { try { state.ws.close(); } catch {} state.ws = null; }
+  if (pfReconnectTimer) { clearTimeout(pfReconnectTimer); pfReconnectTimer = null; }
 
   const wsDot = document.getElementById('ws-dot');
   const wsLabel = document.getElementById('ws-status');
 
+  const ep = PF_ENDPOINTS[pfIndex % PF_ENDPOINTS.length];
+  pfIndex++;
+  pfProtocol = ep.protocol;
+  pfConnectAttempts++;
+
+  wsDot.className = 'dot';
+  wsLabel.textContent = 'WS: Connecting to ' + ep.label + '...';
+
   try {
-    state.ws = new WebSocket(state.wsUrl);
-
-    state.ws.onopen = () => {
-      wsDot.className = 'dot connected';
-      wsLabel.textContent = 'WS: Connected';
-      toast('WebSocket connected', 'success');
-    };
-
-    state.ws.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        handleWsEvent(data);
-      } catch { /* ignore non-JSON */ }
-    };
-
-    state.ws.onclose = () => {
-      wsDot.className = 'dot';
-      wsLabel.textContent = 'WS: Disconnected';
-      // Reconnect after 3s
-      setTimeout(connectWebSocket, 3000);
-    };
-
-    state.ws.onerror = () => {
-      wsDot.className = 'dot error';
-      wsLabel.textContent = 'WS: Error';
-    };
+    state.ws = new WebSocket(ep.url);
   } catch {
     wsDot.className = 'dot error';
     wsLabel.textContent = 'WS: Error';
-    setTimeout(connectWebSocket, 5000);
+    schedulePfReconnect();
+    return;
+  }
+
+  const connectTimeout = setTimeout(() => {
+    if (state.ws && state.ws.readyState !== WebSocket.OPEN) {
+      try { state.ws.close(); } catch {}
+    }
+  }, 10000);
+
+  state.ws.onopen = () => {
+    clearTimeout(connectTimeout);
+    pfReconnectDelay = 1000;
+    pfConnectAttempts = 0;
+    wsDot.className = 'dot connected';
+    wsLabel.textContent = 'WS: Live — ' + ep.label;
+    document.getElementById('stat-bot-status').textContent = 'Live';
+    document.getElementById('stat-bot-status').className = 'value green';
+    toast('Connected to ' + ep.label + ' — streaming real PumpFun data', 'success');
+
+    if (pfProtocol === 'pumpportal') {
+      // Subscribe to all new tokens + all trades
+      state.ws.send(JSON.stringify({ method: 'subscribeNewToken' }));
+      state.ws.send(JSON.stringify({ method: 'subscribeTokenTrade', keys: ['all'] }));
+    }
+    // Relay protocol: server handles subscriptions, just listen
+  };
+
+  state.ws.onmessage = (event) => {
+    try {
+      const data = JSON.parse(event.data);
+      if (pfProtocol === 'pumpportal') {
+        handlePumpPortalEvent(data);
+      } else if (pfProtocol === 'relay') {
+        handleRelayEvent(data);
+      }
+    } catch { /* ignore non-JSON */ }
+  };
+
+  state.ws.onclose = () => {
+    clearTimeout(connectTimeout);
+    wsDot.className = 'dot';
+    wsLabel.textContent = 'WS: Disconnected';
+    document.getElementById('stat-bot-status').textContent = 'Disconnected';
+    document.getElementById('stat-bot-status').className = 'value red';
+    state.ws = null;
+    schedulePfReconnect();
+  };
+
+  state.ws.onerror = () => {
+    clearTimeout(connectTimeout);
+    wsDot.className = 'dot error';
+    wsLabel.textContent = 'WS: Error';
+  };
+}
+
+function schedulePfReconnect() {
+  const delay = Math.min(pfReconnectDelay, 15000);
+  pfReconnectTimer = setTimeout(connectPumpPortal, delay);
+  if (pfConnectAttempts >= PF_ENDPOINTS.length) {
+    pfReconnectDelay = Math.min(pfReconnectDelay * 1.5, 15000);
   }
 }
 
-function handleWsEvent(data) {
-  // Normalize event types from various sources
-  const type = data.type || data.event || 'unknown';
-  const ts = data.timestamp || Date.now();
+// ── Relay WebSocket (for claims + distributions) ────────────────────
 
-  const item = {
-    type,
-    time: new Date(typeof ts === 'number' && ts < 1e12 ? ts * 1000 : ts),
-    data,
+function connectRelay() {
+  if (state.relayWs) { try { state.relayWs.close(); } catch {} state.relayWs = null; }
+
+  try {
+    state.relayWs = new WebSocket('wss://pump-fun-websocket-production.up.railway.app/ws');
+  } catch { setTimeout(connectRelay, 10000); return; }
+
+  state.relayWs.onmessage = (event) => {
+    try {
+      const data = JSON.parse(event.data);
+      if (data.type === 'fee-claim') handleClaimEvent(data);
+    } catch {}
   };
 
-  // Add to feed
+  state.relayWs.onclose = () => {
+    state.relayWs = null;
+    setTimeout(connectRelay, 5000);
+  };
+
+  state.relayWs.onerror = () => {};
+}
+
+// ── PumpPortal Event Handler ────────────────────────────────────────
+
+function handlePumpPortalEvent(msg) {
+  if (!msg || typeof msg !== 'object') return;
+
+  const txType = (msg.txType || '').toLowerCase();
+
+  // Normalize SOL amount
+  let solAmount = 0;
+  if (msg.solAmount !== undefined) {
+    solAmount = msg.solAmount > 1e6 ? msg.solAmount / 1e9 : msg.solAmount;
+  }
+
+  // Determine event type and classify for tabs
+  let type = null;
+  let displayType = null;
+
+  if (txType === 'create' || (!msg.txType && msg.mint && msg.name)) {
+    type = 'launch';
+    displayType = 'launch';
+    // Track creator for CTO detection
+    if (msg.mint && msg.traderPublicKey) {
+      creatorMap.set(msg.mint, msg.traderPublicKey);
+      // Cap the map at 10K entries
+      if (creatorMap.size > 10000) {
+        const first = creatorMap.keys().next().value;
+        creatorMap.delete(first);
+      }
+    }
+  } else if (txType === 'buy' || txType === 'sell') {
+    // Check if this is a CTO event (creator selling their tokens)
+    const creator = creatorMap.get(msg.mint);
+    if (txType === 'sell' && creator && msg.traderPublicKey === creator) {
+      type = 'cto';
+      displayType = 'cto';
+    } else if (solAmount >= WHALE_THRESHOLD_SOL) {
+      // Whale trade
+      type = 'whale';
+      displayType = 'whale';
+    } else {
+      type = txType; // buy or sell
+      displayType = txType;
+    }
+  } else if (txType === 'migrate') {
+    type = 'graduation';
+    displayType = 'graduation';
+  } else {
+    return; // Unknown type
+  }
+
+  const item = {
+    type: displayType,
+    time: new Date(),
+    data: {
+      ...msg,
+      solAmount,
+      name: msg.name || '',
+      symbol: msg.symbol || '',
+      mint: msg.mint || '',
+      user: msg.traderPublicKey || '',
+      tokenSymbol: msg.symbol || '',
+      tokenName: msg.name || '',
+      signature: msg.signature || '',
+      marketCapSol: msg.marketCapSol || 0,
+    },
+  };
+
+  ingestEvent(item);
+}
+
+// ── Relay Event Handler ─────────────────────────────────────────────
+
+function handleRelayEvent(msg) {
+  if (!msg || typeof msg !== 'object') return;
+  if (msg.type === 'heartbeat' || msg.type === 'status') return;
+
+  // token-launch events from relay (backup if PumpPortal fails)
+  if (msg.type === 'token-launch') {
+    const item = {
+      type: 'launch',
+      time: new Date(),
+      data: {
+        name: msg.name || '', symbol: msg.symbol || '',
+        mint: msg.mint || '', user: msg.creator || '',
+        tokenSymbol: msg.symbol || '', tokenName: msg.name || '',
+        signature: msg.signature || '', marketCapSol: msg.marketCapSol || 0,
+      },
+    };
+    // Only ingest if we don't have another WS active (avoid duplicates)
+    if (!state.ws || state.ws.readyState !== WebSocket.OPEN) {
+      ingestEvent(item);
+    }
+    return;
+  }
+}
+
+// ── Claim Event Handler (from relay) ────────────────────────────────
+
+function handleClaimEvent(data) {
+  // Distinguish between simple claims and fee distributions
+  const claimType = (data.claimType || '').toLowerCase();
+  const isDistribution = claimType.includes('distribute') || claimType.includes('social_fee') || claimType.includes('transfer_creator');
+
+  const item = {
+    type: isDistribution ? 'distribution' : 'claim',
+    time: new Date(),
+    data: {
+      amountSol: data.amountSol || 0,
+      claimType: data.claimType || 'fee',
+      claimerWallet: data.claimerWallet || '',
+      tokenMint: data.tokenMint || '',
+      tokenSymbol: data.tokenSymbol || '',
+      txSignature: data.txSignature || '',
+      mint: data.tokenMint || '',
+    },
+  };
+
+  ingestEvent(item);
+}
+
+// ── Common Event Ingestion ──────────────────────────────────────────
+
+function ingestEvent(item) {
+  // Update stats
+  state.stats.total++;
+  if (item.type === 'launch') state.stats.launches++;
+  else if (item.type === 'whale') state.stats.whales++;
+  else if (item.type === 'graduation') state.stats.graduations++;
+  else if (item.type === 'claim') state.stats.claims++;
+  else if (item.type === 'cto') state.stats.cto++;
+  else if (item.type === 'distribution') state.stats.distributions++;
+
+  // Update stat cards
+  document.getElementById('stat-launches').textContent = state.stats.launches;
+  document.getElementById('stat-whales').textContent = state.stats.whales;
+  document.getElementById('stat-graduations').textContent = state.stats.graduations;
+  document.getElementById('stat-claims').textContent = state.stats.claims;
+  document.getElementById('stat-cto').textContent = state.stats.cto;
+  document.getElementById('stat-dist').textContent = state.stats.distributions;
+  document.getElementById('stat-total').textContent = state.stats.total;
+
+  // Add to feeds
   addFeedItem('live-feed', item);
   addFeedItem('dashboard-feed', item);
 
@@ -1097,16 +1337,20 @@ function addFeedItem(feedId, item) {
     launch: 'tag-launch', create: 'tag-launch',
     trade: 'tag-buy', buy: 'tag-buy', sell: 'tag-sell',
     whale: 'tag-whale', whale_trade: 'tag-whale',
-    graduation: 'tag-grad', complete: 'tag-grad',
+    graduation: 'tag-grad', complete: 'tag-grad', migrate: 'tag-migrate',
     claim: 'tag-claim', fee_claim: 'tag-claim',
+    cto: 'tag-cto',
+    distribution: 'tag-dist', fee_distribution: 'tag-dist',
   }[item.type] || 'tag-buy';
 
   const tagLabel = {
     launch: 'LAUNCH', create: 'LAUNCH',
     trade: 'TRADE', buy: 'BUY', sell: 'SELL',
     whale: 'WHALE', whale_trade: 'WHALE',
-    graduation: 'GRAD', complete: 'GRAD',
+    graduation: 'GRAD', complete: 'GRAD', migrate: 'GRAD',
     claim: 'CLAIM', fee_claim: 'CLAIM',
+    cto: 'CTO',
+    distribution: 'DIST', fee_distribution: 'DIST',
   }[item.type] || item.type.toUpperCase();
 
   const d = item.data;
@@ -1115,18 +1359,29 @@ function addFeedItem(feedId, item) {
   if (item.type === 'launch' || item.type === 'create') {
     title = `${d.name || d.tokenName || 'Unknown'} (${d.symbol || d.tokenSymbol || '?'})`;
     detail = d.mint ? shortAddr(d.mint) : '';
-  } else if (item.type === 'trade' || item.type === 'buy' || item.type === 'sell') {
-    title = `${d.tokenSymbol || '?'} — ${(d.solAmount || 0).toFixed(4)} SOL`;
+    if (d.marketCapSol) detail += ` · MC: ${Number(d.marketCapSol).toFixed(2)} SOL`;
+  } else if (item.type === 'buy' || item.type === 'sell' || item.type === 'trade') {
+    const dir = item.type === 'sell' ? '🔴' : '🟢';
+    title = `${dir} ${d.tokenSymbol || '?'} — ${(d.solAmount || 0).toFixed(4)} SOL`;
     detail = d.user ? shortAddr(d.user) : '';
+    if (d.marketCapSol) detail += ` · MC: ${Number(d.marketCapSol).toFixed(2)} SOL`;
   } else if (item.type === 'whale' || item.type === 'whale_trade') {
     title = `🐋 ${(d.solAmount || 0).toFixed(2)} SOL — ${d.tokenSymbol || '?'}`;
     detail = d.user ? shortAddr(d.user) : '';
-  } else if (item.type === 'graduation' || item.type === 'complete') {
-    title = `${d.tokenSymbol || d.name || '?'} graduated to AMM`;
+    if (d.marketCapSol) detail += ` · MC: ${Number(d.marketCapSol).toFixed(2)} SOL`;
+  } else if (item.type === 'graduation' || item.type === 'complete' || item.type === 'migrate') {
+    title = `🎓 ${d.tokenSymbol || d.name || '?'} graduated to AMM`;
     detail = d.mint ? shortAddr(d.mint) : '';
+  } else if (item.type === 'cto') {
+    title = `👑 Creator sold ${d.tokenSymbol || '?'} — ${(d.solAmount || 0).toFixed(4)} SOL`;
+    detail = d.user ? 'Creator: ' + shortAddr(d.user) : '';
+    if (d.mint) detail += ' · ' + shortAddr(d.mint);
   } else if (item.type === 'claim' || item.type === 'fee_claim') {
-    title = `${(d.amountSol || 0).toFixed(4)} SOL claimed`;
+    title = `💰 ${(d.amountSol || 0).toFixed(4)} SOL claimed`;
     detail = `${d.claimType || 'fee'} — ${d.claimerWallet ? shortAddr(d.claimerWallet) : ''}`;
+  } else if (item.type === 'distribution' || item.type === 'fee_distribution') {
+    title = `💎 ${(d.amountSol || 0).toFixed(4)} SOL distributed`;
+    detail = `${d.claimType || 'distribution'} — ${d.claimerWallet ? shortAddr(d.claimerWallet) : ''}`;
   } else {
     title = JSON.stringify(d).slice(0, 80);
   }
@@ -1162,10 +1417,11 @@ function applyFeedFilter() {
       const type = item.dataset.type || '';
       const matches = {
         launch: ['launch', 'create'],
-        trade: ['trade', 'buy', 'sell'],
         whale: ['whale', 'whale_trade'],
-        graduation: ['graduation', 'complete'],
+        graduation: ['graduation', 'complete', 'migrate'],
         claim: ['claim', 'fee_claim'],
+        cto: ['cto'],
+        distribution: ['distribution', 'fee_distribution'],
       }[state.currentFilter] || [state.currentFilter];
       item.style.display = matches.includes(type) ? '' : 'none';
     }
@@ -1189,11 +1445,8 @@ function checkAlerts(item) {
     }
   }
   if (type === 'whale' || type === 'whale_trade') {
-    if (ac.whale) {
-      const threshold = parseFloat(ac.whaleThreshold) || 10;
-      if ((item.data.solAmount || 0) >= threshold) {
-        addAlertItem(item, '🐋 Whale Trade Detected');
-      }
+    if (ac.whale !== false) {
+      addAlertItem(item, '🐋 Whale Trade Detected');
     }
   }
   if (type === 'claim' || type === 'fee_claim') {
@@ -1204,6 +1457,16 @@ function checkAlerts(item) {
   if (type === 'launch' || type === 'create') {
     if (ac.launch) {
       addAlertItem(item, '🚀 New Token Launched');
+    }
+  }
+  if (type === 'cto') {
+    if (ac.cto !== false) {
+      addAlertItem(item, '👑 Creator Sold — CTO Opportunity');
+    }
+  }
+  if (type === 'distribution' || type === 'fee_distribution') {
+    if (ac.distribution) {
+      addAlertItem(item, '💎 Fee Distribution');
     }
   }
 }
@@ -1238,6 +1501,8 @@ function saveAlertConfig() {
     whale: document.getElementById('alert-whale').checked,
     fees: document.getElementById('alert-fees').checked,
     launch: document.getElementById('alert-launch').checked,
+    cto: document.getElementById('alert-cto').checked,
+    distribution: document.getElementById('alert-distribution').checked,
     whaleThreshold: document.getElementById('threshold-whale').value,
     claimThreshold: document.getElementById('threshold-claim').value,
     cooldown: document.getElementById('threshold-cooldown').value,
@@ -1692,7 +1957,11 @@ function saveConfig() {
 
   // Reconnect
   connectApi();
-  connectWebSocket();
+  pfIndex = 0;
+  pfReconnectDelay = 1000;
+  pfConnectAttempts = 0;
+  connectPumpPortal();
+  connectRelay();
 
   toast('Configuration saved & reconnecting', 'success');
 }
