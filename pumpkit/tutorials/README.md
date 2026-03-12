@@ -34,6 +34,16 @@ Hands-on guides for building PumpFun Telegram bots.
 |---|----------|-------------------|
 | 12 | [Fee Sharing Setup](07-fee-sharing.md) | Configuring shareholders, fee distribution mechanics |
 | 13 | [Error Handling Patterns](33-error-handling-patterns.md) | Validation patterns for fee sharing, error classes |
+| 14 | [Cashback & Social Fees](27-cashback-social-fees.md) | Cashback rewards, social fee PDAs, identity-linked fees |
+| 15 | [Analytics & Price Quotes](28-analytics-price-quotes.md) | Quote functions, price impact, graduation progress, price feeds |
+| 16 | [AMM Liquidity Operations](34-amm-liquidity-operations.md) | Post-graduation AMM trading, LP tokens, creator fees |
+
+## Advanced Topics
+
+| # | Tutorial | What You'll Learn |
+|---|----------|-------------------|
+| 17 | [Testing & Benchmarking](38-testing-benchmarking.md) | CLI tests, fuzz tests, stress tests, Rust vs TS benchmarks |
+| 18 | [Custom DeFi Agents & i18n](44-custom-defi-agents-i18n.md) | AI agent JSON definitions, 18-language translations, LLM integration |
 
 ## Prerequisites
 
