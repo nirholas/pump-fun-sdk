@@ -56,8 +56,8 @@ Deep dives into specific protocol topics:
 
 ## Tutorials
 
-19 hands-on guides: [tutorials/](../tutorials/)
+30 hands-on guides: [tutorials/](../tutorials/)
 
-## Live Dashboards
+## Examples
 
-Reference implementations: [live/](../live/)
+Reference implementations and dashboards: [examples/](../examples/)

@@ -193,10 +193,13 @@ Consolidates 3 existing production bots into one:
 - [RPC Best Practices](docs/rpc-best-practices.md) — Provider selection, batching, rate limiting
 - [Performance](docs/performance.md) — Benchmarks, latency, and optimization tips
 - [Security Guide](docs/guides/security.md) — Crypto library rules, key management
+- [Troubleshooting](docs/troubleshooting.md) — Common issues and solutions
+- [Support](docs/support.md) — Getting help, bug reports, feature requests
+- [Roadmap](docs/roadmap.md) — Where PumpKit is headed
 
 ### Tutorials
 
-22 hands-on guides in [tutorials/](tutorials/):
+26 hands-on guides in [tutorials/](tutorials/):
 
 | Tutorial | Topic |
 |----------|-------|
@@ -221,6 +224,10 @@ Consolidates 3 existing production bots into one:
 | [Error Handling](tutorials/33-error-handling-patterns.md) | Validation and error classes |
 | [Security Auditing](tutorials/37-security-auditing-verification.md) | Security audit checklist |
 | [AI Enrichment](tutorials/39-channel-bot-ai-enrichment.md) | GitHub + AI-powered cards |
+| [Your First Claim Bot](tutorials/40-your-first-claim-bot.md) | Build a claim bot from scratch |
+| [Customizing Claim Cards](tutorials/41-customizing-claim-cards.md) | HTML formatting, badges, enrichment |
+| [Channel Feed Bot](tutorials/42-channel-feed-bot.md) | Channel broadcasting setup |
+| [Understanding Events](tutorials/43-understanding-pumpfun-events.md) | On-chain event types and parsing |
 
 ### Community
 - [Contributing](CONTRIBUTING.md) — How to contribute
