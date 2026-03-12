@@ -121,7 +121,28 @@ async function main(): Promise<void> {
         if (event.claimType === 'claim_social_fee_pda' && event.socialPlatform === 2 && event.githubUserId) {
             pipeline.socialClaims++;
 
-            const mint = event.tokenMint?.trim() || '';
+            let mint = event.tokenMint?.trim() || '';
+
+            // When multiple tokens share the same social fee PDA (scam vector),
+            // disambiguate by fetching token info for each and picking highest market cap.
+            if (event.allCandidateMints && event.allCandidateMints.length > 1) {
+                log.warn('PDA %s maps to %d tokens — disambiguating by market cap',
+                    event.socialFeePda?.slice(0, 8) ?? '?', event.allCandidateMints.length);
+                const infos = await Promise.all(
+                    event.allCandidateMints.map(async (m) => {
+                        const info = await fetchTokenInfo(m);
+                        return { mint: m, mc: info?.usdMarketCap ?? 0 };
+                    }),
+                );
+                infos.sort((a, b) => b.mc - a.mc);
+                const best = infos[0];
+                if (best && best.mc > 0) {
+                    mint = best.mint;
+                    event.tokenMint = mint;
+                    log.info('Resolved PDA to highest-MC token: %s ($%s)',
+                        mint.slice(0, 8), best.mc.toFixed(0));
+                }
+            }
 
             // Use on-chain lifetime data as ground truth: if lifetime lamports
             // significantly exceed this claim, the user has claimed before —

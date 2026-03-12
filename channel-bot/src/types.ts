@@ -103,6 +103,8 @@ export interface FeeClaimEvent {
     isFake?: boolean;
     /** Lifetime total claimed in lamports (from on-chain event, cumulative across all claims) */
     lifetimeClaimedLamports?: number;
+    /** When multiple tokens share the same social fee PDA (scam vector), all candidate mints */
+    allCandidateMints?: string[];
 }
 
 export interface TokenLaunchEvent {
