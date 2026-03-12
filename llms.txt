@@ -91,17 +91,29 @@ Difficulty estimates:
 - src/ - Core SDK (instruction builders, bonding curve math, analytics, social fees, PDAs, state, events)
 - rust/ - High-performance Rust vanity address generator (solana-sdk + rayon)
 - typescript/ - TypeScript vanity address generator (@solana/web3.js)
-- mcp-server/ - Model Context Protocol server for AI agents (53 tools)
-- telegram-bot/ - PumpFun activity monitor (10 commands — fee claims, CTO, whale, graduation)
+- mcp-server/ - Model Context Protocol server for AI agents (55 tools, 4 resources, 5 prompts)
+- telegram-bot/ - PumpFun activity monitor (13 commands — fee claims, CTO, whale, graduation, pricing, quotes)
+- channel-bot/ - Broadcast-only Telegram feed (GitHub social fee claims, graduations, fake-claim detection)
+- claim-bot/ - Fee claim tracker by token CA or X handle
+- outsiders-bot/ - Call leaderboard bot (PNL cards, win rate, multi-chain)
+- swarm-bot/ - AI multi-strategy trading bot
+- swarm/ - Bot fleet orchestrator (admin dashboard, event bus, REST API)
+- dashboard/ - Unified control panel for all bots
+- pumpkit/ - Monorepo with 6 packages (core, channel, claim, monitor, tracker, web)
 - websocket-server/ - WebSocket relay (PumpFun API to browser clients, deployed on Railway)
 - x402/ - x402 payment protocol (HTTP 402 USDC micropayments)
-- lair-tg/ - Lair — unified Telegram bot platform for DeFi intelligence
-- live/ - Standalone live token launch + trades dashboards
-- tutorials/ - 19 hands-on tutorial guides
-- scripts/ - Shell scripts wrapping solana-keygen
-- tools/ - Verification and audit utilities
-- tests/ - Cross-language test suites
-- docs/ - API reference, architecture, guides
+- lair-tg/ - Unified Telegram bot platform for DeFi intelligence
+- live/ - Standalone dashboards (token launches, trades, vanity generator)
+- website/ - PumpOS web desktop (169+ Pump-Store apps)
+- site/ - Documentation site
+- pumpfun-site/ - Landing pages (create, profile, token)
+- packages/defi-agents/ - AI agent definitions library
+- packages/plugin.delivery/ - OpenAPI-compatible plugin SDK and gateway
+- tutorials/ - 43 hands-on tutorial guides
+- scripts/ - Production Bash wrappers (vanity generation, verification, site tools)
+- tools/ - Audit and verification utilities
+- tests/ - Integration, fuzz, stress, benchmark, and CLI tests
+- docs/ - Full documentation including official Pump protocol specs
 - website/ - PumpOS web desktop with 169 Pump-Store apps
 - packages/ - Companion packages (DeFi agents, plugin delivery)
 - packages/defi-agents/ - 43 production-ready AI agent definitions

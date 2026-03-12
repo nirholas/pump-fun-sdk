@@ -6,7 +6,7 @@ This file provides comprehensive context for AI assistants working with this cod
 
 ## Project Overview
 
-The Pump SDK (`@nirholas/pump-sdk`) is a TypeScript SDK for the Pump protocol — a Solana-based token launchpad with bonding curve pricing, automatic AMM migration, tiered fees, creator fee sharing, token incentives, and social fee integrations. Also includes vanity address generators (Rust + TypeScript), MCP server (53 tools), WebSocket relay, live dashboards, Telegram bot (10 commands), and production shell scripts. Uses ONLY official Solana Labs libraries for all cryptographic operations.
+The Pump SDK (`@nirholas/pump-sdk`) is a TypeScript SDK for the Pump protocol — a Solana-based token launchpad with bonding curve pricing, automatic AMM migration, tiered fees, creator fee sharing, token incentives, and social fee integrations. Also includes vanity address generators (Rust + TypeScript), MCP server (55 tools), WebSocket relay, live dashboards, 4 Telegram bots, bot fleet orchestrator, AI trading bot, unified dashboard, pumpkit monorepo, and production shell scripts. Uses ONLY official Solana Labs libraries for all cryptographic operations.
 
 ## Official Libraries Only
 
@@ -96,7 +96,7 @@ Solana CLI compatible JSON array of 64 bytes:
 
 Load with: `solana config set --keypair keypair.json`
 
-## Non-Cryptographic Dependencies
+## Components
 
 ### Rust Vanity Generator (rust/)
 
@@ -114,12 +114,12 @@ Educational reference implementation:
 - `lib/output.ts` — File output
 - `lib/security.ts` — Security utilities
 
-### MCP Server (mcp-server/) — NOT YET IMPLEMENTED
+### MCP Server (mcp-server/)
 
-Design documents exist in `prompts/mcp-server/` for a planned Model Context Protocol server:
-- 53 tools: quoting, building transactions, fee management, analytics, AMM operations, social fees, wallet operations (generate_keypair, generate_vanity, sign_message, verify_signature, validate_address, estimate_vanity_time, restore_keypair, and 46 more)
-- 3 resource URIs: solana://config, solana://keypair/{id}, solana://address/{pubkey}
-- 3 prompts: create_wallet, security_audit, batch_generate
+Fully implemented Model Context Protocol server (v2024-11-05):
+- 55 tools organized by category: quoting (8), trading (6), fees (8), analytics (7), AMM (5), social fees (6), wallet (7), token incentives (5), metadata (3)
+- 4 resource URIs: solana://config, solana://keypair/{id}, solana://address/{pubkey}, plus 1 static resource
+- 5 prompts: create_token (step-by-step token creation), buy_token (bonding curve/AMM buying), setup_fee_sharing (fee configuration), check_portfolio (wallet analysis), graduation_check (token graduation status)
 - stdio transport, session keypair management with zeroization on shutdown
 
 ### Telegram Bot (telegram-bot/)
@@ -129,7 +129,7 @@ PumpFun activity monitoring bot with Telegram notifications:
 - Real-time on-chain monitoring of fee claim transactions across Pump, PumpAMM, and PumpFees programs
 - 3 detection strategies: discriminator matching, inner instruction SOL transfers, balance-change heuristic
 - 4th strategy: event log parsing for claim discriminators
-- 10 commands: /start, /help, /watch, /unwatch, /list, /status, /cto, /alerts, /monitor, /stopmonitor
+- 13 commands: /start, /help, /watch, /unwatch, /list, /status, /cto, /alerts, /monitor, /stopmonitor, /price, /fees, /quote
 - CTO (Creator Takeover) alerts: detect creator fee redirection events
 - Graduation alerts: bonding curve completion and AMM migration notifications
 - Whale trade alerts: configurable SOL threshold for large buy/sell detection
@@ -139,6 +139,27 @@ PumpFun activity monitoring bot with Telegram notifications:
 - PumpEventMonitor: Anchor event decoder for graduation, whale trades, and fee distribution events
 - Persistent state with JSON file storage
 - Docker deployment with multi-stage build and HEALTHCHECK
+
+### Channel Bot (channel-bot/)
+
+Broadcast-only Telegram feed for PumpFun activity:
+- GitHub social fee claims with influencer badges
+- Token graduation announcements
+- First-claim alerts and fake-claim detection
+- Read-only channel posting (no user commands)
+
+### Claim Bot (claim-bot/)
+
+Fee claim tracker by token CA or X handle:
+- Commands: /start, /add, /remove, /list, /status, /help, /rank
+- Twitter follower tracking and influencer follow detection
+
+### Outsiders Bot (outsiders-bot/)
+
+Call leaderboard and performance tracking:
+- Commands: /leaderboard, /last, /calls, /winrate, /pnl, /alpha, /gamble, /settings, /block, /unblock, /rank
+- Win rate tracking, PNL cards, hardcore mode
+- Multi-chain support, call forwarding
 
 ### WebSocket Relay Server (websocket-server/)
 
@@ -156,24 +177,62 @@ Real-time token launch relay server:
 Standalone browser UIs for real-time PumpFun monitoring:
 - index.html — Token launch dashboard with full Anchor CreateEvent decoding (name, symbol, creator, market cap)
 - trades.html — Real-time buy/sell feed with volume charts, whale detection, analytics
+- vanity.html — Client-side vanity address generator (zero-trust, offline-capable, Solana CLI format output)
+- dashboard.html — Main trading dashboard
 - Multi-endpoint failover for WebSocket connections
 - Custom RPC endpoint input support
 
+### Swarm Orchestrator (swarm/)
+
+Bot fleet orchestrator with centralized event bus:
+- Admin dashboard with real-time WebSocket updates
+- REST API for bot lifecycle: start/stop/restart/build
+- Log aggregation and health monitoring
+- Cross-bot event routing (whale alerts, token launches, fees)
+
+### Swarm Bot (swarm-bot/)
+
+AI multi-strategy trading bot (v1.0.0, Node 20+).
+
+### Dashboard (dashboard/)
+
+Unified control panel for all bots — PumpFun Swarms Bot Dashboard.
+
+### Pumpkit (pumpkit/)
+
+Monorepo with 6 packages:
+- @pumpkit/core — Core monitoring and storage
+- @pumpkit/channel — Channel bot logic
+- @pumpkit/claim — Claim tracking
+- @pumpkit/monitor — Event monitoring
+- @pumpkit/tracker — Token tracking
+- @pumpkit/web — React web dashboard
+
+Uses Turborepo for build orchestration.
+
 ### Lair-TG (lair-tg/)
 
-Unified Telegram bot platform for DeFi intelligence.
+Unified Telegram bot platform for DeFi intelligence. Docker-deployable with Railway config.
 
 ### DeFi Agents (packages/defi-agents/)
 
-43 AI agent definitions in JSON format. See `packages/defi-agents/README.md`.
+@nirholas/ai-agents-library (v1.42.0) — General AI agent index with i18n, auto-build, index.json discovery, CI integration.
 
 ### Plugin.delivery (packages/plugin.delivery/)
 
-OpenAPI-compatible plugin SDK and gateway. See `packages/plugin.delivery/README.md`.
+AI Plugin Index for SperaxOS — Monorepo with gateway SDK, plugin SDK, Vercel deployment.
 
 ### PumpOS Website (website/)
 
-Static HTML/CSS/JS web desktop. See `website/README.md` for details.
+Static HTML/CSS/JS web desktop with 169+ Pump-Store applications.
+
+### Documentation Site (site/)
+
+Documentation pages covering architecture, deployment, API reference, and examples.
+
+### Landing Pages (pumpfun-site/)
+
+Simple token/profile landing pages (create, profile, token, index).
 
 ### Shell Scripts (scripts/)
 
@@ -181,6 +240,17 @@ Production wrappers around `solana-keygen grind`:
 - generate-vanity.sh — Single address with GPG encryption support
 - batch-generate.sh — Parallel batch with resume
 - verify-keypair.sh — 7-point verification
+- test-rust.sh — Rust test runner
+- utils.sh — Shared utilities
+- publish-clawhub.sh — Publishing script
+- scrape-site.mjs — Site scraping
+- screenshot-site.mjs — Site screenshots
+
+### Verification Tools (tools/)
+
+- verify-keypair.ts — TypeScript keypair verification
+- audit-dependencies.sh — Dependency audit
+- check-file-permissions.sh — File permission checks
 
 ## Non-Cryptographic Dependencies
 
@@ -280,12 +350,14 @@ DO NOT add: web3.py, solders, or any third-party crypto libraries.
 
 ## Agent Skill Files
 
-See `.github/skills/` for 28 detailed skill documents:
+See `.github/skills/` for 41 detailed skill documents:
 - pump-sdk-core, bonding-curve, bonding-curve-math, token-lifecycle
 - fee-system, fee-sharing, token-incentives
 - solana-program-architecture, solana-wallet, security-practices
 - rust-vanity-gen, rust-vanity-generator, typescript-vanity-generator
-- mcp-server, shell-scripting-cli
+- mcp-server, shell-scripting-cli, testing-quality
+- admin-operations, ai-integration, channel-bot, build-release
+- nextjs-website, pump-official (multiple), pump-carbon-indexer, openclaw (multiple)
 
 ## Well-Known Files
 

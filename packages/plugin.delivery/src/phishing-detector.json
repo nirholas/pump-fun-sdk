@@ -1,0 +1,20 @@
+{
+  "author": "SperaxOS",
+  "createdAt": "2025-01-01",
+  "homepage": "https://github.com/nirholas/plugin.delivery",
+  "identifier": "phishing-detector",
+  "manifest": "https://plugin.delivery/phishing-detector/manifest.json",
+  "meta": {
+    "avatar": "🎣",
+    "description": "Detect phishing URLs, typosquatting domains, and malicious smart contracts targeting DeFi users",
+    "tags": [
+      "phishing",
+      "security",
+      "scam-detection",
+      "typosquatting"
+    ],
+    "title": "Phishing Detector",
+    "category": "tools"
+  },
+  "schemaVersion": 1
+}

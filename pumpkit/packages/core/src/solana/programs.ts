@@ -52,6 +52,28 @@ export const TRADE_EVENT_DISCRIMINATOR = 'bddb7fd34ee661ee';
 /** DistributeCreatorFeesEvent — fee distribution to shareholders */
 export const DISTRIBUTE_FEES_EVENT_DISCRIMINATOR = 'a537817004b3ca28';
 
+/** CollectCreatorFeeEvent — creator fee collection */
+export const COLLECT_CREATOR_FEE_DISCRIMINATOR = '7a027f010ebf0caf';
+
+/** ClaimCashbackEvent — cashback reward claim */
+export const CLAIM_CASHBACK_DISCRIMINATOR = 'e2d6f62107f293e5';
+
+/** CollectCoinCreatorFeeEvent — coin creator fee collection on AMM */
+export const COLLECT_COIN_CREATOR_FEE_DISCRIMINATOR = 'e8f5c2eeeada3a59';
+
+/** Well-known system programs to exclude when searching for mint addresses */
+export const SYSTEM_PROGRAMS = new Set([
+  '11111111111111111111111111111111',
+  'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',   // SPL Token
+  'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb',   // Token-2022
+  'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL',  // ATA
+  'SysvarRent111111111111111111111111111111111',
+  'SysvarC1ock11111111111111111111111111111111',
+  'ComputeBudget111111111111111111111111111111',
+  'metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s',   // Token Metadata
+  PUMP_PROGRAM_ID,
+]);
+
 /** Default token total supply (1B tokens with 6 decimals) */
 export const DEFAULT_TOKEN_TOTAL_SUPPLY = 1_000_000_000_000_000;
 

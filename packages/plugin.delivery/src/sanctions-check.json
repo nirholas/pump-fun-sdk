@@ -1,0 +1,20 @@
+{
+  "author": "SperaxOS",
+  "createdAt": "2025-01-01",
+  "homepage": "https://github.com/nirholas/plugin.delivery",
+  "identifier": "sanctions-check",
+  "manifest": "https://plugin.delivery/sanctions-check/manifest.json",
+  "meta": {
+    "avatar": "🛡️",
+    "description": "Screen wallet addresses against OFAC SDN and EU sanctions lists for compliance",
+    "tags": [
+      "sanctions",
+      "compliance",
+      "ofac",
+      "aml"
+    ],
+    "title": "Sanctions Check",
+    "category": "tools"
+  },
+  "schemaVersion": 1
+}

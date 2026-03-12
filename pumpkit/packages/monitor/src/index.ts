@@ -24,7 +24,8 @@ import { getActiveMonitors } from './launch-store.js';
 import { log, setLogLevel } from './logger.js';
 import { PumpFunMonitor } from './monitor.js';
 import { loadWatches } from './store.js';
-import { loadApiConfig, PumpFunApi } from './api/index.js';
+import { loadApiConfig, MonitorApi } from './api/index.js';
+import type { LaunchResponse } from './api/index.js';
 
 async function main(): Promise<void> {
     // ── Load config ──────────────────────────────────────────────────────
@@ -55,12 +56,19 @@ async function main(): Promise<void> {
     );
 
     // ── Create API server (if enabled) ───────────────────────────────────
-    let api: PumpFunApi | null = null;
+    let api: MonitorApi | null = null;
     if (enableApi) {
         const apiConfig = loadApiConfig();
-        api = new PumpFunApi(apiConfig, monitor);
+        api = new MonitorApi(apiConfig, () => {
+            const state = monitor.getState();
+            return {
+                running: state.isRunning,
+                mode: state.mode,
+                claimsDetected: state.claimsDetected,
+            };
+        });
         log.info('  API port: %d', apiConfig.port);
-        log.info('  API keys: %s', apiConfig.apiKeys.length || 'none (open)');
+        log.info('  API auth: %s', apiConfig.bearerToken ? 'bearer token' : 'none (open)');
     }
 
     // ── Create Telegram bot ──────────────────────────────────────────────
@@ -69,6 +77,26 @@ async function main(): Promise<void> {
     try {
         const { TokenLaunchMonitor } = await import('./token-launch-monitor.js');
         launchMonitor = new TokenLaunchMonitor(config, async (event: TokenLaunchEvent) => {
+            // Feed launch events to the API layer
+            if (api) {
+                const launch: LaunchResponse = {
+                    txSignature: event.txSignature,
+                    slot: event.slot,
+                    timestamp: new Date(event.timestamp * 1000).toISOString(),
+                    mintAddress: event.mintAddress,
+                    creatorWallet: event.creatorWallet,
+                    name: event.name,
+                    symbol: event.symbol,
+                    description: event.description,
+                    metadataUri: event.metadataUri,
+                    hasGithub: event.hasGithub,
+                    githubUrls: event.githubUrls,
+                    mayhemMode: event.mayhemMode,
+                    cashbackEnabled: event.cashbackEnabled,
+                };
+                api.handleLaunch(launch);
+            }
+
             if (!bot) return;
             const monitors = getActiveMonitors();
             for (const entry of monitors) {
