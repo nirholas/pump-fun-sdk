@@ -536,32 +536,96 @@ export interface CreatorClaimContext {
     event: FeeClaimEvent;
     solUsdPrice: number;
     creator: CreatorProfile | null;
+    tokenInfo?: TokenInfo | null;
+    holders?: HolderDetails | null;
+    trades?: TokenTradeInfo | null;
+    devWallet?: DevWalletInfo | null;
+    liquidity?: PoolLiquidityInfo | null;
+    bundle?: BundleInfo | null;
+    sameNameTokens?: SameNameToken[] | null;
+    affiliates?: { axiom: string; gmgn: string; padre: string };
 }
 
 /**
- * Creator fee first-claim card — shows a creator collecting fees for the first time.
- * Includes their PumpFun profile and recent launches.
+ * Creator fee claim card — rich card with token info, creator profile,
+ * market data, holder intel, signals, same-name tokens, and trade links.
  */
 export function formatCreatorClaimFeed(ctx: CreatorClaimContext): { imageUrl: string | null; caption: string } {
-    const { event, solUsdPrice, creator } = ctx;
+    const { event, solUsdPrice, creator, tokenInfo } = ctx;
     const L: string[] = [];
+    const mint = event.tokenMint?.trim() || '';
+    const aff = ctx.affiliates;
 
     // ━━ HEADER ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     L.push(`💰 <b>Creator Claimed Fees</b>`);
-
-    // ━━ AMOUNT ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     L.push('');
+
+    // ━━ CA ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    if (mint) {
+        L.push(`<code>${mint}</code>`);
+        L.push('');
+    }
+
+    // ━━ TOKEN INFO ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    if (tokenInfo) {
+        const ticker = tokenInfo.symbol ? `<b>$${esc(tokenInfo.symbol)}</b>` : '';
+        const name = tokenInfo.name ? esc(tokenInfo.name) : '';
+        L.push(`🐙 ${ticker}${ticker && name ? ' — ' : ''}${name}`);
+        if (tokenInfo.usdMarketCap > 0) {
+            L.push(`💰 MC: $${formatCompact(tokenInfo.usdMarketCap)}`);
+        } else if (tokenInfo.marketCapSol > 0) {
+            L.push(`💰 MC: ${tokenInfo.marketCapSol.toFixed(1)} SOL`);
+        }
+        if (tokenInfo.priceSol > 0) {
+            const priceUsd = solUsdPrice > 0 ? ` ($${formatPriceUsd(tokenInfo.priceSol * solUsdPrice)})` : '';
+            L.push(`💲 Price: ${formatPriceSol(tokenInfo.priceSol)} SOL${priceUsd}`);
+        }
+        if (tokenInfo.createdTimestamp > 0) {
+            L.push(`⏱ Created: ${timeAgo(tokenInfo.createdTimestamp)}`);
+        }
+        if (tokenInfo.complete) {
+            L.push('🎓 Status: Graduated (AMM)');
+            if (tokenInfo.pumpSwapPool) {
+                L.push(`🏊 Pool: <code>${tokenInfo.pumpSwapPool}</code>`);
+            }
+        } else if (tokenInfo.curveProgress > 0) {
+            const pct = Math.round(tokenInfo.curveProgress);
+            L.push(`📈 Status: Bonding curve (${pct > 0 ? `${pct}%` : '<1%'})`);
+        } else {
+            L.push('📈 Status: Bonding curve');
+        }
+        if (tokenInfo.athMarketCap > 0) {
+            L.push(`🏆 ATH: $${formatCompact(tokenInfo.athMarketCap)}`);
+        }
+        if (ctx.liquidity) {
+            L.push(`💦 Liquidity: $${formatCompact(ctx.liquidity.liquidityUsd)}`);
+        }
+        if (tokenInfo.replyCount > 0) {
+            L.push(`💬 Replies: ${tokenInfo.replyCount}`);
+        }
+        if (tokenInfo.lastTradeTimestamp > 0) {
+            L.push(`🕐 Last trade: ${timeAgo(tokenInfo.lastTradeTimestamp)}`);
+        }
+        if (tokenInfo.kothTimestamp > 0) {
+            L.push(`👑 KotH: ${timeAgo(tokenInfo.kothTimestamp)}`);
+        }
+        L.push('');
+    }
+
+    // ━━ CLAIM STATS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    L.push(`💸 <b>Claim Stats</b>`);
     const claimSol = event.amountSol.toFixed(4);
     const claimUsd = solUsdPrice > 0 ? ` ($${(event.amountSol * solUsdPrice).toFixed(2)})` : '';
-    L.push(`🏦 <b>${claimSol} SOL</b>${claimUsd}`);
-    L.push(`  ↳ ${esc(event.claimLabel)}`);
+    L.push(`${claimSol} SOL${claimUsd}`);
+    L.push(`Type: ${esc(event.claimLabel)}`);
+    L.push('');
 
     // ━━ CREATOR PROFILE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    L.push('');
     const wallet = event.claimerWallet;
     const profileLink = `<a href="https://pump.fun/profile/${wallet}">${shortAddr(wallet)}</a>`;
     const uname = creator?.username ? ` @${esc(creator.username)}` : '';
-    L.push(`👤 ${profileLink}${uname}`);
+    L.push(`🧑‍💻 <b>Token Creator</b>`);
+    L.push(`${profileLink}${uname}`);
 
     if (creator) {
         if (creator.totalLaunches > 0) L.push(`🚀 Launches: ${creator.totalLaunches}`);
@@ -571,26 +635,206 @@ export function formatCreatorClaimFeed(ctx: CreatorClaimContext): { imageUrl: st
         if (creator.followers > 0) L.push(`👁 Followers: ${formatCount(creator.followers)}`);
 
         // Show recent coins
-        const coins = creator.recentCoins.slice(0, 3);
+        const coins = creator.recentCoins.slice(0, 5);
         if (coins.length > 0) {
             const tickers = coins.map((c) => {
                 const g = c.complete ? '⭐' : '';
                 const mcap = c.usdMarketCap > 0 ? ` [${formatCompact(c.usdMarketCap)}]` : '';
                 return `<a href="https://pump.fun/coin/${c.mint}">${esc(c.symbol)}</a>${g}${mcap}`;
             });
-            const more = creator.recentCoins.length > 3 ? ` … +${creator.recentCoins.length - 3}` : '';
+            const more = creator.recentCoins.length > 5 ? ` … +${creator.recentCoins.length - 5}` : '';
             L.push(`🪙 ${tickers.join(' · ')}${more}`);
         }
     }
-
-    // ━━ TX ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     L.push('');
-    if (event.txSignature) {
-        L.push(`🔍 <a href="https://solscan.io/tx/${event.txSignature}">TX</a>`);
-    }
-    L.push(`🕐 ${formatTime(event.timestamp)}`);
 
-    const imageUrl = creator?.profileImage || null;
+    // ━━ MARKET DATA ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    {
+        const parts: string[] = [];
+        if (ctx.trades) {
+            if (ctx.trades.recentVolumeSol > 0) {
+                const volStr = solUsdPrice > 0
+                    ? `$${formatCompact(ctx.trades.recentVolumeSol * solUsdPrice)}`
+                    : `${ctx.trades.recentVolumeSol.toFixed(1)} SOL`;
+                parts.push(`Vol: ${volStr}`);
+            }
+            if (ctx.trades.buyCount > 0 || ctx.trades.sellCount > 0) {
+                parts.push(`🅑 ${ctx.trades.buyCount}  Ⓢ ${ctx.trades.sellCount}`);
+            }
+            if (ctx.trades.recentTradeCount > 0) {
+                parts.push(`Trades: ${ctx.trades.recentTradeCount}`);
+            }
+        }
+        if (ctx.bundle && ctx.bundle.bundlePct > 0) {
+            parts.push(`📦 Bundle: ${ctx.bundle.bundlePct.toFixed(1)}% (${ctx.bundle.bundleWallets}w)`);
+        }
+        if (parts.length > 0) {
+            L.push(`📊 <b>Market</b>`);
+            for (const p of parts) L.push(p);
+            L.push('');
+        }
+    }
+
+    // ━━ HOLDER INTEL ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    if (ctx.holders && ctx.holders.totalHolders > 0) {
+        const hd = ctx.holders;
+        L.push(`👥 <b>Holders</b>`);
+        L.push(`🤝 Total: ${hd.totalHolders.toLocaleString()}`);
+        const nonPool = hd.topHolders.filter(h => !h.isPool);
+        if (nonPool.length > 0) {
+            const top5 = nonPool.slice(0, 5).map(h => h.pct.toFixed(1)).join('⋅');
+            const concStr = hd.top10Pct > 0 ? ` [top10: ${hd.top10Pct.toFixed(0)}%]` : '';
+            L.push(`📊 Top5: ${top5}${concStr}`);
+        }
+        if (ctx.devWallet && ctx.devWallet.tokenSupplyPct > 0.001) {
+            L.push(`🧑‍💻 Dev holds: ${ctx.devWallet.tokenSupplyPct.toFixed(1)}%`);
+        }
+        L.push('');
+    }
+
+    // ━━ TRUST SIGNALS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    {
+        const signals: string[] = [];
+        if (ctx.sameNameTokens?.length && tokenInfo) {
+            const top = ctx.sameNameTokens[0]!;
+            if (top.usdMarketCap > tokenInfo.usdMarketCap * 5) {
+                signals.push(`🚩 Possible copycat — ${esc(top.symbol)} exists at $${formatCompact(top.usdMarketCap)}`);
+            }
+        }
+        if (ctx.bundle && ctx.bundle.bundlePct >= 5) {
+            signals.push(`📦 Bundled launch (${ctx.bundle.bundlePct.toFixed(1)}%)`);
+        }
+        if (creator && creator.scamEstimate >= 3) {
+            signals.push(`⚠️ Creator has ${creator.scamEstimate} suspected rugs`);
+        }
+        if (ctx.holders && ctx.holders.top10Pct >= 50) {
+            signals.push(`⚠️ Top10 hold ${ctx.holders.top10Pct.toFixed(0)}% of supply`);
+        }
+        if (tokenInfo?.isNsfw) signals.push('🔞 NSFW');
+        if (tokenInfo?.isBanned) signals.push('🚫 BANNED');
+        if (tokenInfo?.isCashbackEnabled) signals.push('💸 Cashback enabled');
+        if (tokenInfo?.isHackathon) signals.push('🏗 Hackathon token');
+
+        if (signals.length > 0) {
+            L.push(`⚡ <b>Signals</b>`);
+            for (const s of signals) L.push(s);
+            L.push('');
+        }
+    }
+
+    // ━━ SAME-NAME TOKENS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    if (ctx.sameNameTokens && ctx.sameNameTokens.length > 0) {
+        const MAX_SAME_NAME = 5;
+        const top = ctx.sameNameTokens[0]!;
+        const isCopycat = tokenInfo && top.usdMarketCap > tokenInfo.usdMarketCap * 5;
+        if (isCopycat) {
+            L.push(`🚩 <b>Same Name Tokens — possible copycat</b>`);
+            L.push(`This token: $${formatCompact(tokenInfo!.usdMarketCap)}`);
+        } else {
+            L.push(`🔍 <b>Same Name Tokens</b>`);
+        }
+        for (const t of ctx.sameNameTokens.slice(0, MAX_SAME_NAME)) {
+            const mc = `$${formatCompact(t.usdMarketCap)}`;
+            const age = t.age ? ` ${t.age}` : '';
+            const shortMint = t.mint.length > 8 ? `${t.mint.slice(0, 6)}…` : t.mint;
+            L.push(`• <a href="${esc(t.url)}">${esc(t.symbol)}</a> ${mc} — ${shortMint}${age}`);
+        }
+        if (ctx.sameNameTokens.length > MAX_SAME_NAME) {
+            L.push(`… +${ctx.sameNameTokens.length - MAX_SAME_NAME} more`);
+        }
+        L.push('');
+    }
+
+    // ━━ TRANSACTION ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    if (event.txSignature) {
+        L.push(`🔎 <b>Transaction</b>`);
+        L.push(`<a href="https://solscan.io/tx/${event.txSignature}">solscan.io/tx/${event.txSignature.slice(0, 20)}…</a>`);
+        L.push('');
+    }
+
+    // ━━ CHART ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    if (mint) {
+        L.push(`📊 <a href="https://pump.fun/coin/${mint}">pump.fun/coin/${mint.slice(0, 12)}…</a>`);
+    }
+
+    // ━━ SOCIALS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    if (tokenInfo) {
+        if (tokenInfo.twitter) {
+            const handle = cleanXHandle(tokenInfo.twitter);
+            if (handle) {
+                L.push(`𝕏 <a href="https://x.com/${esc(handle)}">${esc(handle)}</a>`);
+            } else {
+                L.push(`𝕏 <a href="${esc(tokenInfo.twitter)}">Twitter</a>`);
+            }
+        }
+        if (tokenInfo.telegram) {
+            L.push(`💬 <a href="${esc(tokenInfo.telegram)}">Telegram</a>`);
+        }
+        if (tokenInfo.website) {
+            const host = tokenInfo.website.replace(/^https?:\/\//, '').replace(/\/+$/, '').slice(0, 30);
+            L.push(`🌐 <a href="${esc(tokenInfo.website)}">${esc(host)}</a>`);
+        }
+    }
+    L.push('');
+
+    // ━━ SEPARATOR ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    L.push('━━━━━━━━━━━━━━━━');
+    L.push('');
+
+    // ━━ TRADE LINKS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    if (mint) {
+        const axiomUrl = `https://axiom.trade/t/${mint}?ref=${encodeURIComponent(aff?.axiom ?? 'nich')}`;
+        const gmgnUrl  = `https://gmgn.ai/sol/token/${mint}?ref=${encodeURIComponent(aff?.gmgn ?? 'nichxbt')}`;
+        const padreUrl = `https://trade.padre.gg/rk/${encodeURIComponent(aff?.padre ?? 'nichxbt')}`;
+        L.push(`💹 Trade`);
+        L.push(`<a href="${axiomUrl}">Axiom</a> | <a href="${gmgnUrl}">GMGN</a> | <a href="${padreUrl}">Padre</a>`);
+    }
+
+    // ━━ CA FOOTER ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    if (mint) {
+        L.push('');
+        L.push(`<code>${mint}</code>`);
+    }
+
+    // ━━ SEPARATOR ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    L.push('');
+    L.push('━━━━━━━━━━━━━━━━');
+
+    // ━━ TLDR ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    L.push('<b>TLDR</b>');
+    if (tokenInfo) {
+        const ticker = tokenInfo.symbol ? `<b>$${esc(tokenInfo.symbol)}</b>` : '';
+        const name = tokenInfo.name ? esc(tokenInfo.name) : '';
+        L.push(`🐙 ${ticker}${ticker && name ? ' — ' : ''}${name}`);
+        if (tokenInfo.usdMarketCap > 0) {
+            L.push(`💰 MC: $${formatCompact(tokenInfo.usdMarketCap)}`);
+        } else if (tokenInfo.marketCapSol > 0) {
+            L.push(`💰 MC: ${tokenInfo.marketCapSol.toFixed(1)} SOL`);
+        }
+        if (tokenInfo.complete) {
+            L.push('🎓 Status: Graduated (AMM)');
+        } else if (tokenInfo.curveProgress > 0) {
+            const pct = Math.round(tokenInfo.curveProgress);
+            L.push(`📈 Status: Bonding curve (${pct > 0 ? `${pct}%` : '<1%'})`);
+        }
+        if (tokenInfo.athMarketCap > 0) {
+            L.push(`🏆 ATH: $${formatCompact(tokenInfo.athMarketCap)}`);
+        }
+    }
+    L.push('');
+    if (creator) {
+        const uTag = creator.username ? ` @${esc(creator.username)}` : '';
+        L.push(`🧑‍💻 Creator: <a href="https://pump.fun/profile/${wallet}">${shortAddr(wallet)}</a>${uTag}`);
+        if (creator.totalLaunches > 0) L.push(`🚀 Launches: ${creator.totalLaunches}`);
+        const grad = creator.recentCoins.filter(c => c.complete).length;
+        if (grad > 0) L.push(`🎓 Graduated: ${grad}`);
+    }
+    L.push('');
+    if (mint) {
+        L.push(`CA: <code>${mint}</code>`);
+    }
+
+    const imageUrl = tokenInfo?.imageUri || creator?.profileImage || null;
     return { imageUrl, caption: L.join('\n') };
 }
 
