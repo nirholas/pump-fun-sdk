@@ -1,0 +1,49 @@
+# PumpKit
+
+> Open-source TypeScript framework for building PumpFun Telegram bots on Solana.
+
+PumpKit is a monorepo of production-ready Telegram bots for monitoring PumpFun activity on Solana. It provides shared building blocks (bot scaffolding, Solana monitoring, formatters, storage, health checks) so you can ship a bot in hours, not weeks.
+
+## Packages
+
+- @pumpkit/core — Shared framework: bot scaffolding, Solana monitoring, formatters, storage, config, health checks
+- @pumpkit/monitor — All-in-one monitoring bot (fee claims, launches, graduations, whale trades, CTO alerts, REST API + SSE)
+- @pumpkit/tracker — Group call-tracking bot (leaderboards, PNL cards, rankings, multi-chain, SQLite)
+- @pumpkit/channel — Read-only Telegram channel feed (5 event types, HTML messages)
+- @pumpkit/claim — Fee claim tracker (by token CA or X handle, Twitter follower display)
+- @pumpkit/web — Frontend dashboard (coming soon)
+
+## Tech Stack
+
+- TypeScript (ES2022, strict mode, ES modules)
+- grammy (Telegram bot framework)
+- @solana/web3.js (Solana RPC)
+- better-sqlite3 (tracker database)
+- canvas (PNL card generation)
+- Turborepo (monorepo orchestration)
+- Docker + Railway (deployment)
+
+## On-Chain Programs Monitored
+
+- Pump: 6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P — Bonding curve operations
+- PumpAMM: pAMMBay6oceH9fJKBRHGP5D4bD4sWpmSwMn52FMfXEA — Graduated AMM pools
+- PumpFees: pfeeUxB6jkeY1Hxd7CsFCAjcbHA9rWtchMGdZ6VojVZ — Fee sharing
+
+## Quick Start
+
+```bash
+git clone https://github.com/nirholas/pumpkit.git
+cd pumpkit && npm install
+cp packages/monitor/.env.example packages/monitor/.env
+npm run dev --workspace=@pumpkit/monitor
+```
+
+## npm Status
+
+Not yet published. Use monorepo workspace references for now. See docs/npm.md for roadmap.
+
+## Links
+
+- Repository: https://github.com/nirholas/pumpkit
+- Parent SDK: https://github.com/nirholas/pump-fun-sdk
+- Pump Protocol: https://pump.fun

@@ -101,9 +101,9 @@ bot.launch();
 | [`@pumpkit/channel`](packages/channel/) | Read-only Telegram channel feed (broadcasts token events) | ✅ Ready |
 | [`@pumpkit/claim`](packages/claim/) | Fee claim tracker by token CA or X handle | ✅ Ready |
 | [`@pumpkit/tracker`](packages/tracker/) | Group call-tracking bot with leaderboards & PNL cards | ✅ Ready |
-| [`@pumpkit/web`](packages/web/) | Frontend dashboard and documentation site | 🚧 Coming Soon |
+| [`@pumpkit/web`](packages/web/) | Frontend dashboard and documentation site | 🏗️ Skeleton |
 
-> **npm:** Packages will be published to npm under the `@pumpkit` scope. See [npm Packages](docs/npm-packages.md) for the publishing roadmap.
+> **npm:** Packages will be published to npm under the `@pumpkit` scope. See [npm Packages](docs/npm.md) for the publishing roadmap.
 
 ## Features
 
@@ -191,6 +191,7 @@ Consolidates 3 existing production bots into one:
 - [Code Examples](docs/examples.md) — Practical code samples
 - [Error Reference](docs/errors.md) — Custom error classes and fixes
 - [RPC Best Practices](docs/rpc-best-practices.md) — Provider selection, batching, rate limiting
+- [Performance](docs/performance.md) — Benchmarks, latency, and optimization tips
 - [Security Guide](docs/guides/security.md) — Crypto library rules, key management
 
 ### Tutorials

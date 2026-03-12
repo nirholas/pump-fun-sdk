@@ -9,9 +9,14 @@ pumpkit/
 ├── packages/
 │   ├── core/        @pumpkit/core — shared framework
 │   ├── monitor/     @pumpkit/monitor — monitoring bot
-│   └── tracker/     @pumpkit/tracker — group tracker bot
-├── docs/            documentation
-├── examples/        starter templates
+│   ├── tracker/     @pumpkit/tracker — group tracker bot
+│   ├── channel/     @pumpkit/channel — channel feed bot
+│   ├── claim/       @pumpkit/claim — claim tracker bot
+│   └── web/         @pumpkit/web — frontend dashboard (coming soon)
+├── docs/            documentation and guides
+├── tutorials/       hands-on step-by-step guides
+├── examples/        HTML dashboard examples
+├── agent-prompts/   sequenced implementation tasks
 └── turbo.json       monorepo orchestration
 ```
 

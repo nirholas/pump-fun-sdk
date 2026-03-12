@@ -19,12 +19,21 @@ Hands-on guides for building PumpFun Telegram bots.
 | 6 | [Event Parsing & Analytics](29-event-parsing-analytics.md) | Decoding 20+ on-chain events from Pump/PumpAMM/PumpFees logs |
 | 7 | [WebSocket Real-Time Feeds](21-websocket-realtime-feeds.md) | Real-time token launches & trades via WebSocket |
 
+## Getting Started with Bots
+
+| # | Tutorial | What You'll Learn |
+|---|----------|-------------------|
+| 8 | [Your First Claim Bot](40-your-first-claim-bot.md) | Set up a claim bot from scratch with grammy and Solana RPC |
+| 9 | [Customizing Claim Cards](41-customizing-claim-cards.md) | HTML message formatting, badges, enrichment fields |
+| 10 | [Channel Feed Bot](42-channel-feed-bot.md) | Read-only channel broadcasting, event filtering, formatting |
+| 11 | [Understanding PumpFun Events](43-understanding-pumpfun-events.md) | On-chain event types, log parsing, program account decoding |
+
 ## Protocol Knowledge
 
 | # | Tutorial | What You'll Learn |
 |---|----------|-------------------|
-| 8 | [Fee Sharing Setup](07-fee-sharing.md) | Configuring shareholders, fee distribution mechanics |
-| 9 | [Error Handling Patterns](33-error-handling-patterns.md) | Validation patterns for fee sharing, error classes |
+| 12 | [Fee Sharing Setup](07-fee-sharing.md) | Configuring shareholders, fee distribution mechanics |
+| 13 | [Error Handling Patterns](33-error-handling-patterns.md) | Validation patterns for fee sharing, error classes |
 
 ## Prerequisites
 
