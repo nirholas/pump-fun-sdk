@@ -11,14 +11,6 @@
     "build": {
       "dependsOn": ["^build"],
       "outputs": ["dist/**"],
-      "env": ["NODE_ENV
-    "VERCEL_URL",
-    "VERCEL_GIT_COMMIT_SHA"
-  ],
-  "tasks": {
-    "build": {
-      "dependsOn": ["^build"],
-      "outputs": ["dist/**", ".next/**", "!.next/cache/**"],
       "env": ["NODE_ENV"]
     },
     "dev": {
