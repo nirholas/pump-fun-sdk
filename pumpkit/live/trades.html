@@ -255,7 +255,6 @@ const RPC_ENDPOINTS = [
   { url: 'wss://pumpportal.fun/api/data',                          protocol: 'pumpportal', label: 'PumpPortal' },
   { url: 'wss://pump-fun-websocket-production.up.railway.app/ws',  protocol: 'relay',      label: 'Relay Server' },
 ];
-const MAX_FULL_CYCLES = 2; // auto-demo after this many full rotations
 let rpcIndex = 0;
 
 // ── State ───────────────────────────────────────────────────────────
@@ -1022,9 +1021,8 @@ sysLog('PumpFun Live Trades — Real-time analytics dashboard');
 sysLog(`Monitoring Pump program: ${PUMP_PROGRAM}`);
 sysLog(`Primary: PumpPortal API (pre-parsed trades, no RPC limits)`);
 sysLog(`Fallback: Relay server at Railway (proxied Solana events)`);
-sysLog(`Auto-demo after ${MAX_FULL_CYCLES} full endpoint cycles if all fail`);
 sysLog('Tracking: buys, sells, creates, migrations, whale alerts (≥1 SOL)');
-sysLog('Click "Demo" to simulate trades if all endpoints are unavailable');
+sysLog('Click "Demo" to simulate trades manually');
 
 // Allow Enter in RPC input to force reconnect
 $rpc.addEventListener('keydown', (e) => {
