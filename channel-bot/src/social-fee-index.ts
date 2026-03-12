@@ -105,14 +105,39 @@ export class SocialFeeIndex {
     /**
      * Bootstrap the index by scanning ALL SharingConfig accounts on-chain.
      * Runs once at startup so historical configs are covered.
+     *
+     * Uses `dataSlice` to fetch only the fields we need (mint + shareholders),
+     * skipping the 8-byte discriminator to reduce per-account memory.
+     *
+     * Set SKIP_SOCIAL_FEE_BOOTSTRAP=true to disable if the GPA is too large.
      */
     async bootstrap(rpc: RpcFallback): Promise<void> {
         if (this.bootstrapped) return;
+
+        if (process.env.SKIP_SOCIAL_FEE_BOOTSTRAP === 'true') {
+            log.info('SocialFeeIndex: bootstrap skipped (SKIP_SOCIAL_FEE_BOOTSTRAP=true), relying on live events');
+            this.bootstrapped = true;
+            return;
+        }
+
         try {
             log.info('SocialFeeIndex: bootstrapping from on-chain SharingConfig accounts...');
+
+            // dataSlice: skip the 8-byte discriminator, fetch from offset 3 (bump/version/status)
+            // through the shareholders vec. Max shareholders = 20, each 34 bytes.
+            // Sliced layout relative to returned data:
+            //   [0..2]   = bump(1) + version(1) + status(1)
+            //   [3..34]  = mint (32 bytes)
+            //   [35..66] = admin (32 bytes)  — skipped during parse
+            //   [67]     = admin_revoked (1 byte)
+            //   [68..]   = shareholders vec (4 + n*34)
+            const SLICE_OFFSET = 8; // skip discriminator
+            const SLICE_LENGTH = 3 + 32 + 32 + 1 + 4 + 20 * 34; // 752 bytes max
+
             const accounts = await rpc.withFallback((conn) =>
                 conn.getProgramAccounts(new PublicKey(PUMP_FEE_PROGRAM_ID), {
                     commitment: 'confirmed',
+                    dataSlice: { offset: SLICE_OFFSET, length: SLICE_LENGTH },
                     filters: [
                         {
                             memcmp: {
@@ -126,23 +151,30 @@ export class SocialFeeIndex {
             ) as unknown as Array<{ pubkey: PublicKey; account: { data: Buffer } }>;
 
             let indexed = 0;
-            for (const { account } of accounts) {
-                const data = account.data as Buffer;
-                // Layout: disc(8) + bump(1) + version(1) + status(1) + mint(32) + admin(32) + admin_revoked(1) + shareholders(4+n*34)
-                if (data.length < 76) continue;
+            const totalAccounts = accounts.length;
+            for (let i = 0; i < totalAccounts; i++) {
+                const data = accounts[i]!.account.data as Buffer;
+                // Sliced layout: bump(1)+version(1)+status(1)+mint(32)+admin(32)+admin_revoked(1)+shareholders
+                // mint at offset 3, shareholders at offset 68
+                if (data.length < 68) continue;
 
-                const mint = readPubkey(data, 11); // offset: 8+1+1+1 = 11
+                const mint = readPubkey(data, 3);
                 if (!mint) continue;
 
-                const shareholders = parseShareholderAddresses(data, 76);
+                const shareholders = parseShareholderAddresses(data, 68);
                 for (const addr of shareholders) {
                     this.addMapping(addr, mint);
                     indexed++;
                 }
+
+                // Release reference for GC
+                (accounts as unknown[])[i] = null;
             }
+            // Release the array itself
+            accounts.length = 0;
 
             this.bootstrapped = true;
-            log.info('SocialFeeIndex: bootstrapped %d mappings from %d SharingConfig accounts', indexed, accounts.length);
+            log.info('SocialFeeIndex: bootstrapped %d mappings from %d SharingConfig accounts', indexed, totalAccounts);
         } catch (err) {
             log.warn('SocialFeeIndex: bootstrap failed (will rely on live events): %s', err);
             this.bootstrapped = true; // don't retry on every restart
