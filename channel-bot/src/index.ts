@@ -131,14 +131,26 @@ async function main(): Promise<void> {
                 mint ? fetchTokenInfo(mint) : Promise.resolve(null),
                 fetchSolUsdPrice(),
             ]);
-            const [xProfile, repoInfo] = await Promise.all([
+            // Second wave: depends on first-wave results
+            const [xProfile, repoInfo, creatorProfile, holders, trades, liquidity, bundle] = await Promise.all([
                 githubUser?.twitterUsername
                     ? fetchXProfile(githubUser.twitterUsername)
                     : Promise.resolve(null),
                 tokenInfo?.githubUrls?.length
                     ? fetchRepoFromUrls(tokenInfo.githubUrls)
                     : Promise.resolve(null),
+                tokenInfo?.creator
+                    ? fetchCreatorProfile(tokenInfo.creator)
+                    : Promise.resolve(null),
+                mint ? fetchTopHolders(mint) : Promise.resolve(null),
+                mint ? fetchTokenTrades(mint) : Promise.resolve(null),
+                mint && tokenInfo ? fetchPoolLiquidity(mint, tokenInfo.usdMarketCap) : Promise.resolve(null),
+                mint ? fetchBundleInfo(mint) : Promise.resolve(null),
             ]);
+            // Third wave: dev wallet needs RPC + creator address
+            const devWallet = tokenInfo?.creator
+                ? await fetchDevWalletInfo(tokenInfo.creator, mint, config.solanaRpcUrl)
+                : null;
 
             const isFake = event.isFake === true;
             const claimNumber = isFake ? 0 : incrementGithubClaimCount(event.githubUserId);
@@ -160,6 +172,12 @@ async function main(): Promise<void> {
                     ? event.lifetimeClaimedLamports / 1e9
                     : undefined,
                 repoInfo,
+                creatorProfile,
+                holders,
+                trades,
+                devWallet,
+                liquidity,
+                bundle,
             };
 
             const { imageUrl, caption } = formatGitHubClaimFeed(ctx);
