@@ -95,7 +95,6 @@ const docs = [
   { title: 'Troubleshooting', file: 'troubleshooting' },
   { title: 'Migration', file: 'migration' },
   { title: 'Ecosystem', file: 'ecosystem' },
-  { title: 'PumpOS Guide', file: 'pumpos-guide' },
 ];
 
 const guides = [

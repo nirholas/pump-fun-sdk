@@ -255,25 +255,6 @@ Production-ready AI agent definitions for DeFi workflows, compatible with Sperax
 
 ---
 
-## PumpOS Web Desktop
-
-**Directory:** `site/` · **Language:** HTML/CSS/JavaScript · **Apps:** 169
-
-A web-based desktop environment with a full app store, file system, and windowed UI. Each app is a self-contained HTML file that can interact with the Pump SDK ecosystem.
-
-### Features
-
-| Feature | Description |
-|---------|-------------|
-| App Store | 169 installable apps covering DeFi, analytics, trading, utilities |
-| Window Manager | Draggable, resizable windows with taskbar |
-| File System | Virtual file system with localStorage persistence |
-| Themes | Light/dark mode, customizable wallpapers |
-| Service Worker | Offline-capable with caching |
-| PWA | Installable as a Progressive Web App |
-
----
-
 ## Security
 
 **Directory:** `security/`

@@ -8,7 +8,6 @@ PumpFun-styled documentation and information site for the Pump SDK. This is one 
 |-----------|--------|
 | **`website/`** (this) | SDK documentation & marketing site |
 | [`pumpfun-site/`](../pumpfun-site/) | pump.fun UI design template (mock data, no blockchain) |
-| [`site/`](../site/) | PumpOS — full web desktop OS with app store |
 
 ## Structure
 

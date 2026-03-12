@@ -39,7 +39,7 @@ npm install @nirholas/pump-sdk @solana/web3.js @coral-xyz/anchor bn.js
                                 ↓
        36 x402 Facilitator → 37 Security Audit
                                 ↓
-     38 Testing → 39 Channel Bot AI → 40 PumpOS Apps
+     38 Testing → 39 Channel Bot AI
                                 ↓
    41 Plugin Gateway → 42 Custom Agents → 43 Standalone Plugins
 ```
@@ -75,7 +75,6 @@ npm install @nirholas/pump-sdk @solana/web3.js @coral-xyz/anchor bn.js
 | Run security audits | [Tutorial 37](./37-security-auditing-verification.md) |
 | Test & benchmark generators | [Tutorial 38](./38-testing-benchmarking.md) |
 | Add AI enrichment to bots | [Tutorial 39](./39-channel-bot-ai-enrichment.md) |
-| Build PumpOS desktop apps | [Tutorial 40](./40-pumpos-app-development.md) |
 | Create plugin API handlers | [Tutorial 41](./41-plugin-gateway-api-handlers.md) |
 | Define custom AI agents | [Tutorial 42](./42-custom-defi-agents-i18n.md) |
 | Build interactive chat UIs | [Tutorial 43](./43-standalone-plugin-artifacts.md) |
@@ -202,10 +201,6 @@ npm install @nirholas/pump-sdk @solana/web3.js @coral-xyz/anchor bn.js
 | 39 | [Channel Bot AI & GitHub Enrichment](./39-channel-bot-ai-enrichment.md) | Groq AI summaries, GitHub metadata, first-claim detection, rich HTML cards, rate limiting | Advanced |
 
 ### Platform & Ecosystem
-
-| # | Tutorial | Topics | Difficulty |
-|---|---------|--------|------------|
-| 40 | [Building PumpOS Apps](./40-pumpos-app-development.md) | PumpOS desktop, NTX API, file system, event bus, Pump Store, window manager | Intermediate |
 | 41 | [Plugin Gateway API Handlers](./41-plugin-gateway-api-handlers.md) | 17 serverless handlers, edge functions, Plugin SDK, schema validation, deployment | Advanced |
 | 42 | [Custom DeFi Agents & i18n](./42-custom-defi-agents-i18n.md) | Agent JSON schema, 18 languages, manifest registry, OpenAI/Claude integration | Beginner |
 | 43 | [Standalone Plugin Artifacts](./43-standalone-plugin-artifacts.md) | Interactive iframe UIs, host-plugin messaging, embedded dashboards, trading forms | Advanced |

@@ -52,7 +52,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Refactored to use Twitter's internal GraphQL API with cookie-based authentication via `xactions`
   - `createdAt` and `tweetCount` fields on `XProfile` interface
   - Influencer tier logic
-- **Website** (`website/`) — PumpOS web desktop
+- **Website** (`website/`) — SDK documentation & marketing site
   - Full HTML/CSS/JS implementation with Vercel deployment config
 - **Live dashboards** — enhanced `dashboard.html` with viewer count
 - **Documentation**

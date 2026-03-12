@@ -3,7 +3,6 @@
    ================================================================
    Color palette: #7bff69 green (matches pump.fun UI)
    See also: website/styles.css (#00ff88 — SDK docs site)
-             site/pump.css (#5be45b — PumpOS desktop)
    ================================================================ */
 
 /* ---------- Reset & Variables ---------- */
@@ -284,7 +283,7 @@ input, textarea, select { font-family: inherit; }
 .ticker-track {
   display: flex;
   gap: 32px;
-  animation: ticker-scroll 120s linear infinite;
+  animation: ticker-scroll 300s linear infinite;
   width: max-content;
 }
 .ticker-item {

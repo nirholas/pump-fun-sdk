@@ -443,6 +443,5 @@ npx serve plugins/analytics/ -p 8080
 
 ## Next Steps
 
-- See [Tutorial 40](./40-pumpos-app-development.md) for PumpOS desktop apps
 - See [Tutorial 41](./41-plugin-gateway-api-handlers.md) for backend API handlers
 - See [Tutorial 26](./26-live-dashboard-deployment.md) for standalone dashboard deployment

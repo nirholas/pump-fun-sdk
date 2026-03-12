@@ -9,7 +9,7 @@ Manage the project's build, release, and deployment pipeline across four ecosyst
 
 ## Context
 
-The project ships multiple artifacts: an npm package (`@nirholas/pump-sdk`), a Rust binary (`solana-vanity`), a TypeScript CLI (`solana-vanity-ts`), an MCP server (`solana-wallet-toolkit`), and a static website (PumpOS). Each has its own build system, dependency management, and release process, unified by a root Makefile and semantic-release.
+The project ships multiple artifacts: an npm package (`@nirholas/pump-sdk`), a Rust binary (`solana-vanity`), a TypeScript CLI (`solana-vanity-ts`), an MCP server (`solana-wallet-toolkit`), and a static website. Each has its own build system, dependency management, and release process, unified by a root Makefile and semantic-release.
 
 ## Key Files
 
@@ -32,8 +32,8 @@ The project ships multiple artifacts: an npm package (`@nirholas/pump-sdk`), a R
 - `server.json` — MCP server manifest
 
 ### Website
-- `website/package.json` — PumpOS static site dependencies
-- `website/index.html` — PumpOS desktop shell
+- `website/package.json` — Static site dependencies
+- `website/index.html` — SDK documentation site
 - `vercel.json` — Vercel deployment config
 
 ### Meta
