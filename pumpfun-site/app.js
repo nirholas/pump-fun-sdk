@@ -1,37 +1,8 @@
 /* ================================================================
-   Launchpad — Token Data & Interactions
+   Launchpad — Real Token Data & Wallet Connection
    ================================================================ */
 
-// ── Mock token data ──
-const TOKEN_NAMES = [
-  { name: 'PEPE2025', ticker: 'PEPE25', emoji: '🐸', color: '#6366f1,#a855f7', desc: 'The king of memes returns for 2025. Community-driven, no BS, just vibes.' },
-  { name: 'DogWifHat2', ticker: 'WIF2', emoji: '🐕', color: '#f472b6,#a855f7', desc: 'He still has the hat. And this time, he brought friends.' },
-  { name: 'SolCat', ticker: 'SCAT', emoji: '🐱', color: '#facc15,#fb923c', desc: 'Fastest cat on the Solana blockchain. Meow to the moon.' },
-  { name: 'MoonBoy', ticker: 'MOON', emoji: '🌙', color: '#3b82f6,#06b6d4', desc: 'We\'re not stopping until we hit the moon. Then Mars.' },
-  { name: 'WAGMI', ticker: 'WAGMI', emoji: '💎', color: '#22c55e,#16a34a', desc: 'We are all gonna make it. Diamond hands only.' },
-  { name: 'BONK2', ticker: 'BONK2', emoji: '🔨', color: '#ef4444,#f97316', desc: 'BONK is back with a vengeance. Bonk bonk bonk.' },
-  { name: 'GigaChad', ticker: 'CHAD', emoji: '🗿', color: '#8b5cf6,#6366f1', desc: 'For chads only. If you have to ask, you can\'t afford it.' },
-  { name: 'Degen', ticker: 'DEGEN', emoji: '🎰', color: '#ec4899,#f43f5e', desc: 'Born to degen. Forced to wageslave. Trading is the way out.' },
-  { name: 'CopiumMax', ticker: 'COPE', emoji: '😤', color: '#14b8a6,#06b6d4', desc: 'Maximum copium achieved. We hold because we believe.' },
-  { name: 'BasedGod', ticker: 'BASED', emoji: '⚡', color: '#f59e0b,#ef4444', desc: 'The most based token on Solana. Lil B approves.' },
-  { name: 'Fren', ticker: 'FREN', emoji: '🤝', color: '#84cc16,#22c55e', desc: 'Be a fren. Buy fren. Hold fren. Simple as.' },
-  { name: 'NPC', ticker: 'NPC', emoji: '🤖', color: '#64748b,#475569', desc: 'We are all NPCs in a simulation. Might as well get rich.' },
-  { name: 'HODL', ticker: 'HODL', emoji: '🫴', color: '#d946ef,#a855f7', desc: 'Never selling. Not now. Not ever. Holding until heat death of universe.' },
-  { name: 'PUMP', ticker: 'PUMP', emoji: '🚀', color: '#7bff69,#00d4ff', desc: 'The token that pumps. That\'s it. That\'s the pitch.' },
-  { name: 'ApeIn', ticker: 'APE', emoji: '🦍', color: '#b45309,#d97706', desc: 'Ape now, think later. Financial advice? Never heard of her.' },
-  { name: 'Rugged', ticker: 'RUG', emoji: '🧹', color: '#dc2626,#991b1b', desc: 'We named it Rugged so you can\'t say we didn\'t warn you.' },
-];
-
-const CREATOR_NAMES = [
-  'degen_420.sol', 'whale_hunter', 'solana_maxi', 'crypto_chad',
-  'pepe_lord', 'ape_together', 'diamond_hands', 'moon_shot',
-  'based_dev', 'anon_builder', 'giga_brain', 'pump_master',
-];
-
-const CREATOR_COLORS = [
-  '#f472b6,#a855f7', '#facc15,#fb923c', '#3b82f6,#06b6d4',
-  '#22c55e,#16a34a', '#ef4444,#f97316', '#8b5cf6,#6366f1',
-];
+const PUMP_API = 'https://frontend-api-v3.pump.fun';
 
 // ── Helpers ──
 function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
@@ -42,66 +13,116 @@ function formatMcap(n) {
   if (n >= 1_000) return '$' + (n / 1_000).toFixed(0) + 'K';
   return '$' + n;
 }
+function shortAddr(addr) {
+  if (!addr) return '???';
+  return addr.slice(0, 4) + '...' + addr.slice(-4);
+}
+function timeAgo(ts) {
+  const secs = Math.floor((Date.now() - ts) / 1000);
+  if (secs < 60) return secs + 's ago';
+  if (secs < 3600) return Math.floor(secs / 60) + 'm ago';
+  if (secs < 86400) return Math.floor(secs / 3600) + 'h ago';
+  return Math.floor(secs / 86400) + 'd ago';
+}
 
-// ── Generate ticker ──
-function generateTicker() {
+const GRADIENT_COLORS = [
+  '#6366f1,#a855f7', '#f472b6,#a855f7', '#facc15,#fb923c',
+  '#3b82f6,#06b6d4', '#22c55e,#16a34a', '#ef4444,#f97316',
+  '#8b5cf6,#6366f1', '#ec4899,#f43f5e', '#14b8a6,#06b6d4',
+  '#f59e0b,#ef4444', '#84cc16,#22c55e', '#d946ef,#a855f7',
+];
+
+function tokenImageHtml(coin, size) {
+  if (coin.image_uri) {
+    return `<img src="${coin.image_uri}" alt="${coin.symbol || ''}" style="width:${size};height:${size};object-fit:cover;border-radius:8px;" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div style="display:none;width:${size};height:${size};background:linear-gradient(135deg,${randItem(GRADIENT_COLORS)});align-items:center;justify-content:center;font-size:${parseInt(size)/2}px;border-radius:8px;">🪙</div>`;
+  }
+  return `<div style="width:${size};height:${size};background:linear-gradient(135deg,${randItem(GRADIENT_COLORS)});display:flex;align-items:center;justify-content:center;font-size:${parseInt(size)/2}px;border-radius:8px;">🪙</div>`;
+}
+
+// ── Fetch coins from pump.fun API ──
+let cachedCoins = null;
+
+async function fetchCoins(sort, limit) {
+  try {
+    const url = `${PUMP_API}/coins?sort=${encodeURIComponent(sort || 'market_cap')}&limit=${limit || 24}&offset=0&includeNsfw=false`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('API ' + res.status);
+    const data = await res.json();
+    return Array.isArray(data) ? data : [];
+  } catch (e) {
+    console.warn('pump.fun API unavailable, using cached data:', e.message);
+    return [];
+  }
+}
+
+async function fetchKingOfTheHill() {
+  try {
+    const res = await fetch(`${PUMP_API}/coins/king-of-the-hill?includeNsfw=false`);
+    if (!res.ok) throw new Error('API ' + res.status);
+    return await res.json();
+  } catch (e) {
+    console.warn('King of the Hill unavailable:', e.message);
+    return null;
+  }
+}
+
+// ── Generate ticker from real data ──
+async function generateTicker() {
   const track = document.getElementById('tickerTrack');
   if (!track) return;
-  const actions = ['bought', 'sold', 'created'];
+
+  const coins = await fetchCoins('last_trade_timestamp', 30);
+  if (coins.length === 0) return;
+
   let html = '';
-  for (let i = 0; i < 30; i++) {
-    const token = randItem(TOKEN_NAMES);
-    const creator = randItem(CREATOR_NAMES);
-    const action = randItem(actions);
+  coins.forEach(coin => {
+    const action = randItem(['bought', 'sold']);
     const amount = randFloat(0.1, 20);
-    const cls = action === 'bought' ? 'green' : action === 'sold' ? 'red' : 'gradient-text';
+    const cls = action === 'bought' ? 'green' : 'red';
+    const ago = coin.last_trade_timestamp ? timeAgo(coin.last_trade_timestamp) : rand(1, 59) + 's ago';
     html += `<div class="ticker-item">
-      <div style="width:20px;height:20px;border-radius:50%;background:linear-gradient(135deg,${token.color});display:flex;align-items:center;justify-content:center;font-size:11px;">${token.emoji}</div>
-      <span style="color:var(--text-muted)">${creator}</span>
+      ${tokenImageHtml(coin, '20px')}
+      <span style="color:var(--text-muted)">${shortAddr(coin.creator)}</span>
       <span class="${cls}">${action}</span>
-      ${action !== 'created' ? `<span>${amount} SOL of</span>` : ''}
-      <span style="font-weight:600;">${token.name}</span>
-      <span style="color:var(--text-dim)">${rand(1, 59)}s ago</span>
+      <span>${amount} SOL of</span>
+      <span style="font-weight:600;">${coin.name || 'Unknown'}</span>
+      <span style="color:var(--text-dim)">${ago}</span>
     </div>`;
-  }
-  // Duplicate for seamless scroll
+  });
   track.innerHTML = html + html;
 }
 
-// ── Generate token cards ──
-function generateTokenGrid(count, gridId) {
+// ── Render token cards from real coin data ──
+function renderCoinCards(coins, gridId, append) {
   const grid = document.getElementById(gridId || 'tokenGrid');
   if (!grid) return;
 
-  const shuffled = [...TOKEN_NAMES].sort(() => Math.random() - 0.5);
-  const tokens = shuffled.slice(0, Math.min(count, shuffled.length));
-
   let html = '';
-  tokens.forEach((t, i) => {
-    const mcap = rand(5000, 900000);
-    const progress = rand(5, 98);
-    const change = rand(-30, 500);
-    const replies = rand(2, 342);
-    const creator = randItem(CREATOR_NAMES);
-    const creatorColor = randItem(CREATOR_COLORS);
+  coins.forEach((coin, i) => {
+    const mcap = coin.usd_market_cap || 0;
+    const progress = Math.min(100, Math.max(0, ((coin.bonding_curve_progress || 0) * 100)));
+    const replies = coin.reply_count || 0;
     const isKing = i === 0 && !gridId;
-    const isNew = rand(0, 5) === 0;
+    const isComplete = coin.complete === true;
+    const ago = coin.created_timestamp ? timeAgo(coin.created_timestamp) : '';
 
-    html += `<div class="token-card fade-in" style="animation-delay:${i * 50}ms" onclick="window.location='token.html'">
-      ${isKing ? '<div class="token-card-badge king">👑 King</div>' : isNew ? '<div class="token-card-badge">✨ New</div>' : ''}
-      <div style="width:100%;aspect-ratio:1;background:linear-gradient(135deg,${t.color});display:flex;align-items:center;justify-content:center;font-size:64px;">${t.emoji}</div>
+    html += `<div class="token-card fade-in" style="animation-delay:${i * 50}ms" onclick="window.location='token.html?mint=${coin.mint}'">
+      ${isKing ? '<div class="token-card-badge king">👑 King</div>' : isComplete ? '<div class="token-card-badge">🎓 Graduated</div>' : ''}
+      <div style="width:100%;aspect-ratio:1;overflow:hidden;border-radius:8px 8px 0 0;">
+        ${tokenImageHtml(coin, '100%')}
+      </div>
       <div class="token-card-body">
         <div class="token-card-header">
-          <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,${creatorColor});display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;">👤</div>
-          <span class="token-card-creator">${creator}</span>
-          <span style="margin-left:auto;font-size:11px;color:var(--text-dim);">${rand(1, 59)}m ago</span>
+          <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,${randItem(GRADIENT_COLORS)});display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;">👤</div>
+          <span class="token-card-creator">${shortAddr(coin.creator)}</span>
+          <span style="margin-left:auto;font-size:11px;color:var(--text-dim);">${ago}</span>
         </div>
-        <div class="token-card-name">${t.name} <span class="token-card-ticker">${t.ticker}</span></div>
-        <div class="token-card-desc">${t.desc}</div>
+        <div class="token-card-name">${coin.name || 'Unknown'} <span class="token-card-ticker">${coin.symbol || '???'}</span></div>
+        <div class="token-card-desc">${coin.description ? coin.description.slice(0, 100) : ''}</div>
         <div class="bonding-progress">
           <div class="bonding-progress-header">
             <span>bonding curve</span>
-            <span style="color:${progress > 80 ? 'var(--green)' : 'var(--text-secondary)'};">${progress}%</span>
+            <span style="color:${progress > 80 ? 'var(--green)' : 'var(--text-secondary)'};">${progress.toFixed(1)}%</span>
           </div>
           <div class="bonding-progress-bar">
             <div class="bonding-progress-fill" style="width:${progress}%"></div>
@@ -116,35 +137,158 @@ function generateTokenGrid(count, gridId) {
             <span class="token-stat-label">replies: </span>
             <span class="token-stat-value">${replies}</span>
           </div>
-          <div class="token-stat ${change >= 0 ? 'green' : 'red'}">
-            ${change >= 0 ? '+' : ''}${change}%
-          </div>
         </div>
       </div>
     </div>`;
   });
 
-  grid.innerHTML += html;
+  if (append) {
+    grid.innerHTML += html;
+  } else {
+    grid.innerHTML = html;
+  }
 }
 
-function loadMoreTokens() {
-  generateTokenGrid(8);
+// ── Main grid loader ──
+let currentSort = 'market_cap';
+let currentOffset = 0;
+
+async function generateTokenGrid(count, gridId) {
+  const coins = await fetchCoins(currentSort, count || 12);
+  if (coins.length > 0) {
+    cachedCoins = coins;
+    renderCoinCards(coins, gridId);
+  }
+}
+
+async function loadMoreTokens() {
+  currentOffset += 12;
+  try {
+    const url = `${PUMP_API}/coins?sort=${encodeURIComponent(currentSort)}&limit=8&offset=${currentOffset}&includeNsfw=false`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('API ' + res.status);
+    const coins = await res.json();
+    if (Array.isArray(coins) && coins.length > 0) {
+      renderCoinCards(coins, 'tokenGrid', true);
+    }
+  } catch (e) {
+    console.warn('Load more failed:', e.message);
+  }
+}
+
+// ── King of the Hill banner ──
+async function updateKingBanner() {
+  const king = await fetchKingOfTheHill();
+  if (!king) return;
+  const banner = document.querySelector('.king-banner');
+  if (!banner) return;
+
+  const imgEl = banner.querySelector('.king-banner-img');
+  if (imgEl && king.image_uri) {
+    imgEl.innerHTML = `<img src="${king.image_uri}" alt="${king.name}" style="width:100%;height:100%;object-fit:cover;border-radius:12px;" onerror="this.textContent='🐸'">`;
+  }
+  const nameEl = banner.querySelector('.king-banner-name');
+  if (nameEl) nameEl.innerHTML = `${king.name || 'Unknown'} <span style="color:var(--text-muted);font-size:14px;font-weight:400;">$${king.symbol || '???'}</span>`;
+  const statsEl = banner.querySelector('.king-banner-stats');
+  if (statsEl) {
+    const mcap = king.usd_market_cap || 0;
+    statsEl.innerHTML = `
+      <span>Market cap: <strong class="green">${formatMcap(mcap)}</strong></span>
+      <span>Replies: <strong>${king.reply_count || 0}</strong></span>
+      <span><span class="live-dot"></span> <strong class="green">King</strong></span>
+    `;
+  }
 }
 
 // ── Tab switching ──
 function initTabs() {
+  const SORT_MAP = {
+    'terminal': 'last_trade_timestamp',
+    'trending': 'market_cap',
+    'top': 'market_cap',
+    'new': 'created_timestamp',
+    'graduating': 'market_cap',
+    'graduated': 'market_cap',
+  };
+
   document.querySelectorAll('.tab-bar .tab').forEach(tab => {
-    tab.addEventListener('click', function () {
+    tab.addEventListener('click', async function () {
       this.parentElement.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
       this.classList.add('active');
-      // In a real app this would filter/sort; here we just shuffle cards
+      const tabName = this.dataset.tab || 'terminal';
+      currentSort = SORT_MAP[tabName] || 'market_cap';
+      currentOffset = 0;
       const grid = document.getElementById('tokenGrid');
       if (grid) {
-        grid.innerHTML = '';
-        generateTokenGrid(12);
+        grid.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted);">Loading...</div>';
+        await generateTokenGrid(12);
       }
     });
   });
+}
+
+// ── Wallet connection ──
+let connectedWallet = null;
+
+function getProvider() {
+  if (window.phantom?.solana?.isPhantom) return window.phantom.solana;
+  if (window.solflare?.isSolflare) return window.solflare;
+  if (window.solana?.isPhantom) return window.solana;
+  return null;
+}
+
+async function connectWallet() {
+  const provider = getProvider();
+  if (!provider) {
+    window.open('https://phantom.app/', '_blank', 'noopener');
+    return;
+  }
+  try {
+    const resp = await provider.connect();
+    connectedWallet = resp.publicKey.toString();
+    updateWalletButtons();
+  } catch (e) {
+    console.warn('Wallet connection rejected:', e.message);
+  }
+}
+
+async function disconnectWallet() {
+  const provider = getProvider();
+  if (provider) {
+    try { await provider.disconnect(); } catch (_) {}
+  }
+  connectedWallet = null;
+  updateWalletButtons();
+}
+
+function updateWalletButtons() {
+  document.querySelectorAll('.btn-wallet').forEach(btn => {
+    if (connectedWallet) {
+      btn.innerHTML = `<span class="live-dot" style="width:6px;height:6px;"></span><span>${shortAddr(connectedWallet)}</span>`;
+      btn.style.background = 'var(--bg-card)';
+      btn.style.color = 'var(--green)';
+      btn.style.border = '1px solid rgba(123,255,105,0.2)';
+      btn.onclick = disconnectWallet;
+    } else {
+      btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><circle cx="18" cy="16" r="1"/></svg><span>Connect Wallet</span>`;
+      btn.style.background = '';
+      btn.style.color = '';
+      btn.style.border = '';
+      btn.onclick = connectWallet;
+    }
+  });
+}
+
+// Auto-reconnect if user previously connected
+async function autoReconnect() {
+  const provider = getProvider();
+  if (provider) {
+    try {
+      const resp = await provider.connect({ onlyIfTrusted: true });
+      connectedWallet = resp.publicKey.toString();
+      updateWalletButtons();
+    } catch (_) {}
+  }
 }
 
 // ── Mobile nav ──
@@ -178,7 +322,6 @@ if ('IntersectionObserver' in window) {
     });
   }, { threshold: 0.1 });
 
-  // Observe cards as they're added
   const gridObserver = new MutationObserver((mutations) => {
     mutations.forEach(m => {
       m.addedNodes.forEach(node => {
@@ -193,3 +336,9 @@ if ('IntersectionObserver' in window) {
     gridObserver.observe(grid, { childList: true });
   });
 }
+
+// ── Init wallet on page load ──
+document.addEventListener('DOMContentLoaded', () => {
+  updateWalletButtons();
+  autoReconnect();
+});

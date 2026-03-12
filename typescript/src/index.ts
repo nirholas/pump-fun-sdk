@@ -252,25 +252,24 @@ async function runGenerator(options: CommandOptions): Promise<void> {
     console.log(`Warning: ${warning}\n`);
   }
 
-  // Validate inputs
-  const prefix = options.prefix?.trim();
-  const suffix = options.suffix?.trim();
-
-  if ((prefix === undefined || prefix === '') && (suffix === undefined || suffix === '')) {
-    console.log('Error: At least one of --prefix or --suffix must be specified.');
-    console.log('\nUse --help for usage information.');
-    process.exit(1);
-  }
-
+  // Validate inputs before trimming to properly detect whitespace
   try {
-    validateVanityInput(prefix, suffix);
+    validateVanityInput(options.prefix, options.suffix);
   } catch (error) {
     if (error instanceof VanityError) {
-      console.log(`Validation Error: ${error.message}`);
+      if (error.type === VanityErrorType.NO_PATTERN_SPECIFIED) {
+        console.log('Error: At least one of --prefix or --suffix must be specified.');
+        console.log('\nUse --help for usage information.');
+      } else {
+        console.log(`Validation Error: ${error.message}`);
+      }
       process.exit(1);
     }
     throw error;
   }
+
+  const prefix = options.prefix?.trim();
+  const suffix = options.suffix?.trim();
 
   // Display search parameters
   console.log('Search Parameters:');
