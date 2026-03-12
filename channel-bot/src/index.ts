@@ -98,10 +98,10 @@ async function main(): Promise<void> {
     }
 
     // ── Pipeline Counters ─────────────────────────────────────────────
-    const pipeline = { total: 0, socialClaims: 0, firstClaim: 0, posted: 0, skippedCashback: 0 };
+    const pipeline = { total: 0, socialClaims: 0, firstClaim: 0, posted: 0, skippedCashback: 0, repeatClaim: 0 };
     setInterval(() => {
-        log.info('Pipeline: %d total → %d social → %d first → %d posted (skip: %d cashback)',
-            pipeline.total, pipeline.socialClaims, pipeline.firstClaim, pipeline.posted, pipeline.skippedCashback);
+        log.info('Pipeline: %d total → %d social → %d first / %d repeat → %d posted (skip: %d cashback)',
+            pipeline.total, pipeline.socialClaims, pipeline.firstClaim, pipeline.repeatClaim, pipeline.posted, pipeline.skippedCashback);
     }, 60_000);
 
     // ── Claim Monitor ────────────────────────────────────────────────
@@ -121,8 +121,9 @@ async function main(): Promise<void> {
         if (event.claimType === 'claim_social_fee_pda' && event.socialPlatform === 2 && event.githubUserId) {
             pipeline.socialClaims++;
 
-            if (hasGithubUserClaimed(event.githubUserId)) return;
-            pipeline.firstClaim++;
+            const isFirstClaim = !hasGithubUserClaimed(event.githubUserId);
+            if (isFirstClaim) pipeline.firstClaim++;
+            else pipeline.repeatClaim++;
 
             const mint = event.tokenMint?.trim() || '';
             const [githubUser, tokenInfo, solUsdPrice] = await Promise.all([
@@ -134,7 +135,8 @@ async function main(): Promise<void> {
                 ? await fetchXProfile(githubUser.twitterUsername)
                 : null;
 
-            log.info('📤 GitHub social fee claim by %s (%s) — %s SOL',
+            log.info('%s GitHub social fee claim by %s (%s) — %s SOL',
+                isFirstClaim ? '🚨' : '📤',
                 event.githubUserId, githubUser?.login ?? '?', event.amountSol.toFixed(4));
 
             const ctx: ClaimFeedContext = {
@@ -143,6 +145,7 @@ async function main(): Promise<void> {
                 githubUser,
                 xProfile,
                 tokenInfo,
+                isFirstClaim,
             };
 
             const { imageUrl, caption } = formatGitHubClaimFeed(ctx);
@@ -152,7 +155,7 @@ async function main(): Promise<void> {
                 } else {
                     await postToChannel(caption);
                 }
-                markGithubUserClaimed(event.githubUserId);
+                if (isFirstClaim) markGithubUserClaimed(event.githubUserId);
                 pipeline.posted++;
                 log.info('✅ Posted GitHub claim by %s (%s) to %s',
                     event.githubUserId, githubUser?.login ?? '?', config.channelId);

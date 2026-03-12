@@ -28,6 +28,8 @@ export interface ClaimFeedContext {
     xProfile: XProfile | null;
     tokenInfo?: TokenInfo | null;
     affiliates?: { axiom: string; gmgn: string; padre: string };
+    /** True when this GitHub user is claiming for the very first time. */
+    isFirstClaim?: boolean;
 }
 
 /**
@@ -41,6 +43,10 @@ export function formatGitHubClaimFeed(ctx: ClaimFeedContext): { imageUrl: string
     const aff = ctx.affiliates;
 
     // ━━ HEADER: TOKEN IDENTITY ━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    if (ctx.isFirstClaim) {
+        L.push(`🚨🚨🚨 <b>FIRST TIME CLAIM</b> 🚨🚨🚨`);
+        L.push('');
+    }
     if (tokenInfo) {
         const pfLink = `<a href="https://pump.fun/coin/${mint}">${esc(tokenInfo.name || mint.slice(0, 8))}</a>`;
         const ticker = tokenInfo.symbol ? ` <b>$${esc(tokenInfo.symbol)}</b>` : '';
