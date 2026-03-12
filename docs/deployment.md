@@ -262,9 +262,13 @@ Current production deployments and their hosting platforms:
 |-----|-----------|-------|
 | [pump-fun-websocket.vercel.app](https://pump-fun-websocket.vercel.app/) | Live dashboards (index) | Token launch dashboard |
 | [pump-fun-websocket.vercel.app/trades](https://pump-fun-websocket.vercel.app/trades) | Live dashboards (trades) | Real-time trade analytics |
+| [pump-fun-sdk1-e1wsfe2mu-aryllyraaryl-6220s-projects.vercel.app](https://pump-fun-sdk1-e1wsfe2mu-aryllyraaryl-6220s-projects.vercel.app/) | Deployment preview | Auto-generated preview URL |
 
 - **Vercel project:** `pump-fun-sdk1`
+- **Vercel account:** `aryllyraaryl-6220`
 - **Source branch:** `main`
+- **GitHub repo:** `gigazook`
+- **Custom domains:** `pump-fun-websocket.vercel.app`, `pump-fun-sdk1-git-main-aryllyraaryl-6220s-projects.vercel.app`
 - **Preview URLs:** `pump-fun-sdk1-*.vercel.app` (auto-generated per deployment)
 
 ### Railway

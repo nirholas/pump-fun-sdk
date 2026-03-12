@@ -170,6 +170,7 @@
     <div>Creates: <span class="val yellow" id="s-creates">0</span></div>
     <div>Whales: <span class="val yellow" id="s-whales">0</span></div>
     <div>Vol: <span class="val blue" id="s-volume">0</span> SOL</div>
+    <div>Viewers: <span class="val" id="s-viewers">—</span></div>
     <div>Events/s: <span class="val" id="s-rate">0</span></div>
     <div>Uptime: <span class="val" id="s-uptime">0s</span></div>
   </div>
@@ -599,8 +600,14 @@ function handlePumpPortalMessage(msg) {
 // ── Railway relay server message handler ────────────────────────────
 function handleRelayMessage(msg) {
   if (!msg || typeof msg !== 'object') return;
-  // Skip heartbeat / status frames
-  if (msg.type === 'heartbeat' || msg.type === 'status') return;
+  // Skip heartbeat frames; extract viewer count from status
+  if (msg.type === 'heartbeat') return;
+  if (msg.type === 'status') {
+    if (typeof msg.clients === 'number') {
+      document.getElementById('s-viewers').textContent = msg.clients;
+    }
+    return;
+  }
   // The relay emits TokenLaunchEvent objects with type='token-launch'
   if (msg.type === 'token-launch' || msg.type === 'create' || msg.mint) {
     stats.logsReceived++;

@@ -157,6 +157,7 @@
 <div id="stats">
   <div>Tokens: <span class="val" id="s-total">0</span></div>
   <div>With GitHub: <span class="val" id="s-github">0</span></div>
+  <div>Viewers: <span class="val" id="s-viewers">—</span></div>
   <div>Logs/sec: <span class="val" id="s-rate">0</span></div>
   <div>Uptime: <span class="val" id="s-uptime">0s</span></div>
 </div>
@@ -295,7 +296,13 @@ function connect() {
 
     if (currentProtocol === 'relay') {
       // Relay server sends { type:'token-launch', mint, name, symbol, ... }
-      if (msg.type === 'heartbeat' || msg.type === 'status') return;
+      if (msg.type === 'heartbeat') return;
+      if (msg.type === 'status') {
+        if (typeof msg.clients === 'number') {
+          document.getElementById('s-viewers').textContent = msg.clients;
+        }
+        return;
+      }
       if (msg.type === 'token-launch' || msg.mint) {
         stats.logsReceived++;
         const info = {
