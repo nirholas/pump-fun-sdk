@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pump SDK — The Community SDK for Pump.fun</title>
+  <meta name="description" content="Unofficial community TypeScript SDK for creating, buying, and selling tokens on the Solana blockchain via the Pump protocol.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🟢</text></svg>">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- ========== TOP BANNER ========== -->
+  <div class="top-banner">
+    <span>🚀 Pump SDK v2 is live — createV2, Token2022, mayhem mode, social fees &amp; more</span>
+    <a href="#getting-started">Get Started →</a>
+  </div>
+
+  <!-- ========== HEADER ========== -->
+  <header class="header">
+    <div class="header-inner">
+      <a href="#" class="logo" onclick="navigateTo('home')">
+        <div class="logo-icon">
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+            <circle cx="16" cy="16" r="14" fill="url(#logoGrad)" />
+            <path d="M10 20 L16 8 L22 20 L16 16 Z" fill="#0a0a0f" />
+            <defs>
+              <linearGradient id="logoGrad" x1="0" y1="0" x2="32" y2="32">
+                <stop offset="0%" stop-color="#00ff88" />
+                <stop offset="100%" stop-color="#00c2ff" />
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+        <span class="logo-text">pump<span class="logo-accent">sdk</span></span>
+      </a>
+
+      <nav class="nav-links" id="navLinks">
+        <a href="#" class="nav-link active" data-page="home" onclick="navigateTo('home')">Home</a>
+        <a href="#" class="nav-link" data-page="docs" onclick="navigateTo('docs')">Docs</a>
+        <a href="#" class="nav-link" data-page="sdk" onclick="navigateTo('sdk')">SDK</a>
+        <a href="#" class="nav-link" data-page="tools" onclick="navigateTo('tools')">Tools</a>
+        <a href="#" class="nav-link" data-page="ecosystem" onclick="navigateTo('ecosystem')">Ecosystem</a>
+      </nav>
+
+      <div class="header-actions">
+        <a href="https://github.com/nirholas/pump-fun-sdk" target="_blank" rel="noopener" class="btn btn-ghost">
+          <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+          GitHub
+        </a>
+        <a href="https://www.npmjs.com/package/@nirholas/pump-sdk" target="_blank" rel="noopener" class="btn btn-primary">
+          npm install
+        </a>
+      </div>
+
+      <button class="mobile-menu-btn" onclick="toggleMobileMenu()" aria-label="Toggle menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ========== MAIN CONTENT ========== -->
+  <main class="main">
+
+    <!-- ===== HOME PAGE ===== -->
+    <section class="page page-home active" id="page-home">
+
+      <!-- Hero -->
+      <div class="hero">
+        <div class="hero-bg"></div>
+        <div class="hero-content">
+          <div class="hero-badge">Community SDK • Open Source • Solana</div>
+          <h1 class="hero-title">
+            Build on <span class="gradient-text">Pump.fun</span>
+          </h1>
+          <p class="hero-subtitle">
+            The unofficial TypeScript SDK for creating, buying, and selling tokens on the Solana blockchain.
+            Bonding curve pricing, AMM migration, tiered fees, creator fee sharing &amp; more.
+          </p>
+          <div class="hero-actions">
+            <a href="#" class="btn btn-primary btn-lg" onclick="navigateTo('docs')">
+              📖 Read the Docs
+            </a>
+            <a href="#" class="btn btn-outline btn-lg" onclick="navigateTo('sdk')">
+              ⚡ Quick Start
+            </a>
+          </div>
+          <div class="hero-install">
+            <code>npm install @nirholas/pump-sdk</code>
+            <button onclick="copyInstall()" class="copy-btn" title="Copy to clipboard">📋</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats Bar -->
+      <div class="stats-bar">
+        <div class="stat">
+          <span class="stat-value">3</span>
+          <span class="stat-label">On-Chain Programs</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value">55</span>
+          <span class="stat-label">MCP Tools</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value">19</span>
+          <span class="stat-label">Tutorials</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value">39+</span>
+          <span class="stat-label">Doc Pages</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value">100K+</span>
+          <span class="stat-label">Keys/sec (Rust)</span>
+        </div>
+      </div>
+
+      <!-- King of the Hill — Featured -->
+      <div class="section">
+        <div class="section-header">
+          <h2>👑 King of the Hill</h2>
+          <p class="section-subtitle">Core features that make Pump SDK the go-to toolkit</p>
+        </div>
+        <div class="featured-grid">
+          <div class="featured-card featured-main" onclick="navigateTo('sdk')">
+            <div class="featured-card-glow"></div>
+            <div class="featured-icon">⚡</div>
+            <h3>Offline-First SDK</h3>
+            <p>Build transaction instructions without a connection. Pure functions, &lt;1ms, zero async overhead. Compose your own transactions with full control.</p>
+            <div class="featured-tags">
+              <span class="tag tag-green">TypeScript</span>
+              <span class="tag tag-blue">Solana</span>
+              <span class="tag tag-purple">Offline</span>
+            </div>
+          </div>
+          <div class="featured-card" onclick="navigateTo('docs')">
+            <div class="featured-icon">📈</div>
+            <h3>Bonding Curve Math</h3>
+            <p>Precise buy/sell calculations with BN.js. Get token amounts from SOL, SOL from tokens, price impact, graduation progress.</p>
+            <div class="featured-tags">
+              <span class="tag tag-green">Math</span>
+              <span class="tag tag-blue">BN.js</span>
+            </div>
+          </div>
+          <div class="featured-card" onclick="navigateTo('docs')">
+            <div class="featured-icon">🏊</div>
+            <h3>AMM Pool Trading</h3>
+            <p>Post-graduation PumpSwap AMM with swap, deposit, and withdraw. Constant-product pools with protocol fees.</p>
+            <div class="featured-tags">
+              <span class="tag tag-purple">PumpAMM</span>
+              <span class="tag tag-green">Pools</span>
+            </div>
+          </div>
+          <div class="featured-card" onclick="navigateTo('docs')">
+            <div class="featured-icon">💰</div>
+            <h3>Fee System</h3>
+            <p>Dynamic tiered fees based on market cap. Creator fee sharing with configurable shareholders (10,000 BPS). Cashback rewards.</p>
+            <div class="featured-tags">
+              <span class="tag tag-blue">Fees</span>
+              <span class="tag tag-purple">Tiers</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Token Cards Section — "Recently Launched" Documentation -->
+      <div class="section">
+        <div class="section-header">
+          <h2>📚 Documentation</h2>
+          <p class="section-subtitle">Everything you need to build on Pump</p>
+          <div class="filter-bar">
+            <button class="filter-btn active" onclick="filterDocs('all')">All</button>
+            <button class="filter-btn" onclick="filterDocs('getting-started')">Getting Started</button>
+            <button class="filter-btn" onclick="filterDocs('core')">Core Concepts</button>
+            <button class="filter-btn" onclick="filterDocs('advanced')">Advanced</button>
+            <button class="filter-btn" onclick="filterDocs('reference')">Reference</button>
+          </div>
+        </div>
+        <div class="token-grid" id="docGrid">
+          <!-- Populated by JS -->
+        </div>
+        <div class="section-footer">
+          <a href="#" class="btn btn-outline" onclick="navigateTo('docs')">View All Documentation →</a>
+        </div>
+      </div>
+
+      <!-- Programs Section -->
+      <div class="section">
+        <div class="section-header">
+          <h2>🔗 On-Chain Programs</h2>
+          <p class="section-subtitle">Three programs powering the Pump protocol</p>
+        </div>
+        <div class="program-grid">
+          <div class="program-card">
+            <div class="program-icon">🟢</div>
+            <h3>Pump Program</h3>
+            <code class="program-id">6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P</code>
+            <p>Bonding curve operations — create tokens, buy, sell, with virtual and real reserves. Supports create_v2, Token2022, and mayhem mode.</p>
+            <div class="program-features">
+              <span>Create</span><span>Buy</span><span>Sell</span><span>Migrate</span>
+            </div>
+          </div>
+          <div class="program-card">
+            <div class="program-icon">🔵</div>
+            <h3>PumpSwap AMM</h3>
+            <code class="program-id">pAMMBay6oceH9fJKBRHGP5D4bD4sWpmSwMn52FMfXEA</code>
+            <p>Graduated AMM pools — constant-product swap, deposit liquidity, withdraw. Post-graduation trading with protocol fees.</p>
+            <div class="program-features">
+              <span>Swap</span><span>Deposit</span><span>Withdraw</span><span>Pools</span>
+            </div>
+          </div>
+          <div class="program-card">
+            <div class="program-icon">🟣</div>
+            <h3>PumpFees</h3>
+            <code class="program-id">pfeeUxB6jkeY1Hxd7CsFCAjcbHA9rWtchMGdZ6VojVZ</code>
+            <p>Fee sharing and distribution — dynamic tiers based on market cap, creator fee configs with shareholders summing to 10,000 BPS.</p>
+            <div class="program-features">
+              <span>Fee Tiers</span><span>Sharing</span><span>Cashback</span><span>Claims</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quickstart Code -->
+      <div class="section" id="getting-started">
+        <div class="section-header">
+          <h2>🚀 Quick Start</h2>
+          <p class="section-subtitle">Go from zero to building in under a minute</p>
+        </div>
+        <div class="code-showcase">
+          <div class="code-tabs">
+            <button class="code-tab active" onclick="showCodeTab('install')">Install</button>
+            <button class="code-tab" onclick="showCodeTab('create')">Create Token</button>
+            <button class="code-tab" onclick="showCodeTab('buy')">Buy</button>
+            <button class="code-tab" onclick="showCodeTab('sell')">Sell</button>
+            <button class="code-tab" onclick="showCodeTab('fees')">Fee Sharing</button>
+          </div>
+          <div class="code-panel active" id="code-install">
+            <pre><code><span class="code-comment">// Install the SDK</span>
+<span class="code-keyword">npm</span> install @nirholas/pump-sdk
+
+<span class="code-comment">// Peer dependencies</span>
+<span class="code-keyword">npm</span> install @solana/web3.js @solana/spl-token @coral-xyz/anchor bn.js</code></pre>
+          </div>
+          <div class="code-panel" id="code-create">
+            <pre><code><span class="code-keyword">import</span> { PUMP_SDK } <span class="code-keyword">from</span> <span class="code-string">"@nirholas/pump-sdk"</span>;
+
+<span class="code-comment">// Create a new token (v2 — never use v1)</span>
+<span class="code-keyword">const</span> ix = <span class="code-keyword">await</span> PUMP_SDK.<span class="code-fn">createV2Instruction</span>({
+  mint,          <span class="code-comment">// Keypair for new token mint</span>
+  name,          <span class="code-comment">// Token name</span>
+  symbol,        <span class="code-comment">// Token symbol</span>
+  uri,           <span class="code-comment">// Metadata URI</span>
+  creator,       <span class="code-comment">// Creator public key</span>
+  user,          <span class="code-comment">// Transaction payer</span>
+  mayhemMode: <span class="code-keyword">false</span>,
+  cashback: <span class="code-keyword">false</span>,
+});</code></pre>
+          </div>
+          <div class="code-panel" id="code-buy">
+            <pre><code><span class="code-keyword">import</span> { PUMP_SDK, OnlinePumpSdk } <span class="code-keyword">from</span> <span class="code-string">"@nirholas/pump-sdk"</span>;
+<span class="code-keyword">import</span> { TOKEN_PROGRAM_ID } <span class="code-keyword">from</span> <span class="code-string">"@solana/spl-token"</span>;
+
+<span class="code-keyword">const</span> online = <span class="code-keyword">new</span> <span class="code-fn">OnlinePumpSdk</span>(connection);
+<span class="code-keyword">const</span> global = <span class="code-keyword">await</span> online.<span class="code-fn">fetchGlobal</span>();
+<span class="code-keyword">const</span> state = <span class="code-keyword">await</span> online.<span class="code-fn">fetchBuyState</span>(mint, user);
+
+<span class="code-keyword">const</span> ixs = <span class="code-keyword">await</span> PUMP_SDK.<span class="code-fn">buyInstructions</span>({
+  global,
+  bondingCurveAccountInfo: state.bondingCurveAccountInfo,
+  bondingCurve: state.bondingCurve,
+  associatedUserAccountInfo: state.associatedUserAccountInfo,
+  mint, user, solAmount, amount,
+  slippage: <span class="code-number">1</span>,
+  tokenProgram: TOKEN_PROGRAM_ID,
+});</code></pre>
+          </div>
+          <div class="code-panel" id="code-sell">
+            <pre><code><span class="code-keyword">import</span> { PUMP_SDK, OnlinePumpSdk } <span class="code-keyword">from</span> <span class="code-string">"@nirholas/pump-sdk"</span>;
+
+<span class="code-keyword">const</span> online = <span class="code-keyword">new</span> <span class="code-fn">OnlinePumpSdk</span>(connection);
+<span class="code-keyword">const</span> global = <span class="code-keyword">await</span> online.<span class="code-fn">fetchGlobal</span>();
+<span class="code-keyword">const</span> bc = <span class="code-keyword">await</span> online.<span class="code-fn">fetchBondingCurve</span>(mint);
+
+<span class="code-keyword">const</span> ixs = <span class="code-keyword">await</span> PUMP_SDK.<span class="code-fn">sellInstructions</span>({
+  global,
+  bondingCurve: bc,
+  mint, user, amount,
+  slippage: <span class="code-number">1</span>,
+  tokenProgram: TOKEN_PROGRAM_ID,
+});</code></pre>
+          </div>
+          <div class="code-panel" id="code-fees">
+            <pre><code><span class="code-keyword">import</span> { PUMP_SDK } <span class="code-keyword">from</span> <span class="code-string">"@nirholas/pump-sdk"</span>;
+
+<span class="code-comment">// Shares MUST total exactly 10,000 BPS</span>
+<span class="code-keyword">const</span> ix = <span class="code-keyword">await</span> PUMP_SDK.<span class="code-fn">createFeeSharingConfig</span>({
+  mint,
+  shareholders: [
+    { address: creator, shareBps: <span class="code-number">7000</span> },  <span class="code-comment">// 70%</span>
+    { address: partner, shareBps: <span class="code-number">3000</span> },  <span class="code-comment">// 30%</span>
+  ],
+  user,
+});</code></pre>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ===== DOCS PAGE ===== -->
+    <section class="page page-docs" id="page-docs">
+      <div class="page-header">
+        <h1>📚 Documentation</h1>
+        <p>Comprehensive guides and references for the Pump SDK</p>
+        <div class="search-bar">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <input type="text" id="docSearch" placeholder="Search documentation..." oninput="searchDocs(this.value)">
+        </div>
+      </div>
+      <div class="docs-layout">
+        <aside class="docs-sidebar" id="docsSidebar">
+          <!-- Populated by JS -->
+        </aside>
+        <div class="docs-content" id="docsContent">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SDK PAGE ===== -->
+    <section class="page page-sdk" id="page-sdk">
+      <div class="page-header">
+        <h1>⚡ SDK Reference</h1>
+        <p>Architecture, API surface, types, and patterns</p>
+      </div>
+
+      <div class="sdk-layout">
+        <!-- Architecture -->
+        <div class="sdk-section">
+          <h2>Architecture</h2>
+          <div class="arch-diagram">
+            <div class="arch-box arch-offline">
+              <h3>PumpSdk <span class="arch-badge">offline</span></h3>
+              <ul>
+                <li><code>decode*()</code> — Deserialize accounts</li>
+                <li><code>*Instruction()</code> — Build single IX</li>
+                <li><code>*Instructions()</code> — Build IX arrays</li>
+              </ul>
+              <div class="arch-singleton">Singleton: <code>PUMP_SDK</code></div>
+            </div>
+            <div class="arch-arrow">extends ▼</div>
+            <div class="arch-box arch-online">
+              <h3>OnlinePumpSdk <span class="arch-badge arch-badge-blue">online</span></h3>
+              <ul>
+                <li><code>fetch*()</code> — RPC account fetches</li>
+                <li><code>fetchBuyState()</code> — All state for buying</li>
+                <li><code>fetchGlobal()</code> — Protocol global config</li>
+              </ul>
+              <div class="arch-note">new OnlinePumpSdk(connection)</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Key Types -->
+        <div class="sdk-section">
+          <h2>Key Types</h2>
+          <div class="type-grid">
+            <div class="type-card">
+              <h4>BondingCurve</h4>
+              <pre><code>{
+  virtualTokenReserves: BN
+  virtualSolReserves: BN
+  realTokenReserves: BN
+  realSolReserves: BN
+  tokenTotalSupply: BN
+  complete: boolean
+  creator: PublicKey
+  isMayhemMode: boolean
+}</code></pre>
+            </div>
+            <div class="type-card">
+              <h4>Global</h4>
+              <pre><code>{
+  initialized: boolean
+  authority: PublicKey
+  feeRecipient: PublicKey
+  initialVirtualTokenReserves: BN
+  initialVirtualSolReserves: BN
+  initialRealTokenReserves: BN
+  tokenTotalSupply: BN
+  feeBasisPoints: BN
+}</code></pre>
+            </div>
+            <div class="type-card">
+              <h4>Shareholder</h4>
+              <pre><code>{
+  address: PublicKey
+  shareBps: number
+  <span class="code-comment">// All shareholders must
+  // sum to exactly 10,000 BPS</span>
+}</code></pre>
+            </div>
+            <div class="type-card">
+              <h4>FeeConfig</h4>
+              <pre><code>{
+  feeRecipient: PublicKey
+  feeBasisPoints: BN
+  <span class="code-comment">// Dynamic tiers based
+  // on market cap</span>
+}</code></pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- Import Map -->
+        <div class="sdk-section">
+          <h2>Import Map</h2>
+          <div class="import-showcase">
+            <pre><code><span class="code-comment">// Core SDK</span>
+<span class="code-keyword">import</span> { PUMP_SDK, PumpSdk, OnlinePumpSdk } <span class="code-keyword">from</span> <span class="code-string">"@nirholas/pump-sdk"</span>;
+
+<span class="code-comment">// Constants</span>
+<span class="code-keyword">import</span> { PUMP_PROGRAM_ID, PUMP_AMM_PROGRAM_ID, PUMP_FEE_PROGRAM_ID } <span class="code-keyword">from</span> <span class="code-string">"@nirholas/pump-sdk"</span>;
+
+<span class="code-comment">// Bonding curve math</span>
+<span class="code-keyword">import</span> { getBuyTokenAmountFromSolAmount, getSellSolAmountFromTokenAmount } <span class="code-keyword">from</span> <span class="code-string">"@nirholas/pump-sdk"</span>;
+
+<span class="code-comment">// PDAs</span>
+<span class="code-keyword">import</span> { bondingCurvePda, globalPda, feeSharingConfigPda } <span class="code-keyword">from</span> <span class="code-string">"@nirholas/pump-sdk"</span>;
+
+<span class="code-comment">// State types</span>
+<span class="code-keyword">import type</span> { BondingCurve, Global, FeeConfig, Pool } <span class="code-keyword">from</span> <span class="code-string">"@nirholas/pump-sdk"</span>;
+
+<span class="code-comment">// Analytics</span>
+<span class="code-keyword">import</span> { calculateBuyPriceImpact, getGraduationProgress, getTokenPrice } <span class="code-keyword">from</span> <span class="code-string">"@nirholas/pump-sdk"</span>;
+
+<span class="code-comment">// Fees</span>
+<span class="code-keyword">import</span> { getFee, computeFeesBps, calculateFeeTier } <span class="code-keyword">from</span> <span class="code-string">"@nirholas/pump-sdk"</span>;</code></pre>
+          </div>
+        </div>
+
+        <!-- Common Pitfalls -->
+        <div class="sdk-section">
+          <h2>⚠️ Common Pitfalls</h2>
+          <div class="pitfall-grid">
+            <div class="pitfall-card pitfall-danger">
+              <div class="pitfall-icon">🚫</div>
+              <h4>Using createInstruction (v1)</h4>
+              <p>DEPRECATED. Always use <code>createV2Instruction</code>.</p>
+            </div>
+            <div class="pitfall-card pitfall-danger">
+              <div class="pitfall-icon">🚫</div>
+              <h4>Using number for amounts</h4>
+              <p>WRONG. Use <code>new BN(...)</code> for all financial math. Always.</p>
+            </div>
+            <div class="pitfall-card pitfall-warning">
+              <div class="pitfall-icon">⚠️</div>
+              <h4>Trading a graduated curve</h4>
+              <p>Check <code>bondingCurve.complete</code>. If true, use AMM methods instead.</p>
+            </div>
+            <div class="pitfall-card pitfall-warning">
+              <div class="pitfall-icon">⚠️</div>
+              <h4>Shares not summing to 10,000</h4>
+              <p>Fee sharing config requires exactly 10,000 BPS total.</p>
+            </div>
+            <div class="pitfall-card pitfall-danger">
+              <div class="pitfall-icon">🚫</div>
+              <h4>Returning Transaction objects</h4>
+              <p>SDK returns <code>TransactionInstruction[]</code>, never Transaction.</p>
+            </div>
+            <div class="pitfall-card pitfall-warning">
+              <div class="pitfall-icon">⚠️</div>
+              <h4>Importing from internal paths</h4>
+              <p>Import from <code>@nirholas/pump-sdk</code>, not <code>.../dist/...</code></p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== TOOLS PAGE ===== -->
+    <section class="page page-tools" id="page-tools">
+      <div class="page-header">
+        <h1>🛠️ Tools &amp; Dashboards</h1>
+        <p>Live tools, generators, bots, and dashboards built with Pump SDK</p>
+      </div>
+      <div class="tools-grid">
+        <div class="tool-card tool-card-featured">
+          <div class="tool-badge">MCP Server</div>
+          <div class="tool-icon">🤖</div>
+          <h3>AI Agent Integration</h3>
+          <p>55 tools, 4 resources, 5 prompts via Model Context Protocol. Connect any AI agent to Pump.fun.</p>
+          <div class="tool-stats">
+            <span>55 Tools</span>
+            <span>MCP v2024-11-05</span>
+          </div>
+        </div>
+        <div class="tool-card">
+          <div class="tool-icon">📡</div>
+          <h3>Live Token Launches</h3>
+          <p>Real-time token launch feed via WebSocket. GitHub detection, metadata fetching, auto-reconnect.</p>
+          <div class="tool-stats">
+            <span>WebSocket</span>
+            <span>Real-time</span>
+          </div>
+        </div>
+        <div class="tool-card">
+          <div class="tool-icon">📊</div>
+          <h3>Live Trades Dashboard</h3>
+          <p>Buy/sell/create/migrate feed with volume charts, whale alerts, top tokens, and analytics sidebar.</p>
+          <div class="tool-stats">
+            <span>Charts</span>
+            <span>Analytics</span>
+          </div>
+        </div>
+        <div class="tool-card">
+          <div class="tool-icon">🔑</div>
+          <h3>Vanity Address Generator</h3>
+          <p>Client-side Solana vanity address generation. Multi-threaded, difficulty estimation, export keypairs.</p>
+          <div class="tool-stats">
+            <span>Ed25519</span>
+            <span>Client-side</span>
+          </div>
+        </div>
+        <div class="tool-card">
+          <div class="tool-icon">🦀</div>
+          <h3>Rust Vanity Generator</h3>
+          <p>High-performance vanity generator with rayon + solana-sdk. 100K+ keys/sec multi-threaded.</p>
+          <div class="tool-stats">
+            <span>100K+ keys/sec</span>
+            <span>Rayon</span>
+          </div>
+        </div>
+        <div class="tool-card">
+          <div class="tool-icon">💬</div>
+          <h3>Telegram Bot</h3>
+          <p>PumpFun activity monitor with 10 commands. Fee claims, CTO alerts, whale trades, graduation tracking.</p>
+          <div class="tool-stats">
+            <span>10 Commands</span>
+            <span>50 TX/sec</span>
+          </div>
+        </div>
+        <div class="tool-card">
+          <div class="tool-icon">🌊</div>
+          <h3>WebSocket Relay</h3>
+          <p>Real-time token launch broadcasting server. 10K connections, 50K msg/sec per vCPU.</p>
+          <div class="tool-stats">
+            <span>10K Conn</span>
+            <span>50K msg/sec</span>
+          </div>
+        </div>
+        <div class="tool-card">
+          <div class="tool-icon">📱</div>
+          <h3>Channel Bot</h3>
+          <p>Telegram channel bot for broadcasting token launches and graduation events to your community.</p>
+          <div class="tool-stats">
+            <span>Broadcasting</span>
+            <span>Docker</span>
+          </div>
+        </div>
+        <div class="tool-card">
+          <div class="tool-icon">💸</div>
+          <h3>Claim Bot</h3>
+          <p>Automated fee claiming bot. Monitors and claims creator fees from bonding curves and AMM pools.</p>
+          <div class="tool-stats">
+            <span>Auto-claim</span>
+            <span>Railway</span>
+          </div>
+        </div>
+        <div class="tool-card">
+          <div class="tool-icon">🖥️</div>
+          <h3>PumpOS Desktop</h3>
+          <p>Full web desktop environment with app store, file system, window manager. 169 Pump-Store apps.</p>
+          <div class="tool-stats">
+            <span>169 Apps</span>
+            <span>Desktop OS</span>
+          </div>
+        </div>
+        <div class="tool-card">
+          <div class="tool-icon">💳</div>
+          <h3>x402 Payments</h3>
+          <p>HTTP 402 micropayment protocol with Solana USDC. Pay-per-request API monetization.</p>
+          <div class="tool-stats">
+            <span>USDC</span>
+            <span>HTTP 402</span>
+          </div>
+        </div>
+        <div class="tool-card">
+          <div class="tool-icon">🐝</div>
+          <h3>Swarm Agents</h3>
+          <p>Multi-agent DeFi intelligence swarm. Coordinated agents for token analysis and trading strategies.</p>
+          <div class="tool-stats">
+            <span>Multi-agent</span>
+            <span>DeFi</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== ECOSYSTEM PAGE ===== -->
+    <section class="page page-ecosystem" id="page-ecosystem">
+      <div class="page-header">
+        <h1>🌐 Ecosystem</h1>
+        <p>The complete Pump SDK ecosystem — everything you need to build on Pump.fun</p>
+      </div>
+
+      <div class="eco-layout">
+        <!-- Architecture Map -->
+        <div class="eco-section">
+          <h2>Project Structure</h2>
+          <div class="eco-tree">
+            <div class="eco-tree-item eco-core">
+              <span class="eco-tree-icon">📦</span>
+              <span class="eco-tree-name">src/</span>
+              <span class="eco-tree-desc">Core SDK — instruction builders, bonding curve math, PDAs, state, events, analytics</span>
+            </div>
+            <div class="eco-tree-item">
+              <span class="eco-tree-icon">🦀</span>
+              <span class="eco-tree-name">rust/</span>
+              <span class="eco-tree-desc">Rust vanity address generator — rayon + solana-sdk, 100K+ keys/sec</span>
+            </div>
+            <div class="eco-tree-item">
+              <span class="eco-tree-icon">📘</span>
+              <span class="eco-tree-name">typescript/</span>
+              <span class="eco-tree-desc">TypeScript vanity generator — educational @solana/web3.js implementation</span>
+            </div>
+            <div class="eco-tree-item">
+              <span class="eco-tree-icon">🤖</span>
+              <span class="eco-tree-name">mcp-server/</span>
+              <span class="eco-tree-desc">MCP server — 55 tools, 4 resources, 5 prompts for AI agents</span>
+            </div>
+            <div class="eco-tree-item">
+              <span class="eco-tree-icon">💬</span>
+              <span class="eco-tree-name">telegram-bot/</span>
+              <span class="eco-tree-desc">PumpFun Telegram monitor — 10 commands, fee claims, whale alerts</span>
+            </div>
+            <div class="eco-tree-item">
+              <span class="eco-tree-icon">📡</span>
+              <span class="eco-tree-name">channel-bot/</span>
+              <span class="eco-tree-desc">Telegram channel bot — broadcasting launches and graduations</span>
+            </div>
+            <div class="eco-tree-item">
+              <span class="eco-tree-icon">💸</span>
+              <span class="eco-tree-name">claim-bot/</span>
+              <span class="eco-tree-desc">Automated fee claiming — monitors and claims creator fees</span>
+            </div>
+            <div class="eco-tree-item">
+              <span class="eco-tree-icon">🌊</span>
+              <span class="eco-tree-name">websocket-server/</span>
+              <span class="eco-tree-desc">WebSocket relay — real-time token launch broadcasting</span>
+            </div>
+            <div class="eco-tree-item">
+              <span class="eco-tree-icon">📊</span>
+              <span class="eco-tree-name">live/</span>
+              <span class="eco-tree-desc">Browser dashboards — token launches, trades, vanity generator</span>
+            </div>
+            <div class="eco-tree-item">
+              <span class="eco-tree-icon">📝</span>
+              <span class="eco-tree-name">tutorials/</span>
+              <span class="eco-tree-desc">19 hands-on guides covering the full SDK</span>
+            </div>
+            <div class="eco-tree-item">
+              <span class="eco-tree-icon">📚</span>
+              <span class="eco-tree-name">docs/</span>
+              <span class="eco-tree-desc">39+ documentation pages — architecture, math, fees, security</span>
+            </div>
+            <div class="eco-tree-item">
+              <span class="eco-tree-icon">🐝</span>
+              <span class="eco-tree-name">swarm/</span>
+              <span class="eco-tree-desc">Multi-agent DeFi intelligence swarm</span>
+            </div>
+            <div class="eco-tree-item">
+              <span class="eco-tree-icon">💳</span>
+              <span class="eco-tree-name">x402/</span>
+              <span class="eco-tree-desc">HTTP 402 micropayments with Solana USDC</span>
+            </div>
+            <div class="eco-tree-item">
+              <span class="eco-tree-icon">🔐</span>
+              <span class="eco-tree-name">security/</span>
+              <span class="eco-tree-desc">Security audits, checklists, and practices</span>
+            </div>
+            <div class="eco-tree-item">
+              <span class="eco-tree-icon">🧪</span>
+              <span class="eco-tree-name">tests/</span>
+              <span class="eco-tree-desc">Integration tests and verification suites</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Performance -->
+        <div class="eco-section">
+          <h2>Performance</h2>
+          <div class="perf-grid">
+            <div class="perf-card">
+              <div class="perf-metric">&lt;1ms</div>
+              <div class="perf-label">SDK offline instructions</div>
+              <div class="perf-note">Pure functions, no async</div>
+            </div>
+            <div class="perf-card">
+              <div class="perf-metric">50–500ms</div>
+              <div class="perf-label">SDK online (RPC)</div>
+              <div class="perf-note">Batch with getMultipleAccountsInfo</div>
+            </div>
+            <div class="perf-card">
+              <div class="perf-metric">100K+</div>
+              <div class="perf-label">Rust vanity keys/sec</div>
+              <div class="perf-note">Multi-threaded rayon</div>
+            </div>
+            <div class="perf-card">
+              <div class="perf-metric">~1K</div>
+              <div class="perf-label">TS vanity keys/sec</div>
+              <div class="perf-note">Educational only</div>
+            </div>
+            <div class="perf-card">
+              <div class="perf-metric">10K</div>
+              <div class="perf-label">WebSocket connections</div>
+              <div class="perf-note">Per vCPU</div>
+            </div>
+            <div class="perf-card">
+              <div class="perf-metric">50K</div>
+              <div class="perf-label">Messages/sec</div>
+              <div class="perf-note">WebSocket relay</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Security -->
+        <div class="eco-section">
+          <h2>🔐 Security</h2>
+          <div class="security-list">
+            <div class="security-item">
+              <span class="security-check">✅</span>
+              <span>ONLY official Solana Labs crypto: solana-sdk, @solana/web3.js, solana-keygen</span>
+            </div>
+            <div class="security-item">
+              <span class="security-check">✅</span>
+              <span>Zeroize all key material after use</span>
+            </div>
+            <div class="security-item">
+              <span class="security-check">✅</span>
+              <span>Keypair file permissions set to 0600</span>
+            </div>
+            <div class="security-item">
+              <span class="security-check">✅</span>
+              <span>No network calls for key generation — fully offline</span>
+            </div>
+            <div class="security-item">
+              <span class="security-check">✅</span>
+              <span>60+ item security checklist in security/SECURITY_CHECKLIST.md</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Links -->
+        <div class="eco-section">
+          <h2>Links</h2>
+          <div class="links-grid">
+            <a href="https://github.com/nirholas/pump-fun-sdk" target="_blank" rel="noopener" class="link-card">
+              <span class="link-icon">🐙</span>
+              <span class="link-name">GitHub</span>
+            </a>
+            <a href="https://www.npmjs.com/package/@nirholas/pump-sdk" target="_blank" rel="noopener" class="link-card">
+              <span class="link-icon">📦</span>
+              <span class="link-name">npm</span>
+            </a>
+            <a href="https://pump-fun-sdk.vercel.app" target="_blank" rel="noopener" class="link-card">
+              <span class="link-icon">🖥️</span>
+              <span class="link-name">PumpOS</span>
+            </a>
+            <a href="https://pump.fun" target="_blank" rel="noopener" class="link-card">
+              <span class="link-icon">🟢</span>
+              <span class="link-name">Pump.fun</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ========== FOOTER ========== -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <span class="logo-text">pump<span class="logo-accent">sdk</span></span>
+        <p>Community TypeScript SDK for Pump.fun on Solana</p>
+      </div>
+      <div class="footer-links">
+        <div class="footer-col">
+          <h4>Documentation</h4>
+          <a href="#" onclick="navigateTo('docs')">Getting Started</a>
+          <a href="#" onclick="navigateTo('sdk')">SDK Reference</a>
+          <a href="#" onclick="navigateTo('docs')">Tutorials</a>
+          <a href="#" onclick="navigateTo('docs')">FAQ</a>
+        </div>
+        <div class="footer-col">
+          <h4>Tools</h4>
+          <a href="#" onclick="navigateTo('tools')">MCP Server</a>
+          <a href="#" onclick="navigateTo('tools')">Telegram Bot</a>
+          <a href="#" onclick="navigateTo('tools')">Live Dashboards</a>
+          <a href="#" onclick="navigateTo('tools')">Vanity Generator</a>
+        </div>
+        <div class="footer-col">
+          <h4>Community</h4>
+          <a href="https://github.com/nirholas/pump-fun-sdk" target="_blank" rel="noopener">GitHub</a>
+          <a href="https://www.npmjs.com/package/@nirholas/pump-sdk" target="_blank" rel="noopener">npm</a>
+          <a href="https://github.com/nirholas/pump-fun-sdk/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener">Contributing</a>
+          <a href="https://github.com/nirholas/pump-fun-sdk/blob/main/SECURITY.md" target="_blank" rel="noopener">Security</a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>&copy; 2024–2026 Pump SDK Contributors. Open source under MIT License.</p>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

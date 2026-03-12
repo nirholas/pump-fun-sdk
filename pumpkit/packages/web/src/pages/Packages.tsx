@@ -16,7 +16,7 @@ const packages = [
       '🏥 HTTP health check server',
       '📊 Leveled console logger',
     ],
-    install: 'npm install @pumpkit/core (coming soon)',
+    install: 'npm install @pumpkit/core',
     code: `import { createBot, createHealthServer } from '@pumpkit/core';
 
 const bot = createBot({

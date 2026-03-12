@@ -12,7 +12,7 @@ pumpkit/
 │   ├── tracker/     @pumpkit/tracker — group tracker bot
 │   ├── channel/     @pumpkit/channel — channel feed bot
 │   ├── claim/       @pumpkit/claim — claim tracker bot
-│   └── web/         @pumpkit/web — frontend dashboard (coming soon)
+│   └── web/         @pumpkit/web — frontend dashboard and docs site
 ├── docs/            documentation and guides
 ├── tutorials/       hands-on step-by-step guides
 ├── examples/        HTML dashboard examples

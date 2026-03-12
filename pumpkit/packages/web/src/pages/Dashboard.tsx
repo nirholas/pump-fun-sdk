@@ -1,10 +1,35 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { EventCard } from '../components/EventCard';
 import { StatsBar } from '../components/StatsBar';
+import { useEventStream } from '../hooks/useEventStream';
 import type { FeedEvent } from '../components/EventCard';
 import type { EventType } from '../types';
+import type { BaseEvent } from '../lib/types';
 
-// ── Mock data ───────────────────────────────────────────
+// ── Map API events to FeedEvent shape ───────────────────
+
+let feedIdCounter = 0;
+
+function apiEventToFeedEvent(raw: BaseEvent, isNew: boolean): FeedEvent {
+  const id = `sse-${++feedIdCounter}`;
+  const r = raw as Record<string, unknown>;
+  return {
+    id,
+    type: raw.type as FeedEvent['type'],
+    timestamp: raw.timestamp,
+    txSignature: raw.txSignature,
+    tokenName: (r.tokenName as string) ?? (r.name as string) ?? 'Unknown',
+    tokenSymbol: (r.tokenSymbol as string) ?? (r.symbol as string) ?? '???',
+    creator: (r.creator as string) ?? (r.claimerWallet as string) ?? (r.wallet as string) ?? '',
+    amountSol: (r.amountSol as number) ?? 0,
+    direction: r.direction as 'buy' | 'sell' | undefined,
+    newCreator: r.newCreator as string | undefined,
+    shareholders: r.shareholders as { address: string; amount: number }[] | undefined,
+    isNew,
+  };
+}
+
+// ── Mock data (fallback when no API configured) ─────────
 
 const MOCK_TOKENS = [
   { name: 'PumpKitty', symbol: 'KITTY', creator: '7xKp...3nRm' },
@@ -107,8 +132,18 @@ const FILTERS: { key: EventType | 'all'; label: string }[] = [
 
 // ── Dashboard ───────────────────────────────────────────
 
+const hasApiUrl = !!import.meta.env.VITE_API_URL;
+
 export function Dashboard() {
-  const events = useMockFeed();
+  // Use real SSE stream when API is configured, mock feed otherwise
+  const sseEvents = useEventStream();
+  const mockEvents = useMockFeed();
+  const isLive = hasApiUrl && sseEvents.length > 0;
+
+  // Convert SSE BaseEvent[] into FeedEvent[] for EventCard
+  const liveEvents: FeedEvent[] = sseEvents.map((e, i) => apiEventToFeedEvent(e, i === 0));
+  const events = isLive ? liveEvents : mockEvents;
+
   const [filter, setFilter] = useState<EventType | 'all'>('all');
 
   const filtered = filter === 'all' ? events : events.filter((e) => e.type === filter);
@@ -138,7 +173,7 @@ export function Dashboard() {
       <div className="flex-1 overflow-y-auto">
         <div className="flex flex-col gap-2 p-4 max-w-3xl mx-auto">
           {/* Stats bar */}
-          <StatsBar events={events} connected={true} />
+          <StatsBar events={events} connected={isLive} />
 
           {/* Date separator */}
           <div className="text-center py-2">
@@ -158,7 +193,13 @@ export function Dashboard() {
       {/* Bottom info bar */}
       <div className="border-t border-tg-border px-4 py-2 text-center">
         <span className="text-xs text-zinc-500">
-          Simulated feed &bull; Connect your bot for live data
+          {isLive ? (
+            <>🟢 Live feed from monitor bot</>
+          ) : hasApiUrl ? (
+            <>🟡 Connecting to monitor bot…</>
+          ) : (
+            <>Simulated feed &bull; Set <code className="text-tg-blue">VITE_API_URL</code> for live data</>
+          )}
         </span>
       </div>
     </div>

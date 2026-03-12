@@ -171,7 +171,7 @@ Consolidates 3 existing production bots into one:
 - [Core API](docs/core-api.md) — `@pumpkit/core` module reference
 - [Monitor Bot](docs/monitor-bot.md) — Feature spec, commands, configuration
 - [Tracker Bot](docs/tracker-bot.md) — Feature spec, commands, configuration
-- [npm Packages](docs/npm.md) — Publishing roadmap (coming soon)
+- [npm Packages](docs/npm.md) — Package installation and usage
 
 ### Pump Protocol Reference
 - [Protocol Overview](docs/pump-protocol/) — All 9 official protocol specs + IDLs

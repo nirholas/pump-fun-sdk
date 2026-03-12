@@ -3,7 +3,11 @@
  *
  * These types represent the API responses and data models
  * that the frontend will consume from PumpKit bot APIs.
+ *
+ * EventType is re-exported from lib/types.ts — the canonical definition.
  */
+
+export type { EventType } from './lib/types';
 
 // ── Bot Health ──────────────────────────────────────────
 
@@ -18,14 +22,6 @@ export interface BotStatus {
 }
 
 // ── Monitor Events ──────────────────────────────────────
-
-export type EventType =
-  | "claim"
-  | "launch"
-  | "graduation"
-  | "whale"
-  | "cto"
-  | "distribution";
 
 export interface MonitorEvent {
   id: string;
@@ -114,7 +110,8 @@ export interface TrackerSettings {
   athPollInterval: number;
 }
 
-// ── API Responses ───────────────────────────────────────
+// ── API Responses (UI-side simplified shapes) ───────────
+// For full API response types, see lib/types.ts
 
 export interface PaginatedResponse<T> {
   data: T[];
