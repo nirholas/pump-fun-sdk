@@ -4,7 +4,7 @@ use carbon_core::{borsh, CarbonDeserialize};
 )]
 #[carbon(discriminator = "0x18")]
 pub struct UiAmountToAmount {
-    // TODO: Check what to do here, on github it's: &'a str
+    // On-chain type is &'a str; owned String used here to avoid lifetimes
     pub ui_amount: String,
 }
 

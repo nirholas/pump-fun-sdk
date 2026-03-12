@@ -20,3 +20,6 @@ solana-instruction = { workspace = true, default-features = false }
 solana-program = { workspace = true }
 solana-pubkey = { workspace = true }
 spl-token-interface = { workspace = true }
+
+[dev-dependencies]
+carbon-test-utils = { workspace = true }

@@ -40,7 +40,7 @@ Production-tested Grammy scaffolding with command routing, error handling, grace
 Built-in monitors for fee claims, token launches, graduations, whale trades, CTO alerts, and fee distributions. Each emits typed events you can subscribe to.
 
 #### 3. Call Tracking + Leaderboards
-Group-based call tracking with point systems, multiplier rankings, PNL cards, win rates, and tiered ranks from Amateur to Oracle. powered by SQLite.
+Group-based call tracking with point systems, multiplier rankings, PNL cards, win rates, and tiered ranks from Amateur to Oracle. Powered by SQLite.
 
 #### 4. REST API + Webhooks
 Every bot includes optional HTTP endpoints for external integrations. Server-Sent Events for real-time streaming. Outbound webhooks for downstream services.
@@ -57,28 +57,31 @@ MIT licensed. Full source code, documentation, and 26 tutorials. Build on it, fo
 
 ### 3 Steps to Your First Bot
 
-**Step 1: Install**
+**Step 1: Install @pumpkit/core**
 
 ```bash
 npm install @pumpkit/core
 ```
 
-**Step 2: Configure**
+**Step 2: Pick monitors + configure**
 
-```bash
-cp .env.example .env
-# Set TELEGRAM_BOT_TOKEN and SOLANA_RPC_URL
+Choose the monitors you need — fee claims, token launches, graduations, whale trades — and wire them to your bot with a few lines of config:
+
+```typescript
+const monitor = new ClaimMonitor({
+  rpcUrl: process.env.SOLANA_RPC_URL!,
+  onClaim: async (event) => await bot.broadcast(formatClaim(event)),
+});
 ```
 
-**Step 3: Deploy**
+**Step 3: Deploy to Railway**
 
 ```bash
-# Local
-npm run dev
+# One-click deploy to Railway
+railway up
 
-# Production
-docker build -t my-bot .
-# Or one-click Railway deploy
+# Or use Docker anywhere
+docker build -t my-bot . && docker run my-bot
 ```
 
 ---

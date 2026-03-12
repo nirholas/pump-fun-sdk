@@ -1,10 +1,13 @@
 /**
- * PumpFun API — Type definitions
+ * Monitor Bot API — Type definitions
  *
- * Request/response types for the scalable REST API.
+ * Request/response types for the REST API with SSE + webhooks.
  */
 
 import type { ClaimType, FeeClaimEvent, MonitorState, WatchEntry } from '../types.js';
+
+// Re-export for convenience
+export type { ClaimType, FeeClaimEvent, MonitorState, WatchEntry };
 
 // ============================================================================
 // API Config
@@ -13,11 +16,11 @@ import type { ClaimType, FeeClaimEvent, MonitorState, WatchEntry } from '../type
 export interface ApiConfig {
     /** Port to listen on */
     port: number;
-    /** API key(s) for authentication (empty = no auth required) */
-    apiKeys: string[];
+    /** Bearer token for authentication (empty = no auth required) */
+    bearerToken: string;
     /** Enable CORS */
     corsOrigins: string;
-    /** Max watches per API key / client */
+    /** Max watches per client */
     maxWatchesPerClient: number;
     /** Rate limit: requests per window */
     rateLimitMax: number;
@@ -25,6 +28,8 @@ export interface ApiConfig {
     rateLimitWindowMs: number;
     /** Max claim events to buffer in memory */
     claimBufferSize: number;
+    /** Max launch events to buffer in memory */
+    launchBufferSize: number;
 }
 
 // ============================================================================
@@ -63,15 +68,11 @@ export interface CreateWatchBody {
     webhookUrl?: string;
 }
 
-export interface UpdateWatchBody {
-    /** Update label */
-    label?: string;
-    /** Update active status */
-    active?: boolean;
-    /** Update token filter */
-    tokenFilter?: string[];
-    /** Update webhook URL */
-    webhookUrl?: string;
+export interface RegisterWebhookBody {
+    /** URL to POST events to */
+    url: string;
+    /** Event types to subscribe to (default: all) */
+    events?: string[];
 }
 
 // ============================================================================
@@ -87,17 +88,7 @@ export interface ApiError {
 
 export interface HealthResponse {
     status: 'ok' | 'degraded' | 'down';
-    version: string;
     uptime: number;
-    monitor: {
-        running: boolean;
-        mode: string;
-        claimsDetected: number;
-    };
-    watches: {
-        total: number;
-        active: number;
-    };
     timestamp: string;
 }
 
@@ -128,8 +119,28 @@ export interface ClaimResponse {
     claimLabel: string;
 }
 
+export interface LaunchResponse {
+    txSignature: string;
+    slot: number;
+    timestamp: string;
+    mintAddress: string;
+    creatorWallet: string;
+    name: string;
+    symbol: string;
+    description: string;
+    metadataUri: string;
+    hasGithub: boolean;
+    githubUrls: string[];
+    mayhemMode: boolean;
+    cashbackEnabled: boolean;
+}
+
 export interface StatusResponse {
-    monitor: MonitorState;
+    monitor: {
+        running: boolean;
+        mode: string;
+        claimsDetected: number;
+    };
     watches: {
         total: number;
         active: number;
@@ -138,7 +149,19 @@ export interface StatusResponse {
         buffered: number;
         total: number;
     };
+    launches: {
+        buffered: number;
+        total: number;
+    };
     uptime: number;
+}
+
+export interface WebhookRegistration {
+    id: string;
+    url: string;
+    events: string[];
+    createdAt: string;
+    clientId: string;
 }
 
 // ============================================================================

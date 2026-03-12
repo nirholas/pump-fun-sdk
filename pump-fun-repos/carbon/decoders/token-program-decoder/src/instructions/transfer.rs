@@ -29,7 +29,6 @@ impl carbon_core::deserialize::ArrangeAccounts for Transfer {
             source: source.pubkey,
             destination: destination.pubkey,
             authority: authority.pubkey,
-            // TODO: Check
             remaining_accounts: remaining_accounts.to_vec(),
         })
     }

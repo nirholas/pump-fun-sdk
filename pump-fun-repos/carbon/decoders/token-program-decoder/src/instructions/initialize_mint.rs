@@ -6,7 +6,7 @@ use carbon_core::{borsh, CarbonDeserialize};
 pub struct InitializeMint {
     pub decimals: u8,
     pub mint_authority: solana_pubkey::Pubkey,
-    // TODO: It's COPTION on github so don't know
+    // COption<Pubkey> on-chain, deserialized as Option<Pubkey>
     pub freeze_authority: Option<solana_pubkey::Pubkey>,
 }
 
