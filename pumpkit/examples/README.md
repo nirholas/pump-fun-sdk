@@ -9,6 +9,7 @@ Reference implementations from the original PumpFun SDK live dashboards.
 | [index.html](index.html) | Main dashboard landing — navigation and layout skeleton |
 | [dashboard.html](dashboard.html) | Real-time token launch feed with WebSocket connection |
 | [trades.html](trades.html) | Live trade display with buy/sell indicators |
+| [vanity.html](vanity.html) | Client-side Solana vanity address generator |
 
 ## Using These Examples
 

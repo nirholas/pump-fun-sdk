@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { fetchHealth } from '../lib/api';
 import type { HealthResponse, EventType } from '../lib/types';
 import { EventCard } from '../components/EventCard';
+import { StatsBar } from '../components/StatsBar';
 import { useEventStream } from '../hooks/useEventStream';
 
 export function Dashboard() {
@@ -58,6 +59,7 @@ export function Dashboard() {
       {/* Event Feed */}
       <div className="flex-1 overflow-y-auto p-6">
         <div className="max-w-2xl mx-auto">
+          <StatsBar events={events} connected={!!health} />
           <h2 className="text-lg font-bold mb-4">
             Live Feed
             <span className="text-sm font-normal text-zinc-500 ml-2">

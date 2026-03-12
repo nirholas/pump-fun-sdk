@@ -1,101 +1,112 @@
-import type { BaseEvent, ClaimEvent, LaunchEvent, GraduationEvent, WhaleEvent, CTOEvent } from '../lib/types';
+import type { MonitorEvent } from '../types';
 
-const iconMap: Record<string, { icon: string; color: string }> = {
-  claim: { icon: '💰', color: 'border-accent-green' },
-  launch: { icon: '🚀', color: 'border-accent-blue' },
-  graduation: { icon: '🎓', color: 'border-accent-purple' },
-  whale: { icon: '🐋', color: 'border-accent-orange' },
-  cto: { icon: '👑', color: 'border-accent-red' },
-  distribution: { icon: '💎', color: 'border-accent-cyan' },
+interface FeedEvent extends MonitorEvent {
+  tokenName: string;
+  tokenSymbol: string;
+  creator: string;
+  amountSol: number;
+  direction?: 'buy' | 'sell';
+  newCreator?: string;
+  isNew?: boolean;
+}
+
+const avatarConfig: Record<string, { emoji: string; bg: string }> = {
+  launch: { emoji: '🚀', bg: 'bg-tg-blue' },
+  whale: { emoji: '🐋', bg: 'bg-pump-orange' },
+  graduation: { emoji: '🎓', bg: 'bg-pump-purple' },
+  claim: { emoji: '💰', bg: 'bg-pump-green' },
+  cto: { emoji: '👑', bg: 'bg-pump-pink' },
 };
 
-function shortAddr(addr: string): string {
-  return `${addr.slice(0, 4)}…${addr.slice(-4)}`;
+function formatTime(timestamp: string): string {
+  const d = new Date(timestamp);
+  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
-function timeAgo(timestamp: string): string {
-  const seconds = Math.floor((Date.now() - new Date(timestamp).getTime()) / 1000);
-  if (seconds < 60) return `${seconds}s ago`;
-  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
-  return `${Math.floor(seconds / 3600)}h ago`;
-}
-
-export function EventCard({ event }: { event: BaseEvent }) {
-  const { icon, color } = iconMap[event.type] ?? { icon: '📋', color: 'border-border' };
-
+function InlineButtons({ labels }: { labels: string[] }) {
+  const cols = labels.length >= 2 ? 'grid-cols-2' : 'grid-cols-1';
   return (
-    <div className={`bg-bg-card border-l-4 ${color} border border-border rounded-lg p-4`}>
-      <div className="flex items-start justify-between">
-        <div className="flex items-center gap-2 mb-1">
-          <span className="text-lg">{icon}</span>
-          <span className="font-bold text-sm capitalize">{event.type}</span>
-        </div>
-        <span className="text-xs text-zinc-500">{timeAgo(event.timestamp)}</span>
-      </div>
-      <EventDetails event={event} />
-      <a
-        href={`https://solscan.io/tx/${event.txSignature}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-xs text-accent-blue hover:underline mt-2 inline-block"
-      >
-        {shortAddr(event.txSignature)}
-      </a>
+    <div className={`grid ${cols} gap-2 mt-2`}>
+      {labels.map((label) => (
+        <span
+          key={label}
+          className="bg-tg-input text-tg-blue text-xs rounded-lg px-3 py-1.5 text-center select-none"
+        >
+          {label}
+        </span>
+      ))}
     </div>
   );
 }
 
-function EventDetails({ event }: { event: BaseEvent }) {
+function EventContent({ event }: { event: FeedEvent }) {
   switch (event.type) {
-    case 'claim': {
-      const e = event as ClaimEvent;
+    case 'launch':
       return (
-        <div className="text-sm text-zinc-300 space-y-0.5">
-          <p>Claimer: <code className="text-xs">{shortAddr(e.claimerWallet)}</code></p>
-          {e.tokenSymbol && <p>Token: {e.tokenSymbol}</p>}
-          <p>Amount: {e.amountSol.toFixed(4)} SOL</p>
-        </div>
-      );
-    }
-    case 'launch': {
-      const e = event as LaunchEvent;
-      return (
-        <div className="text-sm text-zinc-300 space-y-0.5">
-          <p>{e.name} ({e.symbol})</p>
-          <p>Creator: <code className="text-xs">{shortAddr(e.creator)}</code></p>
-          {e.isCashback && <span className="text-xs bg-accent-green/20 text-accent-green px-1.5 py-0.5 rounded">Cashback</span>}
-        </div>
-      );
-    }
-    case 'graduation': {
-      const e = event as GraduationEvent;
-      return (
-        <div className="text-sm text-zinc-300 space-y-0.5">
-          {e.tokenName && <p>{e.tokenName}</p>}
-          <p>Mint: <code className="text-xs">{shortAddr(e.tokenMint)}</code></p>
-        </div>
-      );
-    }
-    case 'whale': {
-      const e = event as WhaleEvent;
-      return (
-        <div className="text-sm text-zinc-300 space-y-0.5">
-          <p className={e.direction === 'buy' ? 'text-accent-green' : 'text-accent-red'}>
-            {e.direction === 'buy' ? '🟢 BUY' : '🔴 SELL'} {e.amountSol.toFixed(2)} SOL
+        <>
+          <p className="text-sm text-zinc-200 font-medium">🚀 New Token Launch</p>
+          <p className="text-sm text-zinc-300 mt-1">
+            {event.tokenName} (<span className="text-zinc-400">${event.tokenSymbol}</span>)
           </p>
-          <p>Wallet: <code className="text-xs">{shortAddr(e.wallet)}</code></p>
-        </div>
+          <p className="text-xs text-zinc-400">Creator: {event.creator}</p>
+          <InlineButtons labels={['View on PumpFun', 'Explorer']} />
+        </>
       );
-    }
-    case 'cto': {
-      const e = event as CTOEvent;
+    case 'whale': {
+      const isBuy = event.direction === 'buy';
       return (
-        <div className="text-sm text-zinc-300 space-y-0.5">
-          <p>Old: <code className="text-xs">{shortAddr(e.oldCreator)}</code></p>
-          <p>New: <code className="text-xs">{shortAddr(e.newCreator)}</code></p>
-        </div>
+        <>
+          <p className="text-sm text-zinc-200 font-medium">
+            🐋 Whale {isBuy ? 'Buy' : 'Sell'} —{' '}
+            <span className={isBuy ? 'text-pump-green' : 'text-pump-pink'}>
+              {event.amountSol.toFixed(1)} SOL
+            </span>
+          </p>
+          <p className="text-sm text-zinc-300 mt-1">
+            {event.tokenName} (<span className="text-zinc-400">${event.tokenSymbol}</span>)
+          </p>
+          <p className="text-xs text-zinc-400">Wallet: {event.creator}</p>
+          <InlineButtons labels={['View TX']} />
+        </>
       );
     }
+    case 'graduation':
+      return (
+        <>
+          <p className="text-sm text-zinc-200 font-medium">🎓 Token Graduated!</p>
+          <p className="text-sm text-zinc-300 mt-1">
+            {event.tokenName} (<span className="text-zinc-400">${event.tokenSymbol}</span>) migrated to PumpSwap AMM
+          </p>
+          <p className="text-xs text-zinc-400">Liquidity: {event.amountSol.toFixed(1)} SOL</p>
+          <InlineButtons labels={['View Pool', 'Trade']} />
+        </>
+      );
+    case 'claim':
+      return (
+        <>
+          <p className="text-sm text-zinc-200 font-medium">
+            💰 Fee Claimed — <span className="text-pump-green">{event.amountSol.toFixed(1)} SOL</span>
+          </p>
+          <p className="text-sm text-zinc-300 mt-1">
+            Creator {event.creator} claimed fees from {event.tokenName} (
+            <span className="text-zinc-400">${event.tokenSymbol}</span>)
+          </p>
+          <InlineButtons labels={['View TX']} />
+        </>
+      );
+    case 'cto':
+      return (
+        <>
+          <p className="text-sm text-zinc-200 font-medium">👑 Creator Transfer</p>
+          <p className="text-sm text-zinc-300 mt-1">
+            {event.tokenName} (<span className="text-zinc-400">${event.tokenSymbol}</span>)
+          </p>
+          <p className="text-xs text-zinc-400">
+            From: {event.creator} → To: {event.newCreator}
+          </p>
+          <InlineButtons labels={['View TX']} />
+        </>
+      );
     default:
       return null;
   }
