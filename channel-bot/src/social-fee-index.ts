@@ -109,7 +109,11 @@ export class SocialFeeIndex {
      * Uses `dataSlice` to fetch only the fields we need (mint + shareholders),
      * skipping the 8-byte discriminator to reduce per-account memory.
      *
-     * Set SKIP_SOCIAL_FEE_BOOTSTRAP=true to disable if the GPA is too large.
+     * To avoid OOM from a single massive `getProgramAccounts` response, the
+     * fetch is partitioned into 256 chunks by the first byte of the mint
+     * pubkey, processed in small concurrent batches.
+     *
+     * Set SKIP_SOCIAL_FEE_BOOTSTRAP=true to disable if not needed.
      */
     async bootstrap(rpc: RpcFallback): Promise<void> {
         if (this.bootstrapped) return;
@@ -134,44 +138,70 @@ export class SocialFeeIndex {
             const SLICE_OFFSET = 8; // skip discriminator
             const SLICE_LENGTH = 3 + 32 + 32 + 1 + 4 + 20 * 34; // 752 bytes max
 
-            const accounts = await rpc.withFallback((conn) =>
-                conn.getProgramAccounts(new PublicKey(PUMP_FEE_PROGRAM_ID), {
-                    commitment: 'confirmed',
-                    dataSlice: { offset: SLICE_OFFSET, length: SLICE_LENGTH },
-                    filters: [
-                        {
-                            memcmp: {
-                                offset: 0,
-                                bytes: SHARING_CONFIG_DISC.toString('base64'),
-                                encoding: 'base64',
-                            },
-                        },
-                    ],
-                }),
-            ) as unknown as Array<{ pubkey: PublicKey; account: { data: Buffer } }>;
+            // Mint pubkey absolute offset in account data: disc(8) + bump(1) + version(1) + status(1) = 11
+            const MINT_ABS_OFFSET = 11;
 
+            let totalAccounts = 0;
             let indexed = 0;
-            const totalAccounts = accounts.length;
-            for (let i = 0; i < totalAccounts; i++) {
-                const data = accounts[i]!.account.data as Buffer;
-                // Sliced layout: bump(1)+version(1)+status(1)+mint(32)+admin(32)+admin_revoked(1)+shareholders
-                // mint at offset 3, shareholders at offset 68
-                if (data.length < 68) continue;
 
-                const mint = readPubkey(data, 3);
-                if (!mint) continue;
+            // Chunk GPA by first byte of the mint pubkey to avoid OOM.
+            // Each chunk fetches ~1/256th of all SharingConfig accounts.
+            const CONCURRENCY = 4;
+            for (let batchStart = 0; batchStart < 256; batchStart += CONCURRENCY) {
+                const batchEnd = Math.min(batchStart + CONCURRENCY, 256);
+                type GpaResult = Array<{ pubkey: PublicKey; account: { data: Buffer } }>;
+                const fetches: Promise<GpaResult | null>[] = [];
 
-                const shareholders = parseShareholderAddresses(data, 68);
-                for (const addr of shareholders) {
-                    this.addMapping(addr, mint);
-                    indexed++;
+                for (let b = batchStart; b < batchEnd; b++) {
+                    const mintByte = Buffer.from([b]);
+                    fetches.push(
+                        (rpc.withFallback((conn) =>
+                            conn.getProgramAccounts(new PublicKey(PUMP_FEE_PROGRAM_ID), {
+                                commitment: 'confirmed',
+                                dataSlice: { offset: SLICE_OFFSET, length: SLICE_LENGTH },
+                                filters: [
+                                    {
+                                        memcmp: {
+                                            offset: 0,
+                                            bytes: SHARING_CONFIG_DISC.toString('base64'),
+                                            encoding: 'base64',
+                                        },
+                                    },
+                                    {
+                                        memcmp: {
+                                            offset: MINT_ABS_OFFSET,
+                                            bytes: mintByte.toString('base64'),
+                                            encoding: 'base64',
+                                        },
+                                    },
+                                ],
+                            }),
+                        ) as Promise<unknown>).then(
+                            (res) => res as GpaResult,
+                            () => null, // swallow per-chunk errors; partial index is still useful
+                        ),
+                    );
                 }
 
-                // Release reference for GC
-                (accounts as unknown[])[i] = null;
+                const results = await Promise.all(fetches);
+                for (const accounts of results) {
+                    if (!accounts) continue;
+                    totalAccounts += accounts.length;
+                    for (let i = 0; i < accounts.length; i++) {
+                        const data = accounts[i]!.account.data as Buffer;
+                        if (data.length < 68) continue;
+
+                        const mint = readPubkey(data, 3);
+                        if (!mint) continue;
+
+                        const shareholders = parseShareholderAddresses(data, 68);
+                        for (const addr of shareholders) {
+                            this.addMapping(addr, mint);
+                            indexed++;
+                        }
+                    }
+                }
             }
-            // Release the array itself
-            accounts.length = 0;
 
             this.bootstrapped = true;
             log.info('SocialFeeIndex: bootstrapped %d mappings from %d SharingConfig accounts', indexed, totalAccounts);
