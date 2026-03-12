@@ -1,0 +1,14 @@
+{
+  "name": "@pumpkit/web",
+  "version": "0.1.0",
+  "private": true,
+  "description": "PumpKit documentation site and bot dashboard UI",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}

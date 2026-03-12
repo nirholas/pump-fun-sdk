@@ -96,9 +96,14 @@ bot.launch();
 
 | Package | Description | Status |
 |---------|-------------|--------|
-| [`@pumpkit/core`](packages/core/) | Shared framework — bot, monitoring, solana, formatters, storage | 🚧 Building |
-| [`@pumpkit/monitor`](packages/monitor/) | All-in-one PumpFun monitor bot (DM + channel + API) | 🚧 Building |
-| [`@pumpkit/tracker`](packages/tracker/) | Group call-tracking bot with leaderboards | 🚧 Building |
+| [`@pumpkit/core`](packages/core/) | Shared framework — logger, health server, config, shutdown, types | ✅ Ready |
+| [`@pumpkit/monitor`](packages/monitor/) | All-in-one PumpFun monitor bot (DM + channel + API) | ✅ Ready |
+| [`@pumpkit/channel`](packages/channel/) | Read-only Telegram channel feed (broadcasts token events) | ✅ Ready |
+| [`@pumpkit/claim`](packages/claim/) | Fee claim tracker by token CA or X handle | ✅ Ready |
+| [`@pumpkit/tracker`](packages/tracker/) | Group call-tracking bot with leaderboards & PNL cards | ✅ Ready |
+| [`@pumpkit/web`](packages/web/) | Frontend dashboard and documentation site | 🚧 Coming Soon |
+
+> **npm:** Packages will be published to npm soon. See [npm docs](docs/npm.md) for details.
 
 ## Features
 
@@ -155,13 +160,79 @@ Consolidates 3 existing production bots into one:
 
 ## Documentation
 
+### Framework
 - [Architecture](docs/architecture.md) — System design, module boundaries, data flow
 - [Getting Started](docs/getting-started.md) — Setup, configuration, first bot
 - [Core API](docs/core-api.md) — `@pumpkit/core` module reference
 - [Monitor Bot](docs/monitor-bot.md) — Feature spec, commands, configuration
 - [Tracker Bot](docs/tracker-bot.md) — Feature spec, commands, configuration
 - [Deployment](docs/deployment.md) — Railway, Docker, Vercel setup
+- [npm Packages](docs/npm-packages.md) — Package publishing roadmap (coming soon)
+
+### Pump Protocol Reference
+- [Protocol Overview](docs/pump-protocol/) — All 9 official protocol specs + IDLs
+- [Events Reference](docs/guides/events-reference.md) — 20+ on-chain event types with field mappings
+- [Bonding Curve Math](docs/guides/bonding-curve-math.md) — Constant-product formula, buy/sell calculations
+- [Fee Tiers](docs/guides/fee-tiers.md) — Market-cap-based dynamic fee selection
+- [Fee Sharing](docs/guides/fee-sharing.md) — Multi-shareholder fee distribution
+- [Social Fees](docs/guides/social-fees.md) — GitHub identity-based fee sharing
+- [Cashback](docs/guides/cashback.md) — Trader cashback opt-in system
+- [Token Incentives](docs/guides/token-incentives.md) — Volume-based PUMP rewards
+- [Mayhem Mode](docs/guides/mayhem-mode.md) — Alternate vault routing, Token2022
+- [End-to-End Workflow](docs/guides/end-to-end-workflow.md) — Full token lifecycle
+- [Analytics](docs/guides/analytics.md) — Price impact, graduation progress, market cap
+- [Security](docs/guides/security.md) — Crypto library rules, key management
+
+### Reference
+- [Glossary](docs/reference/glossary.md) — 60+ protocol and SDK terms
+- [Code Examples](docs/reference/examples.md) — 20+ practical code samples
+- [Error Reference](docs/reference/errors.md) — Custom error classes and fixes
+- [RPC Best Practices](docs/reference/rpc-best-practices.md) — Provider selection, batching, rate limiting
+
+### Tutorials
+- [Tutorial Index](tutorials/) — 19 hands-on guides covering SDK basics, fee system, bot development, and infrastructure
+
+### Contributing
 - [Contributing](CONTRIBUTING.md) — How to contribute
+
+### Protocol & Reference
+
+- [Events Reference](docs/events-reference.md) — All 20+ PumpFun on-chain event types
+- [Fee Sharing](docs/fee-sharing.md) — Shareholder configuration and distribution
+- [Fee Tiers](docs/fee-tiers.md) — Market cap-based fee calculation
+- [Cashback](docs/cashback.md) — Cashback accumulation and claiming
+- [Channel Bot Architecture](docs/channel-bot-architecture.md) — Deep dive into event detection patterns
+- [Analytics](docs/analytics.md) — Price impact, graduation progress, token pricing
+- [RPC Best Practices](docs/rpc-best-practices.md) — Connection management and fallback
+- [Error Handling](docs/errors.md) — Error types and validation patterns
+- [End-to-End Workflow](docs/end-to-end-workflow.md) — Full token lifecycle
+- [FAQ](docs/faq.md) — Common issues and CU optimization
+- [npm Packages](docs/npm.md) — Coming soon
+
+### Tutorials
+
+9 hands-on guides in [tutorials/](tutorials/):
+
+| Tutorial | Topic |
+|----------|-------|
+| [Telegram Bot Patterns](tutorials/18-telegram-bot.md) | Interactive DM bot with grammy |
+| [Channel Bot Setup](tutorials/22-channel-bot-setup.md) | Read-only broadcast feed |
+| [Monitoring Claims](tutorials/16-monitoring-claims.md) | Fee claim monitoring architecture |
+| [WebSocket Feeds](tutorials/21-websocket-realtime-feeds.md) | Real-time token data |
+| [Event Parsing](tutorials/29-event-parsing-analytics.md) | Decoding on-chain events |
+| [AI Enrichment](tutorials/39-channel-bot-ai-enrichment.md) | GitHub + AI-powered cards |
+| [Trading Bot](tutorials/11-trading-bot.md) | Condition-based trading patterns |
+| [Fee Sharing](tutorials/07-fee-sharing.md) | Shareholder setup |
+| [Error Handling](tutorials/33-error-handling-patterns.md) | Validation and error classes |
+
+### Protocol Specs
+
+Official Pump protocol documentation in [docs/protocol/](docs/protocol/):
+- Pump Program (bonding curve state, instructions)
+- PumpSwap AMM (pool state, swap instructions)
+- Fee Program (dynamic fee tiers)
+- Creator Fees, Cashback, and more
+- Anchor IDL files for all 3 programs
 
 ## Origins
 
