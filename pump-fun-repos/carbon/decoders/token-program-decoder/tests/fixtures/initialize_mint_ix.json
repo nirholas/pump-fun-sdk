@@ -1,0 +1,16 @@
+{
+    "accounts": [
+        {
+            "pubkey": "BPFLoaderUpgradeab1e11111111111111111111111",
+            "is_signer": false,
+            "is_writable": true
+        },
+        {
+            "pubkey": "SysvarRent111111111111111111111111111111111",
+            "is_signer": false,
+            "is_writable": false
+        }
+    ],
+    "data": "000900000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000",
+    "program_id": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+}

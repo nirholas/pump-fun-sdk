@@ -533,15 +533,6 @@ function connect() {
 function scheduleReconnect() {
   if (demoMode) return;
 
-  // After cycling all endpoints MAX_FULL_CYCLES times, auto-switch to demo
-  const fullCycles = Math.floor(connectAttempts / RPC_ENDPOINTS.length);
-  if (fullCycles >= MAX_FULL_CYCLES) {
-    sysLog('All endpoints unreachable — switching to Demo mode automatically', 'error');
-    sysLog('Tip: enter a paid Solana RPC URL (wss://…) and press Enter to reconnect', 'warn');
-    $btnDemo.click();
-    return;
-  }
-
   const delay = Math.min(reconnectDelay, 15000);
   const nextEp = RPC_ENDPOINTS[rpcIndex % RPC_ENDPOINTS.length];
   setStatus(`● Retrying ${(delay / 1000).toFixed(0)}s → ${nextEp.label}`, 'err');

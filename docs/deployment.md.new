@@ -1,0 +1,876 @@
+# Deployment & Operations Guide
+
+Production deployment guide for every component in the Pump SDK ecosystem.
+
+> **Prerequisites:** Node.js 20+, Docker (optional), and a hosting provider account (Railway, Vercel, Fly.io, or bare VPS).
+
+---
+
+## Table of Contents
+
+- [Core SDK](#core-sdk)
+- [Telegram Bot](#telegram-bot)
+- [Channel Bot](#channel-bot)
+- [Claim Bot](#claim-bot)
+- [Outsiders Bot](#outsiders-bot)
+- [Swarm Bot](#swarm-bot)
+- [Swarm Orchestrator](#swarm-orchestrator)
+- [Dashboard](#dashboard)
+- [WebSocket Relay Server](#websocket-relay-server)
+- [MCP Server](#mcp-server)
+- [Live Dashboards](#live-dashboards)
+- [x402 Payment Server](#x402-payment-server)
+- [Plugin Delivery Platform](#plugin-delivery-platform)
+- [PumpOS Website](#pumpos-website)
+- [Docker Compose (Local Development)](#docker-compose-local-development)
+- [Production Checklist](#production-checklist)
+- [RPC Provider Recommendations](#rpc-provider-recommendations)
+- [Monitoring & Alerting](#monitoring--alerting)
+- [Troubleshooting](#troubleshooting)
+
+---
+
+## Core SDK
+
+The SDK itself is a library — there's nothing to deploy. Install it in your project:
+
+```bash
+npm install @nirholas/pump-sdk @solana/web3.js @coral-xyz/anchor bn.js
+```
+
+---
+
+## Telegram Bot
+
+Interactive Telegram bot for monitoring PumpFun fee claims, token launches, graduations, whale trades, and fee distributions. Supports individual DM and group chat interactions with `/watch`, `/unwatch`, `/list` commands and an optional REST API with webhooks and SSE.
+
+**Platform:** Railway (recommended), Docker, or any Node.js host  
+**Port:** 3000  
+**Health Check:** `GET /api/v1/health`  
+**Persistent Storage:** `/app/data` (watch entries)
+
+### Railway Deployment
+
+```bash
+cd telegram-bot
+cp .env.example .env
+# Edit .env with your values
+
+railway login
+railway init
+railway up
+```
+
+The `railway.json` configures the Dockerfile builder, V2 runtime, `ON_FAILURE` restart policy (10 retries), and healthcheck at `/api/v1/health`.
+
+> **Volumes:** Railway bans the `VOLUME` keyword in Dockerfiles. Use [Railway Volumes](https://docs.railway.com/reference/volumes) to persist `/app/data`.
+
+### Docker Deployment
+
+```bash
+cd telegram-bot
+docker build -t pump-telegram-bot .
+docker run -d \
+  --name pump-telegram-bot \
+  --restart unless-stopped \
+  -p 3000:3000 \
+  --env-file .env \
+  -v telegram-bot-data:/app/data \
+  pump-telegram-bot
+```
+
+The multi-stage Dockerfile uses `node:20-alpine`, creates a non-root `bot:bot` user, and includes a built-in healthcheck.
+
+### Node.js Deployment
+
+```bash
+cd telegram-bot
+npm install
+npm run build
+cp .env.example .env  # edit with your values
+node dist/index.js
+```
+
+### Environment Variables
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `TELEGRAM_BOT_TOKEN` | ✅ | — | Token from [@BotFather](https://t.me/BotFather) |
+| `SOLANA_RPC_URL` | ✅ | — | Solana RPC endpoint (mainnet recommended) |
+| `SOLANA_WS_URL` | ⬜ | Derived from RPC | WebSocket URL for real-time monitoring |
+| `ALLOWED_USER_IDS` | ⬜ | — | Comma-separated Telegram user IDs to allow |
+| `POLL_INTERVAL_SECONDS` | ⬜ | `15` | Polling interval when WebSocket unavailable |
+| `LOG_LEVEL` | ⬜ | `info` | `debug` \| `info` \| `warn` \| `error` |
+| `ENABLE_LAUNCH_MONITOR` | ⬜ | `false` | Enable new token launch monitoring |
+| `GITHUB_ONLY_FILTER` | ⬜ | `false` | Only notify for GitHub-linked tokens |
+| `IPFS_GATEWAY` | ⬜ | `https://cf-ipfs.com/ipfs/` | IPFS gateway for token metadata |
+| `ENABLE_API` | ⬜ | `false` | Enable the REST API server |
+| `API_ONLY` | ⬜ | `false` | Run API without Telegram bot |
+| `API_PORT` | ⬜ | `3000` | HTTP port for the API server |
+| `API_KEYS` | ⬜ | — | Comma-separated API keys for authentication |
+| `WEBHOOK_SECRET` | ⬜ | — | HMAC-SHA256 secret for webhook signatures |
+| `CORS_ORIGINS` | ⬜ | `*` | CORS allowed origins |
+| `MAX_WATCHES_PER_CLIENT` | ⬜ | `100` | Max watches per API client |
+| `RATE_LIMIT_MAX` | ⬜ | `100` | Max requests per rate limit window |
+| `RATE_LIMIT_WINDOW_MS` | ⬜ | `60000` | Rate limit window duration (ms) |
+| `CLAIM_BUFFER_SIZE` | ⬜ | `10000` | Max claim events buffered in memory |
+| `ENABLE_GRADUATION_ALERTS` | ⬜ | `true` | Enable graduation/migration alerts |
+| `ENABLE_TRADE_ALERTS` | ⬜ | `false` | Enable whale trade alerts |
+| `WHALE_THRESHOLD_SOL` | ⬜ | `10` | Minimum SOL for whale alert |
+| `ENABLE_FEE_DISTRIBUTION_ALERTS` | ⬜ | `false` | Enable creator fee distribution alerts |
+
+### Verification
+
+```bash
+# Health check
+curl http://localhost:3000/api/v1/health
+
+# Verify bot is responding
+curl -s "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getMe"
+```
+
+---
+
+## Channel Bot
+
+Read-only broadcast bot that posts PumpFun activity (claims, launches, graduations, whale trades, fee distributions) to a Telegram channel. Supports GitHub/X follower enrichment, fake claim detection, and optional AI summaries via Groq.
+
+**Platform:** Railway (recommended), Docker  
+**Port:** 3000  
+**Persistent Storage:** `/app/data` (claim tracker state)
+
+### Railway Deployment
+
+```bash
+cd channel-bot
+cp .env.example .env
+# Edit .env with your values
+
+railway login
+railway init
+railway up
+```
+
+### Docker Deployment
+
+```bash
+cd channel-bot
+docker build -t pump-channel-bot .
+docker run -d \
+  --name pump-channel-bot \
+  --restart unless-stopped \
+  -p 3000:3000 \
+  --env-file .env \
+  -v channel-bot-data:/app/data \
+  pump-channel-bot
+```
+
+### Channel Setup
+
+1. Create a Telegram channel
+2. Create a bot via [@BotFather](https://t.me/BotFather)
+3. Add the bot as an **administrator** of the channel (needs "Post Messages" permission)
+4. Set `CHANNEL_ID` to the channel's `@username` or numeric ID (e.g., `-1001234567890`)
+
+### Environment Variables
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `TELEGRAM_BOT_TOKEN` | ✅ | — | Bot token with channel admin permission |
+| `CHANNEL_ID` | ✅ | — | Channel ID (`@channelname` or `-100xxx`) |
+| `SOLANA_RPC_URL` | ✅ | — | RPC endpoint |
+| `SOLANA_WS_URL` | ⬜ | Derived from RPC | WebSocket URL |
+| `SOLANA_RPC_URLS` | ⬜ | — | Comma-separated fallback RPCs (rotates on 429/5xx) |
+| `POLL_INTERVAL_SECONDS` | ⬜ | `30` | Polling interval |
+| `FEED_CLAIMS` | ⬜ | `true` | Enable fee claim feed |
+| `FEED_LAUNCHES` | ⬜ | `true` | Enable token launch feed |
+| `FEED_GRADUATIONS` | ⬜ | `true` | Enable graduation feed |
+| `FEED_WHALES` | ⬜ | `true` | Enable whale trade feed |
+| `FEED_FEE_DISTRIBUTIONS` | ⬜ | `true` | Enable fee distribution feed |
+| `WHALE_THRESHOLD_SOL` | ⬜ | `10` | Minimum SOL for whale alerts |
+| `LOG_LEVEL` | ⬜ | `info` | `debug` \| `info` \| `warn` \| `error` |
+| `AXIOM_REF` | ⬜ | — | Axiom.trade affiliate ref code |
+| `GMGN_REF` | ⬜ | — | GMGN affiliate ref code |
+| `PADRE_REF` | ⬜ | — | Padre affiliate ref code |
+| `GITHUB_TOKEN` | ⬜ | — | GitHub PAT for repo enrichment |
+| `GROQ_API_KEY` | ⬜ | — | Groq API key for AI summaries |
+| `X_AUTH_TOKEN` | ⬜ | — | X/Twitter auth_token cookie for follower counts |
+| `X_CT0_TOKEN` | ⬜ | — | X/Twitter ct0 cookie |
+
+---
+
+## Claim Bot
+
+Interactive Telegram bot for tracking PumpFun fee claims across Pump, PumpSwap, and PumpFees programs. Monitors both token contracts and X handles with optional Twitter follower tracking and influencer detection.
+
+**Platform:** Railway (recommended), Docker  
+**Port:** None (bot only, no HTTP server)  
+**Persistent Storage:** `/app/data`
+
+### Railway Deployment
+
+```bash
+cd claim-bot
+cp .env.example .env
+railway login && railway init && railway up
+```
+
+### Docker Deployment
+
+```bash
+cd claim-bot
+docker build -t pump-claim-bot .
+docker run -d \
+  --name pump-claim-bot \
+  --restart unless-stopped \
+  --env-file .env \
+  -v claim-bot-data:/app/data \
+  pump-claim-bot
+```
+
+### Environment Variables
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `TELEGRAM_BOT_TOKEN` | ✅ | — | Token from @BotFather |
+| `SOLANA_RPC_URL` | ✅ | — | Solana RPC HTTP URL (mainnet-beta) |
+| `SOLANA_WS_URL` | ⬜ | Derived from RPC | WebSocket URL for real-time monitoring |
+| `SOLANA_RPC_URLS` | ⬜ | — | Comma-separated fallback RPCs |
+| `POLL_INTERVAL_SECONDS` | ⬜ | `15` | Polling interval |
+| `LOG_LEVEL` | ⬜ | `info` | `debug` \| `info` \| `warn` \| `error` |
+| `TWITTER_BEARER_TOKEN` | ⬜ | — | Twitter API bearer token for follower tracking |
+| `TWITTER_INFLUENCER_IDS` | ⬜ | — | Comma-separated influential X account IDs |
+
+---
+
+## Outsiders Bot
+
+Call-tracking Telegram bot with leaderboards, PNL cards, and performance analytics. Uses SQLite for persistence and canvas for image generation. Supports multi-chain (Solana, Ethereum, Base, BSC).
+
+**Platform:** Any Node.js host (no Dockerfile provided)  
+**Port:** None (bot only)  
+**Persistent Storage:** SQLite database file
+
+### Node.js Deployment
+
+```bash
+cd outsiders-bot
+npm install
+npm run build
+cp .env.example .env  # edit with your values
+node dist/index.js
+```
+
+### Docker Deployment (manual)
+
+Since no Dockerfile is provided, you can use a generic Node.js container:
+
+```bash
+cd outsiders-bot
+docker run -d \
+  --name outsiders-bot \
+  --restart unless-stopped \
+  -v outsiders-data:/app/data \
+  -w /app \
+  -e TELEGRAM_BOT_TOKEN=your_token \
+  node:20-alpine sh -c "npm install && npm run build && node dist/index.js"
+```
+
+> **Note:** The `canvas` dependency requires native libraries. On Alpine, install `cairo-dev pango-dev jpeg-dev giflib-dev` first.
+
+### Environment Variables
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `TELEGRAM_BOT_TOKEN` | ✅ | — | Token from @BotFather |
+| `CALL_CHANNEL_ID` | ⬜ | — | Forward calls to a channel (numeric ID) |
+| `DEXSCREENER_API` | ⬜ | `https://api.dexscreener.com` | DexScreener API base URL |
+| `ATH_POLL_INTERVAL` | ⬜ | `60` | ATH polling interval in seconds |
+| `LOG_LEVEL` | ⬜ | `info` | `debug` \| `info` \| `warn` \| `error` |
+| `DB_PATH` | ⬜ | `./outsiders.db` | SQLite database path |
+
+---
+
+## Swarm Bot
+
+Multi-strategy PumpFun trading bot with real-time web dashboard, SQLite persistence, and WebSocket-based position tracking. Uses the core Pump SDK for on-chain operations.
+
+**Platform:** Docker (recommended), Railway, Node.js  
+**Port:** 3100  
+**Persistent Storage:** `/app/data/swarm.db` (SQLite)
+
+### Docker Deployment
+
+```bash
+# Must be run from repo root (swarm-bot depends on root SDK)
+docker build -t pump-swarm-bot -f swarm-bot/Dockerfile .
+docker run -d \
+  --name pump-swarm-bot \
+  --restart unless-stopped \
+  -p 3100:3100 \
+  --env-file swarm-bot/.env \
+  -v swarm-bot-data:/app/data \
+  pump-swarm-bot
+```
+
+> **Important:** The swarm-bot Dockerfile copies the root SDK (`package.json`, `src/`, `tsconfig.json`, `tsup.config.ts`) because it depends on `@nirholas/pump-sdk` as a `file:..` dependency. Build from the repo root.
+
+### Railway Deployment
+
+```bash
+cd swarm-bot
+cp .env.example .env
+railway login && railway init && railway up
+```
+
+The `railway.json` configures the Dockerfile builder with V2 runtime and `ON_FAILURE` restart.
+
+### Node.js Deployment
+
+```bash
+# Build root SDK first
+npm install && npm run build
+
+cd swarm-bot
+npm install
+npm run build
+cp .env.example .env  # edit with your values
+node dist/index.js
+```
+
+### Environment Variables
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `SOLANA_RPC_URL` | ✅ | — | Solana RPC endpoint |
+| `PORT` | ⬜ | `3100` | API server port |
+| `DB_PATH` | ⬜ | `./data/swarm.db` | SQLite database path |
+| `DEFAULT_SLIPPAGE_BPS` | ⬜ | `500` | Default slippage in basis points (500 = 5%) |
+| `MAX_POSITION_SOL_PER_BOT` | ⬜ | `5` | Maximum SOL per bot position |
+| `MAX_TOTAL_POSITION_SOL` | ⬜ | `50` | Maximum total SOL across all bots |
+| `POLL_INTERVAL_MS` | ⬜ | `5000` | Feed poll interval (ms) |
+| `LOG_LEVEL` | ⬜ | `info` | `debug` \| `info` \| `warn` \| `error` |
+
+---
+
+## Swarm Orchestrator
+
+Bot orchestration layer with cross-bot event bus, fleet management, and admin dashboard. Manages lifecycle (start/stop/restart/build/logs) of all bots in the swarm via REST API and WebSocket.
+
+**Platform:** Any Node.js host  
+**Port:** 4000  
+**Dependencies:** Individual bot services must be installed alongside
+
+### Deployment
+
+```bash
+cd swarm
+npm install
+npm run build
+cp .env.example .env  # edit with your values
+node dist/index.js
+```
+
+### Environment Variables
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `SWARM_PORT` | ⬜ | `4000` | HTTP/WS server port |
+| `SWARM_LOG_LEVEL` | ⬜ | `info` | Log level |
+| `SWARM_HEALTH_INTERVAL` | ⬜ | `10000` | Health check interval (ms) |
+| `SWARM_MAX_EVENTS` | ⬜ | `5000` | Max events buffered in memory |
+| `SWARM_API_KEY` | ⬜ | — | API key for REST endpoint auth |
+| `SWARM_CORS_ORIGINS` | ⬜ | `*` | CORS allowed origins |
+| `SWARM_AUTO_START` | ⬜ | — | Comma-separated bot IDs to auto-start (e.g., `websocket-server,telegram-bot`) |
+
+### REST API
+
+```bash
+# List all bots
+curl http://localhost:4000/api/bots
+
+# Start a bot
+curl -X POST http://localhost:4000/api/bots/telegram-bot/start
+
+# Stop a bot
+curl -X POST http://localhost:4000/api/bots/telegram-bot/stop
+
+# Aggregate metrics
+curl http://localhost:4000/api/metrics
+```
+
+---
+
+## Dashboard
+
+Unified web control panel for monitoring and managing all bots in the swarm. Displays health status, metrics, and provides direct bot control.
+
+**Platform:** Any Node.js host  
+**Port:** 8080
+
+### Deployment
+
+```bash
+cd dashboard
+npm install
+npm run build
+cp .env.example .env  # edit with your values
+node dist/server.js
+```
+
+### Environment Variables
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `DASHBOARD_PORT` | ⬜ | `8080` | HTTP server port |
+| `DASHBOARD_API_KEY` | ⬜ | — | API key for dashboard authentication |
+| `TELEGRAM_BOT_URL` | ⬜ | — | URL to Telegram Bot service |
+| `CHANNEL_BOT_URL` | ⬜ | — | URL to Channel Bot service |
+| `OUTSIDERS_BOT_URL` | ⬜ | — | URL to Outsiders Bot service |
+| `WEBSOCKET_SERVER_URL` | ⬜ | — | URL to WebSocket Relay service |
+| `TELEGRAM_BOT_API_KEY` | ⬜ | — | Telegram Bot API key for direct control |
+| `TELEGRAM_BOT_ENABLE_API` | ⬜ | `true` | Enable Telegram Bot API integration |
+| `SOLANA_RPC_URL` | ⬜ | `https://api.mainnet-beta.solana.com` | Solana RPC endpoint |
+| `SOLANA_RPC_URLS` | ⬜ | Derived from `SOLANA_RPC_URL` | Comma-separated fallback RPCs |
+
+> **Tip:** Only set the `*_URL` variables for bots you actually run. The dashboard dynamically registers/monitors services based on which URLs are configured.
+
+---
+
+## WebSocket Relay Server
+
+Real-time token launch and fee claim broadcasting via WebSocket. Includes a built-in dashboard UI. Dual source: PumpFun API (primary) + Solana RPC (bonus data).
+
+**Platform:** Railway (recommended), Fly.io, Render, or any host with WebSocket support  
+**Port:** 3099  
+**Health Check:** `GET /health`
+
+### Railway Deployment
+
+```bash
+cd websocket-server
+cp .env.example .env
+railway login && railway init && railway up
+```
+
+The `railway.json` configures the start command (`node dist/server.js`), healthcheck at `/health`, and default environment variables.
+
+### Docker Deployment
+
+```bash
+cd websocket-server
+docker build -t pump-ws-relay .
+docker run -d \
+  --name pump-ws-relay \
+  --restart unless-stopped \
+  -p 3099:3099 \
+  --env-file .env \
+  pump-ws-relay
+```
+
+> **Note:** The websocket-server Dockerfile uses a single-stage build with `node:22-alpine` and includes the `public/` directory for the built-in dashboard UI.
+
+### Environment Variables
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `PORT` | ⬜ | `3099` | HTTP/WS listen port |
+| `SOLANA_RPC_WS` | ⬜ | `wss://api.mainnet-beta.solana.com` | Solana WebSocket URL for monitoring |
+| `SOLANA_RPC_URL` | ⬜ | `https://api.mainnet-beta.solana.com` | Solana HTTP RPC URL |
+| `IPFS_GATEWAY` | ⬜ | `https://cf-ipfs.com/ipfs/` | IPFS gateway for metadata (must end with `/`) |
+| `ENABLE_CLAIMS` | ⬜ | `true` | Enable fee claim monitoring |
+| `CLAIM_POLL_INTERVAL` | ⬜ | `15000` | Claim poll interval (ms) |
+
+### Verification
+
+```bash
+# Health check
+curl http://localhost:3099/health
+
+# WebSocket test (requires wscat: npm i -g wscat)
+wscat -c ws://localhost:3099
+```
+
+### Scaling
+
+The WebSocket relay handles ~10K concurrent connections on a 1 vCPU machine. For more, put behind a load balancer with **sticky sessions** (WebSocket connections are stateful).
+
+---
+
+## MCP Server
+
+Model Context Protocol server providing 55 tools, 4 resources, and 5 prompts for AI agent integration. Runs as a CLI tool embedded in host applications — not as a standalone deployed service.
+
+**Platform:** CLI tool (stdio transport)  
+**Install:** Via npm or local build
+
+### Claude Desktop
+
+Add to `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) or `%APPDATA%\Claude\claude_desktop_config.json` (Windows):
+
+```json
+{
+  "mcpServers": {
+    "pump-sdk": {
+      "command": "node",
+      "args": ["/path/to/pump-fun-sdk/mcp-server/dist/index.js"],
+      "env": {
+        "SOLANA_RPC_URL": "https://api.mainnet-beta.solana.com"
+      }
+    }
+  }
+}
+```
+
+### VS Code / Cursor
+
+Add to `.vscode/mcp.json` or project-level MCP config:
+
+```json
+{
+  "servers": {
+    "pump-sdk": {
+      "command": "node",
+      "args": ["./mcp-server/dist/index.js"],
+      "env": {
+        "SOLANA_RPC_URL": "https://api.mainnet-beta.solana.com"
+      }
+    }
+  }
+}
+```
+
+### Build from Source
+
+```bash
+cd mcp-server
+npm install
+npm run build
+# Test locally
+node dist/index.js
+```
+
+### Environment Variables
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `SOLANA_RPC_URL` | ⬜ | `https://api.mainnet-beta.solana.com` | Solana HTTP RPC endpoint |
+| `SOLANA_RPC_URLS` | ⬜ | Derived from `SOLANA_RPC_URL` | Comma-separated RPC endpoints for failover |
+
+> **Lazy RPC:** The MCP server only creates Solana connections when tools that need them are called. No RPC traffic at idle.
+
+---
+
+## Live Dashboards
+
+Static HTML dashboards for token launches and trade analytics. No build step required.
+
+**Platform:** Vercel (recommended), Netlify, GitHub Pages, or any static host
+
+### Vercel Deployment
+
+The `live/vercel.json` is pre-configured with security headers:
+
+```bash
+cd live
+vercel --prod
+```
+
+### GitHub Pages
+
+Copy the `live/` directory to your repo's `gh-pages` branch, or use GitHub Actions.
+
+### Manual / Local
+
+```bash
+cd live
+npx serve .
+# Opens: index.html, dashboard.html, trades.html, vanity.html
+```
+
+### Security Headers (included in `vercel.json`)
+
+- `X-Content-Type-Options: nosniff`
+- `X-Frame-Options: DENY`
+- `Referrer-Policy: strict-origin-when-cross-origin`
+
+---
+
+## x402 Payment Server
+
+HTTP 402 micropayment protocol with Solana USDC. Requires HTTPS for production.
+
+**Platform:** Any Node.js host with HTTPS  
+**Port:** 3402
+
+```bash
+cd x402
+npm install
+cp .env.example .env  # edit with your values
+npm start
+```
+
+### Environment Variables
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `SOLANA_RPC_URL` | ✅ | — | Mainnet RPC endpoint |
+| `FACILITATOR_PRIVATE_KEY` | ✅ | — | Facilitator wallet private key (base58) |
+| `PAYMENT_AMOUNT` | ⬜ | `0.01` | USDC amount per request |
+| `PORT` | ⬜ | `3402` | Server port |
+
+> ⚠️ **Security:** Never commit `FACILITATOR_PRIVATE_KEY`. Use environment variables or a secrets manager.
+
+---
+
+## Plugin Delivery Platform
+
+**Platform:** Vercel
+
+```bash
+cd packages/plugin.delivery
+bun install
+bun run build
+vercel --prod
+```
+
+---
+
+## PumpOS Website
+
+Web desktop UI with 169 Pump-Store apps.
+
+**Platform:** Vercel, GitHub Pages
+
+```bash
+cd site
+vercel --prod
+# Or serve locally:
+npx serve .
+```
+
+The root `vercel.json` serves the `website/` folder with SPA routing (rewrites all non-static paths to `/index.html`).
+
+---
+
+## Docker Compose (Local Development)
+
+Run the full bot fleet locally for development and testing:
+
+```yaml
+# docker-compose.yml (place in repo root)
+version: "3.8"
+
+services:
+  telegram-bot:
+    build: ./telegram-bot
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    env_file: ./telegram-bot/.env
+    volumes:
+      - telegram-data:/app/data
+
+  channel-bot:
+    build: ./channel-bot
+    restart: unless-stopped
+    ports:
+      - "3002:3000"
+    env_file: ./channel-bot/.env
+    volumes:
+      - channel-data:/app/data
+
+  claim-bot:
+    build: ./claim-bot
+    restart: unless-stopped
+    env_file: ./claim-bot/.env
+    volumes:
+      - claim-data:/app/data
+
+  websocket-server:
+    build: ./websocket-server
+    restart: unless-stopped
+    ports:
+      - "3099:3099"
+    env_file: ./websocket-server/.env
+
+  swarm-bot:
+    build:
+      context: .
+      dockerfile: swarm-bot/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "3100:3100"
+    env_file: ./swarm-bot/.env
+    volumes:
+      - swarm-data:/app/data
+
+  dashboard:
+    build: ./dashboard
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    env_file: ./dashboard/.env
+    depends_on:
+      - telegram-bot
+      - channel-bot
+      - websocket-server
+    environment:
+      - TELEGRAM_BOT_URL=http://telegram-bot:3000
+      - CHANNEL_BOT_URL=http://channel-bot:3000
+      - WEBSOCKET_SERVER_URL=http://websocket-server:3099
+
+volumes:
+  telegram-data:
+  channel-data:
+  claim-data:
+  swarm-data:
+```
+
+```bash
+# Start all services
+docker compose up -d
+
+# View logs
+docker compose logs -f telegram-bot
+
+# Stop all services
+docker compose down
+```
+
+> **Note:** The `outsiders-bot` is excluded from Docker Compose because it requires native `canvas` libraries. Run it separately with `npm run dev` in its directory.
+
+---
+
+## Production Checklist
+
+### Before Going Live
+
+- [ ] **RPC endpoint:** Use a paid provider (Helius, Alchemy, QuickNode) — public endpoints have strict rate limits
+- [ ] **Environment variables:** All secrets set via env vars, never hardcoded
+- [ ] **Bot tokens:** Generated fresh, not shared between environments (dev/staging/prod)
+- [ ] **HTTPS:** All public endpoints served over TLS
+- [ ] **Rate limiting:** REST API rate limits configured (`RATE_LIMIT_MAX`, `RATE_LIMIT_WINDOW_MS`)
+- [ ] **CORS:** Origins restricted to known domains (`CORS_ORIGINS`), not `*` in production
+- [ ] **API keys:** Set `API_KEYS` for authenticated endpoints, `SWARM_API_KEY` for orchestrator
+- [ ] **Monitoring:** Health check endpoints monitored (UptimeRobot, Betterstack, etc.)
+- [ ] **Logging:** Structured logging enabled (`LOG_LEVEL=info`), no PII or private keys in logs
+- [ ] **Restart policy:** `--restart unless-stopped` for Docker, `ON_FAILURE` on Railway
+- [ ] **Persistent storage:** Database volumes mounted for SQLite-backed services
+- [ ] **Backups:** Regular backup of `/app/data` volumes and SQLite databases
+- [ ] **Webhook security:** `WEBHOOK_SECRET` set for signed webhook payloads
+- [ ] **Non-root user:** Docker containers running as non-root (bots use `bot:bot`)
+- [ ] **Resource limits:** CPU/memory limits set per container in production
+
+### Security Hardening
+
+- [ ] Rotate bot tokens and API keys regularly
+- [ ] Use read-only file systems where possible (`--read-only` Docker flag)
+- [ ] No `VOLUME` keywords in Dockerfiles for Railway (use Railway Volumes)
+- [ ] Keep base images updated (`node:20-alpine`, `node:22-alpine`)
+- [ ] Scan images for vulnerabilities (`docker scout`, `trivy`)
+- [ ] Never expose private keys — use env vars or secrets managers
+- [ ] Set file permissions `0600` for any keypair files
+
+---
+
+## RPC Provider Recommendations
+
+| Provider | Free Tier | Paid Plans | WebSocket | Best For |
+|----------|-----------|------------|-----------|----------|
+| [Helius](https://helius.dev) | 100K req/day | From $49/mo | ✅ | General Solana development |
+| [Alchemy](https://alchemy.com) | 300M CU/mo | From $49/mo | ✅ | Multi-chain projects |
+| [QuickNode](https://quicknode.com) | 50M credits | From $49/mo | ✅ | Low-latency trading |
+| [Triton](https://triton.one) | — | Custom | ✅ | High-throughput production |
+
+### RPC Tips
+
+- **Always use paid RPC** for production — public endpoints throttle aggressively
+- **Use WebSocket** (`SOLANA_WS_URL`) for real-time monitoring instead of polling
+- **Set fallback RPCs** (`SOLANA_RPC_URLS`) for automatic failover on 429/5xx errors
+- **Batch RPC calls** with `getMultipleAccountsInfo` where possible
+- See [RPC Best Practices](./rpc-best-practices.md) for detailed optimization
+
+---
+
+## Monitoring & Alerting
+
+### Health Check Endpoints
+
+| Component | Endpoint | Method |
+|-----------|----------|--------|
+| Telegram Bot | `/api/v1/health` | `GET` |
+| WebSocket Relay | `/health` | `GET` |
+| Swarm Bot | `:3100/` (dashboard) | `GET` |
+| Swarm Orchestrator | `:4000/api/bots` | `GET` |
+| Dashboard | `:8080/` | `GET` |
+| x402 Server | `/health` | `GET` |
+| Plugin Delivery | Vercel dashboard | — |
+
+### Recommended Monitoring
+
+- **UptimeRobot** or **Betterstack** for endpoint monitoring (free tiers available)
+- **Railway Metrics** for CPU/memory/network on Railway deployments
+- **Vercel Analytics** for static site performance
+- **Grafana + Prometheus** for self-hosted infrastructure
+- Set up alerts for health check failures, high error rates, and resource exhaustion
+
+---
+
+## Troubleshooting
+
+### Common Issues
+
+| Problem | Cause | Solution |
+|---------|-------|----------|
+| Bot not responding | Invalid `TELEGRAM_BOT_TOKEN` | Verify token with `curl https://api.telegram.org/bot<TOKEN>/getMe` |
+| WebSocket disconnects | Public RPC rate limit | Use a paid RPC provider with WebSocket support |
+| `canvas` install fails | Missing native libraries | Install `cairo-dev pango-dev jpeg-dev giflib-dev` on Alpine |
+| Railway build fails on VOLUME | Railway doesn't allow VOLUME in Dockerfiles | Use Railway Volumes instead |
+| High memory usage | SQLite WAL files growing | Set `PRAGMA journal_mode=DELETE` or increase memory limit |
+| 429 errors from RPC | Rate limiting | Set `SOLANA_RPC_URLS` with multiple endpoints for failover |
+| Stale data in bot | Polling interval too high | Reduce `POLL_INTERVAL_SECONDS` or switch to WebSocket |
+| Docker image too large | Dev dependencies included | Ensure multi-stage build with `npm ci --omit=dev` |
+| swarm-bot build fails | Missing root SDK | Build from repo root: `docker build -f swarm-bot/Dockerfile .` |
+
+### Logs
+
+```bash
+# Docker
+docker logs -f pump-telegram-bot
+
+# Railway
+railway logs
+
+# Node.js (increase verbosity)
+LOG_LEVEL=debug node dist/index.js
+```
+
+---
+
+## Live Deployments
+
+Current production deployments:
+
+### Vercel
+
+| URL | Component |
+|-----|-----------|
+| [pump-fun-websocket.vercel.app](https://pump-fun-websocket.vercel.app/) | Token launch dashboard |
+| [pump-fun-websocket.vercel.app/trades](https://pump-fun-websocket.vercel.app/trades) | Real-time trade analytics |
+
+- **Vercel project:** `pump-fun-sdk1`
+- **Source branch:** `main`
+
+### Railway
+
+| Component | Notes |
+|-----------|-------|
+| Telegram bots | Channel bot, claim bot, outsiders bot |
+
+### Scaling Notes
+
+- **Telegram bots** scale vertically — a single instance handles thousands of users
+- **WebSocket relay** handles ~10K connections / 50K msg/sec on 1 vCPU — use sticky-session load balancer for more
+- **Live dashboards** are static files — scale infinitely behind a CDN
+- **swarm-bot** is single-instance by design (one SQLite database)

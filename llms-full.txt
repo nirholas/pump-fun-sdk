@@ -317,8 +317,17 @@ cd tools && npx ts-node verify-keypair.ts ../output/keypair.json
 ## Testing
 
 ```bash
-# TypeScript SDK
-cd typescript && npm test
+# SDK unit tests
+npm test
+
+# SDK with coverage
+npm run test:coverage
+
+# Lint
+npm run lint
+
+# Type check
+npm run typecheck
 
 # Rust
 cd rust && cargo test

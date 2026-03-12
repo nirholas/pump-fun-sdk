@@ -5,6 +5,97 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.31.0] - 2026-03-12
+
+### Added
+
+- **Core SDK — Token program auto-detection** in `OnlinePumpSdk`
+  - `fetchBuyState` and `fetchSellState` now auto-detect Token Program vs Token-2022 from the mint account owner when `tokenProgram` is not provided
+  - `fetchBuyState` now returns `tokenProgram` and normalizes `associatedUserAccountInfo` to `null` (was `undefined`)
+  - `fetchSellState` now returns `tokenProgram` in its result
+- **Core SDK — Convenience wrappers** on `OnlinePumpSdk`
+  - `buyInstructions()` — fetches global state and builds buy instructions in one call
+  - `sellInstructions()` — fetches global state and builds sell instructions in one call
+- **Lair-TG** — unified Telegram bot platform for DeFi intelligence (`lair-tg/`)
+  - Config, data sources, formatters, health check, logger, and type definitions
+  - Dockerfile and Railway deployment config
+- **PumpKit framework** (`pumpkit/`) — major expansion
+  - `@pumpkit/web` — React dashboard with Dashboard, CreateCoin, Docs, Home, Profile, Token pages
+  - `useEventStream` hook for SSE connection with status tracking
+  - WatchForm, WatchList, StatsBar, EventCard, CopyButton components
+  - Chart functionality with cleanup and resize handling
+  - Fee Distribution Monitor for detecting distribution events via WebSocket
+  - 26 new tutorials (20–45) covering MCP server, WebSocket feeds, channel bot, mayhem mode, cross-program trading, DeFi agents, live dashboards, cashback, analytics, event parsing, shell scripts, Rust vanity, plugin delivery, error handling, AMM liquidity, admin management, x402, security auditing, testing, AI enrichment, claim bot, and channel feed bot
+  - CI workflow with testing step
+  - Makefile, contributing guidelines, and monorepo setup instructions
+  - Mock event feed, Packages page
+  - Comprehensive documentation: core API, deployment, getting started, monitor bot, tracker bot
+- **Channel-bot enhancements**
+  - Graduation event support with enriched token data (holders, recent volume, replies, KotH timestamp)
+  - Event monitor and feed logging
+  - Support for multiple linked tokens in claim feed formatting
+  - Token disambiguation by market cap
+  - Same-name token detection and fetching
+- **Claim-bot enhancements**
+  - `ClaimMonitor` for tracking fee claim transactions in Pump programs
+  - `RpcClaimMonitor` for direct Solana RPC monitoring
+  - Social fee claim support with WebSocket broadcasting
+  - GitHub social fee claims — first claim badge, lifetime claimed amounts, fake claim detection
+  - GitHub claim card with token image, name/ticker/mcap header, creator card style
+  - GitHub repo info fetching, clickable repository links, developer profile enrichment
+  - Social-fee-index for CA resolution on claims
+  - `FEED_CLAIMS` env var gating for clean graduation/claims split
+- **Outsiders Bot** (`outsiders-bot/`)
+  - Core functionality: health check server, logging, token service
+  - Comprehensive setup guide, bot information, and privacy policy
+- **X/Twitter integration**
+  - Refactored to use Twitter's internal GraphQL API with cookie-based authentication via `xactions`
+  - `createdAt` and `tweetCount` fields on `XProfile` interface
+  - Influencer tier logic
+- **Website** (`website/`) — PumpOS web desktop
+  - Full HTML/CSS/JS implementation with Vercel deployment config
+- **Live dashboards** — enhanced `dashboard.html` with viewer count
+- **Documentation**
+  - Governance, adopters, migration guide, development guide, FAQ, roadmap, support, vision docs
+  - API reference documentation
+  - Skills for Carbon indexing, React Native Pager View, Pump Segments SDK, Transfer Hook Authority
+- **Tests**
+  - Integration test for `OnlinePumpSdk` buy/sell flow on mainnet
+  - Event types and templates formatting tests
+  - Health and logger tests for PumpKit
+- **pumpfun-site** — token creation page (`create.html`) and token launchpad HTML/CSS
+
+### Changed
+
+- `fetchBuyState` `tokenProgram` parameter changed from default `TOKEN_PROGRAM_ID` to optional with auto-detection (non-breaking — callers omitting the param get the same behavior)
+- `fetchSellState` `tokenProgram` parameter changed similarly
+- Enhanced claim feed formatting with additional token holder, trade info, liquidity, and bundle detection
+- Enhanced graduation feed formatting with trade data, compact stats, bot links
+- Enhanced GitHub claim feed with creator profile, holders, trades, liquidity context
+- Updated live dashboards with deployment sections and viewer counts
+- Specified `packageManager` field in root `package.json`
+- Node.js engine requirement remains `>=18.0.0`
+
+### Fixed
+
+- Fixed token program detection for associated token address in buy flow
+- Fixed social fee claim detection using Anchor instruction log matching
+- Fixed GitHub user ID list fallback widened to `per_page=20` for deleted account gaps
+- Fixed Twitter community URL display (show "Community" link correctly)
+- Fixed graduation card formatting — compact stats, no tree, correct Twitter community URLs
+- Fixed GitHub claim card — creator card style with `↳`, compact meta, clean footer
+- Fixed `formatCompact` — removed unnecessary condition
+- Removed redundant environment variables from Turbo configuration
+- Removed unused `types` configuration from `tsconfig.json`
+- Replaced forbidden `npx tsc --noEmit` with `npm run typecheck` in development docs
+
+### Removed
+
+- Deprecated Twitter API v2 integration (replaced by GraphQL API via `xactions`)
+- Unused social fee claim parsing logic from ClaimMonitor
+- Creator fee claim tracking (GitHub claims only now)
+- Unused image files (Screenshot, `a.png`)
+
 ## [1.30.0] - 2026-03-06
 
 ### Added
