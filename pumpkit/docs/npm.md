@@ -12,9 +12,9 @@ PumpKit packages are available under the `@pumpkit` scope. Currently distributed
 | `@pumpkit/claim` | `npm i @pumpkit/claim` | Fee claim tracker by token CA or X handle | ✅ Ready |
 | `@pumpkit/tracker` | `npm i @pumpkit/tracker` | Group call-tracking bot with leaderboards and PNL cards | ✅ Ready |
 
-## Install (Coming Soon)
+## Install
 
-Once published, you'll be able to install packages directly:
+Once published to npm, install packages directly:
 
 ```bash
 # Install the core framework
@@ -27,7 +27,7 @@ npm install @pumpkit/monitor
 npm install @pumpkit/core @pumpkit/monitor @pumpkit/tracker @pumpkit/channel @pumpkit/claim
 ```
 
-## Usage (Coming Soon)
+## Usage
 
 ### Build a custom bot with core
 

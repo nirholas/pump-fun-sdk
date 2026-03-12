@@ -389,8 +389,8 @@ export function getDashboardHtml(): string {
         <span class="header-stat-label">Events/min</span>
       </div>
       <div class="header-stat">
-        <span class="header-stat-value" id="stat-ws-clients" style="color:var(--blue)">0</span>
-        <span class="header-stat-label">Clients</span>
+        <span class="header-stat-value" id="stat-total-events" style="color:var(--blue)">0</span>
+        <span class="header-stat-label">Events</span>
       </div>
       <div class="batch-actions">
         <button class="btn btn-sm primary" onclick="batchAction('start-all')">&#9654; All</button>
@@ -796,6 +796,8 @@ export function getDashboardHtml(): string {
       Object.values(state.bots).filter(function(b) { return b.status === 'running'; }).length;
     document.getElementById('stat-events-min').textContent =
       state.metrics && state.metrics.eventsPerMinute ? state.metrics.eventsPerMinute : 0;
+    document.getElementById('stat-total-events').textContent =
+      fmtNum(state.metrics && state.metrics.totalEvents ? state.metrics.totalEvents : 0);
   }
 
   function renderMetrics() {

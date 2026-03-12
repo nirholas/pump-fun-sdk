@@ -1,20 +1,31 @@
 /**
  * @pumpkit/web — Shared types for the dashboard UI.
  *
- * These types represent the API responses and data models
- * that the frontend will consume from PumpKit bot APIs.
- *
- * EventType is re-exported from lib/types.ts — the canonical definition.
+ * Re-exports API types from lib/types.ts and adds UI-specific types
+ * for tracker, settings, and bot status.
  */
 
-import type { EventType } from './lib/types';
-export type { EventType };
+// Re-export all API types as the canonical source
+export type {
+  EventType,
+  BaseEvent,
+  ClaimEvent,
+  LaunchEvent,
+  GraduationEvent,
+  WhaleEvent,
+  CTOEvent,
+  DistributionEvent,
+  PumpEvent,
+  HealthResponse,
+  WatchResponse,
+  PaginatedResponse,
+} from './lib/types';
 
 // ── Bot Health ──────────────────────────────────────────
 
 export interface BotStatus {
-  name: "monitor" | "tracker" | "channel" | "claim";
-  status: "online" | "offline" | "error";
+  name: 'monitor' | 'tracker' | 'channel' | 'claim';
+  status: 'online' | 'offline' | 'error';
   uptime: number;
   lastEvent: string | null;
   version: string;
@@ -22,41 +33,11 @@ export interface BotStatus {
   watchedWallets?: number;
 }
 
-// ── Monitor Events ──────────────────────────────────────
-
-export interface MonitorEvent {
-  id: string;
-  type: EventType;
-  timestamp: string;
-  mint?: string;
-  creator?: string;
-  amountLamports?: string;
-  amountSol?: string;
-  txSignature: string;
-  tokenName?: string;
-  tokenSymbol?: string;
-}
-
-// ── Watched Wallets ─────────────────────────────────────
-
-export interface WatchedWallet {
-  address: string;
-  label?: string;
-  addedAt: string;
-  lastClaim?: string;
-  totalClaims: number;
-}
-
 // ── Tracker Leaderboard ─────────────────────────────────
 
-export type RankTier =
-  | "Amateur"
-  | "Novice"
-  | "Contender"
-  | "Guru"
-  | "Oracle";
+export type RankTier = 'Amateur' | 'Novice' | 'Contender' | 'Guru' | 'Oracle';
 
-export type Timeframe = "24h" | "7d" | "30d" | "all";
+export type Timeframe = '24h' | '7d' | '30d' | 'all';
 
 export interface LeaderboardEntry {
   rank: number;
@@ -72,7 +53,7 @@ export interface LeaderboardEntry {
 
 // ── Active Calls ────────────────────────────────────────
 
-export type Chain = "solana" | "ethereum" | "base" | "bsc";
+export type Chain = 'solana' | 'ethereum' | 'base' | 'bsc';
 
 export interface ActiveCall {
   id: number;
@@ -86,7 +67,7 @@ export interface ActiveCall {
   athPrice: number;
   multiplier: number;
   calledAt: string;
-  callType: "alpha" | "gamble";
+  callType: 'alpha' | 'gamble';
 }
 
 // ── Settings ────────────────────────────────────────────
@@ -100,31 +81,13 @@ export interface MonitorSettings {
   enableTradeAlerts: boolean;
   enableFeeDistributionAlerts: boolean;
   whaleThresholdSol: number;
-  logLevel: "debug" | "info" | "warn" | "error";
+  logLevel: 'debug' | 'info' | 'warn' | 'error';
 }
 
 export interface TrackerSettings {
-  callMode: "auto" | "button";
-  displayMode: "simple" | "advanced";
+  callMode: 'auto' | 'button';
+  displayMode: 'simple' | 'advanced';
   hardcoreEnabled: boolean;
   hardcoreMinWinRate: number;
   athPollInterval: number;
-}
-
-// ── API Responses (UI-side simplified shapes) ───────────
-// For full API response types, see lib/types.ts
-
-export interface PaginatedResponse<T> {
-  data: T[];
-  total: number;
-  page: number;
-  pageSize: number;
-  hasMore: boolean;
-}
-
-export interface HealthResponse {
-  status: "ok" | "error";
-  uptime: number;
-  startedAt: string;
-  stats: Record<string, unknown>;
 }

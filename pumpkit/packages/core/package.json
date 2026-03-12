@@ -26,14 +26,23 @@
     "dotenv": "^16.4.7"
   },
   "peerDependencies": {
-    "grammy": "^1.35.0"
+    "grammy": "^1.35.0",
+    "@solana/web3.js": "^1.98.0",
+    "better-sqlite3": "^11.0.0"
   },
   "peerDependenciesMeta": {
     "grammy": {
       "optional": true
+    },
+    "@solana/web3.js": {
+      "optional": true
+    },
+    "better-sqlite3": {
+      "optional": true
     }
   },
   "devDependencies": {
+    "@types/better-sqlite3": "^7.6.0",
     "@types/node": "^22.13.0",
     "typescript": "^5.7.0",
     "vitest": "^3.0.0"

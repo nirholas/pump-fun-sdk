@@ -64,7 +64,7 @@ describe('formatter/links', () => {
 
         it('shortenAddress() accepts custom char count', () => {
             const addr = '7xKpR3nRm4qZ5bN2cW8dF1eG9hJk';
-            expect(shortenAddress(addr, 6)).toMatch(/^7xKpR3\.\.\.G9hJk$/);
+            expect(shortenAddress(addr, 6)).toBe('7xKpR3...eG9hJk');
         });
 
         it('formatSol() converts lamports to SOL', () => {
