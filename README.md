@@ -44,6 +44,45 @@ The SDK never sends transactions itself. It returns `TransactionInstruction[]` t
 - [Acknowledgments](#-acknowledgments)
 
 ---
+## 🚀 Live Demos & Resources
+
+- **[Websocket Demo](https://pumpfun-sdk.vercel.app)**
+- **[PumpKit](https://github.com/nirholas/pumpkit)**
+- **[PumpKit Site](https://pumpkits.vercel.app)**
+- **[Telegram PumpFun Github Claim Tracker Bot](https://t.me/pumpfunclaims)**
+- **[Telegram PumpFun Graduation/Migration Tracker Bot](https://t.me/trackpumpfun)**
+- **[Pumpfun Claim Tracker](https://t.me/pfclaimsbot)** (best bot — currently offline while building)
+
+## 📈 Proof & Virality
+
+**Proof the GitHub Claim Tracker bot is profitable to monitor**  
+[→ View tweet](https://x.com/nichxbt/status/2033377591592444056)
+
+**Went mega viral**  
+[→ View tweet](https://x.com/RoundtableSpace/status/2027417189918064915)
+
+> **just shipped a real-time PumpFun intelligence bot on Telegram**  
+> 
+> 17 commands. zero cost. fully on-chain.  
+> 
+> `/price` → instant token price & bonding curve  
+> `/monitor` → live token launch feed  
+> `/cto` → creator takeover alerts  
+> `/watch` → wallet fee claim tracking  
+> `/quote` → buy/sell estimates  
+> `/graduated` → AMM graduation status  
+> `/alerts` → customize your notifications  
+> 
+> all powered by the open-source **pump-fun-sdk**
+
+[→ View original post](https://x.com/nichxbt/status/2027304823712817503)
+
+**The post that started it all**  
+[→ View tweet](https://x.com/nichxbt/status/2027087471683698811)
+
+
+
+---
 
 ## 🚀 Quick Start
 
