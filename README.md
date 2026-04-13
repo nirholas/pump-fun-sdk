@@ -80,7 +80,11 @@ The SDK never sends transactions itself. It returns `TransactionInstruction[]` t
 **The post that started it all**  
 [→ View tweet](https://x.com/nichxbt/status/2027087471683698811)
 
+# Looking for more? Check out PumpKit 💊💚
 
+> Open-source framework for building PumpFun Telegram bots on Solana. Claim monitors, channel feeds, group trackers, whale alerts — build your own or use ours.
+>
+>  [PumpKit Web App + Documentation](https://pumpkits.vercel.app)
 
 ---
 
