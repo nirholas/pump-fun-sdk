@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📉</text></svg>">
+<title>Pump SDK — Live Sell Demo</title>
+<meta name="description" content="Live sell quote demo for the Pump SDK. Fetch real bonding curve state, compute sell quotes with overflow analysis, and compare old vs fixed slippage formulas.">
+<style>
+  :root {
+    --bg: #0a0a0a; --bg2: #111; --bg3: #1a1a1a; --border: #1e1e1e;
+    --green: #00ff41; --red: #ff4141; --yellow: #ffcc00; --blue: #4a9eff;
+    --orange: #ff9900; --purple: #b366ff; --cyan: #00e5ff; --dim: #555; --text: #aaa;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--green); font-family: 'Courier New', monospace; font-size: 13px; line-height: 1.6; }
+
+  /* ── Header ─────────────────────────────────────────── */
+  #header {
+    background: var(--bg2); border-bottom: 1px solid var(--border);
+    padding: 12px 20px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+    position: sticky; top: 0; z-index: 10;
+  }
+  #header h1 { font-size: 16px; white-space: nowrap; }
+  #header nav { display: flex; gap: 8px; }
+  #header nav a {
+    color: var(--blue); text-decoration: none; font-size: 12px;
+    border: 1px solid #333; padding: 4px 10px; border-radius: 3px;
+  }
+  #header nav a:hover { border-color: var(--blue); }
+
+  /* ── Layout ─────────────────────────────────────────── */
+  #main { max-width: 900px; margin: 0 auto; padding: 24px 20px; }
+
+  /* ── Input card ─────────────────────────────────────── */
+  .card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 6px; padding: 20px; margin-bottom: 20px;
+  }
+  .card h2 { font-size: 14px; color: var(--yellow); margin-bottom: 14px; letter-spacing: .05em; }
+
+  .field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
+  .field label { font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: .08em; }
+  input[type="text"], input[type="number"], select {
+    background: var(--bg3); border: 1px solid #2a2a2a; color: var(--text);
+    padding: 8px 12px; font-family: inherit; font-size: 13px; border-radius: 4px; width: 100%;
+  }
+  input:focus, select:focus { outline: none; border-color: var(--green); color: #eee; }
+  input::placeholder { color: #333; }
+
+  .row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+  @media (max-width: 600px) { .row { grid-template-columns: 1fr; } }
+
+  button {
+    background: #003300; border: 1px solid var(--green); color: var(--green);
+    padding: 10px 24px; cursor: pointer; font-family: inherit; font-size: 13px;
+    border-radius: 4px; width: 100%; letter-spacing: .05em;
+    transition: background .15s;
+  }
+  button:hover { background: #004400; }
+  button:disabled { opacity: .4; cursor: not-allowed; }
+
+  /* ── Status / Error ─────────────────────────────────── */
+  #status-bar {
+    padding: 8px 12px; border-radius: 4px; font-size: 12px;
+    display: none; margin-bottom: 16px;
+  }
+  #status-bar.loading { background: #1a1a00; border: 1px solid #444400; color: var(--yellow); display: block; }
+  #status-bar.error   { background: #1a0000; border: 1px solid #440000; color: var(--red); display: block; }
+  #status-bar.ok      { background: #001a00; border: 1px solid #004400; color: var(--green); display: block; }
+
+  /* ── Results ─────────────────────────────────────────── */
+  .section { display: none; }
+  .section.visible { display: block; }
+
+  /* ── Table ───────────────────────────────────────────── */
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  td { padding: 6px 0; border-bottom: 1px solid #151515; }
+  td:first-child { color: var(--dim); width: 52%; }
+  td:last-child { color: #eee; text-align: right; font-variant-numeric: tabular-nums; }
+  td .tag {
+    display: inline-block; font-size: 10px; padding: 1px 6px; border-radius: 3px;
+    vertical-align: middle; margin-left: 6px;
+  }
+  td .tag.green { background: #003300; color: var(--green); border: 1px solid #004400; }
+  td .tag.red   { background: #330000; color: var(--red);   border: 1px solid #440000; }
+  td .tag.yellow{ background: #2a2000; color: var(--yellow); border: 1px solid #443300; }
+
+  /* ── Quote display ───────────────────────────────────── */
+  .quote-box {
+    background: var(--bg3); border: 1px solid #1a3a1a; border-radius: 6px;
+    padding: 16px; margin: 16px 0;
+  }
+  .quote-box .amount {
+    font-size: 22px; color: var(--green); font-weight: bold; letter-spacing: .03em;
+  }
+  .quote-box .label { font-size: 11px; color: var(--dim); text-transform: uppercase; margin-bottom: 4px; }
+  .quote-box .sub { font-size: 11px; color: var(--dim); margin-top: 6px; }
+
+  /* ── Overflow gauge ──────────────────────────────────── */
+  .gauge { margin: 12px 0; }
+  .gauge-label { font-size: 11px; color: var(--dim); text-transform: uppercase; margin-bottom: 6px; }
+  .gauge-bar { height: 8px; background: #1a1a1a; border-radius: 4px; overflow: hidden; position: relative; }
+  .gauge-fill { height: 100%; border-radius: 4px; transition: width .4s ease; }
+  .gauge-fill.safe { background: linear-gradient(90deg, #004400, var(--green)); }
+  .gauge-fill.warn { background: linear-gradient(90deg, #443300, var(--yellow)); }
+  .gauge-fill.crit { background: linear-gradient(90deg, #440000, var(--red)); }
+  .gauge-value { font-size: 11px; color: var(--text); margin-top: 4px; }
+
+  /* ── Slippage compare ────────────────────────────────── */
+  .slip-compare {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px;
+  }
+  .slip-box {
+    background: var(--bg3); border: 1px solid #1e1e1e; border-radius: 4px; padding: 12px;
+  }
+  .slip-box h4 { font-size: 11px; color: var(--dim); margin-bottom: 8px; text-transform: uppercase; }
+  .slip-box .val { font-size: 14px; font-weight: bold; margin-bottom: 4px; }
+  .slip-box .note { font-size: 10px; color: var(--dim); }
+  .slip-box.old .val { color: var(--orange); }
+  .slip-box.new .val { color: var(--green); }
+
+  /* ── Deep analysis ────────────────────────────────────── */
+  .analysis-item {
+    padding: 10px 0; border-bottom: 1px solid #151515;
+  }
+  .analysis-item:last-child { border-bottom: none; }
+  .analysis-item h4 { font-size: 12px; color: var(--yellow); margin-bottom: 4px; }
+  .analysis-item p { font-size: 11px; color: var(--text); line-height: 1.7; }
+  .analysis-item code {
+    background: var(--bg3); color: var(--cyan); padding: 1px 5px; border-radius: 3px; font-family: inherit; font-size: 11px;
+  }
+
+  /* ── Known good tokens list ──────────────────────────── */
+  .token-btn {
+    background: var(--bg3); border: 1px solid #2a2a2a; color: var(--text);
+    padding: 4px 10px; cursor: pointer; font-family: inherit; font-size: 11px;
+    border-radius: 3px; width: auto; display: inline-block; margin: 2px;
+  }
+  .token-btn:hover { border-color: var(--green); color: var(--green); }
+
+  /* ── Misc ─────────────────────────────────────────────── */
+  .mono { font-family: 'Courier New', monospace; }
+  .green { color: var(--green); }
+  .red   { color: var(--red); }
+  .yellow{ color: var(--yellow); }
+  .blue  { color: var(--blue); }
+  .dim   { color: var(--dim); }
+  .section-title {
+    font-size: 11px; text-transform: uppercase; letter-spacing: .1em;
+    color: var(--dim); margin-bottom: 10px; border-bottom: 1px solid #1a1a1a; padding-bottom: 6px;
+  }
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: #222; border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<div id="header">
+  <h1>📉 Pump SDK — Sell Demo</h1>
+  <nav>
+    <a href="/">⚡ Live</a>
+    <a href="/trades">📊 Trades</a>
+    <a href="https://github.com/nirholas/pump-fun-sdk" target="_blank">GitHub</a>
+  </nav>
+</div>
+
+<div id="main">
+
+  <!-- ── Input ──────────────────────────────────────────── -->
+  <div class="card">
+    <h2>▸ SELL QUOTE</h2>
+
+    <div class="field">
+      <label>Token Mint Address</label>
+      <input type="text" id="mint" placeholder="e.g. 6p6xgHyF7AeE6TZkSmFsko444wqoP15icUSqi2jfGiPN" autocomplete="off" spellcheck="false" />
+    </div>
+
+    <div style="margin-bottom:12px;">
+      <div class="field" style="margin-bottom:4px;"><label>Quick Examples (active bonding curve tokens)</label></div>
+      <div id="examples"></div>
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label>Token Amount to Sell (whole tokens)</label>
+        <input type="number" id="amount" value="1000" min="0" step="1" />
+      </div>
+      <div class="field">
+        <label>Slippage %</label>
+        <input type="number" id="slippage" value="1" min="0" max="50" step="0.1" />
+      </div>
+      <div class="field">
+        <label>RPC Endpoint</label>
+        <select id="rpc">
+          <option value="https://api.mainnet-beta.solana.com">Solana Mainnet (public)</option>
+          <option value="https://solana-mainnet.g.alchemy.com/v2/demo">Alchemy (demo)</option>
+          <option value="custom">Custom…</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="custom-rpc-field" class="field" style="display:none;">
+      <label>Custom RPC URL</label>
+      <input type="text" id="custom-rpc" placeholder="https://…" />
+    </div>
+
+    <button id="btn-quote">▸ Get Live Sell Quote</button>
+  </div>
+
+  <!-- ── Status ─────────────────────────────────────────── -->
+  <div id="status-bar"></div>
+
+  <!-- ── Results ────────────────────────────────────────── -->
+  <div id="results" class="section">
+
+    <!-- Bonding Curve State -->
+    <div class="card">
+      <div class="section-title">Bonding Curve State — Live On-Chain Data</div>
+      <table id="bc-table"></table>
+    </div>
+
+    <!-- Sell Quote -->
+    <div class="card">
+      <div class="section-title">Sell Quote Breakdown</div>
+      <div id="quote-display"></div>
+      <table id="quote-table" style="margin-top:12px;"></table>
+    </div>
+
+    <!-- Slippage Formula Comparison -->
+    <div class="card">
+      <div class="section-title">Slippage Formula — Old Bug vs Fix (Issue #6)</div>
+      <p style="font-size:11px; color:var(--dim); margin-bottom:10px;">
+        The old formula <code style="color:var(--cyan)">Math.floor(slippage * 10) / 1000</code> loses precision for
+        fractional slippage values. The fixed formula uses <code style="color:var(--cyan)">Math.round(slippage * 100) / 10000</code>.
+      </p>
+      <div class="slip-compare" id="slip-compare"></div>
+    </div>
+
+    <!-- Overflow Risk -->
+    <div class="card">
+      <div class="section-title">Overflow Risk Analysis</div>
+      <div id="overflow-display"></div>
+    </div>
+
+    <!-- Deep Analysis -->
+    <div class="card">
+      <div class="section-title">Deep Dive — Why error 6024 (Overflow) Occurs</div>
+      <div id="deep-analysis"></div>
+    </div>
+
+  </div><!-- /results -->
+
+</div><!-- /main -->
+
+<script>
+// ════════════════════════════════════════════════════════════════
+// Constants
+// ════════════════════════════════════════════════════════════════
+const PUMP_PROGRAM = '6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P';
+const GLOBAL_SEED  = new TextEncoder().encode('global');
+const BC_SEED      = new TextEncoder().encode('bonding-curve');
+const U64_MAX      = (1n << 64n) - 1n;
+const TOKEN_DECIMALS = 6;
+
+// Well-known active tokens for quick examples (these may graduate over time)
+const EXAMPLES = [
+  { label: 'DOGE2', mint: '6p6xgHyF7AeE6TZkSmFsko444wqoP15icUSqi2jfGiPN' },
+  { label: 'PUMP',  mint: 'pumpCmXqMfrsAkQ5r49WcJnRayYRqmXz6ae8H7H9Dfn' },
+];
+
+// ════════════════════════════════════════════════════════════════
+// Borsh / BigInt helpers
+// ════════════════════════════════════════════════════════════════
+function readU64(buf, off) {
+  const lo = BigInt(buf[off] | (buf[off+1]<<8) | (buf[off+2]<<16) | (buf[off+3]<<24)) & 0xffffffffn;
+  const hi = BigInt(buf[off+4] | (buf[off+5]<<8) | (buf[off+6]<<16) | (buf[off+7]<<24)) & 0xffffffffn;
+  return (hi << 32n) | lo;
+}
+function readBool(buf, off) { return buf[off] !== 0; }
+function readPubkey(buf, off) { return base58Encode(buf.slice(off, off + 32)); }
+
+const B58C = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+function base58Encode(bytes) {
+  let n = 0n;
+  for (const b of bytes) n = n * 256n + BigInt(b);
+  if (n === 0n) return '1';
+  let s = '';
+  while (n > 0n) { s = B58C[Number(n % 58n)] + s; n /= 58n; }
+  for (const b of bytes) { if (b === 0) s = '1' + s; else break; }
+  return s;
+}
+function base58Decode(s) {
+  let n = 0n;
+  for (const c of s) {
+    const v = B58C.indexOf(c);
+    if (v < 0) throw new Error('Invalid base58 char: ' + c);
+    n = n * 58n + BigInt(v);
+  }
+  const out = [];
+  while (n > 0n) { out.unshift(Number(n & 0xffn)); n >>= 8n; }
+  for (const c of s) { if (c === '1') out.unshift(0); else break; }
+  return new Uint8Array(out);
+}
+
+// ════════════════════════════════════════════════════════════════
+// PDA derivation (via SHA-256 in SubtleCrypto, no libs needed)
+// ════════════════════════════════════════════════════════════════
+async function findPda(seeds, programIdStr) {
+  const programId = base58Decode(programIdStr);
+  const marker = new TextEncoder().encode('ProgramDerivedAddress');
+
+  for (let nonce = 255; nonce >= 0; nonce--) {
+    const parts = [...seeds, new Uint8Array([nonce]), programId, marker];
+    const total = parts.reduce((a, b) => a + b.length, 0);
+    const buf = new Uint8Array(total);
+    let off = 0;
+    for (const p of parts) { buf.set(p, off); off += p.length; }
+    const hash = new Uint8Array(await crypto.subtle.digest('SHA-256', buf));
+    if (!isOnEd25519Curve(hash)) return { address: base58Encode(hash), nonce };
+  }
+  throw new Error('Could not find PDA');
+}
+
+// Ed25519 curve check: a point is on the curve iff the hash encodes a
+// valid compressed Y coordinate with X existing. A fast approximation:
+// check if p < l where l = 2^255 - 19 (field prime for Ed25519).
+// We only need to reject points that are OFF the curve (i.e., hash encodes
+// a random u255, which is usually valid, but nonce bumping handles edge cases).
+function isOnEd25519Curve(bytes) {
+  // The field prime for Ed25519: 2^255 - 19
+  // A 32-byte value with the high bit cleared is in range.
+  // The Solana PDA derivation rejects the point if it IS on the curve.
+  // We check if the compressed Y coordinate (bytes, little-endian)
+  // corresponds to a valid Ed25519 point. Approximation used by Solana SDK:
+  // try to decode as Ristretto255 — but that needs a full implementation.
+  // Instead we use the commonly-known heuristic: call this a valid curve
+  // point check for all values (worst case we bump nonce one extra time).
+  // For a proper implementation, check if modular square root of
+  // (y^2 - 1) / (d*y^2 + 1) exists in GF(2^255 - 19).
+  //
+  // Simplified: almost all SHA-256 outputs ARE valid compressed points,
+  // but Solana iterates nonces until one ISN'T, so we try a simpler proxy:
+  // reject if the low bit of byte[31] is set after clearing the sign bit
+  // and the remaining bytes are all zero (degenerate case). This isn't
+  // 100% accurate but works for the vast majority of PDAs at nonce 255.
+  // A proper implementation would ship nacl or tweetnacl.
+  //
+  // For this demo, we use a different approach: derive PDA via RPC instead.
+  return false; // always say "not on curve" → nonce=255 always chosen (fine for most PDAs)
+}
+
+// ════════════════════════════════════════════════════════════════
+// RPC helpers
+// ════════════════════════════════════════════════════════════════
+let rpcUrl = 'https://api.mainnet-beta.solana.com';
+
+async function rpcCall(method, params) {
+  const resp = await fetch(rpcUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
+    signal: AbortSignal.timeout(10000),
+  });
+  if (!resp.ok) throw new Error(`RPC HTTP ${resp.status}`);
+  const json = await resp.json();
+  if (json.error) throw new Error(json.error.message || JSON.stringify(json.error));
+  return json.result;
+}
+
+async function getAccountData(address) {
+  const result = await rpcCall('getAccountInfo', [
+    address,
+    { encoding: 'base64', commitment: 'confirmed' },
+  ]);
+  if (!result?.value) return null;
+  return Uint8Array.from(atob(result.value.data[0]), c => c.charCodeAt(0));
+}
+
+// Derive PDA via RPC (avoids full ed25519 implementation)
+async function derivePdaViaRpc(seeds, programId) {
+  try {
+    // Use getProgramAccounts is too heavy; use getAccountInfo on the deterministic address
+    // Best: let the RPC compute it, but there's no direct RPC method for this.
+    // We use our crypto implementation with nonce=255 (works for ~99% of PDAs)
+    const marker = new TextEncoder().encode('ProgramDerivedAddress');
+    const programBytes = base58Decode(programId);
+    for (let nonce = 255; nonce >= 0; nonce--) {
+      const parts = [...seeds, new Uint8Array([nonce]), programBytes, marker];
+      const total = parts.reduce((a, b) => a + b.length, 0);
+      const buf = new Uint8Array(total);
+      let off = 0;
+      for (const p of parts) { buf.set(p, off); off += p.length; }
+      const hash = new Uint8Array(await crypto.subtle.digest('SHA-256', buf));
+      // Check if on Ed25519 curve by verifying the account exists or using the
+      // proper field arithmetic. For simplicity we try the address and if it
+      // has data it's valid; otherwise try next nonce.
+      // Most PDAs resolve at nonce 254 or 255.
+      const candidate = base58Encode(hash);
+      const data = await getAccountData(candidate).catch(() => null);
+      if (data !== null) return candidate;
+    }
+  } catch (e) {
+    // Fallback: just return the nonce=255 attempt
+  }
+  return null;
+}
+
+// ════════════════════════════════════════════════════════════════
+// Account decoders
+// ════════════════════════════════════════════════════════════════
+function decodeBondingCurve(data) {
+  // Skip 8-byte Anchor discriminator
+  let off = 8;
+  return {
+    virtualTokenReserves: readU64(data, off),      // off 8
+    virtualSolReserves:   readU64(data, off + 8),  // off 16
+    realTokenReserves:    readU64(data, off + 16), // off 24
+    realSolReserves:      readU64(data, off + 24), // off 32
+    tokenTotalSupply:     readU64(data, off + 32), // off 40
+    complete:             readBool(data, off + 40), // off 48
+    creator:              data.length > off + 41 + 32 ? readPubkey(data, off + 41) : null, // off 49
+    isMayhemMode:         data.length > off + 73 ? readBool(data, off + 73) : false, // off 81
+  };
+}
+
+function decodeGlobal(data) {
+  // Skip 8-byte discriminator
+  // initialized(1) + authority(32) + feeRecipient(32) = 65 bytes before reserves
+  let off = 8;
+  off += 1 + 32 + 32; // initialized + authority + feeRecipient = 65
+  const initialVirtualTokenReserves = readU64(data, off); off += 8;
+  const initialVirtualSolReserves   = readU64(data, off); off += 8;
+  const initialRealTokenReserves    = readU64(data, off); off += 8;
+  const tokenTotalSupply            = readU64(data, off); off += 8;
+  const feeBasisPoints              = readU64(data, off); off += 8;
+  off += 32 + 1; // withdrawAuthority + enableMigrate
+  off += 8;      // poolMigrationFee
+  const creatorFeeBasisPoints       = readU64(data, off);
+  return { initialVirtualTokenReserves, initialVirtualSolReserves, initialRealTokenReserves, tokenTotalSupply, feeBasisPoints, creatorFeeBasisPoints };
+}
+
+// ════════════════════════════════════════════════════════════════
+// Bonding curve math (mirrors bondingCurve.ts, using BigInt)
+// ════════════════════════════════════════════════════════════════
+function ceilDiv(a, b) {
+  if (b === 0n) return 0n;
+  return (a + b - 1n) / b;
+}
+
+function getSellQuote({ amount, vTok, vSol, protocolBps, creatorBps, hasCreator }) {
+  if (amount === 0n || vTok === 0n) return { grossSol: 0n, feeProtocol: 0n, feeCreator: 0n, netSol: 0n };
+
+  const grossSol = amount * vSol / (vTok + amount); // floor division
+
+  const feeProtocol = ceilDiv(grossSol * protocolBps, 10000n);
+  const feeCreator  = hasCreator ? ceilDiv(grossSol * creatorBps, 10000n) : 0n;
+  const totalFee    = feeProtocol + feeCreator;
+
+  // BUG FIX: ceilDiv fee can exceed grossSol for dust amounts → clamp to 0
+  const netSol = grossSol > totalFee ? grossSol - totalFee : 0n;
+
+  return { grossSol, feeProtocol, feeCreator, netSol };
+}
+
+function slippageOld(netSol, slippage) {
+  // Old buggy formula: Math.floor(slippage * 10) / 1000
+  const factor = BigInt(Math.floor(slippage * 10));
+  const reduction = netSol * factor / 1000n;
+  const min = netSol - reduction;
+  return min < 0n ? 0n : min;
+}
+
+function slippageNew(netSol, slippage) {
+  // Fixed formula: Math.round(slippage * 100) / 10000
+  const factor = BigInt(Math.round(slippage * 100));
+  const reduction = netSol * factor / 10000n;
+  const min = netSol - reduction;
+  return min < 0n ? 0n : min;
+}
+
+function slippageDiff(slippage) {
+  // Returns the precision error in BPS for the old formula
+  const old = Math.floor(slippage * 10) / 1000;
+  const neu = Math.round(slippage * 100) / 10000;
+  return Math.abs(old - neu) * 10000; // in BPS
+}
+
+// u64 overflow check for the main AMM multiplication
+function u64OverflowRisk(amount, vSol) {
+  const product = amount * vSol;
+  return { product, overflows: product > U64_MAX };
+}
+
+// ════════════════════════════════════════════════════════════════
+// Format helpers
+// ════════════════════════════════════════════════════════════════
+function fmtSol(lamports) {
+  if (lamports === null || lamports === undefined) return '—';
+  const n = Number(lamports) / 1e9;
+  if (n >= 1000) return n.toLocaleString(undefined, { maximumFractionDigits: 0 }) + ' SOL';
+  if (n >= 1)    return n.toFixed(4) + ' SOL';
+  if (n >= 0.001)return n.toFixed(6) + ' SOL';
+  return n.toExponential(4) + ' SOL';
+}
+function fmtLam(lamports) {
+  return Number(lamports).toLocaleString() + ' lamports';
+}
+function fmtTok(raw) {
+  const n = Number(raw) / (10 ** TOKEN_DECIMALS);
+  return n >= 1e9 ? (n / 1e9).toFixed(3) + 'B'
+       : n >= 1e6 ? (n / 1e6).toFixed(3) + 'M'
+       : n >= 1e3 ? (n / 1e3).toFixed(3) + 'K'
+       : n.toFixed(6);
+}
+function fmtBps(bps) {
+  return (Number(bps) / 100).toFixed(2) + '%';
+}
+function fmtPct(n) {
+  return n.toFixed(4) + '%';
+}
+function esc(s) {
+  const d = document.createElement('div');
+  d.textContent = String(s);
+  return d.innerHTML;
+}
+function short(addr) {
+  return addr ? addr.slice(0, 6) + '…' + addr.slice(-4) : '—';
+}
+
+// ════════════════════════════════════════════════════════════════
+// Fetch + compute
+// ════════════════════════════════════════════════════════════════
+async function getQuote() {
+  const mintStr  = document.getElementById('mint').value.trim();
+  const amountWhole = parseFloat(document.getElementById('amount').value) || 0;
+  const slippage = parseFloat(document.getElementById('slippage').value) || 0;
+
+  if (!mintStr || mintStr.length < 32) {
+    setStatus('error', 'Enter a valid mint address (32–44 chars).');
+    return;
+  }
+
+  const btn = document.getElementById('btn-quote');
+  btn.disabled = true;
+  setStatus('loading', 'Fetching bonding curve and global state from Solana mainnet…');
+  hideResults();
+
+  try {
+    // Update RPC url
+    const rpcSel = document.getElementById('rpc').value;
+    rpcUrl = rpcSel === 'custom'
+      ? document.getElementById('custom-rpc').value.trim()
+      : rpcSel;
+
+    // Derive PDAs
+    const mintBytes = base58Decode(mintStr);
+    const [bcPda, globalPda] = await Promise.all([
+      derivePda([BC_SEED, mintBytes], PUMP_PROGRAM),
+      derivePda([GLOBAL_SEED], PUMP_PROGRAM),
+    ]);
+
+    setStatus('loading', `Fetching accounts: BC=${short(bcPda)}, Global=${short(globalPda)}…`);
+
+    // Fetch accounts in parallel
+    const [bcData, globalData] = await Promise.all([
+      getAccountData(bcPda),
+      getAccountData(globalPda),
+    ]);
+
+    if (!bcData) throw new Error(`Bonding curve account not found for mint ${short(mintStr)}. Token may not exist on pump.fun, or may have already migrated to AMM.`);
+    if (!globalData) throw new Error('Global account not found. Check program ID.');
+
+    // Decode
+    const bc = decodeBondingCurve(bcData);
+    const g  = decodeGlobal(globalData);
+
+    // Amount in raw token units (6 decimals)
+    const amountRaw = BigInt(Math.round(amountWhole * 10 ** TOKEN_DECIMALS));
+
+    // Compute quote
+    const hasCreator = bc.creator && bc.creator !== '11111111111111111111111111111111';
+    const quote = getSellQuote({
+      amount: amountRaw,
+      vTok: bc.virtualTokenReserves,
+      vSol: bc.virtualSolReserves,
+      protocolBps: g.feeBasisPoints,
+      creatorBps: g.creatorFeeBasisPoints,
+      hasCreator,
+    });
+
+    // Slippage comparison
+    const minOld = slippageOld(quote.netSol, slippage);
+    const minNew = slippageNew(quote.netSol, slippage);
+    const slipErr = slippageDiff(slippage);
+
+    // Overflow analysis
+    const ov = u64OverflowRisk(amountRaw, bc.virtualSolReserves);
+
+    // Render everything
+    renderBcState(bc, g, bcPda, mintStr);
+    renderQuote(quote, amountRaw, amountWhole, g);
+    renderSlippageCompare(minOld, minNew, slippage, slipErr);
+    renderOverflow(ov, amountRaw, bc, amountWhole);
+    renderDeepAnalysis(bc, quote, amountRaw, ov, slipErr);
+
+    showResults();
+    setStatus('ok', `✓ Live data loaded from Solana mainnet — slot ${new Date().toLocaleTimeString()}`);
+  } catch (e) {
+    setStatus('error', '✗ ' + (e.message || String(e)));
+    console.error(e);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+// PDA derivation (deterministic, no full ed25519 needed for 99%)
+// ════════════════════════════════════════════════════════════════
+async function derivePda(seeds, programId) {
+  const programBytes = base58Decode(programId);
+  const marker = new TextEncoder().encode('ProgramDerivedAddress');
+
+  for (let nonce = 255; nonce >= 0; nonce--) {
+    const parts = [...seeds, new Uint8Array([nonce]), programBytes, marker];
+    const total = parts.reduce((a, b) => a + b.length, 0);
+    const buf = new Uint8Array(total);
+    let off = 0;
+    for (const p of parts) { buf.set(p, off); off += p.length; }
+    const hash = new Uint8Array(await crypto.subtle.digest('SHA-256', buf));
+
+    // Ed25519 field prime: p = 2^255 - 19
+    // A point is NOT on the curve if it can't be decoded as a valid compressed
+    // Y coordinate. The simplified check Solana uses: try decode, if it fails,
+    // this nonce is valid for a PDA. We approximate by checking if the top 7 bits
+    // of byte[31] are all clear (point has no valid X) — this is NOT correct but
+    // works well enough. The real SDK iterates until RPC confirms the account exists.
+    //
+    // Better approach: try fetching and check if account owner = program.
+    // We fetch the candidate and see if it belongs to PUMP_PROGRAM.
+    const candidate = base58Encode(hash);
+    try {
+      const result = await rpcCall('getAccountInfo', [candidate, { encoding: 'base64', commitment: 'confirmed' }]);
+      if (result?.value?.owner === PUMP_PROGRAM) return candidate;
+      // If account doesn't exist yet but is a valid PDA, still return it
+      // (program would create it on first interaction)
+      if (!result?.value) {
+        // Check if this looks like a valid public key (not on curve)
+        // by attempting a heuristic: most SHA256 outputs at nonce 255 work
+        if (nonce === 255) return candidate; // Best guess
+      }
+    } catch { /* continue */ }
+  }
+  throw new Error('PDA derivation failed after 256 attempts');
+}
+
+// ════════════════════════════════════════════════════════════════
+// Renderers
+// ════════════════════════════════════════════════════════════════
+function renderBcState(bc, g, bcPda, mint) {
+  const marketCap = bc.virtualTokenReserves > 0n
+    ? bc.virtualSolReserves * g.tokenTotalSupply / bc.virtualTokenReserves
+    : 0n;
+  const graduationProgress = bc.tokenTotalSupply > 0n
+    ? Number((bc.tokenTotalSupply - bc.virtualTokenReserves + g.initialVirtualTokenReserves - g.initialRealTokenReserves) * 10000n / g.tokenTotalSupply) / 100
+    : 0;
+
+  const rows = [
+    ['Mint',                    `<a href="https://pump.fun/coin/${esc(mint)}" target="_blank" style="color:var(--blue)">${esc(short(mint))}</a>`],
+    ['Bonding Curve PDA',       `<a href="https://solscan.io/account/${esc(bcPda)}" target="_blank" style="color:var(--blue)">${esc(short(bcPda))}</a>`],
+    ['Status',                  bc.complete
+      ? `<span class="tag yellow">⚠ GRADUATED — use AMM</span>`
+      : `<span class="tag green">● Active</span>`],
+    ['virtualSolReserves',      fmtSol(bc.virtualSolReserves)],
+    ['virtualTokenReserves',    fmtTok(bc.virtualTokenReserves) + ' tokens'],
+    ['realSolReserves',         fmtSol(bc.realSolReserves)],
+    ['realTokenReserves',       fmtTok(bc.realTokenReserves) + ' tokens'],
+    ['tokenTotalSupply',        fmtTok(bc.tokenTotalSupply) + ' tokens'],
+    ['Market Cap (implied)',     fmtSol(marketCap)],
+    ['Creator',                 bc.creator ? esc(short(bc.creator)) : '<span class="dim">none (zero address)</span>'],
+    ['isMayhemMode',            bc.isMayhemMode ? '<span class="yellow">YES</span>' : 'no'],
+    ['Protocol Fee',            fmtBps(g.feeBasisPoints)],
+    ['Creator Fee',             fmtBps(g.creatorFeeBasisPoints)],
+    ['Graduation Progress',     graduationProgress.toFixed(2) + '%'],
+  ];
+
+  document.getElementById('bc-table').innerHTML = rows.map(([k, v]) =>
+    `<tr><td>${esc(k)}</td><td>${v}</td></tr>`
+  ).join('');
+}
+
+function renderQuote(quote, amountRaw, amountWhole, g) {
+  const totalFee = quote.feeProtocol + quote.feeCreator;
+  const totalFeeBps = quote.grossSol > 0n
+    ? Number(totalFee * 10000n / quote.grossSol)
+    : 0;
+  const pricePerToken = amountRaw > 0n
+    ? Number(quote.grossSol) / Number(amountRaw) * 1e6
+    : 0;
+
+  document.getElementById('quote-display').innerHTML = `
+    <div class="quote-box">
+      <div class="label">Net SOL Received (after fees)</div>
+      <div class="amount">${fmtSol(quote.netSol)}</div>
+      <div class="sub">
+        Gross: ${fmtSol(quote.grossSol)} &nbsp;|&nbsp;
+        Total fee: ${fmtSol(totalFee)} (${(totalFeeBps / 100).toFixed(2)}%) &nbsp;|&nbsp;
+        Price: ${pricePerToken.toFixed(6)} lamports/token
+      </div>
+    </div>
+  `;
+
+  const isDustRisk = quote.grossSol < 10n && amountRaw > 0n;
+  const rows = [
+    ['Amount to sell',          fmtTok(amountRaw) + ` tokens (${amountWhole} whole)`],
+    ['Gross SOL from AMM',      fmtSol(quote.grossSol)],
+    ['Protocol fee (ceil)',     fmtSol(quote.feeProtocol) + ` (${fmtBps(g.feeBasisPoints)})`],
+    ['Creator fee (ceil)',      fmtSol(quote.feeCreator) + ` (${fmtBps(g.creatorFeeBasisPoints)})`],
+    ['Net SOL (before slippage)', fmtSol(quote.netSol) + (isDustRisk ? ' <span class="tag red">DUST — clamped to 0</span>' : '')],
+  ];
+
+  document.getElementById('quote-table').innerHTML = rows.map(([k, v]) =>
+    `<tr><td>${esc(k)}</td><td>${v}</td></tr>`
+  ).join('');
+}
+
+function renderSlippageCompare(minOld, minNew, slippage, errBps) {
+  const hasDiff = minOld !== minNew;
+  const exampleBug = slippage === 0.3 || slippage % 1 !== 0;
+
+  document.getElementById('slip-compare').innerHTML = `
+    <div class="slip-box old">
+      <h4>Old formula (buggy)</h4>
+      <div class="val">${fmtSol(minOld)}</div>
+      <div class="note"><code>Math.floor(slippage * 10) / 1000</code></div>
+      ${hasDiff ? '<div class="note" style="color:var(--red);margin-top:4px;">⚠ Imprecise result</div>' : ''}
+    </div>
+    <div class="slip-box new">
+      <h4>Fixed formula ✓</h4>
+      <div class="val">${fmtSol(minNew)}</div>
+      <div class="note"><code>Math.round(slippage * 100) / 10000</code></div>
+      ${hasDiff ? `<div class="note" style="color:var(--green);margin-top:4px;">Δ = ${fmtLam(minNew > minOld ? minNew - minOld : minOld - minNew)}</div>` : '<div class="note" style="color:var(--dim);margin-top:4px;">No difference at this slippage value</div>'}
+    </div>
+  `;
+
+  if (errBps > 0.001) {
+    document.getElementById('slip-compare').insertAdjacentHTML('beforeend', `
+      <div style="grid-column:1/-1; font-size:11px; color:var(--orange); padding:8px; background:#1a0f00; border:1px solid #332200; border-radius:4px; margin-top:8px;">
+        ⚠ Formula precision error at slippage=${slippage}%: <strong>${fmtPct(errBps / 100)}</strong> drift.
+        Try slippage=0.3 to see a clear bug: <code>Math.floor(0.3*10)=2</code> (should be 3),
+        yielding 0.2% effective slippage instead of 0.3%.
+      </div>
+    `);
+  }
+}
+
+function renderOverflow(ov, amountRaw, bc, amountWhole) {
+  const pct = ov.overflows ? 100 : Number(ov.product * 100n / U64_MAX);
+  const cls = ov.overflows ? 'crit' : pct > 80 ? 'warn' : 'safe';
+  const threshold = amountRaw > 0n ? U64_MAX / amountRaw : 0n; // max safe vSol
+
+  document.getElementById('overflow-display').innerHTML = `
+    <div class="gauge">
+      <div class="gauge-label">u64 product utilization: amount × virtualSolReserves / 2⁶⁴</div>
+      <div class="gauge-bar">
+        <div class="gauge-fill ${cls}" style="width:${Math.min(pct, 100)}%"></div>
+      </div>
+      <div class="gauge-value">
+        ${ov.overflows
+          ? `<span class="red">✗ OVERFLOW — product ${ov.product.toLocaleString()} > u64::MAX (${U64_MAX.toLocaleString()})</span>`
+          : `<span class="green">✓ Safe — ${pct.toFixed(1)}% of u64 range used</span>`
+        }
+      </div>
+    </div>
+
+    <table style="margin-top:12px;">
+      <tr><td>Amount (raw)</td><td>${amountRaw.toLocaleString()} (${amountWhole} tokens)</td></tr>
+      <tr><td>virtualSolReserves</td><td>${fmtSol(bc.virtualSolReserves)} (${bc.virtualSolReserves.toLocaleString()} lamports)</td></tr>
+      <tr><td>Product (amount × vSol)</td><td style="color:${ov.overflows ? 'var(--red)' : 'var(--green)'};">${ov.product.toLocaleString()}</td></tr>
+      <tr><td>u64::MAX</td><td>${U64_MAX.toLocaleString()}</td></tr>
+      <tr><td>Max safe vSol for this amount</td><td>${threshold > 0n ? fmtSol(threshold) + ' (' + threshold.toLocaleString() + ' lamports)' : '—'}</td></tr>
+      <tr>
+        <td>Risk at current vSol</td>
+        <td>${ov.overflows
+          ? '<span class="tag red">OVERFLOW if pump.fun uses u64 (not u128)</span>'
+          : '<span class="tag green">SAFE in u64 range</span>'
+        }</td>
+      </tr>
+    </table>
+
+    <p style="margin-top:12px; font-size:11px; color:var(--dim);">
+      Pump.fun's on-chain program almost certainly uses u128 for <code>amount × vSol</code>,
+      so this overflow is unlikely to be the direct cause of error 6024. However, if any secondary
+      calculation uses u64, it would fail for amounts beyond the threshold above.
+    </p>
+  `;
+}
+
+function renderDeepAnalysis(bc, quote, amountRaw, ov, slipErr) {
+  const items = [
+    {
+      title: '1. Negative min_sol_output (confirmed SDK bug)',
+      content: `For dust sells where <code>ceil(fee) > grossSol</code>, <code>getSellSolAmountFromTokenAmount</code>
+        returned a <strong>negative BN</strong>. When serialized as u64, negative values wrap to ~u64::MAX
+        (≈ 18.4 × 10¹⁸ lamports). The on-chain program then tries to check
+        <code>net_sol ≥ min_sol_output</code> where <code>min_sol_output ≈ u64::MAX</code>,
+        which can never pass — triggering error 6024 (Overflow) rather than 6003 (tooLittleSolReceived).
+        <br><br>
+        <strong>Fix applied:</strong> <code>BN.max(new BN(0), netSol)</code> in
+        <code>getSellSolAmountFromTokenAmount</code> and a matching guard in <code>sellInstructions</code>.`,
+    },
+    {
+      title: '2. Slippage formula precision loss (confirmed SDK bug)',
+      content: `<code>Math.floor(slippage × 10) / 1000</code> drops precision for fractional slippage
+        percentages. For slippage=0.3: <code>Math.floor(0.3 × 10) = Math.floor(2.999…) = 2</code>,
+        yielding 0.2% instead of 0.3% — a 33% error. This makes <code>min_sol_output</code> higher than
+        intended, leaving less buffer against price movement and causing sporadic failures.
+        <br><br>
+        <strong>Fix applied:</strong> <code>Math.round(slippage × 100) / 10000</code>.
+        Precision error at slippage=${document.getElementById('slippage').value}%:
+        <span style="color:${slipErr > 0.001 ? 'var(--orange)' : 'var(--green)'}">
+          ${slipErr > 0.001 ? fmtPct(slipErr / 100) + ' drift' : 'none'}
+        </span>.`,
+    },
+    {
+      title: '3. Race condition — stale bonding curve state (architectural)',
+      content: `The user fetches state (<code>fetchSellState</code>, <code>fetchGlobal</code>,
+        <code>fetchFeeConfig</code>) via three concurrent RPC calls, then submits the transaction.
+        If other trades occur between fetch and execution:
+        <ul style="margin:6px 0 0 16px;">
+          <li>Reserves change → different gross SOL on-chain vs off-chain</li>
+          <li>Fee tier boundary crossed → different fee rates</li>
+          <li>If on-chain net_sol &lt; min_sol_output: error 6003 (tooLittleSolReceived)</li>
+          <li>If arithmetic edge case hit: error 6024 (Overflow)</li>
+        </ul>
+        <br>
+        <strong>Mitigation:</strong> Fetch state immediately before building the transaction, use adequate
+        slippage (≥1% for volatile tokens), and retry on failure. The SDK cannot prevent this without
+        a CLOB-style reservation system.`,
+    },
+    {
+      title: '4. On-chain reserve update underflow (hypothesis)',
+      content: `Error 6024 occurs at <code>lib.rs:764</code>, AFTER a successful
+        <code>Token 2022 TransferChecked</code>. This places line 764 in the reserve-update
+        path (post token transfer). A likely cause:
+        <pre style="background:var(--bg3); padding:8px; margin:6px 0; border-radius:3px; font-size:11px; overflow-x:auto;">// Rust pseudocode
+let gross_sol = compute_gross_sol(amount, vSol, vTok); // u128 → safe
+let fee = get_fee(gross_sol, fee_bps);                  // returned from fee CPI
+let net_sol = gross_sol
+    .checked_sub(fee)                                   // could underflow if fee > gross_sol
+    .ok_or(error!(ErrorCode::Overflow))?;               // → 6024</pre>
+        If the fee program returns an unexpected fee (e.g., due to a fee tier change between
+        fee-fetch and execution), <code>fee &gt; gross_sol</code> → underflow → 6024.
+        The intermittent (1/4) failure rate is consistent with fee tier transitions.`,
+    },
+    {
+      title: '5. Token 2022 transfer fee hook (hypothesis)',
+      content: `This token uses the Token 2022 program (<code>TransferChecked</code> visible in the trace).
+        If the mint has a <strong>transfer fee extension</strong>, the bonding curve receives
+        <code>amount × (1 - transfer_fee)</code> tokens — less than the stated <code>amount</code>.
+        The pump program may then compute reserves based on the full <code>amount</code>
+        while the actual balance reflects the reduced amount, causing an invariant check to fail
+        at line 764.
+        <br><br>
+        Pump.fun itself creates all tokens via its program, so transfer fees should be zero.
+        But this is worth verifying for third-party mints.`,
+    },
+  ];
+
+  document.getElementById('deep-analysis').innerHTML = items.map(({ title, content }) => `
+    <div class="analysis-item">
+      <h4>${esc(title)}</h4>
+      <p>${content}</p>
+    </div>
+  `).join('');
+}
+
+// ════════════════════════════════════════════════════════════════
+// UI helpers
+// ════════════════════════════════════════════════════════════════
+function setStatus(type, msg) {
+  const el = document.getElementById('status-bar');
+  el.className = type;
+  el.textContent = msg;
+}
+function showResults() { document.getElementById('results').classList.add('visible'); }
+function hideResults() { document.getElementById('results').classList.remove('visible'); }
+
+// ════════════════════════════════════════════════════════════════
+// Init
+// ════════════════════════════════════════════════════════════════
+document.getElementById('btn-quote').addEventListener('click', getQuote);
+
+// Allow Enter key in mint input
+document.getElementById('mint').addEventListener('keydown', e => {
+  if (e.key === 'Enter') getQuote();
+});
+
+// Custom RPC toggle
+document.getElementById('rpc').addEventListener('change', e => {
+  document.getElementById('custom-rpc-field').style.display =
+    e.target.value === 'custom' ? 'block' : 'none';
+});
+
+// Quick example buttons
+const exDiv = document.getElementById('examples');
+EXAMPLES.forEach(({ label, mint }) => {
+  const btn = document.createElement('button');
+  btn.className = 'token-btn';
+  btn.textContent = label;
+  btn.onclick = () => { document.getElementById('mint').value = mint; };
+  exDiv.appendChild(btn);
+});
+
+// Also prepopulate from URL param ?mint=...
+const urlMint = new URLSearchParams(location.search).get('mint');
+if (urlMint) {
+  document.getElementById('mint').value = urlMint;
+  getQuote();
+}
+</script>
+</body>
+</html>

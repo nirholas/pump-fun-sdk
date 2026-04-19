@@ -35,6 +35,11 @@ const mint = Keypair.generate();
 console.log("Token mint address:", mint.publicKey.toBase58());
 ```
 
+> Want a mint address ending in `pump` like the ones on pump.fun? See
+> [Tutorial 13: Vanity Mints and the `pump` Suffix](./13-vanity-addresses.md) —
+> swap `Keypair.generate()` for `generateVanityMint({ suffix: "pump" })` and
+> the rest of this tutorial stays the same.
+
 ## Step 3: Build the Create Instruction
 
 Use `createV2Instruction` (the v1 `createInstruction` is deprecated):

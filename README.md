@@ -29,6 +29,7 @@ The SDK never sends transactions itself. It returns `TransactionInstruction[]` t
 - [Quick Start](#-quick-start)
 - [Usage Examples](#-usage-examples)
   - [Create a Token](#create-a-token)
+  - [Create a Token With a `...pump` Vanity Mint](#create-a-token-with-a-pump-vanity-mint)
   - [Buy Tokens on the Bonding Curve](#buy-tokens-on-the-bonding-curve)
   - [Sell Tokens](#sell-tokens)
   - [Check Graduation Progress](#check-graduation-progress)
@@ -157,6 +158,39 @@ const createIx = await PUMP_SDK.createV2Instruction({
 ```
 
 > **Warning**: Do NOT use `createInstruction` — it is deprecated (v1). Always use `createV2Instruction`.
+
+### Create a Token With a `...pump` Vanity Mint
+
+Mint addresses ending in `pump` (like the ones on pump.fun) are produced by
+grinding keypairs off-chain. The SDK exposes this as a first-class helper —
+swap `Keypair.generate()` for `generateVanityMint()` and the rest of the
+flow is unchanged.
+
+```typescript
+import { generateVanityMint, PUMP_SDK } from "@nirholas/pump-sdk";
+
+// Grind until we find a mint whose address ends in "pump" (~11M attempts, ~1–4 min in Node)
+const { keypair: mintKeypair } = await generateVanityMint({ suffix: "pump" });
+
+const createIx = await PUMP_SDK.createV2Instruction({
+  mint: mintKeypair.publicKey,  // ← ends in "pump"
+  name: "My Token",
+  symbol: "MYTKN",
+  uri: "https://arweave.net/metadata.json",
+  creator: wallet.publicKey,
+  user: wallet.publicKey,
+  mayhemMode: false,
+});
+
+// Sign the transaction with BOTH the payer and the mint keypair.
+// tx.sign([wallet, mintKeypair]);
+```
+
+Supports `prefix`, `suffix`, `caseInsensitive`, `maxAttempts`, `onProgress`,
+and `AbortSignal`. For patterns longer than 4 characters, use the
+multi-threaded Rust generator at [`rust/`](rust/). See
+[Tutorial 13: Vanity Mints](tutorials/13-vanity-addresses.md) for the full
+end-to-end flow and a runnable devnet example.
 
 ### Buy Tokens on the Bonding Curve
 

@@ -91,6 +91,19 @@ export {
   getTokenPrice,
   getBondingCurveSummary,
 } from "./analytics";
+export {
+  generateVanityMint,
+  estimateVanityMintAttempts,
+  VanityMintPatternError,
+  VanityMintMaxAttemptsError,
+  BASE58_ALPHABET,
+  MAX_VANITY_PATTERN_LENGTH,
+} from "./vanityMint";
+export type {
+  VanityMintOptions,
+  VanityMintResult,
+  VanityMintProgress,
+} from "./vanityMint";
 export type {
   PriceImpactResult,
   GraduationProgress,

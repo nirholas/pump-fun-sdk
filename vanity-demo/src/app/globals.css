@@ -1,0 +1,56 @@
+:root {
+  --bg: #09090b;
+  --bg2: #111113;
+  --bg3: rgba(255, 255, 255, 0.04);
+  --border: rgba(255, 255, 255, 0.08);
+  --border-h: rgba(255, 255, 255, 0.16);
+  --fg: #fafafa;
+  --fg2: #a1a1aa;
+  --fg3: #71717a;
+  --fg4: #52525b;
+  --accent: #22d3ee;
+  --accent2: #818cf8;
+  --green: #4ade80;
+  --red: #f87171;
+  --yellow: #facc15;
+  --radius: 8px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  background: var(--bg);
+  color: var(--fg2);
+  font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: inherit; text-decoration: none; }
+
+/* wallet adapter overrides */
+.wallet-adapter-button {
+  background: var(--bg3) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--fg) !important;
+  font-size: 13px !important;
+  height: 36px !important;
+  padding: 0 16px !important;
+  border-radius: var(--radius) !important;
+  font-family: inherit !important;
+}
+.wallet-adapter-button:hover {
+  border-color: var(--border-h) !important;
+  background: rgba(255,255,255,0.06) !important;
+}
+.wallet-adapter-modal-wrapper {
+  background: var(--bg2) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 12px !important;
+}
+.wallet-adapter-modal-title { color: var(--fg) !important; }
+.wallet-adapter-modal-list .wallet-adapter-button {
+  height: 48px !important;
+  border-radius: 8px !important;
+}
