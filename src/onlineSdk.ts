@@ -31,6 +31,10 @@ import {
   getGraduationProgress,
   getTokenPrice,
 } from "./analytics";
+import {
+  getSellSolAmountFromTokenAmount,
+  maxSafeSellAmount,
+} from "./bondingCurve";
 import type {
   BondingCurveSummary,
   GraduationProgress,
@@ -290,9 +294,76 @@ export class OnlinePumpSdk {
       solAmount,
       slippage,
       tokenProgram,
-      mayhemMode: bondingCurve.isMayhemMode,
       cashback,
     });
+  }
+
+  /**
+   * Sell `totalAmount` tokens, splitting into multiple transactions when the
+   * amount would overflow the on-chain u64 multiply (AnchorError 6024).
+   *
+   * Each chunk is sent via the caller-provided `sendTx`. State is refetched
+   * between chunks so reserves — and therefore the max safe chunk size —
+   * stay current as earlier chunks land.
+   *
+   * Returns the signature of every chunk in order.
+   */
+  async sellChunked({
+    mint,
+    user,
+    totalAmount,
+    slippage,
+    tokenProgram = TOKEN_PROGRAM_ID,
+    cashback = false,
+    sendTx,
+  }: {
+    mint: PublicKey;
+    user: PublicKey;
+    totalAmount: BN;
+    slippage: number;
+    tokenProgram?: PublicKey;
+    cashback?: boolean;
+    sendTx: (ixs: TransactionInstruction[]) => Promise<string>;
+  }): Promise<string[]> {
+    const signatures: string[] = [];
+    let remaining = totalAmount;
+
+    while (remaining.gtn(0)) {
+      const [sellState, global, feeConfig] = await Promise.all([
+        this.fetchSellState(mint, user, tokenProgram),
+        this.fetchGlobal(),
+        this.fetchFeeConfig(),
+      ]);
+
+      const maxChunk = maxSafeSellAmount(sellState.bondingCurve.virtualSolReserves);
+      const chunk = remaining.lte(maxChunk) ? remaining : maxChunk;
+
+      const solAmount = getSellSolAmountFromTokenAmount({
+        global,
+        feeConfig,
+        mintSupply: sellState.bondingCurve.tokenTotalSupply,
+        bondingCurve: sellState.bondingCurve,
+        amount: chunk,
+      });
+
+      const ixs = await PUMP_SDK.sellInstructions({
+        global,
+        bondingCurveAccountInfo: sellState.bondingCurveAccountInfo,
+        bondingCurve: sellState.bondingCurve,
+        mint,
+        user,
+        amount: chunk,
+        solAmount,
+        slippage,
+        tokenProgram,
+        cashback,
+      });
+
+      signatures.push(await sendTx(ixs));
+      remaining = remaining.sub(chunk);
+    }
+
+    return signatures;
   }
 
   async fetchGlobalVolumeAccumulator(): Promise<GlobalVolumeAccumulator> {
@@ -965,7 +1036,7 @@ export class OnlinePumpSdk {
     const bondingCurve = PUMP_SDK.decodeBondingCurve(bondingCurveAccountInfo);
     const feeConfig = await this.fetchFeeConfig();
 
-    const solAmount = (await import("./bondingCurve")).getSellSolAmountFromTokenAmount({
+    const solAmount = getSellSolAmountFromTokenAmount({
       global: globalState,
       feeConfig,
       mintSupply: bondingCurve.tokenTotalSupply,
@@ -983,7 +1054,6 @@ export class OnlinePumpSdk {
       solAmount,
       slippage,
       tokenProgram,
-      mayhemMode: bondingCurve.isMayhemMode,
     });
 
     // Close the ATA after selling to reclaim rent

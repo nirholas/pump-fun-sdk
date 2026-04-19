@@ -6,7 +6,10 @@ import {
   getSellSolAmountFromTokenAmount,
   newBondingCurve,
   bondingCurveMarketCap,
+  maxSafeSellAmount,
+  validateSellAmount,
 } from "../bondingCurve";
+import { SellOverflowError } from "../errors";
 
 import {
   makeGlobal,
@@ -208,6 +211,20 @@ describe("bondingCurve", () => {
       expect(result.eq(new BN(0))).toBe(true);
     });
 
+    it("returns 0 (not negative) for dust amounts where fee exceeds gross SOL", () => {
+      // When gross_sol is tiny, ceilDiv fee rounding can exceed gross_sol.
+      // A negative BN encoded as u64 wraps to ~u64::MAX, causing on-chain overflow.
+      const dustAmount = new BN("35766"); // ~1 lamport gross SOL at initial reserves
+      const result = getSellSolAmountFromTokenAmount({
+        global,
+        feeConfig: null,
+        mintSupply,
+        bondingCurve: makeBondingCurve(),
+        amount: dustAmount,
+      });
+      expect(result.gten(0)).toBe(true);
+    });
+
     it("sell price < buy price (spread)", () => {
       const oneToken = new BN("1000000");
       const bc = makeBondingCurve();
@@ -255,6 +272,68 @@ describe("bondingCurve", () => {
           virtualTokenReserves: new BN(0),
         }),
       ).toThrow("Division by zero");
+    });
+  });
+
+  // ── maxSafeSellAmount / validateSellAmount ─────────────────────────
+
+  describe("maxSafeSellAmount", () => {
+    it("returns 0 when virtualSolReserves is 0", () => {
+      expect(maxSafeSellAmount(new BN(0)).isZero()).toBe(true);
+    });
+
+    it("returns ~553M for 30 SOL reserves (90% of u64::MAX / 30e9)", () => {
+      const limit = maxSafeSellAmount(new BN("30000000000"));
+      expect(limit.gt(new BN(500_000_000))).toBe(true);
+      expect(limit.lt(new BN(700_000_000))).toBe(true);
+    });
+
+    it("product stays under u64::MAX at the limit", () => {
+      const reserves = new BN("30000000000");
+      const limit = maxSafeSellAmount(reserves);
+      const product = limit.mul(reserves);
+      const U64_MAX = new BN("18446744073709551615");
+      expect(product.lte(U64_MAX)).toBe(true);
+    });
+  });
+
+  describe("validateSellAmount", () => {
+    it("safe amount does not throw", () => {
+      const bc = makeBondingCurve({ virtualSolReserves: new BN("30000000000") });
+      expect(() => validateSellAmount(new BN(100_000_000), bc)).not.toThrow();
+    });
+
+    it("throws SellOverflowError when amount exceeds the safe limit", () => {
+      const bc = makeBondingCurve({ virtualSolReserves: new BN("30000000000") });
+      expect(() => validateSellAmount(new BN("9999999999999999"), bc)).toThrow(
+        SellOverflowError,
+      );
+    });
+
+    it("SellOverflowError carries amount, reserves, and max for recovery", () => {
+      const bc = makeBondingCurve({ virtualSolReserves: new BN("30000000000") });
+      const tooBig = new BN("9999999999999999");
+      let caught: SellOverflowError | undefined;
+      try {
+        validateSellAmount(tooBig, bc);
+      } catch (e) {
+        caught = e as SellOverflowError;
+      }
+      expect(caught).toBeInstanceOf(SellOverflowError);
+      expect(caught!.amount.eq(tooBig)).toBe(true);
+      expect(caught!.virtualSolReserves.eq(bc.virtualSolReserves)).toBe(true);
+      expect(caught!.maxSafeAmount.gtn(0)).toBe(true);
+    });
+
+    it("reproduces the scenario from issue #6 (amount=6325344957752 against large reserves)", () => {
+      // Realistic popular-token reserves — virtualSolReserves large enough that
+      // 6.3e12 * reserves overflows u64 (1.84e19).
+      const bc = makeBondingCurve({
+        virtualSolReserves: new BN("5000000000000000"), // 5e15
+      });
+      expect(() =>
+        validateSellAmount(new BN("6325344957752"), bc),
+      ).toThrow(SellOverflowError);
     });
   });
 });

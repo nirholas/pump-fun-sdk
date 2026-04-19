@@ -18,7 +18,7 @@ import {
 } from "@solana/web3.js";
 import BN from "bn.js";
 
-import { getStaticRandomFeeRecipient } from "./bondingCurve";
+import { getStaticRandomFeeRecipient, validateSellAmount } from "./bondingCurve";
 import {
   NoShareholdersError,
   TooManyShareholdersError,
@@ -567,7 +567,7 @@ export class PumpSdk {
       feeRecipient: getFeeRecipient(global, mayhemMode),
       amount,
       solAmount: solAmount.add(
-        solAmount.mul(new BN(Math.floor(slippage * 10))).div(new BN(1000)),
+        solAmount.mul(new BN(Math.round(slippage * 100))).div(new BN(10000)),
       ),
       tokenProgram,
     });
@@ -583,7 +583,6 @@ export class PumpSdk {
     solAmount,
     slippage,
     tokenProgram = TOKEN_PROGRAM_ID,
-    mayhemMode = false,
     cashback = false,
   }: {
     global: Global;
@@ -595,9 +594,13 @@ export class PumpSdk {
     solAmount: BN;
     slippage: number;
     tokenProgram: PublicKey;
-    mayhemMode: boolean;
     cashback?: boolean;
   }): Promise<TransactionInstruction[]> {
+    // Pre-flight: fail fast (with a descriptive error) when the amount would
+    // overflow the on-chain u64 multiply. Prevents broadcasting a sell that
+    // moves tokens via TransferChecked before the bonding-curve math aborts.
+    validateSellAmount(amount, bondingCurve);
+
     const instructions: TransactionInstruction[] = [];
 
     if (bondingCurveAccountInfo.data.length < BONDING_CURVE_NEW_SIZE) {
@@ -614,10 +617,13 @@ export class PumpSdk {
         user,
         mint,
         creator: bondingCurve.creator,
-        feeRecipient: getFeeRecipient(global, mayhemMode),
+        feeRecipient: getFeeRecipient(global, bondingCurve.isMayhemMode),
         amount,
-        solAmount: solAmount.sub(
-          solAmount.mul(new BN(Math.floor(slippage * 10))).div(new BN(1000)),
+        solAmount: BN.max(
+          new BN(0),
+          solAmount.sub(
+            solAmount.mul(new BN(Math.round(slippage * 100))).div(new BN(10000)),
+          ),
         ),
         tokenProgram,
         cashback,

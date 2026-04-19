@@ -1,8 +1,48 @@
 import { PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
 
+import { SellOverflowError } from "./errors";
 import { computeFeesBps, getFee } from "./fees";
 import { BondingCurve, FeeConfig, Global } from "./state";
+
+/**
+ * u64::MAX = 2^64 - 1 = 18_446_744_073_709_551_615
+ *
+ * The deployed pump program computes `amount * virtualSolReserves` as a u64
+ * before dividing in the sell formula. When that intermediate product exceeds
+ * u64::MAX, the program aborts with AnchorError 6024 (Overflow). We mirror the
+ * same upper bound here — minus a 10% safety margin — so we can refuse the
+ * sell before any tokens move.
+ */
+const U64_MAX = new BN("18446744073709551615");
+const SELL_SAFETY_MARGIN = U64_MAX.muln(9).divn(10);
+
+/**
+ * Maximum token amount that is safe to sell in a single sell instruction for
+ * the given reserves.
+ *
+ * Returns `floor(0.9 * u64::MAX / virtualSolReserves)`. The 10% margin absorbs
+ * reserve drift between quote and execution. Returns 0 if reserves are 0.
+ */
+export function maxSafeSellAmount(virtualSolReserves: BN): BN {
+  if (virtualSolReserves.isZero()) return new BN(0);
+  return SELL_SAFETY_MARGIN.div(virtualSolReserves);
+}
+
+/**
+ * Throws `SellOverflowError` if the sell amount would overflow the on-chain
+ * u64 multiply. Use this as a pre-flight check before building sell
+ * instructions.
+ */
+export function validateSellAmount(
+  amount: BN,
+  bondingCurve: BondingCurve,
+): void {
+  const max = maxSafeSellAmount(bondingCurve.virtualSolReserves);
+  if (amount.gt(max)) {
+    throw new SellOverflowError(amount, bondingCurve.virtualSolReserves, max);
+  }
+}
 
 /**
  * Create a new bonding curve state from global config.
@@ -234,7 +274,7 @@ export function getSellSolAmountFromTokenAmount({
     virtualSolReserves: bondingCurve.virtualSolReserves,
   });
 
-  return solCost.sub(
+  const netSol = solCost.sub(
     getFee({
       global,
       feeConfig,
@@ -244,6 +284,9 @@ export function getSellSolAmountFromTokenAmount({
       isNewBondingCurve: false,
     }),
   );
+
+  // ceilDiv fee rounding can exceed gross SOL for dust amounts; clamp to 0.
+  return BN.max(new BN(0), netSol);
 }
 
 /**

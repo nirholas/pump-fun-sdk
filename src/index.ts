@@ -9,6 +9,8 @@ export {
   newBondingCurve,
   bondingCurveMarketCap,
   getStaticRandomFeeRecipient,
+  maxSafeSellAmount,
+  validateSellAmount,
 } from "./bondingCurve";
 export * from "./pda";
 export {
