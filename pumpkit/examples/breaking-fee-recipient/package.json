@@ -1,0 +1,21 @@
+{
+  "name": "@pumpkit/example-breaking-fee-recipient",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Devnet integration test for the 2026-04-28 breaking fee-recipient upgrade",
+  "scripts": {
+    "verify": "ts-node verify-accounts.ts",
+    "devnet": "ts-node devnet-buy-sell.ts"
+  },
+  "dependencies": {
+    "@nirholas/pump-sdk": "^1.32.0",
+    "@solana/spl-token": "^0.4.13",
+    "@solana/web3.js": "^1.98.2",
+    "bn.js": "^5.2.2",
+    "bs58": "^6.0.0"
+  },
+  "devDependencies": {
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.0"
+  }
+}

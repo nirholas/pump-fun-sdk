@@ -16,6 +16,7 @@ import {
   getSellSolAmountFromTokenAmount,
   bondingCurveMarketCap,
 } from "./bondingCurve";
+import { computeFeesBps } from "./fees";
 import { BondingCurve, FeeConfig, Global } from "./state";
 
 // ── Types ─────────────────────────────────────────────────────────────
@@ -42,6 +43,8 @@ export interface GraduationProgress {
   tokensTotal: BN;
   /** SOL accumulated in the real reserves */
   solAccumulated: BN;
+  /** SOL cost (in lamports) to buy all remaining tokens and trigger graduation */
+  solNeededToGraduate: BN;
 }
 
 export interface TokenPriceInfo {
@@ -62,6 +65,8 @@ export interface BondingCurveSummary {
   progressBps: number;
   /** Is graduated */
   isGraduated: boolean;
+  /** SOL cost to buy all remaining tokens and trigger graduation */
+  solNeededToGraduate: BN;
   /** Buy price for 1 whole token in lamports */
   buyPricePerToken: BN;
   /** Sell price for 1 whole token in lamports */
@@ -74,6 +79,12 @@ export interface BondingCurveSummary {
   virtualSolReserves: BN;
   /** Virtual token reserves */
   virtualTokenReserves: BN;
+  /** Protocol fee in basis points for the current fee tier */
+  protocolFeeBps: BN;
+  /** Creator fee in basis points for the current fee tier */
+  creatorFeeBps: BN;
+  /** Whether this is a Mayhem Mode token */
+  isMayhemMode: boolean;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────
@@ -214,6 +225,42 @@ export function calculateSellPriceImpact({
 // ── Graduation Progress ───────────────────────────────────────────────
 
 /**
+ * Standard initial real token reserves for a Pump bonding curve.
+ * Tokens are sold from this pool; when it reaches 0 the curve graduates.
+ */
+export const INITIAL_REAL_TOKEN_RESERVES = new BN("793100000000000");
+
+/**
+ * Lightweight graduation progress check — no on-chain state required.
+ *
+ * Returns a number in [0, 1] where 1.0 = graduated. Uses a fixed
+ * `initialRealTokenReserves` constant (793.1M tokens, 6 decimals), which
+ * matches all Pump bonding curves created via `create_v2`.
+ *
+ * For mayhem-mode tokens with custom virtual params the initial reserves
+ * may differ; pass the optional `initialRealTokenReserves` override.
+ *
+ * @example
+ * const progress = bondingCurveGraduationProgress({ realSolReserves: bc.realSolReserves, realTokenReserves: bc.realTokenReserves });
+ * console.log(`${(progress * 100).toFixed(1)}% to graduation`);
+ */
+export function bondingCurveGraduationProgress({
+  realTokenReserves,
+  initialRealTokenReserves = INITIAL_REAL_TOKEN_RESERVES,
+}: {
+  realSolReserves: BN;
+  realTokenReserves: BN;
+  initialRealTokenReserves?: BN;
+}): number {
+  if (initialRealTokenReserves.isZero()) return 0;
+  if (realTokenReserves.isZero()) return 1;
+  const sold = initialRealTokenReserves.sub(
+    BN.min(realTokenReserves, initialRealTokenReserves),
+  );
+  return Math.min(1, sold.toNumber() / initialRealTokenReserves.toNumber());
+}
+
+/**
  * Calculate how close a token is to graduating from the bonding curve to AMM.
  *
  * A token graduates when `realTokenReserves` reaches 0 (all tokens sold).
@@ -226,6 +273,7 @@ export function calculateSellPriceImpact({
 export function getGraduationProgress(
   global: Global,
   bondingCurve: BondingCurve,
+  feeConfig: FeeConfig | null = null,
 ): GraduationProgress {
   if (bondingCurve.complete) {
     return {
@@ -234,6 +282,7 @@ export function getGraduationProgress(
       tokensRemaining: new BN(0),
       tokensTotal: global.initialRealTokenReserves,
       solAccumulated: bondingCurve.realSolReserves,
+      solNeededToGraduate: new BN(0),
     };
   }
 
@@ -245,11 +294,20 @@ export function getGraduationProgress(
       tokensRemaining: new BN(0),
       tokensTotal: new BN(0),
       solAccumulated: new BN(0),
+      solNeededToGraduate: new BN(0),
     };
   }
 
   const tokensSold = initialReal.sub(bondingCurve.realTokenReserves);
   const progressBps = tokensSold.muln(10_000).div(initialReal).toNumber();
+
+  const solNeededToGraduate = getBuySolAmountFromTokenAmount({
+    global,
+    feeConfig,
+    mintSupply: bondingCurve.tokenTotalSupply,
+    bondingCurve,
+    amount: bondingCurve.realTokenReserves,
+  });
 
   return {
     progressBps,
@@ -257,6 +315,7 @@ export function getGraduationProgress(
     tokensRemaining: bondingCurve.realTokenReserves,
     tokensTotal: initialReal,
     solAccumulated: bondingCurve.realSolReserves,
+    solNeededToGraduate,
   };
 }
 
@@ -337,19 +396,30 @@ export function getBondingCurveSummary({
   mintSupply: BN;
   bondingCurve: BondingCurve;
 }): BondingCurveSummary {
-  const progress = getGraduationProgress(global, bondingCurve);
+  const progress = getGraduationProgress(global, bondingCurve, feeConfig);
   const price = getTokenPrice({ global, feeConfig, mintSupply, bondingCurve });
+  const { protocolFeeBps, creatorFeeBps } = computeFeesBps({
+    global,
+    feeConfig,
+    mintSupply,
+    virtualSolReserves: bondingCurve.virtualSolReserves,
+    virtualTokenReserves: bondingCurve.virtualTokenReserves,
+  });
 
   return {
     marketCap: price.marketCap,
     progressBps: progress.progressBps,
     isGraduated: progress.isGraduated,
+    solNeededToGraduate: progress.solNeededToGraduate,
     buyPricePerToken: price.buyPricePerToken,
     sellPricePerToken: price.sellPricePerToken,
     realSolReserves: bondingCurve.realSolReserves,
     realTokenReserves: bondingCurve.realTokenReserves,
     virtualSolReserves: bondingCurve.virtualSolReserves,
     virtualTokenReserves: bondingCurve.virtualTokenReserves,
+    protocolFeeBps,
+    creatorFeeBps,
+    isMayhemMode: bondingCurve.isMayhemMode,
   };
 }
 

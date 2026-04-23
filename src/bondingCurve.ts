@@ -58,6 +58,7 @@ export function newBondingCurve(global: Global): BondingCurve {
     complete: false,
     creator: PublicKey.default,
     isMayhemMode: global.mayhemModeEnabled,
+    isCashbackCoin: false,
   };
 }
 
@@ -287,6 +288,75 @@ export function getSellSolAmountFromTokenAmount({
 
   // ceilDiv fee rounding can exceed gross SOL for dust amounts; clamp to 0.
   return BN.max(new BN(0), netSol);
+}
+
+/**
+ * Binary-search the token amount to sell that yields approximately `targetSol`
+ * lamports (after all protocol and creator fees).
+ *
+ * Bounded by the smaller of `realTokenReserves` and `maxSafeSellAmount` so the
+ * returned amount is always safe for a single sell instruction. If selling the
+ * entire safe limit still doesn't reach `targetSol`, the limit is returned so
+ * callers can decide whether to fall back to `sellChunked`.
+ *
+ * @param global - Global program state
+ * @param feeConfig - Fee tier config (null uses defaults)
+ * @param mintSupply - Current token supply
+ * @param bondingCurve - Current bonding curve state
+ * @param targetSol - Desired SOL out in lamports
+ * @returns Token amount to sell, clamped to the safe single-tx limit
+ */
+export function getTokenAmountForTargetSol({
+  global,
+  feeConfig,
+  mintSupply,
+  bondingCurve,
+  targetSol,
+}: {
+  global: Global;
+  feeConfig: FeeConfig | null;
+  mintSupply: BN;
+  bondingCurve: BondingCurve;
+  targetSol: BN;
+}): BN {
+  if (targetSol.isZero()) return new BN(0);
+
+  const safeMax = maxSafeSellAmount(bondingCurve.virtualSolReserves);
+  const upper = BN.min(bondingCurve.realTokenReserves, safeMax);
+
+  if (upper.isZero()) return new BN(0);
+
+  const maxOut = getSellSolAmountFromTokenAmount({
+    global,
+    feeConfig,
+    mintSupply,
+    bondingCurve,
+    amount: upper,
+  });
+
+  // Target unreachable within a single safe sell — return the ceiling
+  if (maxOut.lte(targetSol)) return upper;
+
+  let lo = new BN(0);
+  let hi = upper;
+
+  while (hi.sub(lo).gtn(1)) {
+    const mid = lo.add(hi).divn(2);
+    const solOut = getSellSolAmountFromTokenAmount({
+      global,
+      feeConfig,
+      mintSupply,
+      bondingCurve,
+      amount: mid,
+    });
+    if (solOut.gte(targetSol)) {
+      hi = mid;
+    } else {
+      lo = mid;
+    }
+  }
+
+  return hi;
 }
 
 /**

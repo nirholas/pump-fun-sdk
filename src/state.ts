@@ -71,6 +71,7 @@ export interface BondingCurve {
   complete: boolean;
   creator: PublicKey;
   isMayhemMode: boolean;
+  isCashbackCoin: boolean;
 }
 
 export interface GlobalVolumeAccumulator {

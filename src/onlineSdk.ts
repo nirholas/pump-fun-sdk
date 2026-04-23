@@ -1,10 +1,18 @@
 import { Program } from "@coral-xyz/anchor";
 import {
+  buyQuoteInput,
   coinCreatorVaultAtaPda,
   coinCreatorVaultAuthorityPda,
   OnlinePumpAmmSdk,
   PUMP_AMM_SDK,
   PumpAmmAdminSdk,
+  sellBaseInput,
+  type DepositBaseResult,
+  type DepositQuoteResult,
+  type WithdrawResult,
+  type WithdrawAutocompleteResult,
+  type DepositQuoteAndLpTokenFromBaseResult,
+  type DepositBaseAndLpTokenFromQuoteResult,
 } from "@pump-fun/pump-swap-sdk";
 import {
   createCloseAccountInstruction,
@@ -32,8 +40,11 @@ import {
   getTokenPrice,
 } from "./analytics";
 import {
+  getBuyTokenAmountFromSolAmount,
+  getTokenAmountForTargetSol,
   getSellSolAmountFromTokenAmount,
   maxSafeSellAmount,
+  validateSellAmount,
 } from "./bondingCurve";
 import type {
   BondingCurveSummary,
@@ -57,6 +68,7 @@ import {
   socialFeePda,
   userVolumeAccumulatorPda,
 } from "./pda";
+import { computeFeesBps } from "./fees";
 import {
   getPumpAmmProgram,
   getPumpFeeProgram,
@@ -65,17 +77,44 @@ import {
   PUMP_TOKEN_MINT,
 } from "./sdk";
 import {
+  AdminSetCreatorEvent,
+  AmmBuyEvent,
   AmmGlobalConfig,
+  AmmSellEvent,
   BondingCurve,
+  ClaimCashbackEvent,
+  ClaimTokenIncentivesEvent,
+  CloseUserVolumeAccumulatorEvent,
+  CollectCreatorFeeEvent,
+  CompleteEvent,
+  CompletePumpAmmMigrationEvent,
+  CreateEvent,
+  CreateFeeSharingConfigEvent,
+  CreatePoolEvent,
+  DepositEvent,
+  DistributeCreatorFeesEvent,
+  ExtendAccountEvent,
   FeeConfig,
   FeeProgramGlobal,
   Global,
   GlobalVolumeAccumulator,
+  InitUserVolumeAccumulatorEvent,
+  MigrateBondingCurveCreatorEvent,
   MinimumDistributableFeeEvent,
   Pool,
+  ResetFeeSharingConfigEvent,
+  RevokeFeeSharingAuthorityEvent,
+  SetCreatorEvent,
   SocialFeePda,
+  SocialFeePdaClaimedEvent,
+  SocialFeePdaCreatedEvent,
+  SyncUserVolumeAccumulatorEvent,
+  TradeEvent,
+  TransferFeeSharingAuthorityEvent,
+  UpdateFeeSharesEvent,
   UserVolumeAccumulator,
   UserVolumeAccumulatorTotalStats,
+  WithdrawEvent,
 } from "./state";
 import { currentDayTokens, totalUnclaimedTokens } from "./tokenIncentives";
 import {
@@ -986,13 +1025,21 @@ export class OnlinePumpSdk {
     mint,
     user,
     slippage = 1,
-    tokenProgram = TOKEN_PROGRAM_ID,
+    tokenProgram,
   }: {
     mint: PublicKey;
     user: PublicKey;
     slippage?: number;
     tokenProgram?: PublicKey;
   }): Promise<TransactionInstruction[]> {
+    // Auto-detect token program from mint account owner when not provided
+    if (!tokenProgram) {
+      const mintInfo = await this.connection.getAccountInfo(mint);
+      tokenProgram = mintInfo?.owner.equals(TOKEN_2022_PROGRAM_ID)
+        ? TOKEN_2022_PROGRAM_ID
+        : TOKEN_PROGRAM_ID;
+    }
+
     const associatedUser = getAssociatedTokenAddressSync(
       mint,
       user,
@@ -1071,6 +1118,912 @@ export class OnlinePumpSdk {
   }
 
   /**
+   * Fetch all state and produce a full pre-trade sell quote.
+   *
+   * Returns the net SOL out, fees deducted, price impact, the max single-tx
+   * safe sell amount, and whether the requested amount would overflow.
+   *
+   * @param mint - Token mint address
+   * @param user - Seller wallet
+   * @param amount - Token amount to quote (raw units)
+   * @param tokenProgram - Token program (default: TOKEN_PROGRAM_ID)
+   */
+  async quoteBuy({
+    mint,
+    user,
+    solAmount,
+  }: {
+    mint: PublicKey;
+    user: PublicKey;
+    solAmount: BN;
+  }): Promise<BuyQuote> {
+    const [buyState, global, feeConfig] = await Promise.all([
+      this.fetchBuyState(mint, user),
+      this.fetchGlobal(),
+      this.fetchFeeConfig(),
+    ]);
+
+    const { bondingCurve } = buyState;
+    const impact = calculateBuyPriceImpact({
+      global,
+      feeConfig,
+      mintSupply: bondingCurve.tokenTotalSupply,
+      bondingCurve,
+      solAmount,
+    });
+
+    // Fee = sol * totalFeeBps / (totalFeeBps + 10_000)
+    // This follows from: fee = netInput * totalFeeBps/10_000, netInput + fee = solAmount
+    const { protocolFeeBps, creatorFeeBps } = computeFeesBps({
+      global,
+      feeConfig,
+      mintSupply: bondingCurve.tokenTotalSupply,
+      virtualSolReserves: bondingCurve.virtualSolReserves,
+      virtualTokenReserves: bondingCurve.virtualTokenReserves,
+    });
+    const isCreatorSet = !bondingCurve.creator.equals(PublicKey.default);
+    const totalFeeBps = protocolFeeBps.add(isCreatorSet ? creatorFeeBps : new BN(0));
+    const feesLamports = totalFeeBps.isZero()
+      ? new BN(0)
+      : solAmount.mul(totalFeeBps).div(totalFeeBps.addn(10_000));
+
+    return {
+      tokensOut: impact.outputAmount,
+      feesLamports,
+      priceImpactBps: impact.impactBps,
+      priceAfter: impact.priceAfter,
+      priceBefore: impact.priceBefore,
+    };
+  }
+
+  /**
+   * Buy tokens by specifying a SOL amount to spend.
+   *
+   * Combines `fetchBuyState`, bonding curve math, and `buyInstructions` into
+   * a single call. Useful when you know the SOL budget and want the SDK to
+   * compute the expected token output automatically.
+   *
+   * @param mint - Token mint address
+   * @param user - Buyer wallet
+   * @param solAmount - SOL to spend in lamports
+   * @param slippage - Slippage tolerance as a decimal (0.01 = 1%)
+   */
+  async buyBySolAmount({
+    mint,
+    user,
+    solAmount,
+    slippage,
+  }: {
+    mint: PublicKey;
+    user: PublicKey;
+    solAmount: BN;
+    slippage: number;
+  }): Promise<TransactionInstruction[]> {
+    const [buyState, global, feeConfig] = await Promise.all([
+      this.fetchBuyState(mint, user),
+      this.fetchGlobal(),
+      this.fetchFeeConfig(),
+    ]);
+
+    const tokensOut = getBuyTokenAmountFromSolAmount({
+      global,
+      feeConfig,
+      mintSupply: buyState.bondingCurve.tokenTotalSupply,
+      bondingCurve: buyState.bondingCurve,
+      amount: solAmount,
+    });
+
+    return PUMP_SDK.buyInstructions({
+      global,
+      bondingCurveAccountInfo: buyState.bondingCurveAccountInfo,
+      bondingCurve: buyState.bondingCurve,
+      associatedUserAccountInfo: buyState.associatedUserAccountInfo,
+      mint,
+      user,
+      amount: tokensOut,
+      solAmount,
+      slippage,
+      tokenProgram: buyState.tokenProgram,
+    });
+  }
+
+  /**
+   * Buy tokens, automatically routing to the bonding curve or PumpAMM pool
+   * depending on whether the token has graduated.
+   *
+   * - Bonding curve: uses the standard buy flow with slippage-protected quote
+   * - AMM: computes `minBaseAmountOut` via `buyQuoteInput` and delegates to
+   *   `PUMP_AMM_SDK.buyInstructions`
+   *
+   * @param mint - Token mint address
+   * @param user - Buyer wallet
+   * @param quoteAmountIn - SOL to spend in lamports
+   * @param slippage - Slippage tolerance as a decimal (0.01 = 1%)
+   */
+  async routedBuyInstructions({
+    mint,
+    user,
+    quoteAmountIn,
+    slippage,
+  }: {
+    mint: PublicKey;
+    user: PublicKey;
+    quoteAmountIn: BN;
+    slippage: number;
+  }): Promise<TransactionInstruction[]> {
+    const [buyState, global, feeConfig] = await Promise.all([
+      this.fetchBuyState(mint, user),
+      this.fetchGlobal(),
+      this.fetchFeeConfig(),
+    ]);
+
+    if (buyState.bondingCurve.complete) {
+      const swapState = await this.pumpAmmSdk.swapSolanaState(
+        canonicalPumpPoolPda(mint),
+        user,
+      );
+      // slippage * 100: PUMP_AMM_SDK expects percentage (1 = 1%), not decimal
+      return PUMP_AMM_SDK.buyQuoteInput(swapState, quoteAmountIn, slippage * 100);
+    }
+
+    // Still on bonding curve
+    const tokensOut = getBuyTokenAmountFromSolAmount({
+      global,
+      feeConfig,
+      mintSupply: buyState.bondingCurve.tokenTotalSupply,
+      bondingCurve: buyState.bondingCurve,
+      amount: quoteAmountIn,
+    });
+
+    return PUMP_SDK.buyInstructions({
+      global,
+      bondingCurveAccountInfo: buyState.bondingCurveAccountInfo,
+      bondingCurve: buyState.bondingCurve,
+      associatedUserAccountInfo: buyState.associatedUserAccountInfo,
+      mint,
+      user,
+      amount: tokensOut,
+      solAmount: quoteAmountIn,
+      slippage,
+      tokenProgram: buyState.tokenProgram,
+    });
+  }
+
+  /**
+   * Sell tokens, automatically routing to the bonding curve or PumpAMM pool
+   * depending on whether the token has graduated.
+   *
+   * - Bonding curve: uses the standard sell flow with slippage-protected quote
+   * - AMM: computes `minQuoteAmountOut` from constant-product math and delegates
+   *   to `PUMP_AMM_SDK.sellInstructions`
+   *
+   * @param mint - Token mint address
+   * @param user - Seller wallet
+   * @param baseAmountIn - Token amount to sell (raw units)
+   * @param slippage - Slippage tolerance as a decimal (0.01 = 1%)
+   * @param cashback - Opt in to cashback (default: false)
+   * @param tokenProgram - Token program (default: auto-detected)
+   */
+  async routedSellInstructions({
+    mint,
+    user,
+    baseAmountIn,
+    slippage,
+    cashback = false,
+    tokenProgram,
+  }: {
+    mint: PublicKey;
+    user: PublicKey;
+    baseAmountIn: BN;
+    slippage: number;
+    cashback?: boolean;
+    tokenProgram?: PublicKey;
+  }): Promise<TransactionInstruction[]> {
+    const [sellState, global, feeConfig] = await Promise.all([
+      this.fetchSellState(mint, user, tokenProgram),
+      this.fetchGlobal(),
+      this.fetchFeeConfig(),
+    ]);
+
+    if (sellState.bondingCurve.complete) {
+      const swapState = await this.pumpAmmSdk.swapSolanaState(
+        canonicalPumpPoolPda(mint),
+        user,
+      );
+      return PUMP_AMM_SDK.sellBaseInput(swapState, baseAmountIn, slippage * 100);
+    }
+
+    // Still on bonding curve
+    const solAmount = getSellSolAmountFromTokenAmount({
+      global,
+      feeConfig,
+      mintSupply: sellState.bondingCurve.tokenTotalSupply,
+      bondingCurve: sellState.bondingCurve,
+      amount: baseAmountIn,
+    });
+
+    return PUMP_SDK.sellInstructions({
+      global,
+      bondingCurveAccountInfo: sellState.bondingCurveAccountInfo,
+      bondingCurve: sellState.bondingCurve,
+      mint,
+      user,
+      amount: baseAmountIn,
+      solAmount,
+      slippage,
+      tokenProgram: sellState.tokenProgram,
+      cashback,
+    });
+  }
+
+  /**
+   * Fetch bonding curves for multiple mints in a single RPC call.
+   *
+   * Returns a `Map<mintBase58, BondingCurve | null>` — `null` means the
+   * account does not exist on-chain. Ordering is preserved relative to
+   * the input array.
+   *
+   * @param mints - Array of token mint public keys
+   */
+  async fetchMultipleBondingCurves(
+    mints: PublicKey[],
+  ): Promise<Map<string, BondingCurve | null>> {
+    const pdas = mints.map((m) => bondingCurvePda(m));
+    const accounts = await this.connection.getMultipleAccountsInfo(pdas);
+    const result = new Map<string, BondingCurve | null>();
+    for (let i = 0; i < mints.length; i++) {
+      const mint = mints[i];
+      const info = accounts[i];
+      if (!mint) continue;
+      result.set(
+        mint.toBase58(),
+        info ? PUMP_SDK.decodeBondingCurve(info) : null,
+      );
+    }
+    return result;
+  }
+
+  /**
+   * Fetch a confirmed transaction and decode every Pump program event from its
+   * logs. Events from all three programs (Pump, PumpAMM, PumpFees) are
+   * included. Unrecognised log entries are silently skipped.
+   *
+   * @param signature - Transaction signature to parse
+   * @param commitment - Commitment level (default: "confirmed")
+   * @returns Array of strongly-typed events in log order
+   */
+  async parseTransactionEvents(
+    signature: string,
+    commitment: "confirmed" | "finalized" = "confirmed",
+  ): Promise<PumpEvent[]> {
+    const tx = await this.connection.getTransaction(signature, {
+      commitment,
+      maxSupportedTransactionVersion: 0,
+    });
+    if (!tx?.meta?.logMessages) return [];
+
+    const events: PumpEvent[] = [];
+    for (const log of tx.meta.logMessages) {
+      if (!log.startsWith("Program data: ")) continue;
+      const data = Buffer.from(log.slice("Program data: ".length), "base64");
+      if (data.length < 8) continue;
+      const decoded = tryDecodePumpEvent(data);
+      if (decoded) events.push(decoded);
+    }
+    return events;
+  }
+
+  async quoteSell({
+    mint,
+    user,
+    amount,
+    tokenProgram,
+  }: {
+    mint: PublicKey;
+    user: PublicKey;
+    amount: BN;
+    tokenProgram?: PublicKey;
+  }): Promise<SellQuote> {
+    const [sellState, global, feeConfig] = await Promise.all([
+      this.fetchSellState(mint, user, tokenProgram),
+      this.fetchGlobal(),
+      this.fetchFeeConfig(),
+    ]);
+
+    const { bondingCurve } = sellState;
+    const impact = calculateSellPriceImpact({
+      global,
+      feeConfig,
+      mintSupply: bondingCurve.tokenTotalSupply,
+      bondingCurve,
+      tokenAmount: amount,
+    });
+
+    // Gross SOL before fees: amount * vSol / (vToken + amount)
+    const grossSol = bondingCurve.virtualTokenReserves.add(amount).isZero()
+      ? new BN(0)
+      : amount
+          .mul(bondingCurve.virtualSolReserves)
+          .div(bondingCurve.virtualTokenReserves.add(amount));
+
+    const feesLamports = BN.max(new BN(0), grossSol.sub(impact.outputAmount));
+    const maxSafeAmount = maxSafeSellAmount(bondingCurve.virtualSolReserves);
+
+    return {
+      solOut: impact.outputAmount,
+      feesLamports,
+      priceImpactBps: impact.impactBps,
+      priceBefore: impact.priceBefore,
+      priceAfter: impact.priceAfter,
+      maxSafeAmount,
+      willOverflow: amount.gt(maxSafeAmount),
+    };
+  }
+
+  /**
+   * Build sell instructions for a percentage of the user's current balance.
+   *
+   * @param mint - Token mint address
+   * @param user - Seller wallet
+   * @param percent - Percentage to sell, 0–100 (decimals accepted, e.g. 33.5)
+   * @param slippage - Slippage tolerance in percent (e.g. 0.05 for 5%)
+   * @param tokenProgram - Token program (default: TOKEN_PROGRAM_ID)
+   * @param cashback - Enable cashback volume tracking (default: false)
+   * @returns TransactionInstruction[] — empty if balance is zero
+   */
+  async sellByPercentage({
+    mint,
+    user,
+    percent,
+    slippage,
+    tokenProgram = TOKEN_PROGRAM_ID,
+    cashback = false,
+  }: {
+    mint: PublicKey;
+    user: PublicKey;
+    percent: number;
+    slippage: number;
+    tokenProgram?: PublicKey;
+    cashback?: boolean;
+  }): Promise<TransactionInstruction[]> {
+    if (percent <= 0 || percent > 100) {
+      throw new Error(`percent must be between 0 (exclusive) and 100, got ${percent}`);
+    }
+
+    const balance = await this.getTokenBalance(mint, user, tokenProgram);
+    if (balance.isZero()) return [];
+
+    // Scale to avoid floating-point truncation: work in basis points
+    const bps = Math.round(percent * 100);
+    const amount = balance.muln(bps).divn(10_000);
+    if (amount.isZero()) return [];
+
+    const [sellState, global, feeConfig] = await Promise.all([
+      this.fetchSellState(mint, user, tokenProgram),
+      this.fetchGlobal(),
+      this.fetchFeeConfig(),
+    ]);
+
+    const solAmount = getSellSolAmountFromTokenAmount({
+      global,
+      feeConfig,
+      mintSupply: sellState.bondingCurve.tokenTotalSupply,
+      bondingCurve: sellState.bondingCurve,
+      amount,
+    });
+
+    return PUMP_SDK.sellInstructions({
+      global,
+      bondingCurveAccountInfo: sellState.bondingCurveAccountInfo,
+      bondingCurve: sellState.bondingCurve,
+      mint,
+      user,
+      amount,
+      solAmount,
+      slippage,
+      tokenProgram,
+      cashback,
+    });
+  }
+
+  /**
+   * Build sell instructions that yield approximately `targetSol` lamports.
+   *
+   * Uses binary search over the bonding curve quote to find the minimum token
+   * amount that produces at least `targetSol` after fees. The result is
+   * bounded by `maxSafeSellAmount`, so it is always safe for a single tx.
+   * If the full safe limit is still less than `targetSol`, the limit is used
+   * and you'll receive less than requested — check `quoteSell` first.
+   *
+   * @param mint - Token mint address
+   * @param user - Seller wallet
+   * @param targetSol - Desired SOL out in lamports
+   * @param slippage - Slippage tolerance in percent
+   * @param tokenProgram - Token program (default: TOKEN_PROGRAM_ID)
+   * @param cashback - Enable cashback volume tracking (default: false)
+   */
+  async sellToTargetSol({
+    mint,
+    user,
+    targetSol,
+    slippage,
+    tokenProgram = TOKEN_PROGRAM_ID,
+    cashback = false,
+  }: {
+    mint: PublicKey;
+    user: PublicKey;
+    targetSol: BN;
+    slippage: number;
+    tokenProgram?: PublicKey;
+    cashback?: boolean;
+  }): Promise<TransactionInstruction[]> {
+    const [sellState, global, feeConfig] = await Promise.all([
+      this.fetchSellState(mint, user, tokenProgram),
+      this.fetchGlobal(),
+      this.fetchFeeConfig(),
+    ]);
+
+    const amount = getTokenAmountForTargetSol({
+      global,
+      feeConfig,
+      mintSupply: sellState.bondingCurve.tokenTotalSupply,
+      bondingCurve: sellState.bondingCurve,
+      targetSol,
+    });
+
+    if (amount.isZero()) return [];
+
+    validateSellAmount(amount, sellState.bondingCurve);
+
+    const solAmount = getSellSolAmountFromTokenAmount({
+      global,
+      feeConfig,
+      mintSupply: sellState.bondingCurve.tokenTotalSupply,
+      bondingCurve: sellState.bondingCurve,
+      amount,
+    });
+
+    return PUMP_SDK.sellInstructions({
+      global,
+      bondingCurveAccountInfo: sellState.bondingCurveAccountInfo,
+      bondingCurve: sellState.bondingCurve,
+      mint,
+      user,
+      amount,
+      solAmount,
+      slippage,
+      tokenProgram,
+      cashback,
+    });
+  }
+
+  // ─── AMM Trading Wrappers ────────────────────────────────────────────
+
+  /**
+   * Buy tokens on a graduated AMM pool.
+   *
+   * Accepts either the high-level `{ solAmount, slippageBps }` form used in
+   * tutorials, or the low-level `{ quoteAmountIn, minBaseAmountOut }` form for
+   * callers that have already computed slippage externally.
+   *
+   * @param mint        - Token mint (must be graduated)
+   * @param user        - Buyer wallet
+   * @param solAmount   - SOL to spend in lamports (alias: quoteAmountIn)
+   * @param slippageBps - Slippage tolerance in basis points (e.g. 500 = 5%)
+   */
+  async ammBuyInstructions({
+    mint,
+    user,
+    solAmount,
+    quoteAmountIn,
+    slippageBps,
+    slippage,
+    minBaseAmountOut,
+  }: {
+    mint: PublicKey;
+    user: PublicKey;
+    solAmount?: BN;
+    quoteAmountIn?: BN;
+    slippageBps?: number;
+    slippage?: number;
+    minBaseAmountOut?: BN;
+  }): Promise<TransactionInstruction[]> {
+    const quoteIn = solAmount ?? quoteAmountIn;
+    if (!quoteIn) throw new Error("ammBuyInstructions: solAmount is required");
+    const poolKey = canonicalPumpPoolPda(mint);
+    const state = await this.pumpAmmSdk.swapSolanaState(poolKey, user);
+    if (minBaseAmountOut !== undefined) {
+      return PUMP_AMM_SDK.buyInstructions(state, minBaseAmountOut, quoteIn);
+    }
+    const slippagePct =
+      slippageBps !== undefined ? slippageBps / 100 : (slippage ?? 0.01) * 100;
+    return PUMP_AMM_SDK.buyQuoteInput(state, quoteIn, slippagePct);
+  }
+
+  /**
+   * Sell tokens on a graduated AMM pool.
+   *
+   * Accepts either the high-level `{ tokenAmount, slippageBps }` form or the
+   * low-level `{ baseAmountIn, minQuoteAmountOut }` form.
+   *
+   * @param mint        - Token mint (must be graduated)
+   * @param user        - Seller wallet
+   * @param tokenAmount - Tokens to sell in raw units (alias: baseAmountIn)
+   * @param slippageBps - Slippage tolerance in basis points (e.g. 500 = 5%)
+   */
+  async ammSellInstructions({
+    mint,
+    user,
+    tokenAmount,
+    baseAmountIn,
+    slippageBps,
+    slippage,
+    minQuoteAmountOut,
+  }: {
+    mint: PublicKey;
+    user: PublicKey;
+    tokenAmount?: BN;
+    baseAmountIn?: BN;
+    slippageBps?: number;
+    slippage?: number;
+    minQuoteAmountOut?: BN;
+  }): Promise<TransactionInstruction[]> {
+    const baseIn = tokenAmount ?? baseAmountIn;
+    if (!baseIn) throw new Error("ammSellInstructions: tokenAmount is required");
+    const poolKey = canonicalPumpPoolPda(mint);
+    const state = await this.pumpAmmSdk.swapSolanaState(poolKey, user);
+    if (minQuoteAmountOut !== undefined) {
+      return PUMP_AMM_SDK.sellInstructions(state, baseIn, minQuoteAmountOut);
+    }
+    const slippagePct =
+      slippageBps !== undefined ? slippageBps / 100 : (slippage ?? 0.01) * 100;
+    return PUMP_AMM_SDK.sellBaseInput(state, baseIn, slippagePct);
+  }
+
+  // ─── AMM Liquidity Operations ─────────────────────────────────────────
+
+  /**
+   * Deposit liquidity into a graduated AMM pool.
+   * Specify the exact LP token amount you want out; slippage guards max base/quote in.
+   */
+  async ammDepositInstructions({
+    mint,
+    user,
+    lpTokenOut,
+    slippage,
+  }: {
+    mint: PublicKey;
+    user: PublicKey;
+    lpTokenOut: BN;
+    slippage: number;
+  }): Promise<TransactionInstruction[]> {
+    const poolKey = canonicalPumpPoolPda(mint);
+    const state = await this.pumpAmmSdk.liquiditySolanaState(poolKey, user);
+    return PUMP_AMM_SDK.depositInstructions(state, lpTokenOut, slippage);
+  }
+
+  /**
+   * Withdraw liquidity from a graduated AMM pool.
+   * Specify the LP token amount to burn; slippage guards min base/quote out.
+   */
+  async ammWithdrawInstructions({
+    mint,
+    user,
+    lpTokenIn,
+    slippage,
+  }: {
+    mint: PublicKey;
+    user: PublicKey;
+    lpTokenIn: BN;
+    slippage: number;
+  }): Promise<TransactionInstruction[]> {
+    const poolKey = canonicalPumpPoolPda(mint);
+    const state = await this.pumpAmmSdk.liquiditySolanaState(poolKey, user);
+    return PUMP_AMM_SDK.withdrawInstructions(state, lpTokenIn, slippage);
+  }
+
+  /**
+   * Quote a deposit using base token amount as input.
+   * Returns the quote amount and LP tokens you'll receive, plus slippage-adjusted maxes.
+   */
+  async quoteAmmDepositBaseIn({
+    mint,
+    user,
+    base,
+    slippage,
+  }: {
+    mint: PublicKey;
+    user: PublicKey;
+    base: BN;
+    slippage: number;
+  }): Promise<DepositBaseResult> {
+    const poolKey = canonicalPumpPoolPda(mint);
+    const state = await this.pumpAmmSdk.liquiditySolanaState(poolKey, user);
+    return PUMP_AMM_SDK.depositBaseInput(state, base, slippage);
+  }
+
+  /**
+   * Quote a deposit using quote (SOL) amount as input.
+   * Returns the base tokens and LP tokens you'll receive, plus slippage-adjusted maxes.
+   */
+  async quoteAmmDepositQuoteIn({
+    mint,
+    user,
+    quote,
+    slippage,
+  }: {
+    mint: PublicKey;
+    user: PublicKey;
+    quote: BN;
+    slippage: number;
+  }): Promise<DepositQuoteResult> {
+    const poolKey = canonicalPumpPoolPda(mint);
+    const state = await this.pumpAmmSdk.liquiditySolanaState(poolKey, user);
+    return PUMP_AMM_SDK.depositQuoteInput(state, quote, slippage);
+  }
+
+  /**
+   * Quote how much base and quote (SOL) you'll receive for a given LP token burn.
+   * Returns min amounts after slippage is applied.
+   */
+  async quoteAmmWithdraw({
+    mint,
+    user,
+    lpToken,
+    slippage,
+  }: {
+    mint: PublicKey;
+    user: PublicKey;
+    lpToken: BN;
+    slippage: number;
+  }): Promise<WithdrawResult> {
+    const poolKey = canonicalPumpPoolPda(mint);
+    const state = await this.pumpAmmSdk.liquiditySolanaState(poolKey, user);
+    return PUMP_AMM_SDK.withdrawInputs(state, lpToken, slippage);
+  }
+
+  /**
+   * UI autocomplete: given a base token input, calculate quote and LP out.
+   * Does NOT include slippage maxes — use quoteAmmDepositBaseIn for those.
+   */
+  async ammDepositAutocompleteFromBase({
+    mint,
+    user,
+    base,
+    slippage,
+  }: {
+    mint: PublicKey;
+    user: PublicKey;
+    base: BN;
+    slippage: number;
+  }): Promise<DepositQuoteAndLpTokenFromBaseResult> {
+    const poolKey = canonicalPumpPoolPda(mint);
+    const state = await this.pumpAmmSdk.liquiditySolanaState(poolKey, user);
+    return PUMP_AMM_SDK.depositAutocompleteQuoteAndLpTokenFromBase(
+      state,
+      base,
+      slippage,
+    );
+  }
+
+  /**
+   * UI autocomplete: given a quote (SOL) input, calculate base and LP out.
+   * Does NOT include slippage maxes — use quoteAmmDepositQuoteIn for those.
+   */
+  async ammDepositAutocompleteFromQuote({
+    mint,
+    user,
+    quote,
+    slippage,
+  }: {
+    mint: PublicKey;
+    user: PublicKey;
+    quote: BN;
+    slippage: number;
+  }): Promise<DepositBaseAndLpTokenFromQuoteResult> {
+    const poolKey = canonicalPumpPoolPda(mint);
+    const state = await this.pumpAmmSdk.liquiditySolanaState(poolKey, user);
+    return PUMP_AMM_SDK.depositAutocompleteBaseAndLpTokenFromQuote(
+      state,
+      quote,
+      slippage,
+    );
+  }
+
+  /**
+   * UI autocomplete: given an LP token amount to burn, calculate base and quote out.
+   * Returns display amounts without slippage applied.
+   */
+  async ammWithdrawAutocomplete({
+    mint,
+    user,
+    lpToken,
+    slippage,
+  }: {
+    mint: PublicKey;
+    user: PublicKey;
+    lpToken: BN;
+    slippage: number;
+  }): Promise<WithdrawAutocompleteResult> {
+    const poolKey = canonicalPumpPoolPda(mint);
+    const state = await this.pumpAmmSdk.liquiditySolanaState(poolKey, user);
+    return PUMP_AMM_SDK.withdrawAutoCompleteBaseAndQuoteFromLpToken(
+      state,
+      lpToken,
+      slippage,
+    );
+  }
+
+  /**
+   * Get the user's LP token balance for a graduated pool.
+   */
+  async getLpTokenBalance(mint: PublicKey, user: PublicKey): Promise<BN> {
+    const pool = await this.fetchPool(mint);
+    return this.getTokenBalance(pool.lpMint, user, TOKEN_PROGRAM_ID);
+  }
+
+  /**
+   * Buy tokens on a graduated AMM pool by specifying the SOL amount to spend.
+   * Slippage, fee deduction, and wSOL wrapping are handled by PUMP_AMM_SDK internally.
+   *
+   * @param mint - Token mint (must be graduated)
+   * @param user - Buyer wallet
+   * @param quoteAmountIn - SOL to spend in lamports
+   * @param slippage - Slippage tolerance as a decimal (0.01 = 1%)
+   */
+  async ammBuyBySolAmount({
+    mint,
+    user,
+    quoteAmountIn,
+    slippage,
+  }: {
+    mint: PublicKey;
+    user: PublicKey;
+    quoteAmountIn: BN;
+    slippage: number;
+  }): Promise<TransactionInstruction[]> {
+    const swapState = await this.pumpAmmSdk.swapSolanaState(
+      canonicalPumpPoolPda(mint),
+      user,
+    );
+    return PUMP_AMM_SDK.buyQuoteInput(swapState, quoteAmountIn, slippage * 100);
+  }
+
+  /**
+   * Sell an exact token amount on a graduated AMM pool.
+   * Min SOL output and wSOL unwrapping are handled by PUMP_AMM_SDK internally.
+   *
+   * @param mint - Token mint (must be graduated)
+   * @param user - Seller wallet
+   * @param baseAmountIn - Tokens to sell (raw units)
+   * @param slippage - Slippage tolerance as a decimal (0.01 = 1%)
+   */
+  async ammSellByTokenAmount({
+    mint,
+    user,
+    baseAmountIn,
+    slippage,
+  }: {
+    mint: PublicKey;
+    user: PublicKey;
+    baseAmountIn: BN;
+    slippage: number;
+  }): Promise<TransactionInstruction[]> {
+    const swapState = await this.pumpAmmSdk.swapSolanaState(
+      canonicalPumpPoolPda(mint),
+      user,
+    );
+    return PUMP_AMM_SDK.sellBaseInput(swapState, baseAmountIn, slippage * 100);
+  }
+
+  /**
+   * Pre-trade buy quote for a graduated AMM pool.
+   * Computes expected tokens out and protocol fees using exact on-chain math,
+   * without building any instructions.
+   *
+   * @param mint - Token mint (must be graduated)
+   * @param user - Buyer wallet (needed to resolve swap state)
+   * @param quoteAmountIn - SOL to spend in lamports
+   */
+  async ammQuoteBuy({
+    mint,
+    user,
+    quoteAmountIn,
+  }: {
+    mint: PublicKey;
+    user: PublicKey;
+    quoteAmountIn: BN;
+  }): Promise<AmmBuyQuote> {
+    const swapState = await this.pumpAmmSdk.swapSolanaState(
+      canonicalPumpPoolPda(mint),
+      user,
+    );
+    const result = buyQuoteInput({
+      quote: quoteAmountIn,
+      slippage: 0,
+      baseReserve: swapState.poolBaseAmount,
+      quoteReserve: swapState.poolQuoteAmount,
+      globalConfig: swapState.globalConfig,
+      baseMintAccount: swapState.baseMintAccount,
+      baseMint: mint,
+      coinCreator: swapState.pool.coinCreator,
+      creator: swapState.pool.creator,
+      feeConfig: swapState.feeConfig,
+    });
+    return {
+      tokensOut: result.base,
+      solSpent: quoteAmountIn,
+      feesLamports: BN.max(new BN(0), quoteAmountIn.sub(result.internalQuoteWithoutFees)),
+      poolBaseAmount: swapState.poolBaseAmount,
+      poolQuoteAmount: swapState.poolQuoteAmount,
+    };
+  }
+
+  /**
+   * Pre-trade sell quote for a graduated AMM pool.
+   * Computes expected SOL out and protocol fees using exact on-chain math,
+   * without building any instructions.
+   *
+   * @param mint - Token mint (must be graduated)
+   * @param user - Seller wallet (needed to resolve swap state)
+   * @param baseAmountIn - Tokens to sell (raw units)
+   */
+  async ammQuoteSell({
+    mint,
+    user,
+    baseAmountIn,
+  }: {
+    mint: PublicKey;
+    user: PublicKey;
+    baseAmountIn: BN;
+  }): Promise<AmmSellQuote> {
+    const swapState = await this.pumpAmmSdk.swapSolanaState(
+      canonicalPumpPoolPda(mint),
+      user,
+    );
+    const result = sellBaseInput({
+      base: baseAmountIn,
+      slippage: 0,
+      baseReserve: swapState.poolBaseAmount,
+      quoteReserve: swapState.poolQuoteAmount,
+      globalConfig: swapState.globalConfig,
+      baseMintAccount: swapState.baseMintAccount,
+      baseMint: mint,
+      coinCreator: swapState.pool.coinCreator,
+      creator: swapState.pool.creator,
+      feeConfig: swapState.feeConfig,
+    });
+    return {
+      solOut: result.uiQuote,
+      tokensSold: baseAmountIn,
+      feesLamports: BN.max(new BN(0), result.internalQuoteAmountOut.sub(result.uiQuote)),
+      poolBaseAmount: swapState.poolBaseAmount,
+      poolQuoteAmount: swapState.poolQuoteAmount,
+    };
+  }
+
+  /**
+   * Fetch AMM pools for multiple mints in a single RPC call.
+   *
+   * Returns a `Map<mintBase58, Pool | null>` — `null` means the token has not
+   * graduated or the pool account does not exist. Ordering matches input array.
+   *
+   * @param mints - Array of token mint public keys
+   */
+  async fetchMultiplePools(mints: PublicKey[]): Promise<Map<string, Pool | null>> {
+    const pdas = mints.map((m) => canonicalPumpPoolPda(m));
+    const accounts = await this.connection.getMultipleAccountsInfo(pdas);
+    const result = new Map<string, Pool | null>();
+    for (let i = 0; i < mints.length; i++) {
+      const mint = mints[i];
+      const info = accounts[i];
+      if (!mint) continue;
+      result.set(mint.toBase58(), info ? PUMP_AMM_SDK.decodePool(info) : null);
+    }
+    return result;
+  }
+
+  /**
    * Check if a token has graduated to the AMM by checking if its
    * canonical pool account exists on-chain.
    *
@@ -1121,6 +2074,63 @@ export class OnlinePumpSdk {
   }
 
   /**
+   * Fetch the fee sharing config for a token mint. Throws if not found.
+   *
+   * A sharing config exists when the creator has set up multi-recipient fee
+   * splitting via `createFeeSharingConfig`. Check `BondingCurve.creator` or
+   * `Pool.coinCreator` — if it equals `feeSharingConfigPda(mint)`, the config
+   * is active and this method will return it.
+   */
+  async fetchSharingConfig(mint: PublicKey) {
+    const pda = feeSharingConfigPda(mint);
+    const accountInfo = await this.connection.getAccountInfo(pda);
+    if (!accountInfo) {
+      throw new Error(
+        `Sharing config not found for mint: ${mint.toBase58()}. ` +
+          `Use fetchSharingConfigNullable() if the config may not exist.`,
+      );
+    }
+    return PUMP_SDK.decodeSharingConfig(accountInfo);
+  }
+
+  /**
+   * Fetch the fee sharing config for a token mint, returning null if it doesn't exist.
+   *
+   * Safe to call regardless of whether the creator has set up fee sharing.
+   */
+  async fetchSharingConfigNullable(mint: PublicKey) {
+    const accountInfo = await this.connection.getAccountInfo(
+      feeSharingConfigPda(mint),
+    );
+    if (!accountInfo) return null;
+    return PUMP_SDK.decodeSharingConfig(accountInfo);
+  }
+
+  /**
+   * Fetch fee sharing configs for multiple mints in a single RPC call.
+   * Returns a map from mint base58 → config (or null if the mint has no config).
+   *
+   * @example
+   * const configs = await sdk.fetchMultipleSharingConfigs([mintA, mintB]);
+   * for (const [mint, config] of configs) {
+   *   if (config) console.log(mint, "has", config.shareholders.length, "shareholders");
+   * }
+   */
+  async fetchMultipleSharingConfigs(mints: PublicKey[]) {
+    const pdas = mints.map(feeSharingConfigPda);
+    const accountInfos = await this.connection.getMultipleAccountsInfo(pdas);
+    const result = new Map<string, ReturnType<typeof PUMP_SDK.decodeSharingConfig> | null>();
+    for (const [i, mint] of mints.entries()) {
+      const info = accountInfos[i];
+      result.set(
+        mint.toBase58(),
+        info ? PUMP_SDK.decodeSharingConfig(info) : null,
+      );
+    }
+    return result;
+  }
+
+  /**
    * Fetch a social fee PDA account by user ID and platform.
    */
   async fetchSocialFeePda(
@@ -1151,7 +2161,184 @@ export class OnlinePumpSdk {
     // SPL Token account data layout: mint (32) + owner (32) + amount (8)
     return new BN(accountInfo.data.subarray(64, 72), "le");
   }
+
+  // ─── AMM Liquidity (Deposit / Withdraw) ─────────────────────────────
+
+  /**
+   * Fetch the user's LP token balance for a graduated AMM pool.
+   *
+   * LP tokens are standard SPL tokens in the user's ATA for the pool's LP
+   * mint. They represent a proportional share of the pool's base + quote
+   * reserves.
+   *
+   * @param mint - The graduated token's mint address
+   * @param user - User wallet
+   */
+  async fetchLpBalance(mint: PublicKey, user: PublicKey): Promise<BN> {
+    const pool = await this.fetchPool(mint);
+    return this.getTokenBalance(pool.lpMint, user, TOKEN_PROGRAM_ID);
+  }
+
+  /**
+   * Quote a deposit into a graduated AMM pool, specifying how many base
+   * tokens (the traded token) you want to contribute.
+   *
+   * Returns the proportional SOL (quote) required and the LP tokens you'd
+   * receive. No transaction is built — use `depositByBaseAmount` to execute.
+   *
+   * @param mint - Token mint address
+   * @param baseAmount - Base tokens to deposit (raw units)
+   * @param slippage - Slippage tolerance as a decimal (0.01 = 1%)
+   */
+  async quoteDepositByBase(
+    mint: PublicKey,
+    baseAmount: BN,
+    slippage: number,
+  ): Promise<DepositQuoteAndLpTokenFromBaseResult> {
+    const poolKey = canonicalPumpPoolPda(mint);
+    const state = await this.pumpAmmSdk.liquiditySolanaState(
+      poolKey,
+      PublicKey.default,
+    );
+    return PUMP_AMM_SDK.depositAutocompleteQuoteAndLpTokenFromBase(
+      state,
+      baseAmount,
+      slippage * 100,
+    );
+  }
+
+  /**
+   * Quote a withdrawal from a graduated AMM pool.
+   *
+   * Returns the minimum base (tokens) and quote (SOL) you'd receive for
+   * burning `lpAmount` LP tokens at the current reserves. No transaction
+   * is built — use `withdrawByLpAmount` to execute.
+   *
+   * @param mint - Token mint address
+   * @param lpAmount - LP tokens to redeem
+   * @param slippage - Slippage tolerance as a decimal (0.01 = 1%)
+   */
+  async quoteWithdraw(
+    mint: PublicKey,
+    lpAmount: BN,
+    slippage: number,
+  ): Promise<WithdrawAutocompleteResult> {
+    const poolKey = canonicalPumpPoolPda(mint);
+    const state = await this.pumpAmmSdk.liquiditySolanaState(
+      poolKey,
+      PublicKey.default,
+    );
+    return PUMP_AMM_SDK.withdrawAutoCompleteBaseAndQuoteFromLpToken(
+      state,
+      lpAmount,
+      slippage * 100,
+    );
+  }
+
+  /**
+   * Build instructions to deposit liquidity into a graduated AMM pool,
+   * specifying the base token (the graduated token) amount to contribute.
+   *
+   * The SDK computes the proportional SOL required from current reserves and
+   * applies slippage tolerance to both inputs. Includes WSOL wrapping and
+   * LP ATA creation if needed.
+   *
+   * @param mint - Token mint address
+   * @param user - Depositor wallet
+   * @param baseAmount - Base tokens to deposit (raw units)
+   * @param slippage - Slippage tolerance as a decimal (0.01 = 1%)
+   */
+  async depositByBaseAmount({
+    mint,
+    user,
+    baseAmount,
+    slippage,
+  }: {
+    mint: PublicKey;
+    user: PublicKey;
+    baseAmount: BN;
+    slippage: number;
+  }): Promise<TransactionInstruction[]> {
+    const poolKey = canonicalPumpPoolPda(mint);
+    const state = await this.pumpAmmSdk.liquiditySolanaState(poolKey, user);
+    const { lpToken } = PUMP_AMM_SDK.depositAutocompleteQuoteAndLpTokenFromBase(
+      state,
+      baseAmount,
+      slippage * 100,
+    );
+    return PUMP_AMM_SDK.depositInstructions(state, lpToken, slippage * 100);
+  }
+
+  /**
+   * Build instructions to deposit liquidity into a graduated AMM pool,
+   * specifying the SOL (quote) amount to contribute.
+   *
+   * The SDK computes the proportional base tokens required from current
+   * reserves and applies slippage tolerance to both inputs. Includes WSOL
+   * wrapping and LP ATA creation if needed.
+   *
+   * @param mint - Token mint address
+   * @param user - Depositor wallet
+   * @param quoteAmount - SOL to deposit in lamports
+   * @param slippage - Slippage tolerance as a decimal (0.01 = 1%)
+   */
+  async depositByQuoteAmount({
+    mint,
+    user,
+    quoteAmount,
+    slippage,
+  }: {
+    mint: PublicKey;
+    user: PublicKey;
+    quoteAmount: BN;
+    slippage: number;
+  }): Promise<TransactionInstruction[]> {
+    const poolKey = canonicalPumpPoolPda(mint);
+    const state = await this.pumpAmmSdk.liquiditySolanaState(poolKey, user);
+    const { lpToken } = PUMP_AMM_SDK.depositAutocompleteBaseAndLpTokenFromQuote(
+      state,
+      quoteAmount,
+      slippage * 100,
+    );
+    return PUMP_AMM_SDK.depositInstructions(state, lpToken, slippage * 100);
+  }
+
+  /**
+   * Build instructions to withdraw liquidity from a graduated AMM pool.
+   *
+   * Burns lpAmount LP tokens and returns proportional base (tokens) and
+   * quote (SOL) to the user's wallet, with WSOL unwrapping included.
+   *
+   * @param mint - Token mint address
+   * @param user - Withdrawer wallet
+   * @param lpAmount - LP tokens to redeem
+   * @param slippage - Slippage tolerance as a decimal (0.01 = 1%)
+   */
+  async withdrawByLpAmount({
+    mint,
+    user,
+    lpAmount,
+    slippage,
+  }: {
+    mint: PublicKey;
+    user: PublicKey;
+    lpAmount: BN;
+    slippage: number;
+  }): Promise<TransactionInstruction[]> {
+    const poolKey = canonicalPumpPoolPda(mint);
+    const state = await this.pumpAmmSdk.liquiditySolanaState(poolKey, user);
+    return PUMP_AMM_SDK.withdrawInstructions(state, lpAmount, slippage * 100);
+  }
 }
+
+export type {
+  DepositBaseResult,
+  DepositQuoteResult,
+  WithdrawResult,
+  WithdrawAutocompleteResult,
+  DepositQuoteAndLpTokenFromBaseResult,
+  DepositBaseAndLpTokenFromQuoteResult,
+} from "@pump-fun/pump-swap-sdk";
 
 export interface MinimumDistributableFeeResult extends MinimumDistributableFeeEvent {
   isGraduated: boolean;
@@ -1160,6 +2347,138 @@ export interface MinimumDistributableFeeResult extends MinimumDistributableFeeEv
 export interface DistributeCreatorFeeResult {
   instructions: TransactionInstruction[];
   isGraduated: boolean;
+}
+
+export interface AmmBuyQuote {
+  /** Expected tokens received after all AMM fees, in raw token units. */
+  tokensOut: BN;
+  /** SOL spent (lamports). */
+  solSpent: BN;
+  /** Protocol + LP + creator fees deducted (lamports). */
+  feesLamports: BN;
+  /** Pool base token reserve at quote time. */
+  poolBaseAmount: BN;
+  /** Pool quote (SOL) reserve at quote time. */
+  poolQuoteAmount: BN;
+}
+
+export interface AmmSellQuote {
+  /** Net SOL received after all AMM fees, in lamports. */
+  solOut: BN;
+  /** Tokens sold (raw units). */
+  tokensSold: BN;
+  /** Protocol + LP + creator fees deducted (lamports). */
+  feesLamports: BN;
+  /** Pool base token reserve at quote time. */
+  poolBaseAmount: BN;
+  /** Pool quote (SOL) reserve at quote time. */
+  poolQuoteAmount: BN;
+}
+
+export interface SellQuote {
+  /** Net SOL received after all fees, in lamports. */
+  solOut: BN;
+  /** Total fees deducted (protocol + creator), in lamports. */
+  feesLamports: BN;
+  /** Price impact of the sell in basis points (100 bps = 1%). */
+  priceImpactBps: number;
+  /** Spot price per token before the sell executes, in lamports. */
+  priceBefore: BN;
+  /** Spot price per token after the sell executes, in lamports. */
+  priceAfter: BN;
+  /** Maximum tokens safely sellable in a single instruction without overflow. */
+  maxSafeAmount: BN;
+  /** True if the requested amount exceeds maxSafeAmount and requires sellChunked. */
+  willOverflow: boolean;
+}
+
+export interface BuyQuote {
+  /** Expected tokens received after all fees, in raw token units. */
+  tokensOut: BN;
+  /** Total fees deducted (protocol + creator), in lamports. */
+  feesLamports: BN;
+  /** Price impact of the buy in basis points (100 bps = 1%). */
+  priceImpactBps: number;
+  /** Spot price per token before the buy executes, in lamports. */
+  priceBefore: BN;
+  /** Spot price per token after the buy executes, in lamports. */
+  priceAfter: BN;
+}
+
+export type PumpEvent =
+  // ── Pump bonding curve ──────────────────────────────────────────────
+  | { type: "trade"; data: TradeEvent }
+  | { type: "create"; data: CreateEvent }
+  | { type: "complete"; data: CompleteEvent }
+  | { type: "completePumpAmmMigration"; data: CompletePumpAmmMigrationEvent }
+  | { type: "setCreator"; data: SetCreatorEvent }
+  | { type: "collectCreatorFee"; data: CollectCreatorFeeEvent }
+  | { type: "claimCashback"; data: ClaimCashbackEvent }
+  | { type: "claimTokenIncentives"; data: ClaimTokenIncentivesEvent }
+  | { type: "extendAccount"; data: ExtendAccountEvent }
+  | { type: "initUserVolumeAccumulator"; data: InitUserVolumeAccumulatorEvent }
+  | { type: "syncUserVolumeAccumulator"; data: SyncUserVolumeAccumulatorEvent }
+  | { type: "closeUserVolumeAccumulator"; data: CloseUserVolumeAccumulatorEvent }
+  | { type: "adminSetCreator"; data: AdminSetCreatorEvent }
+  | { type: "migrateBondingCurveCreator"; data: MigrateBondingCurveCreatorEvent }
+  | { type: "distributeCreatorFees"; data: DistributeCreatorFeesEvent }
+  // ── PumpAMM ─────────────────────────────────────────────────────────
+  | { type: "ammBuy"; data: AmmBuyEvent }
+  | { type: "ammSell"; data: AmmSellEvent }
+  | { type: "deposit"; data: DepositEvent }
+  | { type: "withdraw"; data: WithdrawEvent }
+  | { type: "createPool"; data: CreatePoolEvent }
+  // ── PumpFees ─────────────────────────────────────────────────────────
+  | { type: "createFeeSharingConfig"; data: CreateFeeSharingConfigEvent }
+  | { type: "updateFeeShares"; data: UpdateFeeSharesEvent }
+  | { type: "resetFeeSharingConfig"; data: ResetFeeSharingConfigEvent }
+  | { type: "revokeFeeSharingAuthority"; data: RevokeFeeSharingAuthorityEvent }
+  | { type: "transferFeeSharingAuthority"; data: TransferFeeSharingAuthorityEvent }
+  | { type: "socialFeePdaCreated"; data: SocialFeePdaCreatedEvent }
+  | { type: "socialFeePdaClaimed"; data: SocialFeePdaClaimedEvent };
+
+function tryDecodePumpEvent(data: Buffer): PumpEvent | null {
+  const decoders: Array<() => PumpEvent | null> = [
+    // Pump bonding curve
+    () => { const d = PUMP_SDK.decodeTradeEvent(data); return d ? { type: "trade", data: d } : null; },
+    () => { const d = PUMP_SDK.decodeCreateEvent(data); return d ? { type: "create", data: d } : null; },
+    () => { const d = PUMP_SDK.decodeCompleteEvent(data); return d ? { type: "complete", data: d } : null; },
+    () => { const d = PUMP_SDK.decodeCompletePumpAmmMigrationEvent(data); return d ? { type: "completePumpAmmMigration", data: d } : null; },
+    () => { const d = PUMP_SDK.decodeSetCreatorEvent(data); return d ? { type: "setCreator", data: d } : null; },
+    () => { const d = PUMP_SDK.decodeCollectCreatorFeeEvent(data); return d ? { type: "collectCreatorFee", data: d } : null; },
+    () => { const d = PUMP_SDK.decodeClaimCashbackEvent(data); return d ? { type: "claimCashback", data: d } : null; },
+    () => { const d = PUMP_SDK.decodeClaimTokenIncentivesEvent(data); return d ? { type: "claimTokenIncentives", data: d } : null; },
+    () => { const d = PUMP_SDK.decodeExtendAccountEvent(data); return d ? { type: "extendAccount", data: d } : null; },
+    () => { const d = PUMP_SDK.decodeInitUserVolumeAccumulatorEvent(data); return d ? { type: "initUserVolumeAccumulator", data: d } : null; },
+    () => { const d = PUMP_SDK.decodeSyncUserVolumeAccumulatorEvent(data); return d ? { type: "syncUserVolumeAccumulator", data: d } : null; },
+    () => { const d = PUMP_SDK.decodeCloseUserVolumeAccumulatorEvent(data); return d ? { type: "closeUserVolumeAccumulator", data: d } : null; },
+    () => { const d = PUMP_SDK.decodeAdminSetCreatorEvent(data); return d ? { type: "adminSetCreator", data: d } : null; },
+    () => { const d = PUMP_SDK.decodeMigrateBondingCurveCreatorEvent(data); return d ? { type: "migrateBondingCurveCreator", data: d } : null; },
+    () => { const d = PUMP_SDK.decodeDistributeCreatorFeesEvent(data); return d ? { type: "distributeCreatorFees", data: d } : null; },
+    // PumpAMM
+    () => { const d = PUMP_SDK.decodeAmmBuyEvent(data); return d ? { type: "ammBuy", data: d } : null; },
+    () => { const d = PUMP_SDK.decodeAmmSellEvent(data); return d ? { type: "ammSell", data: d } : null; },
+    () => { const d = PUMP_SDK.decodeDepositEvent(data); return d ? { type: "deposit", data: d } : null; },
+    () => { const d = PUMP_SDK.decodeWithdrawEvent(data); return d ? { type: "withdraw", data: d } : null; },
+    () => { const d = PUMP_SDK.decodeCreatePoolEvent(data); return d ? { type: "createPool", data: d } : null; },
+    // PumpFees
+    () => { const d = PUMP_SDK.decodeCreateFeeSharingConfigEvent(data); return d ? { type: "createFeeSharingConfig", data: d } : null; },
+    () => { const d = PUMP_SDK.decodeUpdateFeeSharesEvent(data); return d ? { type: "updateFeeShares", data: d } : null; },
+    () => { const d = PUMP_SDK.decodeResetFeeSharingConfigEvent(data); return d ? { type: "resetFeeSharingConfig", data: d } : null; },
+    () => { const d = PUMP_SDK.decodeRevokeFeeSharingAuthorityEvent(data); return d ? { type: "revokeFeeSharingAuthority", data: d } : null; },
+    () => { const d = PUMP_SDK.decodeTransferFeeSharingAuthorityEvent(data); return d ? { type: "transferFeeSharingAuthority", data: d } : null; },
+    () => { const d = PUMP_SDK.decodeSocialFeePdaCreatedEvent(data); return d ? { type: "socialFeePdaCreated", data: d } : null; },
+    () => { const d = PUMP_SDK.decodeSocialFeePdaClaimedEvent(data); return d ? { type: "socialFeePdaClaimed", data: d } : null; },
+  ];
+  for (const decode of decoders) {
+    try {
+      const result = decode();
+      if (result) return result;
+    } catch {
+      // discriminator mismatch — try next
+    }
+  }
+  return null;
 }
 
 

@@ -3,7 +3,7 @@ import {
   TOKEN_PROGRAM_ID,
   getAssociatedTokenAddressSync,
 } from "@solana/spl-token";
-import { PublicKey } from "@solana/web3.js";
+import { PublicKey, TransactionInstruction } from "@solana/web3.js";
 import BN from "bn.js";
 
 import { bondingCurveMarketCap } from "./bondingCurve";
@@ -163,12 +163,35 @@ export const BREAKING_FEE_RECIPIENTS: PublicKey[] = [
   new PublicKey("A7hAgCzFw14fejgCp387JUJRMNyz4j89JKnhtKU8piqW"),
 ];
 
+/** Returns true if pubkey is one of the 8 breaking fee recipients. */
+export function isBreakingFeeRecipient(pubkey: PublicKey): boolean {
+  const b58 = pubkey.toBase58();
+  return BREAKING_FEE_RECIPIENTS.some((r) => r.toBase58() === b58);
+}
+
 /** Pick one of the 8 breaking fee recipients at random. */
 export function pickBreakingFeeRecipient(): PublicKey {
   return BREAKING_FEE_RECIPIENTS[
     Math.floor(Math.random() * BREAKING_FEE_RECIPIENTS.length)
   ]!;
 }
+
+/**
+ * Pre-computed WSOL ATAs for each of the 8 breaking fee recipients, keyed by
+ * recipient base58 address. Use this in high-throughput paths (e.g. AMM trading
+ * bots) to avoid re-deriving the ATA on every instruction.
+ *
+ * @example
+ * const recipient = pickBreakingFeeRecipient();
+ * const wsol = BREAKING_FEE_RECIPIENT_WSOL_ATAS.get(recipient.toBase58())!;
+ */
+export const BREAKING_FEE_RECIPIENT_WSOL_ATAS: ReadonlyMap<string, PublicKey> =
+  new Map(
+    BREAKING_FEE_RECIPIENTS.map((r) => [
+      r.toBase58(),
+      getAssociatedTokenAddressSync(NATIVE_MINT, r, true, TOKEN_PROGRAM_ID),
+    ]),
+  );
 
 /**
  * The two trailing accounts every PumpAMM buy/sell must carry after the 2026-04-28
@@ -191,16 +214,173 @@ export function buildAmmBreakingFeeRecipientAccounts(
       isSigner: false,
     },
     {
-      pubkey: getAssociatedTokenAddressSync(
-        NATIVE_MINT,
-        feeRecipient,
-        true,
-        TOKEN_PROGRAM_ID,
-      ),
+      pubkey: BREAKING_FEE_RECIPIENT_WSOL_ATAS.get(feeRecipient.toBase58()) ??
+        getAssociatedTokenAddressSync(
+          NATIVE_MINT,
+          feeRecipient,
+          true,
+          TOKEN_PROGRAM_ID,
+        ),
       isWritable: true,
       isSigner: false,
     },
   ];
 }
 
+export interface BreakingFeeValidation {
+  valid: boolean;
+  errors: string[];
+}
 
+/**
+ * Validate the account layout of a bonding curve buy or sell instruction
+ * produced after the 2026-04-28 upgrade.
+ *
+ * @param ix   The TransactionInstruction to inspect.
+ * @param kind "buy" (18 accounts) | "sell" (16) | "sell-cashback" (17)
+ */
+export function validateBcInstruction(
+  ix: TransactionInstruction,
+  kind: "buy" | "sell" | "sell-cashback",
+): BreakingFeeValidation {
+  const expected = kind === "buy" ? 18 : kind === "sell-cashback" ? 17 : 16;
+  const errors: string[] = [];
+
+  if (ix.keys.length !== expected) {
+    errors.push(
+      `expected ${expected} accounts for BC ${kind}, got ${ix.keys.length}`,
+    );
+  }
+
+  const tail = ix.keys[ix.keys.length - 1];
+  if (!tail) {
+    errors.push("instruction has no accounts");
+    return { valid: false, errors };
+  }
+
+  if (!isBreakingFeeRecipient(tail.pubkey)) {
+    errors.push(
+      `last account (${tail.pubkey.toBase58()}) is not a breaking fee recipient`,
+    );
+  }
+  if (!tail.isWritable) {
+    errors.push("last account (breaking fee recipient) must be mutable");
+  }
+  if (tail.isSigner) {
+    errors.push("last account (breaking fee recipient) must not be a signer");
+  }
+
+  return { valid: errors.length === 0, errors };
+}
+
+/**
+ * Validate the account layout of a PumpAMM buy or sell instruction produced
+ * after the 2026-04-28 upgrade.
+ *
+ * @param ix   The TransactionInstruction to inspect.
+ * @param kind "buy" (26) | "buy-cashback" (27) | "sell" (24) | "sell-cashback" (26)
+ */
+export function validateAmmInstruction(
+  ix: TransactionInstruction,
+  kind: "buy" | "buy-cashback" | "sell" | "sell-cashback",
+): BreakingFeeValidation {
+  const expected =
+    kind === "buy"
+      ? 26
+      : kind === "buy-cashback"
+        ? 27
+        : kind === "sell"
+          ? 24
+          : 26; // sell-cashback
+  const errors: string[] = [];
+
+  if (ix.keys.length !== expected) {
+    errors.push(
+      `expected ${expected} accounts for AMM ${kind}, got ${ix.keys.length}`,
+    );
+  }
+
+  const ataAccount = ix.keys[ix.keys.length - 1];
+  const recipientAccount = ix.keys[ix.keys.length - 2];
+
+  if (!recipientAccount || !ataAccount) {
+    errors.push("instruction has fewer than 2 accounts");
+    return { valid: false, errors };
+  }
+
+  if (!isBreakingFeeRecipient(recipientAccount.pubkey)) {
+    errors.push(
+      `second-to-last account (${recipientAccount.pubkey.toBase58()}) is not a breaking fee recipient`,
+    );
+  }
+  if (recipientAccount.isWritable) {
+    errors.push("AMM fee recipient (second-to-last) must be readonly");
+  }
+  if (recipientAccount.isSigner) {
+    errors.push("AMM fee recipient must not be a signer");
+  }
+
+  if (isBreakingFeeRecipient(recipientAccount.pubkey)) {
+    const expectedAta = BREAKING_FEE_RECIPIENT_WSOL_ATAS.get(
+      recipientAccount.pubkey.toBase58(),
+    )!;
+    if (!ataAccount.pubkey.equals(expectedAta)) {
+      errors.push(
+        `last account (WSOL ATA) does not match expected ATA for recipient ${recipientAccount.pubkey.toBase58()}`,
+      );
+    }
+  }
+  if (!ataAccount.isWritable) {
+    errors.push("AMM WSOL ATA (last account) must be mutable");
+  }
+  if (ataAccount.isSigner) {
+    errors.push("AMM WSOL ATA must not be a signer");
+  }
+
+  return { valid: errors.length === 0, errors };
+}
+
+/**
+ * Append the breaking fee recipient trailing account to a bonding curve buy or
+ * sell instruction that was built without it (pre-upgrade code). Returns a new
+ * instruction — the original is not mutated.
+ *
+ * Idempotent: if the tail is already a breaking fee recipient, the instruction
+ * is returned unchanged.
+ */
+export function patchBcInstruction(
+  ix: TransactionInstruction,
+): TransactionInstruction {
+  const tail = ix.keys[ix.keys.length - 1];
+  if (tail && isBreakingFeeRecipient(tail.pubkey)) return ix;
+
+  return new TransactionInstruction({
+    keys: [
+      ...ix.keys,
+      { pubkey: pickBreakingFeeRecipient(), isWritable: true, isSigner: false },
+    ],
+    programId: ix.programId,
+    data: ix.data,
+  });
+}
+
+/**
+ * Append the two breaking fee recipient trailing accounts to a PumpAMM buy or
+ * sell instruction built without them (pre-upgrade code). Returns a new
+ * instruction — the original is not mutated.
+ *
+ * Idempotent: if the second-to-last account is already a breaking fee
+ * recipient, the instruction is returned unchanged.
+ */
+export function patchAmmInstruction(
+  ix: TransactionInstruction,
+): TransactionInstruction {
+  const secondToLast = ix.keys[ix.keys.length - 2];
+  if (secondToLast && isBreakingFeeRecipient(secondToLast.pubkey)) return ix;
+
+  return new TransactionInstruction({
+    keys: [...ix.keys, ...buildAmmBreakingFeeRecipientAccounts()],
+    programId: ix.programId,
+    data: ix.data,
+  });
+}

@@ -496,7 +496,7 @@ describe('Monitor deduplication (seen set trimming)', () => {
     const events: unknown[] = [];
     const monitor = new LaunchMonitor({
       connection: conn as any,
-      onLaunch: (e) => events.push(e),
+      onLaunch: (e) => { events.push(e); },
     });
     monitor.start();
 

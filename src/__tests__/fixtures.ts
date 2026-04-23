@@ -55,6 +55,7 @@ export function makeBondingCurve(
     complete: false,
     creator: PublicKey.default,
     isMayhemMode: false,
+    isCashbackCoin: false,
     ...overrides,
   };
 }

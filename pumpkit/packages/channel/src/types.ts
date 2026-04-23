@@ -99,6 +99,10 @@ export interface FeeClaimEvent {
     recipientWallet?: string;
     /** Social fee PDA account for social claims */
     socialFeePda?: string;
+    /** True when a social fee PDA claim was called but had no payout (amount 0) */
+    isFake?: boolean;
+    /** Total lifetime claimed lamports from this wallet */
+    lifetimeClaimedLamports?: number;
 }
 
 export interface TokenLaunchEvent {

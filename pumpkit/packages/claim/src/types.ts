@@ -117,6 +117,12 @@ export interface BotConfig {
     logLevel: 'debug' | 'info' | 'warn' | 'error';
     twitterBearerToken?: string;
     twitterInfluencerIds: string[];
+    /** Primary Solana RPC endpoint */
+    solanaRpcUrl?: string;
+    /** WebSocket endpoint for real-time logs (optional — derived from RPC if omitted) */
+    solanaWsUrl?: string;
+    /** Polling interval in seconds when WebSocket is unavailable (default: 15) */
+    pollIntervalSeconds?: number;
 }
 
 // ============================================================================

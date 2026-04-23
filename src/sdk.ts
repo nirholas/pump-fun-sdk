@@ -107,13 +107,13 @@ export function getPumpProgram(connection: Connection): Program<Pump> {
   );
 }
 
-export {
-  PUMP_PROGRAM_ID,
-  PUMP_AMM_PROGRAM_ID,
+import {
   MAYHEM_PROGRAM_ID,
+  PUMP_AMM_PROGRAM_ID,
   PUMP_FEE_PROGRAM_ID,
+  PUMP_PROGRAM_ID,
 } from "./programIds";
-import { MAYHEM_PROGRAM_ID } from "./programIds";
+export { MAYHEM_PROGRAM_ID, PUMP_AMM_PROGRAM_ID, PUMP_FEE_PROGRAM_ID, PUMP_PROGRAM_ID };
 
 /** Create an Anchor Program instance for the PumpAMM graduated pool program. */
 export function getPumpAmmProgram(connection: Connection): Program<PumpAmm> {
@@ -734,6 +734,80 @@ export class PumpSdk {
     return await this.offlinePumpProgram.methods
       .closeUserVolumeAccumulator()
       .accountsPartial({ user })
+      .instruction();
+  }
+
+  async collectCreatorFeeInstruction({
+    creator,
+  }: {
+    creator: PublicKey;
+  }): Promise<TransactionInstruction> {
+    return await this.offlinePumpProgram.methods
+      .collectCreatorFee()
+      .accountsPartial({ creator })
+      .instruction();
+  }
+
+  async claimTokenIncentivesInstruction({
+    user,
+    payer,
+    mint = PUMP_TOKEN_MINT,
+    tokenProgram = TOKEN_2022_PROGRAM_ID,
+  }: {
+    user: PublicKey;
+    payer: PublicKey;
+    mint?: PublicKey;
+    tokenProgram?: PublicKey;
+  }): Promise<TransactionInstruction> {
+    return await this.offlinePumpProgram.methods
+      .claimTokenIncentives()
+      .accountsPartial({ user, payer, mint, tokenProgram })
+      .instruction();
+  }
+
+  async adminSetCreatorInstruction({
+    authority,
+    mint,
+    creator,
+  }: {
+    authority: PublicKey;
+    mint: PublicKey;
+    creator: PublicKey;
+  }): Promise<TransactionInstruction> {
+    return await this.offlinePumpProgram.methods
+      .adminSetCreator(creator)
+      .accountsPartial({ adminSetCreatorAuthority: authority, mint })
+      .instruction();
+  }
+
+  async adminUpdateTokenIncentivesInstruction({
+    authority,
+    mint = PUMP_TOKEN_MINT,
+    tokenProgram = TOKEN_2022_PROGRAM_ID,
+    startTime,
+    endTime,
+    secondsInADay = new BN(86_400),
+    dayNumber,
+    pumpTokenSupplyPerDay,
+  }: {
+    authority: PublicKey;
+    mint?: PublicKey;
+    tokenProgram?: PublicKey;
+    startTime: BN;
+    endTime: BN;
+    secondsInADay?: BN;
+    dayNumber: BN;
+    pumpTokenSupplyPerDay: BN;
+  }): Promise<TransactionInstruction> {
+    return await this.offlinePumpProgram.methods
+      .adminUpdateTokenIncentives(
+        startTime,
+        endTime,
+        secondsInADay,
+        dayNumber,
+        pumpTokenSupplyPerDay,
+      )
+      .accountsPartial({ authority, mint, tokenProgram })
       .instruction();
   }
 
@@ -1537,6 +1611,58 @@ export class PumpSdk {
       .instruction();
   }
 
+  /**
+   * Update all global parameters in one instruction. Requires the global authority.
+   *
+   * Covers bonding curve initial reserves, fee rates, migration settings, and
+   * authority addresses. Use this to change protocol-wide fee tiers, enable/disable
+   * migration, or rotate authority pubkeys.
+   */
+  async setParamsInstruction({
+    authority,
+    initialVirtualTokenReserves,
+    initialVirtualSolReserves,
+    initialRealTokenReserves,
+    tokenTotalSupply,
+    feeBasisPoints,
+    withdrawAuthority,
+    enableMigrate,
+    poolMigrationFee,
+    creatorFeeBasisPoints,
+    setCreatorAuthority,
+    adminSetCreatorAuthority,
+  }: {
+    authority: PublicKey;
+    initialVirtualTokenReserves: BN;
+    initialVirtualSolReserves: BN;
+    initialRealTokenReserves: BN;
+    tokenTotalSupply: BN;
+    feeBasisPoints: BN;
+    withdrawAuthority: PublicKey;
+    enableMigrate: boolean;
+    poolMigrationFee: BN;
+    creatorFeeBasisPoints: BN;
+    setCreatorAuthority: PublicKey;
+    adminSetCreatorAuthority: PublicKey;
+  }): Promise<TransactionInstruction> {
+    return await this.offlinePumpProgram.methods
+      .setParams(
+        initialVirtualTokenReserves,
+        initialVirtualSolReserves,
+        initialRealTokenReserves,
+        tokenTotalSupply,
+        feeBasisPoints,
+        withdrawAuthority,
+        enableMigrate,
+        poolMigrationFee,
+        creatorFeeBasisPoints,
+        setCreatorAuthority,
+        adminSetCreatorAuthority,
+      )
+      .accountsPartial({ authority })
+      .instruction();
+  }
+
   // ─── PumpAMM Instructions ──────────────────────────────────────────
 
   /**
@@ -1918,6 +2044,237 @@ export class PumpSdk {
       .instruction();
   }
 
+  async ammInitUserVolumeAccumulatorInstruction({
+    payer,
+    user,
+  }: {
+    payer: PublicKey;
+    user: PublicKey;
+  }): Promise<TransactionInstruction> {
+    return await this.offlinePumpAmmProgram.methods
+      .initUserVolumeAccumulator()
+      .accountsPartial({ payer, user })
+      .instruction();
+  }
+
+  async ammCloseUserVolumeAccumulatorInstruction(
+    user: PublicKey,
+  ): Promise<TransactionInstruction> {
+    return await this.offlinePumpAmmProgram.methods
+      .closeUserVolumeAccumulator()
+      .accountsPartial({ user })
+      .instruction();
+  }
+
+  async ammClaimTokenIncentivesInstruction({
+    user,
+    payer,
+    mint = PUMP_TOKEN_MINT,
+    tokenProgram = TOKEN_2022_PROGRAM_ID,
+  }: {
+    user: PublicKey;
+    payer: PublicKey;
+    mint?: PublicKey;
+    tokenProgram?: PublicKey;
+  }): Promise<TransactionInstruction> {
+    return await this.offlinePumpAmmProgram.methods
+      .claimTokenIncentives()
+      .accountsPartial({ user, payer, mint, tokenProgram })
+      .instruction();
+  }
+
+  async ammToggleCashbackEnabledInstruction({
+    admin,
+    enabled,
+  }: {
+    admin: PublicKey;
+    enabled: boolean;
+  }): Promise<TransactionInstruction> {
+    return await this.offlinePumpAmmProgram.methods
+      .toggleCashbackEnabled(enabled)
+      .accountsPartial({ admin })
+      .instruction();
+  }
+
+  async ammToggleMayhemModeInstruction({
+    admin,
+    enabled,
+  }: {
+    admin: PublicKey;
+    enabled: boolean;
+  }): Promise<TransactionInstruction> {
+    return await this.offlinePumpAmmProgram.methods
+      .toggleMayhemMode(enabled)
+      .accountsPartial({ admin })
+      .instruction();
+  }
+
+  async ammExtendAccountInstruction({
+    account,
+    user,
+  }: {
+    account: PublicKey;
+    user: PublicKey;
+  }): Promise<TransactionInstruction> {
+    return await this.offlinePumpAmmProgram.methods
+      .extendAccount()
+      .accountsPartial({ account, user })
+      .instruction();
+  }
+
+  async ammSetReservedFeeRecipientsInstruction({
+    admin,
+    whitelistPda,
+  }: {
+    admin: PublicKey;
+    whitelistPda: PublicKey;
+  }): Promise<TransactionInstruction> {
+    return await this.offlinePumpAmmProgram.methods
+      .setReservedFeeRecipients(whitelistPda)
+      .accountsPartial({ admin })
+      .instruction();
+  }
+
+  async ammCreateConfigInstruction({
+    admin,
+    lpFeeBasisPoints,
+    protocolFeeBasisPoints,
+    protocolFeeRecipients,
+    coinCreatorFeeBasisPoints,
+    adminSetCoinCreatorAuthority,
+  }: {
+    admin: PublicKey;
+    lpFeeBasisPoints: BN;
+    protocolFeeBasisPoints: BN;
+    protocolFeeRecipients: PublicKey[];
+    coinCreatorFeeBasisPoints: BN;
+    adminSetCoinCreatorAuthority: PublicKey;
+  }): Promise<TransactionInstruction> {
+    return await this.offlinePumpAmmProgram.methods
+      .createConfig(
+        lpFeeBasisPoints,
+        protocolFeeBasisPoints,
+        protocolFeeRecipients,
+        coinCreatorFeeBasisPoints,
+        adminSetCoinCreatorAuthority,
+      )
+      .accountsPartial({ admin })
+      .instruction();
+  }
+
+  async ammUpdateAdminInstruction({
+    admin,
+    newAdmin,
+  }: {
+    admin: PublicKey;
+    newAdmin: PublicKey;
+  }): Promise<TransactionInstruction> {
+    return await this.offlinePumpAmmProgram.methods
+      .updateAdmin()
+      .accountsPartial({ admin, newAdmin })
+      .instruction();
+  }
+
+  async ammUpdateFeeConfigInstruction({
+    admin,
+    lpFeeBasisPoints,
+    protocolFeeBasisPoints,
+    protocolFeeRecipients,
+    coinCreatorFeeBasisPoints,
+    adminSetCoinCreatorAuthority,
+  }: {
+    admin: PublicKey;
+    lpFeeBasisPoints: BN;
+    protocolFeeBasisPoints: BN;
+    protocolFeeRecipients: PublicKey[];
+    coinCreatorFeeBasisPoints: BN;
+    adminSetCoinCreatorAuthority: PublicKey;
+  }): Promise<TransactionInstruction> {
+    return await this.offlinePumpAmmProgram.methods
+      .updateFeeConfig(
+        lpFeeBasisPoints,
+        protocolFeeBasisPoints,
+        protocolFeeRecipients,
+        coinCreatorFeeBasisPoints,
+        adminSetCoinCreatorAuthority,
+      )
+      .accountsPartial({ admin })
+      .instruction();
+  }
+
+  async ammDisableInstruction({
+    admin,
+    disableCreatePool,
+    disableDeposit,
+    disableWithdraw,
+    disableBuy,
+    disableSell,
+  }: {
+    admin: PublicKey;
+    disableCreatePool: boolean;
+    disableDeposit: boolean;
+    disableWithdraw: boolean;
+    disableBuy: boolean;
+    disableSell: boolean;
+  }): Promise<TransactionInstruction> {
+    return await this.offlinePumpAmmProgram.methods
+      .disable(
+        disableCreatePool,
+        disableDeposit,
+        disableWithdraw,
+        disableBuy,
+        disableSell,
+      )
+      .accountsPartial({ admin })
+      .instruction();
+  }
+
+  async ammAdminSetCoinCreatorInstruction({
+    authority,
+    pool,
+    coinCreator,
+  }: {
+    authority: PublicKey;
+    pool: PublicKey;
+    coinCreator: PublicKey;
+  }): Promise<TransactionInstruction> {
+    return await this.offlinePumpAmmProgram.methods
+      .adminSetCoinCreator(coinCreator)
+      .accountsPartial({ adminSetCoinCreatorAuthority: authority, pool })
+      .instruction();
+  }
+
+  async ammAdminUpdateTokenIncentivesInstruction({
+    admin,
+    mint = PUMP_TOKEN_MINT,
+    tokenProgram = TOKEN_2022_PROGRAM_ID,
+    startTime,
+    endTime,
+    secondsInADay = new BN(86_400),
+    dayNumber,
+    tokenSupplyPerDay,
+  }: {
+    admin: PublicKey;
+    mint?: PublicKey;
+    tokenProgram?: PublicKey;
+    startTime: BN;
+    endTime: BN;
+    secondsInADay?: BN;
+    dayNumber: BN;
+    tokenSupplyPerDay: BN;
+  }): Promise<TransactionInstruction> {
+    return await this.offlinePumpAmmProgram.methods
+      .adminUpdateTokenIncentives(
+        startTime,
+        endTime,
+        secondsInADay,
+        dayNumber,
+        tokenSupplyPerDay,
+      )
+      .accountsPartial({ admin, mint, tokenProgram })
+      .instruction();
+  }
+
   // ─── PumpFees Instructions ─────────────────────────────────────────
 
   /**
@@ -1977,74 +2334,8 @@ export class PumpSdk {
       .instruction();
   }
 
-  /**
-   * Normalize social shareholders — resolve social handles to PDAs
-   * and collect any PDAs that need to be created.
-   */
-  normalizeSocialShareholders({
-    newShareholders,
-  }: {
-    newShareholders: Array<{
-      shareBps: number;
-      address?: PublicKey;
-      userId?: string;
-      platform?: Platform;
-    }>;
-  }): {
-    normalizedShareholders: Shareholder[];
-    socialRecipientsToCreate: Map<string, { userId: string; platform: Platform }>;
-  } {
-    const socialRecipientsToCreate = new Map<
-      string,
-      { userId: string; platform: Platform }
-    >();
-    const normalizedShareholders: Shareholder[] = newShareholders.map(
-      (shareholder) => {
-        if (shareholder.address) {
-          return {
-            address: shareholder.address,
-            shareBps: shareholder.shareBps,
-          };
-        }
-
-        if (
-          typeof shareholder.userId === "string" &&
-          typeof shareholder.platform === "number"
-        ) {
-          if (!SUPPORTED_SOCIAL_PLATFORMS.includes(shareholder.platform)) {
-            const supportedPlatformNames = SUPPORTED_SOCIAL_PLATFORMS.map(
-              (platform) => platformToString(platform),
-            ).join(", ");
-            throw new Error(
-              `Unsupported platform "${shareholder.platform}" for userId "${shareholder.userId}". Supported platforms: ${supportedPlatformNames}.`,
-            );
-          }
-
-          const recipientPda = socialFeePdaHelper(
-            shareholder.userId,
-            shareholder.platform,
-          );
-          socialRecipientsToCreate.set(recipientPda.toBase58(), {
-            userId: shareholder.userId,
-            platform: shareholder.platform,
-          });
-
-          return {
-            address: recipientPda,
-            shareBps: shareholder.shareBps,
-          };
-        }
-
-        throw new Error(
-          "Each new shareholder must provide either an address or both userId and platform.",
-        );
-      },
-    );
-
-    return {
-      normalizedShareholders,
-      socialRecipientsToCreate,
-    };
+  normalizeSocialShareholders(params: Parameters<typeof normalizeSocialShareholders>[0]) {
+    return normalizeSocialShareholders(params);
   }
 
   /**
@@ -2269,6 +2560,111 @@ export class PumpSdk {
       })
       .instruction();
   }
+
+  async initializeFeeConfigInstruction({
+    admin,
+    configProgramId,
+  }: {
+    admin: PublicKey;
+    configProgramId: PublicKey;
+  }): Promise<TransactionInstruction> {
+    return await this.offlinePumpFeeProgram.methods
+      .initializeFeeConfig()
+      .accountsPartial({ admin, configProgramId })
+      .instruction();
+  }
+
+  async initializeFeeProgramGlobalInstruction({
+    authority,
+    socialClaimAuthority,
+    disableFlags,
+    claimRateLimit,
+  }: {
+    authority: PublicKey;
+    socialClaimAuthority: PublicKey;
+    disableFlags: number;
+    claimRateLimit: BN;
+  }): Promise<TransactionInstruction> {
+    return await this.offlinePumpFeeProgram.methods
+      .initializeFeeProgramGlobal(socialClaimAuthority, disableFlags, claimRateLimit)
+      .accountsPartial({ authority })
+      .instruction();
+  }
+
+  async setFeeAuthorityInstruction({
+    authority,
+    newAuthority,
+  }: {
+    authority: PublicKey;
+    newAuthority: PublicKey;
+  }): Promise<TransactionInstruction> {
+    return await this.offlinePumpFeeProgram.methods
+      .setAuthority(newAuthority)
+      .accountsPartial({ authority })
+      .instruction();
+  }
+
+  async setFeeDisableFlagsInstruction({
+    authority,
+    disableFlags,
+  }: {
+    authority: PublicKey;
+    disableFlags: number;
+  }): Promise<TransactionInstruction> {
+    return await this.offlinePumpFeeProgram.methods
+      .setDisableFlags(disableFlags)
+      .accountsPartial({ authority })
+      .instruction();
+  }
+
+  async feesUpdateAdminInstruction({
+    admin,
+    newAdmin,
+    configProgramId,
+  }: {
+    admin: PublicKey;
+    newAdmin: PublicKey;
+    configProgramId: PublicKey;
+  }): Promise<TransactionInstruction> {
+    return await this.offlinePumpFeeProgram.methods
+      .updateAdmin()
+      .accountsPartial({ admin, newAdmin, configProgramId })
+      .instruction();
+  }
+
+  async feesUpdateFeeConfigInstruction({
+    admin,
+    configProgramId,
+    feeTiers,
+    flatFees,
+  }: {
+    admin: PublicKey;
+    configProgramId: PublicKey;
+    feeTiers: Array<{
+      marketCapLamportsThreshold: BN;
+      fees: { lpFeeBps: BN; protocolFeeBps: BN; creatorFeeBps: BN };
+    }>;
+    flatFees: { lpFeeBps: BN; protocolFeeBps: BN; creatorFeeBps: BN };
+  }): Promise<TransactionInstruction> {
+    return await this.offlinePumpFeeProgram.methods
+      .updateFeeConfig(feeTiers, flatFees)
+      .accountsPartial({ admin, configProgramId })
+      .instruction();
+  }
+
+  /** Alias for {@link createSocialFeePdaInstruction} — matches `@pump-fun/pump-sdk` naming. */
+  createSocialFeePda(
+    params: Parameters<PumpSdk["createSocialFeePdaInstruction"]>[0],
+  ): ReturnType<PumpSdk["createSocialFeePdaInstruction"]> {
+    return this.createSocialFeePdaInstruction(params);
+  }
+
+  /** Not user-callable — social fee PDA claims are executed internally by the pump program. */
+  claimSocialFeePda(): never {
+    throw new Error(
+      "claimSocialFeePda can only be called by the pump program and is not supported for external use",
+    );
+  }
 }
 
 /** Pre-built singleton instance of {@link PumpSdk}. Use this instead of `new PumpSdk()`. */
@@ -2320,6 +2716,87 @@ export function isCreatorUsingSharingConfig({
   creator: PublicKey;
 }): boolean {
   return feeSharingConfigPda(mint).equals(creator);
+}
+
+/** Social shareholder input — either a wallet address or a social-platform user. */
+export type SocialShareholderInput = {
+  shareBps: number;
+  address?: PublicKey;
+  userId?: string;
+  platform?: Platform;
+};
+
+/**
+ * Resolve social handles to their on-chain PDAs and collect any PDAs that
+ * still need to be created before a fee-sharing config can be submitted.
+ */
+export function normalizeSocialShareholders({
+  newShareholders,
+}: {
+  newShareholders: SocialShareholderInput[];
+}): {
+  normalizedShareholders: Shareholder[];
+  socialRecipientsToCreate: Map<string, { userId: string; platform: Platform }>;
+} {
+  const socialRecipientsToCreate = new Map<
+    string,
+    { userId: string; platform: Platform }
+  >();
+  const normalizedShareholders: Shareholder[] = newShareholders.map(
+    (shareholder) => {
+      if (shareholder.address) {
+        return { address: shareholder.address, shareBps: shareholder.shareBps };
+      }
+
+      if (
+        typeof shareholder.userId === "string" &&
+        typeof shareholder.platform === "number"
+      ) {
+        if (!SUPPORTED_SOCIAL_PLATFORMS.includes(shareholder.platform)) {
+          const supportedPlatformNames = SUPPORTED_SOCIAL_PLATFORMS.map(
+            (platform) => platformToString(platform),
+          ).join(", ");
+          throw new Error(
+            `Unsupported platform "${shareholder.platform}" for userId "${shareholder.userId}". Supported platforms: ${supportedPlatformNames}.`,
+          );
+        }
+
+        const recipientPda = socialFeePdaHelper(
+          shareholder.userId,
+          shareholder.platform,
+        );
+        socialRecipientsToCreate.set(recipientPda.toBase58(), {
+          userId: shareholder.userId,
+          platform: shareholder.platform,
+        });
+
+        return { address: recipientPda, shareBps: shareholder.shareBps };
+      }
+
+      throw new Error(
+        "Each new shareholder must provide either an address or both userId and platform.",
+      );
+    },
+  );
+
+  return { normalizedShareholders, socialRecipientsToCreate };
+}
+
+/**
+ * Checks whether a fee sharing config's reward split is editable.
+ *
+ * NOT editable when:
+ * - version === 1 (legacy, immutable)
+ * - version === 2 and adminRevoked === true
+ */
+export function isSharingConfigEditable({
+  sharingConfig,
+}: {
+  sharingConfig: SharingConfig;
+}): boolean {
+  if (sharingConfig.version === 1) return false;
+  if (sharingConfig.version === 2 && sharingConfig.adminRevoked) return false;
+  return true;
 }
 
 

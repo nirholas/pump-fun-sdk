@@ -392,11 +392,328 @@ const claimPdaIx = await PUMP_SDK.claimSocialFeePdaInstruction({
 
 > **Note:** Only `Platform.GitHub` is currently supported. Check `SUPPORTED_SOCIAL_PLATFORMS` for the latest list. The `userId` must be the numeric GitHub user ID from `https://api.github.com/users/<username>`.
 
-## Combining Cashback + Social Fees + Fee Sharing
+---
 
-For maximum fee distribution, combine all three mechanisms:
+## Part 3: Volume Accumulator Lifecycle
+
+The `UserVolumeAccumulator` account tracks per-user trading volume for cashback eligibility. Beyond the one-time `initUserVolumeAccumulator`, you may need to sync, inspect, or close the account.
+
+### Read Accumulator State
 
 ```typescript
+import { userVolumeAccumulatorPda, ammUserVolumeAccumulatorPda } from "@nirholas/pump-sdk";
+
+// Derive the PDA addresses
+const pumpAccumulatorPda = userVolumeAccumulatorPda(trader.publicKey);
+const ammAccumulatorPda = ammUserVolumeAccumulatorPda(trader.publicKey);
+
+// Fetch raw account data and decode
+const accountInfo = await connection.getAccountInfo(pumpAccumulatorPda);
+if (accountInfo) {
+  const accumulator = PUMP_SDK.decodeUserVolumeAccumulator(accountInfo.data);
+  // {
+  //   user: PublicKey,
+  //   needsClaim: boolean,        // true = pending token incentives
+  //   totalUnclaimedTokens: BN,  // earned but not yet claimed
+  //   totalClaimedTokens: BN,
+  //   currentSolVolume: BN,      // volume in current period (lamports)
+  //   lastUpdateTimestamp: BN,
+  // }
+  console.log("Unclaimed tokens:", accumulator.totalUnclaimedTokens.toString());
+  console.log("Current SOL volume:", accumulator.currentSolVolume.toNumber() / 1e9, "SOL");
+  console.log("Needs claim:", accumulator.needsClaim);
+}
+```
+
+### Sync the Accumulator
+
+Call `syncUserVolumeAccumulator` when the account is out of sync with on-chain state (e.g. after a period rollover). The AMM variant does the same for graduated pool trades:
+
+```typescript
+// Sync bonding curve accumulator
+const syncIx = PUMP_SDK.syncUserVolumeAccumulator({
+  user: trader.publicKey,
+});
+
+// Sync AMM accumulator (for post-graduation trades)
+const ammSyncIx = PUMP_SDK.ammSyncUserVolumeAccumulatorInstruction({
+  user: trader.publicKey,
+});
+
+const { blockhash } = await connection.getLatestBlockhash("confirmed");
+const message = new TransactionMessage({
+  payerKey: trader.publicKey,
+  recentBlockhash: blockhash,
+  instructions: [syncIx, ammSyncIx],
+}).compileToV0Message();
+const tx = new VersionedTransaction(message);
+tx.sign([trader]);
+await connection.sendTransaction(tx);
+```
+
+### Close the Accumulator
+
+When a trader is done, close the account to reclaim rent:
+
+```typescript
+// Claim any remaining cashback first, then close
+const claimIx = PUMP_SDK.claimCashbackInstruction({ user: trader.publicKey });
+const closeIx = PUMP_SDK.closeUserVolumeAccumulator({ user: trader.publicKey });
+
+const message = new TransactionMessage({
+  payerKey: trader.publicKey,
+  recentBlockhash: (await connection.getLatestBlockhash("confirmed")).blockhash,
+  instructions: [claimIx, closeIx],
+}).compileToV0Message();
+const tx = new VersionedTransaction(message);
+tx.sign([trader]);
+await connection.sendTransaction(tx);
+console.log("Accumulator closed, rent reclaimed.");
+```
+
+### Decode the ClaimCashbackEvent
+
+```typescript
+import { PUMP_SDK, ClaimCashbackEvent } from "@nirholas/pump-sdk";
+
+async function parseCashbackClaim(connection: Connection, signature: string) {
+  const tx = await connection.getTransaction(signature, {
+    maxSupportedTransactionVersion: 0,
+    commitment: "confirmed",
+  });
+  if (!tx?.meta?.logMessages) return;
+
+  for (const log of tx.meta.logMessages) {
+    if (log.includes("ClaimCashbackEvent")) {
+      const data = Buffer.from(log.split("Program data: ")[1] ?? "", "base64");
+      const event: ClaimCashbackEvent = PUMP_SDK.decodeClaimCashbackEvent(data);
+      // {
+      //   user: PublicKey,
+      //   amount: BN,               // SOL claimed this transaction (lamports)
+      //   timestamp: BN,
+      //   totalClaimed: BN,         // All-time claimed SOL (lamports)
+      //   totalCashbackEarned: BN,  // All-time earned (may exceed claimed)
+      // }
+      console.log(`User: ${event.user.toBase58()}`);
+      console.log(`Claimed: ${event.amount.toNumber() / 1e9} SOL`);
+      console.log(`All-time claimed: ${event.totalClaimed.toNumber() / 1e9} SOL`);
+    }
+  }
+}
+```
+
+---
+
+## Part 4: Social Fee Sharing — The Full Picture
+
+The SDK provides high-level helpers that let you mix wallet addresses and social identities (GitHub user IDs) as fee shareholders. The SDK resolves social IDs to their PDA addresses and creates missing PDAs automatically.
+
+### `normalizeSocialShareholders` — Resolve Mixed Recipients
+
+Use this when you need to preview or manually build the instructions:
+
+```typescript
+import {
+  PUMP_SDK,
+  Platform,
+  socialFeePda,
+} from "@nirholas/pump-sdk";
+
+// newShareholders accepts either address or (userId + platform)
+const { normalizedShareholders, socialRecipientsToCreate } =
+  PUMP_SDK.normalizeSocialShareholders({
+    newShareholders: [
+      // Wallet address — passed through as-is
+      { address: creator.publicKey, shareBps: 5000 },
+      // GitHub identity — resolved to its social fee PDA
+      { userId: "12345678", platform: Platform.GitHub, shareBps: 3000 },
+      { userId: "87654321", platform: Platform.GitHub, shareBps: 2000 },
+    ],
+  });
+
+// normalizedShareholders: Shareholder[] ready for updateFeeShares
+// All share BPS still sum to 10,000
+
+// socialRecipientsToCreate: Map<pdaAddress, { userId, platform }>
+// PDAs that don't exist yet and need createSocialFeePdaInstruction
+console.log("Resolved shareholders:", normalizedShareholders.map(s => s.address.toBase58()));
+console.log("PDAs to create:", [...socialRecipientsToCreate.keys()]);
+```
+
+### `createSharingConfigWithSocialRecipients` — One-Shot Setup
+
+Create a fee sharing config with social recipients in a single call. The SDK creates missing social PDAs and wires up the config atomically:
+
+```typescript
+import { PUMP_SDK, Platform } from "@nirholas/pump-sdk";
+
+// Returns TransactionInstruction[] — handles PDA creation + config creation
+const setupIxs = await PUMP_SDK.createSharingConfigWithSocialRecipients({
+  creator: creator.publicKey,
+  mint: mint.publicKey,
+  pool: null, // null for bonding curve, PublicKey for graduated AMM pool
+  newShareholders: [
+    { address: creator.publicKey, shareBps: 5000 },
+    { userId: "12345678", platform: Platform.GitHub, shareBps: 3000 },
+    { userId: "87654321", platform: Platform.GitHub, shareBps: 2000 },
+  ],
+});
+
+// Build and send
+const { blockhash } = await connection.getLatestBlockhash("confirmed");
+const message = new TransactionMessage({
+  payerKey: creator.publicKey,
+  recentBlockhash: blockhash,
+  instructions: setupIxs,
+}).compileToV0Message();
+const tx = new VersionedTransaction(message);
+tx.sign([creator]);
+await connection.sendTransaction(tx);
+console.log("Fee config created with social recipients.");
+```
+
+### `updateSharingConfigWithSocialRecipients` — Modify Existing Config
+
+When shareholders change (new collaborator, updated splits), use the update variant. Pass the current shareholders so the SDK can diff and create only missing PDAs:
+
+```typescript
+import { PUMP_SDK, Platform, OnlinePumpSdk } from "@nirholas/pump-sdk";
+
+const online = new OnlinePumpSdk(connection);
+
+// Fetch the existing config to get current shareholders
+const currentConfig = await online.fetchFeeSharingConfig(mint.publicKey);
+
+// Reassign: give a new GitHub collaborator 20%, reduce creator share
+const updateIxs = await PUMP_SDK.updateSharingConfigWithSocialRecipients({
+  authority: creator.publicKey,
+  mint: mint.publicKey,
+  currentShareholders: currentConfig.shareholders,
+  newShareholders: [
+    { address: creator.publicKey, shareBps: 4000 },          // was 5000
+    { userId: "12345678", platform: Platform.GitHub, shareBps: 3000 },
+    { userId: "87654321", platform: Platform.GitHub, shareBps: 1000 }, // was 2000
+    { userId: "99999999", platform: Platform.GitHub, shareBps: 2000 }, // new
+  ],
+});
+
+const { blockhash } = await connection.getLatestBlockhash("confirmed");
+const message = new TransactionMessage({
+  payerKey: creator.publicKey,
+  recentBlockhash: blockhash,
+  instructions: updateIxs,
+}).compileToV0Message();
+const tx = new VersionedTransaction(message);
+tx.sign([creator]);
+await connection.sendTransaction(tx);
+console.log("Shareholders updated.");
+```
+
+---
+
+## Part 5: AMM Cashback Trading
+
+Once a token graduates to the AMM (bonding curve `complete === true`), cashback continues through the AMM programs. The patterns mirror the bonding curve ones but use AMM-specific methods.
+
+### Check Graduation and Switch to AMM
+
+```typescript
+import { PUMP_SDK, OnlinePumpSdk } from "@nirholas/pump-sdk";
+import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import BN from "bn.js";
+
+const online = new OnlinePumpSdk(connection);
+
+async function tradeWithCashback(mint: PublicKey, user: PublicKey) {
+  const bc = await online.fetchBondingCurve(mint);
+
+  if (!bc.complete) {
+    // Still on bonding curve
+    const buyIxs = await online.buyInstructions({
+      mint,
+      user,
+      solAmount: new BN(50_000_000), // 0.05 SOL
+      slippageBps: 500,
+    });
+    return buyIxs;
+  }
+
+  // Graduated — use AMM
+  const pool = await online.fetchPoolForMint(mint);
+
+  // AMM buy (base tokens out, quote SOL in)
+  const ammBuyIx = await PUMP_SDK.ammBuyInstruction({
+    user,
+    pool,
+    mint,
+    baseAmountOut: new BN(1_000_000),   // token amount to receive
+    maxQuoteAmountIn: new BN(50_000_000), // max SOL to spend
+    cashback: true,                      // include volume accumulator
+  });
+  return [ammBuyIx];
+}
+```
+
+### AMM Exact-Quote Buy
+
+Pay an exact SOL amount and receive at least `minBaseAmountOut` tokens:
+
+```typescript
+const ammExactBuyIx = await PUMP_SDK.ammBuyExactQuoteInInstruction({
+  user: trader.publicKey,
+  pool,
+  mint,
+  quoteAmountIn: new BN(100_000_000), // exact 0.1 SOL in
+  minBaseAmountOut: new BN(900_000),  // min tokens out (after slippage)
+  cashback: true,
+});
+```
+
+### AMM Sell
+
+```typescript
+const ammSellIx = await PUMP_SDK.ammSellInstruction({
+  user: trader.publicKey,
+  pool,
+  mint,
+  baseAmountIn: new BN(1_000_000),    // tokens to sell
+  minQuoteAmountOut: new BN(45_000_000), // min SOL out (after slippage)
+  cashback: true,
+});
+```
+
+### Claim AMM Cashback
+
+AMM cashback accumulates in a separate account from bonding curve cashback. Claim both in one transaction:
+
+```typescript
+const pumpClaimIx = PUMP_SDK.claimCashbackInstruction({ user: trader.publicKey });
+const ammClaimIx = PUMP_SDK.ammClaimCashbackInstruction({ user: trader.publicKey });
+
+const message = new TransactionMessage({
+  payerKey: trader.publicKey,
+  recentBlockhash: (await connection.getLatestBlockhash("confirmed")).blockhash,
+  instructions: [pumpClaimIx, ammClaimIx],
+}).compileToV0Message();
+const tx = new VersionedTransaction(message);
+tx.sign([trader]);
+await connection.sendTransaction(tx);
+```
+
+---
+
+## Combining Cashback + Social Fees + Fee Sharing
+
+For maximum fee distribution, combine all three mechanisms. Use `createSharingConfigWithSocialRecipients` to handle social PDA creation automatically:
+
+```typescript
+import {
+  PUMP_SDK,
+  OnlinePumpSdk,
+  Platform,
+} from "@nirholas/pump-sdk";
+import { TransactionMessage, VersionedTransaction } from "@solana/web3.js";
+
 // 1. Create token with cashback
 const createIx = await PUMP_SDK.createV2Instruction({
   mint: mint.publicKey,
@@ -409,28 +726,37 @@ const createIx = await PUMP_SDK.createV2Instruction({
   cashback: true,
 });
 
-// 2. Set up fee sharing (creator keeps 50%, two partners get 25% each)
-const feeSharingIx = await PUMP_SDK.createFeeSharingConfig({
+// 2. Set up fee sharing with social recipients in one call
+//    - creator keeps 50% (wallet address)
+//    - two GitHub collaborators get 25% each (no wallets needed yet)
+const feeSharingIxs = await PUMP_SDK.createSharingConfigWithSocialRecipients({
   creator: creator.publicKey,
   mint: mint.publicKey,
-  pool: null, // Not graduated yet
-});
-
-const updateSharesIx = await PUMP_SDK.updateFeeShares({
-  authority: creator.publicKey,
-  mint: mint.publicKey,
-  currentShareholders: [],
+  pool: null,
   newShareholders: [
-    { address: creator.publicKey, shareBps: 5000 },     // 50%
-    { address: partner1.publicKey, shareBps: 2500 },    // 25%
-    { address: partner2.publicKey, shareBps: 2500 },    // 25%
+    { address: creator.publicKey, shareBps: 5000 },
+    { userId: "12345678", platform: Platform.GitHub, shareBps: 2500 },
+    { userId: "87654321", platform: Platform.GitHub, shareBps: 2500 },
   ],
 });
 
-// 3. Social fee PDAs are derived automatically from user IDs
-// Partners who don't have wallets yet can be referenced by social identity
-const socialPda = socialFeePda("twitter_partner_id", 1);
-console.log("Social fee PDA for Twitter partner:", socialPda.toBase58());
+// 3. Initialize volume accumulator so creator earns cashback too
+const initAccumIx = PUMP_SDK.initUserVolumeAccumulator({
+  payer: creator.publicKey,
+  user: creator.publicKey,
+});
+
+// Send create + fee config + accumulator init in one transaction
+const { blockhash } = await connection.getLatestBlockhash("confirmed");
+const message = new TransactionMessage({
+  payerKey: creator.publicKey,
+  recentBlockhash: blockhash,
+  instructions: [createIx, ...feeSharingIxs, initAccumIx],
+}).compileToV0Message();
+const tx = new VersionedTransaction(message);
+tx.sign([creator, mint]);
+await connection.sendTransaction(tx);
+console.log("Token launched with cashback + social fee sharing.");
 ```
 
 ## Next Steps

@@ -32,8 +32,14 @@ describe("public API exports", () => {
     expect(sdk.ONE_BILLION_SUPPLY).toBeDefined();
     expect(Array.isArray(sdk.BREAKING_FEE_RECIPIENTS)).toBe(true);
     expect(sdk.BREAKING_FEE_RECIPIENTS).toHaveLength(8);
+    expect(sdk.BREAKING_FEE_RECIPIENT_WSOL_ATAS).toBeDefined();
+    expect(typeof sdk.isBreakingFeeRecipient).toBe("function");
     expect(typeof sdk.pickBreakingFeeRecipient).toBe("function");
     expect(typeof sdk.buildAmmBreakingFeeRecipientAccounts).toBe("function");
+    expect(typeof sdk.validateBcInstruction).toBe("function");
+    expect(typeof sdk.validateAmmInstruction).toBe("function");
+    expect(typeof sdk.patchBcInstruction).toBe("function");
+    expect(typeof sdk.patchAmmInstruction).toBe("function");
   });
 
   // ── SDK classes & singletons ───────────────────────────────────────

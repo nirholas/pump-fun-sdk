@@ -311,7 +311,7 @@ async function handleCto(ctx: Context, monitor: PumpFunMonitor): Promise<void> {
     const inputLower = input.toLowerCase();
     const matching = recentEvents.filter(
         (evt) =>
-            evt.tokenMint.toLowerCase() === inputLower ||
+            (evt.tokenMint && evt.tokenMint.toLowerCase() === inputLower) ||
             evt.signerWallet.toLowerCase() === inputLower ||
             (evt.newCreatorWallet && evt.newCreatorWallet.toLowerCase() === inputLower),
     );
@@ -331,7 +331,7 @@ async function handleCto(ctx: Context, monitor: PumpFunMonitor): Promise<void> {
     }
 
     // Determine the role of this address
-    const asMint = matching.filter((e) => e.tokenMint.toLowerCase() === inputLower);
+    const asMint = matching.filter((e) => e.tokenMint && e.tokenMint.toLowerCase() === inputLower);
     const asSigner = matching.filter((e) => e.signerWallet.toLowerCase() === inputLower);
     const asNewCreator = matching.filter(
         (e) => e.newCreatorWallet && e.newCreatorWallet.toLowerCase() === inputLower,

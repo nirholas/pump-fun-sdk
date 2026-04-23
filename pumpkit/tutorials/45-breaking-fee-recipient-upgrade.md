@@ -276,6 +276,235 @@ const recipient = pickBreakingFeeRecipient();
 
 ---
 
+### New utilities (v1.32.0+)
+
+```typescript
+import {
+  // Predicate — is this pubkey one of the 8?
+  isBreakingFeeRecipient,
+
+  // Pre-computed map: recipient base58 → WSOL ATA (use in hot paths)
+  BREAKING_FEE_RECIPIENT_WSOL_ATAS,
+
+  // Structured validators — return { valid, errors[] }
+  validateBcInstruction,     // kind: "buy" | "sell" | "sell-cashback"
+  validateAmmInstruction,    // kind: "buy" | "buy-cashback" | "sell" | "sell-cashback"
+
+  // Migration patchers — idempotent, return new instruction
+  patchBcInstruction,        // appends trailing breaking fee recipient
+  patchAmmInstruction,       // appends recipient + WSOL ATA pair
+} from "@nirholas/pump-sdk";
+
+// Type
+import type { BreakingFeeValidation } from "@nirholas/pump-sdk";
+```
+
+---
+
+## Monitoring — Detecting Breaking Fee Recipients On-Chain
+
+Use `isBreakingFeeRecipient` to detect the new accounts in parsed transactions — useful for analytics dashboards, fee accounting, or audit logging.
+
+```typescript
+import {
+  isBreakingFeeRecipient,
+  BREAKING_FEE_RECIPIENTS,
+} from "@nirholas/pump-sdk";
+import { Connection } from "@solana/web3.js";
+
+const connection = new Connection("https://api.mainnet-beta.solana.com");
+
+async function logBreakingFeeAccounts(signature: string) {
+  const tx = await connection.getTransaction(signature, {
+    commitment: "confirmed",
+    maxSupportedTransactionVersion: 0,
+  });
+  if (!tx) return;
+
+  const accounts = tx.transaction.message.getAccountKeys().staticAccountKeys;
+  const breakingFeeAccounts = accounts.filter(isBreakingFeeRecipient);
+
+  if (breakingFeeAccounts.length > 0) {
+    console.log(
+      `[${signature.slice(0, 8)}] Breaking fee recipients used:`,
+      breakingFeeAccounts.map((k) => k.toBase58()),
+    );
+  }
+}
+```
+
+`isBreakingFeeRecipient` is also handy in a Helius/Triton webhook processor when you want to route post-upgrade buy/sell events differently from pre-upgrade ones.
+
+---
+
+## Performance — Pre-Computed WSOL ATAs
+
+In high-throughput scenarios (AMM trading bots calling `ammBuyInstruction` hundreds of times per second), avoid re-deriving the WSOL ATA with every instruction. Use the pre-computed `BREAKING_FEE_RECIPIENT_WSOL_ATAS` map instead:
+
+```typescript
+import {
+  BREAKING_FEE_RECIPIENT_WSOL_ATAS,
+  pickBreakingFeeRecipient,
+} from "@nirholas/pump-sdk";
+
+// O(1) lookup — no `getAssociatedTokenAddressSync` on the hot path
+const recipient = pickBreakingFeeRecipient();
+const wsolAta = BREAKING_FEE_RECIPIENT_WSOL_ATAS.get(recipient.toBase58())!;
+
+// Build AMM remaining accounts manually:
+const breakingFeeAccounts = [
+  { pubkey: recipient, isWritable: false, isSigner: false },
+  { pubkey: wsolAta, isWritable: true, isSigner: false },
+];
+```
+
+`buildAmmBreakingFeeRecipientAccounts` already uses this map internally, so you only need the raw lookup when constructing AMM accounts by hand at scale.
+
+---
+
+## CI Validation — Check Your Instructions Offline
+
+`validateBcInstruction` and `validateAmmInstruction` return a structured `{ valid, errors }` result so your own test suite can assert account layout without needing to parse raw bytes.
+
+```typescript
+import {
+  PUMP_SDK,
+  validateBcInstruction,
+  validateAmmInstruction,
+  buildAmmBreakingFeeRecipientAccounts,
+  poolV2Pda,
+} from "@nirholas/pump-sdk";
+import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import { PublicKey, TransactionInstruction } from "@solana/web3.js";
+import BN from "bn.js";
+
+const mint = new PublicKey("YOUR_MINT");
+const user = new PublicKey("YOUR_WALLET");
+const creator = new PublicKey("CREATOR_PUBKEY");
+const feeRecipient = new PublicKey("FEE_RECIPIENT");
+
+// ── Bonding curve buy ────────────────────────────────────────────────
+const buyIx = await PUMP_SDK.getBuyInstructionRaw({
+  user, mint, creator, feeRecipient,
+  amount: new BN(1_000_000), solAmount: new BN(10_000_000),
+});
+const buyResult = validateBcInstruction(buyIx, "buy");
+if (!buyResult.valid) throw new Error(buyResult.errors.join("\n"));
+console.log("✓ BC buy is compliant");
+
+// ── Bonding curve sell (non-cashback) ────────────────────────────────
+const sellIx = await PUMP_SDK.getSellInstructionRaw({
+  user, mint, creator, feeRecipient,
+  amount: new BN(1_000_000), solAmount: new BN(0),
+  tokenProgram: TOKEN_PROGRAM_ID, cashback: false,
+});
+const sellResult = validateBcInstruction(sellIx, "sell");
+if (!sellResult.valid) throw new Error(sellResult.errors.join("\n"));
+console.log("✓ BC sell is compliant");
+
+// ── AMM buy (non-cashback) ───────────────────────────────────────────
+// Build a synthetic AMM ix (OnlinePumpSdk builds this for you in practice):
+const [recipient, ata] = buildAmmBreakingFeeRecipientAccounts();
+const ammBuyIx = new TransactionInstruction({
+  keys: [
+    // ... your 23 existing AMM accounts ...
+    { pubkey: poolV2Pda(mint), isWritable: false, isSigner: false },
+    recipient!,
+    ata!,
+  ],
+  programId: new PublicKey("pAMMBay6oceH9fJKBRHGP5D4bD4sWpmSwMn52FMfXEA"),
+  data: Buffer.alloc(8),
+});
+const ammResult = validateAmmInstruction(ammBuyIx, "buy");
+if (!ammResult.valid) throw new Error(ammResult.errors.join("\n"));
+console.log("✓ AMM buy is compliant");
+```
+
+`kind` values and their expected account counts:
+
+| `validateBcInstruction` kind | Accounts |
+|------------------------------|----------|
+| `"buy"` | 18 |
+| `"sell"` | 16 |
+| `"sell-cashback"` | 17 |
+
+| `validateAmmInstruction` kind | Accounts |
+|-------------------------------|----------|
+| `"buy"` | 26 |
+| `"buy-cashback"` | 27 |
+| `"sell"` | 24 |
+| `"sell-cashback"` | 26 |
+
+---
+
+## Migration — Patching Legacy Instructions
+
+If you build bonding curve or AMM instructions by hand (not through `PUMP_SDK.*`) and cannot update every call site before the deadline, `patchBcInstruction` and `patchAmmInstruction` let you retrofit existing code with a single wrapper.
+
+Both functions are **idempotent** — they check whether the trailing account(s) are already present and return the original instruction unchanged if they are.
+
+### Bonding Curve
+
+```typescript
+import {
+  patchBcInstruction,
+  validateBcInstruction,
+} from "@nirholas/pump-sdk";
+import { TransactionInstruction } from "@solana/web3.js";
+
+// Somewhere in your codebase you build a BC buy ix without the trailing account:
+function buildMyLegacyBcBuyIx(): TransactionInstruction {
+  // ... your existing Anchor instruction builder (17 accounts) ...
+}
+
+// Wrap it before submitting — zero changes to existing call sites required:
+const ix = patchBcInstruction(buildMyLegacyBcBuyIx());
+
+// Optionally assert it's correct before sending:
+const { valid, errors } = validateBcInstruction(ix, "buy");
+if (!valid) throw new Error(errors.join("\n"));
+```
+
+### PumpAMM
+
+```typescript
+import {
+  patchAmmInstruction,
+  validateAmmInstruction,
+} from "@nirholas/pump-sdk";
+
+function buildMyLegacyAmmBuyIx(): TransactionInstruction {
+  // ... your existing AMM instruction builder (24 accounts) ...
+}
+
+const ix = patchAmmInstruction(buildMyLegacyAmmBuyIx());
+
+const { valid, errors } = validateAmmInstruction(ix, "buy");
+if (!valid) throw new Error(errors.join("\n"));
+```
+
+### Bulk migration of an instruction array
+
+```typescript
+import {
+  isBreakingFeeRecipient,
+  patchBcInstruction,
+} from "@nirholas/pump-sdk";
+import { TransactionInstruction } from "@solana/web3.js";
+
+function ensureBcInstructionsCompliant(
+  ixs: TransactionInstruction[],
+): TransactionInstruction[] {
+  return ixs.map((ix) => {
+    const tail = ix.keys[ix.keys.length - 1];
+    const needsPatch = !tail || !isBreakingFeeRecipient(tail.pubkey);
+    return needsPatch ? patchBcInstruction(ix) : ix;
+  });
+}
+```
+
+---
+
 ## What Did NOT Change
 
 - The `Global::fee_recipient` and `Global::fee_recipients` slots (the 8-way pre-existing protocol fee) — still present, still in the same account positions.
@@ -301,3 +530,6 @@ const recipient = pickBreakingFeeRecipient();
 - [Tutorial 24: Cross-Program Trading (AMM)](./24-cross-program-trading.md)
 - [Full protocol spec](../../docs/pump-public-docs/BREAKING_FEE_RECIPIENT.md)
 - [Migration guide](../docs/migration.md#upgrading-to-v1320-latest)
+- [verify-accounts.ts — offline account layout checker](../../pumpkit/examples/breaking-fee-recipient/verify-accounts.ts)
+- [patch-legacy.ts — migration utilities demo](../../pumpkit/examples/breaking-fee-recipient/patch-legacy.ts)
+- [devnet-buy-sell.ts — end-to-end devnet test](../../pumpkit/examples/breaking-fee-recipient/devnet-buy-sell.ts)

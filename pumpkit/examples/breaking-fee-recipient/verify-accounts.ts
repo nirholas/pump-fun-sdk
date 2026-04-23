@@ -21,11 +21,16 @@ import BN from "bn.js";
 
 import {
   BREAKING_FEE_RECIPIENTS,
+  BREAKING_FEE_RECIPIENT_WSOL_ATAS,
   PUMP_SDK,
   bondingCurveV2Pda,
   buildAmmBreakingFeeRecipientAccounts,
+  isBreakingFeeRecipient,
   pickBreakingFeeRecipient,
   poolV2Pda,
+  validateBcInstruction,
+  patchBcInstruction,
+  patchAmmInstruction,
 } from "../../../src/index";
 
 // ── Setup ─────────────────────────────────────────────────────────────────────
@@ -34,8 +39,6 @@ const mint = new PublicKey("So11111111111111111111111111111111111111112");
 const user = Keypair.generate().publicKey;
 const creator = Keypair.generate().publicKey;
 const feeRecipient = Keypair.generate().publicKey;
-
-const BREAKING_SET = new Set(BREAKING_FEE_RECIPIENTS.map((k) => k.toBase58()));
 
 let passed = 0;
 let failed = 0;
@@ -61,7 +64,7 @@ async function main() {
     });
     ok(`Total accounts = 18 (got ${ix.keys.length})`, ix.keys.length === 18);
     ok("Index 16 = bonding-curve-v2", ix.keys[16]!.pubkey.equals(bondingCurveV2Pda(mint)));
-    ok("Index 17 (last) = breaking fee recipient", BREAKING_SET.has(ix.keys[17]!.pubkey.toBase58()));
+    ok("Index 17 (last) = breaking fee recipient", isBreakingFeeRecipient(ix.keys[17]!.pubkey));
     ok("Index 17 is mutable", ix.keys[17]!.isWritable);
     ok("Index 17 is not a signer", !ix.keys[17]!.isSigner);
   }
@@ -76,7 +79,7 @@ async function main() {
     });
     ok(`Total accounts = 18 (got ${ix.keys.length})`, ix.keys.length === 18);
     ok("Index 16 = bonding-curve-v2", ix.keys[16]!.pubkey.equals(bondingCurveV2Pda(mint)));
-    ok("Index 17 (last) = breaking fee recipient", BREAKING_SET.has(ix.keys[17]!.pubkey.toBase58()));
+    ok("Index 17 (last) = breaking fee recipient", isBreakingFeeRecipient(ix.keys[17]!.pubkey));
     ok("Index 17 is mutable", ix.keys[17]!.isWritable);
   }
 
@@ -91,7 +94,7 @@ async function main() {
     });
     ok(`Total accounts = 16 (got ${ix.keys.length})`, ix.keys.length === 16);
     ok("Index 14 = bonding-curve-v2", ix.keys[14]!.pubkey.equals(bondingCurveV2Pda(mint)));
-    ok("Index 15 (last) = breaking fee recipient", BREAKING_SET.has(ix.keys[15]!.pubkey.toBase58()));
+    ok("Index 15 (last) = breaking fee recipient", isBreakingFeeRecipient(ix.keys[15]!.pubkey));
     ok("Index 15 is mutable", ix.keys[15]!.isWritable);
   }
 
@@ -106,7 +109,7 @@ async function main() {
     });
     ok(`Total accounts = 17 (got ${ix.keys.length})`, ix.keys.length === 17);
     ok("Index 15 = bonding-curve-v2", ix.keys[15]!.pubkey.equals(bondingCurveV2Pda(mint)));
-    ok("Index 16 (last) = breaking fee recipient", BREAKING_SET.has(ix.keys[16]!.pubkey.toBase58()));
+    ok("Index 16 (last) = breaking fee recipient", isBreakingFeeRecipient(ix.keys[16]!.pubkey));
     ok("Index 16 is mutable", ix.keys[16]!.isWritable);
   }
 
@@ -116,7 +119,7 @@ async function main() {
   {
     const [recipientAccount, ataAccount] = buildAmmBreakingFeeRecipientAccounts();
     ok("Returns 2 accounts", recipientAccount !== undefined && ataAccount !== undefined);
-    ok("Account[0] pubkey = one of 8 breaking fee recipients", BREAKING_SET.has(recipientAccount!.pubkey.toBase58()));
+    ok("Account[0] pubkey = one of 8 breaking fee recipients", isBreakingFeeRecipient(recipientAccount!.pubkey));
     ok("Account[0] isWritable = false (readonly)", !recipientAccount!.isWritable);
     ok("Account[0] isSigner = false", !recipientAccount!.isSigner);
     ok(
@@ -134,7 +137,7 @@ async function main() {
   console.log("\nManual construction (pickBreakingFeeRecipient + getAssociatedTokenAddressSync):");
   {
     const recipient = pickBreakingFeeRecipient();
-    ok("pickBreakingFeeRecipient returns one of 8", BREAKING_SET.has(recipient.toBase58()));
+    ok("pickBreakingFeeRecipient returns one of 8", isBreakingFeeRecipient(recipient));
     const wsol = getAssociatedTokenAddressSync(NATIVE_MINT, recipient, true, TOKEN_PROGRAM_ID);
     const [, fromHelperAta] = buildAmmBreakingFeeRecipientAccounts(recipient);
     ok("Manual WSOL ATA matches helper output when same recipient is passed", wsol.equals(fromHelperAta!.pubkey));
@@ -158,6 +161,61 @@ async function main() {
     for (const [i, addr] of expected.entries()) {
       ok(`Recipient[${i}] = ${addr}`, BREAKING_FEE_RECIPIENTS[i]!.toBase58() === addr);
     }
+  }
+
+  // ── BREAKING_FEE_RECIPIENT_WSOL_ATAS ──────────────────────────────────────
+
+  console.log("\nBREAKING_FEE_RECIPIENT_WSOL_ATAS pre-computed map:");
+  {
+    ok("Contains exactly 8 entries", BREAKING_FEE_RECIPIENT_WSOL_ATAS.size === 8);
+    for (const r of BREAKING_FEE_RECIPIENTS) {
+      const stored = BREAKING_FEE_RECIPIENT_WSOL_ATAS.get(r.toBase58());
+      const expected = getAssociatedTokenAddressSync(NATIVE_MINT, r, true, TOKEN_PROGRAM_ID);
+      ok(`WSOL ATA for ${r.toBase58().slice(0, 8)}… is correct`, stored?.equals(expected) ?? false);
+    }
+  }
+
+  // ── validateBcInstruction ──────────────────────────────────────────────────
+
+  console.log("\nvalidateBcInstruction:");
+  {
+    const buyIx = await PUMP_SDK.getBuyInstructionRaw({ user, mint, creator, feeRecipient, amount: new BN(1), solAmount: new BN(1) });
+    const buyResult = validateBcInstruction(buyIx, "buy");
+    ok("buy ix passes validation", buyResult.valid);
+    if (!buyResult.valid) console.error("    errors:", buyResult.errors);
+
+    const sellIx = await PUMP_SDK.getSellInstructionRaw({ user, mint, creator, feeRecipient, amount: new BN(1), solAmount: new BN(1), tokenProgram: TOKEN_PROGRAM_ID, cashback: false });
+    ok("sell (non-cashback) ix passes validation", validateBcInstruction(sellIx, "sell").valid);
+
+    const sellCbIx = await PUMP_SDK.getSellInstructionRaw({ user, mint, creator, feeRecipient, amount: new BN(1), solAmount: new BN(1), tokenProgram: TOKEN_PROGRAM_ID, cashback: true });
+    ok("sell (cashback) ix passes validation", validateBcInstruction(sellCbIx, "sell-cashback").valid);
+  }
+
+  // ── patchBcInstruction — idempotency ──────────────────────────────────────
+
+  console.log("\npatchBcInstruction (idempotency on already-correct instructions):");
+  {
+    const ix = await PUMP_SDK.getBuyInstructionRaw({ user, mint, creator, feeRecipient, amount: new BN(1), solAmount: new BN(1) });
+    const patched = patchBcInstruction(ix);
+    ok("patchBcInstruction is idempotent on already-correct ix", patched === ix);
+  }
+
+  // ── patchAmmInstruction — smoke ────────────────────────────────────────────
+
+  console.log("\npatchAmmInstruction (smoke — patches a synthetic old-format ix):");
+  {
+    const { TransactionInstruction: TxIx, PublicKey: PK } = await import("@solana/web3.js");
+    const fakeKey = () => ({ pubkey: new PK(Keypair.generate().publicKey.toBytes()), isWritable: false, isSigner: false });
+    const oldIx = new TxIx({
+      keys: Array(22).fill(null).map(() => fakeKey()),
+      programId: new PK("pAMMBay6oceH9fJKBRHGP5D4bD4sWpmSwMn52FMfXEA"),
+      data: Buffer.alloc(0),
+    });
+    const patched = patchAmmInstruction(oldIx);
+    ok("patched ix has 24 accounts (22 + 2 new)", patched.keys.length === 24);
+    ok("second-to-last is a breaking fee recipient (readonly)", isBreakingFeeRecipient(patched.keys[22]!.pubkey) && !patched.keys[22]!.isWritable);
+    ok("last is mutable WSOL ATA", patched.keys[23]!.isWritable && !!BREAKING_FEE_RECIPIENT_WSOL_ATAS.get(patched.keys[22]!.pubkey.toBase58()));
+    ok("patchAmmInstruction is idempotent on already-patched ix", patchAmmInstruction(patched) === patched);
   }
 
   // ── poolV2Pda — pre-upgrade AMM tail ───────────────────────────────────────

@@ -69,19 +69,47 @@ export interface VanityMintResult {
   durationMs: number;
 }
 
-/** Thrown when `prefix`/`suffix` can never match (invalid Base58 or too long). */
-export class VanityMintPatternError extends Error {
-  constructor(message: string) {
+/** Discriminant enum for `VanityError`. */
+export enum VanityErrorType {
+  InvalidPrefix = "InvalidPrefix",
+  InvalidSuffix = "InvalidSuffix",
+  TooLong = "TooLong",
+  Cancelled = "Cancelled",
+  GenerationFailed = "GenerationFailed",
+}
+
+/** Base class for all vanity-mint errors. Check `err.type` to branch on cause. */
+export class VanityError extends Error {
+  public readonly type: VanityErrorType;
+  constructor(type: VanityErrorType, message: string) {
     super(message);
+    this.name = "VanityError";
+    this.type = type;
+  }
+}
+
+/** Thrown when `prefix`/`suffix` can never match (invalid Base58 or too long). */
+export class VanityMintPatternError extends VanityError {
+  constructor(message: string, kind: "prefix" | "suffix" | "length" = "prefix") {
+    const type =
+      kind === "suffix"
+        ? VanityErrorType.InvalidSuffix
+        : kind === "length"
+          ? VanityErrorType.TooLong
+          : VanityErrorType.InvalidPrefix;
+    super(type, message);
     this.name = "VanityMintPatternError";
   }
 }
 
 /** Thrown when `maxAttempts` is reached without finding a match. */
-export class VanityMintMaxAttemptsError extends Error {
+export class VanityMintMaxAttemptsError extends VanityError {
   public readonly attempts: number;
   constructor(attempts: number) {
-    super(`Vanity mint grind exhausted ${attempts.toLocaleString()} attempts without finding a match.`);
+    super(
+      VanityErrorType.GenerationFailed,
+      `Vanity mint grind exhausted ${attempts.toLocaleString()} attempts without finding a match.`,
+    );
     this.name = "VanityMintMaxAttemptsError";
     this.attempts = attempts;
   }
@@ -92,12 +120,13 @@ function assertValidPattern(
   kind: "prefix" | "suffix",
 ): void {
   if (pattern.length === 0) {
-    throw new VanityMintPatternError(`${kind} must not be empty`);
+    throw new VanityMintPatternError(`${kind} must not be empty`, kind);
   }
   if (pattern.length > MAX_VANITY_PATTERN_LENGTH) {
     throw new VanityMintPatternError(
       `${kind} length ${pattern.length} exceeds MAX_VANITY_PATTERN_LENGTH (${MAX_VANITY_PATTERN_LENGTH}). ` +
         `Use the Rust generator at rust/ for longer patterns.`,
+      "length",
     );
   }
   for (let i = 0; i < pattern.length; i++) {
@@ -110,6 +139,7 @@ function assertValidPattern(
         char === "l" ? "(lowercase L — Base58 omits this)" : "";
       throw new VanityMintPatternError(
         `${kind} contains invalid Base58 character '${char}' at position ${i} ${hint}`.trim(),
+        kind,
       );
     }
   }

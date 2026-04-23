@@ -22,6 +22,13 @@ import {
   buildCreateAndBuySchema, buildCreateAndBuy,
   buildAmmSwapSchema, buildAmmSwap,
   buildMigrateSchema, buildMigrateInstructions,
+  buildRoutedBuySchema, buildRoutedBuy,
+  buildRoutedSellSchema, buildRoutedSell,
+  buildBuyBySolAmountSchema, buildBuyBySolAmount,
+  buildSellAllSchema, buildSellAll,
+  buildSellByPercentageSchema, buildSellByPercentage,
+  buildSellToTargetSolSchema, buildSellToTargetSol,
+  buildSellChunkedSchema, buildSellChunked,
 } from "./trading.js";
 
 // Fee tools
@@ -45,6 +52,11 @@ import {
   getRecentTradesSchema, getRecentTrades,
   getSolUsdPriceSchema, getSolUsdPrice,
   getGraduationStatusSchema, getGraduationStatus,
+  getTokenBalanceSchema, getTokenBalance,
+  isGraduatedSchema, isGraduatedTool,
+  fetchMultipleBondingCurvesSchema, fetchMultipleBondingCurves,
+  parseTransactionEventsSchema, parseTransactionEvents,
+  getPoolByAddressSchema, getPoolByAddress,
 } from "./analytics.js";
 
 // AMM tools
@@ -234,6 +246,48 @@ export const ALL_TOOLS: ToolDefinition[] = [
     inputSchema: zodToJsonSchema(buildMigrateSchema),
     handler: buildMigrateInstructions,
   },
+  {
+    name: "build_routed_buy",
+    description: "Build buy instructions that auto-route to bonding curve or PumpAMM depending on graduation status",
+    inputSchema: zodToJsonSchema(buildRoutedBuySchema),
+    handler: buildRoutedBuy,
+  },
+  {
+    name: "build_routed_sell",
+    description: "Build sell instructions that auto-route to bonding curve or PumpAMM depending on graduation status",
+    inputSchema: zodToJsonSchema(buildRoutedSellSchema),
+    handler: buildRoutedSell,
+  },
+  {
+    name: "build_buy_by_sol_amount",
+    description: "Build bonding-curve buy instructions for a given SOL budget — SDK computes expected token output automatically",
+    inputSchema: zodToJsonSchema(buildBuyBySolAmountSchema),
+    handler: buildBuyBySolAmount,
+  },
+  {
+    name: "build_sell_all",
+    description: "Build sell instructions that sell the user's entire token balance (closes ATA, returns rent)",
+    inputSchema: zodToJsonSchema(buildSellAllSchema),
+    handler: buildSellAll,
+  },
+  {
+    name: "build_sell_by_percentage",
+    description: "Build sell instructions for a percentage of the user's token balance (e.g. 50 = sell half)",
+    inputSchema: zodToJsonSchema(buildSellByPercentageSchema),
+    handler: buildSellByPercentage,
+  },
+  {
+    name: "build_sell_to_target_sol",
+    description: "Build sell instructions that yield approximately a target SOL amount — SDK computes the required token amount",
+    inputSchema: zodToJsonSchema(buildSellToTargetSolSchema),
+    handler: buildSellToTargetSol,
+  },
+  {
+    name: "build_sell_chunked",
+    description: "Build chunked sell instructions for very large amounts that exceed the safe single-tx overflow limit — returns multiple transaction groups",
+    inputSchema: zodToJsonSchema(buildSellChunkedSchema),
+    handler: buildSellChunked,
+  },
 
   // ── Fees (8) ──
   {
@@ -327,6 +381,36 @@ export const ALL_TOOLS: ToolDefinition[] = [
     description: "Check whether a token has graduated to AMM and its progress percentage",
     inputSchema: zodToJsonSchema(getGraduationStatusSchema),
     handler: getGraduationStatus,
+  },
+  {
+    name: "get_token_balance",
+    description: "Get a user's token balance for a specific mint in both raw units and human-readable form",
+    inputSchema: zodToJsonSchema(getTokenBalanceSchema),
+    handler: getTokenBalance,
+  },
+  {
+    name: "is_graduated",
+    description: "Check if a token has graduated from bonding curve to PumpAMM",
+    inputSchema: zodToJsonSchema(isGraduatedSchema),
+    handler: isGraduatedTool,
+  },
+  {
+    name: "fetch_multiple_bonding_curves",
+    description: "Batch-fetch bonding curve state for multiple mints in a single RPC call (max 100)",
+    inputSchema: zodToJsonSchema(fetchMultipleBondingCurvesSchema),
+    handler: fetchMultipleBondingCurves,
+  },
+  {
+    name: "parse_transaction_events",
+    description: "Decode and classify all Pump program events emitted in a confirmed transaction",
+    inputSchema: zodToJsonSchema(parseTransactionEventsSchema),
+    handler: parseTransactionEvents,
+  },
+  {
+    name: "get_pool_by_address",
+    description: "Fetch PumpAMM pool state directly by pool account address (use when you have the pool PDA, not the mint)",
+    inputSchema: zodToJsonSchema(getPoolByAddressSchema),
+    handler: getPoolByAddress,
   },
 
   // ── AMM (5) ──

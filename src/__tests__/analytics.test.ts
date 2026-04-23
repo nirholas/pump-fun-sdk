@@ -105,6 +105,39 @@ describe("analytics", () => {
       const result = getGraduationProgress(zeroGlobal, makeBondingCurve());
       expect(result.progressBps).toBe(0);
     });
+
+    it("solNeededToGraduate is zero for graduated curve", () => {
+      const result = getGraduationProgress(global, makeGraduatedBondingCurve());
+      expect(result.solNeededToGraduate.isZero()).toBe(true);
+    });
+
+    it("solNeededToGraduate is positive for a fresh curve", () => {
+      const result = getGraduationProgress(global, makeBondingCurve());
+      expect(result.solNeededToGraduate.gtn(0)).toBe(true);
+    });
+
+    it("solNeededToGraduate is positive for fresh and partial-fill curves", () => {
+      // The bonding curve is non-linear: buying remaining tokens mid-curve costs
+      // MORE per token (steeper price), not less. Both states should have a
+      // positive cost to graduate.
+      const fresh = getGraduationProgress(global, makeBondingCurve());
+      const halfSold = getGraduationProgress(
+        global,
+        makeBondingCurve({
+          realTokenReserves: global.initialRealTokenReserves.divn(2),
+          virtualSolReserves: new BN("30000000000").add(new BN("40000000000")),
+          virtualTokenReserves: new BN("1073000000000000").sub(global.initialRealTokenReserves.divn(2)),
+        }),
+      );
+      expect(fresh.solNeededToGraduate.gtn(0)).toBe(true);
+      expect(halfSold.solNeededToGraduate.gtn(0)).toBe(true);
+    });
+
+    it("solNeededToGraduate is zero when initialRealTokenReserves is zero", () => {
+      const zeroGlobal = makeGlobal({ initialRealTokenReserves: new BN(0) });
+      const result = getGraduationProgress(zeroGlobal, makeBondingCurve());
+      expect(result.solNeededToGraduate.isZero()).toBe(true);
+    });
   });
 
   // ── getTokenPrice ──────────────────────────────────────────────────
@@ -144,6 +177,54 @@ describe("analytics", () => {
       expect(summary.sellPricePerToken.gt(new BN(0))).toBe(true);
       expect(summary.virtualSolReserves.eq(bc.virtualSolReserves)).toBe(true);
       expect(summary.virtualTokenReserves.eq(bc.virtualTokenReserves)).toBe(true);
+    });
+
+    it("includes solNeededToGraduate", () => {
+      const summary = getBondingCurveSummary({
+        global,
+        feeConfig: null,
+        mintSupply,
+        bondingCurve: makeBondingCurve(),
+      });
+      expect(summary.solNeededToGraduate.gtn(0)).toBe(true);
+    });
+
+    it("solNeededToGraduate is zero for graduated curve", () => {
+      const summary = getBondingCurveSummary({
+        global,
+        feeConfig: null,
+        mintSupply,
+        bondingCurve: makeGraduatedBondingCurve(),
+      });
+      expect(summary.solNeededToGraduate.isZero()).toBe(true);
+    });
+
+    it("includes protocolFeeBps and creatorFeeBps from global defaults when feeConfig is null", () => {
+      const summary = getBondingCurveSummary({
+        global,
+        feeConfig: null,
+        mintSupply,
+        bondingCurve: makeBondingCurve(),
+      });
+      expect(summary.protocolFeeBps.eq(global.feeBasisPoints)).toBe(true);
+      expect(summary.creatorFeeBps.eq(global.creatorFeeBasisPoints)).toBe(true);
+    });
+
+    it("isMayhemMode reflects the bonding curve flag", () => {
+      const standardSummary = getBondingCurveSummary({
+        global,
+        feeConfig: null,
+        mintSupply,
+        bondingCurve: makeBondingCurve({ isMayhemMode: false }),
+      });
+      const mayhemSummary = getBondingCurveSummary({
+        global,
+        feeConfig: null,
+        mintSupply,
+        bondingCurve: makeBondingCurve({ isMayhemMode: true }),
+      });
+      expect(standardSummary.isMayhemMode).toBe(false);
+      expect(mayhemSummary.isMayhemMode).toBe(true);
     });
   });
 });

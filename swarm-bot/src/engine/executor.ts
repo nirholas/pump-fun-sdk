@@ -1,9 +1,12 @@
-import { Connection, Keypair, TransactionInstruction, TransactionMessage, VersionedTransaction, PublicKey, SendTransactionError } from '@solana/web3.js';
+import { Connection, Keypair, TransactionInstruction, TransactionMessage, VersionedTransaction, PublicKey } from '@solana/web3.js';
 import BN from 'bn.js';
-import { PUMP_SDK } from '@nirholas/pump-sdk';
-import { OnlinePumpSdk } from '@nirholas/pump-sdk';
-import { getBuyTokenAmountFromSolAmount, getSellSolAmountFromTokenAmount } from '@nirholas/pump-sdk';
-import { getGraduationProgress } from '@nirholas/pump-sdk';
+import {
+  PUMP_SDK,
+  OnlinePumpSdk,
+  getBuyTokenAmountFromSolAmount,
+  getSellSolAmountFromTokenAmount,
+  canonicalPumpPoolPda,
+} from '@nirholas/pump-sdk';
 import { logger } from '../logger.js';
 
 export interface ExecuteResult {
@@ -77,7 +80,7 @@ export class Executor {
         return { success: false, error: 'Zero token output', solAmount, tokenAmount, price: 0 };
       }
 
-      // Build instructions
+      // Build instructions — spread tokenProgram so Token-2022 mints work correctly
       const instructions = await PUMP_SDK.buyInstructions({
         global,
         bondingCurveAccountInfo,
@@ -88,6 +91,7 @@ export class Executor {
         amount: tokenAmount,
         solAmount,
         slippage: slip,
+        tokenProgram: buyState.tokenProgram,
       });
 
       const price = solAmount.toNumber() / tokenAmount.toNumber();
@@ -185,8 +189,7 @@ export class Executor {
   private async ammBuy(mint: PublicKey, solAmount: BN, slippage?: number): Promise<ExecuteResult> {
     const slip = slippage ?? this.defaultSlippage;
     try {
-      const pool = await this.onlineSdk.fetchPool(mint);
-      const poolPda = this.getPoolPda(mint);
+      const poolPda = canonicalPumpPoolPda(mint);
       const minBaseOut = solAmount.muln(Math.floor((1 - slip) * 10000)).divn(10000);
 
       const instruction = await PUMP_SDK.ammBuyExactQuoteInInstruction({
@@ -211,7 +214,7 @@ export class Executor {
   private async ammSell(mint: PublicKey, tokenAmount: BN, slippage?: number): Promise<ExecuteResult> {
     const slip = slippage ?? this.defaultSlippage;
     try {
-      const poolPda = this.getPoolPda(mint);
+      const poolPda = canonicalPumpPoolPda(mint);
       const minQuoteOut = new BN(0); // Accept any SOL amount (slippage applied in instruction)
 
       const instruction = await PUMP_SDK.ammSellInstruction({
@@ -287,13 +290,4 @@ export class Executor {
     throw lastError ?? new Error('Transaction failed after retries');
   }
 
-  /** Derive the canonical PumpAMM pool PDA for a mint */
-  private getPoolPda(mint: PublicKey): PublicKey {
-    const PUMP_AMM_PROGRAM = new PublicKey('pAMMBay6oceH9fJKBRHGP5D4bD4sWpmSwMn52FMfXEA');
-    const [pda] = PublicKey.findProgramAddressSync(
-      [Buffer.from('pool'), mint.toBuffer()],
-      PUMP_AMM_PROGRAM,
-    );
-    return pda;
-  }
 }

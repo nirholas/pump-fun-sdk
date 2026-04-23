@@ -187,3 +187,130 @@ export async function getGraduationStatus(
     return error(`Failed to get graduation status: ${getErrorMessage(e)}`);
   }
 }
+
+// ── get_token_balance ──
+export const getTokenBalanceSchema = z.object({
+  mint: publicKeySchema.describe("Token mint address"),
+  user: publicKeySchema.describe("User wallet address"),
+  tokenProgram: z.string().optional().describe("Token program (optional — auto-detected from mint)"),
+});
+
+export async function getTokenBalance(
+  sdk: OnlinePumpSdk,
+  params: z.infer<typeof getTokenBalanceSchema>
+): Promise<ToolResult> {
+  try {
+    const mint = new PublicKey(params.mint);
+    const user = new PublicKey(params.user);
+    const tokenProgram = params.tokenProgram ? new PublicKey(params.tokenProgram) : undefined;
+
+    const balance = await sdk.getTokenBalance(mint, user, tokenProgram);
+
+    return success({
+      mint: params.mint,
+      user: params.user,
+      balanceRaw: formatBN(balance),
+      balanceTokens: rawToTokens(balance),
+    });
+  } catch (e: unknown) {
+    return error(`Failed to get token balance: ${getErrorMessage(e)}`);
+  }
+}
+
+// ── is_graduated ──
+export const isGraduatedSchema = z.object({
+  mint: publicKeySchema.describe("Token mint address"),
+});
+
+export async function isGraduatedTool(
+  sdk: OnlinePumpSdk,
+  params: z.infer<typeof isGraduatedSchema>
+): Promise<ToolResult> {
+  try {
+    const graduated = await sdk.isGraduated(params.mint);
+    return success({ mint: params.mint, graduated });
+  } catch (e: unknown) {
+    return error(`Failed to check graduation: ${getErrorMessage(e)}`);
+  }
+}
+
+// ── fetch_multiple_bonding_curves ──
+export const fetchMultipleBondingCurvesSchema = z.object({
+  mints: z.array(publicKeySchema).min(1).max(100).describe("Array of token mint addresses (max 100)"),
+});
+
+export async function fetchMultipleBondingCurves(
+  sdk: OnlinePumpSdk,
+  params: z.infer<typeof fetchMultipleBondingCurvesSchema>
+): Promise<ToolResult> {
+  try {
+    const mints = params.mints.map((m) => new PublicKey(m));
+    const results = await sdk.fetchMultipleBondingCurves(mints);
+
+    const data: Record<string, unknown> = {};
+    for (const [mint, bc] of results.entries()) {
+      data[mint] = bc
+        ? {
+            virtualSolReserves: formatBN(bc.virtualSolReserves),
+            virtualTokenReserves: formatBN(bc.virtualTokenReserves),
+            realTokenReserves: formatBN(bc.realTokenReserves),
+            complete: bc.complete,
+            creator: bc.creator.toBase58(),
+            isMayhemMode: bc.isMayhemMode,
+          }
+        : null;
+    }
+
+    return success({ count: mints.length, bondingCurves: data });
+  } catch (e: unknown) {
+    return error(`Failed to fetch bonding curves: ${getErrorMessage(e)}`);
+  }
+}
+
+// ── parse_transaction_events ──
+export const parseTransactionEventsSchema = z.object({
+  signature: z.string().describe("Transaction signature to decode"),
+});
+
+export async function parseTransactionEvents(
+  sdk: OnlinePumpSdk,
+  params: z.infer<typeof parseTransactionEventsSchema>
+): Promise<ToolResult> {
+  try {
+    const events = await sdk.parseTransactionEvents(params.signature);
+    return success({
+      signature: params.signature,
+      eventCount: events.length,
+      events: events.map((e) => ({ type: e.type, data: e.data })),
+    });
+  } catch (e: unknown) {
+    return error(`Failed to parse transaction events: ${getErrorMessage(e)}`);
+  }
+}
+
+// ── get_pool_by_address ──
+export const getPoolByAddressSchema = z.object({
+  poolAddress: publicKeySchema.describe("PumpAMM pool account address"),
+});
+
+export async function getPoolByAddress(
+  sdk: OnlinePumpSdk,
+  params: z.infer<typeof getPoolByAddressSchema>
+): Promise<ToolResult> {
+  try {
+    const pool = await sdk.fetchPoolByAddress(params.poolAddress);
+    return success({
+      poolAddress: params.poolAddress,
+      baseMint: pool.baseMint.toBase58(),
+      quoteMint: pool.quoteMint.toBase58(),
+      lpMint: pool.lpMint.toBase58(),
+      lpSupply: formatBN(pool.lpSupply),
+      creator: pool.creator.toBase58(),
+      coinCreator: pool.coinCreator.toBase58(),
+      poolBaseTokenAccount: pool.poolBaseTokenAccount.toBase58(),
+      poolQuoteTokenAccount: pool.poolQuoteTokenAccount.toBase58(),
+    });
+  } catch (e: unknown) {
+    return error(`Failed to fetch pool by address: ${getErrorMessage(e)}`);
+  }
+}

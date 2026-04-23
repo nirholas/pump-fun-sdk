@@ -20,7 +20,13 @@ import {
 } from "../sdk";
 import {
   BREAKING_FEE_RECIPIENTS,
+  BREAKING_FEE_RECIPIENT_WSOL_ATAS,
+  isBreakingFeeRecipient,
   buildAmmBreakingFeeRecipientAccounts,
+  validateBcInstruction,
+  validateAmmInstruction,
+  patchBcInstruction,
+  patchAmmInstruction,
 } from "../fees";
 import { Platform } from "../state";
 import { TEST_PUBKEY, TEST_CREATOR, makeBondingCurveWithCreator } from "./fixtures";
@@ -387,6 +393,286 @@ describe("sdk", () => {
         ata!,
       ];
       expect(AMM_SELL_BASE + tail.length).toBe(26);
+    });
+  });
+
+  // ── isBreakingFeeRecipient ─────────────────────────────────────────
+  describe("isBreakingFeeRecipient", () => {
+    it("returns true for every known breaking fee recipient", () => {
+      for (const r of BREAKING_FEE_RECIPIENTS) {
+        expect(isBreakingFeeRecipient(r)).toBe(true);
+      }
+    });
+
+    it("returns false for an arbitrary pubkey", () => {
+      expect(isBreakingFeeRecipient(TEST_PUBKEY)).toBe(false);
+      expect(isBreakingFeeRecipient(PublicKey.default)).toBe(false);
+    });
+  });
+
+  // ── BREAKING_FEE_RECIPIENT_WSOL_ATAS ──────────────────────────────
+  describe("BREAKING_FEE_RECIPIENT_WSOL_ATAS", () => {
+    it("has exactly 8 entries", () => {
+      expect(BREAKING_FEE_RECIPIENT_WSOL_ATAS.size).toBe(8);
+    });
+
+    it("each entry matches getAssociatedTokenAddressSync output", () => {
+      for (const r of BREAKING_FEE_RECIPIENTS) {
+        const cached = BREAKING_FEE_RECIPIENT_WSOL_ATAS.get(r.toBase58());
+        expect(cached).toBeDefined();
+        const derived = getAssociatedTokenAddressSync(
+          NATIVE_MINT,
+          r,
+          true,
+          TOKEN_PROGRAM_ID,
+        );
+        expect(cached!.equals(derived)).toBe(true);
+      }
+    });
+
+    it("buildAmmBreakingFeeRecipientAccounts uses cached ATA", () => {
+      const recipient = BREAKING_FEE_RECIPIENTS[0]!;
+      const [, ataAccount] = buildAmmBreakingFeeRecipientAccounts(recipient);
+      const cached = BREAKING_FEE_RECIPIENT_WSOL_ATAS.get(
+        recipient.toBase58(),
+      )!;
+      expect(ataAccount!.pubkey.equals(cached)).toBe(true);
+    });
+  });
+
+  // ── validateBcInstruction ──────────────────────────────────────────
+  describe("validateBcInstruction", () => {
+    const bcMint = new PublicKey("So11111111111111111111111111111111111111112");
+    const bcCreator = makeBondingCurveWithCreator().creator;
+
+    it("passes for a valid BC buy instruction (18 accounts)", async () => {
+      const ix = await PUMP_SDK.getBuyInstructionRaw({
+        user: TEST_PUBKEY, mint: bcMint, creator: bcCreator,
+        amount: new BN(1), solAmount: new BN(1), feeRecipient: TEST_CREATOR,
+      });
+      const result = validateBcInstruction(ix, "buy");
+      expect(result.valid).toBe(true);
+      expect(result.errors).toHaveLength(0);
+    });
+
+    it("fails for wrong account count", async () => {
+      const ix = await PUMP_SDK.getBuyInstructionRaw({
+        user: TEST_PUBKEY, mint: bcMint, creator: bcCreator,
+        amount: new BN(1), solAmount: new BN(1), feeRecipient: TEST_CREATOR,
+      });
+      // strip trailing account to simulate pre-upgrade instruction
+      const truncated = { ...ix, keys: ix.keys.slice(0, 17) } as typeof ix;
+      const result = validateBcInstruction(truncated, "buy");
+      expect(result.valid).toBe(false);
+      expect(result.errors.some((e) => e.includes("expected 18"))).toBe(true);
+    });
+
+    it("fails when last account is not a breaking fee recipient", async () => {
+      const ix = await PUMP_SDK.getBuyInstructionRaw({
+        user: TEST_PUBKEY, mint: bcMint, creator: bcCreator,
+        amount: new BN(1), solAmount: new BN(1), feeRecipient: TEST_CREATOR,
+      });
+      const tampered = {
+        ...ix,
+        keys: [
+          ...ix.keys.slice(0, -1),
+          { pubkey: TEST_PUBKEY, isWritable: true, isSigner: false },
+        ],
+      } as typeof ix;
+      const result = validateBcInstruction(tampered, "buy");
+      expect(result.valid).toBe(false);
+      expect(result.errors.some((e) => e.includes("not a breaking fee recipient"))).toBe(true);
+    });
+
+    it("fails when last account is readonly", async () => {
+      const ix = await PUMP_SDK.getBuyInstructionRaw({
+        user: TEST_PUBKEY, mint: bcMint, creator: bcCreator,
+        amount: new BN(1), solAmount: new BN(1), feeRecipient: TEST_CREATOR,
+      });
+      const tampered = {
+        ...ix,
+        keys: [
+          ...ix.keys.slice(0, -1),
+          { ...ix.keys[ix.keys.length - 1]!, isWritable: false },
+        ],
+      } as typeof ix;
+      const result = validateBcInstruction(tampered, "buy");
+      expect(result.valid).toBe(false);
+      expect(result.errors.some((e) => e.includes("must be mutable"))).toBe(true);
+    });
+
+    it("passes for a valid BC sell (non-cashback) instruction (16 accounts)", async () => {
+      const ix = await PUMP_SDK.getSellInstructionRaw({
+        user: TEST_PUBKEY, mint: bcMint, creator: bcCreator,
+        amount: new BN(1), solAmount: new BN(1), feeRecipient: TEST_CREATOR,
+        tokenProgram: TOKEN_PROGRAM_ID, cashback: false,
+      });
+      expect(validateBcInstruction(ix, "sell").valid).toBe(true);
+    });
+
+    it("passes for a valid BC sell-cashback instruction (17 accounts)", async () => {
+      const ix = await PUMP_SDK.getSellInstructionRaw({
+        user: TEST_PUBKEY, mint: bcMint, creator: bcCreator,
+        amount: new BN(1), solAmount: new BN(1), feeRecipient: TEST_CREATOR,
+        tokenProgram: TOKEN_PROGRAM_ID, cashback: true,
+      });
+      expect(validateBcInstruction(ix, "sell-cashback").valid).toBe(true);
+    });
+  });
+
+  // ── validateAmmInstruction ─────────────────────────────────────────
+  describe("validateAmmInstruction", () => {
+    const makeAmmIx = (baseCount: number) => {
+      const [recipient, ata] = buildAmmBreakingFeeRecipientAccounts();
+      const fakeKeys = Array.from({ length: baseCount }, () => ({
+        pubkey: TEST_PUBKEY,
+        isWritable: false,
+        isSigner: false,
+      }));
+      return { keys: [...fakeKeys, recipient!, ata!], programId: TEST_PUBKEY, data: Buffer.alloc(0) };
+    };
+
+    it("passes for correctly shaped non-cashback AMM buy (26 accounts)", () => {
+      const result = validateAmmInstruction(
+        makeAmmIx(24) as unknown as import("@solana/web3.js").TransactionInstruction,
+        "buy",
+      );
+      expect(result.valid).toBe(true);
+      expect(result.errors).toHaveLength(0);
+    });
+
+    it("passes for correctly shaped non-cashback AMM sell (24 accounts)", () => {
+      const result = validateAmmInstruction(
+        makeAmmIx(22) as unknown as import("@solana/web3.js").TransactionInstruction,
+        "sell",
+      );
+      expect(result.valid).toBe(true);
+    });
+
+    it("fails when AMM recipient is writable", () => {
+      const [recipient, ata] = buildAmmBreakingFeeRecipientAccounts();
+      const fakeKeys = Array.from({ length: 24 }, () => ({
+        pubkey: TEST_PUBKEY, isWritable: false, isSigner: false,
+      }));
+      const ix = {
+        keys: [...fakeKeys, { ...recipient!, isWritable: true }, ata!],
+        programId: TEST_PUBKEY,
+        data: Buffer.alloc(0),
+      } as unknown as import("@solana/web3.js").TransactionInstruction;
+      const result = validateAmmInstruction(ix, "buy");
+      expect(result.valid).toBe(false);
+      expect(result.errors.some((e) => e.includes("must be readonly"))).toBe(true);
+    });
+
+    it("fails when WSOL ATA pubkey is wrong", () => {
+      const [recipient] = buildAmmBreakingFeeRecipientAccounts();
+      const fakeKeys = Array.from({ length: 24 }, () => ({
+        pubkey: TEST_PUBKEY, isWritable: false, isSigner: false,
+      }));
+      const ix = {
+        keys: [
+          ...fakeKeys,
+          recipient!,
+          { pubkey: TEST_PUBKEY, isWritable: true, isSigner: false },
+        ],
+        programId: TEST_PUBKEY,
+        data: Buffer.alloc(0),
+      } as unknown as import("@solana/web3.js").TransactionInstruction;
+      const result = validateAmmInstruction(ix, "buy");
+      expect(result.valid).toBe(false);
+      expect(result.errors.some((e) => e.includes("WSOL ATA"))).toBe(true);
+    });
+  });
+
+  // ── patchBcInstruction ─────────────────────────────────────────────
+  describe("patchBcInstruction", () => {
+    it("appends the breaking fee recipient to a pre-upgrade BC instruction", () => {
+      const fakeKeys = Array.from({ length: 17 }, () => ({
+        pubkey: TEST_PUBKEY, isWritable: false, isSigner: false,
+      }));
+      const ix = {
+        keys: fakeKeys, programId: TEST_PUBKEY, data: Buffer.alloc(0),
+      } as unknown as import("@solana/web3.js").TransactionInstruction;
+
+      const patched = patchBcInstruction(ix);
+      expect(patched.keys).toHaveLength(18);
+      const tail = patched.keys[patched.keys.length - 1]!;
+      expect(isBreakingFeeRecipient(tail.pubkey)).toBe(true);
+      expect(tail.isWritable).toBe(true);
+      expect(tail.isSigner).toBe(false);
+    });
+
+    it("is idempotent when the trailing account is already a breaking fee recipient", async () => {
+      const ix = await PUMP_SDK.getBuyInstructionRaw({
+        user: TEST_PUBKEY,
+        mint: new PublicKey("So11111111111111111111111111111111111111112"),
+        creator: makeBondingCurveWithCreator().creator,
+        amount: new BN(1), solAmount: new BN(1), feeRecipient: TEST_CREATOR,
+      });
+      expect(ix.keys).toHaveLength(18);
+      const patched = patchBcInstruction(ix);
+      expect(patched).toBe(ix); // same reference — original not mutated
+      expect(patched.keys).toHaveLength(18);
+    });
+
+    it("does not mutate the original instruction", () => {
+      const fakeKeys = Array.from({ length: 17 }, () => ({
+        pubkey: TEST_PUBKEY, isWritable: false, isSigner: false,
+      }));
+      const ix = {
+        keys: fakeKeys, programId: TEST_PUBKEY, data: Buffer.alloc(0),
+      } as unknown as import("@solana/web3.js").TransactionInstruction;
+
+      patchBcInstruction(ix);
+      expect(ix.keys).toHaveLength(17);
+    });
+  });
+
+  // ── patchAmmInstruction ────────────────────────────────────────────
+  describe("patchAmmInstruction", () => {
+    it("appends two trailing accounts to a pre-upgrade AMM instruction", () => {
+      const fakeKeys = Array.from({ length: 24 }, () => ({
+        pubkey: TEST_PUBKEY, isWritable: false, isSigner: false,
+      }));
+      const ix = {
+        keys: fakeKeys, programId: TEST_PUBKEY, data: Buffer.alloc(0),
+      } as unknown as import("@solana/web3.js").TransactionInstruction;
+
+      const patched = patchAmmInstruction(ix);
+      expect(patched.keys).toHaveLength(26);
+      const secondToLast = patched.keys[patched.keys.length - 2]!;
+      const last = patched.keys[patched.keys.length - 1]!;
+      expect(isBreakingFeeRecipient(secondToLast.pubkey)).toBe(true);
+      expect(secondToLast.isWritable).toBe(false);
+      expect(last.isWritable).toBe(true);
+    });
+
+    it("is idempotent when the accounts are already present", () => {
+      const [recipient, ata] = buildAmmBreakingFeeRecipientAccounts();
+      const fakeKeys = Array.from({ length: 24 }, () => ({
+        pubkey: TEST_PUBKEY, isWritable: false, isSigner: false,
+      }));
+      const ix = {
+        keys: [...fakeKeys, recipient!, ata!],
+        programId: TEST_PUBKEY,
+        data: Buffer.alloc(0),
+      } as unknown as import("@solana/web3.js").TransactionInstruction;
+
+      const patched = patchAmmInstruction(ix);
+      expect(patched).toBe(ix); // same reference
+      expect(patched.keys).toHaveLength(26);
+    });
+
+    it("does not mutate the original instruction", () => {
+      const fakeKeys = Array.from({ length: 24 }, () => ({
+        pubkey: TEST_PUBKEY, isWritable: false, isSigner: false,
+      }));
+      const ix = {
+        keys: fakeKeys, programId: TEST_PUBKEY, data: Buffer.alloc(0),
+      } as unknown as import("@solana/web3.js").TransactionInstruction;
+
+      patchAmmInstruction(ix);
+      expect(ix.keys).toHaveLength(24);
     });
   });
 });

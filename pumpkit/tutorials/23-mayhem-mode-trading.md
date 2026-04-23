@@ -1,6 +1,6 @@
 # Tutorial 23: Mayhem Mode Trading
 
-> Create and trade tokens using Pump's Mayhem Mode — alternative routing with separate vaults, Token-2022, and different fee mechanics.
+> Create and trade tokens using Pump's Mayhem Mode — Token-2022, separate vault routing, different fee recipients, and supply-based fee tiers.
 
 > **Breaking change — 2026-04-28:** Mayhem mode buys and sells are subject to the same trailing fee-recipient requirement as regular trades. Upgrade to `@nirholas/pump-sdk@^1.32.0` — handled automatically. See **[Tutorial 45: Breaking Fee Recipient Upgrade](./45-breaking-fee-recipient-upgrade.md)**.
 
@@ -22,24 +22,47 @@ Mayhem Mode is an alternative token creation path on Pump. When enabled:
 |---------|---------------|-------------|
 | Token Program | `TOKEN_PROGRAM_ID` | `TOKEN_2022_PROGRAM_ID` |
 | Vault routing | Standard Pump vaults | Separate Mayhem program vaults |
-| Fee recipients | `global.feeRecipient` | `global.reservedFeeRecipient` |
-| Fee tier supply | Uses `ONE_BILLION_SUPPLY` constant | Uses actual `mintSupply` |
-| PDAs | Standard Pump PDAs | Mayhem-specific PDAs |
+| Fee recipients | `global.feeRecipient` + pool | `global.reservedFeeRecipient` + pool |
+| Fee tier supply baseline | Fixed `ONE_BILLION_SUPPLY` (1B × 10⁶) | Actual `bondingCurve.tokenTotalSupply` |
+| PDAs | Standard Pump PDAs | Mayhem-specific PDAs under `MAYHEM_PROGRAM_ID` |
 | Immutable | — | Set at creation, **cannot be changed** |
 
-**Key point:** Mayhem Mode is set at token creation and cannot be toggled afterward.
+**Key point:** Mayhem Mode is set at token creation and cannot be toggled afterward. The flag lives on the bonding curve as `bondingCurve.isMayhemMode`.
 
-## Step 1: Create a Mayhem Mode Token
+## Step 1: Check Protocol Status Before Creating
+
+Before creating a Mayhem token, verify the protocol has Mayhem Mode enabled:
 
 ```typescript
-import { Connection, Keypair, TransactionMessage, VersionedTransaction } from "@solana/web3.js";
-import { PUMP_SDK, OnlinePumpSdk } from "@nirholas/pump-sdk";
+import { Connection } from "@solana/web3.js";
+import { OnlinePumpSdk } from "@nirholas/pump-sdk";
 
-const connection = new Connection("https://api.devnet.solana.com", "confirmed");
+const connection = new Connection("https://api.mainnet-beta.solana.com", "confirmed");
+const onlineSdk = new OnlinePumpSdk(connection);
+
+const global = await onlineSdk.fetchGlobal();
+
+if (!global.mayhemModeEnabled) {
+  throw new Error("Mayhem Mode is currently disabled at the protocol level");
+}
+
+console.log("Mayhem Mode enabled:", global.mayhemModeEnabled);
+console.log("Mayhem fee recipients:", [
+  global.reservedFeeRecipient.toBase58(),
+  ...global.reservedFeeRecipients.map((r) => r.toBase58()),
+]);
+```
+
+## Step 2: Create a Mayhem Mode Token
+
+```typescript
+import { Keypair, TransactionMessage, VersionedTransaction } from "@solana/web3.js";
+import { PUMP_SDK } from "@nirholas/pump-sdk";
+
 const creator = Keypair.generate(); // Your funded wallet
 const mint = Keypair.generate();
 
-// Enable Mayhem Mode at creation — this is IRREVERSIBLE
+// Enable Mayhem Mode at creation — IRREVERSIBLE
 const createIx = await PUMP_SDK.createV2Instruction({
   mint: mint.publicKey,
   name: "Mayhem Token",
@@ -47,14 +70,69 @@ const createIx = await PUMP_SDK.createV2Instruction({
   uri: "https://example.com/metadata.json",
   creator: creator.publicKey,
   user: creator.publicKey,
-  mayhemMode: true,   // <-- Enables Mayhem Mode
+  mayhemMode: true,   // <-- activates Token-2022 + mayhem vault routing
   cashback: false,
 });
+
+const { blockhash } = await connection.getLatestBlockhash();
+const tx = new VersionedTransaction(
+  new TransactionMessage({
+    payerKey: creator.publicKey,
+    recentBlockhash: blockhash,
+    instructions: [createIx],
+  }).compileToV0Message(),
+);
+tx.sign([creator, mint]);
+const sig = await connection.sendTransaction(tx);
+console.log("Created mayhem token:", sig);
 ```
 
-## Step 2: Understand the PDA Differences
+## Step 3: Create + Buy in One Transaction
 
-Mayhem Mode uses a separate program for vault derivation:
+`createV2AndBuyInstructions` atomically creates the token and buys a position in a single transaction — no separate buy step needed:
+
+```typescript
+import { PUMP_SDK, OnlinePumpSdk } from "@nirholas/pump-sdk";
+import { TOKEN_2022_PROGRAM_ID } from "@solana/spl-token";
+import BN from "bn.js";
+
+const onlineSdk = new OnlinePumpSdk(connection);
+const global = await onlineSdk.fetchGlobal();
+
+const solToSpend = new BN(500_000_000); // 0.5 SOL for the initial buy
+const expectedTokens = new BN("50000000000"); // quote this from getBuyTokenAmountFromSolAmount
+
+const ixs = await PUMP_SDK.createV2AndBuyInstructions({
+  global,
+  mint: mint.publicKey,
+  name: "Mayhem Token",
+  symbol: "MAYHEM",
+  uri: "https://example.com/metadata.json",
+  creator: creator.publicKey,
+  user: creator.publicKey,
+  solAmount: solToSpend,
+  amount: expectedTokens,     // token amount output (1% slippage is applied internally)
+  mayhemMode: true,
+  cashback: false,
+});
+
+// ixs contains: [createV2, extendAccount, createATA (Token-2022), buy]
+const { blockhash } = await connection.getLatestBlockhash();
+const tx = new VersionedTransaction(
+  new TransactionMessage({
+    payerKey: creator.publicKey,
+    recentBlockhash: blockhash,
+    instructions: ixs,
+  }).compileToV0Message(),
+);
+tx.sign([creator, mint]);
+const sig = await connection.sendTransaction(tx);
+console.log("Created and bought mayhem token:", sig);
+```
+
+## Step 4: Understand the PDA Differences
+
+Mayhem Mode uses a separate program for vault derivation. The SDK exports all four PDA helpers:
 
 ```typescript
 import {
@@ -62,106 +140,269 @@ import {
   getMayhemStatePda,
   getSolVaultPda,
   getTokenVaultPda,
+  MAYHEM_PROGRAM_ID,
 } from "@nirholas/pump-sdk";
 
-// Mayhem-specific PDAs
+// Protocol-level config under the Mayhem program
 const globalParams = getGlobalParamsPda();
-// Seeds: ["global-params"]
+// Seeds: ["global-params"] under MAYHEM_PROGRAM_ID
 
+// Per-token state for this mint
 const mayhemState = getMayhemStatePda(mint.publicKey);
-// Seeds: ["mayhem-state", mint.publicKey.toBuffer()]
+// Seeds: ["mayhem-state", mint.toBuffer()] under MAYHEM_PROGRAM_ID
 
+// Shared SOL vault (one per protocol, not per token)
 const solVault = getSolVaultPda();
-// Seeds: ["sol-vault"]
+// Seeds: ["sol-vault"] under MAYHEM_PROGRAM_ID
 
+// Token vault = solVault's ATA for this mint, using TOKEN_2022_PROGRAM_ID
 const tokenVault = getTokenVaultPda(mint.publicKey);
-// SOL vault's ATA for the mint, using TOKEN_2022_PROGRAM_ID
+// = getAssociatedTokenAddressSync(mint, solVault, true, TOKEN_2022_PROGRAM_ID)
 
-console.log("Mayhem State PDA:", mayhemState.toBase58());
-console.log("SOL Vault PDA:", solVault.toBase58());
-console.log("Token Vault PDA:", tokenVault.toBase58());
+console.log("Mayhem Program:", MAYHEM_PROGRAM_ID.toBase58());
+console.log("Global Params:", globalParams.toBase58());
+console.log("Mayhem State:", mayhemState.toBase58());
+console.log("SOL Vault:", solVault.toBase58());
+console.log("Token Vault:", tokenVault.toBase58());
 ```
 
-## Step 3: Buy a Mayhem Token
+These accounts are passed automatically by `createV2Instruction` when `mayhemMode: true`. You only need to derive them manually for inspection or custom instruction building.
 
-Buying works the same as standard tokens — the SDK handles routing internally:
+## Step 5: Quote a Buy — Fee-Aware
+
+`getBuyTokenAmountFromSolAmount` respects the mayhem flag via the `bondingCurve` it receives. Pass all required fields — do not use a partial signature:
 
 ```typescript
-import { getBuyTokenAmountFromSolAmount } from "@nirholas/pump-sdk";
+import {
+  getBuyTokenAmountFromSolAmount,
+  OnlinePumpSdk,
+} from "@nirholas/pump-sdk";
 import BN from "bn.js";
 
 const onlineSdk = new OnlinePumpSdk(connection);
 
-// Fetch the bonding curve state
-const bc = await onlineSdk.fetchBondingCurve(mint.publicKey);
-const feeConfig = await onlineSdk.fetchFeeConfig();
+const [global, feeConfig, bondingCurve] = await Promise.all([
+  onlineSdk.fetchGlobal(),
+  onlineSdk.fetchFeeConfig(),
+  onlineSdk.fetchBondingCurve(mint.publicKey),
+]);
 
-// Quote how many tokens you'll get
 const solToSpend = new BN(100_000_000); // 0.1 SOL
-const tokensOut = getBuyTokenAmountFromSolAmount(
-  solToSpend,
-  bc.virtualSolReserves,
-  bc.virtualTokenReserves,
-  feeConfig
-);
 
-console.log(`Spending 0.1 SOL → ${tokensOut.toString()} tokens`);
-
-// Build buy instructions
-const buyIxs = await onlineSdk.buyInstructions({
-  mint: mint.publicKey,
-  user: creator.publicKey,
-  solAmount: solToSpend,
-  slippageBps: 500, // 5% slippage tolerance
+const tokensOut = getBuyTokenAmountFromSolAmount({
+  global,
+  feeConfig,
+  mintSupply: bondingCurve.tokenTotalSupply,
+  bondingCurve,
+  amount: solToSpend,
 });
+
+console.log(`0.1 SOL → ${tokensOut.toString()} tokens`);
+console.log(`Mayhem mode: ${bondingCurve.isMayhemMode}`);
 ```
 
-## Step 4: Fee Tier Differences
+## Step 6: Buy a Mayhem Token
 
-In standard mode, fee tiers are calculated against a fixed supply of 1 billion tokens. In Mayhem Mode, the **actual minted supply** is used, which can place your token in a different fee tier:
+`fetchBuyState` auto-detects `TOKEN_2022_PROGRAM_ID` from the mint account's owner, so no explicit `tokenProgram` argument is needed:
 
 ```typescript
-import { computeFeesBps } from "@nirholas/pump-sdk";
+import { OnlinePumpSdk } from "@nirholas/pump-sdk";
+import BN from "bn.js";
 
-// Standard mode — always uses ONE_BILLION_SUPPLY
-const standardFees = computeFeesBps(feeConfig, new BN("1000000000000000")); // 1B supply
+const onlineSdk = new OnlinePumpSdk(connection);
 
-// Mayhem mode — uses actual mint supply from the bonding curve
-const mayhemFees = computeFeesBps(feeConfig, bc.tokenTotalSupply);
+// Auto-detects Token-2022 from the mint account owner
+const { bondingCurve, bondingCurveAccountInfo, associatedUserAccountInfo, tokenProgram } =
+  await onlineSdk.fetchBuyState(mint.publicKey, buyer.publicKey);
 
-console.log("Standard fee (bps):", standardFees.totalFeeBps);
-console.log("Mayhem fee (bps):", mayhemFees.totalFeeBps);
-// These may differ based on where the actual supply falls in the tier schedule
+if (bondingCurve.complete) {
+  throw new Error("Token has graduated — use AMM methods");
+}
+
+const solToSpend = new BN(100_000_000); // 0.1 SOL
+
+// Quote tokens out
+const tokensOut = getBuyTokenAmountFromSolAmount({
+  global: await onlineSdk.fetchGlobal(),
+  feeConfig: await onlineSdk.fetchFeeConfig(),
+  mintSupply: bondingCurve.tokenTotalSupply,
+  bondingCurve,
+  amount: solToSpend,
+});
+
+// Build instructions — tokenProgram from fetchBuyState is TOKEN_2022_PROGRAM_ID for mayhem tokens
+const buyIxs = await onlineSdk.buyInstructions({
+  bondingCurveAccountInfo,
+  bondingCurve,
+  associatedUserAccountInfo,
+  mint: mint.publicKey,
+  user: buyer.publicKey,
+  solAmount: solToSpend,
+  amount: tokensOut,
+  slippage: 1,            // 1% slippage
+  tokenProgram,           // already TOKEN_2022_PROGRAM_ID for mayhem
+});
+
+const { blockhash } = await connection.getLatestBlockhash();
+const tx = new VersionedTransaction(
+  new TransactionMessage({
+    payerKey: buyer.publicKey,
+    recentBlockhash: blockhash,
+    instructions: buyIxs,
+  }).compileToV0Message(),
+);
+tx.sign([buyer]);
+const sig = await connection.sendTransaction(tx);
+console.log("Bought mayhem token:", sig);
 ```
 
-## Step 5: Detect Mayhem Mode On-Chain
+## Step 7: Sell a Mayhem Token
 
-When analyzing existing tokens, check whether they use Mayhem Mode:
+Selling mirrors buying — `fetchSellState` also auto-detects the token program:
 
 ```typescript
+import { getSellSolAmountFromTokenAmount, OnlinePumpSdk } from "@nirholas/pump-sdk";
+import { TOKEN_2022_PROGRAM_ID } from "@solana/spl-token";
+import BN from "bn.js";
+
+const onlineSdk = new OnlinePumpSdk(connection);
+
+// Auto-detects Token-2022
+const { bondingCurve, bondingCurveAccountInfo, tokenProgram } =
+  await onlineSdk.fetchSellState(mint.publicKey, seller.publicKey);
+
+const [global, feeConfig] = await Promise.all([
+  onlineSdk.fetchGlobal(),
+  onlineSdk.fetchFeeConfig(),
+]);
+
+const tokenAmount = new BN("5000000000"); // tokens to sell
+
+// Quote SOL out
+const solOut = getSellSolAmountFromTokenAmount({
+  global,
+  feeConfig,
+  mintSupply: bondingCurve.tokenTotalSupply,
+  bondingCurve,
+  amount: tokenAmount,
+});
+
+console.log(`Selling ${tokenAmount} tokens → ${solOut.toString()} lamports`);
+
+const sellIxs = await onlineSdk.sellInstructions({
+  bondingCurveAccountInfo,
+  bondingCurve,
+  mint: mint.publicKey,
+  user: seller.publicKey,
+  amount: tokenAmount,
+  solAmount: solOut,
+  slippage: 1,
+  tokenProgram,   // TOKEN_2022_PROGRAM_ID from fetchSellState
+});
+
+const { blockhash } = await connection.getLatestBlockhash();
+const tx = new VersionedTransaction(
+  new TransactionMessage({
+    payerKey: seller.publicKey,
+    recentBlockhash: blockhash,
+    instructions: sellIxs,
+  }).compileToV0Message(),
+);
+tx.sign([seller]);
+const sig = await connection.sendTransaction(tx);
+console.log("Sold mayhem token:", sig);
+```
+
+## Step 8: Fee Tier Differences
+
+In standard mode, fee tiers are evaluated against a fixed supply of 1 billion tokens (`ONE_BILLION_SUPPLY = 1_000_000_000_000_000`). In Mayhem Mode, the **actual `bondingCurve.tokenTotalSupply`** is used. This changes the market-cap threshold that determines which fee tier applies.
+
+```typescript
+import { computeFeesBps, ONE_BILLION_SUPPLY } from "@nirholas/pump-sdk";
+
+const [global, feeConfig, bondingCurve] = await Promise.all([
+  onlineSdk.fetchGlobal(),
+  onlineSdk.fetchFeeConfig(),
+  onlineSdk.fetchBondingCurve(mint.publicKey),
+]);
+
+// Standard mode: market cap computed at the fixed 1B-token baseline
+const standardFees = computeFeesBps({
+  global,
+  feeConfig,
+  mintSupply: ONE_BILLION_SUPPLY,
+  virtualSolReserves: bondingCurve.virtualSolReserves,
+  virtualTokenReserves: bondingCurve.virtualTokenReserves,
+});
+
+// Mayhem mode: market cap computed at the actual minted supply
+const mayhemFees = computeFeesBps({
+  global,
+  feeConfig,
+  mintSupply: bondingCurve.tokenTotalSupply,
+  virtualSolReserves: bondingCurve.virtualSolReserves,
+  virtualTokenReserves: bondingCurve.virtualTokenReserves,
+});
+
+console.log("Standard protocol fee (bps):", standardFees.protocolFeeBps.toString());
+console.log("Standard creator fee  (bps):", standardFees.creatorFeeBps.toString());
+console.log("Mayhem  protocol fee (bps):", mayhemFees.protocolFeeBps.toString());
+console.log("Mayhem  creator fee  (bps):", mayhemFees.creatorFeeBps.toString());
+```
+
+`getFee` (used internally by buy/sell instructions) branches on `bondingCurve.isMayhemMode` to pick the right baseline automatically — you only need to call `computeFeesBps` directly when building quotes or analytics.
+
+## Step 9: Detect Mayhem Mode On-Chain
+
+Read the `isMayhemMode` flag directly off the decoded bonding curve — this is authoritative and requires no account-owner inspection:
+
+```typescript
+import { OnlinePumpSdk } from "@nirholas/pump-sdk";
+import { PublicKey } from "@solana/web3.js";
+
 async function isMayhemToken(
   onlineSdk: OnlinePumpSdk,
-  mintAddress: PublicKey
+  mintAddress: PublicKey,
 ): Promise<boolean> {
   const bc = await onlineSdk.fetchBondingCurve(mintAddress);
-  // Mayhem tokens use Token-2022 program
-  // Check the token vault account's owner program
-  const tokenVault = getTokenVaultPda(mintAddress);
-  const accountInfo = await connection.getAccountInfo(tokenVault);
-
-  if (!accountInfo) return false;
-
-  // Token-2022 program ID indicates Mayhem mode
-  const TOKEN_2022_PROGRAM_ID = "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb";
-  return accountInfo.owner.toBase58() === TOKEN_2022_PROGRAM_ID;
+  return bc.isMayhemMode;
 }
+
+// Example: inspect a live token
+const isMayhem = await isMayhemToken(onlineSdk, mint.publicKey);
+console.log("Is Mayhem token:", isMayhem);
 ```
 
-## Step 6: Mayhem + Cashback Combo
+## Step 10: Bonding Curve Summary and Graduation Progress
 
-You can combine Mayhem Mode with cashback for a unique token configuration:
+`fetchBondingCurveSummary` returns price, fees, and graduation progress in one call. For mayhem tokens it passes `bondingCurve.tokenTotalSupply` to `computeFeesBps` automatically:
 
 ```typescript
+import { OnlinePumpSdk } from "@nirholas/pump-sdk";
+
+const onlineSdk = new OnlinePumpSdk(connection);
+
+// All in one call — handles mayhem fee logic internally
+const summary = await onlineSdk.fetchBondingCurveSummary(mint.publicKey);
+console.log("Market cap (lamports):", summary.marketCap.toString());
+console.log("Protocol fee (bps):  ", summary.protocolFeeBps.toString());
+console.log("Creator fee (bps):   ", summary.creatorFeeBps.toString());
+
+// How far to graduation (0–10 000 bps)
+const progress = await onlineSdk.fetchGraduationProgress(mint.publicKey);
+console.log(`Graduation: ${progress.progressBps / 100}%`);
+console.log("Real SOL raised:", progress.realSolReserves.toString());
+console.log("SOL needed to graduate:", progress.solNeededToGraduate.toString());
+```
+
+## Step 11: Mayhem + Cashback Combo
+
+Mayhem Mode and cashback are independent flags — both can be enabled together. Cashback adds a `userVolumeAccumulator` account to remaining accounts on sell:
+
+```typescript
+import { PUMP_SDK, OnlinePumpSdk } from "@nirholas/pump-sdk";
+
+// Create with both flags enabled
 const createIx = await PUMP_SDK.createV2Instruction({
   mint: mint.publicKey,
   name: "Mayhem Cashback Token",
@@ -169,40 +410,85 @@ const createIx = await PUMP_SDK.createV2Instruction({
   uri: "https://example.com/metadata.json",
   creator: creator.publicKey,
   user: creator.publicKey,
-  mayhemMode: true,   // Separate vaults + Token-2022
-  cashback: true,      // Enable cashback rewards
+  mayhemMode: true,
+  cashback: true,
 });
 
-// When selling with cashback enabled, include volume accumulator
+// Sell with cashback: SDK adds userVolumeAccumulator to remaining accounts
+const { bondingCurve, bondingCurveAccountInfo, tokenProgram } =
+  await onlineSdk.fetchSellState(mint.publicKey, seller.publicKey);
+
+const [global, feeConfig] = await Promise.all([
+  onlineSdk.fetchGlobal(),
+  onlineSdk.fetchFeeConfig(),
+]);
+
+const tokenAmount = new BN("1000000000");
+const solOut = getSellSolAmountFromTokenAmount({
+  global,
+  feeConfig,
+  mintSupply: bondingCurve.tokenTotalSupply,
+  bondingCurve,
+  amount: tokenAmount,
+});
+
 const sellIxs = await onlineSdk.sellInstructions({
+  bondingCurveAccountInfo,
+  bondingCurve,
   mint: mint.publicKey,
-  user: creator.publicKey,
-  tokenAmount: new BN("1000000"),
-  slippageBps: 500,
-  cashback: true, // Includes userVolumeAccumulator in remaining accounts
+  user: seller.publicKey,
+  amount: tokenAmount,
+  solAmount: solOut,
+  slippage: 1,
+  tokenProgram,       // TOKEN_2022_PROGRAM_ID
+  cashback: true,     // appends userVolumeAccumulator to remaining accounts
 });
 ```
+
+## Step 12: Fee Recipient Routing
+
+Mayhem tokens draw their fee recipient from a different pool than standard tokens. The SDK resolves this inside `buyInstruction` and `sellInstructions` automatically — no caller action required. For reference:
+
+```typescript
+import { getFeeRecipient } from "@nirholas/pump-sdk";
+
+const global = await onlineSdk.fetchGlobal();
+
+// Standard token: picks randomly from [feeRecipient, ...feeRecipients]
+const standardRecipient = getFeeRecipient(global, false);
+
+// Mayhem token: picks randomly from [reservedFeeRecipient, ...reservedFeeRecipients]
+const mayhemRecipient = getFeeRecipient(global, true);
+
+console.log("Standard recipient:", standardRecipient.toBase58());
+console.log("Mayhem   recipient:", mayhemRecipient.toBase58());
+```
+
+The buy and sell instruction builders call `getFeeRecipient(global, bondingCurve.isMayhemMode)` internally, so the correct recipient is always selected without manual intervention.
 
 ## When to Use Mayhem Mode
 
 **Use Mayhem Mode when:**
-- You want Token-2022 features (extensions, transfer hooks, etc.)
-- You want fee tiers based on actual minted supply rather than fixed 1B
-- You're building a specialized token with separate vault routing
+- You want Token-2022 features (transfer hooks, confidential transfers, etc.)
+- You want fee tiers evaluated against the token's actual supply rather than the fixed 1B baseline
+- You're building on top of the separate Mayhem vault infrastructure
 
 **Use Standard Mode when:**
-- You want maximum compatibility with existing tools and wallets
-- You want predictable fee tier behavior (fixed 1B supply baseline)
+- You want maximum wallet and DEX compatibility
+- You want predictable fee tier behavior anchored to the fixed 1B supply baseline
 - You don't need Token-2022 extensions
 
 ## Important Caveats
 
-1. **Immutable** — Mayhem Mode cannot be disabled after creation
-2. **Different fee recipients** — Fees go to `reservedFeeRecipient` addresses
-3. **Token-2022** — Some wallets may not display Token-2022 tokens correctly
-4. **PDA derivation** — Use the Mayhem-specific PDA functions, not standard ones
+1. **Immutable** — `isMayhemMode` cannot be changed after the bonding curve is created
+2. **Token-2022 everywhere** — all ATAs for mayhem tokens must be derived with `TOKEN_2022_PROGRAM_ID`; pass the `tokenProgram` returned by `fetchBuyState` / `fetchSellState` to avoid this mistake
+3. **Different fee recipients** — fees route to `reservedFeeRecipient` / `reservedFeeRecipients` on `Global`, not the standard `feeRecipient` pool
+4. **Protocol gate** — check `global.mayhemModeEnabled` before attempting to create; the instruction will fail on-chain if the flag is off
+5. **PDA derivation** — vault PDAs are under `MAYHEM_PROGRAM_ID`, not the standard Pump program; use the exported helpers
+6. **Breaking fee-recipient upgrade** — since 2026-04-28, every mayhem buy/sell carries a trailing mutable fee-recipient account; this is handled automatically by `PUMP_SDK.*` and `OnlinePumpSdk`
 
 ## Next Steps
 
 - See [Tutorial 27](./27-cashback-social-fees.md) for the full cashback system
-- See [Tutorial 09](./09-fee-system.md) for understanding fee tiers
+- See [Tutorial 09](./09-fee-system.md) for understanding fee tiers in depth
+- See [Tutorial 45](./45-breaking-fee-recipient-upgrade.md) for the 2026-04-28 breaking fee-recipient upgrade
