@@ -52,6 +52,7 @@ Three on-chain programs:
 | Cashback rewards, UserVolumeAccumulator PDA | `docs/pump-public-docs/PUMP_CASHBACK_README.md` |
 | CU optimization, PDA bump effects | `docs/pump-public-docs/FAQ.md` |
 | create_v2, Token2022, mayhem mode, social fees | `docs/pump-public-docs/README.md` |
+| **2026-04-28 breaking fee-recipient upgrade** (trailing accounts on every buy/sell) | `docs/pump-public-docs/BREAKING_FEE_RECIPIENT.md` |
 
 ## Code Examples
 
@@ -122,6 +123,13 @@ import type { BondingCurve, Global, FeeConfig, SharingConfig, Pool, Shareholder 
 // Fees
 import { getFee, computeFeesBps, calculateFeeTier } from "@nirholas/pump-sdk";
 
+// 2026-04-28 breaking fee-recipient upgrade
+import {
+  BREAKING_FEE_RECIPIENTS,
+  pickBreakingFeeRecipient,
+  buildAmmBreakingFeeRecipientAccounts,
+} from "@nirholas/pump-sdk";
+
 // Analytics
 import { calculateBuyPriceImpact, getGraduationProgress, getTokenPrice } from "@nirholas/pump-sdk";
 
@@ -173,6 +181,7 @@ interface Global {
 6. **Calling `npx tsc --noEmit`** — FORBIDDEN. Use `npm run typecheck`.
 7. **Not extending accounts before migration** — `BONDING_CURVE_NEW_SIZE = 151`, accounts may need extension.
 8. **Importing from internal paths** — Import from `@nirholas/pump-sdk`, not `@nirholas/pump-sdk/dist/...`.
+9. **Hand-rolling buy/sell without the breaking fee recipient** — After the 2026-04-28 upgrade, every bonding curve buy/sell must carry one of 8 mutable trailing fee recipients (`pickBreakingFeeRecipient()`), and every AMM buy/sell must carry that recipient **plus** its quote-mint ATA (`buildAmmBreakingFeeRecipientAccounts()`). Using `PUMP_SDK.*` and `OnlinePumpSdk` gets this right automatically. See `docs/pump-public-docs/BREAKING_FEE_RECIPIENT.md`.
 
 ## Project Layout
 

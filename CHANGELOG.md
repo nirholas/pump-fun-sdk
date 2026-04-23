@@ -5,6 +5,46 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.32.0] - 2026-04-23
+
+Prepares the SDK for the **2026-04-28, 16:00 UTC** breaking on-chain program upgrade to the Pump bonding curve and PumpSwap AMM programs. See [docs/pump-public-docs/BREAKING_FEE_RECIPIENT.md](docs/pump-public-docs/BREAKING_FEE_RECIPIENT.md) for the protocol spec and [docs/MIGRATION.md](docs/MIGRATION.md#upgrading-to-v1320-latest) for call-site guidance.
+
+Upstream breaking release: `@pump-fun/pump-sdk@1.33.0`, `@pump-fun/pump-swap-sdk@1.15.0`.
+
+### Changed — BREAKING (protocol, not SDK surface)
+
+- **All buy/sell instruction builders now append trailing fee-recipient accounts** required by the 2026-04-28 on-chain upgrade. The SDK surface is unchanged — callers using `PUMP_SDK.*` get the fix automatically. Affected builders:
+  - Bonding curve: `buyInstructions`, `sellInstructions`, `buyExactSolInInstruction`, `getBuyInstructionRaw`, `getSellInstructionRaw`, `createV2AndBuyInstructions`, `createAndBuyInstructions` — append one of 8 new fee recipients as a **mutable** trailing account after `bonding-curve-v2`.
+  - PumpAMM: `ammBuyInstruction`, `ammBuyExactQuoteInInstruction`, `ammSellInstruction` — append a **readonly** fee recipient + **mutable** quote-mint (WSOL) ATA after `pool-v2`. Applies to every AMM buy/sell, including pools that did not graduate from a bonding curve.
+  - `OnlinePumpSdk` wrappers delegate to the above, so `buyInstructions`, `sellInstructions`, and `sellChunked` are all covered.
+- **New account totals:**
+  | Instruction | Before | After |
+  |-------------|--------|-------|
+  | BC `buy` / `buy_exact_sol_in` | 17 | **18** |
+  | BC `sell` (non-cashback) | 15 | **16** |
+  | BC `sell` (cashback) | 16 | **17** |
+  | AMM `buy` / `buy_exact_quote_in` (non-cashback) | 24 | **26** |
+  | AMM `buy` / `buy_exact_quote_in` (cashback) | 25 | **27** |
+  | AMM `sell` (non-cashback) | 22 | **24** |
+  | AMM `sell` (cashback) | 24 | **26** |
+
+### Added
+
+- **`BREAKING_FEE_RECIPIENTS`** (`PublicKey[]`) — the 8 new shared fee recipient pubkeys introduced by the upgrade.
+- **`pickBreakingFeeRecipient()`** — selects one of the 8 at random; used internally by every buy/sell builder.
+- **`buildAmmBreakingFeeRecipientAccounts(recipient?)`** — builds the two trailing AMM accounts (readonly recipient + mutable WSOL ATA) under `TOKEN_PROGRAM_ID`. Exported so manual-instruction builders share the same source of truth as the SDK.
+- **[docs/pump-public-docs/BREAKING_FEE_RECIPIENT.md](docs/pump-public-docs/BREAKING_FEE_RECIPIENT.md)** — mirror of the upstream upgrade spec.
+- **[docs/MIGRATION.md](docs/MIGRATION.md)** — v1.32.0 migration section with account-count deltas and the raw remaining-accounts pattern for manual builders.
+
+### Fixed
+
+- `src/__tests__/sdk.test.ts` could not load due to a pre-existing circular dependency (`sdk → onlineSdk → pda` with `PUMP_PROGRAM_ID` used before definition). Reordered imports so `../pda` resolves the cycle before the static `PUMP_PROGRAM_ID` references. Every jest suite now runs.
+
+### Test coverage
+
+- 9 new tests in `src/__tests__/sdk.test.ts` pin the account counts and trailing-account shapes for every upgraded path.
+- `src/__tests__/exports.test.ts` asserts the 3 new public exports.
+
 ## [1.31.0] - 2026-03-12
 
 ### Added

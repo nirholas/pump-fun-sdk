@@ -4,7 +4,59 @@
 
 ---
 
-## Upgrading to v1.29.0 (Latest)
+## Upgrading to v1.32.0 (Latest)
+
+> Released: 2026-04-23 — covers on-chain cutover on **2026-04-28, 16:00 UTC**.
+
+### Breaking Changes — on-chain program upgrade
+
+On **2026-04-28, 16:00 UTC** the Pump bonding curve and PumpSwap AMM programs are being upgraded to require one of **8 new shared fee recipient pubkeys** as a trailing account on every `buy` and `sell`. On AMM, the recipient's quote-mint ATA must also be passed as the final account.
+
+See [docs/pump-public-docs/BREAKING_FEE_RECIPIENT.md](../../docs/pump-public-docs/BREAKING_FEE_RECIPIENT.md) for the full protocol spec.
+
+### New account totals
+
+| Instruction | Before | After |
+|-------------|--------|-------|
+| Bonding curve `buy` / `buy_exact_sol_in` | 17 | **18** |
+| Bonding curve `sell` (non-cashback) | 15 | **16** |
+| Bonding curve `sell` (cashback) | 16 | **17** |
+| PumpAMM `buy` / `buy_exact_quote_in` (non-cashback) | 24 | **26** |
+| PumpAMM `buy` / `buy_exact_quote_in` (cashback) | 25 | **27** |
+| PumpAMM `sell` (non-cashback) | 22 | **24** |
+| PumpAMM `sell` (cashback) | 24 | **26** |
+
+### What the SDK does for you
+
+`@nirholas/pump-sdk@1.32.0` appends the new accounts automatically in every instruction builder — `buyInstructions`, `sellInstructions`, `buyExactSolInInstruction`, `getBuyInstructionRaw`, `getSellInstructionRaw`, `ammBuyInstruction`, `ammBuyExactQuoteInInstruction`, `ammSellInstruction`, `createV2AndBuyInstructions`, and the `OnlinePumpSdk` wrappers.
+
+```bash
+npm install @nirholas/pump-sdk@^1.32.0
+```
+
+### New public API
+
+```typescript
+import {
+  BREAKING_FEE_RECIPIENTS,              // PublicKey[] — the 8 new recipients
+  pickBreakingFeeRecipient,             // () => PublicKey — random selector
+  buildAmmBreakingFeeRecipientAccounts, // (recipient?) => AccountMeta[2]
+} from "@nirholas/pump-sdk";
+```
+
+### Migration steps
+
+1. `npm install @nirholas/pump-sdk@^1.32.0` before 2026-04-28.
+2. Rebuild — no code changes if you use the SDK's instruction builders.
+3. Verify on devnet before the mainnet cutover.
+
+If you build instructions manually, see the parent [docs/MIGRATION.md](../../docs/MIGRATION.md#upgrading-to-v1320-latest) for the raw remaining-accounts pattern.
+
+Upstream breaking release: `@pump-fun/pump-sdk@1.33.0`, `@pump-fun/pump-swap-sdk@1.15.0`.
+
+---
+
+## Upgrading to v1.29.0
 
 > Released: 2026-03-06
 
@@ -158,6 +210,7 @@ The same change applies to `getSellSolAmountFromTokenAmount` and `getBuySolAmoun
 
 | Version | Date | Type | Key Changes |
 |---------|------|------|-------------|
+| v1.32.0 | 2026-04-23 | **Breaking** | 8 new trailing fee-recipient accounts on all buy/sell (on-chain cutover 2026-04-28, SDK handles automatically) |
 | v1.29.0 | 2026-03-06 | **Breaking** | V2 PDAs required on all buy/sell (SDK handles automatically) |
 | v1.28.0 | 2026-02-26 | Feature | Analytics, tutorials, bots, dashboards, x402, social fees |
 | v1.27.x | — | **Breaking** | `createInstruction` → `createV2Instruction`, fee config parameter |

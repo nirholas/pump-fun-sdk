@@ -14,6 +14,7 @@
 | [FEE_PROGRAM_README.md](FEE_PROGRAM_README.md) | Fee program — tiered fees, fee config, fee sharing |
 | [PUMP_CASHBACK_README.md](PUMP_CASHBACK_README.md) | Cashback rewards — user volume accumulator, claim instructions |
 | [FAQ.md](FAQ.md) | Frequently asked questions — CU optimization, fee calculations |
+| [BREAKING_FEE_RECIPIENT.md](BREAKING_FEE_RECIPIENT.md) | **2026-04-28 breaking upgrade** — new trailing fee-recipient accounts on every buy/sell |
 
 ## Programs
 

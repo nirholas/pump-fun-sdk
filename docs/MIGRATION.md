@@ -4,7 +4,90 @@
 
 ---
 
-## Upgrading to v1.29.0 (Latest)
+## Upgrading to v1.32.0 (Latest)
+
+> Released: 2026-04-23 — covers on-chain cutover on **2026-04-28, 16:00 UTC**.
+
+### Breaking Changes — on-chain program upgrade
+
+On **2026-04-28, 16:00 UTC** the Pump bonding curve and PumpSwap AMM programs are being upgraded to require one of **8 new shared fee recipient pubkeys** as a trailing account on every `buy` and `sell`. On AMM, the recipient's quote-mint ATA must also be passed as the final account.
+
+See [docs/pump-public-docs/BREAKING_FEE_RECIPIENT.md](pump-public-docs/BREAKING_FEE_RECIPIENT.md) for the full protocol spec mirrored from pump-fun/pump-public-docs.
+
+### New account totals
+
+| Instruction | Before | After |
+|-------------|--------|-------|
+| Bonding curve `buy` / `buy_exact_sol_in` | 17 | **18** |
+| Bonding curve `sell` (non-cashback) | 15 | **16** |
+| Bonding curve `sell` (cashback) | 16 | **17** |
+| PumpAMM `buy` / `buy_exact_quote_in` (non-cashback) | 24 | **26** |
+| PumpAMM `buy` / `buy_exact_quote_in` (cashback) | 25 | **27** |
+| PumpAMM `sell` (non-cashback) | 22 | **24** |
+| PumpAMM `sell` (cashback) | 24 | **26** |
+
+### What the SDK does for you
+
+`@nirholas/pump-sdk@1.32.0` appends the new accounts automatically in every instruction builder:
+
+- `buyInstructions` / `sellInstructions`
+- `buyExactSolInInstruction`
+- `getBuyInstructionRaw` / `getSellInstructionRaw`
+- `ammBuyInstruction` / `ammBuyExactQuoteInInstruction` / `ammSellInstruction`
+- `createV2AndBuyInstructions` / `createAndBuyInstructions` (via the internal buy path)
+- `OnlinePumpSdk.buyInstructions` / `sellInstructions` / `sellChunked` (delegate to the above)
+
+No call-site changes required. Just upgrade and rebuild:
+
+```bash
+npm install @nirholas/pump-sdk@^1.32.0
+```
+
+### New public API (for manual instruction builders)
+
+```typescript
+import {
+  BREAKING_FEE_RECIPIENTS,            // PublicKey[] — the 8 new recipients
+  pickBreakingFeeRecipient,           // () => PublicKey — random selector
+  buildAmmBreakingFeeRecipientAccounts, // (recipient?) => AccountMeta[2]
+} from "@nirholas/pump-sdk";
+```
+
+### Migration steps
+
+1. **Update the package before 2026-04-28:**
+   ```bash
+   npm install @nirholas/pump-sdk@^1.32.0
+   ```
+2. **Rebuild** — no code changes if you use the SDK's instruction builders.
+3. **Verify on devnet** — the devnet programs already accept the new accounts; run your buy/sell flows against devnet before the mainnet cutover.
+4. **Tighten your CU budget** if you were running near the per-ix limit — you now land 1 (bonding curve) or 2 (AMM) more accounts per tx.
+
+### If you build instructions manually
+
+Append to the **remaining accounts**, after the existing v2 PDA:
+
+```typescript
+// Bonding curve buy / sell — add 1 mutable account
+.remainingAccounts([
+  { pubkey: bondingCurveV2Pda(mint), isWritable: false, isSigner: false },
+  { pubkey: pickBreakingFeeRecipient(), isWritable: true, isSigner: false },
+])
+
+// PumpAMM buy / sell — add 2 accounts (readonly recipient + mutable quote ATA)
+.remainingAccounts([
+  { pubkey: poolV2Pda(mint), isWritable: false, isSigner: false },
+  ...buildAmmBreakingFeeRecipientAccounts(),
+])
+```
+
+### Reference SDK versions
+
+Upstream breaking release: `@pump-fun/pump-sdk@1.33.0`, `@pump-fun/pump-swap-sdk@1.15.0`.
+
+---
+
+## Upgrading to v1.29.0
 
 > Released: 2026-03-06
 
@@ -158,6 +241,7 @@ The same change applies to `getSellSolAmountFromTokenAmount` and `getBuySolAmoun
 
 | Version | Date | Type | Key Changes |
 |---------|------|------|-------------|
+| v1.32.0 | 2026-04-23 | **Breaking** | 8 new trailing fee-recipient accounts on all buy/sell (on-chain cutover 2026-04-28, SDK handles automatically) |
 | v1.29.0 | 2026-03-06 | **Breaking** | V2 PDAs required on all buy/sell (SDK handles automatically) |
 | v1.28.0 | 2026-02-26 | Feature | Analytics, tutorials, bots, dashboards, x402, social fees |
 | v1.27.x | — | **Breaking** | `createInstruction` → `createV2Instruction`, fee config parameter |
