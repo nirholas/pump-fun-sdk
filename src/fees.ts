@@ -1,3 +1,8 @@
+import {
+  NATIVE_MINT,
+  TOKEN_PROGRAM_ID,
+  getAssociatedTokenAddressSync,
+} from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
 
@@ -137,6 +142,65 @@ export function getFeeRecipient(
   }
   const feeRecipients = [global.feeRecipient, ...global.feeRecipients];
   return feeRecipients[Math.floor(Math.random() * feeRecipients.length)]!;
+}
+
+/**
+ * 8 new fee recipient pubkeys introduced by the 2026-04-28 breaking program
+ * upgrade (pump-fun/pump-public-docs/docs/BREAKING_FEE_RECIPIENT.md).
+ *
+ * One must be appended to every bonding-curve buy/sell and every AMM buy/sell
+ * instruction. The AMM side additionally requires the recipient's quote-mint
+ * ATA. Shared across both programs.
+ */
+export const BREAKING_FEE_RECIPIENTS: PublicKey[] = [
+  new PublicKey("5YxQFdt3Tr9zJLvkFccqXVUwhdTWJQc1fFg2YPbxvxeD"),
+  new PublicKey("9M4giFFMxmFGXtc3feFzRai56WbBqehoSeRE5GK7gf7"),
+  new PublicKey("GXPFM2caqTtQYC2cJ5yJRi9VDkpsYZXzYdwYpGnLmtDL"),
+  new PublicKey("3BpXnfJaUTiwXnJNe7Ej1rcbzqTTQUvLShZaWazebsVR"),
+  new PublicKey("5cjcW9wExnJJiqgLjq7DEG75Pm6JBgE1hNv4B2vHXUW6"),
+  new PublicKey("EHAAiTxcdDwQ3U4bU6YcMsQGaekdzLS3B5SmYo46kJtL"),
+  new PublicKey("5eHhjP8JaYkz83CWwvGU2uMUXefd3AazWGx4gpcuEEYD"),
+  new PublicKey("A7hAgCzFw14fejgCp387JUJRMNyz4j89JKnhtKU8piqW"),
+];
+
+/** Pick one of the 8 breaking fee recipients at random. */
+export function pickBreakingFeeRecipient(): PublicKey {
+  return BREAKING_FEE_RECIPIENTS[
+    Math.floor(Math.random() * BREAKING_FEE_RECIPIENTS.length)
+  ]!;
+}
+
+/**
+ * The two trailing accounts every PumpAMM buy/sell must carry after the 2026-04-28
+ * upgrade: one of 8 breaking fee recipients (readonly), then that recipient's
+ * quote-mint (WSOL) ATA under the classic SPL token program (mutable).
+ *
+ * Exported so the AMM instruction builders and tests share a single source of truth.
+ */
+export function buildAmmBreakingFeeRecipientAccounts(
+  feeRecipient: PublicKey = pickBreakingFeeRecipient(),
+): {
+  pubkey: PublicKey;
+  isWritable: boolean;
+  isSigner: boolean;
+}[] {
+  return [
+    {
+      pubkey: feeRecipient,
+      isWritable: false,
+      isSigner: false,
+    },
+    {
+      pubkey: getAssociatedTokenAddressSync(
+        NATIVE_MINT,
+        feeRecipient,
+        true,
+        TOKEN_PROGRAM_ID,
+      ),
+      isWritable: true,
+      isSigner: false,
+    },
+  ];
 }
 
 

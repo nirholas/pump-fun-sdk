@@ -28,7 +28,15 @@ export {
   PUMP_TOKEN_MINT,
   MAX_SHAREHOLDERS,
 } from "./sdk";
-export { getFee, computeFeesBps, calculateFeeTier, ONE_BILLION_SUPPLY } from "./fees";
+export {
+  getFee,
+  computeFeesBps,
+  calculateFeeTier,
+  ONE_BILLION_SUPPLY,
+  BREAKING_FEE_RECIPIENTS,
+  pickBreakingFeeRecipient,
+  buildAmmBreakingFeeRecipientAccounts,
+} from "./fees";
 export type { CalculatedFeesBps } from "./fees";
 export {
   OnlinePumpSdk,

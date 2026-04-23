@@ -26,7 +26,11 @@ import {
   InvalidShareTotalError,
   DuplicateShareholderError,
 } from "./errors";
-import { getFeeRecipient } from "./fees";
+import {
+  buildAmmBreakingFeeRecipientAccounts,
+  getFeeRecipient,
+  pickBreakingFeeRecipient,
+} from "./fees";
 import { Pump } from "./idl/pump";
 import pumpIdl from "./idl/pump.json";
 import { PumpAmm } from "./idl/pump_amm";
@@ -813,6 +817,12 @@ export class PumpSdk {
           isWritable: false,
           isSigner: false,
         },
+        // 2026-04-28 upgrade: one of 8 breaking fee recipients, mutable, last.
+        {
+          pubkey: pickBreakingFeeRecipient(),
+          isWritable: true,
+          isSigner: false,
+        },
       ])
       .instruction();
   }
@@ -868,6 +878,12 @@ export class PumpSdk {
     cashback?: boolean;
   }): Promise<TransactionInstruction> {
     const userVolumeAccumulator = userVolumeAccumulatorPda(user);
+    // 2026-04-28 upgrade: one of 8 breaking fee recipients, mutable, last.
+    const breakingFeeRecipient = {
+      pubkey: pickBreakingFeeRecipient(),
+      isWritable: true,
+      isSigner: false,
+    };
     const remainingAccounts = cashback
       ? [
           {
@@ -880,6 +896,7 @@ export class PumpSdk {
             isWritable: false,
             isSigner: false,
           },
+          breakingFeeRecipient,
         ]
       : [
           {
@@ -887,6 +904,7 @@ export class PumpSdk {
             isWritable: false,
             isSigner: false,
           },
+          breakingFeeRecipient,
         ];
     return await this.offlinePumpProgram.methods
       .sell(amount, solAmount)
@@ -1376,6 +1394,12 @@ export class PumpSdk {
           isWritable: false,
           isSigner: false,
         },
+        // 2026-04-28 upgrade: one of 8 breaking fee recipients, mutable, last.
+        {
+          pubkey: pickBreakingFeeRecipient(),
+          isWritable: true,
+          isSigner: false,
+        },
       ])
       .instruction();
   }
@@ -1557,31 +1581,28 @@ export class PumpSdk {
       true,
       TOKEN_PROGRAM_ID,
     );
-    const remainingAccounts = cashback
-      ? [
-          {
-            pubkey: getAssociatedTokenAddressSync(
-              NATIVE_MINT,
-              ammUserVolumeAccumulatorPda(user),
-              true,
-              TOKEN_PROGRAM_ID,
-            ),
-            isWritable: true,
-            isSigner: false,
-          },
-          {
-            pubkey: poolV2Pda(mint),
-            isWritable: false,
-            isSigner: false,
-          },
-        ]
-      : [
-          {
-            pubkey: poolV2Pda(mint),
-            isWritable: false,
-            isSigner: false,
-          },
-        ];
+    const remainingAccounts = [
+      ...(cashback
+        ? [
+            {
+              pubkey: getAssociatedTokenAddressSync(
+                NATIVE_MINT,
+                ammUserVolumeAccumulatorPda(user),
+                true,
+                TOKEN_PROGRAM_ID,
+              ),
+              isWritable: true,
+              isSigner: false,
+            },
+          ]
+        : []),
+      {
+        pubkey: poolV2Pda(mint),
+        isWritable: false,
+        isSigner: false,
+      },
+      ...buildAmmBreakingFeeRecipientAccounts(),
+    ];
     return await this.offlinePumpAmmProgram.methods
       .buy(baseAmountOut, maxQuoteAmountIn, { 0: true })
       .accountsPartial({
@@ -1624,31 +1645,28 @@ export class PumpSdk {
       true,
       TOKEN_PROGRAM_ID,
     );
-    const remainingAccounts = cashback
-      ? [
-          {
-            pubkey: getAssociatedTokenAddressSync(
-              NATIVE_MINT,
-              ammUserVolumeAccumulatorPda(user),
-              true,
-              TOKEN_PROGRAM_ID,
-            ),
-            isWritable: true,
-            isSigner: false,
-          },
-          {
-            pubkey: poolV2Pda(mint),
-            isWritable: false,
-            isSigner: false,
-          },
-        ]
-      : [
-          {
-            pubkey: poolV2Pda(mint),
-            isWritable: false,
-            isSigner: false,
-          },
-        ];
+    const remainingAccounts = [
+      ...(cashback
+        ? [
+            {
+              pubkey: getAssociatedTokenAddressSync(
+                NATIVE_MINT,
+                ammUserVolumeAccumulatorPda(user),
+                true,
+                TOKEN_PROGRAM_ID,
+              ),
+              isWritable: true,
+              isSigner: false,
+            },
+          ]
+        : []),
+      {
+        pubkey: poolV2Pda(mint),
+        isWritable: false,
+        isSigner: false,
+      },
+      ...buildAmmBreakingFeeRecipientAccounts(),
+    ];
     return await this.offlinePumpAmmProgram.methods
       .buyExactQuoteIn(quoteAmountIn, minBaseAmountOut, { 0: true })
       .accountsPartial({
@@ -1691,36 +1709,33 @@ export class PumpSdk {
       true,
       TOKEN_PROGRAM_ID,
     );
-    const remainingAccounts = cashback
-      ? [
-          {
-            pubkey: getAssociatedTokenAddressSync(
-              NATIVE_MINT,
-              ammUserVolumeAccumulatorPda(user),
-              true,
-              TOKEN_PROGRAM_ID,
-            ),
-            isWritable: true,
-            isSigner: false,
-          },
-          {
-            pubkey: ammUserVolumeAccumulatorPda(user),
-            isWritable: true,
-            isSigner: false,
-          },
-          {
-            pubkey: poolV2Pda(mint),
-            isWritable: false,
-            isSigner: false,
-          },
-        ]
-      : [
-          {
-            pubkey: poolV2Pda(mint),
-            isWritable: false,
-            isSigner: false,
-          },
-        ];
+    const remainingAccounts = [
+      ...(cashback
+        ? [
+            {
+              pubkey: getAssociatedTokenAddressSync(
+                NATIVE_MINT,
+                ammUserVolumeAccumulatorPda(user),
+                true,
+                TOKEN_PROGRAM_ID,
+              ),
+              isWritable: true,
+              isSigner: false,
+            },
+            {
+              pubkey: ammUserVolumeAccumulatorPda(user),
+              isWritable: true,
+              isSigner: false,
+            },
+          ]
+        : []),
+      {
+        pubkey: poolV2Pda(mint),
+        isWritable: false,
+        isSigner: false,
+      },
+      ...buildAmmBreakingFeeRecipientAccounts(),
+    ];
     return await this.offlinePumpAmmProgram.methods
       .sell(baseAmountIn, minQuoteAmountOut)
       .accountsPartial({

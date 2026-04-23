@@ -30,6 +30,10 @@ describe("public API exports", () => {
     expect(typeof sdk.computeFeesBps).toBe("function");
     expect(typeof sdk.calculateFeeTier).toBe("function");
     expect(sdk.ONE_BILLION_SUPPLY).toBeDefined();
+    expect(Array.isArray(sdk.BREAKING_FEE_RECIPIENTS)).toBe(true);
+    expect(sdk.BREAKING_FEE_RECIPIENTS).toHaveLength(8);
+    expect(typeof sdk.pickBreakingFeeRecipient).toBe("function");
+    expect(typeof sdk.buildAmmBreakingFeeRecipientAccounts).toBe("function");
   });
 
   // ── SDK classes & singletons ───────────────────────────────────────
