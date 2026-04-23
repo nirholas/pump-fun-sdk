@@ -2,6 +2,8 @@
 
 > Handle the full token lifecycle — trade on the bonding curve, detect graduation, and seamlessly transition to AMM pool trading.
 
+> **Breaking change — 2026-04-28:** Both bonding curve and AMM buys/sells now require new trailing fee-recipient accounts. AMM instructions require two new accounts (readonly recipient + mutable WSOL ATA). Upgrade to `@nirholas/pump-sdk@^1.32.0` before cutover — the SDK handles both automatically. See **[Tutorial 45: Breaking Fee Recipient Upgrade](./45-breaking-fee-recipient-upgrade.md)**.
+
 ## Prerequisites
 
 - Node.js 18+

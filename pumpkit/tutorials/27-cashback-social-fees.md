@@ -2,6 +2,8 @@
 
 > Enable cashback rewards on trades and manage social fee PDAs for off-chain identity-linked fee collection.
 
+> **Breaking change — 2026-04-28:** Cashback sells (the ones that include `userVolumeAccumulator`) are also subject to the new trailing fee-recipient requirement. The cashback sell now requires 17 accounts (up from 16). Upgrade to `@nirholas/pump-sdk@^1.32.0` — handled automatically. See **[Tutorial 45: Breaking Fee Recipient Upgrade](./45-breaking-fee-recipient-upgrade.md)**.
+
 ## Prerequisites
 
 - Node.js 18+
@@ -228,24 +230,73 @@ console.log(
 );
 ```
 
-### Step 9: Monitor Social Fee Events
+### Step 9: Decode Social Fee Events
 
-Two events signal social fee PDA activity:
+Two events signal social fee PDA activity. Use the SDK decoders on raw transaction log data:
 
 ```typescript
-// SocialFeePdaCreatedEvent — fires when a new PDA is created
-interface SocialFeePdaCreatedEvent {
-  userId: string;
-  platform: number;
-  pda: PublicKey;
-}
+import {
+  PUMP_SDK,
+  SocialFeePdaCreatedEvent,
+  SocialFeePdaClaimedEvent,
+} from "@nirholas/pump-sdk";
+import { Connection, PublicKey } from "@solana/web3.js";
 
-// SocialFeePdaClaimedEvent — fires when fees are claimed
-interface SocialFeePdaClaimedEvent {
-  userId: string;
-  platform: number;
-  amount: BN;
-  pda: PublicKey;
+// Fetch and parse events from a confirmed transaction
+async function parseSocialFeeEvents(connection: Connection, signature: string) {
+  const tx = await connection.getTransaction(signature, {
+    maxSupportedTransactionVersion: 0,
+    commitment: "confirmed",
+  });
+  if (!tx?.meta?.logMessages) return;
+
+  for (const log of tx.meta.logMessages) {
+    // SocialFeePdaCreatedEvent — fires when a new PDA is initialized
+    if (log.includes("SocialFeePdaCreatedEvent")) {
+      const data = Buffer.from(log.split("Program data: ")[1] ?? "", "base64");
+      const event: SocialFeePdaCreatedEvent =
+        PUMP_SDK.decodeSocialFeePdaCreatedEvent(data);
+      // Full event shape:
+      // {
+      //   timestamp: BN,
+      //   userId: string,
+      //   platform: number,        // Platform enum value
+      //   socialFeePda: PublicKey, // The PDA address
+      //   createdBy: PublicKey,    // Who paid for creation
+      // }
+      console.log(
+        `PDA created for userId=${event.userId} on platform=${event.platform}`
+      );
+      console.log(`PDA address: ${event.socialFeePda.toBase58()}`);
+    }
+
+    // SocialFeePdaClaimedEvent — fires when accumulated fees are withdrawn
+    if (log.includes("SocialFeePdaClaimedEvent")) {
+      const data = Buffer.from(log.split("Program data: ")[1] ?? "", "base64");
+      const event: SocialFeePdaClaimedEvent =
+        PUMP_SDK.decodeSocialFeePdaClaimedEvent(data);
+      // Full event shape:
+      // {
+      //   timestamp: BN,
+      //   userId: string,
+      //   platform: number,
+      //   socialFeePda: PublicKey,
+      //   recipient: PublicKey,            // Where SOL was sent
+      //   socialClaimAuthority: PublicKey, // Authority that approved claim
+      //   amountClaimed: BN,              // SOL claimed this time (lamports)
+      //   claimableBefore: BN,            // Balance before claim (lamports)
+      //   lifetimeClaimed: BN,            // All-time claimed (lamports)
+      //   recipientBalanceBefore: BN,
+      //   recipientBalanceAfter: BN,
+      // }
+      console.log(
+        `Claimed ${event.amountClaimed.toNumber() / 1e9} SOL for userId=${event.userId}`
+      );
+      console.log(
+        `Lifetime claimed: ${event.lifetimeClaimed.toNumber() / 1e9} SOL`
+      );
+    }
+  }
 }
 ```
 

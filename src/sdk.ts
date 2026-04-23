@@ -107,10 +107,13 @@ export function getPumpProgram(connection: Connection): Program<Pump> {
   );
 }
 
-/** Pump bonding curve program ID. */
-export const PUMP_PROGRAM_ID = new PublicKey(
-  "6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P",
-);
+export {
+  PUMP_PROGRAM_ID,
+  PUMP_AMM_PROGRAM_ID,
+  MAYHEM_PROGRAM_ID,
+  PUMP_FEE_PROGRAM_ID,
+} from "./programIds";
+import { MAYHEM_PROGRAM_ID } from "./programIds";
 
 /** Create an Anchor Program instance for the PumpAMM graduated pool program. */
 export function getPumpAmmProgram(connection: Connection): Program<PumpAmm> {
@@ -127,21 +130,6 @@ export function getPumpFeeProgram(connection: Connection): Program<PumpFees> {
     new AnchorProvider(connection, null as any, {}),
   );
 }
-
-/** PumpAMM graduated pool program ID. */
-export const PUMP_AMM_PROGRAM_ID = new PublicKey(
-  "pAMMBay6oceH9fJKBRHGP5D4bD4sWpmSwMn52FMfXEA",
-);
-
-/** Mayhem mode program ID. */
-export const MAYHEM_PROGRAM_ID = new PublicKey(
-  "MAyhSmzXzV1pTf7LsNkrNwkWKTo4ougAJ1PPg47MD4e",
-);
-
-/** PumpFees fee-sharing program ID. */
-export const PUMP_FEE_PROGRAM_ID = new PublicKey(
-  "pfeeUxB6jkeY1Hxd7CsFCAjcbHA9rWtchMGdZ6VojVZ",
-);
 
 /** Account size in bytes for a bonding curve account. */
 export const BONDING_CURVE_NEW_SIZE = 151;

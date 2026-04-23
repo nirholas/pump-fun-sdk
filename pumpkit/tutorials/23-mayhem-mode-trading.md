@@ -2,6 +2,8 @@
 
 > Create and trade tokens using Pump's Mayhem Mode — alternative routing with separate vaults, Token-2022, and different fee mechanics.
 
+> **Breaking change — 2026-04-28:** Mayhem mode buys and sells are subject to the same trailing fee-recipient requirement as regular trades. Upgrade to `@nirholas/pump-sdk@^1.32.0` — handled automatically. See **[Tutorial 45: Breaking Fee Recipient Upgrade](./45-breaking-fee-recipient-upgrade.md)**.
+
 ## Prerequisites
 
 - Node.js 18+

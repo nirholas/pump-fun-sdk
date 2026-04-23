@@ -330,5 +330,63 @@ describe("sdk", () => {
       // must derive deterministically from the mint.
       expect(poolV2Pda(mint).equals(poolV2Pda(mint))).toBe(true);
     });
+
+    // AMM instruction builders cannot be fully exercised offline because
+    // `coin_creator_vault_authority` PDA seeds require `pool.coin_creator`
+    // read from on-chain pool account data (OnlinePumpSdk fetches this).
+    //
+    // Instead, we pin the `remainingAccounts` composition directly:
+    //   non-cashback: [poolV2, recipient, quoteMintATA]             → +3  (23+3=26 buy, 21+3=24 sell)
+    //   buy cashback: [cashbackATA, poolV2, recipient, quoteMintATA] → +4  (23+4=27)
+    //   sell cashback: [cashbackATA, accumulator, poolV2, recipient, quoteMintATA] → +5  (21+5=26)
+    //
+    // These were verified against the devnet txs in BREAKING_FEE_RECIPIENT.md.
+
+    it("AMM remainingAccounts non-cashback gives 26 buy / 24 sell accounts", () => {
+      const AMM_BUY_BASE = 23;
+      const AMM_SELL_BASE = 21;
+      const [recipient, ata] = buildAmmBreakingFeeRecipientAccounts();
+      const tail = [
+        { pubkey: poolV2Pda(mint), isWritable: false, isSigner: false },
+        recipient!,
+        ata!,
+      ];
+      expect(AMM_BUY_BASE + tail.length).toBe(26);
+      expect(AMM_SELL_BASE + tail.length).toBe(24);
+      // structural checks
+      expect(breakingRecipientSet.has(recipient!.pubkey.toBase58())).toBe(true);
+      expect(recipient!.isWritable).toBe(false);
+      expect(ata!.isWritable).toBe(true);
+      expect(ata!.pubkey.equals(getAssociatedTokenAddressSync(NATIVE_MINT, recipient!.pubkey, true, TOKEN_PROGRAM_ID))).toBe(true);
+    });
+
+    it("AMM remainingAccounts cashback buy gives 27 accounts", () => {
+      const AMM_BUY_BASE = 23;
+      const [recipient, ata] = buildAmmBreakingFeeRecipientAccounts();
+      const cashbackExtra = { pubkey: TEST_PUBKEY, isWritable: true, isSigner: false };
+      const tail = [
+        cashbackExtra,
+        { pubkey: poolV2Pda(mint), isWritable: false, isSigner: false },
+        recipient!,
+        ata!,
+      ];
+      expect(AMM_BUY_BASE + tail.length).toBe(27);
+    });
+
+    it("AMM remainingAccounts cashback sell gives 26 accounts", () => {
+      const AMM_SELL_BASE = 21;
+      const [recipient, ata] = buildAmmBreakingFeeRecipientAccounts();
+      const cashbackExtras = [
+        { pubkey: TEST_PUBKEY, isWritable: true, isSigner: false },
+        { pubkey: TEST_CREATOR, isWritable: true, isSigner: false },
+      ];
+      const tail = [
+        ...cashbackExtras,
+        { pubkey: poolV2Pda(mint), isWritable: false, isSigner: false },
+        recipient!,
+        ata!,
+      ];
+      expect(AMM_SELL_BASE + tail.length).toBe(26);
+    });
   });
 });

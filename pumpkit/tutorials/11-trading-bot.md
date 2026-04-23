@@ -2,6 +2,8 @@
 
 > Build a bot that monitors Pump tokens and executes trades based on bonding curve conditions.
 
+> **Breaking change — 2026-04-28:** Every buy and sell instruction built by this bot now requires a new trailing fee-recipient account. Upgrade to `@nirholas/pump-sdk@^1.32.0` before cutover — the SDK handles it automatically. See **[Tutorial 45: Breaking Fee Recipient Upgrade](./45-breaking-fee-recipient-upgrade.md)**.
+
 ## Architecture
 
 ```

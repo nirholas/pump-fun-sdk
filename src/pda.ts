@@ -17,7 +17,7 @@ import {
   PUMP_PROGRAM_ID,
   PUMP_AMM_PROGRAM_ID,
   PUMP_FEE_PROGRAM_ID,
-} from "./sdk";
+} from "./programIds";
 
 /** PDA for the Pump program global state account. */
 export const GLOBAL_PDA = pumpPda([Buffer.from("global")]);
