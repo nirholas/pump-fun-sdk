@@ -1,5 +1,5 @@
 <p align="center">    
-  <h1 align="center">Pump SDK</h1>
+  <h1 align="center">Pump SDK</h1> 
   <p align="center">
     TypeScript SDK for the Pump protocol on Solana — token creation, bonding curves, AMM pools, fee sharing, and volume rewards.
   </p>
