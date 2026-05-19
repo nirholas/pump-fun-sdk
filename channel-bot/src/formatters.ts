@@ -151,14 +151,27 @@ export function formatGitHubClaimFeed(ctx: ClaimFeedContext): { imageUrl: string
 
     // ━━ CLAIM STATS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     L.push(`💸 <b>Claim Stats</b>`);
-    L.push(`Claim #1`);
-    const claimSol = event.amountSol.toFixed(4);
-    const claimUsd = solUsdPrice > 0 ? ` ($${(event.amountSol * solUsdPrice).toFixed(2)})` : '';
-    L.push(`${claimSol} SOL${claimUsd}`);
-    if (ctx.lifetimeClaimedSol != null && ctx.lifetimeClaimedSol > 0) {
-        const ltUsd = solUsdPrice > 0 ? ` ($${(ctx.lifetimeClaimedSol * solUsdPrice).toFixed(2)})` : '';
-        L.push(`Lifetime claims: ${ctx.lifetimeClaimedSol.toFixed(4)} SOL${ltUsd}`);
+    if (ctx.claimNumber && ctx.claimNumber > 0) {
+        L.push(`Claim #${ctx.claimNumber}`);
+    } else {
+        L.push(`Claim #1`);
     }
+
+    const isStable = event.isStableQuote ?? false;
+    const ticker = event.quoteTicker ?? 'SOL';
+    const amount = event.amountQuote ?? event.amountSol;
+    
+    const claimFmt = amount.toFixed(isStable ? 2 : 4);
+    const claimUsd = isStable ? '' : (solUsdPrice > 0 ? ` ($${(amount * solUsdPrice).toFixed(2)})` : '');
+    L.push(`${claimFmt} ${ticker}${claimUsd}`);
+
+    const lifetimeAmt = event.lifetimeClaimedQuote ?? ctx.lifetimeClaimedSol;
+    if (lifetimeAmt != null && lifetimeAmt > 0) {
+        const ltFmt = lifetimeAmt.toFixed(isStable ? 2 : 4);
+        const ltUsd = isStable ? '' : (solUsdPrice > 0 ? ` ($${(lifetimeAmt * solUsdPrice).toFixed(2)})` : '');
+        L.push(`Lifetime claims: ${ltFmt} ${ticker}${ltUsd}`);
+    }
+
     L.push(`Type: ${esc(event.claimLabel)}`);
     L.push('');
 
@@ -535,9 +548,13 @@ export function formatCreatorClaimFeed(ctx: CreatorClaimContext): { imageUrl: st
 
     // ━━ AMOUNT ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     L.push('');
-    const claimSol = event.amountSol.toFixed(4);
-    const claimUsd = solUsdPrice > 0 ? ` ($${(event.amountSol * solUsdPrice).toFixed(2)})` : '';
-    L.push(`🏦 <b>${claimSol} SOL</b>${claimUsd}`);
+    const isStable = event.isStableQuote ?? false;
+    const ticker = event.quoteTicker ?? 'SOL';
+    const amount = event.amountQuote ?? event.amountSol;
+    
+    const claimFmt = amount.toFixed(isStable ? 2 : 4);
+    const claimUsd = isStable ? '' : (solUsdPrice > 0 ? ` ($${(amount * solUsdPrice).toFixed(2)})` : '');
+    L.push(`🏦 <b>${claimFmt} ${ticker}</b>${claimUsd}`);
     L.push(`  ↳ ${esc(event.claimLabel)}`);
 
     // ━━ CREATOR PROFILE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
