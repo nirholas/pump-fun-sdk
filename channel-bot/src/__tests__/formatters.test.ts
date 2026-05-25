@@ -47,11 +47,11 @@ describe('formatGitHubClaimFeed', () => {
         expect(caption).toContain('FIRST CREATOR FEE CLAIM');
     });
 
-    it('always shows FIRST CREATOR FEE CLAIM badge', () => {
-        const ctx = makeClaimFeedContext();
+    it('does not show FIRST CREATOR FEE CLAIM badge for subsequent claims', () => {
+        const ctx = makeClaimFeedContext({ isFirstClaim: false });
         const { caption } = formatGitHubClaimFeed(ctx);
 
-        expect(caption).toContain('FIRST CREATOR FEE CLAIM');
+        expect(caption).not.toContain('FIRST CREATOR FEE CLAIM');
         expect(caption).not.toContain('FAKE CLAIM');
         expect(caption).not.toContain('REPEAT CLAIM');
     });

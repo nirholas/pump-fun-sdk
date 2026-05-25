@@ -73,7 +73,9 @@ export function formatGitHubClaimFeed(ctx: ClaimFeedContext): { imageUrl: string
     const aff = ctx.affiliates;
 
     // ━━ HEADER BADGE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    L.push(`🚨🚨🚨 <b>FIRST CREATOR FEE CLAIM</b>`);
+    if (ctx.isFirstClaim) {
+        L.push(`🚨🚨🚨 <b>FIRST CREATOR FEE CLAIM</b>`);
+    }
 
     // Influencer badge right after header
     const tier = getInfluencerTier(
@@ -144,7 +146,7 @@ export function formatGitHubClaimFeed(ctx: ClaimFeedContext): { imageUrl: string
             const shortMint = `${t.mint.slice(0, 6)}…`;
             const isPrimary = tokenInfo && t.mint === tokenInfo.mint;
             const tag = isPrimary ? ' ◂' : '';
-            L.push(`${status} <a href="https://pump.fun/coin/${esc(t.mint)}">${esc(t.symbol)}</a> — ${mc} — ${shortMint}${tag}`);
+            L.push(`${status} ${esc(t.symbol)} — ${mc} — ${shortMint}${tag}`);
         }
         L.push('');
     }
@@ -348,12 +350,11 @@ export function formatGitHubClaimFeed(ctx: ClaimFeedContext): { imageUrl: string
     {
         const signals: string[] = [];
 
-        // ── Claim verification: does the token's GitHub URL match the claiming user? ──
+        // Claim verification
         if (githubUser && tokenInfo) {
             const claimerLogin = githubUser.login.toLowerCase();
             const ghUrls = tokenInfo.githubUrls ?? [];
             if (ghUrls.length > 0) {
-                // Extract owner from first GitHub URL (github.com/OWNER or github.com/OWNER/REPO)
                 const ownerMatch = ghUrls[0]!
                     .replace(/^https?:\/\/github\.com\//, '')
                     .replace(/\/+$/, '')
@@ -368,45 +369,33 @@ export function formatGitHubClaimFeed(ctx: ClaimFeedContext): { imageUrl: string
             }
         }
 
-        // Copycat warning: higher-MC token with same name exists
+        // Copycat warning
         if (ctx.sameNameTokens?.length && tokenInfo) {
             const top = ctx.sameNameTokens[0]!;
-            if (top.usdMarketCap > tokenInfo.usdMarketCap * 5) {
+            if (top.usdMarketCap > tokenInfo.usdMarketCap * 1.5) {
                 signals.push(`🚩 Possible copycat — ${esc(top.symbol)} exists at $${formatCompact(top.usdMarketCap)}`);
             }
         }
 
-        const warnings: string[] = [];
         if (githubUser?.createdAt) {
             const accountAgeDays = (Date.now() - new Date(githubUser.createdAt).getTime()) / 86_400_000;
-            if (accountAgeDays < 30) {
-                warnings.push(`⚠️ New GitHub account (${Math.floor(accountAgeDays)}d old)`);
+            if (accountAgeDays < 7) {
+                signals.push(`⚠️ New GitHub account (${Math.floor(accountAgeDays)}d old)`);
             }
         }
-        if (githubUser && githubUser.publicRepos === 0) {
-            warnings.push('⚠️ 0 public repos');
-        }
         if (ctx.repoInfo?.isFork) {
-            warnings.push('⚠️ Claimed repo is a fork');
+            signals.push('⚠️ Claimed repo is a fork');
         }
-        if (ctx.bundle && ctx.bundle.bundlePct >= 5) {
-            warnings.push(`📦 Bundled launch (${ctx.bundle.bundlePct.toFixed(1)}%)`);
+        if (ctx.creatorProfile && ctx.creatorProfile.scamEstimate > 0) {
+            signals.push(`⚠️ Creator has ${ctx.creatorProfile.scamEstimate} suspected rugs`);
         }
-        if (ctx.creatorProfile && ctx.creatorProfile.scamEstimate >= 3) {
-            warnings.push(`⚠️ Creator has ${ctx.creatorProfile.scamEstimate} suspected rugs`);
+        if (ctx.holders && ctx.holders.top10Pct >= 40) {
+            signals.push(`⚠️ Top10 hold ${ctx.holders.top10Pct.toFixed(0)}% of supply`);
         }
-        if (ctx.holders && ctx.holders.top10Pct >= 50) {
-            warnings.push(`⚠️ Top10 hold ${ctx.holders.top10Pct.toFixed(0)}% of supply`);
-        }
-        if (tokenInfo?.isNsfw) warnings.push('🔞 NSFW');
-        if (tokenInfo?.isBanned) warnings.push('🚫 BANNED');
-        if (tokenInfo?.isCashbackEnabled) warnings.push('💸 Cashback enabled');
-        if (tokenInfo?.isHackathon) warnings.push('🏗 Hackathon token');
 
-        const all = [...signals, ...warnings];
-        if (all.length > 0) {
+        if (signals.length > 0) {
             L.push(`⚡ <b>Signals</b>`);
-            for (const s of all) L.push(s);
+            for (const s of signals) L.push(s);
             L.push('');
         }
     }
@@ -498,6 +487,25 @@ export function formatGitHubClaimFeed(ctx: ClaimFeedContext): { imageUrl: string
         const nameTag = githubUser.name ? ` (${esc(githubUser.name)})` : '';
         L.push(`👨‍💻 Linked Dev`);
         L.push(`${esc(githubUser.login)}${nameTag}`);
+        if (githubUser.followers > 0) L.push(`👁 Followers: ${githubUser.followers}`);
+        if (githubUser.createdAt) L.push(`📅 Account age: ${timeAgo(new Date(githubUser.createdAt).getTime() / 1000)}`);
+    }
+    L.push('');
+    if (ctx.repoInfo) {
+        L.push(`📂 GitHub Linked`);
+        L.push(`${esc(ctx.repoInfo.fullName)}`);
+    } else if (tokenInfo?.githubUrls?.length) {
+        const repoPath = tokenInfo.githubUrls[0]!.replace(/^https?:\/\/github\.com\//, '').replace(/\/+$/, '');
+        L.push(`📂 GitHub Linked`);
+        L.push(esc(repoPath));
+    }
+    if (mint) {
+        L.push('');
+        L.push(`CA: <code>${mint}</code>`);
+    }
+    
+    return { caption: L.join('\n'), imageUrl: tokenInfo?.image || null };
+}
         if (githubUser.publicRepos > 0) L.push(`📦 Repos: ${githubUser.publicRepos}`);
         if (githubUser.followers > 0) L.push(`👁 Followers: ${githubUser.followers}`);
         if (githubUser.createdAt) L.push(`📅 Account age: ${timeAgo(new Date(githubUser.createdAt).getTime() / 1000)}`);

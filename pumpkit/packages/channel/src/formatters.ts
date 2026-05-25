@@ -385,10 +385,18 @@ export function formatGitHubClaimFeed(ctx: ClaimFeedContext): { imageUrl: string
     if (mint) {
         const axiomUrl = `https://axiom.trade/t/${mint}?ref=${encodeURIComponent(aff?.axiom ?? 'nich')}`;
         const gmgnUrl  = `https://gmgn.ai/sol/token/${mint}?ref=${encodeURIComponent(aff?.gmgn ?? 'nichxbt')}`;
-        const padreUrl = `https://t.me/padre_trading_bot?start=token_${mint}_ref_${encodeURIComponent(aff?.padre ?? 'nichxbt')}`;
+        const padreUrl = `https://trade.padre.gg/rk/${encodeURIComponent(aff?.padre ?? 'nichxbt')}`;
         L.push(`💹 Trade`);
         L.push(`<a href="${axiomUrl}">Axiom</a> | <a href="${gmgnUrl}">GMGN</a> | <a href="${padreUrl}">Padre</a>`);
+        L.push('');
+        L.push(`<code>${mint}</code>`);
+        L.push(``);
+        L.push(`Powered by PumpKit`);
     }
+
+    // ━━ TLDR ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    L.push('...');
+    L.push('');
 
     // Token image takes priority; fall back to GitHub avatar
     const imageUrl = tokenInfo?.imageUri || githubUser?.avatarUrl || null;
