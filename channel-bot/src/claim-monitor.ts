@@ -28,6 +28,8 @@ import {
     PUMP_PROGRAM_ID,
     PUMP_AMM_PROGRAM_ID,
     PUMP_FEE_PROGRAM_ID,
+    WSOL_MINT,
+    QUOTE_MINT_INFO,
     type InstructionDef,
 } from './types.js';
 
@@ -434,6 +436,7 @@ export class ClaimMonitor {
         let recipientWallet: string | undefined;
         let socialFeePda: string | undefined;
         let lifetimeClaimedLamports: number | undefined;
+        let quoteMint: string | undefined;
 
         if (def.claimType === 'distribute_creator_fees') {
             // distribute_creator_fees: accounts[0] = mint
@@ -447,6 +450,7 @@ export class ClaimMonitor {
 
         // Parse event data from CPI log lines for amount
         let amountLamports = 0;
+        let lifetimeClaimedRaw = 0n;
         const logMessages = tx.meta?.logMessages ?? [];
         for (const line of logMessages) {
             if (!line.includes('Program data:')) continue;
@@ -457,27 +461,41 @@ export class ClaimMonitor {
                 const disc = Buffer.from(bytes.subarray(0, 8)).toString('hex');
 
                 // DistributeCreatorFeesEvent: disc=a537817004b3ca28
-                // Layout: disc(8) + timestamp(8) + mint(32) + sharingConfig(32) + admin(32) + ...shareholders... + distributed(8)
+                // V1 layout: disc(8) + timestamp(8) + mint(32) + bondingCurve(32) + sharingConfig(32) + admin(32) + shareholders(4+n*34) + distributed(8)
+                // V2 layout (post-2026-05-21): ... + distributed(8) + quote_mint(32)
                 if (disc === 'a537817004b3ca28' && def.claimType === 'distribute_creator_fees') {
                     // Extract mint from event data (bytes 8+8=16..48)
                     if (bytes.length >= 48) {
                         const mintBytes = bytes.subarray(16, 48);
                         tokenMint = new PublicKey(mintBytes).toBase58();
                     }
-                    // distributed is the last 8 bytes
-                    if (bytes.length >= 8) {
-                        const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-                        // distributed u64 at the end
-                        amountLamports = Number(view.getBigUint64(bytes.length - 8, true));
+                    // Locate `distributed` by walking the shareholders vec rather than reading
+                    // from the end (V2 has a trailing quote_mint that would otherwise be misread).
+                    const SHARE_VEC_OFFSET = 8 + 8 + 32 + 32 + 32 + 32; // 144
+                    if (bytes.length >= SHARE_VEC_OFFSET + 4) {
+                        const shareCount = bytes.readUInt32LE(SHARE_VEC_OFFSET);
+                        const distributedOffset = SHARE_VEC_OFFSET + 4 + shareCount * 34;
+                        if (bytes.length >= distributedOffset + 8) {
+                            const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+                            amountLamports = Number(view.getBigUint64(distributedOffset, true));
+                            const qmOffset = distributedOffset + 8;
+                            if (bytes.length >= qmOffset + 32) {
+                                quoteMint = new PublicKey(bytes.subarray(qmOffset, qmOffset + 32)).toBase58();
+                            }
+                        }
                     }
                 }
 
                 // CollectCreatorFeeEvent: disc=7a027f010ebf0caf
-                // Layout: disc(8) + timestamp(8) + creator(32) + creatorFee(8)
+                // V1 layout: disc(8) + timestamp(8) + creator(32) + creatorFee(8)
+                // V2 layout (post-2026-05-21): ... + quote_mint(32)
                 if (disc === '7a027f010ebf0caf') {
                     if (bytes.length >= 56) {
                         const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
                         amountLamports = Number(view.getBigUint64(48, true));
+                    }
+                    if (bytes.length >= 88) {
+                        quoteMint = new PublicKey(bytes.subarray(56, 88)).toBase58();
                     }
                 }
 
@@ -500,7 +518,11 @@ export class ClaimMonitor {
                 }
 
                 // SocialFeePdaClaimed: disc=3212c141edd2eaec
-                // Layout: disc(8) + timestamp(i64=8) + user_id(string: 4-byte LE len + N) + platform(u8) + social_fee_pda(32) + recipient(32) + social_claim_authority(32) + amount_claimed(u64=8) + ...
+                // V1 layout: disc(8) + timestamp(8) + user_id(string: 4-byte LE len + N) + platform(u8)
+                //            + social_fee_pda(32) + recipient(32) + social_claim_authority(32)
+                //            + amount_claimed(u64) + claimable_before(u64) + lifetime_claimed(u64)
+                //            + recipient_balance_before(u64) + recipient_balance_after(u64)
+                // V2 trailing fields (post-2026-05-21): quote_mint(pubkey) + lifetime_stable_claimed(u64)
                 if (disc === '3212c141edd2eaec' && def.claimType === 'claim_social_fee_pda') {
                     let offset = 16; // skip disc(8) + timestamp(8)
                     // user_id: Borsh string = 4-byte LE length prefix + UTF-8 bytes
@@ -541,6 +563,14 @@ export class ClaimMonitor {
                     if (bytes.length >= offset + 8) {
                         const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
                         lifetimeClaimedLamports = Number(view.getBigUint64(offset, true));
+                        lifetimeClaimedRaw = view.getBigUint64(offset, true);
+                        offset += 8;
+                    }
+                    // V2 only: recipient_balance_before(8) + recipient_balance_after(8) + quote_mint(32)
+                    // skip the two balance fields and read quote_mint
+                    if (bytes.length >= offset + 8 + 8 + 32) {
+                        offset += 16; // skip recipient_balance_before + recipient_balance_after
+                        quoteMint = new PublicKey(bytes.subarray(offset, offset + 32)).toBase58();
                     }
                 }
             } catch { /* skip unparseable log lines */ }
@@ -624,13 +654,26 @@ export class ClaimMonitor {
             }
         }
 
+        // Resolve quote-currency metadata. Defaults to SOL when the event predates V2 or
+        // the quote_mint field couldn't be read; that preserves V1 behavior exactly.
+        const resolvedQuoteMint = quoteMint ?? WSOL_MINT;
+        const quoteInfo = QUOTE_MINT_INFO[resolvedQuoteMint] ?? QUOTE_MINT_INFO[WSOL_MINT]!;
+        const quoteDivisor = Math.pow(10, quoteInfo.decimals);
+        const amountQuote = amountLamports / quoteDivisor;
+        const lifetimeClaimedQuote = lifetimeClaimedRaw != null
+            ? Number(lifetimeClaimedRaw) / quoteDivisor
+            : undefined;
+        // amountSol is preserved only when the quote is actually SOL — for USDC claims it
+        // would be misleading, so we leave it 0 and downstream code branches on isStableQuote.
+        const amountSol = quoteInfo.isStable ? 0 : amountLamports / LAMPORTS_PER_SOL;
+
         return {
             txSignature: signature,
             slot,
             timestamp,
             claimerWallet: signerKey,
             tokenMint,
-            amountSol: amountLamports / LAMPORTS_PER_SOL,
+            amountSol,
             amountLamports,
             claimType: def.claimType,
             isCashback: !def.isCreatorClaim,
@@ -643,6 +686,11 @@ export class ClaimMonitor {
             isFake,
             lifetimeClaimedLamports,
             allCandidateMints,
+            quoteMint: resolvedQuoteMint,
+            quoteTicker: quoteInfo.ticker,
+            isStableQuote: quoteInfo.isStable,
+            amountQuote,
+            lifetimeClaimedQuote,
         };
     }
 

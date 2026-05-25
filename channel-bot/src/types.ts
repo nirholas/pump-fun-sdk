@@ -17,6 +17,15 @@ export const MONITORED_PROGRAM_IDS = [PUMP_PROGRAM_ID, PUMP_AMM_PROGRAM_ID, PUMP
 export const PUMPFUN_FEE_ACCOUNT = 'CebN5WGQ4jvEPvsVU4EoHEpgzq1VV7AbCJ5GEFDM97zC';
 export const PUMPFUN_MIGRATION_AUTHORITY = '39azUYFWPz3VHgKCf3VChUwbpURdCHRxjWVowf5jUJjg';
 export const WSOL_MINT = 'So11111111111111111111111111111111111111112';
+export const USDC_MINT = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v';
+
+// Decimals + display ticker for known quote mints. Used by claim-monitor to
+// convert event `amount_claimed` (u64 in base units of the quote mint) into a
+// human amount, and by the formatter to render the right ticker label.
+export const QUOTE_MINT_INFO: Record<string, { ticker: string; decimals: number; isStable: boolean }> = {
+    [WSOL_MINT]: { ticker: 'SOL', decimals: 9, isStable: false },
+    [USDC_MINT]: { ticker: 'USDC', decimals: 6, isStable: true },
+};
 
 // ============================================================================
 // Token Creation Discriminators
@@ -54,6 +63,7 @@ export interface InstructionDef {
 }
 
 export const CLAIM_INSTRUCTIONS: InstructionDef[] = [
+    // V1 instructions (continue to work for SOL-paired coins after the 2026-05-21 V2 rollout)
     { claimType: 'collect_creator_fee', discriminator: '1416567bc61cdb84', isCreatorClaim: true, label: 'Collect Creator Fee (Pump)', programId: PUMP_PROGRAM_ID },
     { claimType: 'claim_cashback', discriminator: '253a237ebe35e4c5', isCreatorClaim: false, label: 'Claim Cashback (Pump)', programId: PUMP_PROGRAM_ID },
     { claimType: 'distribute_creator_fees', discriminator: 'a572670079cef751', isCreatorClaim: true, label: 'Distribute Creator Fees (Pump)', programId: PUMP_PROGRAM_ID },
@@ -61,6 +71,16 @@ export const CLAIM_INSTRUCTIONS: InstructionDef[] = [
     { claimType: 'claim_cashback', discriminator: '253a237ebe35e4c5', isCreatorClaim: false, label: 'Claim Cashback (PumpSwap)', programId: PUMP_AMM_PROGRAM_ID },
     { claimType: 'transfer_creator_fees_to_pump', discriminator: '8b348655e4e56cf1', isCreatorClaim: true, label: 'Transfer Creator Fees to Pump', programId: PUMP_AMM_PROGRAM_ID },
     { claimType: 'claim_social_fee_pda', discriminator: 'e115fb85a11ec7e2', isCreatorClaim: true, label: 'Claim Social Fee PDA (GitHub)', programId: PUMP_FEE_PROGRAM_ID },
+
+    // V2 instructions (USDC + SOL paired coins, rolled out 2026-05-21).
+    // Mapped to the same ClaimType as the V1 equivalent so downstream handlers stay unified;
+    // V2 emits the same event discriminators with a trailing `quote_mint` field.
+    { claimType: 'collect_creator_fee', discriminator: 'cf118af204221338', isCreatorClaim: true, label: 'Collect Creator Fee V2 (Pump)', programId: PUMP_PROGRAM_ID },
+    { claimType: 'distribute_creator_fees', discriminator: 'ffcb134ff444089f', isCreatorClaim: true, label: 'Distribute Creator Fees V2 (Pump)', programId: PUMP_PROGRAM_ID },
+    { claimType: 'transfer_creator_fees_to_pump', discriminator: '01214eb921432c5c', isCreatorClaim: true, label: 'Transfer Creator Fees to Pump V2', programId: PUMP_AMM_PROGRAM_ID },
+    { claimType: 'claim_social_fee_pda', discriminator: '114df0863abc3595', isCreatorClaim: true, label: 'Claim Social Fee PDA V2 (GitHub)', programId: PUMP_FEE_PROGRAM_ID },
+    // update_fee_shares_v2 CPIs into distribute_creator_fees_v2 internally — match it so we catch admin-driven payouts
+    { claimType: 'distribute_creator_fees', discriminator: '6ffb31064e4e6a12', isCreatorClaim: true, label: 'Update Fee Shares V2 (Pump Fees)', programId: PUMP_FEE_PROGRAM_ID },
 ];
 
 export const CLAIM_EVENT_DISCRIMINATORS: Record<string, { label: string; isCreatorClaim: boolean }> = {
@@ -105,6 +125,16 @@ export interface FeeClaimEvent {
     lifetimeClaimedLamports?: number;
     /** When multiple tokens share the same social fee PDA (scam vector), all candidate mints */
     allCandidateMints?: string[];
+    /** Quote mint for the claim (V2 events only — wrapped SOL or USDC). Base58. */
+    quoteMint?: string;
+    /** Display ticker for the quote currency, e.g. "SOL" or "USDC". Defaults to SOL when absent. */
+    quoteTicker?: string;
+    /** True when the quote currency is a USD-stable asset (USDC, etc.) — drives display formatting. */
+    isStableQuote?: boolean;
+    /** Claim amount expressed in whole units of the quote currency (e.g. SOL or USDC), not base units. */
+    amountQuote?: number;
+    /** Lifetime total claimed in whole units of the quote currency, when known. */
+    lifetimeClaimedQuote?: number;
 }
 
 export interface TokenLaunchEvent {
