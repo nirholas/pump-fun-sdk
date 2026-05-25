@@ -5,7 +5,7 @@ import BN from "bn.js";
 // Import from `../pda` before `../sdk`: pda.ts -> sdk.ts -> onlineSdk.ts -> pda.ts
 // is a live circular dep. Entering the cycle via pda.ts lets sdk.ts finish
 // defining PUMP_PROGRAM_ID before pda.ts references `.toBuffer()` on it.
-import { bondingCurveV2Pda, feeSharingConfigPda, poolV2Pda, socialFeePda } from "../pda";
+import { bondingCurveV2Pda, canonicalPumpPoolPda, feeSharingConfigPda, poolV2Pda, socialFeePda } from "../pda";
 import {
   PUMP_SDK,
   PumpSdk,
@@ -673,6 +673,123 @@ describe("sdk", () => {
 
       patchAmmInstruction(ix);
       expect(ix.keys).toHaveLength(24);
+    });
+  });
+
+  // ── getBuyInstructionRaw / getSellInstructionRaw ───────────────────
+
+  describe("getBuyInstructionRaw", () => {
+    it("returns an instruction with 18 accounts (17 fixed + 1 breaking fee recipient)", async () => {
+      const ix = await PUMP_SDK.getBuyInstructionRaw({
+        user: TEST_PUBKEY,
+        mint: TEST_PUBKEY,
+        creator: TEST_CREATOR,
+        amount: new BN(1_000_000),
+        solAmount: new BN(10_000_000),
+        feeRecipient: TEST_CREATOR,
+      });
+      expect(ix.keys).toHaveLength(18);
+    });
+
+    it("last account is a mutable breaking fee recipient", async () => {
+      const ix = await PUMP_SDK.getBuyInstructionRaw({
+        user: TEST_PUBKEY,
+        mint: TEST_PUBKEY,
+        creator: TEST_CREATOR,
+        amount: new BN(1),
+        solAmount: new BN(1),
+        feeRecipient: TEST_CREATOR,
+      });
+      const tail = ix.keys[ix.keys.length - 1]!;
+      expect(isBreakingFeeRecipient(tail.pubkey)).toBe(true);
+      expect(tail.isWritable).toBe(true);
+    });
+  });
+
+  describe("getSellInstructionRaw", () => {
+    it("non-cashback sell has 16 accounts (15 fixed + 1 breaking fee recipient)", async () => {
+      const ix = await PUMP_SDK.getSellInstructionRaw({
+        user: TEST_PUBKEY,
+        mint: TEST_PUBKEY,
+        creator: TEST_CREATOR,
+        amount: new BN(1_000_000),
+        solAmount: new BN(1),
+        feeRecipient: TEST_CREATOR,
+        cashback: false,
+      });
+      expect(ix.keys).toHaveLength(16);
+      const tail = ix.keys[ix.keys.length - 1]!;
+      expect(isBreakingFeeRecipient(tail.pubkey)).toBe(true);
+      expect(tail.isWritable).toBe(true);
+    });
+
+    it("cashback sell has 17 accounts (adds userVolumeAccumulator)", async () => {
+      const ix = await PUMP_SDK.getSellInstructionRaw({
+        user: TEST_PUBKEY,
+        mint: TEST_PUBKEY,
+        creator: TEST_CREATOR,
+        amount: new BN(1_000_000),
+        solAmount: new BN(1),
+        feeRecipient: TEST_CREATOR,
+        cashback: true,
+      });
+      expect(ix.keys).toHaveLength(17);
+    });
+  });
+
+  // ── AMM instruction account counts ────────────────────────────────
+
+  describe("AMM instruction account shapes", () => {
+    it("ammBuyInstruction has 26 accounts (non-cashback)", async () => {
+      const pool = canonicalPumpPoolPda(TEST_PUBKEY);
+      const ix = await PUMP_SDK.ammBuyInstruction({
+        user: TEST_PUBKEY,
+        pool,
+        mint: TEST_PUBKEY,
+        baseAmountOut: new BN(1_000_000),
+        maxQuoteAmountIn: new BN(10_000_000),
+        cashback: false,
+      });
+      expect(ix.keys).toHaveLength(26);
+    });
+
+    it("ammBuyInstruction has 27 accounts (cashback=true)", async () => {
+      const pool = canonicalPumpPoolPda(TEST_PUBKEY);
+      const ix = await PUMP_SDK.ammBuyInstruction({
+        user: TEST_PUBKEY,
+        pool,
+        mint: TEST_PUBKEY,
+        baseAmountOut: new BN(1_000_000),
+        maxQuoteAmountIn: new BN(10_000_000),
+        cashback: true,
+      });
+      expect(ix.keys).toHaveLength(27);
+    });
+
+    it("ammSellInstruction has 24 accounts (non-cashback)", async () => {
+      const pool = canonicalPumpPoolPda(TEST_PUBKEY);
+      const ix = await PUMP_SDK.ammSellInstruction({
+        user: TEST_PUBKEY,
+        pool,
+        mint: TEST_PUBKEY,
+        baseAmountIn: new BN(1_000_000),
+        minQuoteAmountOut: new BN(1),
+        cashback: false,
+      });
+      expect(ix.keys).toHaveLength(24);
+    });
+
+    it("ammSellInstruction has 26 accounts (cashback=true)", async () => {
+      const pool = canonicalPumpPoolPda(TEST_PUBKEY);
+      const ix = await PUMP_SDK.ammSellInstruction({
+        user: TEST_PUBKEY,
+        pool,
+        mint: TEST_PUBKEY,
+        baseAmountIn: new BN(1_000_000),
+        minQuoteAmountOut: new BN(1),
+        cashback: true,
+      });
+      expect(ix.keys).toHaveLength(26);
     });
   });
 });

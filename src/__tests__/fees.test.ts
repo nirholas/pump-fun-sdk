@@ -9,6 +9,7 @@ import {
   calculateFeeTier,
   computeFeesBps,
   getFee,
+  getFeeRecipient,
   isBreakingFeeRecipient,
   ONE_BILLION_SUPPLY,
   patchAmmInstruction,
@@ -361,6 +362,44 @@ describe("fees", () => {
         programId, data,
       });
       expect(patchAmmInstruction(ix)).toBe(ix);
+    });
+  });
+
+  // ── getFeeRecipient ────────────────────────────────────────────────
+
+  describe("getFeeRecipient", () => {
+    it("returns feeRecipient pool for non-mayhem mode", () => {
+      const g = makeGlobal();
+      const pool = [g.feeRecipient, ...g.feeRecipients].map((p) => p.toBase58());
+      for (let i = 0; i < 30; i++) {
+        const r = getFeeRecipient(g, false);
+        expect(pool).toContain(r.toBase58());
+      }
+    });
+
+    it("returns reservedFeeRecipient pool for mayhem mode", () => {
+      const g = makeGlobal();
+      const pool = [g.reservedFeeRecipient, ...g.reservedFeeRecipients].map((p) => p.toBase58());
+      for (let i = 0; i < 30; i++) {
+        const r = getFeeRecipient(g, true);
+        expect(pool).toContain(r.toBase58());
+      }
+    });
+
+    it("mayhem and non-mayhem use different pools when configured differently", () => {
+      // With the fixture, reservedFeeRecipient == TEST_PUBKEY == feeRecipient,
+      // so we set up a global with distinct pools to verify routing.
+      const { PublicKey } = require("@solana/web3.js");
+      const standardRecipient = new PublicKey("CebN5WGQ4jvEPvsVU4EoHEpgzq1VV7AbicfhtW4xC9iM");
+      const mayhemRecipient = new PublicKey("7VtfL8fvgNfhz17qKRMjzQEXgbdpnHHHQRh54R9jP2RJ");
+      const g = makeGlobal({
+        feeRecipient: standardRecipient,
+        feeRecipients: [],
+        reservedFeeRecipient: mayhemRecipient,
+        reservedFeeRecipients: [],
+      });
+      expect(getFeeRecipient(g, false).toBase58()).toBe(standardRecipient.toBase58());
+      expect(getFeeRecipient(g, true).toBase58()).toBe(mayhemRecipient.toBase58());
     });
   });
 });

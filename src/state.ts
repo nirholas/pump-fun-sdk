@@ -535,4 +535,204 @@ export interface SocialFeePdaClaimedEvent {
   recipientBalanceAfter: BN;
 }
 
+// ─── PumpAMM Extra Events ─────────────────────────────────────────────────────
 
+export interface AmmAdminSetCoinCreatorEvent {
+  timestamp: BN;
+  adminSetCoinCreatorAuthority: PublicKey;
+  baseMint: PublicKey;
+  pool: PublicKey;
+  oldCoinCreator: PublicKey;
+  newCoinCreator: PublicKey;
+}
+
+export interface AmmAdminUpdateTokenIncentivesEvent {
+  startTime: BN;
+  endTime: BN;
+  dayNumber: BN;
+  tokenSupplyPerDay: BN;
+  mint: PublicKey;
+  secondsInADay: BN;
+  timestamp: BN;
+}
+
+export interface AmmClaimCashbackEvent {
+  user: PublicKey;
+  amount: BN;
+  timestamp: BN;
+  totalClaimed: BN;
+  totalCashbackEarned: BN;
+}
+
+export interface AmmClaimTokenIncentivesEvent {
+  user: PublicKey;
+  mint: PublicKey;
+  amount: BN;
+  timestamp: BN;
+  totalClaimedTokens: BN;
+  currentSolVolume: BN;
+}
+
+export interface AmmCloseUserVolumeAccumulatorEvent {
+  user: PublicKey;
+  timestamp: BN;
+  totalUnclaimedTokens: BN;
+  totalClaimedTokens: BN;
+  currentSolVolume: BN;
+  lastUpdateTimestamp: BN;
+}
+
+export interface AmmCollectCoinCreatorFeeEvent {
+  timestamp: BN;
+  coinCreator: PublicKey;
+  coinCreatorFee: BN;
+  coinCreatorVaultAta: PublicKey;
+  coinCreatorTokenAccount: PublicKey;
+}
+
+export interface AmmCreateConfigEvent {
+  timestamp: BN;
+  admin: PublicKey;
+  lpFeeBasisPoints: BN;
+  protocolFeeBasisPoints: BN;
+  protocolFeeRecipients: PublicKey[];
+  coinCreatorFeeBasisPoints: BN;
+  adminSetCoinCreatorAuthority: PublicKey;
+}
+
+export interface AmmDisableEvent {
+  timestamp: BN;
+  admin: PublicKey;
+  disableCreatePool: boolean;
+  disableDeposit: boolean;
+  disableWithdraw: boolean;
+  disableBuy: boolean;
+  disableSell: boolean;
+}
+
+export interface AmmExtendAccountEvent {
+  timestamp: BN;
+  account: PublicKey;
+  user: PublicKey;
+  currentSize: BN;
+  newSize: BN;
+}
+
+export interface AmmInitUserVolumeAccumulatorEvent {
+  payer: PublicKey;
+  user: PublicKey;
+  timestamp: BN;
+}
+
+export interface AmmMigratePoolCoinCreatorEvent {
+  timestamp: BN;
+  baseMint: PublicKey;
+  pool: PublicKey;
+  sharingConfig: PublicKey;
+  oldCoinCreator: PublicKey;
+  newCoinCreator: PublicKey;
+}
+
+export interface AmmReservedFeeRecipientsEvent {
+  timestamp: BN;
+  reservedFeeRecipient: PublicKey;
+  reservedFeeRecipients: PublicKey[];
+}
+
+export interface AmmSetBondingCurveCoinCreatorEvent {
+  timestamp: BN;
+  baseMint: PublicKey;
+  pool: PublicKey;
+  bondingCurve: PublicKey;
+  coinCreator: PublicKey;
+}
+
+export interface AmmSetMetaplexCoinCreatorEvent {
+  timestamp: BN;
+  baseMint: PublicKey;
+  pool: PublicKey;
+  metadata: PublicKey;
+  coinCreator: PublicKey;
+}
+
+export interface AmmSyncUserVolumeAccumulatorEvent {
+  user: PublicKey;
+  totalClaimedTokensBefore: BN;
+  totalClaimedTokensAfter: BN;
+  timestamp: BN;
+}
+
+export interface AmmUpdateAdminEvent {
+  timestamp: BN;
+  admin: PublicKey;
+  newAdmin: PublicKey;
+}
+
+export interface AmmUpdateFeeConfigEvent {
+  timestamp: BN;
+  admin: PublicKey;
+  lpFeeBasisPoints: BN;
+  protocolFeeBasisPoints: BN;
+  protocolFeeRecipients: PublicKey[];
+  coinCreatorFeeBasisPoints: BN;
+  adminSetCoinCreatorAuthority: PublicKey;
+}
+
+// ─── PumpFees Extra Events ────────────────────────────────────────────────────
+
+export interface FeesInitializeFeeConfigEvent {
+  timestamp: BN;
+  admin: PublicKey;
+  feeConfig: PublicKey;
+}
+
+export interface FeesInitializeFeeProgramGlobalEvent {
+  timestamp: BN;
+  authority: PublicKey;
+  socialClaimAuthority: PublicKey;
+  disableFlags: number;
+  claimRateLimit: BN;
+}
+
+export interface FeesSetAuthorityEvent {
+  timestamp: BN;
+  oldAuthority: PublicKey;
+  newAuthority: PublicKey;
+}
+
+export interface FeesSetClaimRateLimitEvent {
+  timestamp: BN;
+  claimRateLimit: BN;
+}
+
+export interface FeesSetDisableFlagsEvent {
+  timestamp: BN;
+  disableFlags: number;
+}
+
+export interface FeesSetSocialClaimAuthorityEvent {
+  timestamp: BN;
+  socialClaimAuthority: PublicKey;
+}
+
+export interface FeesUpdateAdminEvent {
+  timestamp: BN;
+  oldAdmin: PublicKey;
+  newAdmin: PublicKey;
+}
+
+export interface FeesUpdateFeeConfigEvent {
+  timestamp: BN;
+  admin: PublicKey;
+  feeConfig: PublicKey;
+  feeTiers: FeeTier[];
+  flatFees: Fees;
+}
+
+export interface FeesUpsertFeeTiersEvent {
+  timestamp: BN;
+  admin: PublicKey;
+  feeConfig: PublicKey;
+  feeTiers: FeeTier[];
+  offset: number;
+}

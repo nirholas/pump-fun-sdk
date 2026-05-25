@@ -4,6 +4,7 @@ import {
   coinCreatorVaultAuthorityPda,
 } from "@pump-fun/pump-swap-sdk";
 import {
+  ASSOCIATED_TOKEN_PROGRAM_ID,
   createAssociatedTokenAccountIdempotentInstruction,
   getAssociatedTokenAddressSync,
   NATIVE_MINT,
@@ -14,6 +15,7 @@ import {
   AccountInfo,
   Connection,
   PublicKey,
+  SystemProgram,
   TransactionInstruction,
 } from "@solana/web3.js";
 import BN from "bn.js";
@@ -39,6 +41,9 @@ import { PumpFees } from "./idl/pump_fees";
 import PumpFeesIdl from "./idl/pump_fees.json";
 import { OFFLINE_PUMP_PROGRAM } from "./onlineSdk";
 import {
+  AMM_FEE_CONFIG_PDA,
+  AMM_GLOBAL_CONFIG_PDA,
+  AMM_GLOBAL_VOLUME_ACCUMULATOR_PDA,
   bondingCurvePda,
   canonicalPumpPoolPda,
   creatorVaultPda,
@@ -47,6 +52,7 @@ import {
   getSolVaultPda,
   getTokenVaultPda,
   pumpPoolAuthorityPda,
+  PUMP_AMM_EVENT_AUTHORITY_PDA,
   feeSharingConfigPda,
   userVolumeAccumulatorPda,
   ammUserVolumeAccumulatorPda,
@@ -94,6 +100,32 @@ import {
   TransferFeeSharingAuthorityEvent,
   SocialFeePdaCreatedEvent,
   SocialFeePdaClaimedEvent,
+  AmmAdminSetCoinCreatorEvent,
+  AmmAdminUpdateTokenIncentivesEvent,
+  AmmClaimCashbackEvent,
+  AmmClaimTokenIncentivesEvent,
+  AmmCloseUserVolumeAccumulatorEvent,
+  AmmCollectCoinCreatorFeeEvent,
+  AmmCreateConfigEvent,
+  AmmDisableEvent,
+  AmmExtendAccountEvent,
+  AmmInitUserVolumeAccumulatorEvent,
+  AmmMigratePoolCoinCreatorEvent,
+  AmmReservedFeeRecipientsEvent,
+  AmmSetBondingCurveCoinCreatorEvent,
+  AmmSetMetaplexCoinCreatorEvent,
+  AmmSyncUserVolumeAccumulatorEvent,
+  AmmUpdateAdminEvent,
+  AmmUpdateFeeConfigEvent,
+  FeesInitializeFeeConfigEvent,
+  FeesInitializeFeeProgramGlobalEvent,
+  FeesSetAuthorityEvent,
+  FeesSetClaimRateLimitEvent,
+  FeesSetDisableFlagsEvent,
+  FeesSetSocialClaimAuthorityEvent,
+  FeesUpdateAdminEvent,
+  FeesUpdateFeeConfigEvent,
+  FeesUpsertFeeTiersEvent,
   Platform,
   SUPPORTED_SOCIAL_PLATFORMS,
   platformToString,
@@ -905,7 +937,7 @@ export class PumpSdk {
     amount: BN;
     solAmount: BN;
     feeRecipient: PublicKey;
-    tokenProgram: PublicKey;
+    tokenProgram?: PublicKey;
     cashback?: boolean;
   }): Promise<TransactionInstruction> {
     return await this.getSellInstructionInternal({
@@ -1365,6 +1397,166 @@ export class PumpSdk {
     );
   }
 
+  // ─── PumpAMM Extra Event Decoders ─────────────────────────────────────────
+
+  decodeAmmAdminSetCoinCreatorEvent(data: Buffer): AmmAdminSetCoinCreatorEvent {
+    return this.offlinePumpAmmProgram.coder.types.decode<AmmAdminSetCoinCreatorEvent>(
+      "adminSetCoinCreatorEvent", data,
+    );
+  }
+
+  decodeAmmAdminUpdateTokenIncentivesEvent(data: Buffer): AmmAdminUpdateTokenIncentivesEvent {
+    return this.offlinePumpAmmProgram.coder.types.decode<AmmAdminUpdateTokenIncentivesEvent>(
+      "adminUpdateTokenIncentivesEvent", data,
+    );
+  }
+
+  decodeAmmClaimCashbackEvent(data: Buffer): AmmClaimCashbackEvent {
+    return this.offlinePumpAmmProgram.coder.types.decode<AmmClaimCashbackEvent>(
+      "claimCashbackEvent", data,
+    );
+  }
+
+  decodeAmmClaimTokenIncentivesEvent(data: Buffer): AmmClaimTokenIncentivesEvent {
+    return this.offlinePumpAmmProgram.coder.types.decode<AmmClaimTokenIncentivesEvent>(
+      "claimTokenIncentivesEvent", data,
+    );
+  }
+
+  decodeAmmCloseUserVolumeAccumulatorEvent(data: Buffer): AmmCloseUserVolumeAccumulatorEvent {
+    return this.offlinePumpAmmProgram.coder.types.decode<AmmCloseUserVolumeAccumulatorEvent>(
+      "closeUserVolumeAccumulatorEvent", data,
+    );
+  }
+
+  decodeAmmCollectCoinCreatorFeeEvent(data: Buffer): AmmCollectCoinCreatorFeeEvent {
+    return this.offlinePumpAmmProgram.coder.types.decode<AmmCollectCoinCreatorFeeEvent>(
+      "collectCoinCreatorFeeEvent", data,
+    );
+  }
+
+  decodeAmmCreateConfigEvent(data: Buffer): AmmCreateConfigEvent {
+    return this.offlinePumpAmmProgram.coder.types.decode<AmmCreateConfigEvent>(
+      "createConfigEvent", data,
+    );
+  }
+
+  decodeAmmDisableEvent(data: Buffer): AmmDisableEvent {
+    return this.offlinePumpAmmProgram.coder.types.decode<AmmDisableEvent>(
+      "disableEvent", data,
+    );
+  }
+
+  decodeAmmExtendAccountEvent(data: Buffer): AmmExtendAccountEvent {
+    return this.offlinePumpAmmProgram.coder.types.decode<AmmExtendAccountEvent>(
+      "extendAccountEvent", data,
+    );
+  }
+
+  decodeAmmInitUserVolumeAccumulatorEvent(data: Buffer): AmmInitUserVolumeAccumulatorEvent {
+    return this.offlinePumpAmmProgram.coder.types.decode<AmmInitUserVolumeAccumulatorEvent>(
+      "initUserVolumeAccumulatorEvent", data,
+    );
+  }
+
+  decodeAmmMigratePoolCoinCreatorEvent(data: Buffer): AmmMigratePoolCoinCreatorEvent {
+    return this.offlinePumpAmmProgram.coder.types.decode<AmmMigratePoolCoinCreatorEvent>(
+      "migratePoolCoinCreatorEvent", data,
+    );
+  }
+
+  decodeAmmReservedFeeRecipientsEvent(data: Buffer): AmmReservedFeeRecipientsEvent {
+    return this.offlinePumpAmmProgram.coder.types.decode<AmmReservedFeeRecipientsEvent>(
+      "reservedFeeRecipientsEvent", data,
+    );
+  }
+
+  decodeAmmSetBondingCurveCoinCreatorEvent(data: Buffer): AmmSetBondingCurveCoinCreatorEvent {
+    return this.offlinePumpAmmProgram.coder.types.decode<AmmSetBondingCurveCoinCreatorEvent>(
+      "setBondingCurveCoinCreatorEvent", data,
+    );
+  }
+
+  decodeAmmSetMetaplexCoinCreatorEvent(data: Buffer): AmmSetMetaplexCoinCreatorEvent {
+    return this.offlinePumpAmmProgram.coder.types.decode<AmmSetMetaplexCoinCreatorEvent>(
+      "setMetaplexCoinCreatorEvent", data,
+    );
+  }
+
+  decodeAmmSyncUserVolumeAccumulatorEvent(data: Buffer): AmmSyncUserVolumeAccumulatorEvent {
+    return this.offlinePumpAmmProgram.coder.types.decode<AmmSyncUserVolumeAccumulatorEvent>(
+      "syncUserVolumeAccumulatorEvent", data,
+    );
+  }
+
+  decodeAmmUpdateAdminEvent(data: Buffer): AmmUpdateAdminEvent {
+    return this.offlinePumpAmmProgram.coder.types.decode<AmmUpdateAdminEvent>(
+      "updateAdminEvent", data,
+    );
+  }
+
+  decodeAmmUpdateFeeConfigEvent(data: Buffer): AmmUpdateFeeConfigEvent {
+    return this.offlinePumpAmmProgram.coder.types.decode<AmmUpdateFeeConfigEvent>(
+      "updateFeeConfigEvent", data,
+    );
+  }
+
+  // ─── PumpFees Extra Event Decoders ────────────────────────────────────────
+
+  decodeFeesInitializeFeeConfigEvent(data: Buffer): FeesInitializeFeeConfigEvent {
+    return this.offlinePumpFeeProgram.coder.types.decode<FeesInitializeFeeConfigEvent>(
+      "initializeFeeConfigEvent", data,
+    );
+  }
+
+  decodeFeesInitializeFeeProgramGlobalEvent(data: Buffer): FeesInitializeFeeProgramGlobalEvent {
+    return this.offlinePumpFeeProgram.coder.types.decode<FeesInitializeFeeProgramGlobalEvent>(
+      "initializeFeeProgramGlobalEvent", data,
+    );
+  }
+
+  decodeFeesSetAuthorityEvent(data: Buffer): FeesSetAuthorityEvent {
+    return this.offlinePumpFeeProgram.coder.types.decode<FeesSetAuthorityEvent>(
+      "setAuthorityEvent", data,
+    );
+  }
+
+  decodeFeesSetClaimRateLimitEvent(data: Buffer): FeesSetClaimRateLimitEvent {
+    return this.offlinePumpFeeProgram.coder.types.decode<FeesSetClaimRateLimitEvent>(
+      "setClaimRateLimitEvent", data,
+    );
+  }
+
+  decodeFeesSetDisableFlagsEvent(data: Buffer): FeesSetDisableFlagsEvent {
+    return this.offlinePumpFeeProgram.coder.types.decode<FeesSetDisableFlagsEvent>(
+      "setDisableFlagsEvent", data,
+    );
+  }
+
+  decodeFeesSetSocialClaimAuthorityEvent(data: Buffer): FeesSetSocialClaimAuthorityEvent {
+    return this.offlinePumpFeeProgram.coder.types.decode<FeesSetSocialClaimAuthorityEvent>(
+      "setSocialClaimAuthorityEvent", data,
+    );
+  }
+
+  decodeFeesUpdateAdminEvent(data: Buffer): FeesUpdateAdminEvent {
+    return this.offlinePumpFeeProgram.coder.types.decode<FeesUpdateAdminEvent>(
+      "updateAdminEvent", data,
+    );
+  }
+
+  decodeFeesUpdateFeeConfigEvent(data: Buffer): FeesUpdateFeeConfigEvent {
+    return this.offlinePumpFeeProgram.coder.types.decode<FeesUpdateFeeConfigEvent>(
+      "updateFeeConfigEvent", data,
+    );
+  }
+
+  decodeFeesUpsertFeeTiersEvent(data: Buffer): FeesUpsertFeeTiersEvent {
+    return this.offlinePumpFeeProgram.coder.types.decode<FeesUpsertFeeTiersEvent>(
+      "upsertFeeTiersEvent", data,
+    );
+  }
+
   async getMinimumDistributableFee({
     mint,
     sharingConfig,
@@ -1539,6 +1731,39 @@ export class PumpSdk {
       .instruction();
   }
 
+  /**
+   * Transfer IDL authority to a new address.
+   *
+   * Updates the on-chain Anchor IDL account so a new pubkey can publish
+   * future IDL upgrades. Requires the current global authority as signer.
+   *
+   * @param authority    - Current global authority (signer)
+   * @param idlAccount   - The on-chain IDL account address for the Pump program
+   * @param idlAuthority - New IDL authority pubkey
+   */
+  async adminSetIdlAuthorityInstruction({
+    authority,
+    idlAccount,
+    idlAuthority,
+  }: {
+    authority: PublicKey;
+    idlAccount: PublicKey;
+    idlAuthority: PublicKey;
+  }): Promise<TransactionInstruction> {
+    const [programSigner] = PublicKey.findProgramAddressSync(
+      [],
+      this.offlinePumpProgram.programId,
+    );
+    return await this.offlinePumpProgram.methods
+      .adminSetIdlAuthority(idlAuthority)
+      .accountsPartial({
+        authority,
+        idlAccount,
+        programSigner,
+      })
+      .instruction();
+  }
+
   // ─── Creator Management ─────────────────────────────────────────────
 
   /**
@@ -1675,6 +1900,7 @@ export class PumpSdk {
     baseAmountOut,
     maxQuoteAmountIn,
     cashback = false,
+    protocolFeeRecipient = SystemProgram.programId,
   }: {
     user: PublicKey;
     pool: PublicKey;
@@ -1682,48 +1908,55 @@ export class PumpSdk {
     baseAmountOut: BN;
     maxQuoteAmountIn: BN;
     cashback?: boolean;
+    /** Protocol fee recipient from AMM global config. Defaults to SystemProgram.programId for offline use; provide the real address for production. */
+    protocolFeeRecipient?: PublicKey;
   }): Promise<TransactionInstruction> {
-    const userBaseAta = getAssociatedTokenAddressSync(
-      mint,
-      user,
-      true,
-      TOKEN_2022_PROGRAM_ID,
-    );
-    const userQuoteAta = getAssociatedTokenAddressSync(
-      NATIVE_MINT,
-      user,
-      true,
-      TOKEN_PROGRAM_ID,
-    );
+    const userBaseAta = getAssociatedTokenAddressSync(mint, user, true, TOKEN_2022_PROGRAM_ID);
+    const userQuoteAta = getAssociatedTokenAddressSync(NATIVE_MINT, user, true, TOKEN_PROGRAM_ID);
+    const poolBaseAta = getAssociatedTokenAddressSync(mint, pool, true, TOKEN_2022_PROGRAM_ID);
+    const poolQuoteAta = getAssociatedTokenAddressSync(NATIVE_MINT, pool, true, TOKEN_PROGRAM_ID);
+    const protocolFeeAta = getAssociatedTokenAddressSync(NATIVE_MINT, protocolFeeRecipient, true, TOKEN_PROGRAM_ID);
+    const coinCreatorVaultAuthority = coinCreatorVaultAuthorityPda(feeSharingConfigPda(mint));
+    const coinCreatorVaultAta = coinCreatorVaultAtaPda(coinCreatorVaultAuthority, NATIVE_MINT, TOKEN_PROGRAM_ID);
     const remainingAccounts = [
       ...(cashback
         ? [
             {
-              pubkey: getAssociatedTokenAddressSync(
-                NATIVE_MINT,
-                ammUserVolumeAccumulatorPda(user),
-                true,
-                TOKEN_PROGRAM_ID,
-              ),
+              pubkey: getAssociatedTokenAddressSync(NATIVE_MINT, ammUserVolumeAccumulatorPda(user), true, TOKEN_PROGRAM_ID),
               isWritable: true,
               isSigner: false,
             },
           ]
         : []),
-      {
-        pubkey: poolV2Pda(mint),
-        isWritable: false,
-        isSigner: false,
-      },
+      { pubkey: poolV2Pda(mint), isWritable: false, isSigner: false },
       ...buildAmmBreakingFeeRecipientAccounts(),
     ];
     return await this.offlinePumpAmmProgram.methods
       .buy(baseAmountOut, maxQuoteAmountIn, { 0: true })
       .accountsPartial({
-        user,
         pool,
+        user,
+        globalConfig: AMM_GLOBAL_CONFIG_PDA,
+        baseMint: mint,
+        quoteMint: NATIVE_MINT,
         userBaseTokenAccount: userBaseAta,
         userQuoteTokenAccount: userQuoteAta,
+        poolBaseTokenAccount: poolBaseAta,
+        poolQuoteTokenAccount: poolQuoteAta,
+        protocolFeeRecipient,
+        protocolFeeRecipientTokenAccount: protocolFeeAta,
+        baseTokenProgram: TOKEN_2022_PROGRAM_ID,
+        quoteTokenProgram: TOKEN_PROGRAM_ID,
+        systemProgram: SystemProgram.programId,
+        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+        eventAuthority: PUMP_AMM_EVENT_AUTHORITY_PDA,
+        program: PUMP_AMM_PROGRAM_ID,
+        coinCreatorVaultAta,
+        coinCreatorVaultAuthority,
+        globalVolumeAccumulator: AMM_GLOBAL_VOLUME_ACCUMULATOR_PDA,
+        userVolumeAccumulator: ammUserVolumeAccumulatorPda(user),
+        feeConfig: AMM_FEE_CONFIG_PDA,
+        feeProgram: PUMP_FEE_PROGRAM_ID,
       })
       .remainingAccounts(remainingAccounts)
       .instruction();
@@ -1803,6 +2036,7 @@ export class PumpSdk {
     baseAmountIn,
     minQuoteAmountOut,
     cashback = false,
+    protocolFeeRecipient = SystemProgram.programId,
   }: {
     user: PublicKey;
     pool: PublicKey;
@@ -1810,53 +2044,54 @@ export class PumpSdk {
     baseAmountIn: BN;
     minQuoteAmountOut: BN;
     cashback?: boolean;
+    /** Protocol fee recipient from AMM global config. Defaults to SystemProgram.programId for offline use; provide the real address for production. */
+    protocolFeeRecipient?: PublicKey;
   }): Promise<TransactionInstruction> {
-    const userBaseAta = getAssociatedTokenAddressSync(
-      mint,
-      user,
-      true,
-      TOKEN_2022_PROGRAM_ID,
-    );
-    const userQuoteAta = getAssociatedTokenAddressSync(
-      NATIVE_MINT,
-      user,
-      true,
-      TOKEN_PROGRAM_ID,
-    );
+    const userBaseAta = getAssociatedTokenAddressSync(mint, user, true, TOKEN_2022_PROGRAM_ID);
+    const userQuoteAta = getAssociatedTokenAddressSync(NATIVE_MINT, user, true, TOKEN_PROGRAM_ID);
+    const poolBaseAta = getAssociatedTokenAddressSync(mint, pool, true, TOKEN_2022_PROGRAM_ID);
+    const poolQuoteAta = getAssociatedTokenAddressSync(NATIVE_MINT, pool, true, TOKEN_PROGRAM_ID);
+    const protocolFeeAta = getAssociatedTokenAddressSync(NATIVE_MINT, protocolFeeRecipient, true, TOKEN_PROGRAM_ID);
+    const coinCreatorVaultAuthority = coinCreatorVaultAuthorityPda(feeSharingConfigPda(mint));
+    const coinCreatorVaultAta = coinCreatorVaultAtaPda(coinCreatorVaultAuthority, NATIVE_MINT, TOKEN_PROGRAM_ID);
     const remainingAccounts = [
       ...(cashback
         ? [
             {
-              pubkey: getAssociatedTokenAddressSync(
-                NATIVE_MINT,
-                ammUserVolumeAccumulatorPda(user),
-                true,
-                TOKEN_PROGRAM_ID,
-              ),
+              pubkey: getAssociatedTokenAddressSync(NATIVE_MINT, ammUserVolumeAccumulatorPda(user), true, TOKEN_PROGRAM_ID),
               isWritable: true,
               isSigner: false,
             },
-            {
-              pubkey: ammUserVolumeAccumulatorPda(user),
-              isWritable: true,
-              isSigner: false,
-            },
+            { pubkey: ammUserVolumeAccumulatorPda(user), isWritable: true, isSigner: false },
           ]
         : []),
-      {
-        pubkey: poolV2Pda(mint),
-        isWritable: false,
-        isSigner: false,
-      },
+      { pubkey: poolV2Pda(mint), isWritable: false, isSigner: false },
       ...buildAmmBreakingFeeRecipientAccounts(),
     ];
     return await this.offlinePumpAmmProgram.methods
       .sell(baseAmountIn, minQuoteAmountOut)
       .accountsPartial({
-        user,
         pool,
+        user,
+        globalConfig: AMM_GLOBAL_CONFIG_PDA,
+        baseMint: mint,
+        quoteMint: NATIVE_MINT,
         userBaseTokenAccount: userBaseAta,
         userQuoteTokenAccount: userQuoteAta,
+        poolBaseTokenAccount: poolBaseAta,
+        poolQuoteTokenAccount: poolQuoteAta,
+        protocolFeeRecipient,
+        protocolFeeRecipientTokenAccount: protocolFeeAta,
+        baseTokenProgram: TOKEN_2022_PROGRAM_ID,
+        quoteTokenProgram: TOKEN_PROGRAM_ID,
+        systemProgram: SystemProgram.programId,
+        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+        eventAuthority: PUMP_AMM_EVENT_AUTHORITY_PDA,
+        program: PUMP_AMM_PROGRAM_ID,
+        coinCreatorVaultAta,
+        coinCreatorVaultAuthority,
+        feeConfig: AMM_FEE_CONFIG_PDA,
+        feeProgram: PUMP_FEE_PROGRAM_ID,
       })
       .remainingAccounts(remainingAccounts)
       .instruction();

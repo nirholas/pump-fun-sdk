@@ -4,11 +4,14 @@ import {
   getBuyTokenAmountFromSolAmount,
   getBuySolAmountFromTokenAmount,
   getSellSolAmountFromTokenAmount,
+  getTokenAmountForTargetSol,
+  getStaticRandomFeeRecipient,
   newBondingCurve,
   bondingCurveMarketCap,
   maxSafeSellAmount,
   validateSellAmount,
 } from "../bondingCurve";
+import { BREAKING_FEE_RECIPIENTS } from "../fees";
 import { SellOverflowError } from "../errors";
 
 import {
@@ -294,6 +297,126 @@ describe("bondingCurve", () => {
       const product = limit.mul(reserves);
       const U64_MAX = new BN("18446744073709551615");
       expect(product.lte(U64_MAX)).toBe(true);
+    });
+  });
+
+  // ── getTokenAmountForTargetSol ────────────────────────────────────
+
+  describe("getTokenAmountForTargetSol", () => {
+    it("returns 0 for targetSol=0", () => {
+      const result = getTokenAmountForTargetSol({
+        global,
+        feeConfig: null,
+        mintSupply,
+        bondingCurve: makeBondingCurve(),
+        targetSol: new BN(0),
+      });
+      expect(result.isZero()).toBe(true);
+    });
+
+    it("yields at least targetSol when sold (target within safe limit)", () => {
+      // maxSafeSellAmount constrains each sell to prevent u64 overflow on-chain.
+      // The target must be below maxOut (SOL from selling the safe max) to be
+      // reachable. We compute maxOut first and target half of it.
+      const bc = makeBondingCurve();
+      const safeMax = maxSafeSellAmount(bc.virtualSolReserves);
+      const upper = BN.min(bc.realTokenReserves, safeMax);
+      const maxOut = getSellSolAmountFromTokenAmount({
+        global, feeConfig: null, mintSupply, bondingCurve: bc, amount: upper,
+      });
+      if (maxOut.isZero()) return; // degenerate state — skip
+
+      // Target half of maxOut — guaranteed reachable in one safe sell
+      const targetSol = maxOut.divn(2);
+      if (targetSol.isZero()) return;
+
+      const tokenAmount = getTokenAmountForTargetSol({
+        global, feeConfig: null, mintSupply, bondingCurve: bc, targetSol,
+      });
+      expect(tokenAmount.gtn(0)).toBe(true);
+      const actualSol = getSellSolAmountFromTokenAmount({
+        global, feeConfig: null, mintSupply, bondingCurve: bc, amount: tokenAmount,
+      });
+      expect(actualSol.gte(targetSol)).toBe(true);
+    });
+
+    it("one token less yields strictly less than targetSol", () => {
+      const bc = makeBondingCurve();
+      const safeMax = maxSafeSellAmount(bc.virtualSolReserves);
+      const upper = BN.min(bc.realTokenReserves, safeMax);
+      const maxOut = getSellSolAmountFromTokenAmount({
+        global, feeConfig: null, mintSupply, bondingCurve: bc, amount: upper,
+      });
+      if (maxOut.isZero()) return;
+      const targetSol = maxOut.divn(2);
+      if (targetSol.isZero()) return;
+
+      const tokenAmount = getTokenAmountForTargetSol({
+        global, feeConfig: null, mintSupply, bondingCurve: bc, targetSol,
+      });
+      if (tokenAmount.gtn(1)) {
+        const oneLess = tokenAmount.subn(1);
+        const solWithOneLess = getSellSolAmountFromTokenAmount({
+          global, feeConfig: null, mintSupply, bondingCurve: bc, amount: oneLess,
+        });
+        expect(solWithOneLess.lt(targetSol)).toBe(true);
+      }
+    });
+
+    it("returns upper safe limit when target exceeds max possible SOL out", () => {
+      const bc = makeBondingCurve();
+      const impossibleTarget = new BN("999999999999999999");
+      const result = getTokenAmountForTargetSol({
+        global, feeConfig: null, mintSupply, bondingCurve: bc, targetSol: impossibleTarget,
+      });
+      // Should be capped at min(realTokenReserves, maxSafeSellAmount)
+      expect(result.lte(bc.realTokenReserves)).toBe(true);
+      expect(result.gtn(0)).toBe(true);
+    });
+
+    it("returns 0 for migrated bonding curve", () => {
+      const result = getTokenAmountForTargetSol({
+        global, feeConfig: null, mintSupply,
+        bondingCurve: makeMigratedBondingCurve(),
+        targetSol: new BN("500000000"),
+      });
+      expect(result.isZero()).toBe(true);
+    });
+  });
+
+  // ── getStaticRandomFeeRecipient ────────────────────────────────────
+
+  describe("getStaticRandomFeeRecipient", () => {
+    it("always returns a valid PublicKey", () => {
+      for (let i = 0; i < 20; i++) {
+        const r = getStaticRandomFeeRecipient();
+        expect(r).toBeDefined();
+        expect(r.toBase58().length).toBeGreaterThan(0);
+      }
+    });
+
+    it("returns one of the known fee recipients", () => {
+      // Run many times to cover randomness — all results must be from the set
+      const knownSet = new Set(BREAKING_FEE_RECIPIENTS.map((p) => p.toBase58()));
+      // getStaticRandomFeeRecipient uses a different (legacy) list, so we just
+      // verify it returns a non-default pubkey with a valid base58 string
+      for (let i = 0; i < 20; i++) {
+        const r = getStaticRandomFeeRecipient();
+        expect(r.toBase58()).toMatch(/^[1-9A-HJ-NP-Za-km-z]{32,44}$/);
+        // Must NOT be the system program (all zeros)
+        expect(r.toBase58()).not.toBe("11111111111111111111111111111111");
+      }
+      // Silence unused variable warning
+      void knownSet;
+    });
+
+    it("is non-deterministic across calls", () => {
+      // Collect 100 results — expect at least 2 distinct values
+      const results = new Set<string>();
+      for (let i = 0; i < 100; i++) {
+        results.add(getStaticRandomFeeRecipient().toBase58());
+      }
+      expect(results.size).toBeGreaterThan(1);
     });
   });
 

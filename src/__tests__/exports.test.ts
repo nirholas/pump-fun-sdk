@@ -18,15 +18,19 @@ describe("public API exports", () => {
     expect(typeof sdk.getBuyTokenAmountFromSolAmount).toBe("function");
     expect(typeof sdk.getBuySolAmountFromTokenAmount).toBe("function");
     expect(typeof sdk.getSellSolAmountFromTokenAmount).toBe("function");
+    expect(typeof sdk.getTokenAmountForTargetSol).toBe("function");
     expect(typeof sdk.newBondingCurve).toBe("function");
     expect(typeof sdk.bondingCurveMarketCap).toBe("function");
     expect(typeof sdk.getStaticRandomFeeRecipient).toBe("function");
+    expect(typeof sdk.maxSafeSellAmount).toBe("function");
+    expect(typeof sdk.validateSellAmount).toBe("function");
   });
 
   // ── Fee functions ──────────────────────────────────────────────────
 
   it("exports fee functions", () => {
     expect(typeof sdk.getFee).toBe("function");
+    expect(typeof sdk.getFeeRecipient).toBe("function");
     expect(typeof sdk.computeFeesBps).toBe("function");
     expect(typeof sdk.calculateFeeTier).toBe("function");
     expect(sdk.ONE_BILLION_SUPPLY).toBeDefined();
@@ -81,8 +85,10 @@ describe("public API exports", () => {
 
   // ── Utility functions ──────────────────────────────────────────────
 
-  it("exports isCreatorUsingSharingConfig", () => {
+  it("exports isCreatorUsingSharingConfig and related helpers", () => {
     expect(typeof sdk.isCreatorUsingSharingConfig).toBe("function");
+    expect(typeof sdk.isSharingConfigEditable).toBe("function");
+    expect(typeof sdk.normalizeSocialShareholders).toBe("function");
   });
 
   // ── PDA helpers ────────────────────────────────────────────────────
@@ -152,5 +158,22 @@ describe("public API exports", () => {
   it("exports online SDK class", () => {
     // MinimumDistributableFeeResult and DistributeCreatorFeeResult are type-only exports (interfaces)
     expect(sdk.OnlinePumpSdk).toBeDefined();
+  });
+
+  // ── Vanity mint ────────────────────────────────────────────────────
+
+  it("exports vanity mint helpers", () => {
+    expect(typeof sdk.generateVanityMint).toBe("function");
+    expect(typeof sdk.estimateVanityMintAttempts).toBe("function");
+    expect(sdk.BASE58_ALPHABET).toBeDefined();
+    expect(sdk.MAX_VANITY_PATTERN_LENGTH).toBeGreaterThan(0);
+  });
+
+  // ── Fallback / RPC failover ────────────────────────────────────────
+
+  it("exports fallback connection helpers", () => {
+    expect(typeof sdk.createFallbackConnection).toBe("function");
+    expect(typeof sdk.fetchWithFallback).toBe("function");
+    expect(typeof sdk.parseEndpoints).toBe("function");
   });
 });

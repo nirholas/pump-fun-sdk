@@ -473,6 +473,32 @@ describe("OnlinePumpSdk.parseTransactionEvents", () => {
     jest.spyOn(PUMP_SDK, "decodeTransferFeeSharingAuthorityEvent").mockImplementation(throwErr);
     jest.spyOn(PUMP_SDK, "decodeSocialFeePdaCreatedEvent").mockImplementation(throwErr);
     jest.spyOn(PUMP_SDK, "decodeSocialFeePdaClaimedEvent").mockImplementation(throwErr);
+    jest.spyOn(PUMP_SDK, "decodeAmmAdminSetCoinCreatorEvent").mockImplementation(throwErr);
+    jest.spyOn(PUMP_SDK, "decodeAmmAdminUpdateTokenIncentivesEvent").mockImplementation(throwErr);
+    jest.spyOn(PUMP_SDK, "decodeAmmClaimCashbackEvent").mockImplementation(throwErr);
+    jest.spyOn(PUMP_SDK, "decodeAmmClaimTokenIncentivesEvent").mockImplementation(throwErr);
+    jest.spyOn(PUMP_SDK, "decodeAmmCloseUserVolumeAccumulatorEvent").mockImplementation(throwErr);
+    jest.spyOn(PUMP_SDK, "decodeAmmCollectCoinCreatorFeeEvent").mockImplementation(throwErr);
+    jest.spyOn(PUMP_SDK, "decodeAmmCreateConfigEvent").mockImplementation(throwErr);
+    jest.spyOn(PUMP_SDK, "decodeAmmDisableEvent").mockImplementation(throwErr);
+    jest.spyOn(PUMP_SDK, "decodeAmmExtendAccountEvent").mockImplementation(throwErr);
+    jest.spyOn(PUMP_SDK, "decodeAmmInitUserVolumeAccumulatorEvent").mockImplementation(throwErr);
+    jest.spyOn(PUMP_SDK, "decodeAmmMigratePoolCoinCreatorEvent").mockImplementation(throwErr);
+    jest.spyOn(PUMP_SDK, "decodeAmmReservedFeeRecipientsEvent").mockImplementation(throwErr);
+    jest.spyOn(PUMP_SDK, "decodeAmmSetBondingCurveCoinCreatorEvent").mockImplementation(throwErr);
+    jest.spyOn(PUMP_SDK, "decodeAmmSetMetaplexCoinCreatorEvent").mockImplementation(throwErr);
+    jest.spyOn(PUMP_SDK, "decodeAmmSyncUserVolumeAccumulatorEvent").mockImplementation(throwErr);
+    jest.spyOn(PUMP_SDK, "decodeAmmUpdateAdminEvent").mockImplementation(throwErr);
+    jest.spyOn(PUMP_SDK, "decodeAmmUpdateFeeConfigEvent").mockImplementation(throwErr);
+    jest.spyOn(PUMP_SDK, "decodeFeesInitializeFeeConfigEvent").mockImplementation(throwErr);
+    jest.spyOn(PUMP_SDK, "decodeFeesInitializeFeeProgramGlobalEvent").mockImplementation(throwErr);
+    jest.spyOn(PUMP_SDK, "decodeFeesSetAuthorityEvent").mockImplementation(throwErr);
+    jest.spyOn(PUMP_SDK, "decodeFeesSetClaimRateLimitEvent").mockImplementation(throwErr);
+    jest.spyOn(PUMP_SDK, "decodeFeesSetDisableFlagsEvent").mockImplementation(throwErr);
+    jest.spyOn(PUMP_SDK, "decodeFeesSetSocialClaimAuthorityEvent").mockImplementation(throwErr);
+    jest.spyOn(PUMP_SDK, "decodeFeesUpdateAdminEvent").mockImplementation(throwErr);
+    jest.spyOn(PUMP_SDK, "decodeFeesUpdateFeeConfigEvent").mockImplementation(throwErr);
+    jest.spyOn(PUMP_SDK, "decodeFeesUpsertFeeTiersEvent").mockImplementation(throwErr);
 
     const sdk = makeSdk({
       getTransaction: jest.fn().mockResolvedValue({
@@ -546,6 +572,89 @@ describe("OnlinePumpSdk.parseTransactionEvents", () => {
     const events = await sdk.parseTransactionEvents("fakeSig");
     expect(events[0]?.type).toBe("createFeeSharingConfig");
     jest.restoreAllMocks();
+  });
+});
+
+// ─── fetchBondingCurveSummary / fetchGraduationProgress / fetchTokenPrice ────
+
+describe("OnlinePumpSdk analytics wrappers", () => {
+  function makeAnalyticsSdk(bc = makeBondingCurve()) {
+    const sdk = makeSdk();
+    jest.spyOn(sdk, "fetchGlobal").mockResolvedValue(makeGlobal());
+    jest.spyOn(sdk, "fetchFeeConfig").mockResolvedValue(makeFeeConfig());
+    jest.spyOn(sdk, "fetchBondingCurve").mockResolvedValue(bc);
+    return sdk;
+  }
+
+  it("fetchBondingCurveSummary returns correct fields", async () => {
+    const bc = makeBondingCurve();
+    const sdk = makeAnalyticsSdk(bc);
+    const summary = await sdk.fetchBondingCurveSummary(MINT);
+
+    expect(summary.marketCap.gtn(0)).toBe(true);
+    expect(summary.progressBps).toBe(0);
+    expect(summary.isGraduated).toBe(false);
+    expect(summary.solNeededToGraduate.gtn(0)).toBe(true);
+    expect(summary.buyPricePerToken.gtn(0)).toBe(true);
+    expect(summary.sellPricePerToken.gtn(0)).toBe(true);
+    expect(summary.realSolReserves.eq(bc.realSolReserves)).toBe(true);
+    expect(summary.protocolFeeBps.gtn(0)).toBe(true);
+    expect(summary.isMayhemMode).toBe(false);
+  });
+
+  it("fetchBondingCurveSummary reflects isMayhemMode=true", async () => {
+    const sdk = makeAnalyticsSdk(makeBondingCurve({ isMayhemMode: true }));
+    const summary = await sdk.fetchBondingCurveSummary(MINT);
+    expect(summary.isMayhemMode).toBe(true);
+  });
+
+  it("fetchGraduationProgress returns 0 bps for fresh curve", async () => {
+    const sdk = makeAnalyticsSdk();
+    const progress = await sdk.fetchGraduationProgress(MINT);
+    expect(progress.progressBps).toBe(0);
+    expect(progress.isGraduated).toBe(false);
+    expect(progress.solNeededToGraduate.gtn(0)).toBe(true);
+  });
+
+  it("fetchGraduationProgress returns 10000 bps for graduated curve", async () => {
+    const sdk = makeAnalyticsSdk(makeBondingCurve({ complete: true, realTokenReserves: new BN(0), realSolReserves: new BN("85000000000") }));
+    const progress = await sdk.fetchGraduationProgress(MINT);
+    expect(progress.progressBps).toBe(10_000);
+    expect(progress.isGraduated).toBe(true);
+    expect(progress.solNeededToGraduate.isZero()).toBe(true);
+  });
+
+  it("fetchTokenPrice returns buy > sell and positive marketCap", async () => {
+    const sdk = makeAnalyticsSdk();
+    const price = await sdk.fetchTokenPrice(MINT);
+    expect(price.buyPricePerToken.gtn(0)).toBe(true);
+    expect(price.sellPricePerToken.gtn(0)).toBe(true);
+    expect(price.marketCap.gtn(0)).toBe(true);
+    expect(price.buyPricePerToken.gt(price.sellPricePerToken)).toBe(true);
+    expect(price.isGraduated).toBe(false);
+  });
+
+  it("fetchBuyPriceImpact returns positive impactBps for a real buy", async () => {
+    const sdk = makeAnalyticsSdk();
+    const impact = await sdk.fetchBuyPriceImpact(MINT, new BN("1000000000"));
+    expect(impact.impactBps).toBeGreaterThan(0);
+    expect(impact.outputAmount.gtn(0)).toBe(true);
+    expect(impact.priceAfter.gt(impact.priceBefore)).toBe(true);
+  });
+
+  it("fetchBuyPriceImpact returns 0 impactBps for zero sol", async () => {
+    const sdk = makeAnalyticsSdk();
+    const impact = await sdk.fetchBuyPriceImpact(MINT, new BN(0));
+    expect(impact.impactBps).toBe(0);
+    expect(impact.outputAmount.isZero()).toBe(true);
+  });
+
+  it("fetchSellPriceImpact returns positive impactBps for a real sell", async () => {
+    const sdk = makeAnalyticsSdk();
+    const impact = await sdk.fetchSellPriceImpact(MINT, new BN("1000000000000"));
+    expect(impact.impactBps).toBeGreaterThan(0);
+    expect(impact.outputAmount.gtn(0)).toBe(true);
+    expect(impact.priceAfter.lt(impact.priceBefore)).toBe(true);
   });
 });
 

@@ -115,6 +115,32 @@ import {
   UserVolumeAccumulator,
   UserVolumeAccumulatorTotalStats,
   WithdrawEvent,
+  AmmAdminSetCoinCreatorEvent,
+  AmmAdminUpdateTokenIncentivesEvent,
+  AmmClaimCashbackEvent,
+  AmmClaimTokenIncentivesEvent,
+  AmmCloseUserVolumeAccumulatorEvent,
+  AmmCollectCoinCreatorFeeEvent,
+  AmmCreateConfigEvent,
+  AmmDisableEvent,
+  AmmExtendAccountEvent,
+  AmmInitUserVolumeAccumulatorEvent,
+  AmmMigratePoolCoinCreatorEvent,
+  AmmReservedFeeRecipientsEvent,
+  AmmSetBondingCurveCoinCreatorEvent,
+  AmmSetMetaplexCoinCreatorEvent,
+  AmmSyncUserVolumeAccumulatorEvent,
+  AmmUpdateAdminEvent,
+  AmmUpdateFeeConfigEvent,
+  FeesInitializeFeeConfigEvent,
+  FeesInitializeFeeProgramGlobalEvent,
+  FeesSetAuthorityEvent,
+  FeesSetClaimRateLimitEvent,
+  FeesSetDisableFlagsEvent,
+  FeesSetSocialClaimAuthorityEvent,
+  FeesUpdateAdminEvent,
+  FeesUpdateFeeConfigEvent,
+  FeesUpsertFeeTiersEvent,
 } from "./state";
 import { currentDayTokens, totalUnclaimedTokens } from "./tokenIncentives";
 import {
@@ -2329,6 +2355,320 @@ export class OnlinePumpSdk {
     const state = await this.pumpAmmSdk.liquiditySolanaState(poolKey, user);
     return PUMP_AMM_SDK.withdrawInstructions(state, lpAmount, slippage * 100);
   }
+
+  // ─── Token Creation ──────────────────────────────────────────────────
+
+  /**
+   * Create a new V2 token (Token-2022). Returns a single instruction.
+   *
+   * @param mint - Mint keypair public key (must be a fresh, unused address)
+   * @param name - Token name (≤32 chars)
+   * @param symbol - Token symbol (≤10 chars)
+   * @param uri - Off-chain metadata URI
+   * @param creator - Creator wallet (receives creator fees)
+   * @param user - Payer wallet (signs the tx)
+   * @param mayhemMode - Enable mayhem mode mechanics (default: false)
+   * @param cashback - Enable cashback rewards on this token (default: false)
+   */
+  async createV2Instruction({
+    mint,
+    name,
+    symbol,
+    uri,
+    creator,
+    user,
+    mayhemMode = false,
+    cashback = false,
+  }: {
+    mint: PublicKey;
+    name: string;
+    symbol: string;
+    uri: string;
+    creator: PublicKey;
+    user: PublicKey;
+    mayhemMode?: boolean;
+    cashback?: boolean;
+  }): Promise<TransactionInstruction> {
+    return PUMP_SDK.createV2Instruction({
+      mint,
+      name,
+      symbol,
+      uri,
+      creator,
+      user,
+      mayhemMode,
+      cashback,
+    });
+  }
+
+  /**
+   * Create a V2 token AND buy in a single transaction.
+   * Fetches global state internally so the caller doesn't need to.
+   *
+   * @param mint - Fresh mint public key
+   * @param name - Token name
+   * @param symbol - Token symbol
+   * @param uri - Metadata URI
+   * @param creator - Creator wallet
+   * @param user - Payer + buyer wallet
+   * @param solAmount - SOL to spend on the initial buy (lamports)
+   * @param mayhemMode - Enable mayhem mode (default: false)
+   * @param cashback - Enable cashback (default: false)
+   */
+  async createV2AndBuyInstructions({
+    mint,
+    name,
+    symbol,
+    uri,
+    creator,
+    user,
+    solAmount,
+    mayhemMode = false,
+    cashback = false,
+  }: {
+    mint: PublicKey;
+    name: string;
+    symbol: string;
+    uri: string;
+    creator: PublicKey;
+    user: PublicKey;
+    solAmount: BN;
+    mayhemMode?: boolean;
+    cashback?: boolean;
+  }): Promise<TransactionInstruction[]> {
+    const [global, feeConfig] = await Promise.all([
+      this.fetchGlobal(),
+      this.fetchFeeConfig(),
+    ]);
+
+    // Compute expected tokens at the initial bonding curve state
+    const initialBc: BondingCurve = {
+      virtualTokenReserves: global.initialVirtualTokenReserves,
+      virtualSolReserves: global.initialVirtualSolReserves,
+      realTokenReserves: global.initialRealTokenReserves,
+      realSolReserves: new BN(0),
+      tokenTotalSupply: global.tokenTotalSupply,
+      complete: false,
+      creator,
+      isMayhemMode: mayhemMode,
+      isCashbackCoin: cashback,
+    };
+    const tokensOut = getBuyTokenAmountFromSolAmount({
+      global,
+      feeConfig,
+      mintSupply: global.tokenTotalSupply,
+      bondingCurve: initialBc,
+      amount: solAmount,
+    });
+
+    return PUMP_SDK.createV2AndBuyInstructions({
+      global,
+      mint,
+      name,
+      symbol,
+      uri,
+      creator,
+      user,
+      amount: tokensOut,
+      solAmount,
+      mayhemMode,
+      cashback,
+    });
+  }
+
+  // ─── Bonding-Curve Migration ─────────────────────────────────────────
+
+  /**
+   * Build instructions to migrate a fully-funded bonding curve to a PumpAMM pool.
+   * Fetches the global authority and detects the token program automatically.
+   *
+   * @param mint - Token mint address
+   * @param user - Wallet paying for the migration
+   */
+  async migrateInstructions({
+    mint,
+    user,
+  }: {
+    mint: PublicKey;
+    user: PublicKey;
+  }): Promise<TransactionInstruction[]> {
+    const [global, mintInfo] = await Promise.all([
+      this.fetchGlobal(),
+      this.connection.getAccountInfo(mint),
+    ]);
+    const tokenProgram = mintInfo?.owner.equals(TOKEN_2022_PROGRAM_ID)
+      ? TOKEN_2022_PROGRAM_ID
+      : TOKEN_PROGRAM_ID;
+    const ix = await PUMP_SDK.migrateInstruction({
+      withdrawAuthority: global.withdrawAuthority,
+      mint,
+      user,
+      tokenProgram,
+    });
+    return [ix];
+  }
+
+  // ─── Cashback ────────────────────────────────────────────────────────
+
+  /**
+   * Build instructions to claim accumulated cashback for the bonding curve program.
+   *
+   * @param user - Wallet claiming the cashback
+   */
+  async claimCashbackInstructions(user: PublicKey): Promise<TransactionInstruction[]> {
+    return [await PUMP_SDK.claimCashbackInstruction({ user })];
+  }
+
+  /**
+   * Build instructions to claim cashback from BOTH bonding curve and AMM programs.
+   *
+   * @param user - Wallet claiming the cashback
+   */
+  async claimCashbackBothPrograms(user: PublicKey): Promise<TransactionInstruction[]> {
+    const [bcIx, ammIx] = await Promise.all([
+      PUMP_SDK.claimCashbackInstruction({ user }),
+      PUMP_SDK.ammClaimCashbackInstruction({ user }),
+    ]);
+    return [bcIx, ammIx];
+  }
+
+  // ─── Fee Sharing ─────────────────────────────────────────────────────
+
+  /**
+   * Build instructions to create a fee-sharing config for a token.
+   * Auto-detects whether the token has graduated and includes the AMM pool
+   * if it has.
+   *
+   * @param mint - Token mint
+   * @param creator - Current creator (signer + payer)
+   */
+  async createFeeSharingConfigInstructions({
+    mint,
+    creator,
+  }: {
+    mint: PublicKey;
+    creator: PublicKey;
+  }): Promise<TransactionInstruction[]> {
+    const poolAddress = canonicalPumpPoolPda(mint);
+    const poolInfo = await this.connection.getAccountInfo(poolAddress);
+    const ix = await PUMP_SDK.createFeeSharingConfig({
+      creator,
+      mint,
+      pool: poolInfo ? poolAddress : null,
+    });
+    return [ix];
+  }
+
+  /**
+   * Build instructions to update fee shares for a token's sharing config.
+   *
+   * Fetches current shareholders from the on-chain config so the caller only
+   * needs to supply the new shareholder list.
+   *
+   * @param mint - Token mint
+   * @param authority - Sharing config authority (signer)
+   * @param newShareholders - New shareholder list (must sum to 10,000 bps)
+   */
+  async updateFeeSharesInstructions({
+    mint,
+    authority,
+    newShareholders,
+  }: {
+    mint: PublicKey;
+    authority: PublicKey;
+    newShareholders: Array<{ address: PublicKey; shareBps: number }>;
+  }): Promise<TransactionInstruction[]> {
+    const config = await this.fetchSharingConfig(mint);
+    const curShareholders = (config as any).shareholders.map(
+      (s: { address: PublicKey }) => s.address,
+    );
+    const ix = await PUMP_SDK.updateFeeShares({
+      authority,
+      mint,
+      currentShareholders: curShareholders,
+      newShareholders,
+    });
+    return [ix];
+  }
+
+  // ─── Social Fees ─────────────────────────────────────────────────────
+
+  /**
+   * Build instructions to create a social fee PDA (GitHub user-id linked).
+   *
+   * @param payer - Wallet paying for the PDA rent
+   * @param userId - GitHub user ID (numeric, from `api.github.com/users/<name>`)
+   * @param platform - Platform enum (only `Platform.GitHub` is currently supported)
+   */
+  async createSocialFeePdaInstructions({
+    payer,
+    userId,
+    platform,
+  }: {
+    payer: PublicKey;
+    userId: string;
+    platform: number;
+  }): Promise<TransactionInstruction[]> {
+    const ix = await PUMP_SDK.createSocialFeePdaInstruction({
+      payer,
+      userId,
+      platform,
+    });
+    return [ix];
+  }
+
+  /**
+   * Build instructions to claim accumulated fees from a social fee PDA.
+   * Fetches the on-chain claim authority automatically.
+   *
+   * @param recipient - Wallet receiving the claimed fees
+   * @param userId - GitHub user ID
+   * @param platform - Platform enum
+   */
+  async claimSocialFeePdaInstructions({
+    recipient,
+    userId,
+    platform,
+  }: {
+    recipient: PublicKey;
+    userId: string;
+    platform: number;
+  }): Promise<TransactionInstruction[]> {
+    const feeProgramGlobal = await this.fetchFeeProgramGlobal();
+    const ix = await PUMP_SDK.claimSocialFeePdaInstruction({
+      recipient,
+      socialClaimAuthority: feeProgramGlobal.socialClaimAuthority,
+      userId,
+      platform,
+    });
+    return [ix];
+  }
+
+  // ─── Creator Management ──────────────────────────────────────────────
+
+  /**
+   * Migrate a bonding curve's creator field to match its fee-sharing config.
+   * Use this after creating a fee sharing config to align the on-chain creator.
+   *
+   * @param mint - Token mint
+   */
+  async migrateBondingCurveCreatorInstructions(
+    mint: PublicKey,
+  ): Promise<TransactionInstruction[]> {
+    return [await PUMP_SDK.migrateBondingCurveCreatorInstruction({ mint })];
+  }
+
+  /**
+   * Update the Metaplex metadata creator for a graduated token to match
+   * the bonding curve's current creator field.
+   *
+   * @param mint - Token mint
+   */
+  async setMetaplexCreatorInstructions(
+    mint: PublicKey,
+  ): Promise<TransactionInstruction[]> {
+    return [await PUMP_SDK.setMetaplexCreatorInstruction({ mint })];
+  }
 }
 
 export type {
@@ -2435,7 +2775,35 @@ export type PumpEvent =
   | { type: "revokeFeeSharingAuthority"; data: RevokeFeeSharingAuthorityEvent }
   | { type: "transferFeeSharingAuthority"; data: TransferFeeSharingAuthorityEvent }
   | { type: "socialFeePdaCreated"; data: SocialFeePdaCreatedEvent }
-  | { type: "socialFeePdaClaimed"; data: SocialFeePdaClaimedEvent };
+  | { type: "socialFeePdaClaimed"; data: SocialFeePdaClaimedEvent }
+  // ── PumpAMM extra ────────────────────────────────────────────────────
+  | { type: "ammAdminSetCoinCreator"; data: AmmAdminSetCoinCreatorEvent }
+  | { type: "ammAdminUpdateTokenIncentives"; data: AmmAdminUpdateTokenIncentivesEvent }
+  | { type: "ammClaimCashback"; data: AmmClaimCashbackEvent }
+  | { type: "ammClaimTokenIncentives"; data: AmmClaimTokenIncentivesEvent }
+  | { type: "ammCloseUserVolumeAccumulator"; data: AmmCloseUserVolumeAccumulatorEvent }
+  | { type: "ammCollectCoinCreatorFee"; data: AmmCollectCoinCreatorFeeEvent }
+  | { type: "ammCreateConfig"; data: AmmCreateConfigEvent }
+  | { type: "ammDisable"; data: AmmDisableEvent }
+  | { type: "ammExtendAccount"; data: AmmExtendAccountEvent }
+  | { type: "ammInitUserVolumeAccumulator"; data: AmmInitUserVolumeAccumulatorEvent }
+  | { type: "ammMigratePoolCoinCreator"; data: AmmMigratePoolCoinCreatorEvent }
+  | { type: "ammReservedFeeRecipients"; data: AmmReservedFeeRecipientsEvent }
+  | { type: "ammSetBondingCurveCoinCreator"; data: AmmSetBondingCurveCoinCreatorEvent }
+  | { type: "ammSetMetaplexCoinCreator"; data: AmmSetMetaplexCoinCreatorEvent }
+  | { type: "ammSyncUserVolumeAccumulator"; data: AmmSyncUserVolumeAccumulatorEvent }
+  | { type: "ammUpdateAdmin"; data: AmmUpdateAdminEvent }
+  | { type: "ammUpdateFeeConfig"; data: AmmUpdateFeeConfigEvent }
+  // ── PumpFees extra ────────────────────────────────────────────────────
+  | { type: "feesInitializeFeeConfig"; data: FeesInitializeFeeConfigEvent }
+  | { type: "feesInitializeFeeProgramGlobal"; data: FeesInitializeFeeProgramGlobalEvent }
+  | { type: "feesSetAuthority"; data: FeesSetAuthorityEvent }
+  | { type: "feesSetClaimRateLimit"; data: FeesSetClaimRateLimitEvent }
+  | { type: "feesSetDisableFlags"; data: FeesSetDisableFlagsEvent }
+  | { type: "feesSetSocialClaimAuthority"; data: FeesSetSocialClaimAuthorityEvent }
+  | { type: "feesUpdateAdmin"; data: FeesUpdateAdminEvent }
+  | { type: "feesUpdateFeeConfig"; data: FeesUpdateFeeConfigEvent }
+  | { type: "feesUpsertFeeTiers"; data: FeesUpsertFeeTiersEvent };
 
 function tryDecodePumpEvent(data: Buffer): PumpEvent | null {
   const decoders: Array<() => PumpEvent | null> = [
@@ -2469,6 +2837,34 @@ function tryDecodePumpEvent(data: Buffer): PumpEvent | null {
     () => { const d = PUMP_SDK.decodeTransferFeeSharingAuthorityEvent(data); return d ? { type: "transferFeeSharingAuthority", data: d } : null; },
     () => { const d = PUMP_SDK.decodeSocialFeePdaCreatedEvent(data); return d ? { type: "socialFeePdaCreated", data: d } : null; },
     () => { const d = PUMP_SDK.decodeSocialFeePdaClaimedEvent(data); return d ? { type: "socialFeePdaClaimed", data: d } : null; },
+    // PumpAMM extra
+    () => { const d = PUMP_SDK.decodeAmmAdminSetCoinCreatorEvent(data); return d ? { type: "ammAdminSetCoinCreator", data: d } : null; },
+    () => { const d = PUMP_SDK.decodeAmmAdminUpdateTokenIncentivesEvent(data); return d ? { type: "ammAdminUpdateTokenIncentives", data: d } : null; },
+    () => { const d = PUMP_SDK.decodeAmmClaimCashbackEvent(data); return d ? { type: "ammClaimCashback", data: d } : null; },
+    () => { const d = PUMP_SDK.decodeAmmClaimTokenIncentivesEvent(data); return d ? { type: "ammClaimTokenIncentives", data: d } : null; },
+    () => { const d = PUMP_SDK.decodeAmmCloseUserVolumeAccumulatorEvent(data); return d ? { type: "ammCloseUserVolumeAccumulator", data: d } : null; },
+    () => { const d = PUMP_SDK.decodeAmmCollectCoinCreatorFeeEvent(data); return d ? { type: "ammCollectCoinCreatorFee", data: d } : null; },
+    () => { const d = PUMP_SDK.decodeAmmCreateConfigEvent(data); return d ? { type: "ammCreateConfig", data: d } : null; },
+    () => { const d = PUMP_SDK.decodeAmmDisableEvent(data); return d ? { type: "ammDisable", data: d } : null; },
+    () => { const d = PUMP_SDK.decodeAmmExtendAccountEvent(data); return d ? { type: "ammExtendAccount", data: d } : null; },
+    () => { const d = PUMP_SDK.decodeAmmInitUserVolumeAccumulatorEvent(data); return d ? { type: "ammInitUserVolumeAccumulator", data: d } : null; },
+    () => { const d = PUMP_SDK.decodeAmmMigratePoolCoinCreatorEvent(data); return d ? { type: "ammMigratePoolCoinCreator", data: d } : null; },
+    () => { const d = PUMP_SDK.decodeAmmReservedFeeRecipientsEvent(data); return d ? { type: "ammReservedFeeRecipients", data: d } : null; },
+    () => { const d = PUMP_SDK.decodeAmmSetBondingCurveCoinCreatorEvent(data); return d ? { type: "ammSetBondingCurveCoinCreator", data: d } : null; },
+    () => { const d = PUMP_SDK.decodeAmmSetMetaplexCoinCreatorEvent(data); return d ? { type: "ammSetMetaplexCoinCreator", data: d } : null; },
+    () => { const d = PUMP_SDK.decodeAmmSyncUserVolumeAccumulatorEvent(data); return d ? { type: "ammSyncUserVolumeAccumulator", data: d } : null; },
+    () => { const d = PUMP_SDK.decodeAmmUpdateAdminEvent(data); return d ? { type: "ammUpdateAdmin", data: d } : null; },
+    () => { const d = PUMP_SDK.decodeAmmUpdateFeeConfigEvent(data); return d ? { type: "ammUpdateFeeConfig", data: d } : null; },
+    // PumpFees extra
+    () => { const d = PUMP_SDK.decodeFeesInitializeFeeConfigEvent(data); return d ? { type: "feesInitializeFeeConfig", data: d } : null; },
+    () => { const d = PUMP_SDK.decodeFeesInitializeFeeProgramGlobalEvent(data); return d ? { type: "feesInitializeFeeProgramGlobal", data: d } : null; },
+    () => { const d = PUMP_SDK.decodeFeesSetAuthorityEvent(data); return d ? { type: "feesSetAuthority", data: d } : null; },
+    () => { const d = PUMP_SDK.decodeFeesSetClaimRateLimitEvent(data); return d ? { type: "feesSetClaimRateLimit", data: d } : null; },
+    () => { const d = PUMP_SDK.decodeFeesSetDisableFlagsEvent(data); return d ? { type: "feesSetDisableFlags", data: d } : null; },
+    () => { const d = PUMP_SDK.decodeFeesSetSocialClaimAuthorityEvent(data); return d ? { type: "feesSetSocialClaimAuthority", data: d } : null; },
+    () => { const d = PUMP_SDK.decodeFeesUpdateAdminEvent(data); return d ? { type: "feesUpdateAdmin", data: d } : null; },
+    () => { const d = PUMP_SDK.decodeFeesUpdateFeeConfigEvent(data); return d ? { type: "feesUpdateFeeConfig", data: d } : null; },
+    () => { const d = PUMP_SDK.decodeFeesUpsertFeeTiersEvent(data); return d ? { type: "feesUpsertFeeTiers", data: d } : null; },
   ];
   for (const decode of decoders) {
     try {
