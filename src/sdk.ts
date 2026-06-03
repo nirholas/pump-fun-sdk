@@ -520,6 +520,9 @@ export class PumpSdk {
     solAmount,
     mayhemMode,
     cashback = false,
+    quoteMint = NATIVE_MINT,
+    quoteTokenProgram = TOKEN_PROGRAM_ID,
+    quoteAmount,
   }: {
     global: Global;
     mint: PublicKey;
@@ -532,6 +535,9 @@ export class PumpSdk {
     solAmount: BN;
     mayhemMode: boolean;
     cashback?: boolean;
+    quoteMint?: PublicKey;
+    quoteTokenProgram?: PublicKey;
+    quoteAmount?: BN;
   }): Promise<TransactionInstruction[]> {
     const associatedUser = getAssociatedTokenAddressSync(
       mint,
@@ -539,7 +545,8 @@ export class PumpSdk {
       true,
       TOKEN_2022_PROGRAM_ID,
     );
-    return [
+
+    const instructions: TransactionInstruction[] = [
       await this.createV2Instruction({
         mint,
         name,
@@ -549,6 +556,8 @@ export class PumpSdk {
         user,
         mayhemMode,
         cashback,
+        quoteMint,
+        quoteTokenProgram,
       }),
       await this.extendAccountInstruction({
         account: bondingCurvePda(mint),
@@ -561,6 +570,34 @@ export class PumpSdk {
         mint,
         TOKEN_2022_PROGRAM_ID,
       ),
+    ];
+
+    if (!quoteMint.equals(NATIVE_MINT)) {
+      // buy_v2 does not init the user's quote ATA, so the dev-buy would fail
+      // without it. The base Token-2022 ATA is already created above.
+      instructions.push(
+        createAssociatedTokenAccountIdempotentInstruction(
+          user,
+          getAssociatedTokenAddressSync(quoteMint, user, true, quoteTokenProgram),
+          user,
+          quoteMint,
+          quoteTokenProgram,
+        ),
+        await this.buyV2({
+          user,
+          mint,
+          creator,
+          amount,
+          quoteAmount: quoteAmount ?? solAmount,
+          quoteMint,
+          quoteTokenProgram,
+          feeRecipient: getFeeRecipient(global, mayhemMode),
+        }),
+      );
+      return instructions;
+    }
+
+    instructions.push(
       await this.buyInstruction({
         global,
         mint,
@@ -573,7 +610,8 @@ export class PumpSdk {
         tokenProgram: TOKEN_2022_PROGRAM_ID,
         mayhemMode,
       }),
-    ];
+    );
+    return instructions;
   }
 
   /**

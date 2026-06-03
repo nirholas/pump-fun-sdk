@@ -240,3 +240,32 @@ describe("buyInstructions routing (USDC)", () => {
     ).toBe(true);
   });
 });
+
+describe("createV2AndBuyInstructions", () => {
+  const mint = new Keypair().publicKey;
+  const creator = new Keypair().publicKey;
+  const user = new Keypair().publicKey;
+  const common = {
+    global: makeGlobal(), mint, name: "n", symbol: "n", uri: "u",
+    creator, user, amount: new BN("15000000000000"), mayhemMode: false,
+  };
+  it("SOL: 4 instructions, create_v2 has 16 keys, buy leg is legacy buy", async () => {
+    const ixs = await PUMP_SDK.createV2AndBuyInstructions({ ...common, solAmount: new BN("430000000") });
+    expect(ixs).toHaveLength(4);
+    expect(ixs[0]!.keys).toHaveLength(16);
+    expect([...ixs[3]!.data.slice(0, 8)]).toEqual([102, 6, 61, 18, 1, 218, 235, 234]);
+  });
+  it("USDC: create_v2 has 19 keys; user USDC ATA created; buy leg is buy_v2 capped by quoteAmount", async () => {
+    const ixs = await PUMP_SDK.createV2AndBuyInstructions({
+      ...common, solAmount: new BN(0),
+      quoteMint: USDC_MINT, quoteTokenProgram: TOKEN_PROGRAM_ID, quoteAmount: new BN("15000000"),
+    });
+    expect(ixs[0]!.keys).toHaveLength(19);
+    const buyLeg = ixs.at(-1)!;
+    expect([...buyLeg.data.slice(0, 8)]).toEqual([184, 23, 238, 97, 103, 197, 211, 61]);
+    expect(buyLeg.keys).toHaveLength(27);
+    // the user's USDC ATA is created (associated-token-program ix targeting the user's USDC ATA)
+    const userUsdcAta = getAssociatedTokenAddressSync(USDC_MINT, user, true, TOKEN_PROGRAM_ID);
+    expect(ixs.some((ix) => ix.programId.equals(ASSOCIATED_TOKEN_PROGRAM_ID) && ix.keys.some((k) => k.pubkey.equals(userUsdcAta)))).toBe(true);
+  });
+});
