@@ -124,3 +124,27 @@ describe("buyV2 builder (USDC)", () => {
     expect([...ix.data.slice(0, 8)]).toEqual([184, 23, 238, 97, 103, 197, 211, 61]);
   });
 });
+
+describe("getBuyInstructionRaw routing", () => {
+  const mint = new Keypair().publicKey;
+  const creator = new Keypair().publicKey;
+  const user = new Keypair().publicKey;
+
+  it("SOL (default): emits legacy buy (disc 0x66063d12), unchanged", async () => {
+    const ix = await PUMP_SDK.getBuyInstructionRaw({
+      user, mint, creator, amount: new BN(1), solAmount: new BN(1),
+      feeRecipient: getFeeRecipient(makeGlobal(), false),
+    });
+    expect([...ix.data.slice(0, 8)]).toEqual([102, 6, 61, 18, 1, 218, 235, 234]);
+    expect(ix.keys.at(-1)!.isWritable).toBe(true); // breaking fee recipient appended last
+  });
+  it("USDC: routes to buy_v2 (disc 0xb817ee…)", async () => {
+    const ix = await PUMP_SDK.getBuyInstructionRaw({
+      user, mint, creator, amount: new BN("15000000000000"), solAmount: new BN("15000000"),
+      feeRecipient: getFeeRecipient(makeGlobal(), false),
+      quoteMint: USDC_MINT, quoteTokenProgram: TOKEN_PROGRAM_ID,
+    });
+    expect([...ix.data.slice(0, 8)]).toEqual([184, 23, 238, 97, 103, 197, 211, 61]);
+    expect(ix.keys).toHaveLength(27);
+  });
+});

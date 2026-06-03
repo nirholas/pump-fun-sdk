@@ -397,6 +397,8 @@ export class PumpSdk {
     solAmount,
     slippage,
     tokenProgram = TOKEN_PROGRAM_ID,
+    quoteMint = NATIVE_MINT,
+    quoteTokenProgram = TOKEN_PROGRAM_ID,
   }: {
     global: Global;
     bondingCurveAccountInfo: AccountInfo<Buffer>;
@@ -408,7 +410,27 @@ export class PumpSdk {
     solAmount: BN;
     slippage: number;
     tokenProgram: PublicKey;
+    quoteMint?: PublicKey;
+    quoteTokenProgram?: PublicKey;
   }): Promise<TransactionInstruction[]> {
+    // Non-native quote (e.g. USDC) routes to buy_v2, which builds its own
+    // accounts (and uses TOKEN_2022 for the base mint). It does not need the
+    // legacy extendAccount / base-ATA-creation setup, so branch before it.
+    if (!quoteMint.equals(NATIVE_MINT)) {
+      return [
+        await this.buyV2({
+          user,
+          mint,
+          creator: bondingCurve.creator,
+          amount,
+          quoteAmount: solAmount,
+          quoteMint,
+          quoteTokenProgram,
+          feeRecipient: getFeeRecipient(global, bondingCurve.isMayhemMode),
+        }),
+      ];
+    }
+
     const instructions: TransactionInstruction[] = [];
 
     if (bondingCurveAccountInfo.data.length < BONDING_CURVE_NEW_SIZE) {
@@ -588,6 +610,8 @@ export class PumpSdk {
     slippage,
     tokenProgram = TOKEN_PROGRAM_ID,
     mayhemMode = false,
+    quoteMint = NATIVE_MINT,
+    quoteTokenProgram = TOKEN_PROGRAM_ID,
   }: {
     global: Global;
     mint: PublicKey;
@@ -599,7 +623,24 @@ export class PumpSdk {
     slippage: number;
     tokenProgram: PublicKey;
     mayhemMode: boolean;
+    quoteMint?: PublicKey;
+    quoteTokenProgram?: PublicKey;
   }) {
+    // Non-native quote (e.g. USDC) routes to buy_v2. solAmount is the max quote
+    // cost the caller already capped; pass it straight as quoteAmount (no legacy
+    // slippage math).
+    if (!quoteMint.equals(NATIVE_MINT)) {
+      return await this.buyV2({
+        user,
+        mint,
+        creator,
+        amount,
+        quoteAmount: solAmount,
+        quoteMint,
+        quoteTokenProgram,
+        feeRecipient: getFeeRecipient(global, mayhemMode),
+      });
+    }
     return await this.getBuyInstructionInternal({
       user,
       associatedUser,
@@ -868,6 +909,8 @@ export class PumpSdk {
     solAmount,
     feeRecipient = getStaticRandomFeeRecipient(),
     tokenProgram = TOKEN_PROGRAM_ID,
+    quoteMint = NATIVE_MINT,
+    quoteTokenProgram = TOKEN_PROGRAM_ID,
   }: {
     user: PublicKey;
     mint: PublicKey;
@@ -876,7 +919,23 @@ export class PumpSdk {
     solAmount: BN;
     feeRecipient: PublicKey;
     tokenProgram?: PublicKey;
+    quoteMint?: PublicKey;
+    quoteTokenProgram?: PublicKey;
   }): Promise<TransactionInstruction> {
+    // Non-native quote (e.g. USDC) routes to buy_v2; solAmount is the max quote
+    // cost (caller controls the cap), passed straight through as quoteAmount.
+    if (!quoteMint.equals(NATIVE_MINT)) {
+      return await this.buyV2({
+        user,
+        mint,
+        creator,
+        amount,
+        quoteAmount: solAmount,
+        quoteMint,
+        quoteTokenProgram,
+        feeRecipient,
+      });
+    }
     return await this.getBuyInstructionInternal({
       user,
       associatedUser: getAssociatedTokenAddressSync(
