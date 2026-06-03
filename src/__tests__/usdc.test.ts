@@ -1,7 +1,13 @@
-import { NATIVE_MINT, TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID } from "@solana/spl-token";
-import { Connection } from "@solana/web3.js";
+import {
+  NATIVE_MINT,
+  TOKEN_PROGRAM_ID,
+  TOKEN_2022_PROGRAM_ID,
+  getAssociatedTokenAddressSync,
+} from "@solana/spl-token";
+import { Connection, Keypair } from "@solana/web3.js";
 import { USDC_MINT, QUOTE_MINTS, isNativeQuote } from "../quoteMints";
-import { getPumpProgram } from "../sdk";
+import { getPumpProgram, PUMP_SDK } from "../sdk";
+import { bondingCurvePda } from "../pda";
 import pumpIdl from "../idl/pump.json";
 import {
   BUYBACK_FEE_RECIPIENTS,
@@ -59,5 +65,32 @@ describe("buyback fee recipients", () => {
       const picked = pickBuybackFeeRecipient();
       expect(BUYBACK_FEE_RECIPIENTS.some((p) => p.equals(picked))).toBe(true);
     }
+  });
+});
+
+describe("createV2Instruction quote mint", () => {
+  const mint = new Keypair().publicKey;
+  const creator = new Keypair().publicKey;
+  const user = new Keypair().publicKey;
+  const baseArgs = { mint, name: "n", symbol: "n", uri: "u", creator, user, mayhemMode: false };
+
+  it("SOL (default): exactly 16 accounts, no remaining accounts appended", async () => {
+    const ix = await PUMP_SDK.createV2Instruction(baseArgs);
+    expect(ix.keys).toHaveLength(16);
+  });
+  it("explicit NATIVE_MINT behaves like SOL (16 accounts)", async () => {
+    const ix = await PUMP_SDK.createV2Instruction({ ...baseArgs, quoteMint: NATIVE_MINT });
+    expect(ix.keys).toHaveLength(16);
+  });
+  it("USDC: appends exactly the 3 quote remaining accounts in order", async () => {
+    const ix = await PUMP_SDK.createV2Instruction({ ...baseArgs, quoteMint: USDC_MINT });
+    expect(ix.keys).toHaveLength(19);
+    const [r0, r1, r2] = ix.keys.slice(16);
+    expect(r0!.pubkey.equals(USDC_MINT)).toBe(true);
+    expect(r0!.isWritable).toBe(false);
+    expect(r1!.pubkey.equals(getAssociatedTokenAddressSync(USDC_MINT, bondingCurvePda(mint), true, TOKEN_PROGRAM_ID))).toBe(true);
+    expect(r1!.isWritable).toBe(true);
+    expect(r2!.pubkey.equals(TOKEN_PROGRAM_ID)).toBe(true);
+    expect(r2!.isWritable).toBe(false);
   });
 });

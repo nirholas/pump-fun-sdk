@@ -344,6 +344,8 @@ export class PumpSdk {
     user,
     mayhemMode,
     cashback = false,
+    quoteMint = NATIVE_MINT,
+    quoteTokenProgram = TOKEN_PROGRAM_ID,
   }: {
     mint: PublicKey;
     name: string;
@@ -353,7 +355,20 @@ export class PumpSdk {
     user: PublicKey;
     mayhemMode: boolean;
     cashback?: boolean;
+    quoteMint?: PublicKey;
+    quoteTokenProgram?: PublicKey;
   }): Promise<TransactionInstruction> {
+    const remaining = quoteMint.equals(NATIVE_MINT)
+      ? []
+      : [
+          { pubkey: quoteMint, isWritable: false, isSigner: false },
+          {
+            pubkey: getAssociatedTokenAddressSync(quoteMint, bondingCurvePda(mint), true, quoteTokenProgram),
+            isWritable: true,
+            isSigner: false,
+          },
+          { pubkey: quoteTokenProgram, isWritable: false, isSigner: false },
+        ];
     return await this.offlinePumpProgram.methods
       .createV2(name, symbol, uri, creator, mayhemMode, [cashback ?? false])
       .accountsPartial({
@@ -366,6 +381,7 @@ export class PumpSdk {
         mayhemState: getMayhemStatePda(mint),
         mayhemTokenVault: getTokenVaultPda(mint),
       })
+      .remainingAccounts(remaining)
       .instruction();
   }
 
