@@ -5,15 +5,18 @@ import {
   getAssociatedTokenAddressSync,
 } from "@solana/spl-token";
 import { Connection, Keypair } from "@solana/web3.js";
+import BN from "bn.js";
 import { USDC_MINT, QUOTE_MINTS, isNativeQuote } from "../quoteMints";
 import { getPumpProgram, PUMP_SDK } from "../sdk";
-import { bondingCurvePda } from "../pda";
+import { bondingCurvePda, creatorVaultPda } from "../pda";
 import pumpIdl from "../idl/pump.json";
 import {
   BUYBACK_FEE_RECIPIENTS,
   pickBuybackFeeRecipient,
   BREAKING_FEE_RECIPIENTS,
+  getFeeRecipient,
 } from "../fees";
+import { makeGlobal } from "./fixtures";
 
 describe("quoteMints", () => {
   it("exposes the canonical mainnet USDC mint (6 decimals, SPL Token program)", () => {
@@ -92,5 +95,32 @@ describe("createV2Instruction quote mint", () => {
     expect(r1!.isWritable).toBe(true);
     expect(r2!.pubkey.equals(TOKEN_PROGRAM_ID)).toBe(true);
     expect(r2!.isWritable).toBe(false);
+  });
+});
+
+describe("buyV2 builder (USDC)", () => {
+  const mint = new Keypair().publicKey;
+  const creator = new Keypair().publicKey;
+  const user = new Keypair().publicKey;
+
+  it("builds buy_v2 with 27 accounts, 2-arg data, USDC quote wiring", async () => {
+    const ix = await PUMP_SDK.buyV2({
+      user, mint, creator,
+      amount: new BN("15000000000000"),
+      quoteAmount: new BN("15000000"),
+      quoteMint: USDC_MINT,
+      quoteTokenProgram: TOKEN_PROGRAM_ID,
+      feeRecipient: getFeeRecipient(makeGlobal(), false),
+      buybackFeeRecipient: pickBuybackFeeRecipient(),
+    });
+    expect(ix.keys).toHaveLength(27);
+    expect(ix.keys[2]!.pubkey.equals(USDC_MINT)).toBe(true);
+    expect(ix.keys[3]!.pubkey.equals(TOKEN_2022_PROGRAM_ID)).toBe(true);
+    expect(ix.keys[4]!.pubkey.equals(TOKEN_PROGRAM_ID)).toBe(true);
+    expect(ix.keys[13]!.isSigner).toBe(true);
+    expect(ix.keys[12]!.pubkey.equals(getAssociatedTokenAddressSync(USDC_MINT, bondingCurvePda(mint), true, TOKEN_PROGRAM_ID))).toBe(true);
+    expect(ix.keys[16]!.pubkey.equals(creatorVaultPda(creator))).toBe(true);
+    expect(ix.data).toHaveLength(24);
+    expect([...ix.data.slice(0, 8)]).toEqual([184, 23, 238, 97, 103, 197, 211, 61]);
   });
 });

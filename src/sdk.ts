@@ -32,6 +32,7 @@ import {
   buildAmmBreakingFeeRecipientAccounts,
   getFeeRecipient,
   pickBreakingFeeRecipient,
+  pickBuybackFeeRecipient,
 } from "./fees";
 import { Pump } from "./idl/pump";
 import pumpIdl from "./idl/pump.json";
@@ -890,6 +891,67 @@ export class PumpSdk {
       amount,
       solAmount,
     });
+  }
+
+  /**
+   * Build a `buy_v2` instruction (V2 buy supporting non-native quote mints, e.g. USDC).
+   * For SOL-paired coins prefer the legacy `buy` path. `quoteAmount` is the max QUOTE
+   * cost in the quote mint's base units (USDC = 6dp), NOT lamports.
+   */
+  async buyV2({
+    user,
+    mint,
+    creator,
+    amount,
+    quoteAmount,
+    quoteMint = NATIVE_MINT,
+    quoteTokenProgram = TOKEN_PROGRAM_ID,
+    baseTokenProgram = TOKEN_2022_PROGRAM_ID,
+    feeRecipient,
+    buybackFeeRecipient = pickBuybackFeeRecipient(),
+  }: {
+    user: PublicKey;
+    mint: PublicKey;
+    creator: PublicKey;
+    amount: BN;
+    quoteAmount: BN;
+    quoteMint?: PublicKey;
+    quoteTokenProgram?: PublicKey;
+    baseTokenProgram?: PublicKey;
+    feeRecipient: PublicKey;
+    buybackFeeRecipient?: PublicKey;
+  }): Promise<TransactionInstruction> {
+    const creatorVault = creatorVaultPda(creator);
+    return await this.offlinePumpProgram.methods
+      .buyV2(amount, quoteAmount)
+      .accountsPartial({
+        baseMint: mint,
+        quoteMint,
+        baseTokenProgram,
+        quoteTokenProgram,
+        feeRecipient,
+        buybackFeeRecipient,
+        user,
+        // associated_base_user has no PDA metadata in the IDL, so Anchor cannot
+        // offline-resolve it: pass the user's base-mint ATA explicitly.
+        associatedBaseUser: getAssociatedTokenAddressSync(
+          mint,
+          user,
+          true,
+          baseTokenProgram,
+        ),
+        // creator_vault is seeded by bonding_curve.creator (an on-chain field
+        // Anchor cannot read offline), so we derive it from the passed creator.
+        creatorVault,
+        // associated_creator_vault depends on creator_vault; derive it too.
+        associatedCreatorVault: getAssociatedTokenAddressSync(
+          quoteMint,
+          creatorVault,
+          true,
+          quoteTokenProgram,
+        ),
+      })
+      .instruction();
   }
 
   private async getBuyInstructionInternal({
