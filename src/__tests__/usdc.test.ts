@@ -1,13 +1,14 @@
 import {
+  ASSOCIATED_TOKEN_PROGRAM_ID,
   NATIVE_MINT,
   TOKEN_PROGRAM_ID,
   TOKEN_2022_PROGRAM_ID,
   getAssociatedTokenAddressSync,
 } from "@solana/spl-token";
-import { Connection, Keypair } from "@solana/web3.js";
+import { AccountInfo, Connection, Keypair, PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
 import { USDC_MINT, QUOTE_MINTS, isNativeQuote } from "../quoteMints";
-import { getPumpProgram, PUMP_SDK } from "../sdk";
+import { getPumpProgram, PUMP_SDK, BONDING_CURVE_NEW_SIZE } from "../sdk";
 import { bondingCurvePda, creatorVaultPda } from "../pda";
 import pumpIdl from "../idl/pump.json";
 import {
@@ -16,7 +17,7 @@ import {
   BREAKING_FEE_RECIPIENTS,
   getFeeRecipient,
 } from "../fees";
-import { makeGlobal } from "./fixtures";
+import { makeGlobal, makeBondingCurve } from "./fixtures";
 
 describe("quoteMints", () => {
   it("exposes the canonical mainnet USDC mint (6 decimals, SPL Token program)", () => {
@@ -146,5 +147,96 @@ describe("getBuyInstructionRaw routing", () => {
     });
     expect([...ix.data.slice(0, 8)]).toEqual([184, 23, 238, 97, 103, 197, 211, 61]);
     expect(ix.keys).toHaveLength(27);
+  });
+});
+
+describe("buyInstructions routing (USDC)", () => {
+  const mint = new Keypair().publicKey;
+  const creator = new Keypair().publicKey;
+  const user = new Keypair().publicKey;
+
+  // A "new" bonding curve account (data >= BONDING_CURVE_NEW_SIZE) so the legacy
+  // path would not prepend extendAccount — though the USDC branch returns before
+  // that check anyway. Shape mirrors makeBcAccountInfo in onlineSdk.test.ts.
+  function makeBcAccountInfo(): AccountInfo<Buffer> {
+    return {
+      data: Buffer.alloc(BONDING_CURVE_NEW_SIZE),
+      executable: false,
+      lamports: 1_000_000,
+      owner: new PublicKey("6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P"),
+      rentEpoch: 0,
+    };
+  }
+
+  it("prepends user base + quote ATA creates and ends with buy_v2", async () => {
+    const ixs = await PUMP_SDK.buyInstructions({
+      global: makeGlobal(),
+      bondingCurveAccountInfo: makeBcAccountInfo(),
+      bondingCurve: makeBondingCurve({ creator, isMayhemMode: false }),
+      associatedUserAccountInfo: null,
+      mint,
+      user,
+      amount: new BN("15000000000000"),
+      solAmount: new BN("15000000"),
+      slippage: 1,
+      tokenProgram: TOKEN_PROGRAM_ID,
+      quoteMint: USDC_MINT,
+      quoteTokenProgram: TOKEN_PROGRAM_ID,
+    });
+
+    // Last instruction is buy_v2 (27 accounts, official discriminator).
+    const last = ixs.at(-1)!;
+    expect([...last.data.slice(0, 8)]).toEqual([184, 23, 238, 97, 103, 197, 211, 61]);
+    expect(last.keys).toHaveLength(27);
+
+    // At least 2 ATA-program create instructions precede it: the user's base
+    // Token-2022 ATA and the user's USDC quote ATA. Without these, a standalone
+    // USDC buy for a fresh wallet would fail.
+    const ataCreates = ixs.filter((ix) =>
+      ix.programId.equals(ASSOCIATED_TOKEN_PROGRAM_ID),
+    );
+    expect(ataCreates.length).toBeGreaterThanOrEqual(2);
+
+    // The base ATA create targets the user's Token-2022 ATA for the base mint.
+    const baseAta = getAssociatedTokenAddressSync(mint, user, true, TOKEN_2022_PROGRAM_ID);
+    expect(
+      ataCreates.some((ix) => ix.keys.some((k) => k.pubkey.equals(baseAta))),
+    ).toBe(true);
+
+    // The quote ATA create targets the user's USDC (SPL Token) ATA.
+    const quoteAta = getAssociatedTokenAddressSync(USDC_MINT, user, true, TOKEN_PROGRAM_ID);
+    expect(
+      ataCreates.some((ix) => ix.keys.some((k) => k.pubkey.equals(quoteAta))),
+    ).toBe(true);
+  });
+
+  it("still creates the quote ATA when the base ATA already exists", async () => {
+    const ixs = await PUMP_SDK.buyInstructions({
+      global: makeGlobal(),
+      bondingCurveAccountInfo: makeBcAccountInfo(),
+      bondingCurve: makeBondingCurve({ creator, isMayhemMode: false }),
+      // base ATA present -> skip base create, but quote create must remain.
+      associatedUserAccountInfo: makeBcAccountInfo(),
+      mint,
+      user,
+      amount: new BN("15000000000000"),
+      solAmount: new BN("15000000"),
+      slippage: 1,
+      tokenProgram: TOKEN_PROGRAM_ID,
+      quoteMint: USDC_MINT,
+      quoteTokenProgram: TOKEN_PROGRAM_ID,
+    });
+
+    const last = ixs.at(-1)!;
+    expect([...last.data.slice(0, 8)]).toEqual([184, 23, 238, 97, 103, 197, 211, 61]);
+
+    const quoteAta = getAssociatedTokenAddressSync(USDC_MINT, user, true, TOKEN_PROGRAM_ID);
+    const ataCreates = ixs.filter((ix) =>
+      ix.programId.equals(ASSOCIATED_TOKEN_PROGRAM_ID),
+    );
+    expect(ataCreates.length).toBeGreaterThanOrEqual(1);
+    expect(
+      ataCreates.some((ix) => ix.keys.some((k) => k.pubkey.equals(quoteAta))),
+    ).toBe(true);
   });
 });

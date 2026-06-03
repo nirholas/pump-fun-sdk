@@ -413,11 +413,40 @@ export class PumpSdk {
     quoteMint?: PublicKey;
     quoteTokenProgram?: PublicKey;
   }): Promise<TransactionInstruction[]> {
-    // Non-native quote (e.g. USDC) routes to buy_v2, which builds its own
-    // accounts (and uses TOKEN_2022 for the base mint). It does not need the
-    // legacy extendAccount / base-ATA-creation setup, so branch before it.
+    // Non-native quote (e.g. USDC) routes to buy_v2. buy_v2 does NOT init the
+    // user's base/quote ATAs (associated_base_user / associated_quote_user have
+    // no init in the IDL), so we must prepend idempotent ATA creates ourselves:
+    //   - base: Token-2022 ATA (create_v2 coins use TOKEN_2022 for the base
+    //     mint), gated on a missing account like the legacy native path.
+    //   - quote: the quote mint's ATA, always (the USDC ATA may not exist);
+    //     idempotent so it's a no-op when it already does.
     if (!quoteMint.equals(NATIVE_MINT)) {
+      const setupIxs: TransactionInstruction[] = [];
+
+      if (!associatedUserAccountInfo) {
+        setupIxs.push(
+          createAssociatedTokenAccountIdempotentInstruction(
+            user,
+            getAssociatedTokenAddressSync(mint, user, true, TOKEN_2022_PROGRAM_ID),
+            user,
+            mint,
+            TOKEN_2022_PROGRAM_ID,
+          ),
+        );
+      }
+
+      setupIxs.push(
+        createAssociatedTokenAccountIdempotentInstruction(
+          user,
+          getAssociatedTokenAddressSync(quoteMint, user, true, quoteTokenProgram),
+          user,
+          quoteMint,
+          quoteTokenProgram,
+        ),
+      );
+
       return [
+        ...setupIxs,
         await this.buyV2({
           user,
           mint,
