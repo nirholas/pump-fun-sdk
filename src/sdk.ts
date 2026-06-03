@@ -131,6 +131,7 @@ import {
   SUPPORTED_SOCIAL_PLATFORMS,
   platformToString,
 } from "./state";
+import { isNativeQuote } from "./quoteMints";
 
 /** Create an Anchor Program instance for the Pump bonding curve program. */
 export function getPumpProgram(connection: Connection): Program<Pump> {
@@ -359,7 +360,7 @@ export class PumpSdk {
     quoteMint?: PublicKey;
     quoteTokenProgram?: PublicKey;
   }): Promise<TransactionInstruction> {
-    const remaining = quoteMint.equals(NATIVE_MINT)
+    const remaining = isNativeQuote(quoteMint)
       ? []
       : [
           { pubkey: quoteMint, isWritable: false, isSigner: false },
@@ -386,6 +387,17 @@ export class PumpSdk {
       .instruction();
   }
 
+  /**
+   * Build the instructions to buy a coin on the bonding curve.
+   *
+   * When `quoteMint` is a non-native mint (e.g. USDC), the coin is bought against
+   * that quote mint; the buy leg routes to `buy_v2`. In that mode the maximum
+   * quote cost is expressed in the quote mint's base units (USDC = 6 decimals) —
+   * NOT lamports — and is passed straight through as `buy_v2`'s `quoteAmount`
+   * (the caller is responsible for the cap; no legacy slippage math is applied).
+   * The default (`quoteMint = NATIVE_MINT`) preserves the existing SOL behavior
+   * unchanged.
+   */
   async buyInstructions({
     global,
     bondingCurveAccountInfo,
@@ -420,7 +432,7 @@ export class PumpSdk {
     //     mint), gated on a missing account like the legacy native path.
     //   - quote: the quote mint's ATA, always (the USDC ATA may not exist);
     //     idempotent so it's a no-op when it already does.
-    if (!quoteMint.equals(NATIVE_MINT)) {
+    if (!isNativeQuote(quoteMint)) {
       const setupIxs: TransactionInstruction[] = [];
 
       if (!associatedUserAccountInfo) {
@@ -508,6 +520,17 @@ export class PumpSdk {
     return instructions;
   }
 
+  /**
+   * Build the create + dev-buy instructions for a new coin.
+   *
+   * When `quoteMint` is a non-native mint (e.g. USDC), the coin is created and
+   * bought against that quote mint; the buy leg routes to `buy_v2`. In that mode,
+   * `quoteAmount` is the maximum quote cost in the quote mint's base units
+   * (USDC = 6 decimals) — NOT lamports. When `quoteAmount` is omitted it falls
+   * back to `solAmount` interpreted as quote base units, so prefer passing
+   * `quoteAmount` explicitly in USDC mode. The default (`quoteMint = NATIVE_MINT`)
+   * preserves the existing SOL behavior unchanged.
+   */
   async createV2AndBuyInstructions({
     global,
     mint,
@@ -572,7 +595,7 @@ export class PumpSdk {
       ),
     ];
 
-    if (!quoteMint.equals(NATIVE_MINT)) {
+    if (!isNativeQuote(quoteMint)) {
       // buy_v2 does not init the user's quote ATA, so the dev-buy would fail
       // without it. The base Token-2022 ATA is already created above.
       instructions.push(
@@ -696,7 +719,7 @@ export class PumpSdk {
     // Non-native quote (e.g. USDC) routes to buy_v2. solAmount is the max quote
     // cost the caller already capped; pass it straight as quoteAmount (no legacy
     // slippage math).
-    if (!quoteMint.equals(NATIVE_MINT)) {
+    if (!isNativeQuote(quoteMint)) {
       return await this.buyV2({
         user,
         mint,
@@ -991,7 +1014,7 @@ export class PumpSdk {
   }): Promise<TransactionInstruction> {
     // Non-native quote (e.g. USDC) routes to buy_v2; solAmount is the max quote
     // cost (caller controls the cap), passed straight through as quoteAmount.
-    if (!quoteMint.equals(NATIVE_MINT)) {
+    if (!isNativeQuote(quoteMint)) {
       return await this.buyV2({
         user,
         mint,
