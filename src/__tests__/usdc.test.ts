@@ -3,6 +3,11 @@ import { Connection } from "@solana/web3.js";
 import { USDC_MINT, QUOTE_MINTS, isNativeQuote } from "../quoteMints";
 import { getPumpProgram } from "../sdk";
 import pumpIdl from "../idl/pump.json";
+import {
+  BUYBACK_FEE_RECIPIENTS,
+  pickBuybackFeeRecipient,
+  BREAKING_FEE_RECIPIENTS,
+} from "../fees";
 
 describe("quoteMints", () => {
   it("exposes the canonical mainnet USDC mint (6 decimals, SPL Token program)", () => {
@@ -36,5 +41,23 @@ describe("bundled IDL: buy_v2", () => {
     expect(ix.discriminator).toEqual([184, 23, 238, 97, 103, 197, 211, 61]);
     expect(ix.args.map((a: any) => a.name)).toEqual(["amount", "max_sol_cost"]);
     expect(ix.accounts).toHaveLength(27);
+  });
+});
+
+describe("buyback fee recipients", () => {
+  it("are the 8 official buyback recipients (same set as BREAKING_FEE_RECIPIENTS)", () => {
+    expect(BUYBACK_FEE_RECIPIENTS.map((p) => p.toBase58())).toEqual(
+      BREAKING_FEE_RECIPIENTS.map((p) => p.toBase58()),
+    );
+    expect(BUYBACK_FEE_RECIPIENTS).toHaveLength(8);
+    expect(BUYBACK_FEE_RECIPIENTS[0]!.toBase58()).toBe(
+      "5YxQFdt3Tr9zJLvkFccqXVUwhdTWJQc1fFg2YPbxvxeD",
+    );
+  });
+  it("pickBuybackFeeRecipient returns one of the set", () => {
+    for (let i = 0; i < 100; i++) {
+      const picked = pickBuybackFeeRecipient();
+      expect(BUYBACK_FEE_RECIPIENTS.some((p) => p.equals(picked))).toBe(true);
+    }
   });
 });
