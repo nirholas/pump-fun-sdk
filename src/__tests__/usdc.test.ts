@@ -5,7 +5,14 @@ import {
   TOKEN_2022_PROGRAM_ID,
   getAssociatedTokenAddressSync,
 } from "@solana/spl-token";
-import { AccountInfo, Connection, Keypair, PublicKey } from "@solana/web3.js";
+import {
+  AccountInfo,
+  Connection,
+  Keypair,
+  PublicKey,
+  TransactionMessage,
+  VersionedTransaction,
+} from "@solana/web3.js";
 import BN from "bn.js";
 import { USDC_MINT, QUOTE_MINTS, isNativeQuote } from "../quoteMints";
 import { getPumpProgram, PUMP_SDK, BONDING_CURVE_NEW_SIZE } from "../sdk";
@@ -96,6 +103,105 @@ describe("createV2Instruction quote mint", () => {
     expect(r1!.isWritable).toBe(true);
     expect(r2!.pubkey.equals(TOKEN_PROGRAM_ID)).toBe(true);
     expect(r2!.isWritable).toBe(false);
+  });
+  it("threads an explicit non-default quoteTokenProgram into createV2Instruction", async () => {
+    // Stand-in: drive the quote program off USDC's default (TOKEN_PROGRAM_ID) so
+    // the threading is observable. R2 (the quote_token_program remaining account)
+    // must equal it, and R1 (associated_quote_bonding_curve) must be the ATA
+    // derived *with* that program (a different ATA than the default would yield).
+    const ix = await PUMP_SDK.createV2Instruction({
+      mint, name: "n", symbol: "n", uri: "u", creator, user, mayhemMode: false,
+      quoteMint: USDC_MINT, quoteTokenProgram: TOKEN_2022_PROGRAM_ID,
+    });
+    expect(ix.keys).toHaveLength(19);
+    const [, r1, r2] = ix.keys.slice(16);
+    expect(r2!.pubkey.equals(TOKEN_2022_PROGRAM_ID)).toBe(true);
+    expect(
+      r1!.pubkey.equals(
+        getAssociatedTokenAddressSync(USDC_MINT, bondingCurvePda(mint), true, TOKEN_2022_PROGRAM_ID),
+      ),
+    ).toBe(true);
+  });
+});
+
+describe("createV2AndBuyInstructions USDC quoteAmount", () => {
+  const mint = new Keypair().publicKey;
+  const creator = new Keypair().publicKey;
+  const user = new Keypair().publicKey;
+
+  it("encodes quoteAmount (not solAmount) as the buy_v2 cap", async () => {
+    const quoteAmount = new BN("12345678");
+    const ixs = await PUMP_SDK.createV2AndBuyInstructions({
+      global: makeGlobal(), mint, name: "n", symbol: "n", uri: "u",
+      creator, user, amount: new BN("15000000000000"), mayhemMode: false,
+      solAmount: new BN("999"), // deliberately different from quoteAmount
+      quoteMint: USDC_MINT, quoteTokenProgram: TOKEN_PROGRAM_ID, quoteAmount,
+    });
+    const buyLeg = ixs.at(-1)!;
+    // buy_v2 data = disc[8] + amount u64 (LE) [8,16) + max_sol_cost u64 (LE) [16,24).
+    // max_sol_cost is the quote cap; assert it is the quoteAmount we passed, not solAmount.
+    expect(buyLeg.data).toHaveLength(24);
+    expect([...buyLeg.data.slice(0, 8)]).toEqual([184, 23, 238, 97, 103, 197, 211, 61]);
+    const capLE = buyLeg.data.subarray(16, 24);
+    expect(new BN(capLE, "le").toString()).toBe(quoteAmount.toString());
+  });
+});
+
+describe("createV2AndBuyInstructions tx-size / ALT constraint", () => {
+  // OPERATIONAL FINDING: the atomic USDC `create_v2 + buy_v2` instruction set is
+  // too large for a single legacy/v0 transaction without an Address Lookup Table —
+  // its combined unique account set is larger, and the compiled v0 message
+  // serializes to MORE than the 1232-byte packet limit. The SOL path fits without
+  // one. Senders launching a USDC coin with a dev-buy MUST attach an ALT.
+  //
+  // NOTE: compileToV0Message()/serialize() do NOT throw at this size (the RangeError
+  // only fires above ~256 account keys), so we assert the measured byte size and the
+  // unique-account count directly rather than relying on a throw.
+  const PACKET_DATA_SIZE = 1232; // Solana max serialized transaction size.
+  const mint = new Keypair().publicKey;
+  const creator = new Keypair().publicKey;
+  const user = new Keypair().publicKey;
+  const common = {
+    global: makeGlobal(), mint, name: "n", symbol: "n", uri: "u",
+    creator, user, amount: new BN("15000000000000"), mayhemMode: false,
+  };
+
+  function uniqueAccounts(ixs: { programId: PublicKey; keys: { pubkey: PublicKey }[] }[]): number {
+    const seen = new Set<string>();
+    for (const ix of ixs) {
+      seen.add(ix.programId.toBase58());
+      for (const k of ix.keys) seen.add(k.pubkey.toBase58());
+    }
+    return seen.size;
+  }
+
+  function serializedV0Size(ixs: any[]): number {
+    const message = new TransactionMessage({
+      payerKey: user,
+      recentBlockhash: "11111111111111111111111111111111", // dummy blockhash
+      instructions: ixs,
+    }).compileToV0Message();
+    return new VersionedTransaction(message).serialize().length;
+  }
+
+  it("SOL fits in one legacy tx but USDC needs an Address Lookup Table", async () => {
+    const solIxs = await PUMP_SDK.createV2AndBuyInstructions({ ...common, solAmount: new BN("430000000") });
+    const usdcIxs = await PUMP_SDK.createV2AndBuyInstructions({
+      ...common, solAmount: new BN(0),
+      quoteMint: USDC_MINT, quoteTokenProgram: TOKEN_PROGRAM_ID, quoteAmount: new BN("15000000"),
+    });
+
+    const solUnique = uniqueAccounts(solIxs);
+    const usdcUnique = uniqueAccounts(usdcIxs);
+    // Measured (deterministic given fixed keypairs): SOL=24, USDC=32 unique accounts.
+    expect(usdcUnique).toBeGreaterThan(solUnique);
+    expect(usdcUnique).toBeGreaterThanOrEqual(32);
+
+    const solSize = serializedV0Size(solIxs);
+    const usdcSize = serializedV0Size(usdcIxs);
+    // Measured (deterministic): SOL=1084 bytes (fits), USDC=1361 bytes (exceeds 1232).
+    expect(solSize).toBeLessThanOrEqual(PACKET_DATA_SIZE);
+    expect(usdcSize).toBeGreaterThan(PACKET_DATA_SIZE);
   });
 });
 
