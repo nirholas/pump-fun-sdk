@@ -177,6 +177,18 @@ export function pickBreakingFeeRecipient(): PublicKey {
 }
 
 /**
+ * The 8 buyback fee recipients (official `FEE_RECIPIENTS.md`). `buy_v2`/`sell_v2`
+ * take a `buybackFeeRecipient` from this set. These are the same 8 addresses that
+ * the 2026-04-28 upgrade appends to legacy buy/sell (a.k.a. {@link BREAKING_FEE_RECIPIENTS}).
+ */
+export const BUYBACK_FEE_RECIPIENTS = BREAKING_FEE_RECIPIENTS;
+
+/** Pick one of the 8 buyback fee recipients at random (for `buy_v2`/`sell_v2`). */
+export function pickBuybackFeeRecipient(): PublicKey {
+  return pickBreakingFeeRecipient();
+}
+
+/**
  * Pre-computed WSOL ATAs for each of the 8 breaking fee recipients, keyed by
  * recipient base58 address. Use this in high-throughput paths (e.g. AMM trading
  * bots) to avoid re-deriving the ATA on every instruction.

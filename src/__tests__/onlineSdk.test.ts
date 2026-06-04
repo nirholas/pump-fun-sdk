@@ -6,11 +6,13 @@
  * These tests mock the RPC connection and underlying SDK calls so no network
  * access is required.
  */
-import { AccountInfo, PublicKey } from "@solana/web3.js";
+import { AccountInfo, Keypair, PublicKey } from "@solana/web3.js";
+import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import BN from "bn.js";
 
-import { OnlinePumpSdk, BuyQuote } from "../onlineSdk";
+import { OnlinePumpSdk, BuyQuote, OFFLINE_PUMP_PROGRAM } from "../onlineSdk";
 import { PUMP_SDK } from "../sdk";
+import { USDC_MINT } from "../quoteMints";
 import { bondingCurvePda } from "../pda";
 import {
   makeGlobal,
@@ -752,5 +754,74 @@ describe("OnlinePumpSdk.getTokenBalance", () => {
     });
     const bal = await sdk.getTokenBalance(MINT, USER);
     expect(bal.toString()).toBe("5000000000");
+  });
+});
+
+// ─── USDC quote forwarding (Task 7b) ──────────────────────────────────────────
+// Proves the OnlinePumpSdk wrappers forward the new quote params
+// (quoteMint / quoteTokenProgram / quoteAmount) through to PUMP_SDK.*.
+describe("OnlinePumpSdk USDC quote forwarding", () => {
+  // The wrappers delegate to the offline PUMP_SDK instruction builders, which
+  // need PUMP_SDK's offline anchor program. sdk.ts <-> onlineSdk.ts form a
+  // circular import; because this suite imports "../onlineSdk" first, the
+  // PUMP_SDK singleton constructed mid-cycle captured an undefined offline
+  // program. Heal it from the now-initialized OFFLINE_PUMP_PROGRAM so the
+  // offline builders the wrappers call work. (Existing suites import order is
+  // unchanged; the AMM-event decode tests still rely on it.)
+  beforeAll(() => {
+    if (!(PUMP_SDK as any).offlinePumpProgram) {
+      (PUMP_SDK as any).offlinePumpProgram = OFFLINE_PUMP_PROGRAM;
+    }
+  });
+
+  it("createV2Instruction forwards quoteMint (USDC → create_v2 has 19 keys)", async () => {
+    // createV2Instruction needs no on-chain fetch, so a bare sdk suffices.
+    const sdk = makeSdk();
+    const mint = new Keypair().publicKey;
+
+    const ix = await sdk.createV2Instruction({
+      mint,
+      name: "n",
+      symbol: "n",
+      uri: "u",
+      creator: TEST_CREATOR,
+      user: USER,
+      quoteMint: USDC_MINT,
+      quoteTokenProgram: TOKEN_PROGRAM_ID,
+    });
+
+    // USDC appends the 3 quote remaining accounts (16 → 19) vs the SOL default.
+    expect(ix.keys).toHaveLength(19);
+    expect(ix.keys.some((k) => k.pubkey.equals(USDC_MINT))).toBe(true);
+  });
+
+  it("createV2AndBuyInstructions forwards quoteMint/quoteTokenProgram/quoteAmount (buy leg is buy_v2)", async () => {
+    const sdk = makeSdk();
+    // The wrapper fetches global + feeConfig; both are spy-able (no RPC needed).
+    jest.spyOn(sdk, "fetchGlobal").mockResolvedValue(makeGlobal());
+    jest.spyOn(sdk, "fetchFeeConfig").mockResolvedValue(makeFeeConfig());
+    const mint = new Keypair().publicKey;
+
+    const ixs = await sdk.createV2AndBuyInstructions({
+      mint,
+      name: "n",
+      symbol: "n",
+      uri: "u",
+      creator: TEST_CREATOR,
+      user: USER,
+      solAmount: new BN(0),
+      quoteMint: USDC_MINT,
+      quoteTokenProgram: TOKEN_PROGRAM_ID,
+      quoteAmount: new BN("15000000"),
+    });
+
+    // create leg gains the 3 USDC quote accounts (19 keys).
+    expect(ixs[0]!.keys).toHaveLength(19);
+    // buy leg routes to buy_v2: official discriminator + 27 accounts.
+    const buyLeg = ixs.at(-1)!;
+    expect([...buyLeg.data.slice(0, 8)]).toEqual([
+      184, 23, 238, 97, 103, 197, 211, 61,
+    ]);
+    expect(buyLeg.keys).toHaveLength(27);
   });
 });
