@@ -40,9 +40,10 @@ import {
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import BN from "bn.js";
 
-import { OnlinePumpSdk } from "../src/onlineSdk";
-import { PUMP_SDK } from "../src/sdk";
-import { USDC_MINT } from "../src/quoteMints";
+// Import from the package index (not deep paths): the index evaluates `./sdk`
+// before `./onlineSdk`, which is the order that avoids the sdk<->onlineSdk
+// circular-init ordering issue. This is also how real consumers import.
+import { OnlinePumpSdk, PUMP_SDK, USDC_MINT } from "../src";
 
 function loadKeypair(path: string): Keypair {
   return Keypair.fromSecretKey(
@@ -98,41 +99,48 @@ async function buildEphemeralAlt(
     payer: payer.publicKey,
     recentSlot,
   });
-  const extendIx = AddressLookupTableProgram.extendLookupTable({
-    lookupTable: altAddress,
-    authority: payer.publicKey,
-    payer: payer.publicKey,
-    addresses,
-  });
 
-  const { blockhash, lastValidBlockHeight } =
-    await connection.getLatestBlockhash();
-  const message = new TransactionMessage({
-    payerKey: payer.publicKey,
-    recentBlockhash: blockhash,
-    instructions: [createIx, extendIx],
-  }).compileToV0Message();
-  const tx = new VersionedTransaction(message);
-  tx.sign([payer]);
+  const sendIxs = async (instructions: TransactionInstruction[]): Promise<void> => {
+    const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
+    const message = new TransactionMessage({
+      payerKey: payer.publicKey,
+      recentBlockhash: blockhash,
+      instructions,
+    }).compileToV0Message();
+    const tx = new VersionedTransaction(message);
+    tx.sign([payer]);
+    const sig = await connection.sendTransaction(tx);
+    await connection.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight }, "confirmed");
+  };
 
-  const sig = await connection.sendTransaction(tx);
-  await connection.confirmTransaction(
-    { signature: sig, blockhash, lastValidBlockHeight },
-    "confirmed",
-  );
-  console.log("created ephemeral ALT:", altAddress.toBase58(), "tx:", sig);
+  // `extendLookupTable` with many addresses overflows a single tx, so extend in
+  // batches (~20 addresses/tx). The create + first batch share one tx.
+  const BATCH = 20;
+  const extendFor = (addrs: PublicKey[]) =>
+    AddressLookupTableProgram.extendLookupTable({
+      lookupTable: altAddress,
+      authority: payer.publicKey,
+      payer: payer.publicKey,
+      addresses: addrs,
+    });
+  await sendIxs([createIx, extendFor(addresses.slice(0, BATCH))]);
+  for (let i = BATCH; i < addresses.length; i += BATCH) {
+    await sendIxs([extendFor(addresses.slice(i, i + BATCH))]);
+  }
+  console.log("created ephemeral ALT:", altAddress.toBase58());
 
-  // Bound-poll until the ALT resolves and is populated/usable.
+  // Bound-poll until the ALT resolves and is populated. A freshly-extended table
+  // can only be referenced starting the slot AFTER its last extension, so once the
+  // addresses are present we also wait for the slot to advance before returning.
   for (let attempt = 0; attempt < 30; attempt++) {
     const fetched = await connection.getAddressLookupTable(altAddress);
     const account = fetched.value;
     if (account && account.state.addresses.length >= addresses.length) {
-      console.log(
-        "ALT active with",
-        account.state.addresses.length,
-        "addresses",
-      );
-      return account;
+      const warmAt = await connection.getSlot();
+      while ((await connection.getSlot()) <= warmAt + 1) await sleep(400);
+      const ready = (await connection.getAddressLookupTable(altAddress)).value!;
+      console.log("ALT active with", ready.state.addresses.length, "addresses");
+      return ready;
     }
     await sleep(800);
   }
