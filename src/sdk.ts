@@ -530,6 +530,14 @@ export class PumpSdk {
    * back to `solAmount` interpreted as quote base units, so prefer passing
    * `quoteAmount` explicitly in USDC mode. The default (`quoteMint = NATIVE_MINT`)
    * preserves the existing SOL behavior unchanged.
+   *
+   * Transaction-size note: for a non-native (USDC) quote mint, the returned
+   * `create_v2 + buy_v2` instructions serialize to ~1361 bytes across 32 unique
+   * accounts, which exceeds the 1232-byte single-legacy-transaction limit. They
+   * MUST be sent as a v0 `VersionedTransaction` with an Address Lookup Table
+   * covering the static (non-signer) accounts. The SOL path (~1084 bytes) fits in
+   * one legacy transaction without an ALT. See `scripts/devnet-usdc-smoke.ts` for
+   * a worked example of building the ALT and compiling the v0 message.
    */
   async createV2AndBuyInstructions({
     global,
