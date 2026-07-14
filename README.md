@@ -23,7 +23,6 @@ The SDK never sends transactions itself. It returns `TransactionInstruction[]` t
 
 ---
 
-
 ## 📋 Table of Contents
 
 - [Quick Start](#-quick-start)
