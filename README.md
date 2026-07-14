@@ -472,7 +472,7 @@ We welcome contributions! See [CONTRIBUTING.md](./CONTRIBUTING.md) for:
 
 ## 📄 License
 
-[MIT](./LICENSE) © [nirholas](https://github.com/nirholas)
+[Apache-2.0](./LICENSE) © [nirholas](https://github.com/nirholas)
 
 ---
 
