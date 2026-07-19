@@ -3,6 +3,7 @@
   "name": "defi-agents-api",
   "compatibility_date": "2026-07-01",
   "account_id": "9b69258d55b0dc7ed0c31c067dd944d8",
+  "routes": [{ "pattern": "agents.pumpk.it", "custom_domain": true }],
   "assets": {
     "directory": "./public",
     "html_handling": "auto-trailing-slash"
