@@ -1,0 +1,13 @@
+{
+  // Cloudflare Workers static-assets deployment for the SDK website.
+  // Build the bundle first: node scripts/build-site.mjs
+  // Deploy: npx wrangler deploy   (one-time: npx wrangler login)
+  "name": "pump-fun-sdk-site",
+  "compatibility_date": "2026-07-01",
+  "account_id": "9b69258d55b0dc7ed0c31c067dd944d8",
+  "assets": {
+    "directory": "./dist-site",
+    "not_found_handling": "single-page-application",
+    "html_handling": "auto-trailing-slash"
+  }
+}
