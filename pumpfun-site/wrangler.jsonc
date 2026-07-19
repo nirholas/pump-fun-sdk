@@ -1,0 +1,10 @@
+{
+  // Cloudflare Workers static-assets deployment. Deploy: npx wrangler deploy -c pumpfun-site/wrangler.jsonc
+  "name": "pumpfun-template-site",
+  "compatibility_date": "2026-07-01",
+  "account_id": "9b69258d55b0dc7ed0c31c067dd944d8",
+  "assets": {
+    "directory": ".",
+    "html_handling": "auto-trailing-slash"
+  }
+}
