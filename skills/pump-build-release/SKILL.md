@@ -77,8 +77,8 @@ vercel --prod
 
 ```bash
 npm publish --access public
-# Package: @pump-fun/mcp-server
-# Usage: npx -y @pump-fun/mcp-server
+# Package: pump-fun-mcp
+# Usage: npx -y pump-fun-mcp
 ```
 
 ## Patterns to Follow

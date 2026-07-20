@@ -1,7 +1,8 @@
 {
-  "name": "@pump-fun/mcp-server",
+  "name": "pump-fun-mcp",
   "version": "1.0.0",
-  "description": "Model Context Protocol server for the Pump SDK — 53 tools for token creation, trading, fees, analytics, and wallet management on Solana",
+  "mcpName": "io.github.nirholas/pump-fun-sdk",
+  "description": "Model Context Protocol server for the Pump SDK \u2014 53 tools for token creation, trading, fees, analytics, and wallet management on Solana",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
@@ -17,7 +18,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
-    "@nirholas/pump-sdk": "file:..",
+    "@nirholas/pump-sdk": "^1.32.0",
     "@solana/web3.js": "^1.98.0",
     "bn.js": "^5.2.2",
     "bs58": "^6.0.0",
@@ -34,5 +35,17 @@
   "engines": {
     "node": ">=18"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nirholas/pump-fun-sdk.git",
+    "directory": "mcp-server"
+  }
 }

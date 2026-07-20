@@ -77,7 +77,7 @@ Configure AI agents (GitHub Copilot, Claude, Gemini) to work effectively with th
     "mcpServers": {
         "solana-wallet": {
             "command": "npx",
-            "args": ["-y", "@pump-fun/mcp-server"],
+            "args": ["-y", "pump-fun-mcp"],
             "transportType": "stdio"
         }
     }

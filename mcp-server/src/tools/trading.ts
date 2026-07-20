@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { PublicKey, Keypair } from "@solana/web3.js";
+import { PublicKey, Keypair, type TransactionInstruction } from "@solana/web3.js";
 import BN from "bn.js";
 import { PUMP_SDK } from "@nirholas/pump-sdk";
 import type { OnlinePumpSdk } from "@nirholas/pump-sdk";
@@ -360,7 +360,6 @@ export const buildSellAllSchema = z.object({
   mint: publicKeySchema.describe("Token mint address"),
   user: publicKeySchema.describe("Seller wallet address"),
   slippage: z.number().min(0).max(1).default(0.05).describe("Slippage tolerance (0.05 = 5%)"),
-  cashback: z.boolean().default(false).describe("Enable cashback volume tracking"),
 });
 
 export async function buildSellAll(
@@ -372,7 +371,7 @@ export async function buildSellAll(
     const user = new PublicKey(params.user);
 
     const instructions = await sdk.sellAllInstructions({
-      mint, user, slippage: params.slippage, cashback: params.cashback,
+      mint, user, slippage: params.slippage,
     });
 
     if (instructions.length === 0) {
@@ -382,7 +381,6 @@ export async function buildSellAll(
     return success({
       instructions: instructionsToJson(instructions),
       slippage: params.slippage,
-      cashback: params.cashback,
     });
   } catch (e: unknown) {
     return error(`Failed to build sell-all: ${getErrorMessage(e)}`);
@@ -479,8 +477,15 @@ export async function buildSellChunked(
     const user = new PublicKey(params.user);
     const totalAmount = new BN(params.tokenAmount);
 
-    const instructionGroups = await sdk.sellChunked({
+    // sellChunked sends each chunk via the sendTx callback; this tool is
+    // build-only (no signer), so capture the chunks instead of sending.
+    const instructionGroups: TransactionInstruction[][] = [];
+    await sdk.sellChunked({
       mint, user, totalAmount, slippage: params.slippage,
+      sendTx: async (ixs) => {
+        instructionGroups.push(ixs);
+        return `unsent-chunk-${instructionGroups.length}`;
+      },
     });
 
     return success({
