@@ -181,6 +181,20 @@ class AgentBuilder {
   };
 
   /**
+   * 复制 _redirects 文件到 public 目录（如果存在）
+   * Cloudflare Workers 静态资源用它把 / 重定向到 /index.json
+   */
+  copyRedirects = () => {
+    const redirectsPath = resolve(root, '_redirects');
+    const publicRedirectsPath = resolve(publicDir, '_redirects');
+
+    if (existsSync(redirectsPath)) {
+      copyFileSync(redirectsPath, publicRedirectsPath);
+      Logger.success('_redirects 文件已复制到 public 目录');
+    }
+  };
+
+  /**
    * 执行构建流程
    */
   run = async () => {
@@ -190,6 +204,7 @@ class AgentBuilder {
     this.buildSchema();
     await this.buildFullLocaleAgents();
     this.copyCNAME();
+    this.copyRedirects();
 
     const duration = Date.now() - startTime;
     Logger.success('构建流程完成', '', `耗时 ${duration}ms`);
