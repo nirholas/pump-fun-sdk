@@ -46,7 +46,9 @@ The SDK never sends transactions itself. It returns `TransactionInstruction[]` t
 ---
 ## 🚀 Live Demos & Resources
 
-- **[Websocket Demo](https://sdk.pumpk.it)**
+- **[SDK Docs & Live Dashboards](https://sdk.pumpk.it)** (trades, launches, vanity: [sdk.pumpk.it/live](https://sdk.pumpk.it/live/))
+- **[pump.fun UI Template](https://demo.pumpk.it)**
+- **[DeFi Agents API](https://agents.pumpk.it)**
 - **[PumpKit](https://github.com/nirholas/pumpkit)**
 - **[PumpKit Site](https://pumpk.it)**
 - **[Telegram PumpFun Github Claim Tracker Bot](https://t.me/pumpfunclaims)**

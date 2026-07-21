@@ -232,44 +232,23 @@ vercel --prod
 
 ---
 
-## PumpOS Website
-
-**Platform:** Vercel, GitHub Pages
-
-The `site/vercel.json` is pre-configured:
-
-```bash
-cd site
-vercel --prod
-```
-
-Or serve locally:
-
-```bash
-cd site
-npx serve .
-```
-
----
 
 ## Live Deployments
 
 Current production deployments and their hosting platforms:
 
-### Vercel
+### Cloudflare Workers (static sites)
 
-| URL | Component | Notes |
-|-----|-----------|-------|
-| [pump-fun-websocket.vercel.app](https://pump-fun-websocket.vercel.app/) | Live dashboards (index) | Token launch dashboard |
-| [pump-fun-websocket.vercel.app/trades](https://pump-fun-websocket.vercel.app/trades) | Live dashboards (trades) | Real-time trade analytics |
-| [pump-fun-sdk1-e1wsfe2mu-aryllyraaryl-6220s-projects.vercel.app](https://pump-fun-sdk1-e1wsfe2mu-aryllyraaryl-6220s-projects.vercel.app/) | Deployment preview | Auto-generated preview URL |
+All public sites deploy as Cloudflare Workers static assets under the pumpk.it zone. Each has a `wrangler.jsonc` with its custom domain baked in; `npx wrangler deploy` (with `-c <dir>/wrangler.jsonc` for the non-root ones) builds nothing and ships the prebuilt assets.
 
-- **Vercel project:** `pump-fun-sdk1`
-- **Vercel account:** `aryllyraaryl-6220`
-- **Source branch:** `main`
-- **GitHub repo:** `gigazook`
-- **Custom domains:** `pump-fun-websocket.vercel.app`, `pump-fun-sdk1-git-main-aryllyraaryl-6220s-projects.vercel.app`
-- **Preview URLs:** `pump-fun-sdk1-*.vercel.app` (auto-generated per deployment)
+| URL | Source | Deploy |
+|-----|--------|--------|
+| [sdk.pumpk.it](https://sdk.pumpk.it) | `website/` + `live/` (assembled by `scripts/build-site.mjs`) | `node scripts/build-site.mjs && npx wrangler deploy` |
+| [demo.pumpk.it](https://demo.pumpk.it) | `pumpfun-site/` | `npx wrangler deploy -c pumpfun-site/wrangler.jsonc` |
+| [agents.pumpk.it](https://agents.pumpk.it) | `packages/defi-agents/` (`bun run build` first) | `npx wrangler deploy -c packages/defi-agents/wrangler.jsonc` |
+| [pumpk.it](https://pumpk.it) | `packages/web` in [nirholas/pumpkit](https://github.com/nirholas/pumpkit) | `npx turbo build --filter=@pumpkit/web && npx wrangler deploy` |
+
+The old `*.vercel.app` deployments are retired (Vercel returns 402 DEPLOYMENT_DISABLED).
 
 ### Railway
 
@@ -277,7 +256,7 @@ Current production deployments and their hosting platforms:
 |-----------|-------|
 | Telegram bots | Channel bot, claim bot, outsiders bot |
 
-> Most Telegram bots are deployed on Railway. Live dashboards and static sites are on Vercel.
+> Most Telegram bots are deployed on Railway. Live dashboards and static sites are on Cloudflare Workers.
 
 ---
 
