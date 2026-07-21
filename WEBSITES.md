@@ -6,9 +6,9 @@ The repository contains three web directories, each with a distinct purpose. The
 
 | Directory | Purpose | Tech | Deploys To |
 |-----------|---------|------|------------|
-| [`website/`](website/) | SDK documentation & marketing site | Vanilla HTML/CSS/JS SPA | Vercel (static) |
-| [`pumpfun-site/`](pumpfun-site/) | pump.fun UI design template | Vanilla HTML/CSS/JS (4 pages) | Vercel / Netlify / GitHub Pages |
-| [`site/`](site/) | PumpOS — full web desktop OS | Vanilla JS + PWA + Service Worker | Vercel (static) |
+| [`website/`](website/) | SDK documentation & marketing site | Vanilla HTML/CSS/JS SPA | Cloudflare Workers: [sdk.pumpk.it](https://sdk.pumpk.it) |
+| [`pumpfun-site/`](pumpfun-site/) | pump.fun UI design template | Vanilla HTML/CSS/JS (4 pages) | Cloudflare Workers: [demo.pumpk.it](https://demo.pumpk.it) |
+| [`site/`](site/) | PumpOS — full web desktop OS | Vanilla JS + PWA + Service Worker | Cloudflare Workers: [os.pumpk.it](https://os.pumpk.it) |
 
 ## When to Use Each
 

@@ -46,9 +46,9 @@ The SDK never sends transactions itself. It returns `TransactionInstruction[]` t
 ---
 ## 🚀 Live Demos & Resources
 
-- **[Websocket Demo](https://pumpfun-sdk.vercel.app)**
+- **[Websocket Demo](https://sdk.pumpk.it)**
 - **[PumpKit](https://github.com/nirholas/pumpkit)**
-- **[PumpKit Site](https://pumpkits.vercel.app)**
+- **[PumpKit Site](https://pumpk.it)**
 - **[Telegram PumpFun Github Claim Tracker Bot](https://t.me/pumpfunclaims)**
 - **[Telegram PumpFun Graduation/Migration Tracker Bot](https://t.me/trackpumpfun)**
 - **[Pumpfun Claim Tracker](https://t.me/pfclaimsbot)** (best bot — currently offline while building)
@@ -84,7 +84,7 @@ The SDK never sends transactions itself. It returns `TransactionInstruction[]` t
 
 > Open-source framework for building PumpFun Telegram bots on Solana. Claim monitors, channel feeds, group trackers, whale alerts — build your own or use ours.
 >
->  [PumpKit Web App + Documentation](https://pumpkits.vercel.app)
+>  [PumpKit Web App + Documentation](https://pumpk.it)
 
 ---
 

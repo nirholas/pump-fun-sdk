@@ -1,7 +1,7 @@
 {
   "name": "@nirholas/pump-sdk",
   "version": "1.32.0",
-  "description": "TypeScript SDK for the Pump protocol on Solana — token creation, bonding curves, AMM pools, fee sharing, and volume rewards",
+  "description": "TypeScript SDK for the Pump protocol on Solana \u2014 token creation, bonding curves, AMM pools, fee sharing, and volume rewards",
   "keywords": [
     "solana",
     "pump",
@@ -14,7 +14,7 @@
     "typescript",
     "mcp"
   ],
-  "homepage": "https://github.com/nirholas/pump-fun-sdk#readme",
+  "homepage": "https://sdk.pumpk.it",
   "bugs": {
     "url": "https://github.com/nirholas/pump-fun-sdk/issues"
   },
