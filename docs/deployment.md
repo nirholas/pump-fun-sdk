@@ -170,20 +170,16 @@ wscat -c ws://localhost:8080
 
 ## Live Dashboards
 
-**Platform:** Vercel (recommended), Netlify, GitHub Pages, or any static host
+**Platform:** Cloudflare Workers (production), or any static host
 
-### Vercel Deployment
+### Production
 
-The `live/vercel.json` is pre-configured:
+The dashboards ship inside the docs site at [sdk.pumpk.it/live](https://sdk.pumpk.it/live/); `scripts/build-site.mjs` copies `live/*.html` into the deployed bundle:
 
 ```bash
-cd live
-vercel --prod
+node scripts/build-site.mjs
+npx wrangler deploy
 ```
-
-### GitHub Pages
-
-Copy the `live/` directory to your repo's `gh-pages` branch, or configure GitHub Actions to deploy it.
 
 ### Manual
 
@@ -221,13 +217,13 @@ npm start
 
 ## Plugin Delivery Platform
 
-**Platform:** Vercel
+**Platform:** any static host (no production deployment currently)
 
 ```bash
 cd packages/plugin.delivery
 bun install
 bun run build
-vercel --prod
+npx serve public
 ```
 
 ---
