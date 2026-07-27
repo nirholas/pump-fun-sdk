@@ -32,6 +32,7 @@ import {
   buildAmmBreakingFeeRecipientAccounts,
   getFeeRecipient,
   pickBreakingFeeRecipient,
+  pickBuybackFeeRecipient,
 } from "./fees";
 import { Pump } from "./idl/pump";
 import pumpIdl from "./idl/pump.json";
@@ -130,6 +131,7 @@ import {
   SUPPORTED_SOCIAL_PLATFORMS,
   platformToString,
 } from "./state";
+import { isNativeQuote } from "./quoteMints";
 
 /** Create an Anchor Program instance for the Pump bonding curve program. */
 export function getPumpProgram(connection: Connection): Program<Pump> {
@@ -344,6 +346,8 @@ export class PumpSdk {
     user,
     mayhemMode,
     cashback = false,
+    quoteMint = NATIVE_MINT,
+    quoteTokenProgram = TOKEN_PROGRAM_ID,
   }: {
     mint: PublicKey;
     name: string;
@@ -353,7 +357,20 @@ export class PumpSdk {
     user: PublicKey;
     mayhemMode: boolean;
     cashback?: boolean;
+    quoteMint?: PublicKey;
+    quoteTokenProgram?: PublicKey;
   }): Promise<TransactionInstruction> {
+    const remaining = isNativeQuote(quoteMint)
+      ? []
+      : [
+          { pubkey: quoteMint, isWritable: false, isSigner: false },
+          {
+            pubkey: getAssociatedTokenAddressSync(quoteMint, bondingCurvePda(mint), true, quoteTokenProgram),
+            isWritable: true,
+            isSigner: false,
+          },
+          { pubkey: quoteTokenProgram, isWritable: false, isSigner: false },
+        ];
     return await this.offlinePumpProgram.methods
       .createV2(name, symbol, uri, creator, mayhemMode, [cashback ?? false])
       .accountsPartial({
@@ -366,9 +383,21 @@ export class PumpSdk {
         mayhemState: getMayhemStatePda(mint),
         mayhemTokenVault: getTokenVaultPda(mint),
       })
+      .remainingAccounts(remaining)
       .instruction();
   }
 
+  /**
+   * Build the instructions to buy a coin on the bonding curve.
+   *
+   * When `quoteMint` is a non-native mint (e.g. USDC), the coin is bought against
+   * that quote mint; the buy leg routes to `buy_v2`. In that mode the maximum
+   * quote cost is expressed in the quote mint's base units (USDC = 6 decimals) —
+   * NOT lamports — and is passed straight through as `buy_v2`'s `quoteAmount`
+   * (the caller is responsible for the cap; no legacy slippage math is applied).
+   * The default (`quoteMint = NATIVE_MINT`) preserves the existing SOL behavior
+   * unchanged.
+   */
   async buyInstructions({
     global,
     bondingCurveAccountInfo,
@@ -380,6 +409,8 @@ export class PumpSdk {
     solAmount,
     slippage,
     tokenProgram = TOKEN_PROGRAM_ID,
+    quoteMint = NATIVE_MINT,
+    quoteTokenProgram = TOKEN_PROGRAM_ID,
   }: {
     global: Global;
     bondingCurveAccountInfo: AccountInfo<Buffer>;
@@ -391,7 +422,56 @@ export class PumpSdk {
     solAmount: BN;
     slippage: number;
     tokenProgram: PublicKey;
+    quoteMint?: PublicKey;
+    quoteTokenProgram?: PublicKey;
   }): Promise<TransactionInstruction[]> {
+    // Non-native quote (e.g. USDC) routes to buy_v2. buy_v2 does NOT init the
+    // user's base/quote ATAs (associated_base_user / associated_quote_user have
+    // no init in the IDL), so we must prepend idempotent ATA creates ourselves:
+    //   - base: Token-2022 ATA (create_v2 coins use TOKEN_2022 for the base
+    //     mint), gated on a missing account like the legacy native path.
+    //   - quote: the quote mint's ATA, always (the USDC ATA may not exist);
+    //     idempotent so it's a no-op when it already does.
+    if (!isNativeQuote(quoteMint)) {
+      const setupIxs: TransactionInstruction[] = [];
+
+      if (!associatedUserAccountInfo) {
+        setupIxs.push(
+          createAssociatedTokenAccountIdempotentInstruction(
+            user,
+            getAssociatedTokenAddressSync(mint, user, true, TOKEN_2022_PROGRAM_ID),
+            user,
+            mint,
+            TOKEN_2022_PROGRAM_ID,
+          ),
+        );
+      }
+
+      setupIxs.push(
+        createAssociatedTokenAccountIdempotentInstruction(
+          user,
+          getAssociatedTokenAddressSync(quoteMint, user, true, quoteTokenProgram),
+          user,
+          quoteMint,
+          quoteTokenProgram,
+        ),
+      );
+
+      return [
+        ...setupIxs,
+        await this.buyV2({
+          user,
+          mint,
+          creator: bondingCurve.creator,
+          amount,
+          quoteAmount: solAmount,
+          quoteMint,
+          quoteTokenProgram,
+          feeRecipient: getFeeRecipient(global, bondingCurve.isMayhemMode),
+        }),
+      ];
+    }
+
     const instructions: TransactionInstruction[] = [];
 
     if (bondingCurveAccountInfo.data.length < BONDING_CURVE_NEW_SIZE) {
@@ -440,6 +520,25 @@ export class PumpSdk {
     return instructions;
   }
 
+  /**
+   * Build the create + dev-buy instructions for a new coin.
+   *
+   * When `quoteMint` is a non-native mint (e.g. USDC), the coin is created and
+   * bought against that quote mint; the buy leg routes to `buy_v2`. In that mode,
+   * `quoteAmount` is the maximum quote cost in the quote mint's base units
+   * (USDC = 6 decimals) — NOT lamports. When `quoteAmount` is omitted it falls
+   * back to `solAmount` interpreted as quote base units, so prefer passing
+   * `quoteAmount` explicitly in USDC mode. The default (`quoteMint = NATIVE_MINT`)
+   * preserves the existing SOL behavior unchanged.
+   *
+   * Transaction-size note: for a non-native (USDC) quote mint, the returned
+   * `create_v2 + buy_v2` instructions serialize to ~1361 bytes across 32 unique
+   * accounts, which exceeds the 1232-byte single-legacy-transaction limit. They
+   * MUST be sent as a v0 `VersionedTransaction` with an Address Lookup Table
+   * covering the static (non-signer) accounts. The SOL path (~1084 bytes) fits in
+   * one legacy transaction without an ALT. See `scripts/devnet-usdc-smoke.ts` for
+   * a worked example of building the ALT and compiling the v0 message.
+   */
   async createV2AndBuyInstructions({
     global,
     mint,
@@ -452,6 +551,9 @@ export class PumpSdk {
     solAmount,
     mayhemMode,
     cashback = false,
+    quoteMint = NATIVE_MINT,
+    quoteTokenProgram = TOKEN_PROGRAM_ID,
+    quoteAmount,
   }: {
     global: Global;
     mint: PublicKey;
@@ -464,6 +566,9 @@ export class PumpSdk {
     solAmount: BN;
     mayhemMode: boolean;
     cashback?: boolean;
+    quoteMint?: PublicKey;
+    quoteTokenProgram?: PublicKey;
+    quoteAmount?: BN;
   }): Promise<TransactionInstruction[]> {
     const associatedUser = getAssociatedTokenAddressSync(
       mint,
@@ -471,7 +576,8 @@ export class PumpSdk {
       true,
       TOKEN_2022_PROGRAM_ID,
     );
-    return [
+
+    const instructions: TransactionInstruction[] = [
       await this.createV2Instruction({
         mint,
         name,
@@ -481,6 +587,8 @@ export class PumpSdk {
         user,
         mayhemMode,
         cashback,
+        quoteMint,
+        quoteTokenProgram,
       }),
       await this.extendAccountInstruction({
         account: bondingCurvePda(mint),
@@ -493,6 +601,34 @@ export class PumpSdk {
         mint,
         TOKEN_2022_PROGRAM_ID,
       ),
+    ];
+
+    if (!isNativeQuote(quoteMint)) {
+      // buy_v2 does not init the user's quote ATA, so the dev-buy would fail
+      // without it. The base Token-2022 ATA is already created above.
+      instructions.push(
+        createAssociatedTokenAccountIdempotentInstruction(
+          user,
+          getAssociatedTokenAddressSync(quoteMint, user, true, quoteTokenProgram),
+          user,
+          quoteMint,
+          quoteTokenProgram,
+        ),
+        await this.buyV2({
+          user,
+          mint,
+          creator,
+          amount,
+          quoteAmount: quoteAmount ?? solAmount,
+          quoteMint,
+          quoteTokenProgram,
+          feeRecipient: getFeeRecipient(global, mayhemMode),
+        }),
+      );
+      return instructions;
+    }
+
+    instructions.push(
       await this.buyInstruction({
         global,
         mint,
@@ -505,7 +641,8 @@ export class PumpSdk {
         tokenProgram: TOKEN_2022_PROGRAM_ID,
         mayhemMode,
       }),
-    ];
+    );
+    return instructions;
   }
 
   /**
@@ -571,6 +708,8 @@ export class PumpSdk {
     slippage,
     tokenProgram = TOKEN_PROGRAM_ID,
     mayhemMode = false,
+    quoteMint = NATIVE_MINT,
+    quoteTokenProgram = TOKEN_PROGRAM_ID,
   }: {
     global: Global;
     mint: PublicKey;
@@ -582,7 +721,24 @@ export class PumpSdk {
     slippage: number;
     tokenProgram: PublicKey;
     mayhemMode: boolean;
+    quoteMint?: PublicKey;
+    quoteTokenProgram?: PublicKey;
   }) {
+    // Non-native quote (e.g. USDC) routes to buy_v2. solAmount is the max quote
+    // cost the caller already capped; pass it straight as quoteAmount (no legacy
+    // slippage math).
+    if (!isNativeQuote(quoteMint)) {
+      return await this.buyV2({
+        user,
+        mint,
+        creator,
+        amount,
+        quoteAmount: solAmount,
+        quoteMint,
+        quoteTokenProgram,
+        feeRecipient: getFeeRecipient(global, mayhemMode),
+      });
+    }
     return await this.getBuyInstructionInternal({
       user,
       associatedUser,
@@ -851,6 +1007,8 @@ export class PumpSdk {
     solAmount,
     feeRecipient = getStaticRandomFeeRecipient(),
     tokenProgram = TOKEN_PROGRAM_ID,
+    quoteMint = NATIVE_MINT,
+    quoteTokenProgram = TOKEN_PROGRAM_ID,
   }: {
     user: PublicKey;
     mint: PublicKey;
@@ -859,7 +1017,23 @@ export class PumpSdk {
     solAmount: BN;
     feeRecipient: PublicKey;
     tokenProgram?: PublicKey;
+    quoteMint?: PublicKey;
+    quoteTokenProgram?: PublicKey;
   }): Promise<TransactionInstruction> {
+    // Non-native quote (e.g. USDC) routes to buy_v2; solAmount is the max quote
+    // cost (caller controls the cap), passed straight through as quoteAmount.
+    if (!isNativeQuote(quoteMint)) {
+      return await this.buyV2({
+        user,
+        mint,
+        creator,
+        amount,
+        quoteAmount: solAmount,
+        quoteMint,
+        quoteTokenProgram,
+        feeRecipient,
+      });
+    }
     return await this.getBuyInstructionInternal({
       user,
       associatedUser: getAssociatedTokenAddressSync(
@@ -874,6 +1048,67 @@ export class PumpSdk {
       amount,
       solAmount,
     });
+  }
+
+  /**
+   * Build a `buy_v2` instruction (V2 buy supporting non-native quote mints, e.g. USDC).
+   * For SOL-paired coins prefer the legacy `buy` path. `quoteAmount` is the max QUOTE
+   * cost in the quote mint's base units (USDC = 6dp), NOT lamports.
+   */
+  async buyV2({
+    user,
+    mint,
+    creator,
+    amount,
+    quoteAmount,
+    quoteMint = NATIVE_MINT,
+    quoteTokenProgram = TOKEN_PROGRAM_ID,
+    baseTokenProgram = TOKEN_2022_PROGRAM_ID,
+    feeRecipient,
+    buybackFeeRecipient = pickBuybackFeeRecipient(),
+  }: {
+    user: PublicKey;
+    mint: PublicKey;
+    creator: PublicKey;
+    amount: BN;
+    quoteAmount: BN;
+    quoteMint?: PublicKey;
+    quoteTokenProgram?: PublicKey;
+    baseTokenProgram?: PublicKey;
+    feeRecipient: PublicKey;
+    buybackFeeRecipient?: PublicKey;
+  }): Promise<TransactionInstruction> {
+    const creatorVault = creatorVaultPda(creator);
+    return await this.offlinePumpProgram.methods
+      .buyV2(amount, quoteAmount)
+      .accountsPartial({
+        baseMint: mint,
+        quoteMint,
+        baseTokenProgram,
+        quoteTokenProgram,
+        feeRecipient,
+        buybackFeeRecipient,
+        user,
+        // associated_base_user has no PDA metadata in the IDL, so Anchor cannot
+        // offline-resolve it: pass the user's base-mint ATA explicitly.
+        associatedBaseUser: getAssociatedTokenAddressSync(
+          mint,
+          user,
+          true,
+          baseTokenProgram,
+        ),
+        // creator_vault is seeded by bonding_curve.creator (an on-chain field
+        // Anchor cannot read offline), so we derive it from the passed creator.
+        creatorVault,
+        // associated_creator_vault depends on creator_vault; derive it too.
+        associatedCreatorVault: getAssociatedTokenAddressSync(
+          quoteMint,
+          creatorVault,
+          true,
+          quoteTokenProgram,
+        ),
+      })
+      .instruction();
   }
 
   private async getBuyInstructionInternal({

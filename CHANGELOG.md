@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- USDC (non-native quote-mint) support for the launch path: optional `quoteMint`/`quoteTokenProgram` on `createV2Instruction`, `buyInstructions`, `getBuyInstructionRaw`, and `createV2AndBuyInstructions` (plus an explicit `quoteAmount` cap), a new `buyV2` builder, `USDC_MINT`/`QUOTE_MINTS`/`isNativeQuote`, `BUYBACK_FEE_RECIPIENTS`/`pickBuybackFeeRecipient`, `OnlinePumpSdk` quote forwarding, and the `buy_v2` instruction in the bundled IDL. Existing SOL behavior is unchanged (all new params default to wrapped SOL).
+- `scripts/devnet-usdc-smoke.ts`: a devnet/simulate verification harness for the USDC launch path.
+
+### Notes
+- A USDC `createV2AndBuyInstructions` transaction (~1361 bytes) exceeds the 1232-byte single-transaction limit and must be sent as a v0 transaction with an Address Lookup Table. The SOL path fits without one.
+
 ## [1.32.0] - 2026-04-23
 
 Prepares the SDK for the **2026-04-28, 16:00 UTC** breaking on-chain program upgrade to the Pump bonding curve and PumpSwap AMM programs. See [docs/pump-public-docs/BREAKING_FEE_RECIPIENT.md](docs/pump-public-docs/BREAKING_FEE_RECIPIENT.md) for the protocol spec and [docs/MIGRATION.md](docs/MIGRATION.md#upgrading-to-v1320-latest) for call-site guidance.

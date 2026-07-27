@@ -292,6 +292,8 @@ export class OnlinePumpSdk {
     solAmount,
     slippage,
     tokenProgram = TOKEN_PROGRAM_ID,
+    quoteMint = NATIVE_MINT,
+    quoteTokenProgram = TOKEN_PROGRAM_ID,
   }: {
     bondingCurveAccountInfo: AccountInfo<Buffer>;
     bondingCurve: BondingCurve;
@@ -302,6 +304,8 @@ export class OnlinePumpSdk {
     solAmount: BN;
     slippage: number;
     tokenProgram?: PublicKey;
+    quoteMint?: PublicKey;
+    quoteTokenProgram?: PublicKey;
   }): Promise<TransactionInstruction[]> {
     const global = await this.fetchGlobal();
     return PUMP_SDK.buyInstructions({
@@ -315,6 +319,8 @@ export class OnlinePumpSdk {
       solAmount,
       slippage,
       tokenProgram,
+      quoteMint,
+      quoteTokenProgram,
     });
   }
 
@@ -2379,6 +2385,8 @@ export class OnlinePumpSdk {
     user,
     mayhemMode = false,
     cashback = false,
+    quoteMint = NATIVE_MINT,
+    quoteTokenProgram = TOKEN_PROGRAM_ID,
   }: {
     mint: PublicKey;
     name: string;
@@ -2388,6 +2396,8 @@ export class OnlinePumpSdk {
     user: PublicKey;
     mayhemMode?: boolean;
     cashback?: boolean;
+    quoteMint?: PublicKey;
+    quoteTokenProgram?: PublicKey;
   }): Promise<TransactionInstruction> {
     return PUMP_SDK.createV2Instruction({
       mint,
@@ -2398,6 +2408,8 @@ export class OnlinePumpSdk {
       user,
       mayhemMode,
       cashback,
+      quoteMint,
+      quoteTokenProgram,
     });
   }
 
@@ -2425,6 +2437,9 @@ export class OnlinePumpSdk {
     solAmount,
     mayhemMode = false,
     cashback = false,
+    quoteMint = NATIVE_MINT,
+    quoteTokenProgram = TOKEN_PROGRAM_ID,
+    quoteAmount,
   }: {
     mint: PublicKey;
     name: string;
@@ -2435,6 +2450,9 @@ export class OnlinePumpSdk {
     solAmount: BN;
     mayhemMode?: boolean;
     cashback?: boolean;
+    quoteMint?: PublicKey;
+    quoteTokenProgram?: PublicKey;
+    quoteAmount?: BN;
   }): Promise<TransactionInstruction[]> {
     const [global, feeConfig] = await Promise.all([
       this.fetchGlobal(),
@@ -2473,6 +2491,9 @@ export class OnlinePumpSdk {
       solAmount,
       mayhemMode,
       cashback,
+      quoteMint,
+      quoteTokenProgram,
+      quoteAmount,
     });
   }
 
