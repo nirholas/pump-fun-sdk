@@ -1,3 +1,5 @@
+[![MCP Toplist](https://mcptoplist.com/badge/io.github.nirholas%2Fpump-fun-sdk.svg)](https://mcptoplist.com/server/io.github.nirholas%2Fpump-fun-sdk)
+
 <p align="center">    
   <h1 align="center">Pump SDK</h1>  
   <p align="center">
