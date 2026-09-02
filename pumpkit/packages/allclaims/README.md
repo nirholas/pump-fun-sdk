@@ -298,6 +298,23 @@ Two settings are load-bearing and were learned the hard way:
   `tsc` in Cloud Build while the source on disk is perfectly fine. That failure
   looks exactly like a real type error and costs a six-minute build to diagnose.
 
+**Lost your `.env`?** It is gitignored, so a codespace rebuild deletes it, and
+without it neither `npm start` nor `deploy-cloudrun.sh` can run. The deployed
+revision is the durable copy. Rebuild the file from it:
+
+```bash
+PROJECT=aerial-vehicle-466722-p5 ./recover-env.sh          # writes .env, refuses to clobber
+PROJECT=aerial-vehicle-466722-p5 ./recover-env.sh --force  # replaces an existing .env
+```
+
+It reads the non-secret keys off the live revision, pulls `TELEGRAM_BOT_TOKEN`
+out of Secret Manager, applies the same numeric-`CHANNEL_ID` guard the deploy
+applies, and writes `.env` mode `0600`. It is the exact inverse of
+`deploy-cloudrun.sh` and takes the same `PROJECT`/`REGION`/`SERVICE`/`SECRET_NAME`
+overrides. If gcloud has no usable credentials it says so and stops, because
+that is the normal state after a rebuild and the fix (`gcloud auth login`) is
+interactive.
+
 Local fallback if Cloud Run is ever down: `npm run build && npm start` from this
 directory (port 3901 locally; 3900 belongs to channel-bot). Kill a local
 instance by matching `/proc/<pid>/cwd` to this directory, never by the

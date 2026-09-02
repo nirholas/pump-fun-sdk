@@ -246,6 +246,15 @@ curl -H "Authorization: Bearer $(gcloud auth print-identity-token)" \
     --project aerial-vehicle-466722-p5 --format='value(status.url)')/stats"
 ```
 
+**Lost your `.env`?** It is gitignored, so a codespace rebuild deletes it, and without it neither `npm start` nor `deploy-cloudrun.sh` can run. The deployed revision is the durable copy. Rebuild the file from it:
+
+```bash
+PROJECT=aerial-vehicle-466722-p5 ./recover-env.sh          # writes .env, refuses to clobber
+PROJECT=aerial-vehicle-466722-p5 ./recover-env.sh --force  # replaces an existing .env
+```
+
+It reads the non-secret keys off the live revision, pulls `TELEGRAM_BOT_TOKEN` out of Secret Manager, applies the same numeric-`CHANNEL_ID` guard the deploy applies, and writes `.env` mode `0600`. It is the exact inverse of `deploy-cloudrun.sh` and takes the same `PROJECT`/`REGION`/`SERVICE`/`SECRET_NAME` overrides. If gcloud has no usable credentials it says so and stops, because that is the normal state after a rebuild and the fix (`gcloud auth login`) is interactive.
+
 Local fallback if Cloud Run is ever down: `npm run build && npm start` from this directory (port 3900 locally; 3901 belongs to `@pumpkit/allclaims`). Kill a local instance by matching `/proc/<pid>/cwd` to this directory, never by the `node dist/index.js` cmdline, which is relative: `pkill -f "channel-bot/dist/index.js"` matches nothing, and a bare `dist/index.js` pattern also matches unrelated services under `/workspaces/three.ws` that must never be killed.
 
 ## Admin Commands
