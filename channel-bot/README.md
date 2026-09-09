@@ -126,6 +126,14 @@ SOLANA_WS_URL=wss://mainnet.helius-rpc.com/?api-key=your-key
 # Multiple RPC endpoints for fallback (comma-separated)
 SOLANA_RPC_URLS=https://mainnet.helius-rpc.com/?api-key=key1,https://your-other-rpc.com
 
+# Multiple WebSocket endpoints, tried in order when one stops delivering.
+# Set this. A single endpoint is a single point of failure: rpc.magicblock.app
+# went key-gated on 2026-09-09 and started answering 401 on the upgrade, and the
+# sibling all-claims feed sat silent on it for four days still reporting
+# websocket mode, because a subscription that never connects looks identical to
+# a healthy one. Whatever SOLANA_RPC_URLS implies is appended automatically.
+SOLANA_WS_URLS=wss://solana-rpc.publicnode.com,wss://api.mainnet-beta.solana.com
+
 # ── Feed Toggles ──────────────────────────────────────────
 FEED_CLAIMS=true                 # GitHub social fee claims
 FEED_LAUNCHES=false              # New token launches

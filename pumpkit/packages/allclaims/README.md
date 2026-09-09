@@ -59,14 +59,29 @@ Then:
 
 Set `SOLANA_WS_URL`. The bot works without one, but polling mode samples only the 20 most recent signatures per program per tick, and on a chain doing thousands of transactions per minute it **will** miss most claims. The bot logs a loud warning when it falls back to polling.
 
-Verified working free endpoint used during development:
+**Give it more than one endpoint.** `SOLANA_WS_URLS` takes a comma-separated
+list; whatever the RPC endpoints imply is appended automatically, so there is
+always somewhere to fail over to. Endpoints verified keyless and streaming on
+2026-09-09:
 
 ```bash
-SOLANA_RPC_URL=https://rpc.magicblock.app/mainnet
-SOLANA_WS_URL=wss://rpc.magicblock.app/mainnet
+SOLANA_RPC_URL=https://solana-rpc.publicnode.com
+SOLANA_WS_URL=wss://solana-rpc.publicnode.com
+SOLANA_WS_URLS=wss://solana-rpc.publicnode.com,wss://api.mainnet-beta.solana.com
+SOLANA_RPC_URLS=https://solana-rpc.publicnode.com,https://api.mainnet-beta.solana.com,https://solana.leorpc.com/?api_key=FREE
 ```
 
 A paid RPC (Helius, QuickNode, Triton) is recommended for production. Note that Helius's free tier refuses WebSocket upgrades with HTTP 429.
+
+> **`rpc.magicblock.app` is no longer keyless.** It was this bot's endpoint until
+> 2026-09-09, when it began answering `401` on the WebSocket upgrade and
+> `{"error":"invalid api key"}` on HTTP. That is what a dead endpoint costs here:
+> subscribing cannot fail loudly, because web3.js returns a subscription id
+> immediately and retries the socket internally, so the feed reported
+> `mode: websocket` while detecting **zero claims for four days**. The monitor now
+> requires a new subscription to deliver a real log event within 20 seconds before
+> it accepts an endpoint, and walks to the next one otherwise. Check `activeWs`
+> and `wsEventsReceived` in `/stats`: a websocket with no events is a dead one.
 
 ---
 
@@ -78,7 +93,8 @@ A paid RPC (Helius, QuickNode, Triton) is recommended for production. Note that 
 | `CHANNEL_ID` | ✅ | — | Channel to post to (`@name` or `-100…`) |
 | `SOLANA_RPC_URL` | ⬜ | `api.mainnet-beta.solana.com` | Primary RPC HTTP endpoint |
 | `SOLANA_RPC_URLS` | ⬜ | — | Comma-separated fallback RPCs |
-| `SOLANA_WS_URL` | ⬜ | Derived from RPC URL | WebSocket endpoint. Strongly recommended |
+| `SOLANA_WS_URL` | ⬜ | Derived from RPC URL | Preferred WebSocket endpoint. Strongly recommended |
+| `SOLANA_WS_URLS` | ⬜ | Derived from the RPC URLs | Comma-separated WebSocket endpoints, tried in order when one stops delivering |
 | `INSTANT_THRESHOLD_USD` | ⬜ | `100` | Claims at or above this post individually |
 | `MIN_CLAIM_USD` | ⬜ | `0` | Claims below this are counted but not shown |
 | `CARDS_PER_WINDOW` | ⬜ | `6` | Biggest distinct claims per window promoted to full cards |

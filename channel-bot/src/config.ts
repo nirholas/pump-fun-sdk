@@ -15,8 +15,15 @@ export interface ChannelBotConfig {
     solanaRpcUrl: string;
     /** All Solana RPC HTTP URLs for fallback (primary + backups) */
     solanaRpcUrls: string[];
-    /** Solana WebSocket URL (optional) */
+    /** Solana WebSocket URL (optional). First entry of solanaWsUrls. */
     solanaWsUrl?: string;
+    /**
+     * Every WebSocket URL the monitor may subscribe through, in preference
+     * order. One endpoint is not enough: when magicblock went key-gated on
+     * 2026-09-09 it answered 401 forever, and the sibling all-claims feed sat
+     * silent on it for four days because it had nowhere else to go.
+     */
+    solanaWsUrls: string[];
     /** Polling interval in seconds */
     pollIntervalSeconds: number;
     /** Log level */
@@ -55,6 +62,44 @@ export interface ChannelBotConfig {
     };
 }
 
+/** Convert an http(s) RPC URL to its ws(s) equivalent, or null if it is not a URL. */
+function toWsUrl(httpUrl: string): string | null {
+    try {
+        const url = new URL(httpUrl);
+        if (url.protocol !== 'https:' && url.protocol !== 'http:') return null;
+        url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
+        return url.toString();
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * Build the WebSocket preference list.
+ *
+ * SOLANA_WS_URLS (comma-separated) wins, then SOLANA_WS_URL, and whatever the
+ * RPC endpoints imply is always appended so a single explicit endpoint going
+ * dark still has somewhere to fail over to. Order is preserved and duplicates
+ * are dropped.
+ */
+export function resolveWsUrls(rpcUrls: string[]): string[] {
+    const explicit = [
+        ...(process.env.SOLANA_WS_URLS ?? '').split(','),
+        process.env.SOLANA_WS_URL ?? '',
+    ]
+        .map((s) => s.trim())
+        .filter(Boolean);
+
+    const derived = rpcUrls.map(toWsUrl).filter((u): u is string => u !== null);
+
+    const out: string[] = [];
+    for (const url of [...explicit, ...derived]) {
+        if (!/^wss?:\/\//i.test(url)) continue;
+        if (!out.includes(url)) out.push(url);
+    }
+    return out;
+}
+
 export function loadConfig(): ChannelBotConfig {
     const telegramToken = process.env.TELEGRAM_BOT_TOKEN;
     if (!telegramToken) {
@@ -84,16 +129,8 @@ export function loadConfig(): ChannelBotConfig {
         : [];
     const solanaRpcUrls = [solanaRpcUrl, ...extraUrls.filter((u) => u !== solanaRpcUrl)];
 
-    let solanaWsUrl = process.env.SOLANA_WS_URL;
-    if (!solanaWsUrl) {
-        try {
-            const url = new URL(solanaRpcUrl);
-            url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
-            solanaWsUrl = url.toString();
-        } catch {
-            // leave undefined — monitor will use polling
-        }
-    }
+    const solanaWsUrls = resolveWsUrls(solanaRpcUrls);
+    const solanaWsUrl = solanaWsUrls[0];
 
     const pollIntervalSeconds = Number.parseInt(
         process.env.POLL_INTERVAL_SECONDS || '30',
@@ -165,6 +202,7 @@ export function loadConfig(): ChannelBotConfig {
         solanaRpcUrl,
         solanaRpcUrls,
         solanaWsUrl,
+        solanaWsUrls,
         telegramToken,
         webhookSecret: process.env.WEBHOOK_SECRET || undefined,
         webhookUrls,

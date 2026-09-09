@@ -102,6 +102,17 @@ const MAX_QUEUE_SIZE = 50;
 const RATE_LIMIT_LOG_WINDOW_MS = 30_000;
 const WS_HEARTBEAT_INTERVAL_MS = 60_000;
 const WS_HEARTBEAT_TIMEOUT_MS = 90_000;
+/**
+ * How long a freshly subscribed endpoint has to deliver its first log event
+ * before it is judged dead and the next candidate is tried.
+ *
+ * Subscribing cannot fail loudly: web3.js hands back a subscription id straight
+ * away and retries the socket internally, so a refused upgrade (401) looks
+ * exactly like a healthy connection. Traffic is the only honest signal, and the
+ * monitored programs emit thousands of events a minute, so silence this long
+ * means the endpoint, not the chain.
+ */
+const WS_LIVENESS_TIMEOUT_MS = 20_000;
 
 class RpcQueue {
     private queue: string[] = [];
@@ -186,6 +197,9 @@ export class ClaimMonitor {
     private claimsDetected = 0;
     private lastWsEventTime = 0;
     private wsHeartbeatTimer?: ReturnType<typeof setInterval>;
+    private readonly wsUrls: string[];
+    private wsUrlIndex = 0;
+    private activeWsUrl?: string;
     private wsEventsReceived = 0;
     private claimTxProcessed = 0;
     private claimsByType = new Map<string, number>();
@@ -208,6 +222,12 @@ export class ClaimMonitor {
             new PublicKey(PUMP_AMM_PROGRAM_ID),
         ];
         this.rpcQueue = new RpcQueue((sig) => this.processTransaction(sig));
+        this.wsUrls = config.solanaWsUrls?.length
+            ? config.solanaWsUrls
+            : (config.solanaWsUrl ? [config.solanaWsUrl] : []);
+        if (this.wsUrls.length > 1) {
+            log.info('Claim monitor: %d WebSocket endpoints configured (failover enabled)', this.wsUrls.length);
+        }
     }
 
     async start(): Promise<void> {
@@ -222,10 +242,10 @@ export class ClaimMonitor {
             log.warn('SocialFeeIndex bootstrap error: %s', err);
         });
 
-        if (this.config.solanaWsUrl && process.env.SOLANA_WS_URL) {
+        if (this.wsUrls.length > 0 && (process.env.SOLANA_WS_URL || process.env.SOLANA_WS_URLS)) {
             try {
                 await this.startWebSocket();
-                log.info('Claim monitor: WebSocket mode');
+                log.info('Claim monitor: WebSocket mode (%s)', maskRpcUrl(this.activeWsUrl ?? ''));
                 return;
             } catch (err) {
                 log.warn('WS failed, falling back to polling:', err);
@@ -242,12 +262,7 @@ export class ClaimMonitor {
             clearInterval(this.wsHeartbeatTimer);
             this.wsHeartbeatTimer = undefined;
         }
-        if (this.wsConnection) {
-            for (const id of this.wsSubscriptionIds) {
-                this.wsConnection.removeOnLogsListener(id).catch(() => {});
-            }
-            this.wsSubscriptionIds = [];
-        }
+        this.teardownWsConnection();
         if (this.pollTimer) {
             clearTimeout(this.pollTimer);
             this.pollTimer = undefined;
@@ -262,41 +277,110 @@ export class ClaimMonitor {
             mode: this.wsSubscriptionIds.length > 0 ? 'websocket' : 'polling',
             rpcEndpoints: this.rpc.size,
             activeRpc: maskRpcUrl(this.rpc.currentUrl),
+            wsEndpoints: this.wsUrls.length,
+            activeWs: this.activeWsUrl ? maskRpcUrl(this.activeWsUrl) : null,
+            wsEventsReceived: this.wsEventsReceived,
             uptimeMs: this.startedAt ? Date.now() - this.startedAt : 0,
         };
     }
 
     // ── WebSocket ────────────────────────────────────────────────────
 
+    /**
+     * Bring the log subscription up on the first endpoint that actually
+     * delivers traffic, trying each configured endpoint in turn.
+     */
     private async startWebSocket(): Promise<void> {
-        this.wsConnection = new Connection(this.rpc.currentUrl, {
-            commitment: 'confirmed',
-            wsEndpoint: this.config.solanaWsUrl,
-            disableRetryOnRateLimit: true,
-        });
+        if (this.wsUrls.length === 0) throw new Error('no WebSocket endpoints configured');
 
-        this.lastWsEventTime = Date.now();
-
-        for (const pubkey of this.programPubkeys) {
-            const subId = this.wsConnection.onLogs(
-                pubkey,
-                async (logInfo: Logs) => {
-                    this.lastWsEventTime = Date.now();
-                    this.wsEventsReceived++;
-                    try { await this.handleLogEvent(logInfo); }
-                    catch (err) { log.error('Log event error:', err); }
-                },
-                'confirmed',
-            );
-            this.wsSubscriptionIds.push(subId);
+        let lastError = 'no endpoint delivered traffic';
+        for (let attempt = 0; attempt < this.wsUrls.length; attempt++) {
+            const index = (this.wsUrlIndex + attempt) % this.wsUrls.length;
+            const wsUrl = this.wsUrls[index]!;
+            try {
+                await this.connectWebSocket(wsUrl);
+                this.wsUrlIndex = index;
+                this.activeWsUrl = wsUrl;
+                this.startWsHeartbeat();
+                return;
+            } catch (err) {
+                lastError = String(err);
+                log.warn('Claim monitor: WS endpoint %s is not delivering (%s), trying the next one',
+                    maskRpcUrl(wsUrl), lastError);
+                this.teardownWsConnection();
+            }
         }
+        this.activeWsUrl = undefined;
+        throw new Error(`all ${this.wsUrls.length} WebSocket endpoints failed: ${lastError}`);
+    }
 
-        // Heartbeat: if no event for too long, reconnect
+    /**
+     * Subscribe through one endpoint and resolve only once a log event has
+     * actually arrived. Rejects if the endpoint stays silent, which is what a
+     * refused or black-holed upgrade looks like from web3.js.
+     */
+    private connectWebSocket(wsUrl: string): Promise<void> {
+        return new Promise<void>((resolve, reject) => {
+            let settled = false;
+            const conn = new Connection(this.rpc.currentUrl, {
+                commitment: 'confirmed',
+                wsEndpoint: wsUrl,
+                disableRetryOnRateLimit: true,
+            });
+            this.wsConnection = conn;
+            this.lastWsEventTime = Date.now();
+
+            const liveness = setTimeout(() => {
+                if (settled) return;
+                settled = true;
+                reject(new Error(`no log events within ${WS_LIVENESS_TIMEOUT_MS / 1000}s`));
+            }, WS_LIVENESS_TIMEOUT_MS);
+
+            for (const pubkey of this.programPubkeys) {
+                const subId = conn.onLogs(
+                    pubkey,
+                    async (logInfo: Logs) => {
+                        this.lastWsEventTime = Date.now();
+                        this.wsEventsReceived++;
+                        if (!settled) {
+                            settled = true;
+                            clearTimeout(liveness);
+                            resolve();
+                        }
+                        try { await this.handleLogEvent(logInfo); }
+                        catch (err) { log.error('Log event error:', err); }
+                    },
+                    'confirmed',
+                );
+                this.wsSubscriptionIds.push(subId);
+            }
+        });
+    }
+
+    /** Drop the current subscriptions and connection. Safe to call when there are none. */
+    private teardownWsConnection(): void {
+        if (this.wsConnection) {
+            for (const id of this.wsSubscriptionIds) {
+                this.wsConnection.removeOnLogsListener(id).catch(() => {});
+            }
+        }
+        this.wsSubscriptionIds = [];
+        this.wsConnection = undefined;
+    }
+
+    /**
+     * (Re)arm the silence watchdog. Always clears the previous timer first: a
+     * reconnect that stacked a second interval would double the log volume and
+     * fire overlapping reconnects.
+     */
+    private startWsHeartbeat(): void {
+        if (this.wsHeartbeatTimer) clearInterval(this.wsHeartbeatTimer);
         this.wsHeartbeatTimer = setInterval(() => {
             if (!this.isRunning) return;
             const elapsed = Date.now() - this.lastWsEventTime;
             if (elapsed > WS_HEARTBEAT_TIMEOUT_MS) {
-                log.warn('Claim monitor WS silent for %ds — reconnecting...', Math.floor(elapsed / 1000));
+                log.warn('Claim monitor WS silent for %ds on %s, reconnecting...',
+                    Math.floor(elapsed / 1000), maskRpcUrl(this.activeWsUrl ?? ''));
                 this.reconnectWebSocket();
             } else {
                 const typeBreakdown = [...this.claimsByType.entries()]
@@ -309,16 +393,17 @@ export class ClaimMonitor {
         }, WS_HEARTBEAT_INTERVAL_MS);
     }
 
+    /**
+     * Reconnect after a silence. Steps past the endpoint that just went quiet
+     * so a dead one is not retried forever, which is how the sibling all-claims
+     * feed sat on a 401 endpoint for four days still reporting websocket mode.
+     */
     private reconnectWebSocket(): void {
         if (!this.isRunning) return;
-        // Clean up old connection
-        if (this.wsConnection) {
-            for (const id of this.wsSubscriptionIds) {
-                this.wsConnection.removeOnLogsListener(id).catch(() => {});
-            }
-            this.wsSubscriptionIds = [];
+        this.teardownWsConnection();
+        if (this.wsUrls.length > 1) {
+            this.wsUrlIndex = (this.wsUrlIndex + 1) % this.wsUrls.length;
         }
-        this.wsConnection = undefined;
 
         this.startWebSocket().catch((err) => {
             log.warn('Claim monitor WS reconnect failed, falling back to polling: %s', err);

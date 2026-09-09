@@ -57,6 +57,21 @@ layout added to that table is automatically asserted against the filter. That is
 the cheap version of the refactor: the table is the single source of truth even
 though the decoder is duplicated.
 
+## The transport has the same rule (added 2026-09-09)
+
+The decoder only ever sees what the transport delivers, so the WebSocket layer
+of `claim-monitor.ts` propagates the same way: canonical copy first, then
+`channel-bot`. Both now refuse an endpoint that does not deliver a real log event
+within 20 seconds and walk to the next one in `SOLANA_WS_URLS`.
+
+That rule exists because a subscription cannot fail loudly. web3.js returns a
+subscription id immediately and retries the socket internally, so an endpoint
+answering `401` on the upgrade is indistinguishable from a healthy one: when
+`rpc.magicblock.app` went key-gated on 2026-09-09, the all-claims feed reported
+`mode: websocket` while detecting zero claims for four days. `channel-bot`'s
+`event-monitor.ts` carries the same rotation, since that is the transport its
+live feed actually runs on.
+
 ## If you are fixing a decoder bug
 
 Fix it in the canonical copy first, then propagate to `channel-bot`, then update

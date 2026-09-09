@@ -578,6 +578,7 @@ async function main(): Promise<void> {
         getStats: () => ({
             channel: config.channelId,
             transport: eventMonitor.mode,
+            activeWs: eventMonitor.activeWsUrl ?? null,
             feeds: { ...config.feed },
             muted: postingMuted(),
             whaleThresholdSol: config.whaleThresholdSol,

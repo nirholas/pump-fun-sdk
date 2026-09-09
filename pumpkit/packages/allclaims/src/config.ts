@@ -18,8 +18,15 @@ export interface AllClaimsConfig {
     solanaRpcUrl: string;
     /** All Solana RPC HTTP URLs for fallback (primary + backups) */
     solanaRpcUrls: string[];
-    /** Solana WebSocket URL (optional) */
+    /** Solana WebSocket URL (optional). First entry of solanaWsUrls. */
     solanaWsUrl?: string;
+    /**
+     * Every WebSocket URL the monitor may subscribe through, in preference
+     * order. A single endpoint is not enough: an RPC that starts refusing the
+     * upgrade (magicblock began answering 401 once it went key-gated) leaves a
+     * one-endpoint monitor reconnecting into the same wall forever.
+     */
+    solanaWsUrls: string[];
     /** Polling interval in seconds (fallback mode) */
     pollIntervalSeconds: number;
     /** Log level */
@@ -66,6 +73,44 @@ function parseBool(name: string, fallback: boolean): boolean {
     return raw.toLowerCase() === 'true';
 }
 
+/** Convert an http(s) RPC URL to its ws(s) equivalent, or null if it is not a URL. */
+function toWsUrl(httpUrl: string): string | null {
+    try {
+        const url = new URL(httpUrl);
+        if (url.protocol !== 'https:' && url.protocol !== 'http:') return null;
+        url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
+        return url.toString();
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * Build the WebSocket preference list.
+ *
+ * SOLANA_WS_URLS (comma-separated) wins, then SOLANA_WS_URL, and whatever the
+ * RPC endpoints imply is always appended so a single explicit endpoint going
+ * dark still has somewhere to fail over to. Order is preserved and duplicates
+ * are dropped.
+ */
+export function resolveWsUrls(rpcUrls: string[]): string[] {
+    const explicit = [
+        ...(process.env.SOLANA_WS_URLS ?? '').split(','),
+        process.env.SOLANA_WS_URL ?? '',
+    ]
+        .map((s) => s.trim())
+        .filter(Boolean);
+
+    const derived = rpcUrls.map(toWsUrl).filter((u): u is string => u !== null);
+
+    const out: string[] = [];
+    for (const url of [...explicit, ...derived]) {
+        if (!/^wss?:\/\//i.test(url)) continue;
+        if (!out.includes(url)) out.push(url);
+    }
+    return out;
+}
+
 export function loadConfig(): AllClaimsConfig {
     const telegramToken = process.env.TELEGRAM_BOT_TOKEN;
     if (!telegramToken) {
@@ -92,16 +137,8 @@ export function loadConfig(): AllClaimsConfig {
         : [];
     const solanaRpcUrls = [solanaRpcUrl, ...extraUrls.filter((u) => u !== solanaRpcUrl)];
 
-    let solanaWsUrl = process.env.SOLANA_WS_URL;
-    if (!solanaWsUrl) {
-        try {
-            const url = new URL(solanaRpcUrl);
-            url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
-            solanaWsUrl = url.toString();
-        } catch {
-            // leave undefined — monitor will use polling
-        }
-    }
+    const solanaWsUrls = resolveWsUrls(solanaRpcUrls);
+    const solanaWsUrl = solanaWsUrls[0];
 
     const VALID_LOG_LEVELS = ['debug', 'info', 'warn', 'error'] as const;
     const rawLogLevel = process.env.LOG_LEVEL || 'info';
@@ -130,6 +167,7 @@ export function loadConfig(): AllClaimsConfig {
         solanaRpcUrl,
         solanaRpcUrls,
         solanaWsUrl,
+        solanaWsUrls,
         telegramToken,
     };
 }

@@ -81,12 +81,19 @@ export class EventMonitor {
     private wsHeartbeatTimer?: ReturnType<typeof setInterval>;
     private wsStallCount = 0;
     private wsRetryTimer?: ReturnType<typeof setInterval>;
+    private readonly wsUrls: string[];
+    private wsUrlIndex = 0;
     private pollingActive = false;
     private currentMode: 'websocket' | 'polling' | 'stopped' = 'stopped';
 
     /** Active transport: 'websocket', 'polling', or 'stopped'. */
     get mode(): string {
         return this.currentMode;
+    }
+
+    /** The WebSocket endpoint currently subscribed through, for /stats. */
+    get activeWsUrl(): string | undefined {
+        return this.currentMode === 'websocket' ? this.wsUrls[this.wsUrlIndex] : undefined;
     }
 
     constructor(
@@ -108,13 +115,19 @@ export class EventMonitor {
             log.info('Event monitor: %d RPC endpoints configured (fallback enabled)', config.solanaRpcUrls.length);
         }
         this.programPubkey = new PublicKey(PUMP_PROGRAM_ID);
+        this.wsUrls = config.solanaWsUrls?.length
+            ? config.solanaWsUrls
+            : (config.solanaWsUrl ? [config.solanaWsUrl] : []);
+        if (this.wsUrls.length > 1) {
+            log.info('Event monitor: %d WebSocket endpoints configured (failover enabled)', this.wsUrls.length);
+        }
     }
 
     async start(): Promise<void> {
         if (this.isRunning) return;
         this.isRunning = true;
 
-        if (this.config.solanaWsUrl && process.env.SOLANA_WS_URL) {
+        if (this.wsUrls.length > 0 && (process.env.SOLANA_WS_URL || process.env.SOLANA_WS_URLS)) {
             try {
                 await this.startWebSocket();
                 this.currentMode = 'websocket';
@@ -154,12 +167,18 @@ export class EventMonitor {
     // ── WebSocket ────────────────────────────────────────────────────
 
     private async startWebSocket(): Promise<void> {
+        const wsUrl = this.wsUrls[this.wsUrlIndex];
+        if (!wsUrl) throw new Error('no WebSocket endpoints configured');
         this.wsConnection = new Connection(this.rpc.currentUrl, {
             commitment: 'confirmed',
-            wsEndpoint: this.config.solanaWsUrl,
+            wsEndpoint: wsUrl,
         });
 
         this.lastWsEventTime = Date.now();
+
+        // Clearing first matters: every reconnect calls back into this method,
+        // and a stacked interval fires overlapping reconnects forever.
+        if (this.wsHeartbeatTimer) clearInterval(this.wsHeartbeatTimer);
 
         this.wsSubscriptionId = this.wsConnection.onLogs(
             this.programPubkey,
@@ -208,6 +227,14 @@ export class EventMonitor {
         this.wsSubscriptionId = undefined;
         this.wsConnection = undefined;
 
+        // Step to the next endpoint. Retrying the one that just went quiet is
+        // how a feed ends up silent for days on an endpoint that started
+        // refusing the upgrade (magicblock went key-gated on 2026-09-09).
+        if (this.wsUrls.length > 1) {
+            this.wsUrlIndex = (this.wsUrlIndex + 1) % this.wsUrls.length;
+            log.info('Event monitor: switching to WebSocket endpoint %d/%d', this.wsUrlIndex + 1, this.wsUrls.length);
+        }
+
         if (this.wsStallCount >= MAX_WS_STALLS) {
             this.fallBackToPolling();
             return;
@@ -230,7 +257,11 @@ export class EventMonitor {
             this.wsRetryTimer = setInterval(() => {
                 if (this.stopped || !this.pollingActive) return;
                 this.wsStallCount = 0;
-                log.info('Event monitor: retrying WebSocket...');
+                if (this.wsUrls.length > 1) {
+                    this.wsUrlIndex = (this.wsUrlIndex + 1) % this.wsUrls.length;
+                }
+                log.info('Event monitor: retrying WebSocket (endpoint %d/%d)...',
+                    this.wsUrlIndex + 1, this.wsUrls.length);
                 this.startWebSocket().catch((err) => {
                     log.debug('WS retry failed: %s', err);
                 });
