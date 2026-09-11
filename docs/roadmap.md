@@ -41,7 +41,7 @@
 | Live trades dashboard | ✅ Done | PumpPortal + relay fallback with auto-demo |
 | On-chain analytics | ✅ Done | Price impact, graduation progress, token price, bonding curve summary |
 | x402 payment protocol | ✅ Done | HTTP 402 micropayments with Solana USDC |
-| 44 tutorials | ✅ Done | Step-by-step guides from a first token to a complete swap build |
+| 45 tutorials | ✅ Done | Step-by-step guides from a first token to a complete swap build |
 | PumpOS website | ✅ Done | Web desktop with 169 Pump-Store apps |
 | DeFi agents | ✅ Done | 43 production-ready AI agent definitions with 18-language i18n |
 | Lair-TG platform | ✅ Done | Unified Telegram bot for DeFi intelligence, wallet management, token launching |

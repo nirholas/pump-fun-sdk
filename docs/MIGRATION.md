@@ -166,7 +166,7 @@ npm install @nirholas/pump-sdk@1.28.0
 
 ### New Ecosystem Components Added
 
-- **44 tutorials** (`tutorials/`) — beginner to advanced
+- **45 tutorials** (`tutorials/`) — beginner to advanced
 - **Analytics module** (`src/analytics.ts`) — price impact, graduation, pricing
 - **WebSocket relay server** (`websocket-server/`) — real-time token launch broadcasting
 - **Live dashboards** (`live/`) — browser-based monitoring UIs
