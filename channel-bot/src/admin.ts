@@ -43,7 +43,7 @@ export interface AdminContext {
     performance?: PerformanceTracker;
 }
 
-const FEED_NAMES = ['claims', 'launches', 'graduations', 'whales', 'feeDistributions'] as const;
+const FEED_NAMES = ['claims', 'creatorClaims', 'launches', 'graduations', 'whales', 'feeDistributions'] as const;
 type FeedName = (typeof FEED_NAMES)[number];
 
 export function isMuted(state: RuntimeState): boolean {
@@ -123,6 +123,16 @@ export function registerAdminCommands(bot: Bot, ctx: AdminContext): void {
                 return;
             }
             const enabled = value.toLowerCase() === 'on';
+            if (config.profile) {
+                // A profile is the whole point: one word that says what this
+                // channel carries. Letting a DM widen it is how the first-claims
+                // feed ended up posting routine payouts.
+                await c.reply(
+                    `🔒 This deployment runs the "${config.profile}" profile, which pins every feed. ` +
+                    `Change FEED_PROFILE and redeploy to alter what it posts.`,
+                );
+                return;
+            }
             if (feed === 'claims' && enabled && !config.feed.claims) {
                 // The claim monitor bootstraps a large on-chain index at startup,
                 // so it only runs when claims were enabled at boot.

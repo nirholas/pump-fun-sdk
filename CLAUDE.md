@@ -182,6 +182,7 @@ interface Global {
 7. **Not extending accounts before migration** — `BONDING_CURVE_NEW_SIZE = 151`, accounts may need extension.
 8. **Importing from internal paths** — Import from `@nirholas/pump-sdk`, not `@nirholas/pump-sdk/dist/...`.
 9. **Hand-rolling buy/sell without the breaking fee recipient** — After the 2026-04-28 upgrade, every bonding curve buy/sell must carry one of 8 mutable trailing fee recipients (`pickBreakingFeeRecipient()`), and every AMM buy/sell must carry that recipient **plus** its quote-mint ATA (`buildAmmBreakingFeeRecipientAccounts()`). Using `PUMP_SDK.*` and `OnlinePumpSdk` gets this right automatically. See `docs/pump-public-docs/BREAKING_FEE_RECIPIENT.md`.
+10. **Widening the @pumpfunclaims Telegram feed** — that channel carries ONE event, a dev's first-ever GitHub reward claim on a coin. `channel-bot/` runs two feeds from one codebase, selected by `FEED_PROFILE`; the claims feed is `github-first-claims` and must never post creator-fee collections, repeat claims, graduations, or diagnostics. Read `channel-bot/CLAUDE.md` before touching anything in that directory.
 
 ## Project Layout
 

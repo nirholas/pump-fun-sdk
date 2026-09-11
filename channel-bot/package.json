@@ -1,7 +1,7 @@
 {
   "name": "pumpfun-channel-bot",
   "version": "1.0.0",
-  "description": "PumpFun read-only Telegram channel feed — broadcasts token launches, graduations, whale trades, fee claims and distributions",
+  "description": "PumpFun read-only Telegram channel feed \u2014 broadcasts token launches, graduations, whale trades, fee claims and distributions",
   "type": "module",
   "engines": {
     "node": ">=20.0.0"
@@ -12,7 +12,11 @@
     "build": "tsc",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "probe:endpoints": "node scripts/probe-endpoints.mjs",
+    "broadcast:test": "node scripts/post-test-broadcast.mjs",
+    "alerts:bind": "node scripts/bind-alert-chat.mjs",
+    "doctor": "node scripts/doctor.mjs"
   },
   "dependencies": {
     "@solana/web3.js": "^1.98.0",

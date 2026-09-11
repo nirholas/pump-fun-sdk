@@ -4,6 +4,12 @@ Deep dive into the `@pumpfunclaims` channel bot — how it detects on-chain even
 
 > **Source:** `channel-bot/src/`
 > **Channel:** [@pumpfunclaims](https://t.me/pumpfunclaims)
+
+> **Status: dark since 2026-08-01.** This document describes how the feed works,
+> not a feed that is currently running. No bot holds post rights in
+> `-1003533969743`, and no service in this repo targets it. Restore steps:
+> [channel-bot README](../channel-bot/README.md#the-pumpfunclaims-first-claims-feed-is-dark).
+
 > **Purpose:** Read-only broadcast of PumpFun first fee claims by GitHub-assigned developers
 
 ---

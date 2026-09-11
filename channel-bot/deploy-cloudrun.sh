@@ -19,6 +19,15 @@ REGION="${REGION:-us-central1}"
 PROJECT="${PROJECT:-$(gcloud config get-value project 2>/dev/null)}"
 SECRET_NAME="${SECRET_NAME:-pumpfun-channel-bot-token}"
 
+# One checkout serves several feeds. Each feed is its own Cloud Run service with
+# its own bot token, channel and FEED_* toggles, so the config it ships lives in
+# its own env file rather than in this script. Overriding all four variables is
+# what deploys a sibling feed without disturbing the one already running:
+#
+#   SERVICE=pumpfun-claims-bot SECRET_NAME=pumpfun-claims-bot-token \
+#     ENV_FILE=.env.claims ./deploy-cloudrun.sh
+ENV_FILE="${ENV_FILE:-.env}"
+
 # The project's default compute service account was deleted, so both the build
 # and the runtime identity must be pinned explicitly or the deploy fails with an
 # opaque permissions error.
@@ -30,29 +39,29 @@ if [[ -z "${PROJECT}" || "${PROJECT}" == "(unset)" ]]; then
     exit 1
 fi
 
-if [[ ! -f .env ]]; then
-    echo "No .env found in $(pwd). Copy .env.example and fill it in first." >&2
+if [[ ! -f "${ENV_FILE}" ]]; then
+    echo "No ${ENV_FILE} found in $(pwd). Copy .env.example and fill it in first." >&2
     exit 1
 fi
 
-# Pull the token out of .env; everything else ships as plain env vars.
-TOKEN="$(grep -E '^TELEGRAM_BOT_TOKEN=' .env | head -1 | cut -d= -f2-)"
+# Pull the token out of the env file; everything else ships as plain env vars.
+TOKEN="$(grep -E '^TELEGRAM_BOT_TOKEN=' "${ENV_FILE}" | head -1 | cut -d= -f2-)"
 if [[ -z "${TOKEN}" ]]; then
-    echo "TELEGRAM_BOT_TOKEN is not set in .env" >&2
+    echo "TELEGRAM_BOT_TOKEN is not set in ${ENV_FILE}" >&2
     exit 1
 fi
 
 # This bot must never post to the all-claims channel. A numeric -100... id is
 # also the only form that survives a chat username change, and getChat by
 # @handle is not reliable across chat types.
-CHANNEL="$(grep -E '^CHANNEL_ID=' .env | head -1 | cut -d= -f2-)"
+CHANNEL="$(grep -E '^CHANNEL_ID=' "${ENV_FILE}" | head -1 | cut -d= -f2-)"
 if [[ ! "${CHANNEL}" =~ ^-100[0-9]+$ ]]; then
     echo "CHANNEL_ID must be the numeric -100... chat id, got: '${CHANNEL}'" >&2
     echo "Recover it with: curl -s \"https://api.telegram.org/bot\${TOKEN}/getChat?chat_id=@handle\"" >&2
     exit 1
 fi
 
-echo "Project: ${PROJECT}   Service: ${SERVICE}   Region: ${REGION}"
+echo "Project: ${PROJECT}   Service: ${SERVICE}   Region: ${REGION}   Config: ${ENV_FILE}"
 echo "Channel: ${CHANNEL}   Build SA: ${BUILD_SA}   Runtime SA: ${RUNTIME_SA}"
 
 # Store (or rotate) the bot token in Secret Manager.
@@ -87,7 +96,7 @@ while IFS= read -r line || [[ -n "${line}" ]]; do
     [[ "${key}" == "TELEGRAM_BOT_TOKEN" || "${key}" == "PORT" ]] && continue
     # Escape double quotes for YAML, then emit a quoted scalar.
     printf '%s: "%s"\n' "${key}" "${value//\"/\\\"}" >> "${ENV_YAML}"
-done < .env
+done < "${ENV_FILE}"
 
 echo "Shipping $(wc -l < "${ENV_YAML}") env vars (token comes from Secret Manager, PORT from Cloud Run)"
 

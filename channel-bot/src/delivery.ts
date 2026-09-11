@@ -103,6 +103,28 @@ export interface ChannelAccess {
  * Verify at boot that the bot can actually post to its channel.
  * Never throws: a preflight that cannot run must not stop the feed.
  */
+/**
+ * Telegram answers getChatMember with "member list is inaccessible" when the
+ * caller is not an administrator of the chat. The string matches none of the
+ * classifier's branches, so on its own it lands in the retryable `unknown`
+ * bucket.
+ */
+function isMemberListInaccessible(err: unknown): boolean {
+    const description = String(
+        (err as { description?: string })?.description ?? (err as Error)?.message ?? err,
+    ).toLowerCase();
+    return description.includes('member list is inaccessible');
+}
+
+/** The chat's type, or undefined when it cannot be read. Never throws. */
+async function chatTypeOf(api: Api, channelId: string): Promise<string | undefined> {
+    try {
+        return (await api.getChat(channelId)).type;
+    } catch {
+        return undefined;
+    }
+}
+
 export async function verifyChannelAccess(api: Api, channelId: string, botId: number): Promise<ChannelAccess> {
     try {
         const member = await api.getChatMember(channelId, botId);
@@ -118,6 +140,19 @@ export async function verifyChannelAccess(api: Api, channelId: string, botId: nu
         return { ok: true };
     } catch (err) {
         const verdict = classifyDeliveryError(err, channelId);
+        // "member list is inaccessible" means the bot is not an admin. In a
+        // channel that is decisive rather than inconclusive: a non-admin bot
+        // cannot post there at all. Left in the retryable `unknown` bucket it
+        // boots the feed logging "Channel access verified" and then silently
+        // drops every event, which is the state @pumpfunclaims was in after
+        // its bot was demoted. A group is different (a non-admin member can
+        // still post), so only a channel converts the fault.
+        if (verdict.fault === 'unknown' && isMemberListInaccessible(err)) {
+            if ((await chatTypeOf(api, channelId)) === 'channel') {
+                const demoted = classifyDeliveryError({ description: 'not enough rights' }, channelId);
+                return { ok: false, fault: demoted.fault, fix: demoted.fix };
+            }
+        }
         // A transient probe failure is not proof of a broken channel.
         if (verdict.retryable) {
             log.warn('Channel preflight inconclusive (%s) — continuing', verdict.fault);

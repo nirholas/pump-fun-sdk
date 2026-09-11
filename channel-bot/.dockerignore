@@ -5,7 +5,8 @@
 .gitignore
 node_modules/
 dist/
-.env
-.env.bak
+# Every env file, not just .env: each feed deployed from this directory keeps
+# its own (.env.claims, .env.bak), and every one of them holds a bot token.
+.env*
 *.log
 .DS_Store

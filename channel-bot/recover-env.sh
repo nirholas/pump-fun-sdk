@@ -27,7 +27,10 @@ SERVICE="${SERVICE:-pumpfun-channel-bot}"
 REGION="${REGION:-us-central1}"
 PROJECT="${PROJECT:-$(gcloud config get-value project 2>/dev/null)}"
 SECRET_NAME="${SECRET_NAME:-pumpfun-channel-bot-token}"
-OUT="${OUT:-.env}"
+# ENV_FILE is the name deploy-cloudrun.sh uses for the same thing, so a sibling
+# feed recovers with the same variable it deploys with:
+#   SERVICE=pumpfun-claims-bot ENV_FILE=.env.claims ./recover-env.sh
+OUT="${OUT:-${ENV_FILE:-.env}}"
 
 FORCE=0
 for arg in "$@"; do

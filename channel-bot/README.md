@@ -9,6 +9,12 @@ Read-only Telegram channel feed that broadcasts PumpFun on-chain activity — Gi
 > That chat is the discussion supergroup linked to channel `@migratedpumpfun`
 > (`-1003818751043`); posting targets the supergroup, which is where the audience is.
 >
+> **`@pumpfunclaims` is not this service and is currently dark.** This code used to
+> serve it; the deployment was repurposed into the migrations feed on 2026-08-01
+> (`FEED_CLAIMS=false`). See
+> [The `@pumpfunclaims` first-claims feed is dark](#the-pumpfunclaims-first-claims-feed-is-dark)
+> for what is broken and how to bring it back without taking `@trackpumpfun` down.
+>
 > The separate all-claims firehose is [`@pumpkit/allclaims`](../pumpkit/packages/allclaims/),
 > a **different bot, token, channel and Cloud Run service**. Never share a bot token
 > between them: one token cannot serve two feeds, and reusing it crosses the streams.
@@ -24,11 +30,14 @@ Read-only Telegram channel feed that broadcasts PumpFun on-chain activity — Gi
 
 | Feed | Description | Toggle |
 |------|-------------|--------|
-| **GitHub Social Fee Claims** | GitHub devs claiming PumpFun social fee PDA rewards | `FEED_CLAIMS` |
+| **GitHub First Claims** | A dev's first-ever claim of GitHub social-fee-PDA rewards on a coin (Path A). The @pumpfunclaims product | `FEED_CLAIMS` |
+| **Creator Fee Claims** | Plain `collect_creator_fee` payouts (Path B). Off by default; never in the first-claims channel | `FEED_CREATOR_CLAIMS` |
 | **Token Launches** | New token mints with creator profile enrichment | `FEED_LAUNCHES` |
 | **Token Graduations** | Tokens graduating from bonding curve to PumpAMM | `FEED_GRADUATIONS` |
 | **Whale Trades** | Buys/sells over `WHALE_THRESHOLD_SOL` with curve progress | `FEED_WHALES` |
 | **Fee Distributions** | Creator fee payouts to shareholders | `FEED_FEE_DISTRIBUTIONS` |
+
+**Prefer `FEED_PROFILE` to individual toggles.** `github-first-claims` and `graduations` each pin the complete set, so a deployment is selected by one word and cannot drift one variable at a time into posting things its channel is not for. With a profile set the `FEED_*` variables are ignored and `/feeds` refuses runtime changes. See [CLAUDE.md](CLAUDE.md) for the rules per feed.
 
 All toggles except `FEED_CLAIMS` can also be flipped at runtime with the `/feeds` admin command — no redeploy needed. Detection always runs for every feed; toggles only gate what gets posted to Telegram, so the HTTP API and webhooks below always carry the full event stream.
 
@@ -135,7 +144,10 @@ SOLANA_RPC_URLS=https://mainnet.helius-rpc.com/?api-key=key1,https://your-other-
 SOLANA_WS_URLS=wss://solana-rpc.publicnode.com,wss://api.mainnet-beta.solana.com
 
 # ── Feed Toggles ──────────────────────────────────────────
-FEED_CLAIMS=true                 # GitHub social fee claims
+FEED_PROFILE=github-first-claims # one word selects the feed; pins every toggle below
+# Individual toggles, only honoured when FEED_PROFILE is unset:
+FEED_CLAIMS=true                 # GitHub first claims (Path A)
+FEED_CREATOR_CLAIMS=false        # plain creator fee collections (Path B)
 FEED_LAUNCHES=false              # New token launches
 FEED_GRADUATIONS=true            # Token graduations
 FEED_WHALES=false                # Large trades over WHALE_THRESHOLD_SOL
@@ -261,7 +273,173 @@ PROJECT=aerial-vehicle-466722-p5 ./recover-env.sh          # writes .env, refuse
 PROJECT=aerial-vehicle-466722-p5 ./recover-env.sh --force  # replaces an existing .env
 ```
 
-It reads the non-secret keys off the live revision, pulls `TELEGRAM_BOT_TOKEN` out of Secret Manager, applies the same numeric-`CHANNEL_ID` guard the deploy applies, and writes `.env` mode `0600`. It is the exact inverse of `deploy-cloudrun.sh` and takes the same `PROJECT`/`REGION`/`SERVICE`/`SECRET_NAME` overrides. If gcloud has no usable credentials it says so and stops, because that is the normal state after a rebuild and the fix (`gcloud auth login`) is interactive.
+It reads the non-secret keys off the live revision, pulls `TELEGRAM_BOT_TOKEN` out of Secret Manager, applies the same numeric-`CHANNEL_ID` guard the deploy applies, and writes `.env` mode `0600`. It is the exact inverse of `deploy-cloudrun.sh` and takes the same `PROJECT`/`REGION`/`SERVICE`/`SECRET_NAME`/`ENV_FILE` overrides, so a sibling feed recovers into its own file instead of overwriting this one:
+
+```bash
+SERVICE=pumpfun-claims-bot ENV_FILE=.env.claims ./recover-env.sh
+``` If gcloud has no usable credentials it says so and stops, because that is the normal state after a rebuild and the fix (`gcloud auth login`) is interactive.
+
+### When it stops: `npm run doctor`
+
+The outages this feed has had were cheap to fix and expensive to diagnose. An
+endpoint goes key-gated, the channel goes quiet, and whoever looks next starts
+from nothing: which bot is this, which channel, which endpoints are configured,
+are any alive, is it even RPC or did the bot lose post rights. That question has
+taken days to answer more than once, on a feed that was working the day before.
+
+One command answers all of it, in the order the pipeline fails:
+
+```bash
+npm run doctor                                  # diagnose .env.claims
+npm run doctor -- --env .env                    # the graduations feed
+npm run doctor -- --fix --candidates            # rewrite the endpoint lists to what works
+```
+
+It checks config coherence (does `CHANNEL_ID` match `FEED_PROFILE`, is anything
+about to collide), then Telegram (can this bot post to this channel *right
+now*), then every endpoint against the real payloads. It ends with either
+`HEALTHY` or a numbered list of problems, each with the exact command or Telegram
+action that fixes it. `--fix` rewrites `SOLANA_RPC_URL(S)`/`SOLANA_WS_URL(S)` to
+the endpoints that passed, pulling replacements from the public pool with
+`--candidates`, and refuses to write an empty list.
+
+Every watchdog alert ends with the `doctor` command for that deployment, so an
+outage notification is also its own runbook.
+
+### Staying up without a babysitter
+
+Three mechanisms, each covering a failure this feed has actually had.
+
+**1. Endpoint failover, proven rather than assumed.** `npm run probe:endpoints`
+puts every configured RPC through the calls the claim monitor really makes:
+`getSlot`, `getSignaturesForAddress` and `getTransaction` against the pump
+program over HTTP, and a `logsSubscribe` that must deliver a real
+`logsNotification` within 20s. Liveness pings do not qualify an endpoint here:
+a node can answer `getSlot` in 40ms and still refuse signature history, and an
+endpoint that accepts a subscription and sends nothing is exactly what took the
+all-claims feed down for four days. Add `--candidates` to sweep the public pool,
+`--json` for machine output. It exits non-zero when nothing passes every stage,
+so it works as a deploy gate.
+
+As measured on 2026-09-11, 4 of 14 public keyless endpoints were usable at all;
+the live set is 6 HTTP endpoints and 5 delivering sockets, Helius first.
+
+**2. The feed reports its own outages.** Set `ALERT_CHAT_ID` to a DM or private
+group and the watchdog ([watchdog.ts](src/watchdog.ts)) escalates two conditions:
+delivery blocked (Telegram refusing our posts) and websocket silence (no event
+for 10 minutes, when the pump programs are never quiet that long). It alerts
+once per distinct problem, repeats every 6 hours while it persists, and sends a
+single recovery message when it clears. Alerts are send-only, so a feed with an
+empty `ADMIN_USER_IDS` still escalates without ever calling `getUpdates`.
+
+This is the mechanism that was missing. `/health` already knew the channel was
+blocked; `/health` lives on a private Cloud Run service that nothing was
+reading, so the feed sat dark for six weeks with the process green.
+
+Telegram will not let a bot open a conversation, so `ALERT_CHAT_ID` cannot be
+guessed from outside. `npm run alerts:bind` waits for the first DM the bot
+receives, writes that chat id into the env file, and sends a confirmation back
+so the alert path is proven rather than assumed:
+
+```bash
+npm run alerts:bind            # then message the bot from the account that should get alerts
+npm run alerts:bind -- --env .env --timeout 300
+```
+
+Run it only against a feed with an empty `ADMIN_USER_IDS`; if an instance with
+admin commands is polling the same token, the two split updates between them.
+
+**3. The platform keeps the process alive.** `--min-instances 1`,
+`--no-cpu-throttling` and `--max-instances 1` mean one always-on singleton that
+never scales to zero, never loses CPU between requests, and never doubles up to
+post twice. `/health` returns 503 when delivery is blocked, so an uptime check
+against it catches a lockout that a plain liveness probe would call healthy.
+
+What none of this can cover: a bot demoted inside Telegram. Nothing in a
+container can re-grant its own post rights. The watchdog turns that from a
+silent outage into a message within a minute, which is the whole difference.
+
+### Posting a one-off diagnostic
+
+`npm run broadcast:test` renders a system-diagnostic card and prints it without
+sending. Add `-- --send` to post it to `CHANNEL_ID`, or `-- --send --chat <id>`
+to aim it elsewhere. Every value in it is measured when it runs: endpoint counts
+from the env file, slot and chain lag from a live RPC call, and an HMAC-SHA512
+attestation computed over the rendered message and keyed by a fresh nonce.
+Sending is opt-in; a bare run never posts.
+
+#### Running a second feed from this directory
+
+`SERVICE`, `SECRET_NAME` and `ENV_FILE` are the three overrides that turn this
+one checkout into several independent Cloud Run services. Each feed keeps its
+own env file, so a redeploy of one never picks up another's channel, token or
+`FEED_*` toggles:
+
+```bash
+SERVICE=pumpfun-claims-bot \
+  SECRET_NAME=pumpfun-claims-bot-token \
+  ENV_FILE=.env.claims \
+  ./deploy-cloudrun.sh
+```
+
+Two feeds **may** share one bot token, but only if at most one of them sets
+`ADMIN_USER_IDS`. That variable is the only thing that starts long polling
+([index.ts](src/index.ts): "Long polling only exists to receive admin DMs;
+without admins the bot stays send-only and never pulls updates"), and Telegram
+gives `getUpdates` to one consumer at a time, so two *polling* instances on one
+token split the admin DMs between them at random. Sending is unaffected: a
+send-only instance never calls `getUpdates` and cannot collide with anything.
+Leave `ADMIN_USER_IDS` empty on the second feed, or give it its own bot.
+
+`.env*` is gitignored and excluded from both the Docker and Cloud Build
+contexts, so a second env file never reaches an image.
+
+#### The `@pumpfunclaims` first-claims feed is dark
+
+`@pumpfunclaims` ("PumpFun Tracker [Github Claims]", `-1003533969743`, 227
+members) has had no automated post since **2026-08-01**; everything after post
+`1086` in it is hand-written. Three things have to be true again before a card
+lands there, and today none of them are:
+
+1. **A bot with post rights in the channel.** `@pumpgraduatedbot` is still *in*
+   the channel but is no longer an **administrator**, so it cannot post.
+   `getChatAdministrators` and `getChatMember` on `-1003533969743` both answer
+   `member list is inaccessible`, which is what Telegram returns to a non-admin
+   caller. That it is still a member is provable: resolving a numeric chat id
+   only works for a bot that has the chat in its state, and `getChat` on
+   `-1003533969743` succeeds with this token while the same call on
+   `@pumpfunclaimed`'s id returns `chat not found`. Re-promoting it is a
+   channel-owner action in the Telegram app; nothing in this repo can do it.
+2. **A service pointed at that chat id.** Nothing in *this* repo is: the running
+   `pumpfun-channel-bot` has `CHANNEL_ID=-1003965305979` (`@trackpumpfun`) and
+   `pumpfun-allclaims-bot` has `-1003905427189` (`@pumpfunclaimed`). A *second*
+   implementation does target it, in the three.ws repo: the
+   `/api/cron/pump-claims-push` Cloud Scheduler job fires every 5 minutes at
+   `TELEGRAM_PUMP_CLAIMS_CHAT_ID`. It posts nothing because its scanner is
+   starved, not because it is switched off (see below).
+3. **`FEED_CLAIMS=true`.** The running service ships `FEED_CLAIMS=false` and
+   `FEED_GRADUATIONS=true`: it was repurposed into the migrations feed, so claim
+   detection is off in the only deployment that ever served this channel.
+
+Restore it as a third service rather than by repointing `pumpfun-channel-bot`,
+which would take `@trackpumpfun` down: write `.env.claims` with
+`CHANNEL_ID=-1003533969743`, `FEED_PROFILE=github-first-claims`, the
+@pumpclaimsbot token and an empty `ADMIN_USER_IDS`, then run the
+`SERVICE=pumpfun-claims-bot` command above.
+
+Since 2026-09-11 the boot preflight catches step 1 on its own: a demoted bot in
+a channel now fails `verifyChannelAccess` with `no_permission` and logs the fix,
+where it previously fell into the retryable `unknown` bucket and booted logging
+"Channel access verified" for a bot that could not post a single card.
+
+That also settles which of the two implementations owns the channel. three.ws's
+lane needs an indexer speaking `getFirstClaims`/`getRecentClaims` over JSON-RPC
+`tools/call`, and no such service exists in any repo here, which is why
+`PUMPFUN_BOT_URL` is unset and `https://three.ws/api/pump/first-claims` answers
+`{"items":[]}` for every window. This bot needs no indexer: it decodes claims
+straight off the pump program, which is what `@pumpfunclaimed` is doing right
+now. Deploying it is the shorter path; pointing three.ws's
+`PUMPFUN_BOT_URL` at a new adapter is the longer one.
 
 Local fallback if Cloud Run is ever down: `npm run build && npm start` from this directory (port 3900 locally; 3901 belongs to `@pumpkit/allclaims`). Kill a local instance by matching `/proc/<pid>/cwd` to this directory, never by the `node dist/index.js` cmdline, which is relative: `pkill -f "channel-bot/dist/index.js"` matches nothing, and a bare `dist/index.js` pattern also matches unrelated services under `/workspaces/three.ws` that must never be killed.
 

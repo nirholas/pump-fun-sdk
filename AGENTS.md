@@ -109,6 +109,15 @@ See `.github/skills/` for 28 detailed skill documents. Each skill has an `applyT
 
 - **NEVER run `npx tsc --noEmit`** — use `npm run typecheck` instead if type-checking is needed
 
+## Telegram feeds (read before touching `channel-bot/`)
+
+`channel-bot/` is one codebase deployed as two feeds, selected by `FEED_PROFILE`:
+
+- `github-first-claims` → [@pumpfunclaims](https://t.me/pumpfunclaims) (`-1003533969743`, @pumpclaimsbot, service `pumpfun-claims-bot`, env `.env.claims`)
+- `graduations` → [@trackpumpfun](https://t.me/trackpumpfun) (`-1003965305979`, @pumpgraduatedbot, service `pumpfun-channel-bot`, env `.env`)
+
+@pumpfunclaims exists for exactly one event: a developer's **first-ever** on-chain claim of GitHub social-fee rewards on a coin. Traders read it as "the dev is still working". Plain creator-fee collections, second claims, graduations, launches, whales, and test posts are all forbidden there, and the bot enforces that at its send boundary (`channel-bot/src/channel-policy.ts`). Do not widen it. Full rules, verification steps, and the things never to do: `channel-bot/CLAUDE.md`.
+
 ## Contributing
 
 - Follow the existing code style

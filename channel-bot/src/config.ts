@@ -11,6 +11,12 @@ export interface ChannelBotConfig {
     telegramToken: string;
     /** Channel ID to post to (@channelname or -100xxx) */
     channelId: string;
+    /**
+     * Chat that receives watchdog alerts (blocked delivery, dead transport).
+     * A DM or private group, never the public channel. Alerts are send-only,
+     * so this needs no long polling and costs the feed nothing.
+     */
+    alertChatId?: string;
     /** Solana RPC HTTP URL (primary) */
     solanaRpcUrl: string;
     /** All Solana RPC HTTP URLs for fallback (primary + backups) */
@@ -29,8 +35,21 @@ export interface ChannelBotConfig {
     /** Log level */
     logLevel: 'debug' | 'info' | 'warn' | 'error';
     /** Feed toggles */
+    /**
+     * Named feed profile, when FEED_PROFILE is set. A profile pins every FEED_*
+     * toggle so a feed is selected by one word instead of five booleans that
+     * have to agree with each other. See FEED_PROFILES.
+     */
+    profile?: FeedProfileName;
     feed: {
+        /** GitHub social-fee-PDA first claims (Path A). */
         claims: boolean;
+        /**
+         * Plain creator fee collections (Path B). Off by default and pinned
+         * off by the github-first-claims profile: these are routine payouts,
+         * not the first-ever-claim signal that feed exists to carry.
+         */
+        creatorClaims: boolean;
         launches: boolean;
         graduations: boolean;
         whales: boolean;
@@ -82,6 +101,36 @@ function toWsUrl(httpUrl: string): string | null {
  * dark still has somewhere to fail over to. Order is preserved and duplicates
  * are dropped.
  */
+export type FeedProfileName = 'github-first-claims' | 'graduations';
+
+/**
+ * The two feeds this code ships as. Each profile is the complete set of
+ * toggles for one channel, so switching a deployment between them is a single
+ * variable, and a profile can never post a kind of event its channel is not
+ * for. `github-first-claims` is the point of @pumpfunclaims: a developer's
+ * first-ever GitHub reward claim on a coin, which traders read as "the dev is
+ * still here". Anything else in that channel dilutes the signal, so the
+ * profile pins every other feed off, including plain creator-fee claims.
+ */
+export const FEED_PROFILES: Record<FeedProfileName, ChannelBotConfig['feed']> = {
+    'github-first-claims': {
+        claims: true,
+        creatorClaims: false,
+        launches: false,
+        graduations: false,
+        whales: false,
+        feeDistributions: false,
+    },
+    graduations: {
+        claims: false,
+        creatorClaims: false,
+        launches: false,
+        graduations: true,
+        whales: false,
+        feeDistributions: false,
+    },
+};
+
 export function resolveWsUrls(rpcUrls: string[]): string[] {
     const explicit = [
         ...(process.env.SOLANA_WS_URLS ?? '').split(','),
@@ -143,13 +192,30 @@ export function loadConfig(): ChannelBotConfig {
         ? (rawLogLevel as ChannelBotConfig['logLevel'])
         : 'info';
 
-    const feed = {
-        claims: (process.env.FEED_CLAIMS || 'true').toLowerCase() === 'true',
-        feeDistributions: (process.env.FEED_FEE_DISTRIBUTIONS || 'false').toLowerCase() === 'true',
-        graduations: (process.env.FEED_GRADUATIONS || 'false').toLowerCase() === 'true',
-        launches: (process.env.FEED_LAUNCHES || 'false').toLowerCase() === 'true',
-        whales: (process.env.FEED_WHALES || 'false').toLowerCase() === 'true',
-    };
+    const rawProfile = (process.env.FEED_PROFILE ?? '').trim();
+    let profile: FeedProfileName | undefined;
+    if (rawProfile) {
+        if (!(rawProfile in FEED_PROFILES)) {
+            throw new Error(
+                `FEED_PROFILE=${rawProfile} is not a feed. Use one of: ${Object.keys(FEED_PROFILES).join(', ')}.`,
+            );
+        }
+        profile = rawProfile as FeedProfileName;
+    }
+
+    // A profile wins over individual toggles on purpose: the toggles are how a
+    // feed drifts one variable at a time until it posts things its channel is
+    // not for. With a profile set, the FEED_* variables are ignored.
+    const feed = profile
+        ? { ...FEED_PROFILES[profile] }
+        : {
+            claims: (process.env.FEED_CLAIMS || 'true').toLowerCase() === 'true',
+            creatorClaims: (process.env.FEED_CREATOR_CLAIMS || 'false').toLowerCase() === 'true',
+            feeDistributions: (process.env.FEED_FEE_DISTRIBUTIONS || 'false').toLowerCase() === 'true',
+            graduations: (process.env.FEED_GRADUATIONS || 'false').toLowerCase() === 'true',
+            launches: (process.env.FEED_LAUNCHES || 'false').toLowerCase() === 'true',
+            whales: (process.env.FEED_WHALES || 'false').toLowerCase() === 'true',
+        };
 
     const requireGithub = (process.env.REQUIRE_GITHUB || 'true').toLowerCase() === 'true';
 
@@ -163,6 +229,8 @@ export function loadConfig(): ChannelBotConfig {
         padre: process.env.PADRE_REF  ?? 'nichxbt',
         fomo:  process.env.FOMO_REF  ?? 'nichxbt',
     };
+
+    const alertChatId = (process.env.ALERT_CHAT_ID ?? '').trim() || undefined;
 
     const adminUserIds = (process.env.ADMIN_USER_IDS ?? '')
         .split(',')
@@ -193,8 +261,10 @@ export function loadConfig(): ChannelBotConfig {
     return {
         adminUserIds,
         affiliates,
+        alertChatId,
         channelId,
         performance,
+        profile,
         feed,
         logLevel,
         pollIntervalSeconds,

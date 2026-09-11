@@ -134,6 +134,44 @@ describe('verifyChannelAccess', () => {
 
     afterEach(() => warnSpy.mockRestore());
 
+    it('fails a channel whose bot was demoted, instead of passing it as inconclusive', async () => {
+        // What Telegram actually returns to a non-admin caller. Before this was
+        // handled it classified as retryable `unknown`, so the preflight logged
+        // "Channel access verified" for a bot that could not post at all.
+        const api = {
+            getChatMember: async () => {
+                throw { description: 'Bad Request: member list is inaccessible' };
+            },
+            getChat: async () => ({ type: 'channel' }),
+        };
+        const access = await verifyChannelAccess(api as never, CHANNEL, 1);
+        expect(access.ok).toBe(false);
+        expect(access.fault).toBe('no_permission');
+        expect(access.fix).toContain(CHANNEL);
+    });
+
+    it('still passes a group on the same error, where a non-admin bot can post', async () => {
+        const api = {
+            getChatMember: async () => {
+                throw { description: 'Bad Request: member list is inaccessible' };
+            },
+            getChat: async () => ({ type: 'supergroup' }),
+        };
+        await expect(verifyChannelAccess(api as never, CHANNEL, 1)).resolves.toEqual({ ok: true });
+    });
+
+    it('passes when the chat type cannot be read, so a flaky probe never fails the boot', async () => {
+        const api = {
+            getChatMember: async () => {
+                throw { description: 'Bad Request: member list is inaccessible' };
+            },
+            getChat: async () => {
+                throw new Error('network');
+            },
+        };
+        await expect(verifyChannelAccess(api as never, CHANNEL, 1)).resolves.toEqual({ ok: true });
+    });
+
     it('passes for a member that can post', async () => {
         const api = { getChatMember: async () => ({ status: 'administrator' }) };
         await expect(verifyChannelAccess(api as never, CHANNEL, 1)).resolves.toEqual({ ok: true });

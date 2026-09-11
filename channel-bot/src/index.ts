@@ -28,11 +28,18 @@ import { EventStore } from './event-store.js';
 import { WebhookDispatcher } from './webhooks.js';
 import { registerAdminCommands, isMuted, type RuntimeState } from './admin.js';
 import { DeliveryReporter, verifyChannelAccess, DeliveryFailedError, isReportedDelivery } from './delivery.js';
+import { Watchdog } from './watchdog.js';
+import { assertPostAllowed, ChannelPolicyError, type PostKind } from './channel-policy.js';
 import { PerformanceTracker } from './performance-tracker.js';
 import { buildTokenKeyboard, buildTxKeyboard, type InlineKeyboard } from './keyboards.js';
 import type { FeeClaimEvent, GraduationEvent, TokenLaunchEvent, TradeAlertEvent, FeeDistributionEvent } from './types.js';
 
 interface PostOptions {
+    /**
+     * What this post is. Checked against the channel policy before anything
+     * is sent, so no path can put content in a channel its profile forbids.
+     */
+    kind: PostKind;
     /** Message id this post should reply to (used by follow-up updates) */
     replyTo?: number;
     /** Inline keyboard rendered under the message */
@@ -109,13 +116,27 @@ async function main(): Promise<void> {
         collapsePct: config.performance.collapsePct,
         rpcUrl: config.solanaRpcUrl,
         postUpdate: async (text, replyToMessageId) => {
-            await postToChannel(text, { replyTo: replyToMessageId });
+            await postToChannel(text, { kind: 'follow_up', replyTo: replyToMessageId });
             pipeline.posted++;
         },
     });
 
+    /**
+     * The failsafe. Every send goes through here; a kind the profile forbids
+     * is counted, logged once, and never reaches Telegram.
+     */
+    function guardPost(kind: PostKind): void {
+        try {
+            assertPostAllowed(config.profile, kind);
+        } catch (err) {
+            if (err instanceof ChannelPolicyError) pipeline.policyRejected++;
+            throw err;
+        }
+    }
+
     /** Send a message to the channel. Returns the message id. Throws on failure. */
-    async function postToChannel(message: string, opts: PostOptions = {}): Promise<number> {
+    async function postToChannel(message: string, opts: PostOptions): Promise<number> {
+        guardPost(opts.kind);
         try {
             const sent = await withRetry(() => bot.api.sendMessage(config.channelId, message, {
                 parse_mode: 'HTML',
@@ -133,7 +154,8 @@ async function main(): Promise<void> {
     }
 
     /** Send a photo with caption to the channel. Falls back to text if photo fails. */
-    async function postPhotoToChannel(imageUrl: string, caption: string, opts: PostOptions = {}): Promise<number> {
+    async function postPhotoToChannel(imageUrl: string, caption: string, opts: PostOptions): Promise<number> {
+        guardPost(opts.kind);
         try {
             const sent = await withRetry(() => bot.api.sendPhoto(config.channelId, imageUrl, {
                 caption,
@@ -150,7 +172,7 @@ async function main(): Promise<void> {
     }
 
     // ── Pipeline Counters ─────────────────────────────────────────────
-    const pipeline = { total: 0, socialClaims: 0, creatorClaims: 0, firstClaim: 0, posted: 0, skippedCashback: 0, repeatClaim: 0 };
+    const pipeline = { total: 0, socialClaims: 0, creatorClaims: 0, firstClaim: 0, posted: 0, skippedCashback: 0, repeatClaim: 0, policyRejected: 0 };
 
     /** True when the operator paused channel posting via /mute. */
     const postingMuted = () => isMuted(state);
@@ -297,8 +319,8 @@ async function main(): Promise<void> {
                     ? buildTxKeyboard(mint, event.txSignature, config.affiliates)
                     : undefined;
                 const messageId = imageUrl
-                    ? await postPhotoToChannel(imageUrl, caption, { keyboard })
-                    : await postToChannel(caption, { keyboard });
+                    ? await postPhotoToChannel(imageUrl, caption, { kind: 'github_first_claim', keyboard })
+                    : await postToChannel(caption, { kind: 'github_first_claim', keyboard });
                 markGithubUserClaimed(event.githubUserId, mint);
                 pipeline.posted++;
                 store.markPosted(stored.seq);
@@ -323,8 +345,11 @@ async function main(): Promise<void> {
         }
 
         // ── Path B: Creator fee claims (collect_creator_fee, collect_coin_creator_fee, distribute_creator_fees) ──
-        else if (event.claimType === 'collect_creator_fee' ||
-                 event.claimType === 'collect_coin_creator_fee' ||
+        // Gated separately from Path A. Before FEED_CREATOR_CLAIMS existed this
+        // branch posted under FEED_CLAIMS, so the github-first-claims feed
+        // carried every routine payout on the chain (2026-09-11).
+        else if ((config.feed.creatorClaims && (event.claimType === 'collect_creator_fee' ||
+                                                 event.claimType === 'collect_coin_creator_fee')) ||
                  (event.claimType === 'distribute_creator_fees' && config.feed.feeDistributions)) {
             pipeline.creatorClaims++;
 
@@ -365,9 +390,9 @@ async function main(): Promise<void> {
                     ? buildTxKeyboard(mint, event.txSignature, config.affiliates)
                     : undefined;
                 if (imageUrl) {
-                    await postPhotoToChannel(imageUrl, caption, { keyboard });
+                    await postPhotoToChannel(imageUrl, caption, { kind: 'creator_claim', keyboard });
                 } else {
-                    await postToChannel(caption, { keyboard });
+                    await postToChannel(caption, { kind: 'creator_claim', keyboard });
                 }
                 pipeline.posted++;
                 store.markPosted(stored.seq);
@@ -409,6 +434,7 @@ async function main(): Promise<void> {
 
                     const creator = await fetchCreatorProfile(event.creatorWallet);
                     await postToChannel(formatLaunchFeed(event, creator), {
+                        kind: 'launch',
                         keyboard: buildTokenKeyboard(event.mintAddress, config.affiliates),
                     });
                     pipeline.posted++;
@@ -461,8 +487,8 @@ async function main(): Promise<void> {
 
                     const keyboard = buildTokenKeyboard(event.mintAddress, config.affiliates);
                     const messageId = imageUrl
-                        ? await postPhotoToChannel(imageUrl, caption, { keyboard })
-                        : await postToChannel(caption, { keyboard });
+                        ? await postPhotoToChannel(imageUrl, caption, { kind: 'graduation', keyboard })
+                        : await postToChannel(caption, { kind: 'graduation', keyboard });
                     pipeline.posted++;
                     store.markPosted(stored.seq);
                     if (token) {
@@ -499,6 +525,7 @@ async function main(): Promise<void> {
 
                     const token = await fetchTokenInfo(event.mintAddress);
                     await postToChannel(formatWhaleFeed(event, token), {
+                        kind: 'whale',
                         keyboard: buildTokenKeyboard(event.mintAddress, config.affiliates),
                     });
                     pipeline.posted++;
@@ -523,6 +550,7 @@ async function main(): Promise<void> {
 
                     const token = await fetchTokenInfo(event.mintAddress);
                     await postToChannel(formatFeeDistributionFeed(event, token), {
+                        kind: 'fee_distribution',
                         keyboard: buildTxKeyboard(event.mintAddress, event.txSignature, config.affiliates),
                     });
                     pipeline.posted++;
@@ -583,6 +611,7 @@ async function main(): Promise<void> {
             muted: postingMuted(),
             whaleThresholdSol: config.whaleThresholdSol,
             messagesPosted: pipeline.posted,
+            policyRejected: pipeline.policyRejected,
             // A bot that cannot reach its channel is degraded, not healthy:
             // /health returns 503 so an uptime check actually catches it.
             degraded: !delivery.healthy,
@@ -597,9 +626,39 @@ async function main(): Promise<void> {
         }),
     });
 
+    // ── Watchdog: the feed reports its own outages ───────────────────
+    // Without this a blocked channel or a dead websocket is only visible to
+    // whoever thinks to curl /health on a private service, which is how this
+    // feed stayed dark for six weeks.
+    const watchdog = config.alertChatId
+        ? new Watchdog({
+            label: `PumpFun feed (${config.profile ?? 'custom'}) → ${config.channelId}`,
+            envFile: process.env.ENV_FILE ?? (config.profile === 'github-first-claims' ? '.env.claims' : '.env'),
+            send: async (text) => {
+                await bot.api.sendMessage(config.alertChatId as string, text, { link_preview_options: { is_disabled: true } });
+            },
+            delivery: () => ({
+                blocked: !delivery.healthy,
+                fault: delivery.lastFault,
+                fix: delivery.lastFix,
+                failures: delivery.failures,
+            }),
+            wsEventsReceived: () =>
+                Number((claimMonitor?.getMetrics().wsEventsReceived as number | undefined) ?? 0),
+        })
+        : undefined;
+    if (watchdog) {
+        watchdog.start();
+        // Report a boot that is already broken instead of waiting a full cycle.
+        void watchdog.tick();
+    } else {
+        log.info('Watchdog disabled (set ALERT_CHAT_ID to receive outage alerts)');
+    }
+
     // ── Graceful shutdown ────────────────────────────────────────────
     const shutdown = () => {
         log.info('Shutting down...');
+        watchdog?.stop();
         claimMonitor?.stop();
         eventMonitor.stop();
         performance.stop();
