@@ -8,6 +8,17 @@
    Numbers, tickers, addresses, and code are always mono.
    ======================================================== */
 
+/* The hidden attribute must outrank every layout rule in this file.
+   The UA stylesheet's `[hidden] { display: none }` is author-level-beatable,
+   so any component that declares its own display (a grid, a flex) silently
+   ignores `el.hidden = true`. That is not theoretical: `.docs-content` is a
+   grid, so hiding the card list to show an article left all fifty cards on
+   screen and pushed the article about 4,000px below the fold. Clicking an
+   example looked like it did nothing, while the article had in fact loaded
+   and rendered. It had already been patched once for the table of contents
+   alone; this covers every element instead of the next one to be noticed. */
+[hidden] { display: none !important; }
+
 :root {
   --bg: #050505;
   --bg-elevated: #0e0e0e;
@@ -607,7 +618,6 @@ mark {
   align-items: start;
 }
 .reader-page .docs-layout { grid-template-columns: 240px minmax(0, 1fr) 200px; }
-.reader-page .docs-toc[hidden] { display: none; }
 
 .docs-sidebar {
   position: sticky;
