@@ -321,8 +321,25 @@ all-claims feed down for four days. Add `--candidates` to sweep the public pool,
 `--json` for machine output. It exits non-zero when nothing passes every stage,
 so it works as a deploy gate.
 
-As measured on 2026-09-11, 4 of 14 public keyless endpoints were usable at all;
-the live set is 6 HTTP endpoints and 5 delivering sockets, Helius first.
+**The free public RPC pool is effectively gone, and adding entries will not
+prevent an outage.** A 35-endpoint sweep on 2026-09-11 (`--candidates`) found
+exactly **two** usable keyless endpoints: `api.mainnet-beta.solana.com` and
+`solana-rpc.publicnode.com`. Everything else answered 401, 402, 403, 404, 410,
+429, 503 or 521, or did not resolve, including every `rpcpool` host plus ankr,
+magicblock, getblock, blastapi, tatum, jito, solscan, metaplex and extrnode.
+
+The practical consequence: **depth comes from independent keyed providers, not
+from more free URLs.** Each free tier (Helius, QuickNode, Alchemy, Shyft,
+Syndica, Chainstack, dRPC) is its own quota, and one signup buys more
+resilience than the entire remaining public pool. Two URLs from the same
+provider share a balance: `mainnet.helius-rpc.com` and `beta.helius-rpc.com`
+cover an endpoint fault, not running out of credits.
+
+The candidate list stays long anyway, because the probe is what decides, a dead
+entry costs one fast failure, and endpoints do come back. Rerun the sweep
+rather than trusting any list. The live set is 6 HTTP endpoints and 5
+delivering sockets across 4 independent providers, and the two feeds lead with
+different ones so one exhausted quota cannot starve both.
 
 **2. The feed reports its own outages.** Set `ALERT_CHAT_ID` to a DM or private
 group and the watchdog ([watchdog.ts](src/watchdog.ts)) escalates two conditions:
