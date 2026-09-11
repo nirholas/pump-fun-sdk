@@ -572,7 +572,7 @@ We welcome contributions! See [CONTRIBUTING.md](./CONTRIBUTING.md) for:
 
 ## Documentation
 
-Full documentation site: **https://nirholas.github.io/pump-fun-sdk/**
+Full documentation site: **https://sdk.pumpk.it**
 
 - [Getting started](docs/getting-started.md) covers install and first run.
 - [Examples](docs/examples.md) has copy-paste snippets.

@@ -375,8 +375,8 @@ Production-ready AI agent definitions for DeFi workflows, compatible with Sperax
 ### API
 
 ```
-GET https://nirholas.github.io/AI-Agents-Library/index.json    # Agent registry
-GET https://nirholas.github.io/AI-Agents-Library/{id}.en-US.json  # Agent definition
+GET https://agents.pumpk.it/index.json    # Agent registry
+GET https://agents.pumpk.it/{id}.en-US.json  # Agent definition
 ```
 
 ### Documentation

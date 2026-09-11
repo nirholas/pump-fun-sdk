@@ -2,7 +2,7 @@
 
 Comprehensive reference for all 43 production-ready AI agent definitions in the Pump SDK ecosystem.
 
-> **API:** Agents are served via CDN at `https://nirholas.github.io/AI-Agents-Library/`
+> **API:** Agents are served via CDN at `https://agents.pumpk.it/`
 > **Source:** `packages/defi-agents/`
 
 ---
@@ -36,10 +36,10 @@ Agents are consumed by AI platforms like SperaxOS that support function-calling.
 
 ```bash
 # Get the full agent registry
-GET https://nirholas.github.io/AI-Agents-Library/index.json
+GET https://agents.pumpk.it/index.json
 
 # Get a specific agent definition (with locale)
-GET https://nirholas.github.io/AI-Agents-Library/{agent-id}.en-US.json
+GET https://agents.pumpk.it/{agent-id}.en-US.json
 
 # Available locales: en-US, zh-CN, zh-TW, ja-JP, ko-KR, fr-FR, de-DE,
 #   es-ES, pt-BR, it-IT, ru-RU, ar-SA, hi-IN, th-TH, vi-VN, id-ID, tr-TR, nl-NL

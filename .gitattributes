@@ -51,3 +51,16 @@ Cargo.lock binary
 *.keypair binary
 
 
+
+# ── Linguist ──────────────────────────────────────────────────────────
+# GitHub labelled this repo "Rust" because pump-fun-repos/ holds vendored
+# upstream sources (carbon, pump-segments-sdk, react-native-pager-view):
+# 9.3 MB of third-party .rs, against 5.4 MB of our own TypeScript. Mark
+# them vendored so the language bar reflects what this repo actually is.
+pump-fun-repos/** linguist-vendored
+
+# Generated and reference material, not authored source.
+offline.html linguist-generated
+llms-full.txt linguist-generated
+docs/** linguist-documentation
+tutorials/** linguist-documentation

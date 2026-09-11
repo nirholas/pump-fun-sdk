@@ -1,18 +1,21 @@
 cff-version: 1.2.0
-message: "If you use solana-wallet-toolkit, please cite it as below."
+message: "If you use the Pump SDK, please cite it as below."
 type: software
-title: "solana-wallet-toolkit"
-abstract: "☀️ Solana Development Toolkit ⚒️Official Solana Labs libraries 🔑 Vanity Address Generation — custom wallet addresses, OG names on the blockchain 😎 Multi-threaded Search 🔍 Parallel generation using all CPU cores 💨 Rust & TypeScript, Node.js ⛓"
+title: "Pump SDK"
+abstract: "TypeScript SDK for the Pump protocol on Solana: token creation, bonding curve pricing and trading, AMM migration, tiered fees, creator fee sharing, volume-based token incentives, vanity mint generation, a `pump` CLI, and an MCP server for AI agents."
 authors:
   - alias: nirholas
     name: nirholas
-repository-code: "https://github.com/nirholas/solana-wallet-toolkit"
-url: "https://github.com/nirholas/solana-wallet-toolkit"
-license: MIT
-version: "1.0.0"
-date-released: "2026-02-11"
+repository-code: "https://github.com/nirholas/pump-fun-sdk"
+url: "https://sdk.pumpk.it"
+license: Apache-2.0
+version: "1.36.0"
+date-released: "2026-03-12"
 keywords:
+  - solana
+  - pump-fun
+  - bonding-curve
+  - typescript
+  - sdk
+  - defi
   - open-source
-  - nirholas
-
-
