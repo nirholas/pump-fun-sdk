@@ -4,7 +4,7 @@
 import { PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
 
-import { BondingCurve, FeeConfig, FeeTier, Global } from "../state";
+import type { BondingCurve, FeeConfig, FeeTier, Global } from "../state";
 
 /** A deterministic keypair for tests (not a real wallet). */
 export const TEST_PUBKEY = new PublicKey(

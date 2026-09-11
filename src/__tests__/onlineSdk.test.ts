@@ -7,10 +7,12 @@
  * access is required.
  */
 import { AnchorProvider, Program } from "@coral-xyz/anchor";
-import { AccountInfo, PublicKey } from "@solana/web3.js";
+import type { AccountInfo} from "@solana/web3.js";
+import { PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
 
-import { OnlinePumpSdk, BuyQuote } from "../onlineSdk";
+import type { BuyQuote } from "../onlineSdk";
+import { OnlinePumpSdk } from "../onlineSdk";
 import { PUMP_SDK, PUMP_PROGRAM_ID, PUMP_AMM_PROGRAM_ID } from "../sdk";
 import { bondingCurvePda } from "../pda";
 import pumpIdlJson from "../idl/pump.json";

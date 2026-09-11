@@ -1,5 +1,6 @@
 import { NATIVE_MINT, TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
+import type { TransactionInstruction } from "@solana/web3.js";
 import BN from "bn.js";
 
 // Import from `../pda` before `../sdk`: pda.ts -> sdk.ts -> onlineSdk.ts -> pda.ts
@@ -534,7 +535,7 @@ describe("sdk", () => {
 
     it("passes for correctly shaped non-cashback AMM buy (26 accounts)", () => {
       const result = validateAmmInstruction(
-        makeAmmIx(24) as unknown as import("@solana/web3.js").TransactionInstruction,
+        makeAmmIx(24) as unknown as TransactionInstruction,
         "buy",
       );
       expect(result.valid).toBe(true);
@@ -543,7 +544,7 @@ describe("sdk", () => {
 
     it("passes for correctly shaped non-cashback AMM sell (24 accounts)", () => {
       const result = validateAmmInstruction(
-        makeAmmIx(22) as unknown as import("@solana/web3.js").TransactionInstruction,
+        makeAmmIx(22) as unknown as TransactionInstruction,
         "sell",
       );
       expect(result.valid).toBe(true);
@@ -558,7 +559,7 @@ describe("sdk", () => {
         keys: [...fakeKeys, { ...recipient!, isWritable: true }, ata!],
         programId: TEST_PUBKEY,
         data: Buffer.alloc(0),
-      } as unknown as import("@solana/web3.js").TransactionInstruction;
+      } as unknown as TransactionInstruction;
       const result = validateAmmInstruction(ix, "buy");
       expect(result.valid).toBe(false);
       expect(result.errors.some((e) => e.includes("must be readonly"))).toBe(true);
@@ -577,7 +578,7 @@ describe("sdk", () => {
         ],
         programId: TEST_PUBKEY,
         data: Buffer.alloc(0),
-      } as unknown as import("@solana/web3.js").TransactionInstruction;
+      } as unknown as TransactionInstruction;
       const result = validateAmmInstruction(ix, "buy");
       expect(result.valid).toBe(false);
       expect(result.errors.some((e) => e.includes("WSOL ATA"))).toBe(true);
@@ -592,7 +593,7 @@ describe("sdk", () => {
       }));
       const ix = {
         keys: fakeKeys, programId: TEST_PUBKEY, data: Buffer.alloc(0),
-      } as unknown as import("@solana/web3.js").TransactionInstruction;
+      } as unknown as TransactionInstruction;
 
       const patched = patchBcInstruction(ix);
       expect(patched.keys).toHaveLength(18);
@@ -621,7 +622,7 @@ describe("sdk", () => {
       }));
       const ix = {
         keys: fakeKeys, programId: TEST_PUBKEY, data: Buffer.alloc(0),
-      } as unknown as import("@solana/web3.js").TransactionInstruction;
+      } as unknown as TransactionInstruction;
 
       patchBcInstruction(ix);
       expect(ix.keys).toHaveLength(17);
@@ -636,7 +637,7 @@ describe("sdk", () => {
       }));
       const ix = {
         keys: fakeKeys, programId: TEST_PUBKEY, data: Buffer.alloc(0),
-      } as unknown as import("@solana/web3.js").TransactionInstruction;
+      } as unknown as TransactionInstruction;
 
       const patched = patchAmmInstruction(ix);
       expect(patched.keys).toHaveLength(26);
@@ -656,7 +657,7 @@ describe("sdk", () => {
         keys: [...fakeKeys, recipient!, ata!],
         programId: TEST_PUBKEY,
         data: Buffer.alloc(0),
-      } as unknown as import("@solana/web3.js").TransactionInstruction;
+      } as unknown as TransactionInstruction;
 
       const patched = patchAmmInstruction(ix);
       expect(patched).toBe(ix); // same reference
@@ -669,7 +670,7 @@ describe("sdk", () => {
       }));
       const ix = {
         keys: fakeKeys, programId: TEST_PUBKEY, data: Buffer.alloc(0),
-      } as unknown as import("@solana/web3.js").TransactionInstruction;
+      } as unknown as TransactionInstruction;
 
       patchAmmInstruction(ix);
       expect(ix.keys).toHaveLength(24);

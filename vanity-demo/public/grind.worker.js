@@ -5,6 +5,8 @@
  * Messages out: { type:"progress"|"found"|"error", ... }
  */
 
+/* global nacl -- loaded into the worker scope via importScripts (tweetnacl). */
+
 const BASE58 = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
 
 function toBase58(bytes) {

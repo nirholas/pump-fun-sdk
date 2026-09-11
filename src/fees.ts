@@ -7,7 +7,7 @@ import { PublicKey, TransactionInstruction } from "@solana/web3.js";
 import BN from "bn.js";
 
 import { bondingCurveMarketCap } from "./bondingCurve";
-import { FeeConfig, Global, Fees, BondingCurve, FeeTier } from "./state";
+import type { FeeConfig, Global, Fees, BondingCurve, FeeTier } from "./state";
 
 /** Constant: 1 billion token supply with 6 decimals (1,000,000,000 * 10^6). */
 export const ONE_BILLION_SUPPLY = new BN(1_000_000_000_000_000);

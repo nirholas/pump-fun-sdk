@@ -1,7 +1,7 @@
 import BN from "bn.js";
 
 import { totalUnclaimedTokens, currentDayTokens } from "../tokenIncentives";
-import { GlobalVolumeAccumulator, UserVolumeAccumulator } from "../state";
+import type { GlobalVolumeAccumulator, UserVolumeAccumulator } from "../state";
 
 import { TEST_PUBKEY } from "./fixtures";
 

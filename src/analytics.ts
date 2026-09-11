@@ -17,7 +17,7 @@ import {
   bondingCurveMarketCap,
 } from "./bondingCurve";
 import { computeFeesBps } from "./fees";
-import { BondingCurve, FeeConfig, Global } from "./state";
+import type { BondingCurve, FeeConfig, Global } from "./state";
 
 // ── Types ─────────────────────────────────────────────────────────────
 

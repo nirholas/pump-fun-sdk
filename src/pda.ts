@@ -9,7 +9,8 @@ import {
   NATIVE_MINT,
   TOKEN_2022_PROGRAM_ID,
 } from "@solana/spl-token";
-import { PublicKey, PublicKeyInitData } from "@solana/web3.js";
+import type { PublicKeyInitData } from "@solana/web3.js";
+import { PublicKey } from "@solana/web3.js";
 import { Buffer } from "buffer";
 
 import {

@@ -36,7 +36,9 @@ async function scrape() {
         const url = res.url();
         const body = await res.json();
         apiResponses.push({ url, body });
-      } catch {}
+      } catch {
+        // Non-JSON body on a json content-type. Not a response we care about.
+      }
     }
   });
 

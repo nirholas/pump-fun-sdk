@@ -376,7 +376,7 @@ export async function fetchCreatorProfile(wallet: string): Promise<CreatorProfil
             // Estimate scams/rugs: non-graduated coins with very low market cap
             profile.scamEstimate = coins.filter((c) => {
                 const mc = Number(c.usd_market_cap ?? 0);
-                return !Boolean(c.complete) && mc < 500;
+                return !c.complete && mc < 500;
             }).length;
             const parsed: CreatorCoin[] = coins.map((c) => ({
                 mint: String(c.mint ?? ''),

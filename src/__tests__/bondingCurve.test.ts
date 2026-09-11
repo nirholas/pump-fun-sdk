@@ -382,13 +382,15 @@ describe("bondingCurve", () => {
       const tokenAmount = getTokenAmountForTargetSol({
         global, feeConfig: null, mintSupply, bondingCurve: bc, targetSol,
       });
-      if (tokenAmount.gtn(1)) {
-        const oneLess = tokenAmount.subn(1);
-        const solWithOneLess = getSellSolAmountFromTokenAmount({
-          global, feeConfig: null, mintSupply, bondingCurve: bc, amount: oneLess,
-        });
-        expect(solWithOneLess.lt(targetSol)).toBe(true);
-      }
+      // The fixture curve always quotes more than one token for half of maxOut;
+      // assert that rather than skipping the check when it does not hold.
+      expect(tokenAmount.gtn(1)).toBe(true);
+
+      const oneLess = tokenAmount.subn(1);
+      const solWithOneLess = getSellSolAmountFromTokenAmount({
+        global, feeConfig: null, mintSupply, bondingCurve: bc, amount: oneLess,
+      });
+      expect(solWithOneLess.lt(targetSol)).toBe(true);
     });
 
     it("returns upper safe limit when target exceeds max possible SOL out", () => {

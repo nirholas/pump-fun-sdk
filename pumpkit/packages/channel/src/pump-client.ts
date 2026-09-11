@@ -335,7 +335,7 @@ export async function fetchCreatorProfile(wallet: string): Promise<CreatorProfil
             // Estimate scams/rugs: non-graduated coins with very low market cap
             profile.scamEstimate = coins.filter((c) => {
                 const mc = Number(c.usd_market_cap ?? 0);
-                return !Boolean(c.complete) && mc < 500;
+                return !c.complete && mc < 500;
             }).length;
             profile.recentCoins = coins.slice(0, 5).map((c) => ({
                 mint: String(c.mint ?? ''),
@@ -439,7 +439,7 @@ export async function fetchTokenTrades(mint: string): Promise<TokenTradeInfo> {
             for (const t of trades) {
                 const sol = Number(t.sol_amount ?? 0) / LAMPORTS_PER_SOL;
                 result.recentVolumeSol += sol;
-                if (Boolean(t.is_buy)) result.buyCount++;
+                if (t.is_buy) result.buyCount++;
                 else result.sellCount++;
             }
         }

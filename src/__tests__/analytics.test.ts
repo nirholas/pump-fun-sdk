@@ -1,6 +1,8 @@
 import BN from "bn.js";
 
 import {
+  INITIAL_REAL_TOKEN_RESERVES,
+  bondingCurveGraduationProgress,
   calculateBuyPriceImpact,
   calculateSellPriceImpact,
   getGraduationProgress,
@@ -12,6 +14,7 @@ import {
   makeGlobal,
   makeBondingCurve,
   makeGraduatedBondingCurve,
+  makeMigratedBondingCurve,
 } from "./fixtures";
 
 const global = makeGlobal();
@@ -126,7 +129,9 @@ describe("analytics", () => {
         makeBondingCurve({
           realTokenReserves: global.initialRealTokenReserves.divn(2),
           virtualSolReserves: new BN("30000000000").add(new BN("40000000000")),
-          virtualTokenReserves: new BN("1073000000000000").sub(global.initialRealTokenReserves.divn(2)),
+          virtualTokenReserves: new BN("1073000000000000").sub(
+            global.initialRealTokenReserves.divn(2),
+          ),
         }),
       );
       expect(fresh.solNeededToGraduate.gtn(0)).toBe(true);
@@ -140,9 +145,109 @@ describe("analytics", () => {
     });
   });
 
+  // ── bondingCurveGraduationProgress ─────────────────────────────────
+
+  describe("bondingCurveGraduationProgress", () => {
+    const fresh = {
+      realSolReserves: new BN(0),
+      realTokenReserves: INITIAL_REAL_TOKEN_RESERVES,
+    };
+
+    it("returns 0 for a curve where nothing has been sold", () => {
+      expect(bondingCurveGraduationProgress(fresh)).toBe(0);
+    });
+
+    it("returns 1 once real token reserves are exhausted", () => {
+      expect(
+        bondingCurveGraduationProgress({
+          realSolReserves: new BN("85000000000"),
+          realTokenReserves: new BN(0),
+        }),
+      ).toBe(1);
+    });
+
+    it("returns the sold fraction partway up the curve", () => {
+      const half = INITIAL_REAL_TOKEN_RESERVES.divn(2);
+      const progress = bondingCurveGraduationProgress({
+        realSolReserves: new BN("30000000000"),
+        realTokenReserves: half,
+      });
+      expect(progress).toBeGreaterThan(0.49);
+      expect(progress).toBeLessThan(0.51);
+    });
+
+    it("honors a custom initial reserve for mayhem-mode curves", () => {
+      const initialRealTokenReserves = new BN("400000000000000");
+      const progress = bondingCurveGraduationProgress({
+        realSolReserves: new BN("10000000000"),
+        realTokenReserves: initialRealTokenReserves.divn(4),
+        initialRealTokenReserves,
+      });
+      expect(progress).toBeGreaterThan(0.74);
+      expect(progress).toBeLessThan(0.76);
+    });
+
+    it("returns 0 when the initial reserve is zero rather than dividing by it", () => {
+      expect(
+        bondingCurveGraduationProgress({
+          realSolReserves: new BN(0),
+          realTokenReserves: new BN("1000"),
+          initialRealTokenReserves: new BN(0),
+        }),
+      ).toBe(0);
+    });
+
+    it("clamps to 0 when reserves exceed the stated initial reserve", () => {
+      expect(
+        bondingCurveGraduationProgress({
+          realSolReserves: new BN(0),
+          realTokenReserves: INITIAL_REAL_TOKEN_RESERVES.muln(2),
+        }),
+      ).toBe(0);
+    });
+
+    it("never reports progress outside [0, 1]", () => {
+      for (const divisor of [1, 3, 7, 100, 10_000]) {
+        const progress = bondingCurveGraduationProgress({
+          realSolReserves: new BN(0),
+          realTokenReserves: INITIAL_REAL_TOKEN_RESERVES.divn(divisor),
+        });
+        expect(progress).toBeGreaterThanOrEqual(0);
+        expect(progress).toBeLessThanOrEqual(1);
+      }
+    });
+
+    it("agrees with getGraduationProgress, which reports the same curve in bps", () => {
+      const bondingCurve = makeBondingCurve({
+        realTokenReserves: INITIAL_REAL_TOKEN_RESERVES.divn(4),
+      });
+      const { progressBps } = getGraduationProgress(global, bondingCurve);
+      const fraction = bondingCurveGraduationProgress({
+        realSolReserves: bondingCurve.realSolReserves,
+        realTokenReserves: bondingCurve.realTokenReserves,
+      });
+      expect(Math.round(fraction * 10_000)).toBe(progressBps);
+    });
+  });
+
   // ── getTokenPrice ──────────────────────────────────────────────────
 
   describe("getTokenPrice", () => {
+    it("reports a migrated curve as graduated instead of dividing by zero", () => {
+      // PumpAMM migration zeroes the virtual reserves. Every constant-product
+      // formula over them is undefined, so the helper short-circuits.
+      const result = getTokenPrice({
+        global,
+        feeConfig: null,
+        mintSupply,
+        bondingCurve: makeMigratedBondingCurve(),
+      });
+      expect(result.isGraduated).toBe(true);
+      expect(result.buyPricePerToken.isZero()).toBe(true);
+      expect(result.sellPricePerToken.isZero()).toBe(true);
+      expect(result.marketCap.isZero()).toBe(true);
+    });
+
     it("returns buy and sell prices for 1 token", () => {
       const result = getTokenPrice({
         global,

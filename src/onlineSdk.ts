@@ -1,4 +1,4 @@
-import { Program } from "@coral-xyz/anchor";
+import type { Program } from "@coral-xyz/anchor";
 import {
   buyQuoteInput,
   coinCreatorVaultAtaPda,
@@ -21,12 +21,14 @@ import {
   TOKEN_2022_PROGRAM_ID,
   TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
-import {
+import type {
   AccountInfo,
   Connection,
-  PublicKey,
+  ConnectionConfig,
   PublicKeyInitData,
-  TransactionInstruction,
+  TransactionInstruction} from "@solana/web3.js";
+import {
+  PublicKey,
   TransactionMessage,
   VersionedTransaction,
 } from "@solana/web3.js";
@@ -52,9 +54,9 @@ import type {
   PriceImpactResult,
   TokenPriceInfo,
 } from "./analytics";
-import { Pump } from "./idl/pump";
-import { PumpAmm } from "./idl/pump_amm";
-import { PumpFees } from "./idl/pump_fees";
+import type { Pump } from "./idl/pump";
+import type { PumpAmm } from "./idl/pump_amm";
+import type { PumpFees } from "./idl/pump_fees";
 import {
   AMM_GLOBAL_CONFIG_PDA,
   bondingCurvePda,
@@ -82,7 +84,7 @@ import {
 import pumpIdlJson from "./idl/pump.json";
 import pumpAmmIdlJson from "./idl/pump_amm.json";
 import pumpFeesIdlJson from "./idl/pump_fees.json";
-import {
+import type {
   AdminSetCreatorEvent,
   AmmBuyEvent,
   AmmGlobalConfig,
@@ -190,7 +192,7 @@ export class OnlinePumpSdk {
    */
   static withFallback(
     endpoints: string[],
-    connectionConfig?: import("@solana/web3.js").ConnectionConfig,
+    connectionConfig?: ConnectionConfig,
     fallbackConfig?: FallbackConfig,
   ): OnlinePumpSdk {
     const connection = createFallbackConnection(

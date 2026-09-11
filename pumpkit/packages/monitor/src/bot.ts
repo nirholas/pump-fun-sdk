@@ -603,7 +603,7 @@ async function handlePrice(ctx: Context): Promise<void> {
         await ctx.reply(
             `\u274c Token not found on PumpFun.\n\n` +
             `The mint address <code>${mint.slice(0, 6)}...${mint.slice(-4)}</code> ` +
-            `was not found. Make sure it\'s a PumpFun token mint address.`,
+            `was not found. Make sure it's a PumpFun token mint address.`,
             { parse_mode: 'HTML' },
         );
         return;

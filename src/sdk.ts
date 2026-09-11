@@ -11,12 +11,13 @@ import {
   TOKEN_2022_PROGRAM_ID,
   TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
-import {
+import type {
   AccountInfo,
   Connection,
+  TransactionInstruction} from "@solana/web3.js";
+import {
   PublicKey,
-  SystemProgram,
-  TransactionInstruction,
+  SystemProgram
 } from "@solana/web3.js";
 import BN from "bn.js";
 
@@ -33,11 +34,11 @@ import {
   getFeeRecipient,
   pickBreakingFeeRecipient,
 } from "./fees";
-import { Pump } from "./idl/pump";
+import type { Pump } from "./idl/pump";
 import pumpIdl from "./idl/pump.json";
-import { PumpAmm } from "./idl/pump_amm";
+import type { PumpAmm } from "./idl/pump_amm";
 import PumpAmmIdl from "./idl/pump_amm.json";
-import { PumpFees } from "./idl/pump_fees";
+import type { PumpFees } from "./idl/pump_fees";
 import PumpFeesIdl from "./idl/pump_fees.json";
 import { OFFLINE_PUMP_PROGRAM } from "./onlineSdk";
 import {
@@ -60,7 +61,7 @@ import {
   bondingCurveV2Pda,
   poolV2Pda,
 } from "./pda";
-import {
+import type {
   BondingCurve,
   FeeConfig,
   Global,
@@ -126,7 +127,8 @@ import {
   FeesUpdateAdminEvent,
   FeesUpdateFeeConfigEvent,
   FeesUpsertFeeTiersEvent,
-  Platform,
+  Platform} from "./state";
+import {
   SUPPORTED_SOCIAL_PLATFORMS,
   platformToString,
 } from "./state";

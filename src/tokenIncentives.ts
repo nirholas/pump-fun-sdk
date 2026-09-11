@@ -1,6 +1,6 @@
 import BN from "bn.js";
 
-import { GlobalVolumeAccumulator, UserVolumeAccumulator } from "./state";
+import type { GlobalVolumeAccumulator, UserVolumeAccumulator } from "./state";
 
 /**
  * Calculate total unclaimed token incentive rewards for a user.

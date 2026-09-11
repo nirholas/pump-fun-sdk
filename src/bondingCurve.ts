@@ -3,7 +3,7 @@ import BN from "bn.js";
 
 import { SellOverflowError } from "./errors";
 import { computeFeesBps, getFee } from "./fees";
-import { BondingCurve, FeeConfig, Global } from "./state";
+import type { BondingCurve, FeeConfig, Global } from "./state";
 
 /**
  * u64::MAX = 2^64 - 1 = 18_446_744_073_709_551_615

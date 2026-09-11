@@ -389,7 +389,6 @@ describe("fees", () => {
     it("mayhem and non-mayhem use different pools when configured differently", () => {
       // With the fixture, reservedFeeRecipient == TEST_PUBKEY == feeRecipient,
       // so we set up a global with distinct pools to verify routing.
-      const { PublicKey } = require("@solana/web3.js");
       const standardRecipient = new PublicKey("CebN5WGQ4jvEPvsVU4EoHEpgzq1VV7AbicfhtW4xC9iM");
       const mayhemRecipient = new PublicKey("7VtfL8fvgNfhz17qKRMjzQEXgbdpnHHHQRh54R9jP2RJ");
       const g = makeGlobal({

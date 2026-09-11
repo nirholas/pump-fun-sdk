@@ -54,7 +54,6 @@ async function verifyKeypair(
   expectedSuffix?: string
 ): Promise<VerificationResult> {
   const checks: CheckResult[] = [];
-  let publicKey: string | undefined;
 
   // 1. File exists and is readable
   const fileExistsCheck = checkFileExists(filePath);
@@ -89,7 +88,7 @@ async function verifyKeypair(
   }
 
   const keypair = keypairCheck.keypair;
-  publicKey = keypair.publicKey.toBase58();
+  const publicKey = keypair.publicKey.toBase58();
 
   // 6. Public key derivation is correct
   const derivationCheck = checkPublicKeyDerivation(filePath, keypair);
