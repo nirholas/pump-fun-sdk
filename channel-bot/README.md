@@ -266,6 +266,27 @@ curl -H "Authorization: Bearer $(gcloud auth print-identity-token)" \
     --project aerial-vehicle-466722-p5 --format='value(status.url)')/stats"
 ```
 
+**When `gcloud` cannot mint that token, verify from the public channel instead.**
+A recycled codespace answers `Reauthentication failed. cannot prompt during
+non-interactive execution` on every `gcloud` call, and an org reauth policy
+cannot be satisfied non-interactively, so the command above is unavailable
+exactly when someone is trying to confirm the feed is alive. A post is the
+stronger signal anyway: it proves the deployed service decoded a real event and
+delivered it, not merely that a container is `Ready`.
+
+```bash
+# @trackpumpfun is a supergroup, so t.me/s/ returns 302. Read messages by id:
+curl -s -A Mozilla/5.0 "https://t.me/trackpumpfun/78600?embed=1" |
+  grep -o 'datetime="[^"]*"' | head -1
+```
+
+Walk the id upward until the embed stops returning a `datetime` to find the
+newest post; the id gap between two such readings is the posting rate.
+
+Before treating the reading as proof of Cloud Run, rule out a local bot as the
+source: no `node` process whose `/proc/<pid>/cwd` is under this repo, and the
+local stats port refusing the connection.
+
 **Lost your `.env`?** It is gitignored, so a codespace rebuild deletes it, and without it neither `npm start` nor `deploy-cloudrun.sh` can run. The deployed revision is the durable copy. Rebuild the file from it:
 
 ```bash

@@ -300,6 +300,24 @@ curl -H "Authorization: Bearer $(gcloud auth print-identity-token)" \
     --project aerial-vehicle-466722-p5 --format='value(status.url)')/stats"
 ```
 
+**When `gcloud` cannot mint that token, verify from the public channel instead.**
+A recycled codespace answers `Reauthentication failed. cannot prompt during
+non-interactive execution` on every `gcloud` call, and an org reauth policy
+cannot be satisfied non-interactively, so the command above is unavailable
+exactly when someone is trying to confirm the feed is alive. A post is the
+stronger signal anyway: it proves the deployed service decoded a real event and
+delivered it, not merely that a container is `Ready`.
+
+```bash
+# @pumpfunclaimed is a channel, so the web preview lists post timestamps
+curl -s -A Mozilla/5.0 https://t.me/s/pumpfunclaimed |
+  grep -o 'datetime="[^"]*"' | tail -3
+```
+
+Before treating the reading as proof of Cloud Run, rule out a local bot as the
+source: no `node` process whose `/proc/<pid>/cwd` is under this repo, and the
+local stats port refusing the connection.
+
 Two settings are load-bearing and were learned the hard way:
 
 - **Memory is 2 GiB, and the Node heap cap must stay below it.** The service
