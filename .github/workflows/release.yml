@@ -21,7 +21,10 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
-          node-version-file: .nvmrc
+          # Not .nvmrc (20): semantic-release 25 requires ^22.14 || >=24.10 and
+          # exits 1 on anything older. The package itself still targets >=18,
+          # which is what CI tests against.
+          node-version: 22
           cache: npm
           registry-url: https://registry.npmjs.org
       - run: npm ci
