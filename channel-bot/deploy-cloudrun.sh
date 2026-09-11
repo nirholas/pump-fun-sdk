@@ -75,6 +75,17 @@ else
     echo "Secret ${SECRET_NAME}: created"
 fi
 
+# Grant the runtime identity read access on the secret, every time. Creating a
+# secret does not grant anything, so the FIRST deploy of a new feed used to die
+# after a full container build with "Permission denied on secret ...", which
+# reads like a broken deploy config rather than a one-line IAM gap. The binding
+# is idempotent, so re-running it on an existing secret is a no-op.
+gcloud secrets add-iam-policy-binding "${SECRET_NAME}" \
+    --member="serviceAccount:${RUNTIME_SA}" \
+    --role="roles/secretmanager.secretAccessor" \
+    --project "${PROJECT}" >/dev/null
+echo "Secret ${SECRET_NAME}: ${RUNTIME_SA} can read it"
+
 # Every non-secret key from .env becomes a runtime env var. This goes through
 # a YAML file, not --set-env-vars: values here legitimately contain commas
 # (SOLANA_RPC_URLS is a comma-separated list) and "@" (CHANNEL_ID), so both the

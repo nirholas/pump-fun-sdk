@@ -16,7 +16,7 @@ import bs58 from 'bs58';
 
 import type { ChannelBotConfig } from './config.js';
 import { log } from './logger.js';
-import { RpcFallback } from './rpc-fallback.js';
+import { RpcFallback, maskRpcUrl } from './rpc-fallback.js';
 import {
     SocialFeeIndex,
     CREATE_FEE_SHARING_CONFIG_EVENT_DISC,
@@ -837,12 +837,4 @@ export class ClaimMonitor {
     }
 }
 
-function maskRpcUrl(url: string): string {
-    try {
-        const u = new URL(url);
-        return u.hostname;
-    } catch {
-        return url.slice(0, 30);
-    }
-}
 

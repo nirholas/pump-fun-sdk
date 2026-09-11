@@ -29,6 +29,7 @@ import { WebhookDispatcher } from './webhooks.js';
 import { registerAdminCommands, isMuted, type RuntimeState } from './admin.js';
 import { DeliveryReporter, verifyChannelAccess, DeliveryFailedError, isReportedDelivery } from './delivery.js';
 import { Watchdog } from './watchdog.js';
+import { maskRpcUrl } from './rpc-fallback.js';
 import { assertPostAllowed, ChannelPolicyError, type PostKind } from './channel-policy.js';
 import { PerformanceTracker } from './performance-tracker.js';
 import { buildTokenKeyboard, buildTxKeyboard, type InlineKeyboard } from './keyboards.js';
@@ -606,12 +607,13 @@ async function main(): Promise<void> {
         getStats: () => ({
             channel: config.channelId,
             transport: eventMonitor.mode,
-            activeWs: eventMonitor.activeWsUrl ?? null,
+            activeWs: eventMonitor.activeWsUrl ? maskRpcUrl(eventMonitor.activeWsUrl) : null,
             feeds: { ...config.feed },
             muted: postingMuted(),
             whaleThresholdSol: config.whaleThresholdSol,
             messagesPosted: pipeline.posted,
             policyRejected: pipeline.policyRejected,
+            survivedRejections,
             // A bot that cannot reach its channel is degraded, not healthy:
             // /health returns 503 so an uptime check actually catches it.
             degraded: !delivery.healthy,
@@ -669,6 +671,40 @@ async function main(): Promise<void> {
 
     process.on('SIGINT', shutdown);
     process.on('SIGTERM', shutdown);
+}
+
+/**
+ * Last-resort process guards.
+ *
+ * Traders watch this feed, so the process staying up matters more than any one
+ * event. Every posting and enrichment path is individually try/caught, which
+ * means a promise that escapes to here is almost always a transient upstream
+ * failure in enrichment, not corrupt state. Node would terminate the process
+ * for it by default, and each termination costs the websocket subscription and
+ * the in-memory claim tracker. So a stray rejection is logged and survived.
+ *
+ * An uncaught exception is the opposite: the stack that threw is gone and the
+ * state it was mutating is unknowable, so the honest move is to die loudly and
+ * let Cloud Run start a clean instance. --min-instances 1 makes that a restart,
+ * not an outage.
+ */
+let survivedRejections = 0;
+
+process.on('unhandledRejection', (reason) => {
+    survivedRejections++;
+    log.error('Unhandled rejection #%d (feed continues): %s',
+        survivedRejections, (reason as Error)?.stack ?? String(reason));
+});
+
+process.on('uncaughtException', (err) => {
+    log.error('Uncaught exception, restarting: %s', err?.stack ?? String(err));
+    // Flush synchronously before the exit; a lost log here is a blind restart.
+    process.exitCode = 1;
+    setTimeout(() => process.exit(1), 100).unref();
+});
+
+export function rejectionCount(): number {
+    return survivedRejections;
 }
 
 main().catch((err) => {

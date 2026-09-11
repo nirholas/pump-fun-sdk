@@ -156,3 +156,21 @@ export function maskUrl(url: string): string {
         return url.slice(0, 30) + '…';
     }
 }
+
+/**
+ * A provider URL reduced to its hostname, safe to log or serve.
+ *
+ * Endpoint URLs carry credentials in places that are easy to forget: Helius
+ * puts the key in `?api-key=`, Phantom puts it in the path. /stats served the
+ * raw active websocket URL and so published the Helius key to every authorised
+ * caller (2026-09-11). Hostname-only drops the query and the path together,
+ * which is all a human or a log reader needs to know which provider is live.
+ */
+export function maskRpcUrl(url: string): string {
+    try {
+        return new URL(url).hostname;
+    } catch {
+        // Not a URL: return something short rather than echoing the input.
+        return url.slice(0, 30);
+    }
+}

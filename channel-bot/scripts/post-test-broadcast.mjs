@@ -23,10 +23,11 @@ import { resolve } from 'node:path';
 import { createHmac, randomBytes } from 'node:crypto';
 
 function parseArgs(argv) {
-	const out = { envFile: '.env.claims', send: false, chat: null, force: false };
+	const out = { envFile: '.env.claims', send: false, chat: null, force: false, headline: 'RPC UPGRADED · BOT RUNNING AGAIN' };
 	for (let i = 0; i < argv.length; i++) {
 		if (argv[i] === '--send') out.send = true;
 		else if (argv[i] === '--force') out.force = true;
+		else if (argv[i] === '--headline') out.headline = argv[++i];
 		else if (argv[i] === '--chat') out.chat = argv[++i];
 		else if (argv[i] === '--env') out.envFile = argv[++i];
 	}
@@ -111,7 +112,7 @@ async function main() {
 		'▌      ·  TEST  BROADCAST  ·         ▐',
 		'▙▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▟',
 		'',
-		'<b>RPC UPGRADED · BOT RUNNING AGAIN</b>',
+		`<b>${args.headline}</b>`,
 		'',
 		'<code>' +
 		[
