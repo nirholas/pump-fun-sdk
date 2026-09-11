@@ -43,8 +43,8 @@ describe("example 11: offline buy quotes", () => {
 
 describe("example 12: offline sell quotes", () => {
   const activeCurve = makeBondingCurve({
-    realSolReserves: SOL(10),
-    virtualSolReserves: SOL(40),
+    realQuoteReserves: SOL(10),
+    virtualQuoteReserves: SOL(40),
   });
 
   it("breaks proceeds into net and fees that sum to gross", () => {
@@ -77,8 +77,8 @@ describe("example 13: market cap", () => {
 describe("example 14: target SOL extraction", () => {
   const global = makeGlobal();
   const curve = makeBondingCurve({
-    realSolReserves: SOL(20),
-    virtualSolReserves: SOL(50),
+    realQuoteReserves: SOL(20),
+    virtualQuoteReserves: SOL(50),
     virtualTokenReserves: new BN("500000000000000"),
     realTokenReserves: new BN("300000000000000"),
   });
@@ -117,7 +117,7 @@ describe("example 15: max safe sell", () => {
   });
 
   it("accepts the issue #6 amount that the old u64-derived bound refused", () => {
-    const curve = makeBondingCurve({ virtualSolReserves: new BN("60000000000") });
+    const curve = makeBondingCurve({ virtualQuoteReserves: new BN("60000000000") });
     expect(checkSellSafety(curve, new BN("6325344957752")).safe).toBe(true);
   });
 
@@ -148,7 +148,7 @@ describe("example 16: launch price ladder", () => {
     expect(tokensOut.gtn(0)).toBe(true);
     expect(solIntoReserves.gtn(0)).toBe(true);
     expect(solIntoReserves.lte(SOL(5))).toBe(true);
-    expect(after.virtualSolReserves.gt(before.virtualSolReserves)).toBe(true);
+    expect(after.virtualQuoteReserves.gt(before.virtualQuoteReserves)).toBe(true);
     expect(after.virtualTokenReserves.lt(before.virtualTokenReserves)).toBe(true);
     expect(spotPriceLamportsPerMillionTokens(after).gte(spotBefore)).toBe(true);
   });

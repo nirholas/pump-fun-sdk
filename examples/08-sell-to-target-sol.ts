@@ -84,7 +84,7 @@ export async function main(): Promise<void> {
   row("Target", formatSol(targetSol));
   row("Tokens to sell", formatTokens(amount));
   row("Actual SOL out", formatSol(check));
-  row("Single-tx safe bound", formatTokens(maxSafeSellAmount(bondingCurve.virtualSolReserves)));
+  row("Single-tx safe bound", formatTokens(maxSafeSellAmount(bondingCurve.virtualQuoteReserves)));
   console.log("The search returns the MINIMUM tokens that reach the target, so");
   console.log("actual SOL out lands just above it, never below (unless the safe");
   console.log("bound itself cannot reach the target; then the bound is returned).");

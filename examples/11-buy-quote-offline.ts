@@ -108,7 +108,7 @@ export async function main(): Promise<void> {
   const ctx = launchContext();
 
   heading("Curve state (fresh mainnet launch)");
-  row("Virtual SOL reserves", formatSol(ctx.bondingCurve.virtualSolReserves));
+  row("Virtual SOL reserves", formatSol(ctx.bondingCurve.virtualQuoteReserves));
   row("Virtual token reserves", formatTokens(ctx.bondingCurve.virtualTokenReserves));
   row("Real token reserves", formatTokens(ctx.bondingCurve.realTokenReserves));
   row("Protocol fee", `${ctx.global.feeBasisPoints.toString()} bps`);

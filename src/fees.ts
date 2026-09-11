@@ -36,13 +36,13 @@ export function getFee({
   amount: BN;
   isNewBondingCurve: boolean;
 }) {
-  const { virtualSolReserves, virtualTokenReserves, isMayhemMode } =
+  const { virtualQuoteReserves, virtualTokenReserves, isMayhemMode } =
     bondingCurve;
   const { protocolFeeBps, creatorFeeBps } = computeFeesBps({
     global,
     feeConfig,
     mintSupply: isMayhemMode ? mintSupply : ONE_BILLION_SUPPLY,
-    virtualSolReserves,
+    virtualQuoteReserves,
     virtualTokenReserves,
   });
 
@@ -61,13 +61,13 @@ export function computeFeesBps({
   global,
   feeConfig,
   mintSupply,
-  virtualSolReserves,
+  virtualQuoteReserves,
   virtualTokenReserves,
 }: {
   global: Global;
   feeConfig: FeeConfig | null;
   mintSupply: BN;
-  virtualSolReserves: BN;
+  virtualQuoteReserves: BN;
   virtualTokenReserves: BN;
 }): CalculatedFeesBps {
   if (feeConfig != null) {
@@ -79,7 +79,7 @@ export function computeFeesBps({
       ? new BN(0)
       : bondingCurveMarketCap({
           mintSupply,
-          virtualSolReserves,
+          virtualQuoteReserves,
           virtualTokenReserves,
         });
 

@@ -62,6 +62,12 @@ export function mainnetGlobal(overrides: Partial<Global> = {}): Global {
     reservedFeeRecipient: PROTOCOL_FEE_RECIPIENTS[0]!,
     mayhemModeEnabled: false,
     reservedFeeRecipients: PROTOCOL_FEE_RECIPIENTS.slice(1),
+    buybackFeeRecipients: PROTOCOL_FEE_RECIPIENTS.slice(1),
+    buybackBasisPoints: new BN(0),
+    initialVirtualQuoteReserves: new BN("30000000000"),
+    // Mainnet whitelists no non-SOL quote mint yet: the program keeps the slot
+    // zeroed, and a curve quoted in anything else is rejected on-chain.
+    whitelistedQuoteMints: [PublicKey.default],
     ...overrides,
   };
 }
@@ -72,14 +78,16 @@ export function launchBondingCurve(
 ): BondingCurve {
   return {
     virtualTokenReserves: new BN("1073000000000000"),
-    virtualSolReserves: new BN("30000000000"),
+    virtualQuoteReserves: new BN("30000000000"),
     realTokenReserves: new BN("793100000000000"),
-    realSolReserves: new BN(0),
+    realQuoteReserves: new BN(0),
     tokenTotalSupply: new BN("1000000000000000"),
     complete: false,
     creator: PublicKey.default,
     isMayhemMode: false,
     isCashbackCoin: false,
+    // The zero key is how the program stores a SOL-quoted curve.
+    quoteMint: PublicKey.default,
     ...overrides,
   };
 }
@@ -102,9 +110,9 @@ export function curveAtVirtualSol(
     virtualTokenReserves,
   );
   return launchBondingCurve({
-    virtualSolReserves,
+    virtualQuoteReserves: virtualSolReserves,
     virtualTokenReserves,
-    realSolReserves: virtualSolReserves.sub(global.initialVirtualSolReserves),
+    realQuoteReserves: virtualSolReserves.sub(global.initialVirtualSolReserves),
     realTokenReserves: BN.max(
       new BN(0),
       global.initialRealTokenReserves.sub(tokensSold),

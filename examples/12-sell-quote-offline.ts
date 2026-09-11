@@ -46,7 +46,7 @@ export function quoteSellBreakdown(
   tokenAmount: BN,
 ): SellQuoteBreakdown {
   const grossSol = tokenAmount
-    .mul(bondingCurve.virtualSolReserves)
+    .mul(bondingCurve.virtualQuoteReserves)
     .div(bondingCurve.virtualTokenReserves.add(tokenAmount));
 
   const netSol = getSellSolAmountFromTokenAmount({
@@ -98,7 +98,7 @@ export async function main(): Promise<void> {
   const curve = launchBondingCurve({ creator: EXAMPLE_CREATOR });
 
   heading("Curve state (fresh launch, creator set)");
-  row("Virtual SOL reserves", formatSol(curve.virtualSolReserves));
+  row("Virtual SOL reserves", formatSol(curve.virtualQuoteReserves));
   row("Virtual token reserves", formatTokens(curve.virtualTokenReserves));
   row("Protocol fee", `${global.feeBasisPoints.toString()} bps`);
   row("Creator fee", `${global.creatorFeeBasisPoints.toString()} bps`);

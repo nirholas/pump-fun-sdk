@@ -47,6 +47,7 @@ import {
   getSellSolAmountFromTokenAmount,
   maxSafeSellAmount,
   validateSellAmount,
+  newBondingCurve,
 } from "./bondingCurve";
 import type {
   BondingCurveSummary,
@@ -111,14 +112,12 @@ import type {
   MinimumDistributableFeeEvent,
   Pool,
   ResetFeeSharingConfigEvent,
-  RevokeFeeSharingAuthorityEvent,
   SetCreatorEvent,
   SocialFeePda,
   SocialFeePdaClaimedEvent,
   SocialFeePdaCreatedEvent,
   SyncUserVolumeAccumulatorEvent,
   TradeEvent,
-  TransferFeeSharingAuthorityEvent,
   UpdateFeeSharesEvent,
   UserVolumeAccumulator,
   UserVolumeAccumulatorTotalStats,
@@ -408,7 +407,7 @@ export class OnlinePumpSdk {
         this.fetchFeeConfig(),
       ]);
 
-      const maxChunk = maxSafeSellAmount(sellState.bondingCurve.virtualSolReserves);
+      const maxChunk = maxSafeSellAmount(sellState.bondingCurve.virtualQuoteReserves);
       const chunk = remaining.lte(maxChunk) ? remaining : maxChunk;
 
       const solAmount = getSellSolAmountFromTokenAmount({
@@ -1192,7 +1191,7 @@ export class OnlinePumpSdk {
       global,
       feeConfig,
       mintSupply: bondingCurve.tokenTotalSupply,
-      virtualSolReserves: bondingCurve.virtualSolReserves,
+      virtualQuoteReserves: bondingCurve.virtualQuoteReserves,
       virtualTokenReserves: bondingCurve.virtualTokenReserves,
     });
     const isCreatorSet = !bondingCurve.creator.equals(PublicKey.default);
@@ -1468,11 +1467,11 @@ export class OnlinePumpSdk {
     const grossSol = bondingCurve.virtualTokenReserves.add(amount).isZero()
       ? new BN(0)
       : amount
-          .mul(bondingCurve.virtualSolReserves)
+          .mul(bondingCurve.virtualQuoteReserves)
           .div(bondingCurve.virtualTokenReserves.add(amount));
 
     const feesLamports = BN.max(new BN(0), grossSol.sub(impact.outputAmount));
-    const maxSafeAmount = maxSafeSellAmount(bondingCurve.virtualSolReserves);
+    const maxSafeAmount = maxSafeSellAmount(bondingCurve.virtualQuoteReserves);
 
     return {
       solOut: impact.outputAmount,
@@ -2441,17 +2440,7 @@ export class OnlinePumpSdk {
     ]);
 
     // Compute expected tokens at the initial bonding curve state
-    const initialBc: BondingCurve = {
-      virtualTokenReserves: global.initialVirtualTokenReserves,
-      virtualSolReserves: global.initialVirtualSolReserves,
-      realTokenReserves: global.initialRealTokenReserves,
-      realSolReserves: new BN(0),
-      tokenTotalSupply: global.tokenTotalSupply,
-      complete: false,
-      creator,
-      isMayhemMode: mayhemMode,
-      isCashbackCoin: cashback,
-    };
+    const initialBc: BondingCurve = newBondingCurve(global);
     const tokensOut = getBuyTokenAmountFromSolAmount({
       global,
       feeConfig,
@@ -2771,8 +2760,6 @@ export type PumpEvent =
   | { type: "createFeeSharingConfig"; data: CreateFeeSharingConfigEvent }
   | { type: "updateFeeShares"; data: UpdateFeeSharesEvent }
   | { type: "resetFeeSharingConfig"; data: ResetFeeSharingConfigEvent }
-  | { type: "revokeFeeSharingAuthority"; data: RevokeFeeSharingAuthorityEvent }
-  | { type: "transferFeeSharingAuthority"; data: TransferFeeSharingAuthorityEvent }
   | { type: "socialFeePdaCreated"; data: SocialFeePdaCreatedEvent }
   | { type: "socialFeePdaClaimed"; data: SocialFeePdaClaimedEvent }
   // ── PumpAMM extra ────────────────────────────────────────────────────
@@ -2906,8 +2893,6 @@ const FEES_EVENT_WRAPPERS: Record<string, EventWrap> = {
   CreateFeeSharingConfigEvent: (d) => ({ type: "createFeeSharingConfig", data: PUMP_SDK.decodeCreateFeeSharingConfigEvent(d) }),
   UpdateFeeSharesEvent: (d) => ({ type: "updateFeeShares", data: PUMP_SDK.decodeUpdateFeeSharesEvent(d) }),
   ResetFeeSharingConfigEvent: (d) => ({ type: "resetFeeSharingConfig", data: PUMP_SDK.decodeResetFeeSharingConfigEvent(d) }),
-  RevokeFeeSharingAuthorityEvent: (d) => ({ type: "revokeFeeSharingAuthority", data: PUMP_SDK.decodeRevokeFeeSharingAuthorityEvent(d) }),
-  TransferFeeSharingAuthorityEvent: (d) => ({ type: "transferFeeSharingAuthority", data: PUMP_SDK.decodeTransferFeeSharingAuthorityEvent(d) }),
   SocialFeePdaCreated: (d) => ({ type: "socialFeePdaCreated", data: PUMP_SDK.decodeSocialFeePdaCreatedEvent(d) }),
   SocialFeePdaClaimed: (d) => ({ type: "socialFeePdaClaimed", data: PUMP_SDK.decodeSocialFeePdaClaimedEvent(d) }),
   InitializeFeeConfigEvent: (d) => ({ type: "feesInitializeFeeConfig", data: PUMP_SDK.decodeFeesInitializeFeeConfigEvent(d) }),

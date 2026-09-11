@@ -34,7 +34,7 @@ const TOKEN_UNITS = new BN(1_000_000);
  */
 export function priceFromReserves(bondingCurve: BondingCurve): BN {
   if (bondingCurve.virtualTokenReserves.isZero()) return new BN(0);
-  return bondingCurve.virtualSolReserves
+  return bondingCurve.virtualQuoteReserves
     .mul(TOKEN_UNITS)
     .div(bondingCurve.virtualTokenReserves);
 }
@@ -67,7 +67,7 @@ export async function main(): Promise<void> {
   heading("Live token");
   const { mint, bondingCurve } = await findActiveCurveMint(connection);
   row("Mint", mint.toBase58());
-  row("Virtual SOL reserves", formatSol(bondingCurve.virtualSolReserves));
+  row("Virtual SOL reserves", formatSol(bondingCurve.virtualQuoteReserves));
   row("Virtual token reserves", bondingCurve.virtualTokenReserves.toString());
 
   const price = await rpc("fetchTokenPrice", () => online.fetchTokenPrice(mint));

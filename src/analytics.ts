@@ -99,7 +99,7 @@ const ONE_TOKEN = new BN(1_000_000);
  */
 function spotPrice(bondingCurve: BondingCurve): BN {
   if (bondingCurve.virtualTokenReserves.isZero()) return new BN(0);
-  return bondingCurve.virtualSolReserves
+  return bondingCurve.virtualQuoteReserves
     .mul(LAMPORTS_PER_SOL)
     .div(bondingCurve.virtualTokenReserves);
 }
@@ -117,7 +117,7 @@ function spotPrice(bondingCurve: BondingCurve): BN {
 function isCurveRetired(bondingCurve: BondingCurve): boolean {
   return (
     bondingCurve.virtualTokenReserves.isZero() ||
-    bondingCurve.virtualSolReserves.isZero()
+    bondingCurve.virtualQuoteReserves.isZero()
   );
 }
 
@@ -157,7 +157,7 @@ export function calculateBuyPriceImpact({
   });
 
   // Simulate new reserves after trade
-  const newVirtualSolReserves = bondingCurve.virtualSolReserves.add(solAmount);
+  const newVirtualSolReserves = bondingCurve.virtualQuoteReserves.add(solAmount);
   const newVirtualTokenReserves =
     bondingCurve.virtualTokenReserves.sub(tokensReceived);
 
@@ -215,7 +215,7 @@ export function calculateSellPriceImpact({
   });
 
   // Simulate new reserves after trade
-  const newVirtualSolReserves = bondingCurve.virtualSolReserves.sub(solReceived);
+  const newVirtualSolReserves = bondingCurve.virtualQuoteReserves.sub(solReceived);
   const newVirtualTokenReserves =
     bondingCurve.virtualTokenReserves.add(tokenAmount);
 
@@ -298,7 +298,7 @@ export function getGraduationProgress(
       isGraduated: true,
       tokensRemaining: new BN(0),
       tokensTotal: global.initialRealTokenReserves,
-      solAccumulated: bondingCurve.realSolReserves,
+      solAccumulated: bondingCurve.realQuoteReserves,
       solNeededToGraduate: new BN(0),
     };
   }
@@ -331,7 +331,7 @@ export function getGraduationProgress(
     isGraduated: false,
     tokensRemaining: bondingCurve.realTokenReserves,
     tokensTotal: initialReal,
-    solAccumulated: bondingCurve.realSolReserves,
+    solAccumulated: bondingCurve.realQuoteReserves,
     solNeededToGraduate,
   };
 }
@@ -393,7 +393,7 @@ export function getTokenPrice({
 
   const marketCap = bondingCurveMarketCap({
     mintSupply,
-    virtualSolReserves: bondingCurve.virtualSolReserves,
+    virtualQuoteReserves: bondingCurve.virtualQuoteReserves,
     virtualTokenReserves: bondingCurve.virtualTokenReserves,
   });
 
@@ -434,7 +434,7 @@ export function getBondingCurveSummary({
     global,
     feeConfig,
     mintSupply,
-    virtualSolReserves: bondingCurve.virtualSolReserves,
+    virtualQuoteReserves: bondingCurve.virtualQuoteReserves,
     virtualTokenReserves: bondingCurve.virtualTokenReserves,
   });
 
@@ -445,9 +445,9 @@ export function getBondingCurveSummary({
     solNeededToGraduate: progress.solNeededToGraduate,
     buyPricePerToken: price.buyPricePerToken,
     sellPricePerToken: price.sellPricePerToken,
-    realSolReserves: bondingCurve.realSolReserves,
+    realSolReserves: bondingCurve.realQuoteReserves,
     realTokenReserves: bondingCurve.realTokenReserves,
-    virtualSolReserves: bondingCurve.virtualSolReserves,
+    virtualSolReserves: bondingCurve.virtualQuoteReserves,
     virtualTokenReserves: bondingCurve.virtualTokenReserves,
     protocolFeeBps,
     creatorFeeBps,

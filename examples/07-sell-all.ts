@@ -61,7 +61,7 @@ export function computeSellAllPlan({
   bondingCurve: BondingCurve;
   balance: BN;
 }): SellAllPlan {
-  const maxSafe = maxSafeSellAmount(bondingCurve.virtualSolReserves);
+  const maxSafe = maxSafeSellAmount(bondingCurve.virtualQuoteReserves);
   const solOut = getSellSolAmountFromTokenAmount({
     global,
     feeConfig,

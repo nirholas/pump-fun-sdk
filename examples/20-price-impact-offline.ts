@@ -53,7 +53,7 @@ export interface ImpactRow {
  */
 export function spotPriceLamports(bondingCurve: BondingCurve): BN {
   if (bondingCurve.virtualTokenReserves.isZero()) return new BN(0);
-  return bondingCurve.virtualSolReserves
+  return bondingCurve.virtualQuoteReserves
     .mul(TOKEN_UNITS)
     .div(bondingCurve.virtualTokenReserves);
 }
@@ -73,15 +73,15 @@ export function priceImpactBps(
   solAmount: BN,
   tokensOut: BN,
 ): BN {
-  const newVirtualSol = bondingCurve.virtualSolReserves.add(solAmount);
+  const newVirtualSol = bondingCurve.virtualQuoteReserves.add(solAmount);
   const newVirtualTokens = bondingCurve.virtualTokenReserves.sub(tokensOut);
-  if (newVirtualTokens.lten(0) || bondingCurve.virtualSolReserves.isZero()) {
+  if (newVirtualTokens.lten(0) || bondingCurve.virtualQuoteReserves.isZero()) {
     throw new Error("Buy consumes the entire curve; impact is unbounded");
   }
   const numerator = newVirtualSol
     .mul(bondingCurve.virtualTokenReserves)
     .mul(BPS);
-  const denominator = newVirtualTokens.mul(bondingCurve.virtualSolReserves);
+  const denominator = newVirtualTokens.mul(bondingCurve.virtualQuoteReserves);
   return numerator.div(denominator).sub(BPS);
 }
 
@@ -115,7 +115,7 @@ export function measureImpact({
   const premiumOverSpotBps = solAmount
     .mul(bondingCurve.virtualTokenReserves)
     .mul(BPS)
-    .div(tokensOut.mul(bondingCurve.virtualSolReserves))
+    .div(tokensOut.mul(bondingCurve.virtualQuoteReserves))
     .sub(BPS);
 
   return {

@@ -84,7 +84,7 @@ export async function runCurve(ctx: CliContext, mintArg: string): Promise<void> 
     global,
     feeConfig,
     mintSupply: curve.tokenTotalSupply,
-    virtualSolReserves: curve.virtualSolReserves,
+    virtualQuoteReserves: curve.virtualQuoteReserves,
     virtualTokenReserves: curve.virtualTokenReserves,
   });
   const totalFeeBps =
@@ -121,9 +121,9 @@ export async function runCurve(ctx: CliContext, mintArg: string): Promise<void> 
           solNeededToGraduateLamports: progress.solNeededToGraduate,
         },
         reserves: {
-          virtualSol: curve.virtualSolReserves,
+          virtualSol: curve.virtualQuoteReserves,
           virtualToken: curve.virtualTokenReserves,
-          realSol: curve.realSolReserves,
+          realSol: curve.realQuoteReserves,
           realToken: curve.realTokenReserves,
           tokenTotalSupply: curve.tokenTotalSupply,
         },
@@ -190,11 +190,11 @@ export async function runCurve(ctx: CliContext, mintArg: string): Promise<void> 
             },
             {
               label: "Virtual reserves",
-              value: `${formatSol(curve.virtualSolReserves)} / ${formatTokens(curve.virtualTokenReserves)} tokens`,
+              value: `${formatSol(curve.virtualQuoteReserves)} / ${formatTokens(curve.virtualTokenReserves)} tokens`,
             },
             {
               label: "Real reserves",
-              value: `${formatSol(curve.realSolReserves)} / ${formatTokens(curve.realTokenReserves)} tokens`,
+              value: `${formatSol(curve.realQuoteReserves)} / ${formatTokens(curve.realTokenReserves)} tokens`,
             },
             { label: "Total supply", value: formatTokens(curve.tokenTotalSupply) },
           ]),

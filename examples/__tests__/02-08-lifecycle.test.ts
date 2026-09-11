@@ -72,8 +72,8 @@ describe("example 02: create and buy", () => {
 
 describe("example 04: sell tokens", () => {
   const curve = makeBondingCurve({
-    realSolReserves: SOL(12),
-    virtualSolReserves: SOL(42),
+    realQuoteReserves: SOL(12),
+    virtualQuoteReserves: SOL(42),
   });
 
   it("quotes positive proceeds for a real position", () => {
@@ -152,8 +152,8 @@ describe("example 06: sell by percentage", () => {
 
 describe("example 07: sell all", () => {
   const curve = makeBondingCurve({
-    realSolReserves: SOL(15),
-    virtualSolReserves: SOL(45),
+    realQuoteReserves: SOL(15),
+    virtualQuoteReserves: SOL(45),
   });
 
   it("values a whole balance and reports no chunking for ordinary sizes", () => {
@@ -183,8 +183,8 @@ describe("example 07: sell all", () => {
 
 describe("example 08: sell to target SOL", () => {
   const curve = makeBondingCurve({
-    realSolReserves: SOL(25),
-    virtualSolReserves: SOL(55),
+    realQuoteReserves: SOL(25),
+    virtualQuoteReserves: SOL(55),
     virtualTokenReserves: new BN("500000000000000"),
     realTokenReserves: new BN("300000000000000"),
   });

@@ -135,7 +135,7 @@ export async function main(): Promise<void> {
     bondingCurveAccountInfo = state.bondingCurveAccountInfo;
     associatedUserAccountInfo = state.associatedUserAccountInfo;
     tokenProgram = state.tokenProgram;
-    row("Virtual SOL reserves", formatSol(bondingCurve.virtualSolReserves));
+    row("Virtual SOL reserves", formatSol(bondingCurve.virtualQuoteReserves));
     row("Virtual token reserves", formatTokens(bondingCurve.virtualTokenReserves));
     row("Buyer token account exists", associatedUserAccountInfo !== null);
   } else {

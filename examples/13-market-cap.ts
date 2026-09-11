@@ -36,7 +36,7 @@ export interface MarketCapPoint {
 export function marketCapOf(global: Global, bondingCurve: BondingCurve): BN {
   return bondingCurveMarketCap({
     mintSupply: global.tokenTotalSupply,
-    virtualSolReserves: bondingCurve.virtualSolReserves,
+    virtualQuoteReserves: bondingCurve.virtualQuoteReserves,
     virtualTokenReserves: bondingCurve.virtualTokenReserves,
   });
 }
@@ -60,7 +60,7 @@ export function buildMarketCapTable(global: Global): MarketCapPoint[] {
     label,
     bondingCurve,
     marketCap: marketCapOf(global, bondingCurve),
-    solRaised: bondingCurve.realSolReserves,
+    solRaised: bondingCurve.realQuoteReserves,
   }));
 }
 
@@ -74,7 +74,7 @@ export async function main(): Promise<void> {
   heading("Market cap checkpoints (SOL-denominated)");
   for (const point of buildMarketCapTable(global)) {
     row(point.label, formatSol(point.marketCap, 2));
-    row("  virtual SOL", formatSol(point.bondingCurve.virtualSolReserves, 2));
+    row("  virtual SOL", formatSol(point.bondingCurve.virtualQuoteReserves, 2));
     row("  virtual tokens", formatTokens(point.bondingCurve.virtualTokenReserves, 0));
     row("  real tokens left", formatTokens(point.bondingCurve.realTokenReserves, 0));
     row("  SOL raised so far", formatSol(point.solRaised, 2));

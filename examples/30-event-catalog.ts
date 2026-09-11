@@ -94,8 +94,6 @@ export const EVENT_DECODERS: readonly CatalogEntry[] = [
   { method: "decodeCreateFeeSharingConfigEvent", program: "fees", idlEvent: "CreateFeeSharingConfigEvent", eventType: "createFeeSharingConfig" },
   { method: "decodeUpdateFeeSharesEvent", program: "fees", idlEvent: "UpdateFeeSharesEvent", eventType: "updateFeeShares" },
   { method: "decodeResetFeeSharingConfigEvent", program: "fees", idlEvent: "ResetFeeSharingConfigEvent", eventType: "resetFeeSharingConfig" },
-  { method: "decodeRevokeFeeSharingAuthorityEvent", program: "fees", idlEvent: "RevokeFeeSharingAuthorityEvent", eventType: "revokeFeeSharingAuthority" },
-  { method: "decodeTransferFeeSharingAuthorityEvent", program: "fees", idlEvent: "TransferFeeSharingAuthorityEvent", eventType: "transferFeeSharingAuthority" },
   { method: "decodeSocialFeePdaCreatedEvent", program: "fees", idlEvent: "SocialFeePdaCreated", eventType: "socialFeePdaCreated" },
   { method: "decodeSocialFeePdaClaimedEvent", program: "fees", idlEvent: "SocialFeePdaClaimed", eventType: "socialFeePdaClaimed" },
   { method: "decodeFeesInitializeFeeConfigEvent", program: "fees", idlEvent: "InitializeFeeConfigEvent", eventType: "feesInitializeFeeConfig" },

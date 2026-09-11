@@ -86,21 +86,7 @@ export interface PumpAmm {
             seeds: [
               {
                 kind: "const";
-                value: [
-                  103,
-                  108,
-                  111,
-                  98,
-                  97,
-                  108,
-                  95,
-                  99,
-                  111,
-                  110,
-                  102,
-                  105,
-                  103,
-                ];
+                value: [103, 108, 111, 98, 97, 108, 95, 99, 111, 110, 102, 105, 103];
               },
             ];
           };
@@ -153,11 +139,11 @@ export interface PumpAmm {
             seeds: [
               {
                 kind: "account";
-                path: "globalVolumeAccumulator";
+                path: "global_volume_accumulator";
               },
               {
                 kind: "account";
-                path: "tokenProgram";
+                path: "token_program";
               },
               {
                 kind: "account";
@@ -326,15 +312,15 @@ export interface PumpAmm {
             seeds: [
               {
                 kind: "account";
-                path: "protocolFeeRecipient";
+                path: "protocol_fee_recipient";
               },
               {
                 kind: "account";
-                path: "quoteTokenProgram";
+                path: "quote_token_program";
               },
               {
                 kind: "account";
-                path: "quoteMint";
+                path: "quote_mint";
               },
             ];
             program: {
@@ -430,15 +416,15 @@ export interface PumpAmm {
             seeds: [
               {
                 kind: "account";
-                path: "coinCreatorVaultAuthority";
+                path: "coin_creator_vault_authority";
               },
               {
                 kind: "account";
-                path: "quoteTokenProgram";
+                path: "quote_token_program";
               },
               {
                 kind: "account";
-                path: "quoteMint";
+                path: "quote_mint";
               },
             ];
             program: {
@@ -486,26 +472,12 @@ export interface PumpAmm {
             seeds: [
               {
                 kind: "const";
-                value: [
-                  99,
-                  114,
-                  101,
-                  97,
-                  116,
-                  111,
-                  114,
-                  95,
-                  118,
-                  97,
-                  117,
-                  108,
-                  116,
-                ];
+                value: [99, 114, 101, 97, 116, 111, 114, 95, 118, 97, 117, 108, 116];
               },
               {
                 kind: "account";
                 path: "pool.coin_creator";
-                account: "pool";
+                account: "Pool";
               },
             ];
           };
@@ -635,7 +607,7 @@ export interface PumpAmm {
             ];
             program: {
               kind: "account";
-              path: "feeProgram";
+              path: "fee_program";
             };
           };
         },
@@ -729,15 +701,15 @@ export interface PumpAmm {
             seeds: [
               {
                 kind: "account";
-                path: "protocolFeeRecipient";
+                path: "protocol_fee_recipient";
               },
               {
                 kind: "account";
-                path: "quoteTokenProgram";
+                path: "quote_token_program";
               },
               {
                 kind: "account";
-                path: "quoteMint";
+                path: "quote_mint";
               },
             ];
             program: {
@@ -833,15 +805,15 @@ export interface PumpAmm {
             seeds: [
               {
                 kind: "account";
-                path: "coinCreatorVaultAuthority";
+                path: "coin_creator_vault_authority";
               },
               {
                 kind: "account";
-                path: "quoteTokenProgram";
+                path: "quote_token_program";
               },
               {
                 kind: "account";
-                path: "quoteMint";
+                path: "quote_mint";
               },
             ];
             program: {
@@ -889,26 +861,12 @@ export interface PumpAmm {
             seeds: [
               {
                 kind: "const";
-                value: [
-                  99,
-                  114,
-                  101,
-                  97,
-                  116,
-                  111,
-                  114,
-                  95,
-                  118,
-                  97,
-                  117,
-                  108,
-                  116,
-                ];
+                value: [99, 114, 101, 97, 116, 111, 114, 95, 118, 97, 117, 108, 116];
               },
               {
                 kind: "account";
                 path: "pool.coin_creator";
-                account: "pool";
+                account: "Pool";
               },
             ];
           };
@@ -1038,7 +996,7 @@ export interface PumpAmm {
             ];
             program: {
               kind: "account";
-              path: "feeProgram";
+              path: "fee_program";
             };
           };
         },
@@ -1127,15 +1085,15 @@ export interface PumpAmm {
             seeds: [
               {
                 kind: "account";
-                path: "userVolumeAccumulator";
+                path: "user_volume_accumulator";
               },
               {
                 kind: "account";
-                path: "quoteTokenProgram";
+                path: "quote_token_program";
               },
               {
                 kind: "account";
-                path: "quoteMint";
+                path: "quote_mint";
               },
             ];
             program: {
@@ -1188,11 +1146,11 @@ export interface PumpAmm {
               },
               {
                 kind: "account";
-                path: "quoteTokenProgram";
+                path: "quote_token_program";
               },
               {
                 kind: "account";
-                path: "quoteMint";
+                path: "quote_mint";
               },
             ];
             program: {
@@ -1292,7 +1250,7 @@ export interface PumpAmm {
               },
               {
                 kind: "account";
-                path: "tokenProgram";
+                path: "token_program";
               },
               {
                 kind: "account";
@@ -1382,11 +1340,11 @@ export interface PumpAmm {
             seeds: [
               {
                 kind: "account";
-                path: "globalVolumeAccumulator";
+                path: "global_volume_accumulator";
               },
               {
                 kind: "account";
-                path: "tokenProgram";
+                path: "token_program";
               },
               {
                 kind: "account";
@@ -1631,25 +1589,11 @@ export interface PumpAmm {
             seeds: [
               {
                 kind: "const";
-                value: [
-                  99,
-                  114,
-                  101,
-                  97,
-                  116,
-                  111,
-                  114,
-                  95,
-                  118,
-                  97,
-                  117,
-                  108,
-                  116,
-                ];
+                value: [99, 114, 101, 97, 116, 111, 114, 95, 118, 97, 117, 108, 116];
               },
               {
                 kind: "account";
-                path: "coinCreator";
+                path: "coin_creator";
               },
             ];
           };
@@ -1661,15 +1605,15 @@ export interface PumpAmm {
             seeds: [
               {
                 kind: "account";
-                path: "coinCreatorVaultAuthority";
+                path: "coin_creator_vault_authority";
               },
               {
                 kind: "account";
-                path: "quoteTokenProgram";
+                path: "quote_token_program";
               },
               {
                 kind: "account";
-                path: "quoteMint";
+                path: "quote_mint";
               },
             ];
             program: {
@@ -1767,21 +1711,7 @@ export interface PumpAmm {
             seeds: [
               {
                 kind: "const";
-                value: [
-                  103,
-                  108,
-                  111,
-                  98,
-                  97,
-                  108,
-                  95,
-                  99,
-                  111,
-                  110,
-                  102,
-                  105,
-                  103,
-                ];
+                value: [103, 108, 111, 98, 97, 108, 95, 99, 111, 110, 102, 105, 103];
               },
             ];
           };
@@ -1871,11 +1801,11 @@ export interface PumpAmm {
               },
               {
                 kind: "account";
-                path: "baseMint";
+                path: "base_mint";
               },
               {
                 kind: "account";
-                path: "quoteMint";
+                path: "quote_mint";
               },
             ];
           };
@@ -1901,20 +1831,7 @@ export interface PumpAmm {
             seeds: [
               {
                 kind: "const";
-                value: [
-                  112,
-                  111,
-                  111,
-                  108,
-                  95,
-                  108,
-                  112,
-                  95,
-                  109,
-                  105,
-                  110,
-                  116,
-                ];
+                value: [112, 111, 111, 108, 95, 108, 112, 95, 109, 105, 110, 116];
               },
               {
                 kind: "account";
@@ -1942,11 +1859,11 @@ export interface PumpAmm {
               },
               {
                 kind: "account";
-                path: "token2022Program";
+                path: "token_2022_program";
               },
               {
                 kind: "account";
-                path: "lpMint";
+                path: "lp_mint";
               },
             ];
             program: {
@@ -1999,11 +1916,11 @@ export interface PumpAmm {
               },
               {
                 kind: "account";
-                path: "baseTokenProgram";
+                path: "base_token_program";
               },
               {
                 kind: "account";
-                path: "baseMint";
+                path: "base_mint";
               },
             ];
             program: {
@@ -2056,11 +1973,11 @@ export interface PumpAmm {
               },
               {
                 kind: "account";
-                path: "quoteTokenProgram";
+                path: "quote_token_program";
               },
               {
                 kind: "account";
-                path: "quoteMint";
+                path: "quote_mint";
               },
             ];
             program: {
@@ -2518,22 +2435,22 @@ export interface PumpAmm {
               {
                 kind: "account";
                 path: "pool.index";
-                account: "pool";
+                account: "Pool";
               },
               {
                 kind: "account";
                 path: "pool.creator";
-                account: "pool";
+                account: "Pool";
               },
               {
                 kind: "account";
                 path: "pool.base_mint";
-                account: "pool";
+                account: "Pool";
               },
               {
                 kind: "account";
                 path: "pool.quote_mint";
-                account: "pool";
+                account: "Pool";
               },
             ];
           };
@@ -2544,27 +2461,12 @@ export interface PumpAmm {
             seeds: [
               {
                 kind: "const";
-                value: [
-                  115,
-                  104,
-                  97,
-                  114,
-                  105,
-                  110,
-                  103,
-                  45,
-                  99,
-                  111,
-                  110,
-                  102,
-                  105,
-                  103,
-                ];
+                value: [115, 104, 97, 114, 105, 110, 103, 45, 99, 111, 110, 102, 105, 103];
               },
               {
                 kind: "account";
                 path: "pool.base_mint";
-                account: "pool";
+                account: "Pool";
               },
             ];
             program: {
@@ -2693,15 +2595,15 @@ export interface PumpAmm {
             seeds: [
               {
                 kind: "account";
-                path: "protocolFeeRecipient";
+                path: "protocol_fee_recipient";
               },
               {
                 kind: "account";
-                path: "quoteTokenProgram";
+                path: "quote_token_program";
               },
               {
                 kind: "account";
-                path: "quoteMint";
+                path: "quote_mint";
               },
             ];
             program: {
@@ -2797,15 +2699,15 @@ export interface PumpAmm {
             seeds: [
               {
                 kind: "account";
-                path: "coinCreatorVaultAuthority";
+                path: "coin_creator_vault_authority";
               },
               {
                 kind: "account";
-                path: "quoteTokenProgram";
+                path: "quote_token_program";
               },
               {
                 kind: "account";
-                path: "quoteMint";
+                path: "quote_mint";
               },
             ];
             program: {
@@ -2853,26 +2755,12 @@ export interface PumpAmm {
             seeds: [
               {
                 kind: "const";
-                value: [
-                  99,
-                  114,
-                  101,
-                  97,
-                  116,
-                  111,
-                  114,
-                  95,
-                  118,
-                  97,
-                  117,
-                  108,
-                  116,
-                ];
+                value: [99, 114, 101, 97, 116, 111, 114, 95, 118, 97, 117, 108, 116];
               },
               {
                 kind: "account";
                 path: "pool.coin_creator";
-                account: "pool";
+                account: "Pool";
               },
             ];
           };
@@ -2925,7 +2813,7 @@ export interface PumpAmm {
             ];
             program: {
               kind: "account";
-              path: "feeProgram";
+              path: "fee_program";
             };
           };
         },
@@ -2947,9 +2835,7 @@ export interface PumpAmm {
     },
     {
       name: "setCoinCreator";
-      docs: [
-        "Sets Pool::coin_creator from Metaplex metadata creator or BondingCurve::creator",
-      ];
+      docs: ["Sets Pool::coin_creator from Metaplex metadata creator or BondingCurve::creator"];
       discriminator: [210, 149, 128, 45, 188, 58, 78, 175];
       accounts: [
         {
@@ -3004,7 +2890,7 @@ export interface PumpAmm {
               {
                 kind: "account";
                 path: "pool.base_mint";
-                account: "pool";
+                account: "Pool";
               },
             ];
             program: {
@@ -3052,26 +2938,12 @@ export interface PumpAmm {
             seeds: [
               {
                 kind: "const";
-                value: [
-                  98,
-                  111,
-                  110,
-                  100,
-                  105,
-                  110,
-                  103,
-                  45,
-                  99,
-                  117,
-                  114,
-                  118,
-                  101,
-                ];
+                value: [98, 111, 110, 100, 105, 110, 103, 45, 99, 117, 114, 118, 101];
               },
               {
                 kind: "account";
                 path: "pool.base_mint";
-                account: "pool";
+                account: "Pool";
               },
             ];
             program: {
@@ -3159,21 +3031,7 @@ export interface PumpAmm {
             seeds: [
               {
                 kind: "const";
-                value: [
-                  103,
-                  108,
-                  111,
-                  98,
-                  97,
-                  108,
-                  95,
-                  99,
-                  111,
-                  110,
-                  102,
-                  105,
-                  103,
-                ];
+                value: [103, 108, 111, 98, 97, 108, 95, 99, 111, 110, 102, 105, 103];
               },
             ];
           };
@@ -3482,25 +3340,11 @@ export interface PumpAmm {
             seeds: [
               {
                 kind: "const";
-                value: [
-                  99,
-                  114,
-                  101,
-                  97,
-                  116,
-                  111,
-                  114,
-                  95,
-                  118,
-                  97,
-                  117,
-                  108,
-                  116,
-                ];
+                value: [99, 114, 101, 97, 116, 111, 114, 95, 118, 97, 117, 108, 116];
               },
               {
                 kind: "account";
-                path: "coinCreator";
+                path: "coin_creator";
               },
             ];
           };
@@ -3512,15 +3356,15 @@ export interface PumpAmm {
             seeds: [
               {
                 kind: "account";
-                path: "coinCreatorVaultAuthority";
+                path: "coin_creator_vault_authority";
               },
               {
                 kind: "account";
-                path: "tokenProgram";
+                path: "token_program";
               },
               {
                 kind: "account";
-                path: "wsolMint";
+                path: "wsol_mint";
               },
             ];
             program: {
@@ -3569,25 +3413,11 @@ export interface PumpAmm {
             seeds: [
               {
                 kind: "const";
-                value: [
-                  99,
-                  114,
-                  101,
-                  97,
-                  116,
-                  111,
-                  114,
-                  45,
-                  118,
-                  97,
-                  117,
-                  108,
-                  116,
-                ];
+                value: [99, 114, 101, 97, 116, 111, 114, 45, 118, 97, 117, 108, 116];
               },
               {
                 kind: "account";
-                path: "coinCreator";
+                path: "coin_creator";
               },
             ];
             program: {
@@ -3626,6 +3456,217 @@ export interface PumpAmm {
                 24,
                 176,
               ];
+            };
+          };
+        },
+        {
+          name: "eventAuthority";
+          pda: {
+            seeds: [
+              {
+                kind: "const";
+                value: [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121,
+                ];
+              },
+            ];
+          };
+        },
+        {
+          name: "program";
+        },
+      ];
+      args: [];
+    },
+    {
+      name: "transferCreatorFeesToPumpV2";
+      discriminator: [1, 33, 78, 185, 33, 67, 44, 92];
+      accounts: [
+        {
+          name: "payer";
+          writable: true;
+          signer: true;
+        },
+        {
+          name: "quoteMint";
+        },
+        {
+          name: "tokenProgram";
+        },
+        {
+          name: "systemProgram";
+          address: "11111111111111111111111111111111";
+        },
+        {
+          name: "associatedTokenProgram";
+          address: "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL";
+        },
+        {
+          name: "coinCreator";
+        },
+        {
+          name: "coinCreatorVaultAuthority";
+          writable: true;
+          pda: {
+            seeds: [
+              {
+                kind: "const";
+                value: [99, 114, 101, 97, 116, 111, 114, 95, 118, 97, 117, 108, 116];
+              },
+              {
+                kind: "account";
+                path: "coin_creator";
+              },
+            ];
+          };
+        },
+        {
+          name: "coinCreatorVaultAta";
+          writable: true;
+          pda: {
+            seeds: [
+              {
+                kind: "account";
+                path: "coin_creator_vault_authority";
+              },
+              {
+                kind: "account";
+                path: "token_program";
+              },
+              {
+                kind: "account";
+                path: "quote_mint";
+              },
+            ];
+            program: {
+              kind: "const";
+              value: [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89,
+              ];
+            };
+          };
+        },
+        {
+          name: "pumpCreatorVault";
+          writable: true;
+          pda: {
+            seeds: [
+              {
+                kind: "const";
+                value: [99, 114, 101, 97, 116, 111, 114, 45, 118, 97, 117, 108, 116];
+              },
+              {
+                kind: "account";
+                path: "coin_creator";
+              },
+            ];
+            program: {
+              kind: "const";
+              value: [
+                1,
+                86,
+                224,
+                246,
+                147,
+                102,
+                90,
+                207,
+                68,
+                219,
+                21,
+                104,
+                191,
+                23,
+                91,
+                170,
+                81,
+                137,
+                203,
+                151,
+                245,
+                210,
+                255,
+                59,
+                101,
+                93,
+                43,
+                182,
+                253,
+                109,
+                24,
+                176,
+              ];
+            };
+          };
+        },
+        {
+          name: "pumpCreatorVaultAta";
+          writable: true;
+          pda: {
+            seeds: [
+              {
+                kind: "account";
+                path: "pump_creator_vault";
+              },
+              {
+                kind: "account";
+                path: "token_program";
+              },
+              {
+                kind: "account";
+                path: "quote_mint";
+              },
+            ];
+            program: {
+              kind: "account";
+              path: "associated_token_program";
             };
           };
         },
@@ -3714,6 +3755,61 @@ export interface PumpAmm {
         },
       ];
       args: [];
+    },
+    {
+      name: "updateBuybackConfig";
+      discriminator: [251, 224, 171, 146, 160, 26, 113, 233];
+      accounts: [
+        {
+          name: "admin";
+          signer: true;
+          relations: ["globalConfig"];
+        },
+        {
+          name: "globalConfig";
+          writable: true;
+        },
+        {
+          name: "eventAuthority";
+          pda: {
+            seeds: [
+              {
+                kind: "const";
+                value: [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121,
+                ];
+              },
+            ];
+          };
+        },
+        {
+          name: "program";
+        },
+      ];
+      args: [
+        {
+          name: "buybackBasisPoints";
+          type: {
+            option: "u64";
+          };
+        },
+      ];
     },
     {
       name: "updateFeeConfig";
@@ -4229,7 +4325,34 @@ export interface PumpAmm {
     },
     {
       code: 6052;
-      name: "cashbackEarnedDoesNotMatchTokenInVault";
+      name: "tokensInVaultLessThanCashbackEarned";
+    },
+    {
+      code: 6053;
+      name: "buybackFeeRecipientNotAuthorized";
+      msg: "Buyback fee recipient not authorized";
+    },
+    {
+      code: 6054;
+      name: "allBuybackFeeRecipientsShouldBeNonZero";
+    },
+    {
+      code: 6055;
+      name: "notUniqueBuybackFeeRecipients";
+    },
+    {
+      code: 6056;
+      name: "buybackBasisPointsOutOfRange";
+      msg: "buyback_basis_points must be <= 10_000";
+    },
+    {
+      code: 6057;
+      name: "wrongBuybackFeeRecipientsCount";
+      msg: "buyback fee recipients require exactly 8 remaining accounts (or none)";
+    },
+    {
+      code: 6058;
+      name: "buybackFeeRecipientMissing";
     },
   ];
   types: [
@@ -4477,6 +4600,14 @@ export interface PumpAmm {
           },
           {
             name: "cashback";
+            type: "u64";
+          },
+          {
+            name: "buybackFeeBasisPoints";
+            type: "u64";
+          },
+          {
+            name: "buybackFee";
             type: "u64";
           },
         ];
@@ -4913,6 +5044,16 @@ export interface PumpAmm {
               };
             };
           },
+          {
+            name: "stableFeeTiers";
+            type: {
+              vec: {
+                defined: {
+                  name: "feeTier";
+                };
+              };
+            };
+          },
         ];
       };
     },
@@ -5023,6 +5164,16 @@ export interface PumpAmm {
           {
             name: "isCashbackEnabled";
             type: "bool";
+          },
+          {
+            name: "buybackFeeRecipients";
+            type: {
+              array: ["pubkey", 8];
+            };
+          },
+          {
+            name: "buybackBasisPoints";
+            type: "u64";
           },
         ];
       };
@@ -5304,6 +5455,14 @@ export interface PumpAmm {
           },
           {
             name: "cashback";
+            type: "u64";
+          },
+          {
+            name: "buybackFeeBasisPoints";
+            type: "u64";
+          },
+          {
+            name: "buybackFee";
             type: "u64";
           },
         ];
@@ -5627,5 +5786,3 @@ export interface PumpAmm {
     },
   ];
 }
-
-

@@ -312,7 +312,7 @@ describe("example 20: price impact", () => {
 
   it("moves the same order less on deeper reserves", () => {
     const deep = makeBondingCurve({
-      virtualSolReserves: SOL(90),
+      virtualQuoteReserves: SOL(90),
       virtualTokenReserves: new BN("357666666666666"),
     });
     const shallow = measureImpact({
@@ -500,8 +500,8 @@ describe("example 23: decode a bonding curve", () => {
     expect(
       curveStatus(
         makeBondingCurve({
-          realSolReserves: SOL(10),
-          virtualSolReserves: SOL(40),
+          realQuoteReserves: SOL(10),
+          virtualQuoteReserves: SOL(40),
           realTokenReserves: new BN("500000000000000"),
         }),
       ),
@@ -524,7 +524,7 @@ describe("example 23: decode a bonding curve", () => {
 
     const halfway = curveReport(
       makeBondingCurve({
-        realSolReserves: SOL(20),
+        realQuoteReserves: SOL(20),
         realTokenReserves: initialReal.divn(2),
         creator: new PublicKey("BPFLoaderUpgradeab1e11111111111111111111111"),
       }),
@@ -543,7 +543,7 @@ describe("example 23: decode a bonding curve", () => {
 
   it("round-trips through the on-chain byte layout", () => {
     const curve = makeBondingCurve({
-      realSolReserves: SOL(7),
+      realQuoteReserves: SOL(7),
       creator: new PublicKey("BPFLoaderUpgradeab1e11111111111111111111111"),
       isMayhemMode: true,
     });
@@ -553,9 +553,9 @@ describe("example 23: decode a bonding curve", () => {
     const decoded = PUMP_SDK.decodeBondingCurve(
       curveAccountInfo(data, PUMP_PROGRAM_ID),
     );
-    expect(decoded.virtualSolReserves.eq(curve.virtualSolReserves)).toBe(true);
+    expect(decoded.virtualQuoteReserves.eq(curve.virtualQuoteReserves)).toBe(true);
     expect(decoded.virtualTokenReserves.eq(curve.virtualTokenReserves)).toBe(true);
-    expect(decoded.realSolReserves.eq(curve.realSolReserves)).toBe(true);
+    expect(decoded.realQuoteReserves.eq(curve.realQuoteReserves)).toBe(true);
     expect(decoded.creator.equals(curve.creator)).toBe(true);
     expect(decoded.isMayhemMode).toBe(true);
     expect(decoded.complete).toBe(false);

@@ -49,8 +49,8 @@ export function checkSellSafety(
 ): SellSafetyCheck {
   const result: SellSafetyCheck = {
     amount,
-    product: amount.mul(bondingCurve.virtualSolReserves),
-    maxSafeAmount: maxSafeSellAmount(bondingCurve.virtualSolReserves),
+    product: amount.mul(bondingCurve.virtualQuoteReserves),
+    maxSafeAmount: maxSafeSellAmount(bondingCurve.virtualQuoteReserves),
     safe: true,
   };
   try {
@@ -81,8 +81,8 @@ export async function main(): Promise<void> {
 
   heading("Limit at launch reserves (30 SOL)");
   const launch = launchBondingCurve();
-  const launchLimit = maxSafeSellAmount(launch.virtualSolReserves);
-  row("Virtual SOL reserves", formatSol(launch.virtualSolReserves));
+  const launchLimit = maxSafeSellAmount(launch.virtualQuoteReserves);
+  row("Virtual SOL reserves", formatSol(launch.virtualQuoteReserves));
   row("Max safe sell", `${launchLimit.toString()} base units`);
   row("Which bound binds", launchLimit.eq(U64_MAX) ? "u64 amount width" : "u128 product");
 

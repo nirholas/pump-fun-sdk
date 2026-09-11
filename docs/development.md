@@ -9,6 +9,7 @@
 - [Tech Stack](#tech-stack)
 - [Environment Setup](#environment-setup)
 - [Available Scripts](#available-scripts)
+- [Keeping the IDL in sync](#keeping-the-idl-in-sync)
 - [Project Structure](#project-structure)
 - [Build System](#build-system)
 - [Adding a New Feature](#adding-a-new-feature)
@@ -82,6 +83,8 @@ cargo test
 | `npm run lint` | Check for lint errors with ESLint |
 | `npm run lint:fix` | Auto-fix lint errors |
 | `npm run typecheck` | Run `tsc --noEmit` for type validation |
+| `npm run idl:sync` | Refresh `src/idl/*` from the IDL the programs publish on mainnet |
+| `npm run idl:check` | Fail if the checked-in IDL has drifted from mainnet |
 | `npm run clean` | Delete the `dist/` directory |
 | `npm run prepublishOnly` | Auto-runs build before `npm publish` |
 
@@ -99,6 +102,63 @@ make generate         # Run vanity address generator scripts
 make verify           # Verify generated keypairs
 make docs             # Generate documentation
 ```
+
+---
+
+## Keeping the IDL in sync
+
+`src/idl/pump.json`, `pump_amm.json` and `pump_fees.json` (and the `.ts` type
+helper beside each) describe the on-chain programs. They are **generated, not
+hand-edited**. Regenerate them with:
+
+```bash
+npm run idl:sync      # rewrite the files from mainnet
+npm run idl:check     # exit 1 if they have drifted (no writes)
+```
+
+### Where the IDL comes from
+
+Each pump program publishes its own Anchor IDL to an account at
+`createWithSeed(findProgramAddress([], programId), "anchor:idl", programId)`.
+`scripts/sync-idl.mjs` reads those three accounts, inflates the zlib-deflated
+JSON inside them, and writes both files per program. It needs no API key and
+issues three `getAccountInfo` calls, so it defaults to public endpoints;
+`SOLANA_RPC_URL`, `SOLANA_RPC_URLS` or `--rpc <url>` override that and it falls
+through the list on failure.
+
+The on-chain account is used deliberately, in preference to the two obvious
+alternatives:
+
+- **The published vendor package runs ahead of the chain.** It ships types for
+  instructions that are written but not yet deployed, so copying it produces an
+  SDK that offers calls mainnet rejects.
+- **A hand-maintained copy runs behind the chain**, silently. That is not
+  hypothetical: this repo's IDL sat at a months-old snapshot while `buy_v2`,
+  `sell_v2` and `buy_exact_quote_in_v2` went live, so the SDK could neither
+  build nor decode roughly a third of the trades happening on the program it
+  wraps, and nothing failed loudly enough to notice.
+
+`npm run idl:check` exists so that gap is a red check rather than a discovery.
+Run it whenever a pump upgrade is announced; it names each instruction that
+appeared.
+
+### After a sync
+
+A refreshed IDL can change the shape of decoded accounts, so treat it as a code
+change rather than a data update:
+
+1. `npm run typecheck` and `npx tsc --noEmit -p examples/tsconfig.json`. The
+   compiler is the reliable way to find every site a renamed field reaches.
+   Untyped object literals are the blind spot: it cannot see those, and the
+   tests are what catch them.
+2. `npm test` and `npm run test:examples`.
+3. Mirror genuine renames into `src/state.ts`. Those interfaces are the SDK's
+   public shape, and anchor decodes by IDL, so a field our interface still calls
+   `virtualSolReserves` after the program renamed it just reads back
+   `undefined`.
+4. Delete decoders for anything the program dropped. An event that is gone from
+   the IDL cannot be decoded: `coder.types.decode` throws on an unknown name, so
+   leaving the method in place ships a call that can only fail.
 
 ---
 

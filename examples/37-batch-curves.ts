@@ -63,9 +63,9 @@ export function aggregateCurves(
       active += 1;
       tokensRemaining = tokensRemaining.add(curve.realTokenReserves);
     }
-    solLocked = solLocked.add(curve.realSolReserves);
-    if (!largest || curve.realSolReserves.gt(largest.solLocked)) {
-      largest = { mint, solLocked: curve.realSolReserves };
+    solLocked = solLocked.add(curve.realQuoteReserves);
+    if (!largest || curve.realQuoteReserves.gt(largest.solLocked)) {
+      largest = { mint, solLocked: curve.realQuoteReserves };
     }
   }
 
@@ -122,7 +122,7 @@ export async function main(): Promise<void> {
     }
     row(
       mint.slice(0, 8),
-      `${curve.complete ? "complete" : "trading"}, ${formatSol(curve.realSolReserves)} locked`,
+      `${curve.complete ? "complete" : "trading"}, ${formatSol(curve.realQuoteReserves)} locked`,
     );
   }
 

@@ -5,6 +5,10 @@ on:
     branches: [main, devnet]
   pull_request:
     branches: [main]
+  # The IDL drift job compares against mainnet, which changes without us.
+  schedule:
+    - cron: "17 6 * * *"
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -22,6 +26,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run typecheck
+      - name: Type check examples
+        run: npx tsc --noEmit -p examples/tsconfig.json
 
   lint:
     name: Lint
@@ -46,6 +52,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run test:coverage
+      - run: npm run test:examples
       - name: Upload coverage
         if: always()
         uses: actions/upload-artifact@v4
@@ -64,3 +71,20 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
+
+  idl-drift:
+    name: IDL Drift
+    # Only on the schedule and on demand. The IDL tracks a program we do not
+    # control, so gating every pull request on it would fail unrelated work the
+    # moment pump ships an upgrade. This reports the gap instead.
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Compare src/idl against the programs on mainnet
+        run: npm run idl:check

@@ -78,7 +78,7 @@ export function maxSingleSellExtraction(
 ): { tokenAmount: BN; solOut: BN } {
   const tokenAmount = BN.min(
     bondingCurve.realTokenReserves,
-    maxSafeSellAmount(bondingCurve.virtualSolReserves),
+    maxSafeSellAmount(bondingCurve.virtualQuoteReserves),
   );
   const solOut = getSellSolAmountFromTokenAmount({
     global,
@@ -105,8 +105,8 @@ export async function main(): Promise<void> {
   const curve = curveAtVirtualSol(global, new BN("60000000000"));
 
   heading("Curve state (mid-curve, 30 SOL raised)");
-  row("Virtual SOL reserves", formatSol(curve.virtualSolReserves));
-  row("Real SOL in the curve", formatSol(curve.realSolReserves));
+  row("Virtual SOL reserves", formatSol(curve.virtualQuoteReserves));
+  row("Real SOL in the curve", formatSol(curve.realQuoteReserves));
   row("Real tokens left", formatTokens(curve.realTokenReserves, 0));
 
   heading("The single-sell ceiling");

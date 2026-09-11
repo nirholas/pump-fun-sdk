@@ -901,8 +901,8 @@ describe("example 32: curve reading", () => {
   it("tracks progress as the curve fills", () => {
     const half = makeBondingCurve({
       realTokenReserves: new BN("396550000000000"),
-      realSolReserves: new BN("30000000000"),
-      virtualSolReserves: new BN("60000000000"),
+      realQuoteReserves: new BN("30000000000"),
+      virtualQuoteReserves: new BN("60000000000"),
       virtualTokenReserves: new BN("536500000000000"),
     });
     const reading = summarizeCurve(summaryFor(half));

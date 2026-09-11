@@ -1,8 +1,9 @@
 import { PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
 
-import { SellOverflowError } from "./errors";
+import { SellOverflowError, UnsupportedQuoteMintError } from "./errors";
 import { computeFeesBps, getFee } from "./fees";
+import { isLegacyQuoteMint } from "./pda";
 import type { BondingCurve, FeeConfig, Global } from "./state";
 
 /**
@@ -51,27 +52,59 @@ export function validateSellAmount(
   amount: BN,
   bondingCurve: BondingCurve,
 ): void {
-  const max = maxSafeSellAmount(bondingCurve.virtualSolReserves);
+  const max = maxSafeSellAmount(bondingCurve.virtualQuoteReserves);
   if (amount.gt(max)) {
-    throw new SellOverflowError(amount, bondingCurve.virtualSolReserves, max);
+    throw new SellOverflowError(amount, bondingCurve.virtualQuoteReserves, max);
   }
+}
+
+/**
+ * The virtual quote reserves a curve quoted in `quoteMint` starts from.
+ *
+ * SOL curves start from `Global.initialVirtualSolReserves`; a curve quoted in
+ * one of the mints `Global.whitelistedQuoteMints` admits starts from
+ * `Global.initialVirtualQuoteReserves`, which is denominated in that mint and
+ * so is a different number entirely. Quoting a mint the program does not
+ * accept would put a curve on a starting price the chain will not agree with,
+ * so it throws rather than guessing.
+ */
+export function initialVirtualQuoteReservesFor(
+  global: Global,
+  quoteMint: PublicKey,
+): BN {
+  if (isLegacyQuoteMint(quoteMint)) {
+    return global.initialVirtualSolReserves;
+  }
+  if (global.whitelistedQuoteMints.some((mint) => mint.equals(quoteMint))) {
+    return global.initialVirtualQuoteReserves;
+  }
+  throw new UnsupportedQuoteMintError(quoteMint);
 }
 
 /**
  * Create a new bonding curve state from global config.
  * Used when simulating a buy on a token that hasn't been created yet.
+ *
+ * @param global    - The program's `Global` account.
+ * @param quoteMint - The mint the curve is quoted in. Defaults to SOL, which
+ *                    the program stores as the zero key.
  */
-export function newBondingCurve(global: Global): BondingCurve {
+export function newBondingCurve(
+  global: Global,
+  quoteMint: PublicKey = PublicKey.default,
+): BondingCurve {
   return {
     virtualTokenReserves: global.initialVirtualTokenReserves,
-    virtualSolReserves: global.initialVirtualSolReserves,
+    virtualQuoteReserves: initialVirtualQuoteReservesFor(global, quoteMint),
     realTokenReserves: global.initialRealTokenReserves,
-    realSolReserves: new BN(0),
+    realQuoteReserves: new BN(0),
     tokenTotalSupply: global.tokenTotalSupply,
     complete: false,
     creator: PublicKey.default,
     isMayhemMode: global.mayhemModeEnabled,
     isCashbackCoin: false,
+    // Stored the way the program stores it: the zero key on a SOL curve.
+    quoteMint: isLegacyQuoteMint(quoteMint) ? PublicKey.default : quoteMint,
   };
 }
 
@@ -159,12 +192,12 @@ export function getBuyTokenAmountFromSolAmount({
     return new BN(0);
   }
 
-  const { virtualSolReserves, virtualTokenReserves } = bondingCurve;
+  const { virtualQuoteReserves, virtualTokenReserves } = bondingCurve;
   const { protocolFeeBps, creatorFeeBps } = computeFeesBps({
     global,
     feeConfig,
     mintSupply,
-    virtualSolReserves,
+    virtualQuoteReserves,
     virtualTokenReserves,
   });
 
@@ -182,7 +215,7 @@ export function getBuyTokenAmountFromSolAmount({
   const tokensReceived = getBuyTokenAmountFromSolAmountQuote({
     inputAmount,
     virtualTokenReserves: bondingCurve.virtualTokenReserves,
-    virtualSolReserves: bondingCurve.virtualSolReserves,
+    virtualSolReserves: bondingCurve.virtualQuoteReserves,
   });
 
   return BN.min(tokensReceived, bondingCurve.realTokenReserves);
@@ -234,7 +267,7 @@ export function getBuySolAmountFromTokenAmount({
   const solCost = getBuySolAmountFromTokenAmountQuote({
     minAmount,
     virtualTokenReserves: bondingCurve.virtualTokenReserves,
-    virtualSolReserves: bondingCurve.virtualSolReserves,
+    virtualSolReserves: bondingCurve.virtualQuoteReserves,
   });
 
   return solCost.add(
@@ -285,7 +318,7 @@ export function getSellSolAmountFromTokenAmount({
   const solCost = getSellSolAmountFromTokenAmountQuote({
     inputAmount: amount,
     virtualTokenReserves: bondingCurve.virtualTokenReserves,
-    virtualSolReserves: bondingCurve.virtualSolReserves,
+    virtualSolReserves: bondingCurve.virtualQuoteReserves,
   });
 
   const netSol = solCost.sub(
@@ -334,7 +367,7 @@ export function getTokenAmountForTargetSol({
 }): BN {
   if (targetSol.isZero()) return new BN(0);
 
-  const safeMax = maxSafeSellAmount(bondingCurve.virtualSolReserves);
+  const safeMax = maxSafeSellAmount(bondingCurve.virtualQuoteReserves);
   const upper = BN.min(bondingCurve.realTokenReserves, safeMax);
 
   if (upper.isZero()) return new BN(0);
@@ -405,17 +438,17 @@ const CURRENT_FEE_RECIPIENTS = [
  */
 export function bondingCurveMarketCap({
   mintSupply,
-  virtualSolReserves,
+  virtualQuoteReserves,
   virtualTokenReserves,
 }: {
   mintSupply: BN;
-  virtualSolReserves: BN;
+  virtualQuoteReserves: BN;
   virtualTokenReserves: BN;
 }): BN {
   if (virtualTokenReserves.isZero()) {
     throw new Error("Division by zero: virtual token reserves cannot be zero");
   }
-  return virtualSolReserves.mul(mintSupply).div(virtualTokenReserves);
+  return virtualQuoteReserves.mul(mintSupply).div(virtualTokenReserves);
 }
 
 

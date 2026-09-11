@@ -60,18 +60,41 @@ export interface Global {
   reservedFeeRecipient: PublicKey;
   mayhemModeEnabled: boolean;
   reservedFeeRecipients: PublicKey[];
+  buybackFeeRecipients: PublicKey[];
+  buybackBasisPoints: BN;
+  /**
+   * Virtual quote reserves a curve starts from when it is quoted in a
+   * whitelisted non-SOL mint. SOL-quoted curves use
+   * {@link Global.initialVirtualSolReserves} instead.
+   */
+  initialVirtualQuoteReserves: BN;
+  /** Non-SOL mints `create_v2` accepts as a curve's quote token. */
+  whitelistedQuoteMints: PublicKey[];
 }
 
 export interface BondingCurve {
   virtualTokenReserves: BN;
-  virtualSolReserves: BN;
+  /**
+   * Virtual reserves of the curve's quote token. Named `virtualSolReserves`
+   * until pump generalized curves beyond SOL: the byte layout is unchanged,
+   * but the balance is denominated in {@link BondingCurve.quoteMint}, which is
+   * only wrapped SOL for a SOL-quoted coin.
+   */
+  virtualQuoteReserves: BN;
   realTokenReserves: BN;
-  realSolReserves: BN;
+  /** Real reserves of the curve's quote token. See {@link BondingCurve.virtualQuoteReserves}. */
+  realQuoteReserves: BN;
   tokenTotalSupply: BN;
   complete: boolean;
   creator: PublicKey;
   isMayhemMode: boolean;
   isCashbackCoin: boolean;
+  /**
+   * The mint the curve is quoted in. Curves created before pump accepted
+   * non-SOL quote tokens store `PublicKey.default`, so normalize this through
+   * `normalizeQuoteMint` before deriving a PDA or an ATA from it.
+   */
+  quoteMint: PublicKey;
 }
 
 export interface GlobalVolumeAccumulator {
@@ -496,21 +519,6 @@ export interface ResetFeeSharingConfigEvent {
   oldShareholders: Shareholder[];
   newAdmin: PublicKey;
   newShareholders: Shareholder[];
-}
-
-export interface RevokeFeeSharingAuthorityEvent {
-  timestamp: BN;
-  mint: PublicKey;
-  sharingConfig: PublicKey;
-  admin: PublicKey;
-}
-
-export interface TransferFeeSharingAuthorityEvent {
-  timestamp: BN;
-  mint: PublicKey;
-  sharingConfig: PublicKey;
-  oldAdmin: PublicKey;
-  newAdmin: PublicKey;
 }
 
 export interface SocialFeePdaCreatedEvent {

@@ -2,6 +2,7 @@
  * Custom error types for the Pump SDK
  */
 
+import type { PublicKey } from "@solana/web3.js";
 import type BN from "bn.js";
 
 export class NoShareholdersError extends Error {
@@ -89,5 +90,27 @@ export class SellOverflowError extends Error {
     this.amount = amount;
     this.virtualSolReserves = virtualSolReserves;
     this.maxSafeAmount = maxSafeAmount;
+  }
+}
+
+/**
+ * Thrown when a curve is asked to quote in a mint the program does not accept.
+ *
+ * `create_v2` takes SOL or one of the mints listed in
+ * `Global.whitelistedQuoteMints`; anything else is rejected on-chain. The SDK
+ * throws before building the instruction because the alternative is silently
+ * picking a starting price the program would never have used, which produces a
+ * quote that disagrees with the chain rather than an error the caller can see.
+ */
+export class UnsupportedQuoteMintError extends Error {
+  readonly quoteMint: PublicKey;
+
+  constructor(quoteMint: PublicKey) {
+    super(
+      `Quote mint ${quoteMint.toBase58()} is not accepted by the pump program. ` +
+        `Use SOL, or a mint listed in Global.whitelistedQuoteMints.`,
+    );
+    this.name = "UnsupportedQuoteMintError";
+    this.quoteMint = quoteMint;
   }
 }

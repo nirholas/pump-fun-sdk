@@ -57,7 +57,7 @@ describe("migrated bonding curves", () => {
         global,
         feeConfig,
         mintSupply,
-        virtualSolReserves: migrated.virtualSolReserves,
+        virtualQuoteReserves: migrated.virtualQuoteReserves,
         virtualTokenReserves: migrated.virtualTokenReserves,
       });
 
@@ -102,9 +102,9 @@ function liveCurve() {
   return {
     ...makeMigratedBondingCurve(),
     virtualTokenReserves: new BN("1073000000000000"),
-    virtualSolReserves: new BN("30000000000"),
+    virtualQuoteReserves: new BN("30000000000"),
     realTokenReserves: new BN("793100000000000"),
-    realSolReserves: new BN(0),
+    realQuoteReserves: new BN(0),
     complete: false,
   };
 }

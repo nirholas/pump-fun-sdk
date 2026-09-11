@@ -97,8 +97,6 @@ import type {
   CreateFeeSharingConfigEvent,
   UpdateFeeSharesEvent,
   ResetFeeSharingConfigEvent,
-  RevokeFeeSharingAuthorityEvent,
-  TransferFeeSharingAuthorityEvent,
   SocialFeePdaCreatedEvent,
   SocialFeePdaClaimedEvent,
   AmmAdminSetCoinCreatorEvent,
@@ -1380,24 +1378,6 @@ export class PumpSdk {
   ): ResetFeeSharingConfigEvent {
     return this.offlinePumpFeeProgram.coder.types.decode<ResetFeeSharingConfigEvent>(
       "resetFeeSharingConfigEvent",
-      data,
-    );
-  }
-
-  decodeRevokeFeeSharingAuthorityEvent(
-    data: Buffer,
-  ): RevokeFeeSharingAuthorityEvent {
-    return this.offlinePumpFeeProgram.coder.types.decode<RevokeFeeSharingAuthorityEvent>(
-      "revokeFeeSharingAuthorityEvent",
-      data,
-    );
-  }
-
-  decodeTransferFeeSharingAuthorityEvent(
-    data: Buffer,
-  ): TransferFeeSharingAuthorityEvent {
-    return this.offlinePumpFeeProgram.coder.types.decode<TransferFeeSharingAuthorityEvent>(
-      "transferFeeSharingAuthorityEvent",
       data,
     );
   }

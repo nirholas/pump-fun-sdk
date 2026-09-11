@@ -135,7 +135,7 @@ export async function main(): Promise<void> {
   ]);
   const offline = offlineBuyQuote({ global, feeConfig, bondingCurve, solAmount });
   row("Tokens out", formatTokens(offline));
-  row("Virtual SOL reserves", formatSol(bondingCurve.virtualSolReserves));
+  row("Virtual SOL reserves", formatSol(bondingCurve.virtualQuoteReserves));
 
   heading("Agreement");
   const comparison = compareBuyQuotes(buy.tokensOut, offline);

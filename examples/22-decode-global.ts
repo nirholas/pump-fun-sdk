@@ -78,7 +78,7 @@ export function interpretGlobal(global: Global): GlobalReport {
     ? new BN(0)
     : bondingCurveMarketCap({
         mintSupply: ONE_BILLION_SUPPLY,
-        virtualSolReserves: global.initialVirtualSolReserves,
+        virtualQuoteReserves: global.initialVirtualSolReserves,
         virtualTokenReserves: global.initialVirtualTokenReserves,
       });
 
@@ -86,7 +86,7 @@ export function interpretGlobal(global: Global): GlobalReport {
     ? new BN(0)
     : bondingCurveMarketCap({
         mintSupply: ONE_BILLION_SUPPLY,
-        virtualSolReserves: graduationVirtualSol,
+        virtualQuoteReserves: graduationVirtualSol,
         virtualTokenReserves: finalVirtualTokenReserves,
       });
 

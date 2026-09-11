@@ -108,7 +108,7 @@ export function feesForCurve(
     global,
     feeConfig,
     mintSupply: feeSupplyBasis(bondingCurve, mintSupply),
-    virtualSolReserves: bondingCurve.virtualSolReserves,
+    virtualQuoteReserves: bondingCurve.virtualQuoteReserves,
     virtualTokenReserves: bondingCurve.virtualTokenReserves,
   });
 }
@@ -151,7 +151,7 @@ export function curveFeeLadder(
       virtualSolReserves,
       marketCap: bondingCurveMarketCap({
         mintSupply: ONE_BILLION_SUPPLY,
-        virtualSolReserves: curve.virtualSolReserves,
+        virtualQuoteReserves: curve.virtualQuoteReserves,
         virtualTokenReserves: curve.virtualTokenReserves,
       }),
       fees: feesForCurve(global, feeConfig, curve, global.tokenTotalSupply),

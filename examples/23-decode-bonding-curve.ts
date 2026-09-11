@@ -58,11 +58,11 @@ export function curveStatus(bondingCurve: BondingCurve): CurveStatus {
   if (
     bondingCurve.complete ||
     bondingCurve.virtualTokenReserves.isZero() ||
-    bondingCurve.virtualSolReserves.isZero()
+    bondingCurve.virtualQuoteReserves.isZero()
   ) {
     return "complete";
   }
-  return bondingCurve.realSolReserves.isZero() ? "fresh" : "active";
+  return bondingCurve.realQuoteReserves.isZero() ? "fresh" : "active";
 }
 
 /** Curve state summarised, with no network access and no floats. */
@@ -76,10 +76,10 @@ export function curveReport(
     soldBps: initialRealTokenReserves.isZero()
       ? new BN(0)
       : BN.max(new BN(0), sold).muln(10_000).div(initialRealTokenReserves),
-    solRaised: bondingCurve.realSolReserves,
+    solRaised: bondingCurve.realQuoteReserves,
     spotPriceLamports: bondingCurve.virtualTokenReserves.isZero()
       ? new BN(0)
-      : bondingCurve.virtualSolReserves
+      : bondingCurve.virtualQuoteReserves
           .muln(1_000_000)
           .div(bondingCurve.virtualTokenReserves),
     hasCreator: !bondingCurve.creator.equals(PublicKey.default),
@@ -113,9 +113,9 @@ export function encodeBondingCurveAccount(bondingCurve: BondingCurve): Buffer {
   return Buffer.concat([
     bondingCurveDiscriminator(),
     u64(bondingCurve.virtualTokenReserves),
-    u64(bondingCurve.virtualSolReserves),
+    u64(bondingCurve.virtualQuoteReserves),
     u64(bondingCurve.realTokenReserves),
-    u64(bondingCurve.realSolReserves),
+    u64(bondingCurve.realQuoteReserves),
     u64(bondingCurve.tokenTotalSupply),
     Buffer.from([bondingCurve.complete ? 1 : 0]),
     bondingCurve.creator.toBuffer(),
@@ -157,9 +157,9 @@ export async function main(): Promise<void> {
 
   heading("decodeBondingCurve");
   const bondingCurve = PUMP_SDK.decodeBondingCurve(accountInfo);
-  row("Virtual SOL reserves", formatSol(bondingCurve.virtualSolReserves, 4));
+  row("Virtual SOL reserves", formatSol(bondingCurve.virtualQuoteReserves, 4));
   row("Virtual token reserves", formatTokens(bondingCurve.virtualTokenReserves, 0));
-  row("Real SOL reserves", formatSol(bondingCurve.realSolReserves, 4));
+  row("Real SOL reserves", formatSol(bondingCurve.realQuoteReserves, 4));
   row("Real token reserves", formatTokens(bondingCurve.realTokenReserves, 0));
   row("Total supply", formatTokens(bondingCurve.tokenTotalSupply, 0));
   row("Complete", bondingCurve.complete);
@@ -212,7 +212,7 @@ export async function main(): Promise<void> {
   row("Re-encoded size", `${reencoded.length} bytes`);
   row(
     "Matches the live account",
-    roundTripped.virtualSolReserves.eq(bondingCurve.virtualSolReserves) &&
+    roundTripped.virtualQuoteReserves.eq(bondingCurve.virtualQuoteReserves) &&
       roundTripped.virtualTokenReserves.eq(bondingCurve.virtualTokenReserves) &&
       roundTripped.creator.equals(bondingCurve.creator) &&
       roundTripped.complete === bondingCurve.complete,

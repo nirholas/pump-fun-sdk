@@ -311,7 +311,7 @@ describe("OnlinePumpSdk.fetchMultipleBondingCurves", () => {
   });
 
   it("decodes accounts that exist on-chain", async () => {
-    const bc = makeBondingCurve({ realSolReserves: new BN(5_000_000_000) });
+    const bc = makeBondingCurve({ realQuoteReserves: new BN(5_000_000_000) });
     const acctInfo = makeBcAccountInfo(bc);
 
     const getMultipleAccountsInfo = jest.fn().mockResolvedValue([acctInfo]);
@@ -325,7 +325,7 @@ describe("OnlinePumpSdk.fetchMultipleBondingCurves", () => {
     const result = await sdk.fetchMultipleBondingCurves([MINT]);
 
     expect(result.get(MINT.toBase58())).not.toBeNull();
-    expect(result.get(MINT.toBase58())!.realSolReserves.eq(new BN(5_000_000_000))).toBe(true);
+    expect(result.get(MINT.toBase58())!.realQuoteReserves.eq(new BN(5_000_000_000))).toBe(true);
 
     decodeSpy.mockRestore();
   });
@@ -608,7 +608,7 @@ describe("OnlinePumpSdk analytics wrappers", () => {
     expect(summary.solNeededToGraduate.gtn(0)).toBe(true);
     expect(summary.buyPricePerToken.gtn(0)).toBe(true);
     expect(summary.sellPricePerToken.gtn(0)).toBe(true);
-    expect(summary.realSolReserves.eq(bc.realSolReserves)).toBe(true);
+    expect(summary.realSolReserves.eq(bc.realQuoteReserves)).toBe(true);
     expect(summary.protocolFeeBps.gtn(0)).toBe(true);
     expect(summary.isMayhemMode).toBe(false);
   });
@@ -628,7 +628,7 @@ describe("OnlinePumpSdk analytics wrappers", () => {
   });
 
   it("fetchGraduationProgress returns 10000 bps for graduated curve", async () => {
-    const sdk = makeAnalyticsSdk(makeBondingCurve({ complete: true, realTokenReserves: new BN(0), realSolReserves: new BN("85000000000") }));
+    const sdk = makeAnalyticsSdk(makeBondingCurve({ complete: true, realTokenReserves: new BN(0), realQuoteReserves: new BN("85000000000") }));
     const progress = await sdk.fetchGraduationProgress(MINT);
     expect(progress.progressBps).toBe(10_000);
     expect(progress.isGraduated).toBe(true);

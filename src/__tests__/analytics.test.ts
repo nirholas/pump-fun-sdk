@@ -95,7 +95,7 @@ describe("analytics", () => {
       // Sell half the real tokens
       const halfSold = makeBondingCurve({
         realTokenReserves: global.initialRealTokenReserves.divn(2),
-        realSolReserves: new BN("40000000000"),
+        realQuoteReserves: new BN("40000000000"),
       });
       const result = getGraduationProgress(global, halfSold);
       expect(result.progressBps).toBeGreaterThan(4900);
@@ -128,7 +128,7 @@ describe("analytics", () => {
         global,
         makeBondingCurve({
           realTokenReserves: global.initialRealTokenReserves.divn(2),
-          virtualSolReserves: new BN("30000000000").add(new BN("40000000000")),
+          virtualQuoteReserves: new BN("30000000000").add(new BN("40000000000")),
           virtualTokenReserves: new BN("1073000000000000").sub(
             global.initialRealTokenReserves.divn(2),
           ),
@@ -223,7 +223,7 @@ describe("analytics", () => {
       });
       const { progressBps } = getGraduationProgress(global, bondingCurve);
       const fraction = bondingCurveGraduationProgress({
-        realSolReserves: bondingCurve.realSolReserves,
+        realSolReserves: bondingCurve.realQuoteReserves,
         realTokenReserves: bondingCurve.realTokenReserves,
       });
       expect(Math.round(fraction * 10_000)).toBe(progressBps);
@@ -280,7 +280,7 @@ describe("analytics", () => {
       expect(summary.isGraduated).toBe(false);
       expect(summary.buyPricePerToken.gt(new BN(0))).toBe(true);
       expect(summary.sellPricePerToken.gt(new BN(0))).toBe(true);
-      expect(summary.virtualSolReserves.eq(bc.virtualSolReserves)).toBe(true);
+      expect(summary.virtualSolReserves.eq(bc.virtualQuoteReserves)).toBe(true);
       expect(summary.virtualTokenReserves.eq(bc.virtualTokenReserves)).toBe(true);
     });
 

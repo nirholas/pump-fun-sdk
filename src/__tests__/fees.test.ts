@@ -39,7 +39,7 @@ describe("fees", () => {
         global,
         feeConfig: null,
         mintSupply,
-        virtualSolReserves: bc.virtualSolReserves,
+        virtualQuoteReserves: bc.virtualQuoteReserves,
         virtualTokenReserves: bc.virtualTokenReserves,
       });
       expect(protocolFeeBps.eq(global.feeBasisPoints)).toBe(true);
@@ -52,7 +52,7 @@ describe("fees", () => {
         global,
         feeConfig,
         mintSupply,
-        virtualSolReserves: bc.virtualSolReserves,
+        virtualQuoteReserves: bc.virtualQuoteReserves,
         virtualTokenReserves: bc.virtualTokenReserves,
       });
       // At initial state the market cap is ~28 SOL, which is below 100 SOL tier

@@ -223,10 +223,10 @@ async function runSellQuote(
   const grossSol = bondingCurve.virtualTokenReserves.add(tokenAmount).isZero()
     ? new BN(0)
     : tokenAmount
-        .mul(bondingCurve.virtualSolReserves)
+        .mul(bondingCurve.virtualQuoteReserves)
         .div(bondingCurve.virtualTokenReserves.add(tokenAmount));
   const feesLamports = BN.max(new BN(0), grossSol.sub(impact.outputAmount));
-  const maxSafe = maxSafeSellAmount(bondingCurve.virtualSolReserves);
+  const maxSafe = maxSafeSellAmount(bondingCurve.virtualQuoteReserves);
   const willOverflow = tokenAmount.gt(maxSafe);
 
   if (ctx.json) {
@@ -297,7 +297,7 @@ function estimateBuyFee({
     global,
     feeConfig,
     mintSupply: bondingCurve.tokenTotalSupply,
-    virtualSolReserves: bondingCurve.virtualSolReserves,
+    virtualQuoteReserves: bondingCurve.virtualQuoteReserves,
     virtualTokenReserves: bondingCurve.virtualTokenReserves,
   });
   // An unset creator means no creator fee is charged, matching `quoteBuy`.

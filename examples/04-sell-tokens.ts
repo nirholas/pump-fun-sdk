@@ -129,7 +129,7 @@ export async function main(): Promise<void> {
     heading("Live bonding curve state");
     bondingCurve = decoded;
     bondingCurveAccountInfo = curveInfo;
-    row("Virtual SOL reserves", formatSol(bondingCurve.virtualSolReserves));
+    row("Virtual SOL reserves", formatSol(bondingCurve.virtualQuoteReserves));
     row("Virtual token reserves", formatTokens(bondingCurve.virtualTokenReserves));
     try {
       // fetchSellState additionally requires the seller's token account to
@@ -159,7 +159,7 @@ export async function main(): Promise<void> {
     };
   }
 
-  const maxSafe = maxSafeSellAmount(bondingCurve.virtualSolReserves);
+  const maxSafe = maxSafeSellAmount(bondingCurve.virtualQuoteReserves);
   const amount = BN.min(new BN(100_000_000), maxSafe); // up to 100 tokens
   const slippage = 1; // percent
 

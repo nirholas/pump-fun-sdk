@@ -27,7 +27,7 @@ import { formatSol, formatTokens, heading, row } from "./_lib/format";
 
 /** Lamports per 1,000,000 whole tokens (1e12 base units), pure BN. */
 export function spotPriceLamportsPerMillionTokens(bondingCurve: BondingCurve): BN {
-  return bondingCurve.virtualSolReserves
+  return bondingCurve.virtualQuoteReserves
     .mul(new BN("1000000000000"))
     .div(bondingCurve.virtualTokenReserves);
 }
@@ -60,7 +60,7 @@ export function applyBuy(
     global,
     feeConfig: null,
     mintSupply: global.tokenTotalSupply,
-    virtualSolReserves: bondingCurve.virtualSolReserves,
+    virtualQuoteReserves: bondingCurve.virtualQuoteReserves,
     virtualTokenReserves: bondingCurve.virtualTokenReserves,
   });
   const totalFeeBps = protocolFeeBps.add(
@@ -84,9 +84,9 @@ export function applyBuy(
     solIntoReserves,
     curve: {
       ...bondingCurve,
-      virtualSolReserves: bondingCurve.virtualSolReserves.add(solIntoReserves),
+      virtualQuoteReserves: bondingCurve.virtualQuoteReserves.add(solIntoReserves),
       virtualTokenReserves: bondingCurve.virtualTokenReserves.sub(tokensOut),
-      realSolReserves: bondingCurve.realSolReserves.add(solIntoReserves),
+      realQuoteReserves: bondingCurve.realQuoteReserves.add(solIntoReserves),
       realTokenReserves: bondingCurve.realTokenReserves.sub(tokensOut),
     },
   };
@@ -121,7 +121,7 @@ export function simulateBuySequence(global: Global, buys: BN[]): LadderStep[] {
       spotPrice: spotPriceLamportsPerMillionTokens(curve),
       marketCap: bondingCurveMarketCap({
         mintSupply: global.tokenTotalSupply,
-        virtualSolReserves: curve.virtualSolReserves,
+        virtualQuoteReserves: curve.virtualQuoteReserves,
         virtualTokenReserves: curve.virtualTokenReserves,
       }),
       curve,
@@ -136,7 +136,7 @@ export async function main(): Promise<void> {
   const start = newBondingCurve(global);
 
   heading("Launch state (newBondingCurve)");
-  row("Virtual SOL", formatSol(start.virtualSolReserves));
+  row("Virtual SOL", formatSol(start.virtualQuoteReserves));
   row("Virtual tokens", formatTokens(start.virtualTokenReserves, 0));
   row("Spot price", `${formatSol(spotPriceLamportsPerMillionTokens(start), 6)} per 1M tokens`);
 

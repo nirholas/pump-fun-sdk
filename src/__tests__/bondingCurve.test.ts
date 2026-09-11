@@ -31,9 +31,9 @@ describe("bondingCurve", () => {
     it("creates a bonding curve from global config", () => {
       const bc = newBondingCurve(global);
       expect(bc.virtualTokenReserves.eq(global.initialVirtualTokenReserves)).toBe(true);
-      expect(bc.virtualSolReserves.eq(global.initialVirtualSolReserves)).toBe(true);
+      expect(bc.virtualQuoteReserves.eq(global.initialVirtualSolReserves)).toBe(true);
       expect(bc.realTokenReserves.eq(global.initialRealTokenReserves)).toBe(true);
-      expect(bc.realSolReserves.eq(new BN(0))).toBe(true);
+      expect(bc.realQuoteReserves.eq(new BN(0))).toBe(true);
       expect(bc.complete).toBe(false);
     });
   });
@@ -256,7 +256,7 @@ describe("bondingCurve", () => {
       const bc = makeBondingCurve();
       const marketCap = bondingCurveMarketCap({
         mintSupply,
-        virtualSolReserves: bc.virtualSolReserves,
+        virtualQuoteReserves: bc.virtualQuoteReserves,
         virtualTokenReserves: bc.virtualTokenReserves,
       });
       expect(marketCap.gt(new BN(0))).toBe(true);
@@ -271,7 +271,7 @@ describe("bondingCurve", () => {
       expect(() =>
         bondingCurveMarketCap({
           mintSupply,
-          virtualSolReserves: new BN("30000000000"),
+          virtualQuoteReserves: new BN("30000000000"),
           virtualTokenReserves: new BN(0),
         }),
       ).toThrow("Division by zero");
@@ -317,7 +317,7 @@ describe("bondingCurve", () => {
       for (const [amount, reserves] of landed) {
         expect(new BN(amount).lte(maxSafeSellAmount(new BN(reserves)))).toBe(true);
         expect(() =>
-          validateSellAmount(new BN(amount), makeBondingCurve({ virtualSolReserves: new BN(reserves) })),
+          validateSellAmount(new BN(amount), makeBondingCurve({ virtualQuoteReserves: new BN(reserves) })),
         ).not.toThrow();
       }
     });
@@ -347,7 +347,7 @@ describe("bondingCurve", () => {
       // The target must be below maxOut (SOL from selling the safe max) to be
       // reachable. We compute maxOut first and target half of it.
       const bc = makeBondingCurve();
-      const safeMax = maxSafeSellAmount(bc.virtualSolReserves);
+      const safeMax = maxSafeSellAmount(bc.virtualQuoteReserves);
       const upper = BN.min(bc.realTokenReserves, safeMax);
       const maxOut = getSellSolAmountFromTokenAmount({
         global, feeConfig: null, mintSupply, bondingCurve: bc, amount: upper,
@@ -370,7 +370,7 @@ describe("bondingCurve", () => {
 
     it("one token less yields strictly less than targetSol", () => {
       const bc = makeBondingCurve();
-      const safeMax = maxSafeSellAmount(bc.virtualSolReserves);
+      const safeMax = maxSafeSellAmount(bc.virtualQuoteReserves);
       const upper = BN.min(bc.realTokenReserves, safeMax);
       const maxOut = getSellSolAmountFromTokenAmount({
         global, feeConfig: null, mintSupply, bondingCurve: bc, amount: upper,
@@ -452,19 +452,19 @@ describe("bondingCurve", () => {
 
   describe("validateSellAmount", () => {
     it("safe amount does not throw", () => {
-      const bc = makeBondingCurve({ virtualSolReserves: new BN("30000000000") });
+      const bc = makeBondingCurve({ virtualQuoteReserves: new BN("30000000000") });
       expect(() => validateSellAmount(new BN(100_000_000), bc)).not.toThrow();
     });
 
     it("throws SellOverflowError when amount exceeds the safe limit", () => {
-      const bc = makeBondingCurve({ virtualSolReserves: new BN("30000000000") });
+      const bc = makeBondingCurve({ virtualQuoteReserves: new BN("30000000000") });
       // Wider than the on-chain u64 token amount field.
       const tooBig = new BN("18446744073709551616");
       expect(() => validateSellAmount(tooBig, bc)).toThrow(SellOverflowError);
     });
 
     it("SellOverflowError carries amount, reserves, and max for recovery", () => {
-      const bc = makeBondingCurve({ virtualSolReserves: new BN("30000000000") });
+      const bc = makeBondingCurve({ virtualQuoteReserves: new BN("30000000000") });
       const tooBig = new BN("18446744073709551616");
       let caught: SellOverflowError | undefined;
       try {
@@ -474,7 +474,7 @@ describe("bondingCurve", () => {
       }
       expect(caught).toBeInstanceOf(SellOverflowError);
       expect(caught!.amount.eq(tooBig)).toBe(true);
-      expect(caught!.virtualSolReserves.eq(bc.virtualSolReserves)).toBe(true);
+      expect(caught!.virtualSolReserves.eq(bc.virtualQuoteReserves)).toBe(true);
       expect(caught!.maxSafeAmount.gtn(0)).toBe(true);
     });
 
@@ -489,7 +489,7 @@ describe("bondingCurve", () => {
       // state-drift signature, not an arithmetic width limit, so the SDK no
       // longer refuses a sell the chain would accept.
       const bc = makeBondingCurve({
-        virtualSolReserves: new BN("5000000000000000"),
+        virtualQuoteReserves: new BN("5000000000000000"),
       });
       expect(() =>
         validateSellAmount(new BN("6325344957752"), bc),

@@ -116,7 +116,7 @@ describe("example 34: token price", () => {
   it("moves with the reserves the same way the SDK price does", () => {
     const cheap = makeBondingCurve();
     const rich = makeBondingCurve({
-      virtualSolReserves: SOL(90),
+      virtualQuoteReserves: SOL(90),
       virtualTokenReserves: new BN("357666666666666"),
     });
     expect(priceFromReserves(rich).gt(priceFromReserves(cheap))).toBe(true);
@@ -133,7 +133,7 @@ describe("example 34: token price", () => {
 
   it("reports no price for a migrated curve, exactly as the SDK does", () => {
     const migrated = makeBondingCurve({
-      virtualSolReserves: new BN(0),
+      virtualQuoteReserves: new BN(0),
       virtualTokenReserves: new BN(0),
       complete: true,
     });
@@ -223,8 +223,8 @@ describe("example 36: live quotes beside offline math", () => {
 
 describe("example 37: batched curve aggregation", () => {
   it("counts active, complete, and missing curves and sums their SOL", () => {
-    const active = makeBondingCurve({ realSolReserves: SOL(12) });
-    const alsoActive = makeBondingCurve({ realSolReserves: SOL(3) });
+    const active = makeBondingCurve({ realQuoteReserves: SOL(12) });
+    const alsoActive = makeBondingCurve({ realQuoteReserves: SOL(3) });
     const done = makeGraduatedBondingCurve();
     const curves = new Map<string, BondingCurve | null>([
       ["mintA", active],
@@ -241,9 +241,9 @@ describe("example 37: batched curve aggregation", () => {
     expect(summary.active + summary.complete + summary.missing).toBe(summary.total);
     expect(
       summary.solLocked.eq(
-        active.realSolReserves
-          .add(alsoActive.realSolReserves)
-          .add(done.realSolReserves),
+        active.realQuoteReserves
+          .add(alsoActive.realQuoteReserves)
+          .add(done.realQuoteReserves),
       ),
     ).toBe(true);
     expect(

@@ -170,6 +170,25 @@ export const AMM_GLOBAL_CONFIG_PDA = pumpAmmPda([
 ]);
 
 /** Derive the bonding curve v2 PDA for a given token mint. */
+/**
+ * Whether a stored quote mint means "this curve is quoted in SOL". The program
+ * writes the zero key on SOL curves and wrapped SOL is equivalent, so both
+ * forms have to be accepted wherever a raw `quoteMint` is read.
+ */
+export const isLegacyQuoteMint = (quoteMint: PublicKey): boolean =>
+  quoteMint.equals(NATIVE_MINT) || quoteMint.equals(PublicKey.default);
+
+/**
+ * Normalizes a curve's stored quote mint to a mint address that can actually be
+ * used. Legacy SOL curves store `PublicKey.default` (all zeros), which is not a
+ * real mint, so deriving an ATA or a PDA from a raw `bondingCurve.quoteMint`
+ * without this produces an address that does not exist.
+ */
+export const normalizeQuoteMint = (
+  quoteMint: PublicKey | undefined | null,
+): PublicKey =>
+  !quoteMint || isLegacyQuoteMint(quoteMint) ? NATIVE_MINT : quoteMint;
+
 export function bondingCurveV2Pda(mint: PublicKeyInitData): PublicKey {
   return pumpPda([
     Buffer.from("bonding-curve-v2"),
