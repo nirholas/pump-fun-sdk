@@ -215,12 +215,25 @@ export class ClaimMonitor {
         if (config.solanaRpcUrls.length > 1) {
             log.info('Claim monitor: %d RPC endpoints configured (fallback enabled)', config.solanaRpcUrls.length);
         }
-        // Monitor all three programs: PumpFees (social fee PDA), Pump (creator fees), PumpAMM (coin creator fees)
-        this.programPubkeys = [
-            new PublicKey(PUMP_FEE_PROGRAM_ID),
-            new PublicKey(PUMP_PROGRAM_ID),
-            new PublicKey(PUMP_AMM_PROGRAM_ID),
-        ];
+        // Subscribe only to the programs the enabled feeds can actually produce
+        // a post from. PumpFees carries the social-fee-PDA claims (Path A) and
+        // is touched only when someone claims. Pump and PumpAMM carry the
+        // creator-fee claims (Path B) and also every buy and sell on pump.fun,
+        // which is the entire firehose: roughly 1,600 log events a second.
+        //
+        // Subscribing to all three unconditionally meant the github-first-claims
+        // feed paid for 23.5 million websocket events in four hours to find
+        // seventeen GitHub claims, discarding the rest. That exhausted a Helius
+        // free tier in a single afternoon ("max usage reached") and then 429-ed
+        // every fallback endpoint in turn, so the feed was rate-limited off the
+        // chain while looking healthy. A feed that cannot post creator claims
+        // has no reason to watch the programs that emit them.
+        const programs = [new PublicKey(PUMP_FEE_PROGRAM_ID)];
+        if (config.feed.creatorClaims || config.feed.feeDistributions) {
+            programs.push(new PublicKey(PUMP_PROGRAM_ID), new PublicKey(PUMP_AMM_PROGRAM_ID));
+        }
+        this.programPubkeys = programs;
+        log.info('Claim monitor: watching %d program(s) for the enabled claim feeds', programs.length);
         this.rpcQueue = new RpcQueue((sig) => this.processTransaction(sig));
         this.wsUrls = config.solanaWsUrls?.length
             ? config.solanaWsUrls

@@ -568,7 +568,26 @@ async function main(): Promise<void> {
         await claimMonitor!.start();
         log.info('Claim monitor started');
     }
-    await eventMonitor.start();
+    // Start the event monitor only when something can consume it. It subscribes
+    // to the Pump and PumpAMM programs, which is every buy and sell on
+    // pump.fun, so running it costs the full firehose whether or not anything
+    // reads the result. On the github-first-claims feed every event toggle is
+    // off, no webhook is configured and nothing is on the SSE stream, and it
+    // was still paying for that traffic alongside the claim monitor. The data
+    // API the always-on design exists for is real, so a configured webhook or
+    // any enabled event feed still turns it on, and EVENT_STREAM_ALWAYS=true
+    // forces it for an SSE-only consumer.
+    const eventFeedWanted =
+        config.feed.launches || config.feed.graduations || config.feed.whales || config.feed.feeDistributions;
+    const eventStreamForced = (process.env.EVENT_STREAM_ALWAYS || '').toLowerCase() === 'true';
+    if (eventFeedWanted || webhooks.enabled || eventStreamForced) {
+        await eventMonitor.start();
+    } else {
+        log.info(
+            'Event monitor idle: no event feed enabled, no webhook configured. ' +
+            'Not subscribing to the Pump/PumpAMM firehose. Set EVENT_STREAM_ALWAYS=true to override.',
+        );
+    }
     state.getMode = () => eventMonitor.mode;
     log.info('Event monitor started (%s)', eventMonitor.mode);
     if (config.performance.enabled) performance.start();
