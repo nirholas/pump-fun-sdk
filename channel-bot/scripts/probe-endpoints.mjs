@@ -35,6 +35,10 @@ const WS_TIMEOUT_MS = 20_000;
 
 /** Public keyless endpoints worth trying. Keyed providers come from the env. */
 export const PUBLIC_CANDIDATES = [
+	// Endpoints that need no key. Most public Solana RPC dies quietly: it goes
+	// key-gated, starts 403ing, or answers getSlot while refusing signature
+	// history. The list is deliberately long because the probe is what decides
+	// which of them are real, and a dead entry here costs one fast failure.
 	'https://api.mainnet-beta.solana.com',
 	'https://solana-rpc.publicnode.com',
 	'https://solana.leorpc.com/?api_key=FREE',
@@ -49,6 +53,27 @@ export const PUBLIC_CANDIDATES = [
 	'https://free.rpcpool.com',
 	'https://api.metaplex.solana.com',
 	'https://solana.public-rpc.com',
+	'https://mainnet.rpcpool.com',
+	'https://api.mainnet.rpcpool.com',
+	'https://solana.rpcpool.com',
+	'https://mainnet.solana.rpcpool.com',
+	'https://solana-mainnet.g.alchemy.com/v2/demo',
+	'https://solana-mainnet.chainstacklabs.com',
+	'https://api.mngo.cloud/lite-rpc/v1/',
+	'https://solana.lava.build',
+	'https://solana.polkachu.com',
+	'https://solana.rpc.everstake.one',
+	'https://try-rpc.mainnet.solana.blockdaemon.tech',
+	'https://solana.rpc.subquery.network/public',
+	'https://rpc.solscan.io',
+	'https://mainnet.rpc.jito.wtf',
+	'https://solana-mainnet.gateway.tatum.io',
+	'https://sol.nownodes.io',
+	'https://solana.therpc.io',
+	'https://solana-mainnet.public.blastapi.io',
+	'https://rpc.magicblock.app/mainnet',
+	'https://solana.w3node.com/rpc',
+	'https://go.getblock.io/4136d34f90a6488b84214ae26f0ed5f4',
 ];
 
 function parseArgs(argv) {
