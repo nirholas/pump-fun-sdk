@@ -94,10 +94,11 @@ The three most common verdicts and what they mean:
 | `every configured endpoint is dead` | Providers went key-gated or rate-limited. | `npm run doctor -- --fix --candidates`, then redeploy |
 | `HEALTHY` but the channel is quiet | Unknown until checked against the chain. Run `node scripts/audit-first-claims.mjs --hours 24`: it reads the verifier that co-signs every GitHub claim. No `FIRST` lines means the silence is real; a `FIRST` line with no card is a bug. | Whoever runs the audit. Do not widen the feed to make it busier. |
 
-That last row matters most. On 2026-09-12 a quiet channel was assumed correct
-while a 203 SOL first claim went unposted, and two more GitHub claims were lost
-outright. Silence is a question to answer with the audit, never a reason to
-enable more feeds.
+That last row matters most. On 2026-09-12 two GitHub claims were lost outright
+while the silence was assumed correct, and a veteran's 203.7 stablecoin claim
+was briefly reported as a missed first claim because only the SOL lifetime was
+read. Silence is a question to answer with the audit, never a reason to enable
+more feeds.
 
 ## How a GitHub claim is found and decided
 
@@ -109,8 +110,12 @@ enable more feeds.
    so a claim seen by both is processed once.
 2. **Retried until fetched.** A transaction counts as handled only after it has
    actually been fetched. A failed fetch is retried, up to 5 attempts.
-3. **Decided before any lookup.** `lifetime_claimed` in the claim event already
-   includes this claim, so lifetime above amount means claimed before. That
+3. **Decided before any lookup, on both counters.** V2 claim events carry two
+   lifetime totals that include this claim: `lifetime_claimed` (SOL) and
+   `lifetime_stable_claimed` (every non-SOL quote asset). A claim is first-ever
+   only when its own currency's total equals the amount and the other total is
+   zero; reading the SOL total alone calls a veteran's first stablecoin claim
+   first-ever. That
    verdict (`src/first-claim.ts`) is taken first; repeats return without a
    single API call. Never move enrichment ahead of it: a dev with 354 linked
    coins stalled the old ordering until the claim was never classified.

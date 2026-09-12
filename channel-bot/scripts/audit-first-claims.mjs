@@ -5,8 +5,11 @@
  * Every GitHub social fee claim is co-signed by one pump.fun verifier, so that
  * address's history is the complete list of GitHub claims, and it is small
  * (about 34 transactions a day). This reads it for the last N hours, decodes each
- * SocialFeePdaClaimed event, and classifies it the way the bot does: lifetime
- * equal to amount is a first-ever claim, larger means claimed before.
+ * SocialFeePdaClaimed event, and classifies it the way the bot does. V2 events
+ * keep two lifetime counters, SOL and non-SOL quote assets, and a claim is
+ * first-ever only when its own currency's counter equals the amount and the
+ * other is empty. Reading only the SOL counter reported a veteran's 203.7
+ * stablecoin claim on 2026-09-11 as a first claim.
  *
  * An earlier version scanned the fee program instead. That program runs about
  * 22 transactions a second, so 400 signatures covered 0.003 hours, and "0 first
@@ -29,6 +32,7 @@ import { resolve } from 'node:path';
 const AUTHORITY = '2sMrGNK8i36YRkF5WWCwnaUYuwDJhHe1g2xA8aPvhkjM';
 const EVENT_DISC = '3212c141edd2eaec'; // SocialFeePdaClaimed
 const GITHUB = 2;
+const SOL_QUOTES = new Set(['11111111111111111111111111111111', 'So11111111111111111111111111111111111111112']);
 
 function parseArgs() {
 	const a = { envFile: '.env.claims', hours: 24 };
@@ -69,7 +73,8 @@ async function rpc(url, method, params, tries = 4) {
 	}
 }
 
-/** Mirrors claim-monitor.ts: disc, timestamp, user_id, platform, 3 pubkeys, amount, claimable_before, lifetime. */
+/** Mirrors claim-monitor.ts: disc, timestamp, user_id, platform, 3 pubkeys, amount, claimable_before,
+ * lifetime, then on V2 events two balances, quote_mint and lifetime_stable_claimed. */
 function decodeEvent(buf) {
 	if (buf.length < 16 || buf.subarray(0, 8).toString('hex') !== EVENT_DISC) return null;
 	let o = 16;
@@ -79,8 +84,33 @@ function decodeEvent(buf) {
 	const platform = buf[o]; o += 1;
 	o += 96;
 	const amount = buf.readBigUInt64LE(o); o += 16;
-	const lifetime = buf.readBigUInt64LE(o);
-	return { githubUserId, platform, amount, lifetime };
+	const lifetime = buf.readBigUInt64LE(o); o += 8;
+	let quoteMint = null;
+	let lifetimeStable = null;
+	if (buf.length >= o + 16 + 32 + 8) {
+		o += 16;
+		quoteMint = bs58(buf.subarray(o, o + 32)); o += 32;
+		lifetimeStable = buf.readBigUInt64LE(o);
+	}
+	return { githubUserId, platform, amount, lifetime, quoteMint, lifetimeStable };
+}
+
+const B58 = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+function bs58(bytes) {
+	let n = BigInt('0x' + (Buffer.from(bytes).toString('hex') || '0'));
+	let out = '';
+	while (n > 0n) { out = B58[Number(n % 58n)] + out; n /= 58n; }
+	for (const b of bytes) { if (b !== 0) break; out = '1' + out; }
+	return out;
+}
+
+/** Same rule as src/first-claim.ts onchainClaimVerdict. */
+function isFirstEver(ev) {
+	const near = (life) => life * 100n <= ev.amount * 101n;
+	if (ev.quoteMint == null || SOL_QUOTES.has(ev.quoteMint)) {
+		return near(ev.lifetime) && (ev.lifetimeStable == null || ev.lifetimeStable === 0n);
+	}
+	return ev.lifetime === 0n && ev.lifetimeStable != null && near(ev.lifetimeStable);
 }
 
 async function main() {
@@ -108,7 +138,7 @@ async function main() {
 			let ev;
 			try { ev = decodeEvent(Buffer.from(line.slice(14), 'base64')); } catch { ev = null; }
 			if (!ev || ev.platform !== GITHUB) continue;
-			claims.push({ ...ev, signature: s.signature, blockTime: s.blockTime, first: ev.lifetime * 100n <= ev.amount * 101n });
+			claims.push({ ...ev, signature: s.signature, blockTime: s.blockTime, first: isFirstEver(ev) });
 		}
 	}
 
@@ -117,7 +147,9 @@ async function main() {
 	for (const c of claims.sort((x, y) => x.blockTime - y.blockTime)) {
 		const when = new Date(c.blockTime * 1000).toISOString().slice(5, 19).replace('T', ' ');
 		const sol = (n) => (Number(n) / 1e9).toFixed(4);
-		console.log(`${c.first ? 'FIRST ' : 'repeat'} ${when}Z gh=${c.githubUserId.padEnd(10)} amount=${sol(c.amount).padStart(10)} lifetime=${sol(c.lifetime).padStart(11)} tx=${c.signature.slice(0, 12)}`);
+		const quote = c.quoteMint == null || SOL_QUOTES.has(c.quoteMint) ? 'SOL' : c.quoteMint.slice(0, 8);
+		const stable = c.lifetimeStable == null ? '-' : sol(c.lifetimeStable);
+		console.log(`${c.first ? 'FIRST ' : 'repeat'} ${when}Z gh=${c.githubUserId.padEnd(10)} amount=${sol(c.amount).padStart(10)} ${quote.padEnd(8)} solLifetime=${sol(c.lifetime).padStart(11)} stableLifetime=${stable.padStart(10)} tx=${c.signature.slice(0, 12)}`);
 	}
 	if (firsts.length) {
 		console.log('\nFirst-ever claims, full signatures:');

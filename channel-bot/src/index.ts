@@ -214,11 +214,16 @@ async function main(): Promise<void> {
             // to run after resolving every coin linked to the PDA, and a dev
             // with 354 linked coins stalled that resolution long enough that
             // the claim was never classified: two lost on 2026-09-12.
-            const onchain = onchainClaimVerdict(
-                event.amountLamports,
-                event.lifetimeClaimedLamports,
-                event.isFake === true,
-            );
+            // Both lifetime counters matter: a claim paid in a stable asset
+            // leaves the SOL counter untouched, so SOL alone reads a veteran's
+            // stablecoin claim as first-ever.
+            const onchain = onchainClaimVerdict({
+                amount: event.amountLamports,
+                lifetimeSol: event.lifetimeClaimedLamports,
+                lifetimeStable: event.lifetimeStableClaimedRaw,
+                quoteMint: event.quoteMint,
+                isFake: event.isFake === true,
+            });
             if (onchain !== 'candidate') {
                 if (onchain === 'repeat') {
                     pipeline.repeatClaim++;

@@ -123,6 +123,12 @@ export interface FeeClaimEvent {
     isFake?: boolean;
     /** Lifetime total claimed in lamports (from on-chain event, cumulative across all claims) */
     lifetimeClaimedLamports?: number;
+    /**
+     * PDA lifetime claimed in a non-SOL quote currency, in that currency's base
+     * units. V2 events keep it apart from lifetimeClaimedLamports, so a claim
+     * paid in a stable or tokenized asset leaves the SOL counter untouched.
+     */
+    lifetimeStableClaimedRaw?: number;
     /** When multiple tokens share the same social fee PDA (scam vector), all candidate mints */
     allCandidateMints?: string[];
     /** Quote mint for the claim (V2 events only — wrapped SOL or USDC). Base58. */

@@ -677,6 +677,7 @@ export class ClaimMonitor {
         let recipientWallet: string | undefined;
         let socialFeePda: string | undefined;
         let lifetimeClaimedLamports: number | undefined;
+        let lifetimeStableClaimedRaw: number | undefined;
         let quoteMint: string | undefined;
 
         if (def.claimType === 'distribute_creator_fees') {
@@ -812,6 +813,15 @@ export class ClaimMonitor {
                     if (bytes.length >= offset + 8 + 8 + 32) {
                         offset += 16; // skip recipient_balance_before + recipient_balance_after
                         quoteMint = new PublicKey(bytes.subarray(offset, offset + 32)).toBase58();
+                        offset += 32;
+                        // lifetime_stable_claimed: u64, the PDA's lifetime in the non-SOL
+                        // quote currency. Without it a veteran's first stablecoin claim
+                        // reads as a first-ever claim, because lifetime_claimed only
+                        // counts SOL (a 203 SOL false first on 2026-09-11).
+                        if (bytes.length >= offset + 8) {
+                            const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+                            lifetimeStableClaimedRaw = Number(view.getBigUint64(offset, true));
+                        }
                     }
                 }
             } catch { /* skip unparseable log lines */ }
@@ -926,6 +936,7 @@ export class ClaimMonitor {
             socialFeePda,
             isFake,
             lifetimeClaimedLamports,
+            lifetimeStableClaimedRaw,
             allCandidateMints,
             quoteMint: resolvedQuoteMint,
             quoteTicker: quoteInfo.ticker,
