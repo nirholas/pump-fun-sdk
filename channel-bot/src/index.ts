@@ -30,6 +30,13 @@ import { registerAdminCommands, isMuted, type RuntimeState } from './admin.js';
 import { DeliveryReporter, verifyChannelAccess, DeliveryFailedError, isReportedDelivery } from './delivery.js';
 import { Watchdog } from './watchdog.js';
 import { maskRpcUrl } from './rpc-fallback.js';
+import { mapBounded } from './bounded.js';
+import {
+    formatSkippedClaim,
+    LINKED_TOKEN_CONCURRENCY,
+    LINKED_TOKEN_DEADLINE_MS,
+    onchainClaimVerdict,
+} from './first-claim.js';
 import { assertPostAllowed, ChannelPolicyError, type PostKind } from './channel-policy.js';
 import { PerformanceTracker } from './performance-tracker.js';
 import { buildTokenKeyboard, buildTxKeyboard, type InlineKeyboard } from './keyboards.js';
@@ -173,13 +180,13 @@ async function main(): Promise<void> {
     }
 
     // ── Pipeline Counters ─────────────────────────────────────────────
-    const pipeline = { total: 0, socialClaims: 0, creatorClaims: 0, firstClaim: 0, posted: 0, skippedCashback: 0, repeatClaim: 0, policyRejected: 0 };
+    const pipeline = { total: 0, socialClaims: 0, creatorClaims: 0, firstClaim: 0, posted: 0, skippedCashback: 0, repeatClaim: 0, fakeClaim: 0, policyRejected: 0 };
 
     /** True when the operator paused channel posting via /mute. */
     const postingMuted = () => isMuted(state);
     setInterval(() => {
-        log.info('Pipeline: %d total → %d social + %d creator → %d first / %d repeat → %d posted (skip: %d cashback)',
-            pipeline.total, pipeline.socialClaims, pipeline.creatorClaims, pipeline.firstClaim, pipeline.repeatClaim, pipeline.posted, pipeline.skippedCashback);
+        log.info('Pipeline: %d total → %d social + %d creator → %d first / %d repeat → %d posted (skip: %d cashback, %d fake)',
+            pipeline.total, pipeline.socialClaims, pipeline.creatorClaims, pipeline.firstClaim, pipeline.repeatClaim, pipeline.posted, pipeline.skippedCashback, pipeline.fakeClaim);
     }, 60_000);
 
     // ── Claim Monitor ────────────────────────────────────────────────
@@ -201,18 +208,56 @@ async function main(): Promise<void> {
 
             let mint = event.tokenMint?.trim() || '';
 
-            // When multiple tokens share the same social fee PDA,
-            // fetch token info for ALL candidates and pick highest MC as primary.
+            // Decide from the on-chain event before any network call. The
+            // event's lifetime_claimed already includes this claim, so a dev
+            // who has claimed before is identifiable here for free. This used
+            // to run after resolving every coin linked to the PDA, and a dev
+            // with 354 linked coins stalled that resolution long enough that
+            // the claim was never classified: two lost on 2026-09-12.
+            const onchain = onchainClaimVerdict(
+                event.amountLamports,
+                event.lifetimeClaimedLamports,
+                event.isFake === true,
+            );
+            if (onchain !== 'candidate') {
+                if (onchain === 'repeat') {
+                    pipeline.repeatClaim++;
+                    // Backfill the local tracker so a later claim missing its
+                    // lifetime field still classifies correctly. Only possible
+                    // when the coin is already known; resolving it here would
+                    // bring back the fan-out this ordering exists to avoid.
+                    if (mint && !hasGithubUserClaimed(event.githubUserId, mint)) {
+                        markGithubUserClaimed(event.githubUserId, mint);
+                    }
+                } else {
+                    pipeline.fakeClaim++;
+                }
+                // Info, not debug: a quiet feed has to stay auditable. Lifetime
+                // equal to amount is a first claim; larger means claimed before.
+                log.info(formatSkippedClaim(onchain, event, mint));
+                return;
+            }
+
+            // Only on-chain first claims, or ones with no lifetime field, get
+            // here, which is rare, so resolving the linked coins is affordable.
+            // It is still bounded: a capped number of lookups in flight and a
+            // total deadline, after which the best coin found so far is used.
             let allLinkedTokens: import('./pump-client.js').TokenInfo[] = [];
             if (event.allCandidateMints && event.allCandidateMints.length > 1) {
-                log.info('PDA %s maps to %d tokens — fetching all',
-                    event.socialFeePda?.slice(0, 8) ?? '?', event.allCandidateMints.length);
-                const infos = (await Promise.all(
-                    event.allCandidateMints.map((m) => fetchTokenInfo(m)),
-                )).filter((i): i is import('./pump-client.js').TokenInfo => i != null);
-                infos.sort((a, b) => b.usdMarketCap - a.usdMarketCap);
-                allLinkedTokens = infos;
-                const best = infos[0];
+                const started = Date.now();
+                const linked = await mapBounded(
+                    event.allCandidateMints,
+                    (m) => fetchTokenInfo(m),
+                    { concurrency: LINKED_TOKEN_CONCURRENCY, deadlineMs: LINKED_TOKEN_DEADLINE_MS },
+                );
+                allLinkedTokens = linked.results
+                    .filter((i): i is import('./pump-client.js').TokenInfo => i != null)
+                    .sort((x, y) => y.usdMarketCap - x.usdMarketCap);
+                log.info('PDA %s: resolved %d of %d linked tokens in %dms%s',
+                    event.socialFeePda?.slice(0, 8) ?? '?', linked.settled,
+                    event.allCandidateMints.length, Date.now() - started,
+                    linked.timedOut ? ', deadline reached, using the best found' : '');
+                const best = allLinkedTokens[0];
                 if (best && best.usdMarketCap > 0) {
                     mint = best.mint;
                     event.tokenMint = mint;
@@ -221,44 +266,14 @@ async function main(): Promise<void> {
                 }
             }
 
-            // Use on-chain lifetime data as ground truth: if lifetime lamports
-            // significantly exceed this claim, the user has claimed before —
-            // regardless of what our local persistence says (it resets on redeploy).
-            // Tracked per user+mint so claiming coin A doesn't affect coin B.
-            let isFirstClaim = !hasGithubUserClaimed(event.githubUserId, mint);
-            if (isFirstClaim && event.lifetimeClaimedLamports != null && event.lifetimeClaimedLamports > event.amountLamports * 1.01) {
-                // On-chain lifetime is larger than this single claim → not actually first
-                isFirstClaim = false;
-                // Backfill our local tracker so future claims aren't misclassified
-                markGithubUserClaimed(event.githubUserId, mint);
-            }
-            const isFake = event.isFake === true;
-            if (isFirstClaim) pipeline.firstClaim++;
-            else pipeline.repeatClaim++;
-
-            // Only post FIRST claims. Skip fake and repeat claims entirely.
-            //
-            // This is logged at info, not debug, on purpose. A first-ever
-            // GitHub claim is rare (historically about one every few days), so
-            // the normal state of this feed is silence, and at debug level
-            // there was no way to tell a correctly-quiet feed from a broken
-            // one without redeploying. Printing the two numbers the decision
-            // turns on makes every rejection auditable against the chain:
-            // lifetime == amount is a genuine first claim, lifetime > amount
-            // means this payee has claimed before.
-            if (isFake || !isFirstClaim) {
-                const sol = (n?: number) => (n == null ? 'unknown' : (n / 1e9).toFixed(4));
-                log.info(
-                    'Skipped %s claim: github=%s mint=%s amount=%s SOL lifetime=%s SOL tx=%s',
-                    isFake ? 'fake' : 'repeat',
-                    event.githubUserId,
-                    mint ? mint.slice(0, 8) : 'unresolved',
-                    sol(event.amountLamports),
-                    sol(event.lifetimeClaimedLamports ?? undefined),
-                    event.txSignature.slice(0, 12),
-                );
+            // The chain did not rule it out. The local tracker, keyed by dev
+            // and coin, is the second guard, and it needs the resolved coin.
+            if (hasGithubUserClaimed(event.githubUserId, mint)) {
+                pipeline.repeatClaim++;
+                log.info(formatSkippedClaim('repeat', event, mint));
                 return;
             }
+            pipeline.firstClaim++;
             log.info('FIRST CLAIM accepted: github=%s mint=%s amount=%s SOL',
                 event.githubUserId, mint.slice(0, 8), (event.amountLamports / 1e9).toFixed(4));
 
