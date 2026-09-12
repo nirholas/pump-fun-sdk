@@ -236,12 +236,31 @@ async function main(): Promise<void> {
             if (isFirstClaim) pipeline.firstClaim++;
             else pipeline.repeatClaim++;
 
-            // Only post FIRST claims — skip fake and repeat claims entirely
+            // Only post FIRST claims. Skip fake and repeat claims entirely.
+            //
+            // This is logged at info, not debug, on purpose. A first-ever
+            // GitHub claim is rare (historically about one every few days), so
+            // the normal state of this feed is silence, and at debug level
+            // there was no way to tell a correctly-quiet feed from a broken
+            // one without redeploying. Printing the two numbers the decision
+            // turns on makes every rejection auditable against the chain:
+            // lifetime == amount is a genuine first claim, lifetime > amount
+            // means this payee has claimed before.
             if (isFake || !isFirstClaim) {
-                log.debug('Skipping %s claim by %s on %s',
-                    isFake ? 'fake' : 'repeat', event.githubUserId, mint.slice(0, 8));
+                const sol = (n?: number) => (n == null ? 'unknown' : (n / 1e9).toFixed(4));
+                log.info(
+                    'Skipped %s claim: github=%s mint=%s amount=%s SOL lifetime=%s SOL tx=%s',
+                    isFake ? 'fake' : 'repeat',
+                    event.githubUserId,
+                    mint ? mint.slice(0, 8) : 'unresolved',
+                    sol(event.amountLamports),
+                    sol(event.lifetimeClaimedLamports ?? undefined),
+                    event.txSignature.slice(0, 12),
+                );
                 return;
             }
+            log.info('FIRST CLAIM accepted: github=%s mint=%s amount=%s SOL',
+                event.githubUserId, mint.slice(0, 8), (event.amountLamports / 1e9).toFixed(4));
 
             const [githubUser, tokenInfo, solUsdPrice] = await Promise.all([
                 fetchGitHubUserById(event.githubUserId),
