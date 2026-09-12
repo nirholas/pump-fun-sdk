@@ -37,6 +37,7 @@ import {
     LINKED_TOKEN_DEADLINE_MS,
     onchainClaimVerdict,
 } from './first-claim.js';
+import { applyQuoteAsset, resolveQuoteAsset } from './quote-asset.js';
 import { assertPostAllowed, ChannelPolicyError, type PostKind } from './channel-policy.js';
 import { PerformanceTracker } from './performance-tracker.js';
 import { buildTokenKeyboard, buildTxKeyboard, type InlineKeyboard } from './keyboards.js';
@@ -279,8 +280,15 @@ async function main(): Promise<void> {
                 return;
             }
             pipeline.firstClaim++;
-            log.info('FIRST CLAIM accepted: github=%s mint=%s amount=%s SOL',
-                event.githubUserId, mint.slice(0, 8), (event.amountLamports / 1e9).toFixed(4));
+            // Paid in an asset outside QUOTE_MINT_INFO: read its real decimals
+            // and symbol from the chain before any card is built.
+            if (event.quoteResolved === false && event.quoteMint) {
+                const asset = await resolveQuoteAsset(event.quoteMint, config.solanaRpcUrl);
+                if (asset) applyQuoteAsset(event, asset);
+            }
+            log.info('FIRST CLAIM accepted: github=%s mint=%s amount=%s %s',
+                event.githubUserId, mint.slice(0, 8),
+                (event.amountQuote ?? event.amountSol).toFixed(4), event.quoteTicker ?? event.quoteMint?.slice(0, 8) ?? 'SOL');
 
             const [githubUser, tokenInfo, solUsdPrice] = await Promise.all([
                 fetchGitHubUserById(event.githubUserId),

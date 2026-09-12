@@ -22,9 +22,27 @@ export const USDC_MINT = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v';
 // Decimals + display ticker for known quote mints. Used by claim-monitor to
 // convert event `amount_claimed` (u64 in base units of the quote mint) into a
 // human amount, and by the formatter to render the right ticker label.
-export const QUOTE_MINT_INFO: Record<string, { ticker: string; decimals: number; isStable: boolean }> = {
+/** V2 claim events write the all-zero key as the quote mint of a SOL claim. */
+export const SOL_NATIVE_QUOTE = '11111111111111111111111111111111';
+
+export interface QuoteAssetInfo {
+    ticker: string;
+    decimals: number;
+    isStable: boolean;
+}
+
+// Assets verified on-chain on 2026-09-12 as quote currencies of real GitHub
+// claims (7 days of verifier history). A mint missing here is resolved from the
+// chain by quote-asset.ts before a card is built; it is never assumed to be SOL,
+// because an 8-decimal tokenized stock read as 9-decimal SOL is off tenfold.
+export const QUOTE_MINT_INFO: Record<string, QuoteAssetInfo> = {
     [WSOL_MINT]: { ticker: 'SOL', decimals: 9, isStable: false },
+    [SOL_NATIVE_QUOTE]: { ticker: 'SOL', decimals: 9, isStable: false },
     [USDC_MINT]: { ticker: 'USDC', decimals: 6, isStable: true },
+    chipCAT7vi5CZtbZsn9z7iMPXvFwyAnKz3QFu8XVuHm: { ticker: 'CHIP', decimals: 9, isStable: false },
+    XsDoVfqeBukxuZHWhdvWHBhgEHjGNst4MLodqsJHzoB: { ticker: 'TSLAx', decimals: 8, isStable: false },
+    XsCPL9dNWBMvFtTmwcCA5v3xWPSMEBCszbQdiLLq6aN: { ticker: 'GOOGLx', decimals: 8, isStable: false },
+    Xsc9qvGR1efVDFGLrVsmkzv3qi45LTBjeUKSPmx9qEh: { ticker: 'NVDAx', decimals: 8, isStable: false },
 };
 
 // ============================================================================
@@ -141,6 +159,11 @@ export interface FeeClaimEvent {
     amountQuote?: number;
     /** Lifetime total claimed in whole units of the quote currency, when known. */
     lifetimeClaimedQuote?: number;
+    /**
+     * False when the quote mint is not in QUOTE_MINT_INFO, so ticker and
+     * decimals are still unknown and must be resolved before display.
+     */
+    quoteResolved?: boolean;
 }
 
 export interface TokenLaunchEvent {

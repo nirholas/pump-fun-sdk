@@ -67,6 +67,36 @@ export interface ClaimFeedContext {
  * Transaction → Linked Dev → Repo Claimed → Token Market →
  * Holder Intel → Trust Signals → Chart → Socials → Separator → Trade Links
  */
+
+/**
+ * A SOL dollar price, applied to SOL amounts only: never to a stablecoin, a
+ * tokenized stock, or an asset whose decimals are still unknown.
+ */
+function solUsd(event: FeeClaimEvent, amount: number, solUsdPrice: number): string {
+    const isSol = (event.quoteTicker ?? 'SOL') === 'SOL' && event.quoteResolved !== false && !event.isStableQuote;
+    return isSol && solUsdPrice > 0 ? ` ($${(amount * solUsdPrice).toFixed(2)})` : '';
+}
+
+/**
+ * Amount and lifetime lines of a claim card, in the claim's own currency. An
+ * asset whose decimals could not be read is named, never rendered as SOL.
+ */
+export function claimAmountLines(event: FeeClaimEvent, solUsdPrice: number, lifetimeFallbackSol?: number): string[] {
+    if (event.quoteResolved === false && event.amountQuote == null) {
+        return [`Paid in ${esc((event.quoteMint ?? 'unknown asset').slice(0, 8))} (amount unavailable)`];
+    }
+    const isStable = event.isStableQuote ?? false;
+    const ticker = event.quoteTicker ?? 'SOL';
+    const amount = event.amountQuote ?? event.amountSol;
+    const places = isStable ? 2 : 4;
+    const lines = [`${amount.toFixed(places)} ${esc(ticker)}${solUsd(event, amount, solUsdPrice)}`];
+    const lifetime = event.lifetimeClaimedQuote ?? (ticker === 'SOL' ? lifetimeFallbackSol : undefined);
+    if (lifetime != null && lifetime > 0) {
+        lines.push(`Lifetime claims: ${lifetime.toFixed(places)} ${esc(ticker)}${solUsd(event, lifetime, solUsdPrice)}`);
+    }
+    return lines;
+}
+
 export function formatGitHubClaimFeed(ctx: ClaimFeedContext): { imageUrl: string | null; caption: string } {
     const { event, solUsdPrice, githubUser, xProfile, tokenInfo } = ctx;
     const L: string[] = [];
@@ -160,20 +190,7 @@ export function formatGitHubClaimFeed(ctx: ClaimFeedContext): { imageUrl: string
         L.push(`Claim #1`);
     }
 
-    const isStable = event.isStableQuote ?? false;
-    const ticker = event.quoteTicker ?? 'SOL';
-    const amount = event.amountQuote ?? event.amountSol;
-    
-    const claimFmt = amount.toFixed(isStable ? 2 : 4);
-    const claimUsd = isStable ? '' : (solUsdPrice > 0 ? ` ($${(amount * solUsdPrice).toFixed(2)})` : '');
-    L.push(`${claimFmt} ${ticker}${claimUsd}`);
-
-    const lifetimeAmt = event.lifetimeClaimedQuote ?? ctx.lifetimeClaimedSol;
-    if (lifetimeAmt != null && lifetimeAmt > 0) {
-        const ltFmt = lifetimeAmt.toFixed(isStable ? 2 : 4);
-        const ltUsd = isStable ? '' : (solUsdPrice > 0 ? ` ($${(lifetimeAmt * solUsdPrice).toFixed(2)})` : '');
-        L.push(`Lifetime claims: ${ltFmt} ${ticker}${ltUsd}`);
-    }
+    L.push(...claimAmountLines(event, solUsdPrice, ctx.lifetimeClaimedSol));
 
     L.push(`Type: ${esc(event.claimLabel)}`);
     L.push('');
@@ -553,7 +570,7 @@ export function formatCreatorClaimFeed(ctx: CreatorClaimContext): { imageUrl: st
     const amount = event.amountQuote ?? event.amountSol;
     
     const claimFmt = amount.toFixed(isStable ? 2 : 4);
-    const claimUsd = isStable ? '' : (solUsdPrice > 0 ? ` ($${(amount * solUsdPrice).toFixed(2)})` : '');
+    const claimUsd = solUsd(event, amount, solUsdPrice);
     L.push(`🏦 <b>${claimFmt} ${ticker}</b>${claimUsd}`);
     L.push(`  ↳ ${esc(event.claimLabel)}`);
 

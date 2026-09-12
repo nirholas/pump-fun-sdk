@@ -908,15 +908,22 @@ export class ClaimMonitor {
         // Resolve quote-currency metadata. Defaults to SOL when the event predates V2 or
         // the quote_mint field couldn't be read; that preserves V1 behavior exactly.
         const resolvedQuoteMint = quoteMint ?? WSOL_MINT;
-        const quoteInfo = QUOTE_MINT_INFO[resolvedQuoteMint] ?? QUOTE_MINT_INFO[WSOL_MINT]!;
-        const quoteDivisor = Math.pow(10, quoteInfo.decimals);
-        const amountQuote = amountLamports / quoteDivisor;
-        const lifetimeClaimedQuote = lifetimeClaimedRaw != null
-            ? Number(lifetimeClaimedRaw) / quoteDivisor
+        // An unknown mint stays unresolved rather than borrowing SOL's decimals:
+        // a tokenized stock has 8, so a SOL fallback printed it tenfold too small,
+        // labelled SOL, at SOL's dollar price.
+        const quoteInfo = QUOTE_MINT_INFO[resolvedQuoteMint];
+        const quoteIsSol = quoteInfo?.ticker === 'SOL';
+        const quoteDivisor = quoteInfo ? Math.pow(10, quoteInfo.decimals) : undefined;
+        const amountQuote = quoteDivisor ? amountLamports / quoteDivisor : undefined;
+        // A card's lifetime is the counter of the claim's own currency.
+        const lifetimeInQuoteRaw = quoteIsSol
+            ? (lifetimeClaimedRaw != null ? Number(lifetimeClaimedRaw) : undefined)
+            : lifetimeStableClaimedRaw;
+        const lifetimeClaimedQuote = quoteDivisor && lifetimeInQuoteRaw != null
+            ? lifetimeInQuoteRaw / quoteDivisor
             : undefined;
-        // amountSol is preserved only when the quote is actually SOL — for USDC claims it
-        // would be misleading, so we leave it 0 and downstream code branches on isStableQuote.
-        const amountSol = quoteInfo.isStable ? 0 : amountLamports / LAMPORTS_PER_SOL;
+        // amountSol only ever means SOL; any other quote leaves it 0.
+        const amountSol = quoteIsSol ? amountLamports / LAMPORTS_PER_SOL : 0;
 
         return {
             txSignature: signature,
@@ -939,8 +946,9 @@ export class ClaimMonitor {
             lifetimeStableClaimedRaw,
             allCandidateMints,
             quoteMint: resolvedQuoteMint,
-            quoteTicker: quoteInfo.ticker,
-            isStableQuote: quoteInfo.isStable,
+            quoteTicker: quoteInfo?.ticker,
+            isStableQuote: quoteInfo?.isStable ?? false,
+            quoteResolved: quoteInfo != null,
             amountQuote,
             lifetimeClaimedQuote,
         };
