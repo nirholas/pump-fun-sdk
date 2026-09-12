@@ -1,35 +1,41 @@
 #!/usr/bin/env node
 /**
- * Answer "should the feed have posted anything?" from the chain, not from the bot.
+ * Answer "did the feed miss a GitHub first claim?" from the chain, not from the bot.
  *
- * A first-ever GitHub claim is rare, so the normal state of @pumpfunclaims is
- * silence, and silence is indistinguishable from a broken filter by looking at
- * the channel. This scans the fee program's recent history, decodes every
- * SocialFeePdaClaimed event, and classifies it the same way the bot does:
- * lifetime_claimed == amount_claimed is a first-ever claim, anything larger
- * means that payee has claimed before.
+ * Every GitHub social fee claim is co-signed by one pump.fun verifier, so that
+ * address's history is the complete list of GitHub claims, and it is small
+ * (about 34 transactions a day). This reads it for the last N hours, decodes each
+ * SocialFeePdaClaimed event, and classifies it the way the bot does: lifetime
+ * equal to amount is a first-ever claim, larger means claimed before.
  *
- * If this reports first-claims and the channel is empty, the filter is broken.
- * If it reports none, the feed is correct and the signal simply has not fired.
+ * An earlier version scanned the fee program instead. That program runs about
+ * 22 transactions a second, so 400 signatures covered 0.003 hours, and "0 first
+ * claims" there meant nothing. The verifier gives the whole day in one page.
  *
  * Usage:
- *   node scripts/audit-first-claims.mjs                 # last 1000 signatures
- *   node scripts/audit-first-claims.mjs --limit 300
- *   node scripts/audit-first-claims.mjs --env .env.claims
+ *   node scripts/audit-first-claims.mjs                # last 24 hours, .env.claims
+ *   node scripts/audit-first-claims.mjs --hours 6
+ *   node scripts/audit-first-claims.mjs --env .env
+ *
+ * To check the running feed saw each one, match the printed 12-character tx
+ * prefixes against its log:
+ *   gcloud logging read 'resource.labels.service_name="pumpfun-claims-bot"
+ *     (textPayload:"Skipped" OR textPayload:"FIRST CLAIM")' --freshness=25h
  */
 
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-const FEE_PROGRAM = 'pfeeUxB6jkeY1Hxd7CsFCAjcbHA9rWtchMGdZ6VojVZ';
+const AUTHORITY = '2sMrGNK8i36YRkF5WWCwnaUYuwDJhHe1g2xA8aPvhkjM';
 const EVENT_DISC = '3212c141edd2eaec'; // SocialFeePdaClaimed
+const GITHUB = 2;
 
-function args() {
-	const a = { envFile: '.env.claims', limit: 1000 };
+function parseArgs() {
+	const a = { envFile: '.env.claims', hours: 24 };
 	const v = process.argv.slice(2);
 	for (let i = 0; i < v.length; i++) {
 		if (v[i] === '--env') a.envFile = v[++i];
-		else if (v[i] === '--limit') a.limit = Number(v[++i]);
+		else if (v[i] === '--hours') a.hours = Number(v[++i]);
 	}
 	return a;
 }
@@ -45,105 +51,78 @@ function readEnv(p) {
 	return e;
 }
 
-async function rpc(url, method, params) {
-	const r = await fetch(url, {
-		method: 'POST',
-		headers: { 'content-type': 'application/json' },
-		body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
-	});
-	const j = await r.json();
-	if (j.error) throw new Error(j.error.message);
-	return j.result;
+async function rpc(url, method, params, tries = 4) {
+	for (let t = 0; ; t++) {
+		try {
+			const r = await fetch(url, {
+				method: 'POST',
+				headers: { 'content-type': 'application/json' },
+				body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
+			});
+			const j = await r.json();
+			if (j.error) throw new Error(j.error.message);
+			return j.result;
+		} catch (err) {
+			if (t >= tries - 1) throw err;
+			await new Promise((res) => setTimeout(res, 1500 * (t + 1)));
+		}
+	}
 }
 
-/** Decode a SocialFeePdaClaimed event body. Mirrors claim-monitor.ts exactly. */
+/** Mirrors claim-monitor.ts: disc, timestamp, user_id, platform, 3 pubkeys, amount, claimable_before, lifetime. */
 function decodeEvent(buf) {
 	if (buf.length < 16 || buf.subarray(0, 8).toString('hex') !== EVENT_DISC) return null;
-	let o = 16; // disc(8) + timestamp(8)
-	if (buf.length < o + 4) return null;
+	let o = 16;
 	const uidLen = buf.readUInt32LE(o); o += 4;
-	if (buf.length < o + uidLen) return null;
+	if (buf.length < o + uidLen + 1 + 96 + 24) return null;
 	const githubUserId = buf.subarray(o, o + uidLen).toString('utf8'); o += uidLen;
-	if (buf.length < o + 1) return null;
 	const platform = buf[o]; o += 1;
-	o += 32 + 32 + 32;           // social_fee_pda + recipient + social_claim_authority
-	if (buf.length < o + 8) return null;
-	const amount = buf.readBigUInt64LE(o); o += 8;
-	o += 8;                      // claimable_before
-	if (buf.length < o + 8) return null;
+	o += 96;
+	const amount = buf.readBigUInt64LE(o); o += 16;
 	const lifetime = buf.readBigUInt64LE(o);
 	return { githubUserId, platform, amount, lifetime };
 }
 
 async function main() {
-	const a = args();
-	const env = readEnv(a.envFile);
-	const url = env.SOLANA_RPC_URL;
+	const a = parseArgs();
+	const url = readEnv(a.envFile).SOLANA_RPC_URL;
 	if (!url) throw new Error(`SOLANA_RPC_URL missing from ${a.envFile}`);
-
-	console.log(`Scanning the last ${a.limit} fee-program signatures for GitHub claims.\n`);
+	const cutoff = Date.now() / 1000 - a.hours * 3600;
 
 	const sigs = [];
 	let before;
-	while (sigs.length < a.limit) {
-		const page = await rpc(url, 'getSignaturesForAddress', [
-			FEE_PROGRAM, { limit: Math.min(1000, a.limit - sigs.length), ...(before ? { before } : {}) },
-		]);
+	for (;;) {
+		const page = await rpc(url, 'getSignaturesForAddress', [AUTHORITY, { limit: 1000, ...(before ? { before } : {}) }]);
 		if (!page.length) break;
 		sigs.push(...page);
 		before = page[page.length - 1].signature;
+		if ((page[page.length - 1].blockTime ?? 0) < cutoff) break;
 	}
-	const ok = sigs.filter((s) => !s.err);
-	const span = sigs.length ? (sigs[0].blockTime - sigs[sigs.length - 1].blockTime) / 3600 : 0;
-	console.log(`${sigs.length} signatures (${ok.length} successful) spanning ${span.toFixed(3)} hours.\n`);
+	const inWindow = sigs.filter((s) => (s.blockTime ?? 0) >= cutoff && !s.err);
 
-	// The fee program clears roughly 22 transactions a second, so signature
-	// paging covers far less time than it looks. Say so rather than letting a
-	// "0 first claims" line read as 0 for the day when it is 0 for the minute.
-	if (span < 1) {
-		const perDay = span > 0 ? Math.round((24 / span) * sigs.length) : 0;
-		console.log(`NOTE: that is ${(span * 60).toFixed(1)} minutes of history, not a day.`);
-		console.log(`Covering 24h this way would need roughly ${perDay.toLocaleString()} signatures.`);
-		console.log('For a real answer use the running feed, which holds a continuous subscription:');
-		console.log("  gcloud run services logs read pumpfun-claims-bot --region us-central1 \\");
-		console.log("    --project aerial-vehicle-466722-p5 --limit 1000 | grep -E 'Skipped|FIRST CLAIM'\n");
-	}
-
-	let claims = 0, first = 0, repeat = 0;
-	const firsts = [];
-
-	for (const s of ok) {
-		let tx;
-		try {
-			tx = await rpc(url, 'getTransaction', [s.signature, { maxSupportedTransactionVersion: 0, encoding: 'json' }]);
-		} catch { continue; }
+	const claims = [];
+	for (const s of inWindow) {
+		const tx = await rpc(url, 'getTransaction', [s.signature, { maxSupportedTransactionVersion: 0, encoding: 'json' }]);
 		for (const line of tx?.meta?.logMessages ?? []) {
 			if (!line.startsWith('Program data: ')) continue;
 			let ev;
-			try { ev = decodeEvent(Buffer.from(line.slice(14), 'base64')); } catch { continue; }
-			if (!ev || ev.platform !== 2) continue; // platform 2 = GitHub
-			claims++;
-			if (ev.lifetime <= (ev.amount * 101n) / 100n) {
-				first++;
-				firsts.push({ sig: s.signature, user: ev.githubUserId, sol: Number(ev.amount) / 1e9, when: new Date(s.blockTime * 1000).toISOString() });
-			} else {
-				repeat++;
-			}
+			try { ev = decodeEvent(Buffer.from(line.slice(14), 'base64')); } catch { ev = null; }
+			if (!ev || ev.platform !== GITHUB) continue;
+			claims.push({ ...ev, signature: s.signature, blockTime: s.blockTime, first: ev.lifetime * 100n <= ev.amount * 101n });
 		}
 	}
 
-	console.log(`GitHub social-fee claims found : ${claims}`);
-	console.log(`  first-ever (lifetime == amt) : ${first}`);
-	console.log(`  repeat     (lifetime >  amt) : ${repeat}\n`);
-
-	if (first === 0) {
-		console.log('No first-ever claim in this window. An empty channel is correct.');
-	} else {
-		console.log('First-ever claims that SHOULD have posted:');
-		for (const f of firsts) console.log(`  ${f.when}  ${f.user}  ${f.sol.toFixed(4)} SOL  ${f.sig}`);
-		console.log('\nIf none of these are in the channel, the filter is dropping real signal.');
+	const firsts = claims.filter((c) => c.first);
+	console.log(`GitHub claims in the last ${a.hours}h: ${claims.length}  (first-ever ${firsts.length}, repeat ${claims.length - firsts.length})\n`);
+	for (const c of claims.sort((x, y) => x.blockTime - y.blockTime)) {
+		const when = new Date(c.blockTime * 1000).toISOString().slice(5, 19).replace('T', ' ');
+		const sol = (n) => (Number(n) / 1e9).toFixed(4);
+		console.log(`${c.first ? 'FIRST ' : 'repeat'} ${when}Z gh=${c.githubUserId.padEnd(10)} amount=${sol(c.amount).padStart(10)} lifetime=${sol(c.lifetime).padStart(11)} tx=${c.signature.slice(0, 12)}`);
 	}
-	process.exit(0);
+	if (firsts.length) {
+		console.log('\nFirst-ever claims, full signatures:');
+		for (const f of firsts) console.log(`  ${f.signature}`);
+	}
 }
 
 main().catch((e) => { console.error(e.message ?? e); process.exit(1); });

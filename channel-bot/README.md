@@ -327,6 +327,22 @@ the endpoints that passed, pulling replacements from the public pool with
 Every watchdog alert ends with the `doctor` command for that deployment, so an
 outage notification is also its own runbook.
 
+### Proving the feed caught every GitHub claim
+
+Every GitHub social fee claim is co-signed by one pump.fun verifier,
+`2sMrGNK8i36YRkF5WWCwnaUYuwDJhHe1g2xA8aPvhkjM`, so its transaction history is
+the complete list of GitHub claims, independent of this bot:
+
+```bash
+node scripts/audit-first-claims.mjs --hours 24
+```
+
+It prints each claim with its amount, on-chain lifetime and a 12-character tx
+prefix, marks first-ever ones, and lists their full signatures. Any `FIRST`
+claim without a card in the channel is a missed post. The running feed reads
+the same verifier every 20 seconds as a backstop to its websocket, so a claim
+the websocket drops is still processed.
+
 ### Staying up without a babysitter
 
 Three mechanisms, each covering a failure this feed has actually had.

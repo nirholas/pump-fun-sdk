@@ -92,10 +92,31 @@ The three most common verdicts and what they mean:
 |---|---|---|
 | `not an administrator of that channel` | The bot was demoted. Nothing in a container can re-grant this. | Owner, in the Telegram app |
 | `every configured endpoint is dead` | Providers went key-gated or rate-limited. | `npm run doctor -- --fix --candidates`, then redeploy |
-| `HEALTHY` but the channel is quiet | Working as designed. A GitHub *first* claim is rare; hours between posts is normal. | Nobody. Do not widen the feed to make it busier. |
+| `HEALTHY` but the channel is quiet | Unknown until checked against the chain. Run `node scripts/audit-first-claims.mjs --hours 24`: it reads the verifier that co-signs every GitHub claim. No `FIRST` lines means the silence is real; a `FIRST` line with no card is a bug. | Whoever runs the audit. Do not widen the feed to make it busier. |
 
-That last row matters most: a quiet channel is usually correct. Never respond to
-silence by enabling more feeds.
+That last row matters most. On 2026-09-12 a quiet channel was assumed correct
+while a 203 SOL first claim went unposted, and two more GitHub claims were lost
+outright. Silence is a question to answer with the audit, never a reason to
+enable more feeds.
+
+## How a GitHub claim is found and decided
+
+1. **Found twice.** The websocket subscribes to the PumpFees program, and the
+   backstop (`src/claim-backstop.ts`) reads the history of
+   `2sMrGNK8i36YRkF5WWCwnaUYuwDJhHe1g2xA8aPvhkjM`, the verifier that co-signs
+   every GitHub claim, every 20 seconds. The verifier signs about 34
+   transactions a day, so this is cheap and complete. Both feed one queue gate,
+   so a claim seen by both is processed once.
+2. **Retried until fetched.** A transaction counts as handled only after it has
+   actually been fetched. A failed fetch is retried, up to 5 attempts.
+3. **Decided before any lookup.** `lifetime_claimed` in the claim event already
+   includes this claim, so lifetime above amount means claimed before. That
+   verdict (`src/first-claim.ts`) is taken first; repeats return without a
+   single API call. Never move enrichment ahead of it: a dev with 354 linked
+   coins stalled the old ordering until the claim was never classified.
+4. **Enrichment is bounded.** Resolving a PDA's linked coins runs through
+   `mapBounded` (6 in flight, 20 second deadline) and uses the best coin found.
+   An unbounded `Promise.all` over linked coins is a bug, whatever the count.
 
 ## Verify before you claim it works
 

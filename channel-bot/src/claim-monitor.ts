@@ -18,6 +18,14 @@ import type { ChannelBotConfig } from './config.js';
 import { log } from './logger.js';
 import { RpcFallback, maskRpcUrl } from './rpc-fallback.js';
 import {
+    BACKSTOP_MAX_ATTEMPTS,
+    BACKSTOP_PAGE_SIZE,
+    BACKSTOP_POLL_MS,
+    BACKSTOP_STARTUP_GRACE_SEC,
+    GITHUB_CLAIM_AUTHORITY,
+    selectBackstopSignatures,
+} from './claim-backstop.js';
+import {
     SocialFeeIndex,
     CREATE_FEE_SHARING_CONFIG_EVENT_DISC,
     UPDATE_FEE_SHARES_EVENT_DISC,
@@ -204,6 +212,14 @@ export class ClaimMonitor {
     private claimTxProcessed = 0;
     private claimsByType = new Map<string, number>();
     private socialFeeIndex = new SocialFeeIndex();
+    /** Transactions actually fetched. Only these count as handled. */
+    private confirmedSignatures = new Set<string>();
+    /** Transactions queued or in flight, so no source can queue one twice. */
+    private pendingSignatures = new Set<string>();
+    private fetchAttempts = new Map<string, number>();
+    private backstopTimer?: ReturnType<typeof setTimeout>;
+    private backstopPolls = 0;
+    private backstopQueued = 0;
 
     constructor(config: ChannelBotConfig, onClaim: (event: FeeClaimEvent) => void) {
         this.config = config;
@@ -255,6 +271,10 @@ export class ClaimMonitor {
             log.warn('SocialFeeIndex bootstrap error: %s', err);
         });
 
+        // Runs in websocket and polling mode alike: its job is to catch what
+        // either of those misses.
+        this.startBackstop();
+
         if (this.wsUrls.length > 0 && (process.env.SOLANA_WS_URL || process.env.SOLANA_WS_URLS)) {
             try {
                 await this.startWebSocket();
@@ -271,6 +291,10 @@ export class ClaimMonitor {
 
     stop(): void {
         this.isRunning = false;
+        if (this.backstopTimer) {
+            clearTimeout(this.backstopTimer);
+            this.backstopTimer = undefined;
+        }
         if (this.wsHeartbeatTimer) {
             clearInterval(this.wsHeartbeatTimer);
             this.wsHeartbeatTimer = undefined;
@@ -286,6 +310,9 @@ export class ClaimMonitor {
     getMetrics(): Record<string, unknown> {
         return {
             claimsDetected: this.claimsDetected,
+            backstopPolls: this.backstopPolls,
+            backstopQueued: this.backstopQueued,
+            pendingSignatures: this.pendingSignatures.size,
             processedSignatures: this.processedSignatures.size,
             mode: this.wsSubscriptionIds.length > 0 ? 'websocket' : 'polling',
             rpcEndpoints: this.rpc.size,
@@ -455,7 +482,7 @@ export class ClaimMonitor {
 
         if (hasClaimSignal(logs)) {
             this.claimTxProcessed++;
-            this.rpcQueue.enqueue(signature);
+            this.queueSignature(signature);
         }
     }
 
@@ -504,7 +531,7 @@ export class ClaimMonitor {
                 if (sigInfo.err) continue;
                 if (this.processedSignatures.has(sigInfo.signature)) continue;
                 this.processedSignatures.add(sigInfo.signature);
-                this.rpcQueue.enqueue(sigInfo.signature);
+                this.queueSignature(sigInfo.signature);
             }
         }
         this.trimProcessedCache();
@@ -512,13 +539,78 @@ export class ClaimMonitor {
 
     // ── Transaction Processing ───────────────────────────────────────
 
+    /**
+     * Queue a transaction unless it is already fetched, already queued, or
+     * out of retries. The websocket, the program poller and the backstop all
+     * go through here, so one claim seen by two of them is processed, and
+     * posted, once.
+     */
+    private queueSignature(signature: string): boolean {
+        if (this.confirmedSignatures.has(signature) || this.pendingSignatures.has(signature)) return false;
+        if ((this.fetchAttempts.get(signature) ?? 0) >= BACKSTOP_MAX_ATTEMPTS) return false;
+        this.pendingSignatures.add(signature);
+        if (!this.rpcQueue.enqueue(signature)) {
+            // Queue full. Left unmarked, so the backstop offers it again.
+            this.pendingSignatures.delete(signature);
+            return false;
+        }
+        return true;
+    }
+
+    private startBackstop(): void {
+        const earliest = Math.floor(this.startedAt / 1000) - BACKSTOP_STARTUP_GRACE_SEC;
+        const tick = async (): Promise<void> => {
+            if (!this.isRunning) return;
+            try {
+                await this.pollBackstop(earliest);
+            } catch (err) {
+                log.warn('Claim backstop read failed: %s', String(err).slice(0, 120));
+            }
+            if (this.isRunning) this.backstopTimer = setTimeout(() => void tick(), BACKSTOP_POLL_MS);
+        };
+        void tick();
+        log.info('Claim backstop: reading GitHub claim verifier %s every %ds',
+            GITHUB_CLAIM_AUTHORITY.slice(0, 8), BACKSTOP_POLL_MS / 1000);
+    }
+
+    private async pollBackstop(earliestBlockTimeSec: number): Promise<void> {
+        const refs = await this.rpc.withFallback((conn) => conn.getSignaturesForAddress(
+            new PublicKey(GITHUB_CLAIM_AUTHORITY), { limit: BACKSTOP_PAGE_SIZE },
+        ));
+        this.backstopPolls++;
+        const missing = selectBackstopSignatures(refs, earliestBlockTimeSec, (sig) =>
+            this.confirmedSignatures.has(sig)
+            || this.pendingSignatures.has(sig)
+            || (this.fetchAttempts.get(sig) ?? 0) >= BACKSTOP_MAX_ATTEMPTS);
+        let queued = 0;
+        for (const sig of missing) {
+            if (this.queueSignature(sig)) queued++;
+        }
+        if (queued > 0) {
+            this.backstopQueued += queued;
+            log.info('Claim backstop: queued %d GitHub claim tx(s) not yet processed (%d total)',
+                queued, this.backstopQueued);
+        }
+    }
+
     private async processTransaction(signature: string): Promise<void> {
+        if (this.confirmedSignatures.has(signature)) {
+            this.pendingSignatures.delete(signature);
+            return;
+        }
+        this.fetchAttempts.set(signature, (this.fetchAttempts.get(signature) ?? 0) + 1);
         try {
             const tx = await this.rpc.withFallback((conn) => conn.getParsedTransaction(signature, {
                 commitment: 'confirmed',
                 maxSupportedTransactionVersion: 0,
             }));
-            if (!tx?.meta || tx.meta.err) return;
+            // Handled only once the transaction is in hand. It used to count as
+            // handled when its log line arrived, so a fetch that failed was never
+            // retried and the claim was simply gone.
+            if (!tx) return;
+            this.confirmedSignatures.add(signature);
+            this.fetchAttempts.delete(signature);
+            if (!tx.meta || tx.meta.err) return;
 
             const instructions = tx.transaction.message.instructions;
             const timestamp = tx.blockTime ?? Math.floor(Date.now() / 1000);
@@ -548,6 +640,8 @@ export class ClaimMonitor {
             } else {
                 log.error('TX processing error %s: %s', signature.slice(0, 8), err);
             }
+        } finally {
+            this.pendingSignatures.delete(signature);
         }
     }
 
@@ -846,6 +940,12 @@ export class ClaimMonitor {
             // Keep the most recent entries (Sets are insertion-ordered in JS)
             const arr = [...this.processedSignatures];
             this.processedSignatures = new Set(arr.slice(-5_000));
+        }
+        if (this.confirmedSignatures.size > this.MAX_PROCESSED_CACHE) {
+            this.confirmedSignatures = new Set([...this.confirmedSignatures].slice(-5_000));
+        }
+        if (this.fetchAttempts.size > this.MAX_PROCESSED_CACHE) {
+            this.fetchAttempts = new Map([...this.fetchAttempts].slice(-5_000));
         }
     }
 }
