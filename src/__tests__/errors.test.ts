@@ -1,3 +1,5 @@
+import { PublicKey } from "@solana/web3.js";
+
 import {
   NoShareholdersError,
   TooManyShareholdersError,
@@ -6,6 +8,7 @@ import {
   InvalidShareTotalError,
   DuplicateShareholderError,
   PoolRequiredForGraduatedError,
+  UnsupportedQuoteMintError,
 } from "../errors";
 
 describe("errors", () => {
@@ -57,5 +60,19 @@ describe("errors", () => {
     const err = new PoolRequiredForGraduatedError();
     expect(err.name).toBe("PoolRequiredForGraduatedError");
     expect(err.message).toContain("graduated");
+  });
+
+  it("UnsupportedQuoteMintError carries the rejected mint and names the way out", () => {
+    const quoteMint = new PublicKey(
+      "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+    );
+    const err = new UnsupportedQuoteMintError(quoteMint);
+    expect(err.name).toBe("UnsupportedQuoteMintError");
+    expect(err).toBeInstanceOf(Error);
+    // The caller recovers by reading the accepted set, so the mint has to
+    // survive on the error rather than only inside the message string.
+    expect(err.quoteMint.equals(quoteMint)).toBe(true);
+    expect(err.message).toContain(quoteMint.toBase58());
+    expect(err.message).toContain("whitelistedQuoteMints");
   });
 });
