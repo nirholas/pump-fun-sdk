@@ -2,27 +2,29 @@
 
 Read-only Telegram channel feed that broadcasts PumpFun on-chain activity — GitHub social fee claims, token graduations, and more. Posts rich, intelligence-enriched cards to a Telegram channel in real time.
 
-> **Live deployment**: this code runs as the graduation/migration feed, posting to
-> [@trackpumpfun](https://t.me/trackpumpfun) ("PumpFun Tracker Chat", chat id
-> `-1003965305979`) as [@pumpgraduatedbot](https://t.me/pumpgraduatedbot). It runs on
-> Cloud Run as `pumpfun-channel-bot`; see [Deploy to Google Cloud Run](#6-deploy-to-google-cloud-run).
-> That chat is the discussion supergroup linked to channel `@migratedpumpfun`
-> (`-1003818751043`); posting targets the supergroup, which is where the audience is.
->
-> **`@pumpfunclaims` is not this service and is currently dark.** This code used to
-> serve it; the deployment was repurposed into the migrations feed on 2026-08-01
-> (`FEED_CLAIMS=false`). See
-> [The `@pumpfunclaims` first-claims feed is dark](#the-pumpfunclaims-first-claims-feed-is-dark)
-> for what is broken and how to bring it back without taking `@trackpumpfun` down.
->
-> The separate all-claims firehose is [`@pumpkit/allclaims`](../pumpkit/packages/allclaims/),
-> a **different bot, token, channel and Cloud Run service**. Never share a bot token
-> between them: one token cannot serve two feeds, and reusing it crosses the streams.
->
-> **Claim decoder**: this file's `src/claim-monitor.ts` is a copy. The canonical decoder
-> lives in `@pumpkit/allclaims`; see [DECODERS.md](../DECODERS.md) before changing it.
->
-> **Looking for interactive monitoring?** The [telegram-bot](../telegram-bot/) supports watch management, group chats, REST API, SSE streaming, and webhooks. Use this channel-bot for simple broadcast-only channels.
+The dedicated project is [nirholas/pumpfun-github-claims](https://github.com/nirholas/pumpfun-github-claims).
+Read the [GitHub Claims product contract](../docs/github-claims-product.md) for
+the notification rule: **one alert for each developer–coin pair**, including
+an experienced developer's first claim on another coin, with previous claimed
+coins shown as context. A CA does not need to appear in the repository.
+
+**Implementation status:** this directory still applies a developer/PDA-wide
+lifetime gate and selects a headline coin by market cap. Those are documented
+implementation gaps, not the agreed per-coin behavior. Publishing the dedicated
+repository does not switch the production feed.
+
+This codebase has separate deployments:
+
+| Profile | Channel | Cloud Run service |
+| --- | --- | --- |
+| `github-first-claims` | [@pumpfunclaims](https://t.me/pumpfunclaims) | `pumpfun-claims-bot` |
+| `graduations` | [@trackpumpfun](https://t.me/trackpumpfun) | `pumpfun-channel-bot` |
+
+The profile name is retained for compatibility. Public channel branding and
+related bots are listed in the product contract; verify the actual posting bot
+from deployment configuration. The separate all-claims firehose is
+[`@pumpkit/allclaims`](../pumpkit/packages/allclaims/). See [DECODERS.md](../DECODERS.md)
+before changing a decoder. Interactive monitoring lives in [telegram-bot](../telegram-bot/).
 
 ## Features
 
@@ -30,7 +32,7 @@ Read-only Telegram channel feed that broadcasts PumpFun on-chain activity — Gi
 
 | Feed | Description | Toggle |
 |------|-------------|--------|
-| **GitHub First Claims** | A dev's first-ever claim of GitHub social-fee-PDA rewards on a coin (Path A). The @pumpfunclaims product | `FEED_CLAIMS` |
+| **GitHub First Claims** | First attributable claim per GitHub developer and coin (Path A); see the implementation gaps above | `FEED_CLAIMS` |
 | **Creator Fee Claims** | Plain `collect_creator_fee` payouts (Path B). Off by default; never in the first-claims channel | `FEED_CREATOR_CLAIMS` |
 | **Token Launches** | New token mints with creator profile enrichment | `FEED_LAUNCHES` |
 | **Token Graduations** | Tokens graduating from bonding curve to PumpAMM | `FEED_GRADUATIONS` |
@@ -47,9 +49,9 @@ Every GitHub social fee claim card includes:
 
 | Feature | Description |
 |---------|-------------|
-| **🚨 First-Time Alert** | `🚨🚨🚨 FIRST TIME CLAIM` banner when a GitHub user claims for the first time ever |
+| **🚨 First-Time Alert** | First claim for this coin; developer-wide first-ever status is separate context (target behavior) |
 | **⚠️ Fake Claim Detection** | Detects when `claim_social_fee_pda` instruction is called but no fees are actually paid out |
-| **📊 Claim Counter** | Sequential claim number tracked persistently across restarts |
+| **📊 Claim Counter** | Locally observed claim count; not proof of complete lifetime history |
 | **💹 Lifetime SOL** | Total SOL claimed from the PDA over all time |
 | **👤 GitHub Profile** | Username, bio, repos, followers, account age, location, blog |
 | **𝕏 Social Links** | Twitter/X profile with follower counts (from GitHub profile) |
@@ -338,8 +340,10 @@ node scripts/audit-first-claims.mjs --hours 24
 ```
 
 It prints each claim with its amount, on-chain lifetime and a 12-character tx
-prefix, marks first-ever ones, and lists their full signatures. Any `FIRST`
-claim without a card in the channel is a missed post. The running feed reads
+prefix, marks first-ever ones, and lists their full signatures. A `FIRST`
+line is a PDA-level audit candidate, not proof of a per-coin first claim. The
+audit does not establish historical coin attribution or cover every experienced
+developer's new-coin claim; investigate those separately. The running feed reads
 the same verifier every 20 seconds as a backstop to its websocket, so a claim
 the websocket drops is still processed.
 
@@ -448,54 +452,20 @@ Leave `ADMIN_USER_IDS` empty on the second feed, or give it its own bot.
 `.env*` is gitignored and excluded from both the Docker and Cloud Build
 contexts, so a second env file never reaches an image.
 
-#### The `@pumpfunclaims` first-claims feed is dark
+#### Claims feed ownership and recovery
 
-`@pumpfunclaims` ("PumpFun Tracker [Github Claims]", `-1003533969743`, 227
-members) has had no automated post since **2026-08-01**; everything after post
-`1086` in it is hand-written. Three things have to be true again before a card
-lands there, and today none of them are:
+The dedicated feed is [@pumpfunclaims](https://t.me/pumpfunclaims), with source
+and product development moving to
+[nirholas/pumpfun-github-claims](https://github.com/nirholas/pumpfun-github-claims).
+The prior statement that it had no automated posts after August 1 is obsolete:
+[post 1121](https://t.me/pumpfunclaims/1121) contains a September 13 claim.
+This observation does not identify the deployed revision.
 
-1. **A bot with post rights in the channel.** `@pumpgraduatedbot` is still *in*
-   the channel but is no longer an **administrator**, so it cannot post.
-   `getChatAdministrators` and `getChatMember` on `-1003533969743` both answer
-   `member list is inaccessible`, which is what Telegram returns to a non-admin
-   caller. That it is still a member is provable: resolving a numeric chat id
-   only works for a bot that has the chat in its state, and `getChat` on
-   `-1003533969743` succeeds with this token while the same call on
-   `@pumpfunclaimed`'s id returns `chat not found`. Re-promoting it is a
-   channel-owner action in the Telegram app; nothing in this repo can do it.
-2. **A service pointed at that chat id.** Nothing in *this* repo is: the running
-   `pumpfun-channel-bot` has `CHANNEL_ID=-1003965305979` (`@trackpumpfun`) and
-   `pumpfun-allclaims-bot` has `-1003905427189` (`@pumpfunclaimed`). A *second*
-   implementation does target it, in the three.ws repo: the
-   `/api/cron/pump-claims-push` Cloud Scheduler job fires every 5 minutes at
-   `TELEGRAM_PUMP_CLAIMS_CHAT_ID`. It posts nothing because its scanner is
-   starved, not because it is switched off (see below).
-3. **`FEED_CLAIMS=true`.** The running service ships `FEED_CLAIMS=false` and
-   `FEED_GRADUATIONS=true`: it was repurposed into the migrations feed, so claim
-   detection is off in the only deployment that ever served this channel.
-
-Restore it as a third service rather than by repointing `pumpfun-channel-bot`,
-which would take `@trackpumpfun` down: write `.env.claims` with
-`CHANNEL_ID=-1003533969743`, `FEED_PROFILE=github-first-claims`, the
-@pumpclaimsbot token and an empty `ADMIN_USER_IDS`, then run the
-`SERVICE=pumpfun-claims-bot` command above.
-
-Since 2026-09-11 the boot preflight catches step 1 on its own: a demoted bot in
-a channel now fails `verifyChannelAccess` with `no_permission` and logs the fix,
-where it previously fell into the retryable `unknown` bucket and booted logging
-"Channel access verified" for a bot that could not post a single card.
-
-That also settles which of the two implementations owns the channel. three.ws's
-lane needs an indexer speaking `getFirstClaims`/`getRecentClaims` over JSON-RPC
-`tools/call`, and no such service exists in any repo here, which is why
-`PUMPFUN_BOT_URL` is unset and `https://three.ws/api/pump/first-claims` answers
-`{"items":[]}` for every window. This bot needs no indexer: it decodes claims
-straight off the pump program, which is what `@pumpfunclaimed` is doing right
-now. Deploying it is the shorter path; pointing three.ws's
-`PUMPFUN_BOT_URL` at a new adapter is the longer one.
-
-Local fallback if Cloud Run is ever down: `npm run build && npm start` from this directory (port 3900 locally; 3901 belongs to `@pumpkit/allclaims`). Kill a local instance by matching `/proc/<pid>/cwd` to this directory, never by the `node dist/index.js` cmdline, which is relative: `pkill -f "channel-bot/dist/index.js"` matches nothing, and a bare `dist/index.js` pattern also matches unrelated services under `/workspaces/three.ws` that must never be killed.
+Use `npm run doctor -- --env .env.claims` and inspect the live service when
+investigating an outage. Keep `pumpfun-claims-bot` and `pumpfun-channel-bot`
+pointed at their respective channels. Do not run two implementations against
+the same channel during a repository migration; preserve claim history and
+pending deliveries before switching the active service.
 
 ## Admin Commands
 
@@ -679,57 +649,39 @@ channel-bot/
 
 ## How It Works
 
-### Claim Detection Pipeline
+### Current claim pipeline and its limits
 
-```
-Transaction detected on PumpFees program
-  │
-  ▼
-Identify instruction: claim_social_fee_pda?
-  │
-  ├─ YES ──▶ Parse platform (2 = GitHub) + user_id from Anchor args
-  │           │
-  │           ▼
-  │        Check amountLamports from SocialFeePdaClaimed event
-  │           │
-  │           ├─ amountLamports > 0 ──▶ Real claim
-  │           │   ├─ Check ClaimTracker: first time for this GitHub user?
-  │           │   │   ├─ YES ──▶ 🚨 FIRST TIME CLAIM banner
-  │           │   │   └─ NO  ──▶ Standard claim card
-  │           │   └─ Enrich: GitHub API + PumpFun API + X profile
-  │           │
-  │           └─ amountLamports = 0 ──▶ ⚠️ FAKE CLAIM (instruction called, no payout)
-  │
-  └─ NO ───▶ Other claim type (creator fee, cashback, etc.)
-```
+1. `ClaimMonitor` detects PumpFees social claims through websocket logs and a
+   verifier-history backstop, then fetches and decodes the transaction.
+2. Path A requires GitHub platform `2`, a numeric GitHub ID and a real payout.
+3. `onchainClaimVerdict` currently rejects prior PDA lifetime claims before
+   enrichment. **This can suppress an experienced developer's first claim on
+   another coin and must change as part of the attribution work.**
+4. `SocialFeeIndex.lookupAll` supplies mints linked through fee-sharing configs.
+   The current handler picks the highest market cap. **This is a presentation
+   heuristic, not proof of the coin whose rewards were claimed.**
+5. The local tracker checks a GitHub-user/mint key, then the handler enriches,
+   formats and posts. It marks the pair after successful delivery.
 
-### SocialFeeIndex Bootstrap
+The [product contract](../docs/github-claims-product.md) defines the replacement
+behavior and acceptance scenarios. A shared PDA lifetime counter must not
+serve as a per-coin first-claim gate. A linked mint must not become a verified
+claim merely because it wins a market-cap sort.
 
-On startup, the bot fetches all `SharingConfig` accounts from the PumpFees program to build a reverse mapping from social fee PDA addresses to token mints. This enables resolving which token a social fee claim belongs to without additional RPC calls.
+### SocialFeeIndex
 
-- **~148K mappings** loaded at startup
-- **Incremental updates** via WebSocket subscription on `CreateFeeSharingConfig` and `UpdateFeeShares` events
-- **Lookup**: `socialFeeIndex.getMintForPda(pdaAddress)` → token mint
+The index bootstraps from `SharingConfig` accounts and updates from creation
+and fee-share events. Each PDA can map to many mints; multiple delegated coins
+are normal. The current update path adds mappings without removing superseded
+shareholders, which is an explicit implementation gap.
 
-### Fake Claim Detection
+### Claim history and invalid events
 
-Some users call the `claim_social_fee_pda` instruction targeting random token PDAs where they have no fees to collect. The bot detects these by checking:
-
-1. The instruction discriminator matches `claim_social_fee_pda`
-2. The transaction logs contain no `SocialFeePdaClaimed` event — OR the event shows `amountLamports = 0`
-3. The GitHub user ID and platform are still parsed from the instruction args (Anchor Borsh format)
-
-Fake claims are posted with a `⚠️ FAKE CLAIM` warning and a `🚩 Fake claim — no fees paid out` trust signal.
-
-### First-Claim Tracking
-
-The `ClaimTracker` maintains a persistent set of GitHub user IDs that have successfully claimed:
-
-- **In-memory set** for fast lookup during processing
-- **Debounced disk persistence** (5-second delay) to `data/github-first-claims.json`
-- **Split check/mark pattern**: `hasGithubUserClaimed()` checks without side effects, `markGithubUserClaimed()` only called after successful Telegram post
-- **Claim counter**: `incrementGithubClaimCount()` returns sequential claim number per user
-- First-claim status is NOT set for fake claims
+Zero-payout and fake social claims are rejected from the claims channel.
+`claim-tracker.ts` persists local user–mint history, but historical coverage and
+coin attribution still need verification. Persisted observations alone must not
+be described as complete on-chain history. Preserve pending deliveries and pair
+history when moving to the standalone repository.
 
 ## Example Claim Card
 

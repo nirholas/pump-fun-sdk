@@ -55,6 +55,7 @@ The SDK never sends transactions itself. It returns `TransactionInstruction[]` t
 - **[PumpKit](https://github.com/nirholas/pumpkit)**
 - **[PumpKit Site](https://pumpk.it)**
 - **[Telegram PumpFun Github Claim Tracker Bot](https://t.me/pumpfunclaims)**
+- **[Pump.fun GitHub Claims — dedicated repository](https://github.com/nirholas/pumpfun-github-claims)** · [Product and notification rules](docs/github-claims-product.md)
 - **[Telegram PumpFun Graduation/Migration Tracker Bot](https://t.me/trackpumpfun)**
 - **[Pumpfun Claim Tracker](https://t.me/pfclaimsbot)** (best bot — currently offline while building)
 

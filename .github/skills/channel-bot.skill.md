@@ -24,24 +24,38 @@ Reference this skill when working on the PumpFun Channel Bot — a read-only Tel
 | `channel-bot/src/health.ts` | Health check HTTP server |
 | `channel-bot/src/logger.ts` | Structured logging |
 
-## Claim Flow Pipeline
+## Product contract and current pipeline
 
-1. **WebSocket** receives all program logs for Pump + PumpSwap programs
-2. **handleLogEvent** filters for claim event discriminators in `Program data:` log lines
-3. **processTransaction** fetches full parsed TX, checks top-level instructions for claim discriminators
-4. **buildClaimEvent** extracts claimer wallet, token mint, amount from TX data
-5. **onClaim callback** (in index.ts) applies filters:
-   - `if (!mint)` → skip wallet-level claims (cashback, collect_creator_fee)
-   - `isFirstClaimByWallet(wallet)` → only first-ever claim per wallet
-   - `requireGithub` → only tokens with GitHub URLs in description
-6. **Enrich** with token info, creator profile, GitHub data, holders, trades
-7. **formatClaimFeed** → rich HTML card with market data, links, GitHub info
-8. **postToChannel** → sends to Telegram channel
+Read `docs/github-claims-product.md` and `channel-bot/CLAUDE.md` first.
+`@pumpfunclaims` alerts once per GitHub developer–coin pair, including a first
+claim on a new coin by an experienced developer. Repeated pair claims are
+suppressed. Previous coins provide context. A CA in GitHub and developer token
+creation are not prerequisites.
+
+The current `index.ts` still uses a PDA-wide lifetime gate before mint
+resolution, then picks the highest-market-cap linked coin. These are known gaps,
+not the product specification. A shared social-fee withdrawal identifies the
+GitHub ID and recipient but does not name a mint. Do not remove the lifetime
+gate without solving attribution, or claim every delegated coin was collected.
+
+1. `ClaimMonitor` and its verifier-history backstop discover PumpFees claims.
+2. Decode the actual payout, GitHub identity, PDA and quote asset.
+3. Establish coin attribution and durable developer–mint history before making
+   a coin-specific first-claim decision (required implementation work).
+4. Bound enrichment concurrency/deadlines and retain unresolved evidence.
+5. Format the first-pair claim, previous coins and developer-wide history as
+   separate facts. Label metadata as a linked repository.
+6. Deliver through the profile policy; preserve history and retryable delivery
+   state. Never use the live channel for test messages.
+
+The dedicated project is `nirholas/pumpfun-github-claims`. Source publication is
+separate from deploying or migrating the live feed.
 
 ## Claim Types & Where Mint Comes From
 
 | Claim Type | Program | Has Token Mint? | Source |
 |------------|---------|----------------|--------|
+| `claim_social_fee_pda` / V2 | PumpFees | No | GitHub identity and shared PDA; coin attribution requires additional evidence |
 | `distribute_creator_fees` | Pump | Yes | instruction accounts[0] or event data bytes 16-48 |
 | `collect_creator_fee` | Pump | No | Wallet-level claim, no specific token |
 | `claim_cashback` | Pump | No | Wallet-level cashback |
@@ -101,6 +115,6 @@ Before modifying claim detection or event parsing, read:
 
 1. Never log full RPC URLs — use `maskUrl()` from `rpc-fallback.ts`
 2. All amount math uses lamports (integers), converted to SOL only for display
-3. The `isFirstClaimByWallet` check is persisted to disk — survives restarts
+3. Deduplicate by stable GitHub ID and mint; wallet-level or PDA-wide history is not per-coin evidence
 4. WebSocket mode is preferred over polling (real-time vs 30s delay)
 5. Rate limit RPC calls via `RpcQueue` (1 req/sec, max 50 queued)

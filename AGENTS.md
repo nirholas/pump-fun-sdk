@@ -116,7 +116,20 @@ See `.github/skills/` for 28 detailed skill documents. Each skill has an `applyT
 - `github-first-claims` → [@pumpfunclaims](https://t.me/pumpfunclaims) (`-1003533969743`, @pumpclaimsbot, service `pumpfun-claims-bot`, env `.env.claims`)
 - `graduations` → [@trackpumpfun](https://t.me/trackpumpfun) (`-1003965305979`, @pumpgraduatedbot, service `pumpfun-channel-bot`, env `.env`)
 
-@pumpfunclaims exists for exactly one event: a developer's **first-ever** on-chain claim of GitHub social-fee rewards on a coin. Traders read it as "the dev is still working". Plain creator-fee collections, second claims, graduations, launches, whales, and test posts are all forbidden there, and the bot enforces that at its send boundary (`channel-bot/src/channel-policy.ts`). Do not widen it. Full rules, verification steps, and the things never to do: `channel-bot/CLAUDE.md`.
+@pumpfunclaims exists to report the **first attributable reward claim for each
+GitHub developer–coin pair**. A developer's previous claim on coin A must not
+suppress their first claim on coin B; repeat claims for the same pair stay out.
+The developer need not launch the coin or put its CA in GitHub. Prior claimed
+coins are context. Read [the product contract](docs/github-claims-product.md)
+and `channel-bot/CLAUDE.md` before changing the feed.
+
+The current runtime's PDA-wide lifetime gate and market-cap-based mint selection
+are known gaps. Do not treat them as the product specification, and do not
+remove the gate without solving coin attribution. The dedicated project is
+[nirholas/pumpfun-github-claims](https://github.com/nirholas/pumpfun-github-claims).
+Publishing source there does not authorize a production cutover. Plain creator
+fee collections, repeated pair claims, graduations, launches, whales and test
+posts do not belong in the claims channel.
 
 ## Contributing
 

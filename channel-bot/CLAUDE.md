@@ -14,35 +14,28 @@ this before touching config, env files, deploy scripts, or posting paths.
 `FEED_*` toggles are ignored when it is set. Switching a deployment between the
 two is changing that one variable and redeploying with the matching env file.
 
-## What @pumpfunclaims is for (do not widen it)
+## Product rule
 
-It carries exactly one event: **a developer's first-ever on-chain claim of
-GitHub social-fee rewards on a coin.** Traders watch it because a first claim
-means the dev showed up to collect, which reads as "the dev is still working on
-this". That is the whole product. The card looks like this:
+Read [the GitHub Claims product contract](../docs/github-claims-product.md).
+The owner clarified the scope on September 13, 2026: **first claim per GitHub
+developer–coin pair**, including a first claim on another coin by a developer
+who has claimed before. Suppress repeated claims for the same pair. Show prior
+claimed coins as context. A developer need not create the token or publish its
+CA in GitHub.
 
-```
-🚨🚨🚨 FIRST CREATOR FEE CLAIM
-⭐ Notable
-🟢 Credibility: 100/100 · Strong
-...
-💸 Claim Stats
-Claim #1
-Type: Claim Social Fee PDA (GitHub)
-⚡ Signals
-✅ Verified — token GitHub matches claimer
-```
+Coin attribution requires evidence. A shared PDA withdrawal does not identify a
+mint; sorting linked coins by market cap does not establish a first claim on
+one of them. Keep incomplete attribution/history explicit.
 
-Everything else is noise in that channel and must never be posted there:
+The current runtime still rejects prior PDA lifetime claims before attribution.
+That gate is a known gap, not a rule to preserve. Changing it requires resolving
+coin attribution and history migration, not enabling every subsequent claim.
+The dedicated project is [pumpfun-github-claims](https://github.com/nirholas/pumpfun-github-claims).
 
-- plain creator-fee collections (`💰 Creator Claimed Fees`, `collect_creator_fee`)
-- a second or later claim on the same coin (`Claim #2`), even with the FIRST banner
-- graduations, launches, whales, fee distributions
-- diagnostics, tests, announcements from scripts
-
-On 2026-09-11 the channel carried a routine creator-fee payout because that
-path posted under `FEED_CLAIMS` with no toggle of its own. It has one now
-(`FEED_CREATOR_CLAIMS`, default off) and the profile pins it off.
+Do not post plain creator-fee collections, repeat claims for the same pair,
+graduations, launches, whales, fee distributions, diagnostics or test messages
+to this channel. The `github_first_claim` post kind represents a first pair
+claim; the product does not call for a general repeat-claim post kind.
 
 ## The three layers that keep it that way
 
@@ -92,7 +85,7 @@ The three most common verdicts and what they mean:
 |---|---|---|
 | `not an administrator of that channel` | The bot was demoted. Nothing in a container can re-grant this. | Owner, in the Telegram app |
 | `every configured endpoint is dead` | Providers went key-gated or rate-limited. | `npm run doctor -- --fix --candidates`, then redeploy |
-| `HEALTHY` but the channel is quiet | Unknown until checked against the chain. Run `node scripts/audit-first-claims.mjs --hours 24`: it reads the verifier that co-signs every GitHub claim. No `FIRST` lines means the silence is real; a `FIRST` line with no card is a bug. | Whoever runs the audit. Do not widen the feed to make it busier. |
+| `HEALTHY` but the channel is quiet | Unknown until checked against the chain. Run `node scripts/audit-first-claims.mjs --hours 24`: it reads the verifier that co-signs every GitHub claim. The audit classifies PDA-wide claims only. Missing `FIRST` lines does not rule out an experienced developer's first claim on another coin. | Whoever runs the audit. Do not widen the feed to make it busier. |
 
 That last row matters most. On 2026-09-12 two GitHub claims were lost outright
 while the silence was assumed correct, and a veteran's 203.7 stablecoin claim
@@ -100,7 +93,7 @@ was briefly reported as a missed first claim because only the SOL lifetime was
 read. Silence is a question to answer with the audit, never a reason to enable
 more feeds.
 
-## How a GitHub claim is found and decided
+## Current runtime (known gaps are not product requirements)
 
 1. **Found twice.** The websocket subscribes to the PumpFees program, and the
    backstop (`src/claim-backstop.ts`) reads the history of
@@ -117,8 +110,9 @@ more feeds.
    zero; reading the SOL total alone calls a veteran's first stablecoin claim
    first-ever. That
    verdict (`src/first-claim.ts`) is taken first; repeats return without a
-   single API call. Never move enrichment ahead of it: a dev with 354 linked
-   coins stalled the old ordering until the claim was never classified.
+   single API call. This early repeat rejection does not satisfy the per-coin contract. Replace
+   it with evidence-backed pair eligibility while retaining bounded work: a
+   developer with 354 linked coins previously stalled unbounded enrichment.
 4. **Enrichment is bounded.** Resolving a PDA's linked coins runs through
    `mapBounded` (6 in flight, 20 second deadline) and uses the best coin found.
    An unbounded `Promise.all` over linked coins is a bug, whatever the count.
@@ -131,7 +125,8 @@ npm run probe:endpoints -- --env .env.claims     # every RPC passes the real pay
 PORT=3910 node dist/index.js                     # boot log must say "Channel access verified"
 ```
 
-A 90-second local boot on the claims profile must log `0 posted` unless a real
-GitHub first claim landed in that window. Then check `/stats`: `policyRejected`
+Only boot a posting instance when explicitly deploying or operating the feed.
+Use tests for local verification; do not post diagnostics to the live channel.
+A quiet boot does not prove per-coin attribution works. Then check `/stats`: `policyRejected`
 must be 0 on a correctly wired feed; a non-zero count means a path is trying to
 post something the channel is not for.
