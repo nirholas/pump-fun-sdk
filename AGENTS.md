@@ -114,7 +114,7 @@ See `.github/skills/` for 28 detailed skill documents. Each skill has an `applyT
 `channel-bot/` is one codebase deployed as two feeds, selected by `FEED_PROFILE`:
 
 - `github-first-claims` → [@pumpfunclaims](https://t.me/pumpfunclaims) (`-1003533969743`, @pumpclaimsbot, service `pumpfun-claims-bot`, env `.env.claims`)
-- `graduations` → [@trackpumpfun](https://t.me/trackpumpfun) (`-1003965305979`, @pumpgraduatedbot, service `pumpfun-channel-bot`, env `.env`)
+- `graduations` → [@migratedpumpfun](https://t.me/migratedpumpfun) (`-1003818751043`, @pumpgraduatedbot, service `pumpfun-channel-bot`, env `.env`)
 
 @pumpfunclaims exists to report the **first attributable reward claim for each
 GitHub developer–coin pair**. A developer's previous claim on coin A must not

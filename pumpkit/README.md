@@ -114,8 +114,8 @@ Production bots running on Telegram, powered by PumpKit:
 |-----|------|-------------|
 | **PumpFun Claims** | [@pumpfunclaims](https://t.me/pumpfunclaims) | Channel feed — first fee claims by GitHub-assigned developers. **Dark since 2026-08-01**: no bot holds post rights in it, and no service here targets it; see [the restore steps](../channel-bot/README.md#the-pumpfunclaims-first-claims-feed-is-dark) |
 | **PumpFun All Claims** | [@pumpfunclaimed](https://t.me/pumpfunclaimed) | Channel feed — every fee claim, carded or digested. Runs as `pumpfun-allclaims-bot` |
-| **PumpFun Migrations** | [@trackpumpfun](https://t.me/trackpumpfun) | Supergroup feed — graduations to PumpSwap AMM. Runs as `pumpfun-channel-bot` |
-| **Migrated PumpFun** | [@migratedpumpfun](https://t.me/migratedpumpfun) | Channel feed — tracks token graduations from bonding curve to PumpSwap AMM |
+| **PumpFun Migrations** | [@trackpumpfun](https://t.me/trackpumpfun) | Linked discussion supergroup — receives forwarded posts from @migratedpumpfun |
+| **Migrated PumpFun** | [@migratedpumpfun](https://t.me/migratedpumpfun) | Channel feed — tracks token graduations from bonding curve to PumpSwap AMM. Runs as `pumpfun-channel-bot` |
 | **Cryptocurrency Vision** | [@cryptocurrencyvisionbot](https://t.me/cryptocurrencyvisionbot) | Interactive bot — PumpFun token analytics, whale alerts, and market insights |
 
 ## Features

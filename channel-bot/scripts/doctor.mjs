@@ -37,7 +37,7 @@ import {
 
 const PROFILES = {
 	'github-first-claims': { channel: '-1003533969743', name: '@pumpfunclaims' },
-	graduations: { channel: '-1003965305979', name: '@trackpumpfun' },
+	graduations: { channel: '-1003818751043', name: '@migratedpumpfun' },
 };
 
 function parseArgs(argv) {
@@ -113,6 +113,14 @@ async function checkTelegram(env) {
 		return;
 	}
 	ok(`authenticated as @${me.result.username}`);
+
+	const chat = await tg(token, 'getChat', { chat_id: env.CHANNEL_ID });
+	if (chat.ok) {
+		ok(`destination ${chat.result.username ? '@' + chat.result.username : chat.result.title} (${chat.result.type}, ${chat.result.id})`);
+		if (chat.result.type === 'supergroup' && chat.result.linked_chat_id) {
+			warn(`This is a discussion group linked to channel ${chat.result.linked_chat_id}. Posts sent here do not appear in that channel.`);
+		}
+	}
 
 	const member = await tg(token, 'getChatMember', { chat_id: env.CHANNEL_ID, user_id: me.result.id });
 	if (!member.ok) {

@@ -18,7 +18,7 @@ This codebase has separate deployments:
 | Profile | Channel | Cloud Run service |
 | --- | --- | --- |
 | `github-first-claims` | [@pumpfunclaims](https://t.me/pumpfunclaims) | `pumpfun-claims-bot` |
-| `graduations` | [@trackpumpfun](https://t.me/trackpumpfun) | `pumpfun-channel-bot` |
+| `graduations` | [@migratedpumpfun](https://t.me/migratedpumpfun) | `pumpfun-channel-bot` |
 
 The profile name is retained for compatibility. Public channel branding and
 related bots are listed in the product contract; verify the actual posting bot
@@ -276,14 +276,17 @@ exactly when someone is trying to confirm the feed is alive. A post is the
 stronger signal anyway: it proves the deployed service decoded a real event and
 delivered it, not merely that a container is `Ready`.
 
-```bash
-# @trackpumpfun is a supergroup, so t.me/s/ returns 302. Read messages by id:
-curl -s -A Mozilla/5.0 "https://t.me/trackpumpfun/78600?embed=1" |
-  grep -o 'datetime="[^"]*"' | head -1
-```
+The graduation destination is `@migratedpumpfun` (`-1003818751043`), a
+channel. Its linked discussion group is `@trackpumpfun` (`-1003965305979`).
+Telegram forwards channel posts to the discussion group automatically; direct
+group posts do not appear in the channel. Verify the destination with the
+bot's `getChat` and `getChatMember` calls (also printed by `npm run doctor`),
+then check a new migration in the channel against the service logs.
 
-Walk the id upward until the embed stops returning a `datetime` to find the
-newest post; the id gap between two such readings is the posting rate.
+The graduation watchdog reads `eventMonitor.wsEventsReceived`, exposed by
+`/stats`. A missing claims monitor is normal for this profile and must never
+be used as a zero-valued activity counter. A WebSocket-silence warning calls
+for diagnosis; it does not prove all HTTP endpoints or Telegram delivery failed.
 
 Before treating the reading as proof of Cloud Run, rule out a local bot as the
 source: no `node` process whose `/proc/<pid>/cwd` is under this repo, and the
@@ -520,14 +523,14 @@ Verify by recomputing the HMAC of the raw request body with your secret and comp
 The bot verifies at boot that it can actually post to `CHANNEL_ID` and says so on line one, rather than failing silently on the first event:
 
 ```
-[INFO]  Channel access verified: @pumpgraduatedbot can post to @trackpumpfun
+[INFO]  Channel access verified: @pumpgraduatedbot can post to @migratedpumpfun
 ```
 
 When it cannot, you get the fault and the fix instead of a stack trace, and the feed keeps running so the API and webhooks still carry every event:
 
 ```
 [ERROR] CHANNEL NOT REACHABLE (not_a_member)
-[ERROR] FIX: Add the bot to @trackpumpfun and grant it post rights (Telegram → group → Add members → the bot, then promote it to admin).
+[ERROR] FIX: Add the bot to @migratedpumpfun and grant it post rights (Telegram → group → Add members → the bot, then promote it to admin).
 ```
 
 The same state is machine-readable: `GET /health` returns **503** with `degraded: true` and a `delivery` object carrying the fault and the fix, so an uptime check catches a bot that is running but mute. Recognized faults:

@@ -28,7 +28,7 @@ import { EventStore } from './event-store.js';
 import { WebhookDispatcher } from './webhooks.js';
 import { registerAdminCommands, isMuted, type RuntimeState } from './admin.js';
 import { DeliveryReporter, verifyChannelAccess, DeliveryFailedError, isReportedDelivery } from './delivery.js';
-import { Watchdog } from './watchdog.js';
+import { Watchdog, feedWsEventCount } from './watchdog.js';
 import { maskRpcUrl } from './rpc-fallback.js';
 import { mapBounded } from './bounded.js';
 import {
@@ -549,7 +549,7 @@ async function main(): Promise<void> {
                             devPct: devWallet?.tokenSupplyPct,
                         });
                     }
-                    log.info('✅ Posted graduation for %s to %s', event.mintAddress.slice(0, 8), config.channelId);
+                    log.info('✅ Posted graduation for %s to %s (message %d)', event.mintAddress.slice(0, 8), config.channelId, messageId);
                 } catch (err) {
                     if (!isReportedDelivery(err)) log.error('Graduation handler error: %s', err);
                 }
@@ -674,6 +674,7 @@ async function main(): Promise<void> {
             channel: config.channelId,
             transport: eventMonitor.mode,
             activeWs: eventMonitor.activeWsUrl ? maskRpcUrl(eventMonitor.activeWsUrl) : null,
+            eventMonitor: eventMonitor.getMetrics(),
             feeds: { ...config.feed },
             muted: postingMuted(),
             whaleThresholdSol: config.whaleThresholdSol,
@@ -711,8 +712,7 @@ async function main(): Promise<void> {
                 fix: delivery.lastFix,
                 failures: delivery.failures,
             }),
-            wsEventsReceived: () =>
-                Number((claimMonitor?.getMetrics().wsEventsReceived as number | undefined) ?? 0),
+            wsEventsReceived: () => feedWsEventCount(claimMonitor, eventMonitor),
         })
         : undefined;
     if (watchdog) {
@@ -777,4 +777,3 @@ main().catch((err) => {
     console.error('Fatal error:', err);
     process.exit(1);
 });
-

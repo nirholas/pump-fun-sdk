@@ -8,7 +8,11 @@ this before touching config, env files, deploy scripts, or posting paths.
 | Profile | Channel | Chat id | Bot | Cloud Run service | Env file |
 |---|---|---|---|---|---|
 | `github-first-claims` | [@pumpfunclaims](https://t.me/pumpfunclaims) | `-1003533969743` | @pumpclaimsbot | `pumpfun-claims-bot` | `.env.claims` |
-| `graduations` | [@trackpumpfun](https://t.me/trackpumpfun) | `-1003965305979` | @pumpgraduatedbot | `pumpfun-channel-bot` | `.env` |
+| `graduations` | [@migratedpumpfun](https://t.me/migratedpumpfun) | `-1003818751043` | @pumpgraduatedbot | `pumpfun-channel-bot` | `.env` |
+
+`@trackpumpfun` (`-1003965305979`) is the linked discussion supergroup.
+Publish to `@migratedpumpfun`; Telegram forwards channel posts into the group.
+Posting directly into the group does not populate the channel.
 
 `FEED_PROFILE` is the switch. One word selects the whole feed; the individual
 `FEED_*` toggles are ignored when it is set. Switching a deployment between the
@@ -56,7 +60,7 @@ decision the owner makes, not a fix.
 ## Never do these
 
 - Never point `pumpfun-channel-bot` at `-1003533969743` or `pumpfun-claims-bot`
-  at `-1003965305979`. Each service has one channel.
+  at `-1003818751043`. Each service has one channel.
 - Never set `ADMIN_USER_IDS` on both feeds if they share a token: only one
   instance may long-poll. The claims feed runs send-only.
 - Never run `npm run broadcast:test -- --send` against the claims channel. The

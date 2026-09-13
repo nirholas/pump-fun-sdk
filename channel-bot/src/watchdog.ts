@@ -32,6 +32,15 @@ export interface DeliveryState {
 	failures: number;
 }
 
+interface MonitorActivity {
+	getMetrics(): { wsEventsReceived?: unknown };
+}
+
+/** Claims deployments watch claims; graduations must watch their EventMonitor. */
+export function feedWsEventCount(claimMonitor: MonitorActivity | null, eventMonitor: MonitorActivity): number {
+	return Number((claimMonitor ?? eventMonitor).getMetrics().wsEventsReceived ?? 0);
+}
+
 export interface WatchdogOptions {
 	/** Send-only transport. Must not throw; failures are logged and dropped. */
 	send: (text: string) => Promise<void>;
@@ -149,8 +158,8 @@ export class Watchdog {
 			const mins = Math.round((now - this.lastEventAt) / 60_000);
 			return (
 				`🔇 ${this.opts.label}: no on-chain event for ${mins} min.\n` +
-				`The pump programs are never quiet this long, so the transport is dead even though the subscription looks open. ` +
-				`The feed rotates endpoints on its own, so if this persists every configured endpoint is refusing traffic.` +
+				`The active monitor has received no WebSocket activity. Check its transport metrics and RPC endpoints; ` +
+				`polling may still be running. This alert alone does not establish that every endpoint is down.` +
 				runDoctor
 			);
 		}

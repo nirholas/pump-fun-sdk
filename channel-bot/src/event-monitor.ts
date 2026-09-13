@@ -77,6 +77,8 @@ export class EventMonitor {
     private wsErrorCount = 0;
     private stopped = false;
     private isRunning = false;
+    private wsEventsReceived = 0;
+    private lastWsEventAt: number | null = null;
     private lastWsEventTime = 0;
     private wsHeartbeatTimer?: ReturnType<typeof setInterval>;
     private wsStallCount = 0;
@@ -94,6 +96,14 @@ export class EventMonitor {
     /** The WebSocket endpoint currently subscribed through, for /stats. */
     get activeWsUrl(): string | undefined {
         return this.currentMode === 'websocket' ? this.wsUrls[this.wsUrlIndex] : undefined;
+    }
+
+    /** Transport activity, including logs that do not produce a channel post. */
+    getMetrics(): { wsEventsReceived: number; lastWsEventAt: number | null } {
+        return {
+            wsEventsReceived: this.wsEventsReceived,
+            lastWsEventAt: this.lastWsEventAt,
+        };
     }
 
     constructor(
@@ -183,7 +193,9 @@ export class EventMonitor {
         this.wsSubscriptionId = this.wsConnection.onLogs(
             this.programPubkey,
             async (logInfo: Logs) => {
+                this.wsEventsReceived++;
                 this.lastWsEventTime = Date.now();
+                this.lastWsEventAt = this.lastWsEventTime;
                 this.wsStallCount = 0;
                 // WS delivered a live event — if we had fallen back to polling,
                 // promote WS back to primary and stop the poll loop.
