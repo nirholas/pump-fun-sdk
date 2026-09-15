@@ -84,6 +84,8 @@ function parseShareholderAddresses(buf: Buffer, offset: number): string[] {
 export class SocialFeeIndex {
     /** socialFeePdaAddress → set of mints (1:many — scammers can add the same PDA to multiple tokens) */
     private index = new Map<string, Set<string>>();
+    /** Current shareholder addresses for each mint, used to replace stale mappings. */
+    private shareholdersByMint = new Map<string, Set<string>>();
     private bootstrapped = false;
 
     /** Number of PDA→mint mappings in the index. */
@@ -100,6 +102,19 @@ export class SocialFeeIndex {
             this.index.set(pdaAddress, set);
         }
         set.add(mint);
+    }
+
+    private replaceMappings(mint: string, addresses: string[]): void {
+        const next = new Set(addresses);
+        const previous = this.shareholdersByMint.get(mint) ?? new Set<string>();
+        for (const address of previous) {
+            if (next.has(address)) continue;
+            const mints = this.index.get(address);
+            mints?.delete(mint);
+            if (mints?.size === 0) this.index.delete(address);
+        }
+        for (const address of next) this.addMapping(address, mint);
+        this.shareholdersByMint.set(mint, next);
     }
 
     /**
@@ -195,10 +210,8 @@ export class SocialFeeIndex {
                         if (!mint) continue;
 
                         const shareholders = parseShareholderAddresses(data, 68);
-                        for (const addr of shareholders) {
-                            this.addMapping(addr, mint);
-                            indexed++;
-                        }
+                        this.replaceMappings(mint, shareholders);
+                        indexed += shareholders.length;
                     }
                 }
             }
@@ -231,9 +244,7 @@ export class SocialFeeIndex {
             offset += 32 + 32;
 
             const shareholders = parseShareholderAddresses(bytes, offset);
-            for (const addr of shareholders) {
-                this.addMapping(addr, mint);
-            }
+            this.replaceMappings(mint, shareholders);
             if (shareholders.length > 0) {
                 log.debug('SocialFeeIndex: indexed %d shareholders for mint %s', shareholders.length, mint.slice(0, 8));
             }
@@ -255,9 +266,7 @@ export class SocialFeeIndex {
             // sharing_config(32) + admin(32)
             const offset = 16 + 32 + 32 + 32; // 112
             const shareholders = parseShareholderAddresses(bytes, offset);
-            for (const addr of shareholders) {
-                this.addMapping(addr, mint);
-            }
+            this.replaceMappings(mint, shareholders);
             if (shareholders.length > 0) {
                 log.debug('SocialFeeIndex: updated %d shareholders for mint %s', shareholders.length, mint.slice(0, 8));
             }

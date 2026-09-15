@@ -99,6 +99,7 @@ particular coin or veto an experienced developer's new-coin claim.
 
 | Label | What traders can safely conclude |
 | --- | --- |
+| **Transaction-Attributed GitHub Fee Claim** | This transaction distributed fees from the displayed mint to the claimed GitHub fee account. |
 | **Verified GitHub Fee Claim** | The claiming GitHub username exactly matches the owner of the repository linked in token metadata. |
 | **Creator-Wallet GitHub Fee Claim** | The receiving wallet also created the token; repository ownership remains unverified. |
 | **Identity Mismatch** | The claiming username differs from the repository owner in metadata; a lookalike or unrelated account is possible. |
@@ -132,18 +133,17 @@ implementation does **not yet implement the complete per-coin rule**:
 
 | Current behavior | Required correction |
 | --- | --- |
-| `first-claim.ts` rejects prior PDA lifetime claims before mint resolution | Separate developer history from per-pair eligibility |
-| Multi-coin withdrawals now remain unresolved and select no primary CA | Add transaction-level attribution evidence before enabling per-pair alerts for these withdrawals |
-| `claim-tracker.ts` has user–mint keys, populated from that inferred mint | Persist verified per-pair history and explicit coverage/provenance |
+| Transaction-level distributions now establish coin attribution; claims without them remain unresolved and unpublished | Backfill older evidenced pairs before production cutover |
+| Pair eligibility is independent of the PDA lifetime counters | Preserve the PDA totals as developer-wide context only |
+| `claim-tracker.ts` persists evidenced user–mint keys with migration from the legacy mixed file | Record and display the explicit history coverage boundary |
 | Cards now separate the claiming identity from the repository in token metadata and show an evidence label | Extend the same structured attribution field to every downstream consumer |
-| `pump-client.ts` uses raw curve-reserve ratios as SOL prices after graduation | Normalize decimals and use a current, quote-aware AMM price |
-| `social-fee-index.ts` only adds shareholder mappings on updates | Replace superseded mappings; preserve historical evidence separately |
-| Delivery and history are not a durable, atomic outbox | Prevent losses and duplicates across retries, restarts and workers |
+| Reserve prices are decimal-normalized and graduated coins use current DexScreener market data | Preserve source/timestamp metadata for every market snapshot |
+| `social-fee-index.ts` replaces superseded current mappings | Preserve historical delegation evidence separately from the current index |
+| Delivery uses a durable unique outbox and claim-history writes are atomic | Telegram Bot API still cannot guarantee exactly-once after an accept/ack crash window |
 
-Simply removing the lifetime gate would retain incorrect attribution and could
-produce misleading new-coin alerts. Attribution and history migration must be
-resolved together. The dedicated repository starts with the existing source,
-tests and this contract; its initial extraction is not a production cutover.
+Production cutover still requires importing the existing pair-history volume and
+recording its coverage boundary. The dedicated repository starts from this source;
+publishing it does not itself move the running service or its secrets.
 
 ## Acceptance scenarios for the implementation
 

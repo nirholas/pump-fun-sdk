@@ -237,7 +237,14 @@ export class PerformanceTracker {
                     const milestone = nextMilestone(post, multiple, this.opts.milestones);
                     if (milestone != null) {
                         await this.opts.postUpdate(formatMilestoneUpdate(post, milestone, mcap, now), post.messageId);
-                        post.announced.push(milestone);
+                        // Mark every lower crossed milestone too. Otherwise a
+                        // 5x alert is followed by a nonsensical 2x alert on the
+                        // next sweep while the token remains above both.
+                        for (const crossed of this.opts.milestones) {
+                            if (crossed <= milestone && !post.announced.includes(crossed)) {
+                                post.announced.push(crossed);
+                            }
+                        }
                         this.stats.milestonesPosted++;
                         continue;
                     }

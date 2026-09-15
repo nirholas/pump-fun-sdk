@@ -111,6 +111,23 @@ export const CLAIM_EVENT_DISCRIMINATORS: Record<string, { label: string; isCreat
 
 export const DEFAULT_GRADUATION_SOL_THRESHOLD = 85;
 
+/**
+ * Coin-level evidence carried by a DistributeCreatorFeesEvent in the same
+ * transaction as a GitHub social-fee withdrawal. Unlike the fee-account index,
+ * this is transaction-scoped proof that this mint paid the social fee PDA.
+ */
+export interface ClaimDistributionEvidence {
+    mint: string;
+    sharingConfig: string;
+    shareBps: number;
+    /** Total amount distributed by the coin, in quote-asset base units. */
+    distributedRaw: string;
+    /** Portion assigned to this social fee PDA, in quote-asset base units. */
+    recipientAmountRaw: string;
+    quoteMint?: string;
+    source: 'same_transaction_distribution';
+}
+
 // ============================================================================
 // Events
 // ============================================================================
@@ -149,6 +166,13 @@ export interface FeeClaimEvent {
     lifetimeStableClaimedRaw?: number;
     /** When multiple tokens share the same social fee PDA (scam vector), all candidate mints */
     allCandidateMints?: string[];
+    /**
+     * Exact per-coin distribution evidence found in this transaction. Social
+     * claims are expanded to one event per evidenced mint before delivery.
+     */
+    attributionEvidence?: ClaimDistributionEvidence;
+    /** All evidenced coin distributions in the transaction, for audit/API output. */
+    transactionDistributions?: ClaimDistributionEvidence[];
     /** Quote mint for the claim (V2 events only — wrapped SOL or USDC). Base58. */
     quoteMint?: string;
     /** Display ticker for the quote currency, e.g. "SOL" or "USDC". Defaults to SOL when absent. */
@@ -228,4 +252,3 @@ export interface FeeDistributionEvent {
     distributedSol: number;
     shareholders: Array<{ address: string; shareBps: number }>;
 }
-

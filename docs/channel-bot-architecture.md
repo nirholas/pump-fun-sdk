@@ -18,21 +18,24 @@ or put its CA in GitHub.
 | `channel-bot/src/claim-monitor.ts` | Fetch and decode successful PumpFees claims; extract GitHub identity, PDA, recipient and quote-aware payment fields |
 | `claim-backstop.ts` | Recover claim candidates from verifier signature history alongside websocket detection |
 | `social-fee-index.ts` | Map fee recipients to potentially multiple delegated token mints |
-| `first-claim.ts` | Current PDA-level lifetime classification; not sufficient for coin-specific eligibility |
-| `claim-tracker.ts` | Local persisted observations, including GitHub-user/mint keys |
+| `claim-monitor.ts` | Transaction-level distribution decoding and social-PDA/mint attribution |
+| `first-claim.ts` | PDA-level lifetime context; never pair eligibility |
+| `claim-tracker.ts` | Atomically persisted GitHub-user/mint observations |
 | `index.ts` | Classification, bounded enrichment and delivery orchestration |
 | `pump-client.ts`, `github-client.ts`, `x-client.ts` | Market, repository, developer and social context |
 | `formatters.ts` | Telegram cards |
 | `channel-policy.ts`, `config.ts` | Feed isolation at configuration and send boundaries |
-| `delivery.ts`, `watchdog.ts` | Delivery health, failure reporting and transport monitoring |
+| `delivery.ts`, `delivery-outbox.ts`, `watchdog.ts` | Durable delivery, failure reporting and transport monitoring |
 | `event-store.ts`, `health.ts`, `webhooks.ts` | Recent events, health, read-only API/SSE and optional webhook delivery |
 
 ## Current runtime versus intended behavior
 
-The runtime currently rejects prior claims using the **shared PDA lifetime**
-before resolving a token. It then selects the highest-market-cap linked token
-and applies a local user–mint guard. This can miss a developer's first claim on
-a different coin, and the selected mint is not proven by the withdrawal event.
+The runtime decodes every same-transaction `DistributeCreatorFeesEvent`, matches
+its shareholders against the claimed social fee PDA, and emits one pair event
+per evidenced mint. Current fee-account mappings remain candidate context only.
+No matching transaction distribution means an unresolved, unpublished record.
+PDA lifetime counters provide developer history but never suppress a different
+developer–mint pair.
 
 The intended flow is:
 

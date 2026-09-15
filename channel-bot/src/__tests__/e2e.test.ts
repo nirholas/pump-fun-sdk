@@ -19,6 +19,7 @@ describe('Claim Tracker', () => {
       existsSync: vi.fn(() => false),
       mkdirSync: vi.fn(),
       readFileSync: vi.fn(() => { throw new Error('ENOENT'); }),
+      renameSync: vi.fn(),
       writeFileSync: vi.fn(),
     }));
     vi.mock('../logger.js', () => ({

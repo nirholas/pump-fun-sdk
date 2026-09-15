@@ -30,7 +30,7 @@ import {
     CREATE_FEE_SHARING_CONFIG_EVENT_DISC,
     UPDATE_FEE_SHARES_EVENT_DISC,
 } from './social-fee-index.js';
-import type { FeeClaimEvent, ClaimType } from './types.js';
+import type { FeeClaimEvent, ClaimDistributionEvidence, ClaimType } from './types.js';
 import {
     CLAIM_INSTRUCTIONS,
     PUMP_PROGRAM_ID,
@@ -73,6 +73,95 @@ const CLAIM_INSTRUCTION_LOG_LINES = [
 const CREATOR_CLAIM_EVENT_DISCS = new Set(
     CLAIM_INSTRUCTIONS.filter((ix) => ix.isCreatorClaim).map((ix) => ix.discriminator),
 );
+
+const DISTRIBUTE_CREATOR_FEES_EVENT_DISC = 'a537817004b3ca28';
+
+interface ParsedDistribution {
+    mint: string;
+    sharingConfig: string;
+    shareholders: Array<{ address: string; shareBps: number }>;
+    distributedRaw: bigint;
+    quoteMint?: string;
+}
+
+/** Decode every coin distribution emitted by a transaction. */
+export function parseTransactionDistributions(logs: string[]): ParsedDistribution[] {
+    const out: ParsedDistribution[] = [];
+    for (const line of logs) {
+        if (!line.includes('Program data:')) continue;
+        const b64 = line.split('Program data: ')[1]?.trim();
+        if (!b64) continue;
+        try {
+            const bytes = Buffer.from(b64, 'base64');
+            if (bytes.length < 148) continue;
+            const disc = Buffer.from(bytes.subarray(0, 8)).toString('hex');
+            if (disc !== DISTRIBUTE_CREATOR_FEES_EVENT_DISC) continue;
+
+            const mint = new PublicKey(bytes.subarray(16, 48)).toBase58();
+            const sharingConfig = new PublicKey(bytes.subarray(80, 112)).toBase58();
+            const shareCount = bytes.readUInt32LE(144);
+            if (shareCount > 20) continue;
+            let offset = 148;
+            if (bytes.length < offset + shareCount * 34 + 8) continue;
+            const shareholders: ParsedDistribution['shareholders'] = [];
+            for (let i = 0; i < shareCount; i++) {
+                shareholders.push({
+                    address: new PublicKey(bytes.subarray(offset, offset + 32)).toBase58(),
+                    shareBps: bytes.readUInt16LE(offset + 32),
+                });
+                offset += 34;
+            }
+            const distributedRaw = bytes.readBigUInt64LE(offset);
+            offset += 8;
+            const quoteMint = bytes.length >= offset + 32
+                ? new PublicKey(bytes.subarray(offset, offset + 32)).toBase58()
+                : undefined;
+            out.push({ mint, sharingConfig, shareholders, distributedRaw, quoteMint });
+        } catch { /* malformed program data is unrelated noise */ }
+    }
+    return out;
+}
+
+/**
+ * Attach only distributions that paid this social fee PDA. The multiplication
+ * stays in bigint so attribution never loses lamports through JS rounding.
+ */
+export function evidenceForSocialFeePda(
+    distributions: ParsedDistribution[],
+    socialFeePda?: string,
+): ClaimDistributionEvidence[] {
+    if (!socialFeePda) return [];
+    const byMint = new Map<string, ClaimDistributionEvidence>();
+    for (const distribution of distributions) {
+        const shareholder = distribution.shareholders.find((s) => s.address === socialFeePda);
+        if (!shareholder || shareholder.shareBps <= 0) continue;
+        const recipientAmountRaw = distribution.distributedRaw * BigInt(shareholder.shareBps) / 10_000n;
+        byMint.set(distribution.mint, {
+            mint: distribution.mint,
+            sharingConfig: distribution.sharingConfig,
+            shareBps: shareholder.shareBps,
+            distributedRaw: distribution.distributedRaw.toString(),
+            recipientAmountRaw: recipientAmountRaw.toString(),
+            quoteMint: distribution.quoteMint,
+            source: 'same_transaction_distribution',
+        });
+    }
+    return [...byMint.values()];
+}
+
+/** One social withdrawal can carry evidenced distributions from several coins. */
+export function expandAttributedClaimEvents(event: FeeClaimEvent): FeeClaimEvent[] {
+    if (event.claimType !== 'claim_social_fee_pda') return [event];
+    const evidence = event.transactionDistributions ?? [];
+    if (evidence.length === 0) {
+        return [{ ...event, tokenMint: '', attributionEvidence: undefined }];
+    }
+    return evidence.map((item) => ({
+        ...event,
+        tokenMint: item.mint,
+        attributionEvidence: item,
+    }));
+}
 
 /**
  * Decide whether a transaction's logs are worth a getParsedTransaction.
@@ -627,10 +716,12 @@ export class ClaimMonitor {
                     signature, slot, timestamp, tx, matchedDef, ix,
                 );
                 if (event) {
-                    this.claimsDetected++;
-                    const typeCount = (this.claimsByType.get(event.claimType) ?? 0) + 1;
-                    this.claimsByType.set(event.claimType, typeCount);
-                    this.onClaim(event);
+                    for (const attributedEvent of expandAttributedClaimEvents(event)) {
+                        this.claimsDetected++;
+                        const typeCount = (this.claimsByType.get(attributedEvent.claimType) ?? 0) + 1;
+                        this.claimsByType.set(attributedEvent.claimType, typeCount);
+                        this.onClaim(attributedEvent);
+                    }
                 }
             }
         } catch (err) {
@@ -694,6 +785,7 @@ export class ClaimMonitor {
         let amountLamports = 0;
         let lifetimeClaimedRaw = 0n;
         const logMessages = tx.meta?.logMessages ?? [];
+        const transactionDistributions = parseTransactionDistributions(logMessages);
         for (const line of logMessages) {
             if (!line.includes('Program data:')) continue;
             const b64 = line.split('Program data: ')[1]?.trim();
@@ -705,7 +797,7 @@ export class ClaimMonitor {
                 // DistributeCreatorFeesEvent: disc=a537817004b3ca28
                 // V1 layout: disc(8) + timestamp(8) + mint(32) + bondingCurve(32) + sharingConfig(32) + admin(32) + shareholders(4+n*34) + distributed(8)
                 // V2 layout (post-2026-05-21): ... + distributed(8) + quote_mint(32)
-                if (disc === 'a537817004b3ca28' && def.claimType === 'distribute_creator_fees') {
+                if (disc === DISTRIBUTE_CREATOR_FEES_EVENT_DISC && def.claimType === 'distribute_creator_fees') {
                     // Extract mint from event data (bytes 8+8=16..48)
                     if (bytes.length >= 48) {
                         const mintBytes = bytes.subarray(16, 48);
@@ -890,19 +982,20 @@ export class ClaimMonitor {
         // Skip non-social dust amounts (real social claims always emit event data)
         if (!isFake && amountLamports < 1000) return null;
 
-        // For social fee PDA claims, resolve mint from the index.
-        // When multiple tokens share the same PDA (scam vector), return all
-        // candidates so the caller can disambiguate by market cap.
+        // For social claims, same-transaction distribution events are the only
+        // coin attribution used for publishing. The broader index remains useful
+        // as candidate context when no transaction-level evidence exists.
         let allCandidateMints: string[] | undefined;
-        if (def.claimType === 'claim_social_fee_pda' && socialFeePda && !tokenMint) {
-            const candidates = this.socialFeeIndex.lookupAll(socialFeePda);
-            if (candidates.length === 1) {
-                tokenMint = candidates[0]!;
-            } else if (candidates.length > 1) {
-                allCandidateMints = candidates;
-                // Use first as fallback; caller should disambiguate
-                tokenMint = candidates[0]!;
+        let attributionDistributions: ClaimDistributionEvidence[] | undefined;
+        if (def.claimType === 'claim_social_fee_pda' && socialFeePda) {
+            attributionDistributions = evidenceForSocialFeePda(transactionDistributions, socialFeePda);
+            if (attributionDistributions.length === 1) {
+                tokenMint = attributionDistributions[0]!.mint;
+            } else {
+                tokenMint = '';
             }
+            const candidates = this.socialFeeIndex.lookupAll(socialFeePda);
+            if (candidates.length > 0) allCandidateMints = candidates;
         }
 
         // Resolve quote-currency metadata. Defaults to SOL when the event predates V2 or
@@ -945,6 +1038,7 @@ export class ClaimMonitor {
             lifetimeClaimedLamports,
             lifetimeStableClaimedRaw,
             allCandidateMints,
+            transactionDistributions: attributionDistributions,
             quoteMint: resolvedQuoteMint,
             quoteTicker: quoteInfo?.ticker,
             isStableQuote: quoteInfo?.isStable ?? false,
@@ -968,5 +1062,4 @@ export class ClaimMonitor {
         }
     }
 }
-
 

@@ -15,7 +15,7 @@ import { Bot, type BotError } from 'grammy';
 import { loadConfig } from './config.js';
 import { ClaimMonitor } from './claim-monitor.js';
 import { EventMonitor } from './event-monitor.js';
-import { hasGithubUserClaimed, markGithubUserClaimed, incrementGithubClaimCount, getGithubUserClaimedMints, loadPersistedClaims } from './claim-tracker.js';
+import { flushClaimState, hasGithubUserClaimed, markGithubUserClaimed, incrementGithubClaimCount, getGithubClaimCount, getGithubUserClaimedMints, loadPersistedClaims } from './claim-tracker.js';
 import { fetchTokenInfo, fetchTopHolders, fetchTokenTrades, fetchDevWalletInfo, fetchSolUsdPrice, fetchPoolLiquidity, fetchBundleInfo, fetchCreatorProfile, fetchSameNameTokens } from './pump-client.js';
 import { fetchGitHubUserById, fetchRepoFromUrls } from './github-client.js';
 import { fetchXProfile } from './x-client.js';
@@ -28,14 +28,11 @@ import { EventStore } from './event-store.js';
 import { WebhookDispatcher } from './webhooks.js';
 import { registerAdminCommands, isMuted, type RuntimeState } from './admin.js';
 import { DeliveryReporter, verifyChannelAccess, DeliveryFailedError, isReportedDelivery } from './delivery.js';
+import { DeliveryOutbox, type PendingChannelPost } from './delivery-outbox.js';
 import { Watchdog, feedWsEventCount } from './watchdog.js';
 import { maskRpcUrl } from './rpc-fallback.js';
-import { mapBounded } from './bounded.js';
 import {
     formatSkippedClaim,
-    LINKED_TOKEN_CONCURRENCY,
-    LINKED_TOKEN_DEADLINE_MS,
-    onchainClaimVerdict,
 } from './first-claim.js';
 import { applyQuoteAsset, resolveQuoteAsset } from './quote-asset.js';
 import { assertPostAllowed, ChannelPolicyError, type PostKind } from './channel-policy.js';
@@ -78,6 +75,7 @@ async function main(): Promise<void> {
 
     // ── Runtime state: event store, webhooks, admin controls ──────────
     const store = new EventStore();
+    const outbox = new DeliveryOutbox();
     const webhooks = new WebhookDispatcher({ urls: config.webhookUrls, secret: config.webhookSecret });
     const state: RuntimeState = {
         muteUntil: 0,
@@ -180,8 +178,18 @@ async function main(): Promise<void> {
         }
     }
 
+    async function deliverPending(post: PendingChannelPost): Promise<number> {
+        outbox.noteAttempt(post.id);
+        const keyboard = post.mint
+            ? buildTxKeyboard(post.mint, post.txSignature, config.affiliates)
+            : undefined;
+        return post.imageUrl
+            ? postPhotoToChannel(post.imageUrl, post.caption, { kind: post.kind, keyboard })
+            : postToChannel(post.caption, { kind: post.kind, keyboard });
+    }
+
     // ── Pipeline Counters ─────────────────────────────────────────────
-    const pipeline = { total: 0, socialClaims: 0, creatorClaims: 0, firstClaim: 0, posted: 0, skippedCashback: 0, repeatClaim: 0, fakeClaim: 0, policyRejected: 0 };
+    const pipeline = { total: 0, socialClaims: 0, creatorClaims: 0, firstClaim: 0, unresolvedClaim: 0, posted: 0, skippedCashback: 0, repeatClaim: 0, fakeClaim: 0, policyRejected: 0 };
 
     /** True when the operator paused channel posting via /mute. */
     const postingMuted = () => isMuted(state);
@@ -207,75 +215,49 @@ async function main(): Promise<void> {
         if (event.claimType === 'claim_social_fee_pda' && event.socialPlatform === 2 && event.githubUserId) {
             pipeline.socialClaims++;
 
-            let mint = event.tokenMint?.trim() || '';
+            const mint = event.tokenMint?.trim() || '';
 
-            // Decide from the on-chain event before any network call. The
-            // event's lifetime_claimed already includes this claim, so a dev
-            // who has claimed before is identifiable here for free. This used
-            // to run after resolving every coin linked to the PDA, and a dev
-            // with 354 linked coins stalled that resolution long enough that
-            // the claim was never classified: two lost on 2026-09-12.
-            // Both lifetime counters matter: a claim paid in a stable asset
-            // leaves the SOL counter untouched, so SOL alone reads a veteran's
-            // stablecoin claim as first-ever.
-            const onchain = onchainClaimVerdict({
-                amount: event.amountLamports,
-                lifetimeSol: event.lifetimeClaimedLamports,
-                lifetimeStable: event.lifetimeStableClaimedRaw,
-                quoteMint: event.quoteMint,
-                isFake: event.isFake === true,
-            });
-            if (onchain !== 'candidate') {
-                if (onchain === 'repeat') {
-                    pipeline.repeatClaim++;
-                    // Backfill the local tracker so a later claim missing its
-                    // lifetime field still classifies correctly. Only possible
-                    // when the coin is already known; resolving it here would
-                    // bring back the fan-out this ordering exists to avoid.
-                    if (mint && !hasGithubUserClaimed(event.githubUserId, mint)) {
-                        markGithubUserClaimed(event.githubUserId, mint);
-                    }
-                } else {
-                    pipeline.fakeClaim++;
-                }
-                // Info, not debug: a quiet feed has to stay auditable. Lifetime
-                // equal to amount is a first claim; larger means claimed before.
-                log.info(formatSkippedClaim(onchain, event, mint));
+            if (event.isFake) {
+                pipeline.fakeClaim++;
+                log.info(formatSkippedClaim('fake', event, mint));
                 return;
             }
 
-            // Only on-chain first claims, or ones with no lifetime field, get
-            // here, which is rare, so resolving the linked coins is affordable.
-            // It is still bounded: a capped number of lookups in flight and a
-            // total deadline. A shared withdrawal does not name a mint, so a
-            // multi-coin result stays unresolved instead of selecting the
-            // highest-market-cap coin and presenting that guess as fact.
-            let allLinkedTokens: import('./pump-client.js').TokenInfo[] = [];
-            if (event.allCandidateMints && event.allCandidateMints.length > 1) {
-                const started = Date.now();
-                const linked = await mapBounded(
-                    event.allCandidateMints,
-                    (m) => fetchTokenInfo(m),
-                    { concurrency: LINKED_TOKEN_CONCURRENCY, deadlineMs: LINKED_TOKEN_DEADLINE_MS },
-                );
-                allLinkedTokens = linked.results
-                    .filter((i): i is import('./pump-client.js').TokenInfo => i != null)
-                    .sort((x, y) => y.usdMarketCap - x.usdMarketCap);
-                log.info('PDA %s: resolved %d of %d linked tokens in %dms%s',
-                    event.socialFeePda?.slice(0, 8) ?? '?', linked.settled,
-                    event.allCandidateMints.length, Date.now() - started,
-                    linked.timedOut ? ', deadline reached' : '');
-                mint = '';
-                event.tokenMint = '';
-                log.warn('PDA %s withdrawal remains unresolved across %d candidate coins; no CA selected',
-                    event.socialFeePda?.slice(0, 8) ?? '?', event.allCandidateMints.length);
+            // A fee-account mapping is only delegation context. Publishing a
+            // coin requires a same-transaction distribution that names the mint
+            // and pays this exact social fee PDA. Keep unattributed withdrawals
+            // in the event stream, but never turn them into trading alerts.
+            if (!mint || !event.attributionEvidence) {
+                pipeline.unresolvedClaim++;
+                const stored = store.record({
+                    kind: 'claim',
+                    txSignature: event.txSignature,
+                    summary: `Unresolved GitHub fee withdrawal by ${event.githubUserId}`,
+                    posted: false,
+                    data: {
+                        type: 'github_social_claim',
+                        githubUserId: event.githubUserId,
+                        attribution: 'unresolved',
+                        candidateMints: event.allCandidateMints ?? [],
+                    },
+                });
+                void webhooks.dispatch(stored);
+                log.warn('GitHub withdrawal %s retained as unresolved; no transaction distribution paid PDA %s',
+                    event.txSignature.slice(0, 8), event.socialFeePda?.slice(0, 8) ?? '?');
+                return;
             }
 
-            // The chain did not rule it out. The local tracker, keyed by dev
-            // and coin, is the second guard, and it needs the resolved coin.
-            if (mint && hasGithubUserClaimed(event.githubUserId, mint)) {
+            // Pair eligibility is independent of the PDA lifetime counters.
+            // A veteran developer's first evidenced distribution from coin B
+            // must not be suppressed because they previously claimed coin A.
+            if (hasGithubUserClaimed(event.githubUserId, mint)) {
                 pipeline.repeatClaim++;
                 log.info(formatSkippedClaim('repeat', event, mint));
+                return;
+            }
+            if (outbox.hasPair(event.githubUserId, mint)) {
+                log.info('Claim pair already waits in the delivery outbox: github=%s mint=%s',
+                    event.githubUserId, mint.slice(0, 8));
                 return;
             }
             pipeline.firstClaim++;
@@ -316,7 +298,7 @@ async function main(): Promise<void> {
                 ? await fetchDevWalletInfo(tokenInfo.creator, mint, config.solanaRpcUrl)
                 : null;
 
-            const claimNumber = mint ? incrementGithubClaimCount(event.githubUserId, mint) : undefined;
+            const claimNumber = getGithubClaimCount(event.githubUserId, mint) + 1;
             const claimedMints = getGithubUserClaimedMints(event.githubUserId);
             log.info('🚨 GitHub social fee FIRST claim by %s (%s) — %s SOL',
                 event.githubUserId, githubUser?.login ?? '?', event.amountSol.toFixed(4));
@@ -341,7 +323,6 @@ async function main(): Promise<void> {
                 liquidity,
                 bundle,
                 sameNameTokens,
-                allLinkedTokens: allLinkedTokens.length > 0 ? allLinkedTokens : undefined,
                 claimedMints: claimedMints.length > 0 ? claimedMints : undefined,
             };
 
@@ -356,7 +337,8 @@ async function main(): Promise<void> {
                     githubUser: githubUser?.login ?? null,
                     amountSol: event.amountSol,
                     mint: mint || null,
-                    attribution: mint ? 'candidate' : 'unresolved_pooled',
+                    attribution: 'same_transaction_distribution',
+                    distribution: event.attributionEvidence,
                     candidateMints: event.allCandidateMints ?? [],
                 },
             });
@@ -368,14 +350,24 @@ async function main(): Promise<void> {
             }
 
             const { imageUrl, caption } = formatGitHubClaimFeed(ctx);
+            const pending = outbox.enqueue({
+                id: `github:${event.githubUserId}:${mint}:${event.txSignature}`,
+                kind: 'github_first_claim',
+                caption,
+                imageUrl,
+                mint,
+                txSignature: event.txSignature,
+                githubUserId: event.githubUserId,
+            });
             try {
-                const keyboard = mint
-                    ? buildTxKeyboard(mint, event.txSignature, config.affiliates)
-                    : undefined;
-                const messageId = imageUrl
-                    ? await postPhotoToChannel(imageUrl, caption, { kind: 'github_first_claim', keyboard })
-                    : await postToChannel(caption, { kind: 'github_first_claim', keyboard });
-                if (mint) markGithubUserClaimed(event.githubUserId, mint);
+                const messageId = await deliverPending(pending);
+                incrementGithubClaimCount(event.githubUserId, mint);
+                markGithubUserClaimed(event.githubUserId, mint);
+                // Make the pair ledger durable before removing its retry item.
+                // A crash at either side of this boundary may retry a Telegram
+                // send, but cannot silently forget a successfully recorded pair.
+                flushClaimState();
+                outbox.acknowledge(pending.id);
                 pipeline.posted++;
                 store.markPosted(stored.seq);
                 if (mint && tokenInfo) {
@@ -656,6 +648,24 @@ async function main(): Promise<void> {
     const access = await verifyChannelAccess(bot.api, config.channelId, bot.botInfo.id);
     if (access.ok) {
         log.info('Channel access verified: @%s can post to %s', bot.botInfo.username, config.channelId);
+        for (const pending of outbox.pending()) {
+            try {
+                await deliverPending(pending);
+                if (pending.githubUserId && pending.mint) {
+                    if (getGithubClaimCount(pending.githubUserId, pending.mint) === 0) {
+                        incrementGithubClaimCount(pending.githubUserId, pending.mint);
+                    }
+                    markGithubUserClaimed(pending.githubUserId, pending.mint);
+                    flushClaimState();
+                }
+                outbox.acknowledge(pending.id);
+                pipeline.posted++;
+                log.info('Delivery outbox replayed %s', pending.id);
+            } catch (err) {
+                log.error('Delivery outbox replay failed for %s: %s', pending.id, err);
+                break;
+            }
+        }
     } else {
         delivery.lastFault = access.fault;
         delivery.lastFix = access.fix;
@@ -686,6 +696,7 @@ async function main(): Promise<void> {
             whaleThresholdSol: config.whaleThresholdSol,
             messagesPosted: pipeline.posted,
             policyRejected: pipeline.policyRejected,
+            pendingDeliveries: outbox.size,
             survivedRejections,
             // A bot that cannot reach its channel is degraded, not healthy:
             // /health returns 503 so an uptime check actually catches it.
@@ -736,6 +747,7 @@ async function main(): Promise<void> {
         claimMonitor?.stop();
         eventMonitor.stop();
         performance.stop();
+        flushClaimState();
         void bot.stop().catch(() => {});
         stopHealthServer();
         process.exit(0);

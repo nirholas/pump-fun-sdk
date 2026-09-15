@@ -124,9 +124,9 @@ The developer need not launch the coin or put its CA in GitHub. Prior claimed
 coins are context. Read [the product contract](docs/github-claims-product.md)
 and `channel-bot/CLAUDE.md` before changing the feed.
 
-The current runtime's PDA-wide lifetime gate and market-cap-based mint selection
-are known gaps. Do not treat them as the product specification, and do not
-remove the gate without solving coin attribution. The dedicated project is
+The runtime attributes a coin only when a same-transaction distribution event
+names the mint and pays the claimed social fee PDA. Pair eligibility never uses
+the shared PDA lifetime or market-cap ranking. The dedicated project is
 [nirholas/pumpfun-github-claims](https://github.com/nirholas/pumpfun-github-claims).
 Publishing source there does not authorize a production cutover. Plain creator
 fee collections, repeated pair claims, graduations, launches, whales and test
@@ -138,4 +138,3 @@ posts do not belong in the claims channel.
 - Test changes before submitting PRs
 - Update documentation when adding features
 - See [CONTRIBUTING.md](CONTRIBUTING.md) for full guidelines
-

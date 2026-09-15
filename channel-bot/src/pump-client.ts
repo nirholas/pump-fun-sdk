@@ -11,6 +11,8 @@ const PUMPFUN_API = 'https://frontend-api-v3.pump.fun';
 const LAMPORTS_PER_SOL = 1_000_000_000;
 const TOKEN_DECIMALS = 6;
 const ONE_TOKEN = 10 ** TOKEN_DECIMALS;
+const WSOL_MINT = 'So11111111111111111111111111111111111111112';
+const NATIVE_SOL_QUOTE = '11111111111111111111111111111111';
 
 // ============================================================================
 // Types
@@ -29,6 +31,8 @@ export interface TokenInfo {
     usdMarketCap: number;
     marketCapSol: number;
     priceSol: number;
+    /** Current USD price per whole token when the upstream source provides it. */
+    priceUsd?: number;
     curveProgress: number;
     /** All-time high USD market cap */
     athMarketCap: number;
@@ -123,12 +127,36 @@ function setCache<T>(cache: Map<string, CacheEntry<T>>, key: string, data: T, tt
 // API Calls
 // ============================================================================
 
-/** Fetch token info: PumpFun API (primary) → DexScreener (fallback). */
+/** Convert raw reserve units into quote units per whole base token. */
+export function normalizedReservePrice(
+    quoteReserveRaw: number,
+    baseReserveRaw: number,
+    baseDecimals = TOKEN_DECIMALS,
+    quoteDecimals = 9,
+): number {
+    if (!(quoteReserveRaw > 0) || !(baseReserveRaw > 0)) return 0;
+    return (quoteReserveRaw / baseReserveRaw) * 10 ** (baseDecimals - quoteDecimals);
+}
+
+/** Fetch token info: PumpFun metadata plus live AMM pricing after graduation. */
 export async function fetchTokenInfo(mint: string): Promise<TokenInfo | null> {
     const cached = getCached(tokenCache, mint);
     if (cached) return cached;
 
-    const info = await fetchTokenInfoPump(mint) ?? await fetchTokenInfoDexScreener(mint);
+    const pump = await fetchTokenInfoPump(mint);
+    let info = pump ?? await fetchTokenInfoDexScreener(mint);
+    if (pump?.complete) {
+        const dex = await fetchTokenInfoDexScreener(mint);
+        if (dex) {
+            info = {
+                ...pump,
+                usdMarketCap: dex.usdMarketCap || pump.usdMarketCap,
+                marketCapSol: dex.marketCapSol || pump.marketCapSol,
+                priceSol: dex.priceSol || 0,
+                priceUsd: dex.priceUsd,
+            };
+        }
+    }
     if (info) setCache(tokenCache, mint, info, TOKEN_CACHE_TTL);
     return info;
 }
@@ -154,11 +182,15 @@ async function fetchTokenInfoPump(mint: string): Promise<TokenInfo | null> {
         const totalSupply = Number(raw.total_supply ?? 0);
         const complete = Boolean(raw.complete);
 
-        const priceSol =
-            virtualTokenReserves > 0 ? virtualSolReserves / virtualTokenReserves : 0;
+        const tokenDecimals = Number(raw.decimals ?? TOKEN_DECIMALS);
+        const quoteMint = String(raw.quote_mint ?? WSOL_MINT);
+        const isSolQuote = quoteMint === WSOL_MINT || quoteMint === NATIVE_SOL_QUOTE;
+        const priceSol = isSolQuote
+            ? normalizedReservePrice(virtualSolReserves, virtualTokenReserves, tokenDecimals, 9)
+            : 0;
         const marketCapSol =
-            virtualTokenReserves > 0
-                ? (virtualSolReserves * totalSupply) / (virtualTokenReserves * LAMPORTS_PER_SOL)
+            priceSol > 0
+                ? priceSol * (totalSupply / 10 ** tokenDecimals)
                 : 0;
 
         // Bonding curve progress: realSolReserves / ~85 SOL threshold
@@ -205,6 +237,9 @@ async function fetchTokenInfoPump(mint: string): Promise<TokenInfo | null> {
             usdMarketCap: Number(raw.usd_market_cap ?? 0),
             marketCapSol: Number(raw.market_cap ?? marketCapSol),
             priceSol,
+            priceUsd: Number(raw.usd_market_cap ?? 0) > 0 && totalSupply > 0
+                ? Number(raw.usd_market_cap) / (totalSupply / 10 ** tokenDecimals)
+                : undefined,
             curveProgress,
             athMarketCap: Number(raw.ath_market_cap ?? 0),
             athTimestamp,
@@ -265,6 +300,7 @@ async function fetchTokenInfoDexScreener(mint: string): Promise<TokenInfo | null
             usdMarketCap: Number(pair.marketCap ?? pair.fdv ?? 0),
             marketCapSol: 0,
             priceSol: Number(pair.priceNative ?? 0),
+            priceUsd: Number(pair.priceUsd ?? 0),
             curveProgress: 100,
             athMarketCap: 0,
             athTimestamp: 0,
@@ -832,4 +868,3 @@ function formatAge(msTimestamp: number): string {
     if (sec < 2_592_000) return `${Math.floor(sec / 86400)}d`;
     return `${Math.floor(sec / 2_592_000)}mo`;
 }
-

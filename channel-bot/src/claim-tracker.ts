@@ -8,7 +8,7 @@
  * re-alert on already-seen wallets.
  */
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { log } from './logger.js';
 
@@ -61,6 +61,12 @@ const SAVE_DEBOUNCE_MS = 5_000;
 
 let saveTimer: ReturnType<typeof setTimeout> | null = null;
 
+function atomicWriteJson(path: string, value: unknown): void {
+    const temporary = `${path}.${process.pid}.tmp`;
+    writeFileSync(temporary, JSON.stringify(value), { encoding: 'utf8', mode: 0o600 });
+    renameSync(temporary, path);
+}
+
 /** Load persisted first-claim sets from disk on startup. */
 export function loadPersistedClaims(): void {
     try {
@@ -92,7 +98,12 @@ export function loadPersistedClaims(): void {
             const users: unknown = JSON.parse(raw);
             if (Array.isArray(users)) {
                 for (const u of users) {
-                    if (typeof u === 'string') githubUserFirstClaim.add(u);
+                    if (typeof u !== 'string') continue;
+                    // Before the pair ledger had its own file, pair keys were
+                    // mixed into github-first-claims.json. Migrate them during
+                    // load so a deploy cannot re-alert every historical pair.
+                    if (u.includes(':')) githubUserTokenClaims.add(u);
+                    else githubUserFirstClaim.add(u);
                 }
                 log.info('Loaded %d persisted first-claim GitHub users', githubUserFirstClaim.size);
             }
@@ -122,40 +133,47 @@ export function loadPersistedClaims(): void {
     }
 }
 
-/** Save first-claim sets to disk (debounced). */
-function scheduleSave(): void {
-    if (saveTimer) return;
-    saveTimer = setTimeout(() => {
+/** Persist all claim ledgers synchronously. */
+export function flushClaimState(): void {
+    if (saveTimer) {
+        clearTimeout(saveTimer);
         saveTimer = null;
-        try {
+    }
+    try {
             if (!existsSync(DATA_DIR)) {
                 mkdirSync(DATA_DIR, { recursive: true });
             }
             const arr = [...tokenFirstClaim];
             const toSave = arr.length > MAX_ENTRIES ? arr.slice(arr.length - MAX_ENTRIES) : arr;
-            writeFileSync(FIRST_CLAIMS_FILE, JSON.stringify(toSave), 'utf8');
+            atomicWriteJson(FIRST_CLAIMS_FILE, toSave);
 
             const walletArr = [...walletFirstClaim];
             const walletToSave = walletArr.length > MAX_ENTRIES ? walletArr.slice(walletArr.length - MAX_ENTRIES) : walletArr;
-            writeFileSync(WALLET_FIRST_CLAIMS_FILE, JSON.stringify(walletToSave), 'utf8');
+            atomicWriteJson(WALLET_FIRST_CLAIMS_FILE, walletToSave);
 
             const ghArr = [...githubUserFirstClaim];
             const ghToSave = ghArr.length > MAX_ENTRIES ? ghArr.slice(ghArr.length - MAX_ENTRIES) : ghArr;
-            writeFileSync(GITHUB_FIRST_CLAIMS_FILE, JSON.stringify(ghToSave), 'utf8');
+            atomicWriteJson(GITHUB_FIRST_CLAIMS_FILE, ghToSave);
 
             const gutArr = [...githubUserTokenClaims];
             const gutToSave = gutArr.length > MAX_ENTRIES ? gutArr.slice(gutArr.length - MAX_ENTRIES) : gutArr;
-            writeFileSync(GITHUB_USER_TOKEN_CLAIMS_FILE, JSON.stringify(gutToSave), 'utf8');
+            atomicWriteJson(GITHUB_USER_TOKEN_CLAIMS_FILE, gutToSave);
 
             const countsObj: Record<string, number> = {};
             for (const [k, v] of githubUserClaimCounts) countsObj[k] = v;
-            writeFileSync(GITHUB_CLAIM_COUNTS_FILE, JSON.stringify(countsObj), 'utf8');
+            atomicWriteJson(GITHUB_CLAIM_COUNTS_FILE, countsObj);
 
-            log.debug('Persisted %d first-claim tokens + %d wallets + %d GitHub users + %d user-token pairs to disk', toSave.length, walletToSave.length, ghToSave.length, gutToSave.length);
-        } catch (err) {
-            log.warn('Failed to persist claims: %s', err);
-        }
-    }, SAVE_DEBOUNCE_MS);
+        log.debug('Persisted %d first-claim tokens + %d wallets + %d GitHub users + %d user-token pairs to disk', toSave.length, walletToSave.length, ghToSave.length, gutToSave.length);
+    } catch (err) {
+        log.warn('Failed to persist claims: %s', err);
+        throw err;
+    }
+}
+
+/** Save first-claim sets to disk (debounced). */
+function scheduleSave(): void {
+    if (saveTimer) return;
+    saveTimer = setTimeout(flushClaimState, SAVE_DEBOUNCE_MS);
 }
 
 // ── Public API ───────────────────────────────────────────────────────────────
@@ -262,10 +280,6 @@ export function isFirstClaimByWallet(wallet: string): boolean {
  */
 export function isFirstClaimByGithubUser(githubUserId: string): boolean {
     if (githubUserFirstClaim.has(githubUserId)) return false;
-    const prefix = `${githubUserId}:`;
-    for (const key of githubUserFirstClaim) {
-        if (key.startsWith(prefix)) return false;
-    }
     githubUserFirstClaim.add(githubUserId);
     scheduleSave();
     if (githubUserFirstClaim.size > MAX_ENTRIES) {
@@ -280,19 +294,26 @@ export function isFirstClaimByGithubUser(githubUserId: string): boolean {
  * Tracked per user+mint so claiming coin A doesn't affect coin B.
  */
 export function hasGithubUserClaimed(githubUserId: string, mint?: string): boolean {
-    const key = mint ? `${githubUserId}:${mint}` : githubUserId;
-    return githubUserFirstClaim.has(key);
+    if (!mint) return githubUserFirstClaim.has(githubUserId);
+    return githubUserTokenClaims.has(`${githubUserId}:${mint}`);
 }
 
 /** Mark a GitHub user as having claimed a specific token. */
 export function markGithubUserClaimed(githubUserId: string, mint?: string): void {
-    const key = mint ? `${githubUserId}:${mint}` : githubUserId;
-    if (githubUserFirstClaim.has(key)) return;
-    githubUserFirstClaim.add(key);
+    if (!mint) {
+        if (githubUserFirstClaim.has(githubUserId)) return;
+        githubUserFirstClaim.add(githubUserId);
+        scheduleSave();
+        return;
+    }
+    const key = `${githubUserId}:${mint}`;
+    if (githubUserTokenClaims.has(key)) return;
+    githubUserTokenClaims.add(key);
+    githubUserFirstClaim.add(githubUserId);
     scheduleSave();
-    if (githubUserFirstClaim.size > MAX_ENTRIES) {
-        const first = githubUserFirstClaim.values().next().value;
-        if (first) githubUserFirstClaim.delete(first);
+    if (githubUserTokenClaims.size > MAX_ENTRIES) {
+        const first = githubUserTokenClaims.values().next().value;
+        if (first) githubUserTokenClaims.delete(first);
     }
 }
 
@@ -320,11 +341,10 @@ export function getGithubClaimCount(githubUserId: string, mint?: string): number
 export function getGithubUserClaimedMints(githubUserId: string): string[] {
     const prefix = `${githubUserId}:`;
     const mints: string[] = [];
-    for (const key of githubUserFirstClaim) {
+    for (const key of githubUserTokenClaims) {
         if (key.startsWith(prefix)) {
             mints.push(key.slice(prefix.length));
         }
     }
     return mints;
 }
-

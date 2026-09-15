@@ -31,9 +31,9 @@ Coin attribution requires evidence. A shared PDA withdrawal does not identify a
 mint; sorting linked coins by market cap does not establish a first claim on
 one of them. Keep incomplete attribution/history explicit.
 
-The current runtime still rejects prior PDA lifetime claims before attribution.
-That gate is a known gap, not a rule to preserve. Changing it requires resolving
-coin attribution and history migration, not enabling every subsequent claim.
+The runtime uses same-transaction fee-distribution evidence for coin attribution
+and pair-keyed persisted history for eligibility. Never reintroduce the former
+PDA-lifetime gate or market-cap mint selection.
 The dedicated project is [pumpfun-github-claims](https://github.com/nirholas/pumpfun-github-claims).
 
 Do not post plain creator-fee collections, repeat claims for the same pair,
@@ -107,19 +107,15 @@ more feeds.
    so a claim seen by both is processed once.
 2. **Retried until fetched.** A transaction counts as handled only after it has
    actually been fetched. A failed fetch is retried, up to 5 attempts.
-3. **Decided before any lookup, on both counters.** V2 claim events carry two
-   lifetime totals that include this claim: `lifetime_claimed` (SOL) and
-   `lifetime_stable_claimed` (every non-SOL quote asset). A claim is first-ever
-   only when its own currency's total equals the amount and the other total is
-   zero; reading the SOL total alone calls a veteran's first stablecoin claim
-   first-ever. That
-   verdict (`src/first-claim.ts`) is taken first; repeats return without a
-   single API call. This early repeat rejection does not satisfy the per-coin contract. Replace
-   it with evidence-backed pair eligibility while retaining bounded work: a
-   developer with 354 linked coins previously stalled unbounded enrichment.
-4. **Enrichment is bounded.** Resolving a PDA's linked coins runs through
-   `mapBounded` (6 in flight, 20 second deadline) and uses the best coin found.
-   An unbounded `Promise.all` over linked coins is a bug, whatever the count.
+3. **Attributed from the transaction.** `claim-monitor.ts` decodes each
+   `DistributeCreatorFeesEvent`, matches the claimed social fee PDA in its
+   shareholder vector, and carries exact mint/config/share evidence. Several
+   evidenced mints become separate pair events. No evidence means no channel post.
+4. **Decided per pair.** Numeric GitHub ID plus full mint is the duplicate key.
+   PDA SOL/stable lifetime counters remain context and cannot suppress coin B.
+5. **Delivered durably.** Claim cards enter `delivery-outbox.json` before the
+   Telegram call and are replayed after channel access is verified on restart.
+   State files use atomic write-then-rename.
 
 ## Verify before you claim it works
 

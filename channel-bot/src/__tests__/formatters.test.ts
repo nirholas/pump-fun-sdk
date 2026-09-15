@@ -45,7 +45,7 @@ describe('formatGitHubClaimFeed', () => {
         const { caption } = formatGitHubClaimFeed(ctx);
 
         expect(caption).toContain('VERIFIED GITHUB FEE CLAIM');
-        expect(caption).toContain('First-ever withdrawal observed');
+        expect(caption).toContain('First claim observed for this developer–coin pair');
     });
 
     it('does not call a subsequent withdrawal first-ever', () => {

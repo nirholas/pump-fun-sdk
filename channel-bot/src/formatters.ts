@@ -60,6 +60,7 @@ export interface ClaimFeedContext {
 }
 
 export type ClaimAttributionStatus =
+    | 'verified_distribution'
     | 'verified_repository'
     | 'verified_creator_wallet'
     | 'identity_mismatch'
@@ -79,6 +80,13 @@ export interface ClaimAttribution {
  */
 export function classifyClaimAttribution(ctx: ClaimFeedContext): ClaimAttribution {
     const { event, githubUser, tokenInfo } = ctx;
+    if (event.attributionEvidence) {
+        return {
+            status: 'verified_distribution',
+            headline: 'TRANSACTION-ATTRIBUTED GITHUB FEE CLAIM',
+            explanation: 'This transaction distributed fees from this exact coin to the claimed GitHub fee account.',
+        };
+    }
     const candidateCount = ctx.allLinkedTokens?.length ?? event.allCandidateMints?.length ?? 0;
     if (candidateCount > 1) {
         return {
@@ -174,14 +182,14 @@ export function formatGitHubClaimFeed(ctx: ClaimFeedContext): { imageUrl: string
 
     // Put the evidence quality before the CA and market data. Traders should
     // never need to read to the bottom of a long card to discover a mismatch.
-    const badge = attribution.status === 'verified_repository' || attribution.status === 'verified_creator_wallet'
+    const badge = attribution.status === 'verified_distribution' || attribution.status === 'verified_repository' || attribution.status === 'verified_creator_wallet'
         ? '✅'
         : attribution.status === 'identity_mismatch'
             ? '🚩'
             : '⚠️';
     L.push(`${badge} <b>${attribution.headline}</b>`);
     L.push(esc(attribution.explanation));
-    if (ctx.isFirstClaim) L.push('First-ever withdrawal observed for this GitHub fee account.');
+    if (ctx.isFirstClaim) L.push('First claim observed for this developer–coin pair within persisted history coverage.');
 
     // Influencer badge right after header
     const tier = getInfluencerTier(
@@ -207,7 +215,10 @@ export function formatGitHubClaimFeed(ctx: ClaimFeedContext): { imageUrl: string
         } else if (tokenInfo.marketCapSol > 0) {
             L.push(`💰 MC: ${tokenInfo.marketCapSol.toFixed(1)} SOL`);
         }
-        if (tokenInfo.priceSol > 0) {
+        if (tokenInfo.priceUsd != null && tokenInfo.priceUsd > 0) {
+            const native = tokenInfo.priceSol > 0 ? `${formatPriceSol(tokenInfo.priceSol)} SOL ` : '';
+            L.push(`💲 Price: ${native}($${formatPriceUsd(tokenInfo.priceUsd)})`);
+        } else if (tokenInfo.priceSol > 0) {
             const priceUsd = solUsdPrice > 0 ? ` ($${formatPriceUsd(tokenInfo.priceSol * solUsdPrice)})` : '';
             L.push(`💲 Price: ${formatPriceSol(tokenInfo.priceSol)} SOL${priceUsd}`);
         }
@@ -264,6 +275,15 @@ export function formatGitHubClaimFeed(ctx: ClaimFeedContext): { imageUrl: string
         L.push(`Claim #${ctx.claimNumber}`);
     } else {
         L.push(`Claim #1`);
+    }
+    if (event.attributionEvidence) {
+        const raw = BigInt(event.attributionEvidence.recipientAmountRaw);
+        const baseUnitScale = event.amountQuote != null && event.amountLamports > 0
+            ? event.amountQuote / event.amountLamports
+            : 1 / 1e9;
+        const contribution = Number(raw) * baseUnitScale;
+        const places = event.isStableQuote ? 2 : 4;
+        L.push(`Coin contribution in this transaction: ${contribution.toFixed(places)} ${esc(event.quoteTicker ?? 'SOL')} (${(event.attributionEvidence.shareBps / 100).toFixed(2)}% share)`);
     }
 
     L.push(...claimAmountLines(event, solUsdPrice, ctx.lifetimeClaimedSol));
@@ -458,6 +478,7 @@ export function formatGitHubClaimFeed(ctx: ClaimFeedContext): { imageUrl: string
     {
         const signals: string[] = [];
 
+        if (attribution.status === 'verified_distribution') signals.push('✅ Coin attribution comes from this transaction’s distribution event');
         if (attribution.status === 'verified_repository') signals.push('✅ Repository owner matches claiming GitHub identity');
         if (attribution.status === 'verified_creator_wallet') signals.push('✅ Claim recipient matches token creator wallet');
         if (attribution.status === 'identity_mismatch') signals.push(`🚩 GitHub identity mismatch — do not treat this as project verification`);
@@ -519,7 +540,7 @@ export function formatGitHubClaimFeed(ctx: ClaimFeedContext): { imageUrl: string
     }
 
     // ━━ CHART ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    const allowTradeLinks = attribution.status === 'verified_repository' || attribution.status === 'verified_creator_wallet';
+    const allowTradeLinks = attribution.status === 'verified_distribution' || attribution.status === 'verified_repository' || attribution.status === 'verified_creator_wallet';
     if (mint && allowTradeLinks) {
         L.push(`📊 <a href="https://pump.fun/coin/${mint}">pump.fun/coin/${mint.slice(0, 12)}…</a>`);
     }

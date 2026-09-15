@@ -111,6 +111,23 @@ describe('PerformanceTracker', () => {
         expect(tracker.stats.milestonesPosted).toBe(1);
     });
 
+    it('never announces a lower milestone after a higher one', async () => {
+        const postUpdate = vi.fn(async (_text: string, _replyTo: number) => {});
+        let mcap = 60_000;
+        const tracker = new PerformanceTracker({ statePath: null,
+            postUpdate,
+            fetchMcap: async () => mcap,
+            milestones: [2, 5, 10],
+        });
+        tracker.track({ mint: MINT, messageId: 99, symbol: 'A', mcapUsd: 10_000 });
+
+        await tracker.sweep();
+        expect(String(postUpdate.mock.calls[0]![0])).toContain('5x');
+        mcap = 70_000;
+        await tracker.sweep();
+        expect(postUpdate).toHaveBeenCalledTimes(1);
+    });
+
     it('announces a collapse and then stops tracking the call', async () => {
         const postUpdate = vi.fn(async (_text: string, _replyTo: number) => {});
         const tracker = new PerformanceTracker({ statePath: null, postUpdate, fetchMcap: async () => 1_000, collapsePct: 80 });

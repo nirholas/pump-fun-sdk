@@ -8,10 +8,12 @@ the notification rule: **one alert for each developer–coin pair**, including
 an experienced developer's first claim on another coin, with previous claimed
 coins shown as context. A CA does not need to appear in the repository.
 
-**Implementation status:** this directory still applies a developer/PDA-wide
-lifetime gate and selects a headline coin by market cap. Those are documented
-implementation gaps, not the agreed per-coin behavior. Publishing the dedicated
-repository does not switch the production feed.
+**Implementation status:** coin attribution now comes from a matching
+`DistributeCreatorFeesEvent` in the claim transaction, never market-cap ranking.
+Pair eligibility is keyed by numeric GitHub ID and full mint independently of
+developer/PDA lifetime. Claims without transaction evidence remain unpublished.
+See the [September repair audit](../docs/audits/2026-09-15-pumpfunclaims-repair.md)
+before a production cutover.
 
 This codebase has separate deployments:
 
@@ -32,7 +34,7 @@ before changing a decoder. Interactive monitoring lives in [telegram-bot](../tel
 
 | Feed | Description | Toggle |
 |------|-------------|--------|
-| **GitHub First Claims** | First attributable claim per GitHub developer and coin (Path A); see the implementation gaps above | `FEED_CLAIMS` |
+| **GitHub First Claims** | First transaction-attributed claim observed per GitHub developer and coin (Path A) | `FEED_CLAIMS` |
 | **Creator Fee Claims** | Plain `collect_creator_fee` payouts (Path B). Off by default; never in the first-claims channel | `FEED_CREATOR_CLAIMS` |
 | **Token Launches** | New token mints with creator profile enrichment | `FEED_LAUNCHES` |
 | **Token Graduations** | Tokens graduating from bonding curve to PumpAMM | `FEED_GRADUATIONS` |
@@ -660,9 +662,10 @@ channel-bot/
 3. `onchainClaimVerdict` currently rejects prior PDA lifetime claims before
    enrichment. **This can suppress an experienced developer's first claim on
    another coin and must change as part of the attribution work.**
-4. `SocialFeeIndex.lookupAll` supplies mints linked through fee-sharing configs.
-   When several mints share a PDA, the handler now leaves the event unresolved,
-   lists candidates for research, and selects no CA or trade link.
+4. A `DistributeCreatorFeesEvent` in the same transaction supplies exact mint,
+   sharing-config and recipient-share evidence. The handler publishes one pair
+   event per evidenced mint. Fee-account index entries remain candidate context
+   only; a claim with no matching transaction distribution stays unpublished.
 5. The local tracker checks a GitHub-user/mint key, then the handler enriches,
    formats and posts. It marks the pair after successful delivery.
 
