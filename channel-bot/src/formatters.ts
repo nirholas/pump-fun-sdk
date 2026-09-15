@@ -59,6 +59,71 @@ export interface ClaimFeedContext {
     claimedMints?: string[];
 }
 
+export type ClaimAttributionStatus =
+    | 'verified_repository'
+    | 'verified_creator_wallet'
+    | 'identity_mismatch'
+    | 'unverified'
+    | 'unresolved_pooled';
+
+export interface ClaimAttribution {
+    status: ClaimAttributionStatus;
+    headline: string;
+    explanation: string;
+}
+
+/**
+ * Classify only the relationship the card can actually prove. A successful
+ * GitHub-PDA withdrawal proves a payment to a GitHub identity; it does not by
+ * itself prove that identity created, owns, or endorses a particular coin.
+ */
+export function classifyClaimAttribution(ctx: ClaimFeedContext): ClaimAttribution {
+    const { event, githubUser, tokenInfo } = ctx;
+    const candidateCount = ctx.allLinkedTokens?.length ?? event.allCandidateMints?.length ?? 0;
+    if (candidateCount > 1) {
+        return {
+            status: 'unresolved_pooled',
+            headline: 'UNRESOLVED POOLED GITHUB FEE WITHDRAWAL',
+            explanation: `One shared fee account is linked to ${candidateCount} coins. This withdrawal cannot be assigned to one CA.`,
+        };
+    }
+
+    const claimer = githubUser?.login.toLowerCase();
+    const githubOwner = tokenInfo?.githubUrls?.[0]
+        ?.replace(/^https?:\/\/github\.com\//, '')
+        .replace(/\/+$/, '')
+        .split('/')[0]
+        ?.toLowerCase();
+    if (claimer && githubOwner && githubOwner !== claimer) {
+        return {
+            status: 'identity_mismatch',
+            headline: 'IDENTITY MISMATCH — GITHUB FEE WITHDRAWAL',
+            explanation: `The claiming GitHub account is not the owner linked in the token metadata (${githubOwner}).`,
+        };
+    }
+    if (claimer && githubOwner === claimer) {
+        return {
+            status: 'verified_repository',
+            headline: 'VERIFIED GITHUB FEE CLAIM',
+            explanation: 'The claiming GitHub identity matches the repository owner linked in the token metadata.',
+        };
+    }
+
+    const recipient = event.recipientWallet ?? event.claimerWallet;
+    if (recipient && tokenInfo?.creator && recipient === tokenInfo.creator) {
+        return {
+            status: 'verified_creator_wallet',
+            headline: 'CREATOR-WALLET GITHUB FEE CLAIM',
+            explanation: 'The claim recipient matches the token creator wallet. No repository-owner match was established.',
+        };
+    }
+    return {
+        status: 'unverified',
+        headline: 'UNVERIFIED GITHUB FEE WITHDRAWAL',
+        explanation: 'A real fee withdrawal occurred, but it does not prove this GitHub user created or endorses the coin.',
+    };
+}
+
 /**
  * GitHub Social Fee Claim card — rich Telegram HTML card with every
  * data point on its own line, grouped into clear sections.
@@ -98,15 +163,25 @@ export function claimAmountLines(event: FeeClaimEvent, solUsdPrice: number, life
 }
 
 export function formatGitHubClaimFeed(ctx: ClaimFeedContext): { imageUrl: string | null; caption: string } {
-    const { event, solUsdPrice, githubUser, xProfile, tokenInfo } = ctx;
+    const { event, solUsdPrice, githubUser, xProfile, tokenInfo: rawTokenInfo } = ctx;
     const L: string[] = [];
-    const mint = event.tokenMint?.trim() || '';
     const aff = ctx.affiliates;
 
-    // ━━ HEADER BADGE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    if (ctx.isFirstClaim) {
-        L.push(`🚨🚨🚨 <b>FIRST CREATOR FEE CLAIM</b>`);
-    }
+    const attribution = classifyClaimAttribution(ctx);
+    const unresolved = attribution.status === 'unresolved_pooled';
+    const mint = unresolved ? '' : event.tokenMint?.trim() || '';
+    const tokenInfo = unresolved ? null : rawTokenInfo;
+
+    // Put the evidence quality before the CA and market data. Traders should
+    // never need to read to the bottom of a long card to discover a mismatch.
+    const badge = attribution.status === 'verified_repository' || attribution.status === 'verified_creator_wallet'
+        ? '✅'
+        : attribution.status === 'identity_mismatch'
+            ? '🚩'
+            : '⚠️';
+    L.push(`${badge} <b>${attribution.headline}</b>`);
+    L.push(esc(attribution.explanation));
+    if (ctx.isFirstClaim) L.push('First-ever withdrawal observed for this GitHub fee account.');
 
     // Influencer badge right after header
     const tier = getInfluencerTier(
@@ -170,20 +245,21 @@ export function formatGitHubClaimFeed(ctx: ClaimFeedContext): { imageUrl: string
 
     // ━━ ALL LINKED COINS (multi-token PDA) ━━━━━━━━━━━━━━
     if (ctx.allLinkedTokens && ctx.allLinkedTokens.length > 1) {
-        L.push(`🪙 <b>All Linked Coins (${ctx.allLinkedTokens.length})</b>`);
+        L.push(`🪙 <b>Candidate Coins (${ctx.allLinkedTokens.length}) — no primary CA selected</b>`);
         for (const t of ctx.allLinkedTokens) {
             const mc = t.usdMarketCap > 0 ? `$${formatCompact(t.usdMarketCap)}` : '?';
             const status = t.complete ? '🎓' : '📈';
             const shortMint = `${t.mint.slice(0, 6)}…`;
-            const isPrimary = tokenInfo && t.mint === tokenInfo.mint;
-            const tag = isPrimary ? ' ◂' : '';
-            L.push(`${status} ${esc(t.symbol)} — ${mc} — ${shortMint}${tag}`);
+            L.push(`${status} ${esc(t.symbol)} — ${mc} — ${shortMint}`);
         }
         L.push('');
     }
 
     // ━━ CLAIM STATS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     L.push(`💸 <b>Claim Stats</b>`);
+    if (attribution.status === 'unresolved_pooled') {
+        L.push('Pooled withdrawal total — not earnings from one coin');
+    }
     if (ctx.claimNumber && ctx.claimNumber > 0) {
         L.push(`Claim #${ctx.claimNumber}`);
     } else {
@@ -229,8 +305,8 @@ export function formatGitHubClaimFeed(ctx: ClaimFeedContext): { imageUrl: string
         L.push('');
     }
 
-    // ━━ LINKED DEV (GITHUB) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    L.push(`👨‍💻 <b>Linked Dev</b>`);
+    // ━━ CLAIMING GITHUB IDENTITY ━━━━━━━━━━━━━━━━━━━━━━━━
+    L.push(`👨‍💻 <b>Claiming GitHub Identity</b>`);
     if (githubUser) {
         const nameTag = githubUser.name ? ` (${esc(githubUser.name)})` : '';
         L.push(`<a href="${esc(githubUser.htmlUrl)}">${esc(githubUser.login)}</a>${nameTag}`);
@@ -264,9 +340,10 @@ export function formatGitHubClaimFeed(ctx: ClaimFeedContext): { imageUrl: string
     }
     L.push('');
 
-    // ━━ REPO CLAIMED ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // A repository URL comes from token metadata. The claim instruction does
+    // not name a repository, so never describe this repository as "claimed".
     if (ctx.repoInfo) {
-        L.push(`📂 <b>Repo Claimed</b>`);
+        L.push(`📂 <b>Repository in Token Metadata</b>`);
         L.push(`<a href="${esc(ctx.repoInfo.htmlUrl)}">${esc(ctx.repoInfo.fullName)}</a>`);
         if (ctx.repoInfo.description) {
             const desc = ctx.repoInfo.description.length > 100 ? ctx.repoInfo.description.slice(0, 97) + '...' : ctx.repoInfo.description;
@@ -287,7 +364,7 @@ export function formatGitHubClaimFeed(ctx: ClaimFeedContext): { imageUrl: string
         const repoUrl = tokenInfo.githubUrls[0]!;
         const repoPath = repoUrl.replace(/^https?:\/\/github\.com\//, '').replace(/\/+$/, '');
         const isRepoUrl = repoPath.includes('/');
-        L.push(`📂 <b>${isRepoUrl ? 'Repo Claimed' : 'GitHub Linked'}</b>`);
+        L.push(`📂 <b>${isRepoUrl ? 'Repository in Token Metadata' : 'GitHub Profile in Token Metadata'}</b>`);
         L.push(`<a href="${esc(repoUrl)}">${esc(repoPath)}</a>`);
         if (!isRepoUrl) L.push(`<i>Profile linked — no specific repo</i>`);
         L.push('');
@@ -381,24 +458,11 @@ export function formatGitHubClaimFeed(ctx: ClaimFeedContext): { imageUrl: string
     {
         const signals: string[] = [];
 
-        // Claim verification
-        if (githubUser && tokenInfo) {
-            const claimerLogin = githubUser.login.toLowerCase();
-            const ghUrls = tokenInfo.githubUrls ?? [];
-            if (ghUrls.length > 0) {
-                const ownerMatch = ghUrls[0]!
-                    .replace(/^https?:\/\/github\.com\//, '')
-                    .replace(/\/+$/, '')
-                    .split('/')[0]?.toLowerCase();
-                if (ownerMatch === claimerLogin) {
-                    signals.push(`✅ Verified — token GitHub matches claimer`);
-                } else if (ownerMatch) {
-                    signals.push(`🚩 Mismatch — token GitHub is <b>${esc(ownerMatch)}</b>, claimer is <b>${esc(githubUser.login)}</b>`);
-                }
-            } else {
-                signals.push(`⚠️ Unverified — token has no GitHub link`);
-            }
-        }
+        if (attribution.status === 'verified_repository') signals.push('✅ Repository owner matches claiming GitHub identity');
+        if (attribution.status === 'verified_creator_wallet') signals.push('✅ Claim recipient matches token creator wallet');
+        if (attribution.status === 'identity_mismatch') signals.push(`🚩 GitHub identity mismatch — do not treat this as project verification`);
+        if (attribution.status === 'unverified') signals.push(`⚠️ No verified GitHub-to-coin relationship`);
+        if (attribution.status === 'unresolved_pooled') signals.push(`⚠️ Shared withdrawal cannot be attributed to one coin`);
 
         // Copycat warning
         if (ctx.sameNameTokens?.length && tokenInfo) {
@@ -455,7 +519,8 @@ export function formatGitHubClaimFeed(ctx: ClaimFeedContext): { imageUrl: string
     }
 
     // ━━ CHART ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    if (mint) {
+    const allowTradeLinks = attribution.status === 'verified_repository' || attribution.status === 'verified_creator_wallet';
+    if (mint && allowTradeLinks) {
         L.push(`📊 <a href="https://pump.fun/coin/${mint}">pump.fun/coin/${mint.slice(0, 12)}…</a>`);
     }
 
@@ -484,7 +549,7 @@ export function formatGitHubClaimFeed(ctx: ClaimFeedContext): { imageUrl: string
     L.push('');
 
     // ━━ TRADE LINKS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    if (mint) {
+    if (mint && allowTradeLinks) {
         L.push(`💹 Trade`);
         L.push(buildTradeLinks(mint, aff).map((l) => `<a href="${l.url}">${l.name}</a>`).join(' | '));
         L.push('');
@@ -517,18 +582,18 @@ export function formatGitHubClaimFeed(ctx: ClaimFeedContext): { imageUrl: string
     L.push('');
     if (githubUser) {
         const nameTag = githubUser.name ? ` (${esc(githubUser.name)})` : '';
-        L.push(`👨‍💻 Linked Dev`);
+        L.push(`👨‍💻 Claiming GitHub Identity`);
         L.push(`${esc(githubUser.login)}${nameTag}`);
         if (githubUser.followers > 0) L.push(`👁 Followers: ${githubUser.followers}`);
         if (githubUser.createdAt) L.push(`📅 Account age: ${timeAgo(new Date(githubUser.createdAt).getTime() / 1000)}`);
     }
     L.push('');
     if (ctx.repoInfo) {
-        L.push(`📂 GitHub Linked`);
+        L.push(`📂 Repository in Token Metadata`);
         L.push(`${esc(ctx.repoInfo.fullName)}`);
     } else if (tokenInfo?.githubUrls?.length) {
         const repoPath = tokenInfo.githubUrls[0]!.replace(/^https?:\/\/github\.com\//, '').replace(/\/+$/, '');
-        L.push(`📂 GitHub Linked`);
+        L.push(`📂 GitHub in Token Metadata`);
         L.push(esc(repoPath));
     }
     if (mint) {
@@ -1130,4 +1195,3 @@ function cleanXHandle(input: string): string | null {
     }
     return null;
 }
-

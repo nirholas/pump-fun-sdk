@@ -247,7 +247,9 @@ async function main(): Promise<void> {
             // Only on-chain first claims, or ones with no lifetime field, get
             // here, which is rare, so resolving the linked coins is affordable.
             // It is still bounded: a capped number of lookups in flight and a
-            // total deadline, after which the best coin found so far is used.
+            // total deadline. A shared withdrawal does not name a mint, so a
+            // multi-coin result stays unresolved instead of selecting the
+            // highest-market-cap coin and presenting that guess as fact.
             let allLinkedTokens: import('./pump-client.js').TokenInfo[] = [];
             if (event.allCandidateMints && event.allCandidateMints.length > 1) {
                 const started = Date.now();
@@ -262,19 +264,16 @@ async function main(): Promise<void> {
                 log.info('PDA %s: resolved %d of %d linked tokens in %dms%s',
                     event.socialFeePda?.slice(0, 8) ?? '?', linked.settled,
                     event.allCandidateMints.length, Date.now() - started,
-                    linked.timedOut ? ', deadline reached, using the best found' : '');
-                const best = allLinkedTokens[0];
-                if (best && best.usdMarketCap > 0) {
-                    mint = best.mint;
-                    event.tokenMint = mint;
-                    log.info('Resolved PDA to highest-MC token: %s ($%s)',
-                        mint.slice(0, 8), best.usdMarketCap.toFixed(0));
-                }
+                    linked.timedOut ? ', deadline reached' : '');
+                mint = '';
+                event.tokenMint = '';
+                log.warn('PDA %s withdrawal remains unresolved across %d candidate coins; no CA selected',
+                    event.socialFeePda?.slice(0, 8) ?? '?', event.allCandidateMints.length);
             }
 
             // The chain did not rule it out. The local tracker, keyed by dev
             // and coin, is the second guard, and it needs the resolved coin.
-            if (hasGithubUserClaimed(event.githubUserId, mint)) {
+            if (mint && hasGithubUserClaimed(event.githubUserId, mint)) {
                 pipeline.repeatClaim++;
                 log.info(formatSkippedClaim('repeat', event, mint));
                 return;
@@ -317,7 +316,7 @@ async function main(): Promise<void> {
                 ? await fetchDevWalletInfo(tokenInfo.creator, mint, config.solanaRpcUrl)
                 : null;
 
-            const claimNumber = incrementGithubClaimCount(event.githubUserId, mint);
+            const claimNumber = mint ? incrementGithubClaimCount(event.githubUserId, mint) : undefined;
             const claimedMints = getGithubUserClaimedMints(event.githubUserId);
             log.info('🚨 GitHub social fee FIRST claim by %s (%s) — %s SOL',
                 event.githubUserId, githubUser?.login ?? '?', event.amountSol.toFixed(4));
@@ -352,7 +351,14 @@ async function main(): Promise<void> {
                 txSignature: event.txSignature,
                 summary: `First GitHub claim by ${githubUser?.login ?? event.githubUserId}: ${event.amountSol.toFixed(4)} SOL`,
                 posted: false,
-                data: { type: 'github_social_claim', githubUser: githubUser?.login ?? null, amountSol: event.amountSol, mint: mint || null },
+                data: {
+                    type: 'github_social_claim',
+                    githubUser: githubUser?.login ?? null,
+                    amountSol: event.amountSol,
+                    mint: mint || null,
+                    attribution: mint ? 'candidate' : 'unresolved_pooled',
+                    candidateMints: event.allCandidateMints ?? [],
+                },
             });
             void webhooks.dispatch(stored);
 
@@ -369,7 +375,7 @@ async function main(): Promise<void> {
                 const messageId = imageUrl
                     ? await postPhotoToChannel(imageUrl, caption, { kind: 'github_first_claim', keyboard })
                     : await postToChannel(caption, { kind: 'github_first_claim', keyboard });
-                markGithubUserClaimed(event.githubUserId, mint);
+                if (mint) markGithubUserClaimed(event.githubUserId, mint);
                 pipeline.posted++;
                 store.markPosted(stored.seq);
                 if (mint && tokenInfo) {

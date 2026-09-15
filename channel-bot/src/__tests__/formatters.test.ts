@@ -40,18 +40,19 @@ describe('formatGitHubClaimFeed', () => {
         expect(imageUrl).not.toBeNull();
     });
 
-    it('shows FIRST CREATOR FEE CLAIM badge for first claims', () => {
+    it('shows a verified claim badge when repository owner matches', () => {
         const ctx = makeClaimFeedContext({ isFirstClaim: true, isFake: false });
         const { caption } = formatGitHubClaimFeed(ctx);
 
-        expect(caption).toContain('FIRST CREATOR FEE CLAIM');
+        expect(caption).toContain('VERIFIED GITHUB FEE CLAIM');
+        expect(caption).toContain('First-ever withdrawal observed');
     });
 
-    it('does not show FIRST CREATOR FEE CLAIM badge for subsequent claims', () => {
+    it('does not call a subsequent withdrawal first-ever', () => {
         const ctx = makeClaimFeedContext({ isFirstClaim: false });
         const { caption } = formatGitHubClaimFeed(ctx);
 
-        expect(caption).not.toContain('FIRST CREATOR FEE CLAIM');
+        expect(caption).not.toContain('First-ever withdrawal observed');
         expect(caption).not.toContain('FAKE CLAIM');
         expect(caption).not.toContain('REPEAT CLAIM');
     });
@@ -77,7 +78,7 @@ describe('formatGitHubClaimFeed', () => {
         const ctx = makeClaimFeedContext();
         const { caption } = formatGitHubClaimFeed(ctx);
 
-        expect(caption).toContain('Linked Dev');
+        expect(caption).toContain('Claiming GitHub Identity');
         expect(caption).toContain('testdev');
         expect(caption).toContain('Repos:');
     });
@@ -86,7 +87,7 @@ describe('formatGitHubClaimFeed', () => {
         const ctx = makeClaimFeedContext({ repoInfo: makeGitHubRepo() });
         const { caption } = formatGitHubClaimFeed(ctx);
 
-        expect(caption).toContain('Repo Claimed');
+        expect(caption).toContain('Repository in Token Metadata');
         expect(caption).toContain('testdev/pump-token');
         expect(caption).toContain('Stars:');
     });
@@ -133,7 +134,7 @@ describe('formatGitHubClaimFeed', () => {
         });
         const { caption } = formatGitHubClaimFeed(ctx);
 
-        expect(caption).toContain('Verified');
+        expect(caption).toContain('VERIFIED');
     });
 
     it('shows mismatch signal when GitHub owner differs', () => {
@@ -146,7 +147,9 @@ describe('formatGitHubClaimFeed', () => {
         });
         const { caption } = formatGitHubClaimFeed(ctx);
 
-        expect(caption).toContain('Mismatch');
+        expect(caption).toContain('MISMATCH');
+        expect(caption).toContain('IDENTITY MISMATCH');
+        expect(caption).not.toContain('Axiom');
     });
 
     it('handles missing tokenInfo gracefully', () => {
@@ -180,7 +183,10 @@ describe('formatGitHubClaimFeed', () => {
         });
         const { caption } = formatGitHubClaimFeed(ctx);
 
-        expect(caption).toContain('All Linked Coins');
+        expect(caption).toContain('UNRESOLVED POOLED');
+        expect(caption).toContain('Candidate Coins');
+        expect(caption).toContain('no primary CA selected');
+        expect(caption).not.toContain('Axiom');
     });
 
     it('shows same-name tokens when present', () => {

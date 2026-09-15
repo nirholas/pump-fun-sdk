@@ -95,6 +95,20 @@ particular coin or veto an experienced developer's new-coin claim.
 
 ## What a card should show
 
+### Trader-facing evidence labels
+
+| Label | What traders can safely conclude |
+| --- | --- |
+| **Verified GitHub Fee Claim** | The claiming GitHub username exactly matches the owner of the repository linked in token metadata. |
+| **Creator-Wallet GitHub Fee Claim** | The receiving wallet also created the token; repository ownership remains unverified. |
+| **Identity Mismatch** | The claiming username differs from the repository owner in metadata; a lookalike or unrelated account is possible. |
+| **Unverified** | The withdrawal is real, but no GitHub-to-coin relationship was proven. |
+| **Unresolved Pooled** | Multiple coins share the fee account, so the withdrawal has no defensible primary CA or per-coin amount. |
+
+Trade links belong only on the two verified relationship classes. “First-ever”
+describes the shared GitHub fee account, not a coin. A card is evidence for
+research, never an endorsement or promise of continued support.
+
 - The full CA, name, symbol and first-claim status for the developer–coin pair.
 - Claim transaction, timestamp, recipient, amount and correctly identified
   quote currency. A pooled withdrawal total must be labeled as such.
@@ -111,7 +125,7 @@ with bounded concurrency and deadlines. Keep discovery and delivery state
 separate, persist pending deliveries, and retry the same event on send failure.
 Replays, restarts and concurrent workers must not create duplicate pair alerts.
 
-## Implementation status — September 13, 2026
+## Implementation status — September 15, 2026
 
 This document is the agreed product contract. The existing `channel-bot/`
 implementation does **not yet implement the complete per-coin rule**:
@@ -119,9 +133,9 @@ implementation does **not yet implement the complete per-coin rule**:
 | Current behavior | Required correction |
 | --- | --- |
 | `first-claim.ts` rejects prior PDA lifetime claims before mint resolution | Separate developer history from per-pair eligibility |
-| `index.ts` picks the highest-market-cap linked mint | Establish coin attribution from evidence before per-pair deduplication |
+| Multi-coin withdrawals now remain unresolved and select no primary CA | Add transaction-level attribution evidence before enabling per-pair alerts for these withdrawals |
 | `claim-tracker.ts` has user–mint keys, populated from that inferred mint | Persist verified per-pair history and explicit coverage/provenance |
-| `formatters.ts` labels metadata as “Repo Claimed” | Use “Linked repository”; separate it from the claiming GitHub identity |
+| Cards now separate the claiming identity from the repository in token metadata and show an evidence label | Extend the same structured attribution field to every downstream consumer |
 | `pump-client.ts` uses raw curve-reserve ratios as SOL prices after graduation | Normalize decimals and use a current, quote-aware AMM price |
 | `social-fee-index.ts` only adds shareholder mappings on updates | Replace superseded mappings; preserve historical evidence separately |
 | Delivery and history are not a durable, atomic outbox | Prevent losses and duplicates across retries, restarts and workers |

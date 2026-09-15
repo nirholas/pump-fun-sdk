@@ -182,7 +182,7 @@ describe('Formatters', () => {
     };
 
     const result = formatters.formatGitHubClaimFeed(ctx);
-    expect(result.caption).toContain('FIRST CREATOR FEE CLAIM');
+    expect(result.caption).toContain('UNVERIFIED GITHUB FEE WITHDRAWAL');
     expect(result.caption).toContain('MintABC123456789012345678901234567890abc');
     expect(result.caption).toContain('TestCoin');
     expect(result.caption).toContain('TST');

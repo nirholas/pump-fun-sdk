@@ -56,6 +56,11 @@ The SDK never sends transactions itself. It returns `TransactionInstruction[]` t
 - **[PumpKit Site](https://pumpk.it)**
 - **[Telegram PumpFun Github Claim Tracker Bot](https://t.me/pumpfunclaims)**
 - **[Pump.fun GitHub Claims — dedicated repository](https://github.com/nirholas/pumpfun-github-claims)** · [Product and notification rules](docs/github-claims-product.md)
+
+> A GitHub social-fee withdrawal is real on-chain activity, not automatic proof
+> that a developer created or endorses a coin. Claim cards distinguish verified
+> repository/creator-wallet relationships, identity mismatches, unverified
+> links, and unresolved pooled withdrawals. See the notification rules above.
 - **[Telegram PumpFun Graduation/Migration Tracker Bot](https://t.me/trackpumpfun)**
 - **[Pumpfun Claim Tracker](https://t.me/pfclaimsbot)** (best bot — currently offline while building)
 

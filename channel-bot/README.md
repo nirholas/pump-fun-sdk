@@ -661,8 +661,8 @@ channel-bot/
    enrichment. **This can suppress an experienced developer's first claim on
    another coin and must change as part of the attribution work.**
 4. `SocialFeeIndex.lookupAll` supplies mints linked through fee-sharing configs.
-   The current handler picks the highest market cap. **This is a presentation
-   heuristic, not proof of the coin whose rewards were claimed.**
+   When several mints share a PDA, the handler now leaves the event unresolved,
+   lists candidates for research, and selects no CA or trade link.
 5. The local tracker checks a GitHub-user/mint key, then the handler enriches,
    formats and posts. It marks the pair after successful delivery.
 
@@ -685,6 +685,20 @@ Zero-payout and fake social claims are rejected from the claims channel.
 coin attribution still need verification. Persisted observations alone must not
 be described as complete on-chain history. Preserve pending deliveries and pair
 history when moving to the standalone repository.
+
+### Reading claim cards
+
+- **Verified GitHub Fee Claim:** claiming username matches the repository owner
+  in token metadata.
+- **Creator-Wallet GitHub Fee Claim:** the recipient also created the token, but
+  repository ownership is not established.
+- **Identity Mismatch:** claiming username and metadata repository owner differ.
+- **Unverified:** a real withdrawal occurred without proof tying it to the coin.
+- **Unresolved Pooled:** multiple candidate coins share the account; no CA or
+  per-coin amount is assigned.
+
+“First-ever” applies to the shared GitHub fee account. Cards are research leads,
+not endorsements, and trade buttons appear only for verified relationships.
 
 ## Example Claim Card
 
