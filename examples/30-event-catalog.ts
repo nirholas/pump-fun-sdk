@@ -62,7 +62,8 @@ export const EVENT_DECODERS: readonly CatalogEntry[] = [
   { method: "decodeInitUserVolumeAccumulatorEvent", program: "pump", idlEvent: "InitUserVolumeAccumulatorEvent", eventType: "initUserVolumeAccumulator" },
   { method: "decodeSyncUserVolumeAccumulatorEvent", program: "pump", idlEvent: "SyncUserVolumeAccumulatorEvent", eventType: "syncUserVolumeAccumulator" },
   { method: "decodeCloseUserVolumeAccumulatorEvent", program: "pump", idlEvent: "CloseUserVolumeAccumulatorEvent", eventType: "closeUserVolumeAccumulator" },
-  { method: "decodeAdminSetCreatorEvent", program: "pump", idlEvent: "AdminSetCreatorEvent", eventType: "adminSetCreator" },
+  { method: "decodeAdminCtoEvent", program: "pump", idlEvent: "AdminCtoEvent", eventType: "adminCto" },
+  { method: "decodeDistributeFeeToHoldersEvent", program: "pump", idlEvent: "DistributeFeeToHoldersEvent", eventType: "distributeFeeToHolders" },
   { method: "decodeMigrateBondingCurveCreatorEvent", program: "pump", idlEvent: "MigrateBondingCurveCreatorEvent", eventType: "migrateBondingCurveCreator" },
   { method: "decodeDistributeCreatorFeesEvent", program: "pump", idlEvent: "DistributeCreatorFeesEvent", eventType: "distributeCreatorFees" },
 

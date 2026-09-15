@@ -62,12 +62,17 @@ export function mainnetGlobal(overrides: Partial<Global> = {}): Global {
     reservedFeeRecipient: PROTOCOL_FEE_RECIPIENTS[0]!,
     mayhemModeEnabled: false,
     reservedFeeRecipients: PROTOCOL_FEE_RECIPIENTS.slice(1),
+    isCashbackEnabled: false,
     buybackFeeRecipients: PROTOCOL_FEE_RECIPIENTS.slice(1),
     buybackBasisPoints: new BN(0),
     initialVirtualQuoteReserves: new BN("30000000000"),
     // Mainnet whitelists no non-SOL quote mint yet: the program keeps the slot
     // zeroed, and a curve quoted in anything else is rejected on-chain.
     whitelistedQuoteMints: [PublicKey.default],
+    creatorFeeConfigurable: false,
+    maxConfigurableCreatorFeeBps: new BN(0),
+    holderRewardClaimAuthority: PublicKey.default,
+    isHolderRewardEnabled: true,
     ...overrides,
   };
 }
@@ -88,6 +93,9 @@ export function launchBondingCurve(
     isCashbackCoin: false,
     // The zero key is how the program stores a SOL-quoted curve.
     quoteMint: PublicKey.default,
+    creatorFeeBps: new BN(0),
+    canEditCreatorFee: false,
+    isHolderReward: false,
     ...overrides,
   };
 }

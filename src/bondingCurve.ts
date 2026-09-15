@@ -105,6 +105,9 @@ export function newBondingCurve(
     isCashbackCoin: false,
     // Stored the way the program stores it: the zero key on a SOL curve.
     quoteMint: isLegacyQuoteMint(quoteMint) ? PublicKey.default : quoteMint,
+    creatorFeeBps: new BN(0),
+    canEditCreatorFee: false,
+    isHolderReward: false,
   };
 }
 
@@ -450,5 +453,3 @@ export function bondingCurveMarketCap({
   }
   return virtualQuoteReserves.mul(mintSupply).div(virtualTokenReserves);
 }
-
-

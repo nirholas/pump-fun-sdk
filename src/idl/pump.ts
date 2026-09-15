@@ -14,6 +14,86 @@ export interface Pump {
   };
   instructions: [
     {
+      name: "addQuoteControlMint";
+      discriminator: [2, 14, 61, 138, 170, 142, 14, 95];
+      accounts: [
+        {
+          name: "authority";
+          writable: true;
+          signer: true;
+        },
+        {
+          name: "global";
+          pda: {
+            seeds: [
+              {
+                kind: "const";
+                value: [103, 108, 111, 98, 97, 108];
+              },
+            ];
+          };
+        },
+        {
+          name: "quoteControl";
+          writable: true;
+          pda: {
+            seeds: [
+              {
+                kind: "const";
+                value: [113, 117, 111, 116, 101, 45, 99, 111, 110, 116, 114, 111, 108];
+              },
+            ];
+          };
+        },
+        {
+          name: "systemProgram";
+          address: "11111111111111111111111111111111";
+        },
+        {
+          name: "eventAuthority";
+          pda: {
+            seeds: [
+              {
+                kind: "const";
+                value: [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121,
+                ];
+              },
+            ];
+          };
+        },
+        {
+          name: "program";
+        },
+      ];
+      args: [
+        {
+          name: "quoteMint";
+          type: "pubkey";
+        },
+        {
+          name: "initialVirtualQuoteReserves";
+          type: "u64";
+        },
+      ];
+    },
+    {
       name: "addQuoteMint";
       discriminator: [111, 121, 21, 56, 40, 24, 94, 209];
       accounts: [
@@ -76,12 +156,12 @@ export interface Pump {
       ];
     },
     {
-      name: "adminSetCreator";
-      docs: ["Allows Global::admin_set_creator_authority to override the bonding curve creator"];
-      discriminator: [69, 25, 171, 142, 57, 239, 13, 4];
+      name: "adminCto";
+      discriminator: [125, 126, 214, 134, 77, 229, 188, 89];
       accounts: [
         {
           name: "adminSetCreatorAuthority";
+          writable: true;
           signer: true;
           relations: ["global"];
         },
@@ -100,6 +180,20 @@ export interface Pump {
           name: "mint";
         },
         {
+          name: "quoteMint";
+        },
+        {
+          name: "quoteTokenProgram";
+        },
+        {
+          name: "associatedTokenProgram";
+          address: "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL";
+        },
+        {
+          name: "systemProgram";
+          address: "11111111111111111111111111111111";
+        },
+        {
           name: "bondingCurve";
           writable: true;
           pda: {
@@ -113,6 +207,315 @@ export interface Pump {
                 path: "mint";
               },
             ];
+          };
+        },
+        {
+          name: "currentCreator";
+          docs: [
+            "Not declared writable: a pre-creator (legacy) curve stores the zero key, which is the",
+            "system program, whose write lock the runtime always demotes. Callers MUST still pass this",
+            "account as writable whenever it is a wallet, so the outgoing creator can be paid from its",
+            "vaults; otherwise the instruction fails with `CtoCreatorAccountNotWritable`. A creator that",
+            "is not a system-owned wallet (a program, a sysvar, a pump-fees or other program-owned",
+            "account) is skipped, its vault balances stay collectable, and it may be passed read-only.",
+          ];
+        },
+        {
+          name: "currentCreatorQuoteTokenAccount";
+          writable: true;
+          pda: {
+            seeds: [
+              {
+                kind: "account";
+                path: "current_creator";
+              },
+              {
+                kind: "account";
+                path: "quote_token_program";
+              },
+              {
+                kind: "account";
+                path: "quote_mint";
+              },
+            ];
+            program: {
+              kind: "account";
+              path: "associated_token_program";
+            };
+          };
+        },
+        {
+          name: "creatorVault";
+          writable: true;
+          pda: {
+            seeds: [
+              {
+                kind: "const";
+                value: [99, 114, 101, 97, 116, 111, 114, 45, 118, 97, 117, 108, 116];
+              },
+              {
+                kind: "account";
+                path: "current_creator";
+              },
+            ];
+          };
+        },
+        {
+          name: "creatorVaultQuoteTokenAccount";
+          writable: true;
+          pda: {
+            seeds: [
+              {
+                kind: "account";
+                path: "creator_vault";
+              },
+              {
+                kind: "account";
+                path: "quote_token_program";
+              },
+              {
+                kind: "account";
+                path: "quote_mint";
+              },
+            ];
+            program: {
+              kind: "account";
+              path: "associated_token_program";
+            };
+          };
+        },
+        {
+          name: "holderCreatorVault";
+          docs: [
+            '`["creator-vault", find_program_address(["holder-rewards", mint], pump)]`. The sweep',
+            "destination on the holder path of a fee-shared coin, ignored otherwise. Re-derived in the",
+            "handler before it is written to; kept out of the seeds constraints to stay under the sBPF",
+            "stack frame.",
+          ];
+          writable: true;
+        },
+        {
+          name: "holderCreatorVaultQuoteTokenAccount";
+          writable: true;
+          pda: {
+            seeds: [
+              {
+                kind: "account";
+                path: "holder_creator_vault";
+              },
+              {
+                kind: "account";
+                path: "quote_token_program";
+              },
+              {
+                kind: "account";
+                path: "quote_mint";
+              },
+            ];
+            program: {
+              kind: "account";
+              path: "associated_token_program";
+            };
+          };
+        },
+        {
+          name: "pumpAmm";
+          address: "pAMMBay6oceH9fJKBRHGP5D4bD4sWpmSwMn52FMfXEA";
+        },
+        {
+          name: "ammGlobalConfig";
+          pda: {
+            seeds: [
+              {
+                kind: "const";
+                value: [103, 108, 111, 98, 97, 108, 95, 99, 111, 110, 102, 105, 103];
+              },
+            ];
+            program: {
+              kind: "account";
+              path: "pump_amm";
+            };
+          };
+        },
+        {
+          name: "poolAuthority";
+          pda: {
+            seeds: [
+              {
+                kind: "const";
+                value: [112, 111, 111, 108, 45, 97, 117, 116, 104, 111, 114, 105, 116, 121];
+              },
+              {
+                kind: "account";
+                path: "mint";
+              },
+            ];
+          };
+        },
+        {
+          name: "pool";
+          writable: true;
+          pda: {
+            seeds: [
+              {
+                kind: "const";
+                value: [112, 111, 111, 108];
+              },
+              {
+                kind: "const";
+                value: [0, 0];
+              },
+              {
+                kind: "account";
+                path: "pool_authority";
+              },
+              {
+                kind: "account";
+                path: "mint";
+              },
+              {
+                kind: "account";
+                path: "quote_mint";
+              },
+            ];
+            program: {
+              kind: "account";
+              path: "pump_amm";
+            };
+          };
+        },
+        {
+          name: "pumpAmmEventAuthority";
+          pda: {
+            seeds: [
+              {
+                kind: "const";
+                value: [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121,
+                ];
+              },
+            ];
+            program: {
+              kind: "account";
+              path: "pump_amm";
+            };
+          };
+        },
+        {
+          name: "coinCreatorVaultAuthority";
+          writable: true;
+          pda: {
+            seeds: [
+              {
+                kind: "const";
+                value: [99, 114, 101, 97, 116, 111, 114, 95, 118, 97, 117, 108, 116];
+              },
+              {
+                kind: "account";
+                path: "current_creator";
+              },
+            ];
+            program: {
+              kind: "account";
+              path: "pump_amm";
+            };
+          };
+        },
+        {
+          name: "coinCreatorVaultAta";
+          writable: true;
+          pda: {
+            seeds: [
+              {
+                kind: "account";
+                path: "coin_creator_vault_authority";
+              },
+              {
+                kind: "account";
+                path: "quote_token_program";
+              },
+              {
+                kind: "account";
+                path: "quote_mint";
+              },
+            ];
+            program: {
+              kind: "account";
+              path: "associated_token_program";
+            };
+          };
+        },
+        {
+          name: "sharingConfig";
+          writable: true;
+          pda: {
+            seeds: [
+              {
+                kind: "const";
+                value: [115, 104, 97, 114, 105, 110, 103, 45, 99, 111, 110, 102, 105, 103];
+              },
+              {
+                kind: "account";
+                path: "mint";
+              },
+            ];
+            program: {
+              kind: "account";
+              path: "pump_fees";
+            };
+          };
+        },
+        {
+          name: "pumpFees";
+          address: "pfeeUxB6jkeY1Hxd7CsFCAjcbHA9rWtchMGdZ6VojVZ";
+        },
+        {
+          name: "pumpFeesEventAuthority";
+          pda: {
+            seeds: [
+              {
+                kind: "const";
+                value: [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121,
+                ];
+              },
+            ];
+            program: {
+              kind: "account";
+              path: "pump_fees";
+            };
           };
         },
         {
@@ -150,8 +553,22 @@ export interface Pump {
       ];
       args: [
         {
-          name: "creator";
-          type: "pubkey";
+          name: "isHolderReward";
+          type: {
+            option: "bool";
+          };
+        },
+        {
+          name: "creatorFeeBps";
+          type: {
+            option: "u64";
+          };
+        },
+        {
+          name: "newCreator";
+          type: {
+            option: "pubkey";
+          };
         },
       ];
     },
@@ -1024,60 +1441,11 @@ export interface Pump {
         },
         {
           name: "associatedQuoteUser";
+          docs: [
+            "canonical SPL associated-token PDA. Validated in handlers via",
+            "`validate_user_quote_token_account` for non-legacy mints; ignored for legacy (SOL) trades.",
+          ];
           writable: true;
-          pda: {
-            seeds: [
-              {
-                kind: "account";
-                path: "user";
-              },
-              {
-                kind: "account";
-                path: "quote_token_program";
-              },
-              {
-                kind: "account";
-                path: "quote_mint";
-              },
-            ];
-            program: {
-              kind: "const";
-              value: [
-                140,
-                151,
-                37,
-                143,
-                78,
-                36,
-                137,
-                241,
-                187,
-                61,
-                16,
-                41,
-                20,
-                142,
-                13,
-                131,
-                11,
-                90,
-                19,
-                153,
-                218,
-                255,
-                16,
-                132,
-                4,
-                142,
-                123,
-                216,
-                219,
-                233,
-                248,
-                89,
-              ];
-            };
-          };
         },
         {
           name: "creatorVault";
@@ -2084,60 +2452,11 @@ export interface Pump {
         },
         {
           name: "associatedQuoteUser";
+          docs: [
+            "canonical SPL associated-token PDA. Validated in handlers via",
+            "`validate_user_quote_token_account` for non-legacy mints; ignored for legacy (SOL) trades.",
+          ];
           writable: true;
-          pda: {
-            seeds: [
-              {
-                kind: "account";
-                path: "user";
-              },
-              {
-                kind: "account";
-                path: "quote_token_program";
-              },
-              {
-                kind: "account";
-                path: "quote_mint";
-              },
-            ];
-            program: {
-              kind: "const";
-              value: [
-                140,
-                151,
-                37,
-                143,
-                78,
-                36,
-                137,
-                241,
-                187,
-                61,
-                16,
-                41,
-                20,
-                142,
-                13,
-                131,
-                11,
-                90,
-                19,
-                153,
-                218,
-                255,
-                16,
-                132,
-                4,
-                142,
-                123,
-                216,
-                219,
-                233,
-                248,
-                89,
-              ];
-            };
-          };
         },
         {
           name: "creatorVault";
@@ -2599,6 +2918,10 @@ export interface Pump {
     },
     {
       name: "claimCashbackV2";
+      docs: [
+        "Pays out the user's accrued cashback. For a token quote, `associated_quote_user` may be",
+        "any token account of `quote_mint` owned by `user`, not only the associated one.",
+      ];
       discriminator: [122, 243, 204, 65, 94, 116, 29, 55];
       accounts: [
         {
@@ -2682,26 +3005,6 @@ export interface Pump {
         {
           name: "associatedQuoteUser";
           writable: true;
-          pda: {
-            seeds: [
-              {
-                kind: "account";
-                path: "user";
-              },
-              {
-                kind: "account";
-                path: "quote_token_program";
-              },
-              {
-                kind: "account";
-                path: "quote_mint";
-              },
-            ];
-            program: {
-              kind: "account";
-              path: "associated_token_program";
-            };
-          };
         },
         {
           name: "systemProgram";
@@ -3541,7 +3844,28 @@ export interface Pump {
     },
     {
       name: "createV2";
-      docs: ["Creates a new spl-22 coin and bonding curve."];
+      docs: [
+        "Creates a new spl-22 coin and bonding curve.",
+        "",
+        "Remaining accounts select the quote mint (none = SOL): `quote_mint`,",
+        "`associated_quote_bonding_curve`, `quote_token_program` (SPL Token or Token-2022; must own",
+        "the mint), plus an optional fourth account, the `quote-control` PDA, read only when `Global`",
+        "does not whitelist the mint. A mint admitted through quote-control seeds the curve's",
+        "virtual quote reserves from its quote-control entry instead of `Global`, and cannot be",
+        "used with `is_mayhem_mode` (`MayhemModeQuoteMintNotAllowed`). The Token-2022",
+        "native mint is rejected, and a Token-2022 quote mint may only carry the xStock operable",
+        "extension set (metadata pointer/metadata, permanent delegate, initialized default account",
+        "state, scaled UI amount, pausable, confidential-transfer mint, and a transfer hook with no",
+        "program). The trailing `creator_fee_bps` argument (EOF-tolerant) sets the coin's own creator",
+        "fee rate for a quote mint admitted through quote-control, and then requires",
+        "`Global.creator_fee_configurable`, a non-cashback coin and a value in",
+        "`1..=Global.max_configurable_creator_fee_bps`; on a SOL or `Global`-whitelisted quote it is",
+        "ignored, and omitted or zero stores 0 so the pump-fees schedule rate applies.",
+        "`is_cashback_enabled` is deprecated and must be false. `is_holder_reward` (EOF-tolerant,",
+        "gated by `Global.is_holder_reward_enabled`) sets the creator to the `holder-rewards` PDA",
+        "of the mint, so creator fees accrue to its creator vault, are collected onto the PDA with",
+        "`collect_creator_fee*` and paid out through `distribute_fee_to_holders`.",
+      ];
       discriminator: [214, 144, 76, 236, 95, 139, 49, 180];
       accounts: [
         {
@@ -3882,6 +4206,22 @@ export interface Pump {
             };
           };
         },
+        {
+          name: "creatorFeeBps";
+          type: {
+            defined: {
+              name: "optionU64";
+            };
+          };
+        },
+        {
+          name: "isHolderReward";
+          type: {
+            defined: {
+              name: "optionBool";
+            };
+          };
+        },
       ];
     },
     {
@@ -4209,6 +4549,116 @@ export interface Pump {
       };
     },
     {
+      name: "distributeFeeToHolders";
+      docs: [
+        "Pays fees collected on the `holder-rewards` PDA (via `collect_creator_fee*` with the PDA",
+        "as creator) out to holders: `amounts[i]` goes to remaining accounts `[2i]` (owner) /",
+        "`[2i + 1]` (its quote ATA, created if missing). `holder_rewards_token_account` is any",
+        "quote token account owned by the PDA (normally its ATA): the source on a token quote, and",
+        "on a SOL quote a parked WSOL account closed into the PDA first; pass the program id when",
+        "there is none. Signed by `Global.holder_reward_claim_authority`.",
+      ];
+      discriminator: [98, 54, 145, 97, 2, 70, 173, 43];
+      accounts: [
+        {
+          name: "global";
+          pda: {
+            seeds: [
+              {
+                kind: "const";
+                value: [103, 108, 111, 98, 97, 108];
+              },
+            ];
+          };
+        },
+        {
+          name: "holderRewardClaimAuthority";
+          writable: true;
+          signer: true;
+          relations: ["global"];
+        },
+        {
+          name: "mint";
+        },
+        {
+          name: "holderRewards";
+          docs: ["deliver the collected fees here (lamports on a SOL quote)"];
+          writable: true;
+          pda: {
+            seeds: [
+              {
+                kind: "const";
+                value: [104, 111, 108, 100, 101, 114, 45, 114, 101, 119, 97, 114, 100, 115];
+              },
+              {
+                kind: "account";
+                path: "mint";
+              },
+            ];
+          };
+        },
+        {
+          name: "holderRewardsTokenAccount";
+          writable: true;
+          optional: true;
+        },
+        {
+          name: "quoteMint";
+        },
+        {
+          name: "quoteTokenProgram";
+        },
+        {
+          name: "associatedTokenProgram";
+          address: "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL";
+        },
+        {
+          name: "systemProgram";
+          address: "11111111111111111111111111111111";
+        },
+        {
+          name: "eventAuthority";
+          pda: {
+            seeds: [
+              {
+                kind: "const";
+                value: [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121,
+                ];
+              },
+            ];
+          };
+        },
+        {
+          name: "program";
+        },
+      ];
+      args: [
+        {
+          name: "amounts";
+          type: {
+            vec: "u64";
+          };
+        },
+      ];
+    },
+    {
       name: "extendAccount";
       docs: ["Extends the size of program-owned accounts"];
       discriminator: [234, 102, 194, 203, 150, 72, 62, 229];
@@ -4219,6 +4669,7 @@ export interface Pump {
         },
         {
           name: "user";
+          writable: true;
           signer: true;
         },
         {
@@ -4484,6 +4935,34 @@ export interface Pump {
       args: [];
     },
     {
+      name: "initializeQuoteControl";
+      discriminator: [239, 73, 245, 173, 209, 177, 84, 66];
+      accounts: [
+        {
+          name: "quoteControl";
+          writable: true;
+          pda: {
+            seeds: [
+              {
+                kind: "const";
+                value: [113, 117, 111, 116, 101, 45, 99, 111, 110, 116, 114, 111, 108];
+              },
+            ];
+          };
+        },
+        {
+          name: "user";
+          writable: true;
+          signer: true;
+        },
+        {
+          name: "systemProgram";
+          address: "11111111111111111111111111111111";
+        },
+      ];
+      args: [];
+    },
+    {
       name: "migrate";
       docs: ["Migrates liquidity to pump_amm if the bonding curve is complete"];
       discriminator: [155, 234, 231, 146, 236, 158, 162, 30];
@@ -4582,6 +5061,7 @@ export interface Pump {
         },
         {
           name: "user";
+          writable: true;
           signer: true;
         },
         {
@@ -5121,6 +5601,7 @@ export interface Pump {
         },
         {
           name: "user";
+          writable: true;
           signer: true;
         },
         {
@@ -5389,6 +5870,82 @@ export interface Pump {
         },
       ];
       args: [];
+    },
+    {
+      name: "removeQuoteControlMint";
+      discriminator: [223, 7, 253, 26, 81, 165, 218, 166];
+      accounts: [
+        {
+          name: "authority";
+          writable: true;
+          signer: true;
+        },
+        {
+          name: "global";
+          pda: {
+            seeds: [
+              {
+                kind: "const";
+                value: [103, 108, 111, 98, 97, 108];
+              },
+            ];
+          };
+        },
+        {
+          name: "quoteControl";
+          writable: true;
+          pda: {
+            seeds: [
+              {
+                kind: "const";
+                value: [113, 117, 111, 116, 101, 45, 99, 111, 110, 116, 114, 111, 108];
+              },
+            ];
+          };
+        },
+        {
+          name: "systemProgram";
+          address: "11111111111111111111111111111111";
+        },
+        {
+          name: "eventAuthority";
+          pda: {
+            seeds: [
+              {
+                kind: "const";
+                value: [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121,
+                ];
+              },
+            ];
+          };
+        },
+        {
+          name: "program";
+        },
+      ];
+      args: [
+        {
+          name: "quoteMint";
+          type: "pubkey";
+        },
+      ];
     },
     {
       name: "removeQuoteMint";
@@ -5981,60 +6538,11 @@ export interface Pump {
         },
         {
           name: "associatedQuoteUser";
+          docs: [
+            "canonical SPL associated-token PDA. Validated in `sell_v2_ix` via",
+            "`validate_user_quote_token_account` for non-legacy mints; ignored for legacy (SOL) trades.",
+          ];
           writable: true;
-          pda: {
-            seeds: [
-              {
-                kind: "account";
-                path: "user";
-              },
-              {
-                kind: "account";
-                path: "quote_token_program";
-              },
-              {
-                kind: "account";
-                path: "quote_mint";
-              },
-            ];
-            program: {
-              kind: "const";
-              value: [
-                140,
-                151,
-                37,
-                143,
-                78,
-                36,
-                137,
-                241,
-                187,
-                61,
-                16,
-                41,
-                20,
-                142,
-                13,
-                131,
-                11,
-                90,
-                19,
-                153,
-                218,
-                255,
-                16,
-                132,
-                4,
-                142,
-                123,
-                216,
-                219,
-                233,
-                248,
-                89,
-              ];
-            };
-          };
         },
         {
           name: "creatorVault";
@@ -6972,6 +7480,78 @@ export interface Pump {
       ];
     },
     {
+      name: "setQuoteControlAdmin";
+      discriminator: [62, 79, 161, 211, 165, 170, 214, 210];
+      accounts: [
+        {
+          name: "global";
+          pda: {
+            seeds: [
+              {
+                kind: "const";
+                value: [103, 108, 111, 98, 97, 108];
+              },
+            ];
+          };
+        },
+        {
+          name: "authority";
+          signer: true;
+          relations: ["global"];
+        },
+        {
+          name: "quoteControl";
+          writable: true;
+          pda: {
+            seeds: [
+              {
+                kind: "const";
+                value: [113, 117, 111, 116, 101, 45, 99, 111, 110, 116, 114, 111, 108];
+              },
+            ];
+          };
+        },
+        {
+          name: "eventAuthority";
+          pda: {
+            seeds: [
+              {
+                kind: "const";
+                value: [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121,
+                ];
+              },
+            ];
+          };
+        },
+        {
+          name: "program";
+        },
+      ];
+      args: [
+        {
+          name: "newAdmin";
+          type: "pubkey";
+        },
+      ];
+    },
+    {
       name: "setReservedFeeRecipients";
       discriminator: [111, 172, 162, 232, 114, 89, 213, 142];
       accounts: [
@@ -7464,6 +8044,72 @@ export interface Pump {
       ];
     },
     {
+      name: "updateCreatorFeeConfig";
+      discriminator: [61, 175, 160, 249, 66, 66, 136, 175];
+      accounts: [
+        {
+          name: "global";
+          writable: true;
+          pda: {
+            seeds: [
+              {
+                kind: "const";
+                value: [103, 108, 111, 98, 97, 108];
+              },
+            ];
+          };
+        },
+        {
+          name: "authority";
+          writable: true;
+          signer: true;
+          relations: ["global"];
+        },
+        {
+          name: "eventAuthority";
+          pda: {
+            seeds: [
+              {
+                kind: "const";
+                value: [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121,
+                ];
+              },
+            ];
+          };
+        },
+        {
+          name: "program";
+        },
+      ];
+      args: [
+        {
+          name: "creatorFeeConfigurable";
+          type: "bool";
+        },
+        {
+          name: "maxConfigurableCreatorFeeBps";
+          type: "u64";
+        },
+      ];
+    },
+    {
       name: "updateGlobalAuthority";
       discriminator: [227, 181, 74, 196, 208, 21, 97, 213];
       accounts: [
@@ -7522,6 +8168,72 @@ export interface Pump {
       ];
       args: [];
     },
+    {
+      name: "updateHolderRewardConfig";
+      discriminator: [225, 252, 66, 4, 199, 35, 236, 16];
+      accounts: [
+        {
+          name: "global";
+          writable: true;
+          pda: {
+            seeds: [
+              {
+                kind: "const";
+                value: [103, 108, 111, 98, 97, 108];
+              },
+            ];
+          };
+        },
+        {
+          name: "authority";
+          writable: true;
+          signer: true;
+          relations: ["global"];
+        },
+        {
+          name: "eventAuthority";
+          pda: {
+            seeds: [
+              {
+                kind: "const";
+                value: [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121,
+                ];
+              },
+            ];
+          };
+        },
+        {
+          name: "program";
+        },
+      ];
+      args: [
+        {
+          name: "isHolderRewardEnabled";
+          type: "bool";
+        },
+        {
+          name: "holderRewardClaimAuthority";
+          type: "pubkey";
+        },
+      ];
+    },
   ];
   accounts: [
     {
@@ -7541,6 +8253,10 @@ export interface Pump {
       discriminator: [202, 42, 246, 43, 142, 190, 30, 255];
     },
     {
+      name: "quoteControl";
+      discriminator: [56, 244, 35, 238, 193, 213, 162, 201];
+    },
+    {
       name: "sharingConfig";
       discriminator: [216, 74, 9, 0, 56, 140, 93, 75];
     },
@@ -7551,8 +8267,12 @@ export interface Pump {
   ];
   events: [
     {
-      name: "adminSetCreatorEvent";
-      discriminator: [64, 69, 192, 104, 29, 30, 25, 107];
+      name: "addQuoteControlMintEvent";
+      discriminator: [164, 175, 87, 74, 88, 45, 33, 62];
+    },
+    {
+      name: "adminCtoEvent";
+      discriminator: [110, 124, 226, 98, 170, 255, 17, 120];
     },
     {
       name: "adminSetIdlAuthorityEvent";
@@ -7595,6 +8315,10 @@ export interface Pump {
       discriminator: [165, 55, 129, 112, 4, 179, 202, 40];
     },
     {
+      name: "distributeFeeToHoldersEvent";
+      discriminator: [227, 190, 215, 206, 176, 180, 165, 132];
+    },
+    {
       name: "extendAccountEvent";
       discriminator: [97, 97, 215, 144, 93, 146, 22, 124];
     },
@@ -7609,6 +8333,10 @@ export interface Pump {
     {
       name: "minimumDistributableFeeEvent";
       discriminator: [168, 216, 132, 239, 235, 182, 49, 52];
+    },
+    {
+      name: "removeQuoteControlMintEvent";
+      discriminator: [46, 33, 86, 134, 0, 213, 209, 48];
     },
     {
       name: "reservedFeeRecipientsEvent";
@@ -7627,12 +8355,20 @@ export interface Pump {
       discriminator: [223, 195, 159, 246, 62, 48, 143, 131];
     },
     {
+      name: "setQuoteControlAdminEvent";
+      discriminator: [74, 248, 141, 69, 202, 81, 30, 247];
+    },
+    {
       name: "syncUserVolumeAccumulatorEvent";
       discriminator: [197, 122, 167, 124, 116, 81, 91, 255];
     },
     {
       name: "tradeEvent";
       discriminator: [189, 219, 127, 211, 78, 230, 97, 238];
+    },
+    {
+      name: "updateCreatorFeeConfigEvent";
+      discriminator: [152, 198, 124, 124, 106, 246, 127, 191];
     },
     {
       name: "updateGlobalAuthorityEvent";
@@ -7877,7 +8613,7 @@ export interface Pump {
     {
       code: 6049;
       name: "creatorMigratedToSharingConfig";
-      msg: "creator has been migrated to sharing config, use pump_fees::reset_fee_sharing_config instead";
+      msg: "creator has been migrated to sharing config";
     },
     {
       code: 6050;
@@ -7949,7 +8685,7 @@ export interface Pump {
     {
       code: 6064;
       name: "invalidQuoteTokenProgram";
-      msg: "Create v2: quote token program must be legacy SPL Token";
+      msg: "Create v2: quote token program must be SPL Token or Token-2022";
     },
     {
       code: 6065;
@@ -7986,10 +8722,148 @@ export interface Pump {
       name: "mayhemModeQuoteMintNotAllowed";
       msg: "Mayhem mode quote mint not allowed";
     },
+    {
+      code: 6072;
+      name: "missingCashbackAccounts";
+      msg: "Cashback trade is missing the required remaining accounts";
+    },
+    {
+      code: 6073;
+      name: "invalidCashbackAccumulator";
+      msg: "Cashback user_volume_accumulator account is invalid";
+    },
+    {
+      code: 6074;
+      name: "invalidBondingCurveV2";
+      msg: "bonding_curve_v2 remaining account is missing or invalid";
+    },
+    {
+      code: 6075;
+      name: "invalidQuoteControl";
+      msg: "quote_control remaining account does not match derivation or is uninitialized";
+    },
+    {
+      code: 6076;
+      name: "invalidCashbackRecipient";
+      msg: "Cashback recipient token account is not owned by user";
+    },
+    {
+      code: 6077;
+      name: "creatorFeeNotConfigurable";
+      msg: "Configurable creator fees are disabled";
+    },
+    {
+      code: 6078;
+      name: "creatorFeeBpsOutOfRange";
+      msg: "Creator fee basis points must be between 1 and the configured maximum";
+    },
+    {
+      code: 6079;
+      name: "creatorFeeNotEditable";
+      msg: "Creator fee is not editable for this bonding curve";
+    },
+    {
+      code: 6080;
+      name: "creatorFeeNotAllowedForCashbackCoin";
+      msg: "Creator fee cannot be configured for a cashback coin";
+    },
+    {
+      code: 6081;
+      name: "bondingCurveAlreadyMigrated";
+      msg: "Bonding curve has already migrated";
+    },
+    {
+      code: 6082;
+      name: "cashbackDeprecated";
+      msg: "Cashback coins can no longer be created";
+    },
+    {
+      code: 6083;
+      name: "holderRewardCreatorImmutable";
+      msg: "The creator of a holder-reward coin cannot be changed";
+    },
+    {
+      code: 6084;
+      name: "holderRewardDisabled";
+      msg: "Holder-reward coins are disabled";
+    },
+    {
+      code: 6085;
+      name: "holderRewardRecipientsMismatch";
+      msg: "Holder-reward amounts and recipient accounts do not match";
+    },
+    {
+      code: 6086;
+      name: "holderRewardsRentFloor";
+      msg: "The holder-rewards PDA cannot be left below its rent-exempt minimum";
+    },
+    {
+      code: 6087;
+      name: "holderRewardTokenAccountMissing";
+      msg: "A holder-rewards token account is required on a token quote";
+    },
+    {
+      code: 6088;
+      name: "ctoNotAllowedForMayhemCoin";
+      msg: "CTO is not allowed on a mayhem-mode coin";
+    },
+    {
+      code: 6089;
+      name: "ctoNewCreatorRequired";
+      msg: "new_creator is required unless converting to holder rewards";
+    },
+    {
+      code: 6090;
+      name: "ctoNewCreatorNotAllowed";
+      msg: "new_creator must be omitted when converting to holder rewards";
+    },
+    {
+      code: 6091;
+      name: "creatorFeeNotConfigurableForQuote";
+      msg: "Creator fee is not configurable on a SOL or whitelisted quote; the fee schedule applies";
+    },
+    {
+      code: 6092;
+      name: "ctoCreatorAccountNotWritable";
+      msg: "current_creator must be passed writable so the outgoing creator can be paid";
+    },
+    {
+      code: 6093;
+      name: "ctoSharedVaultFrozen";
+      msg: "A frozen sharing-config vault account holds a balance; thaw it before the holder conversion";
+    },
   ];
   types: [
     {
-      name: "adminSetCreatorEvent";
+      name: "addQuoteControlMintEvent";
+      type: {
+        kind: "struct";
+        fields: [
+          {
+            name: "quoteControl";
+            type: "pubkey";
+          },
+          {
+            name: "authority";
+            type: "pubkey";
+          },
+          {
+            name: "quoteMint";
+            type: "pubkey";
+          },
+          {
+            name: "initialVirtualQuoteReserves";
+            type: "u64";
+          },
+          {
+            name: "timestamp";
+            type: "i64";
+          },
+        ];
+      };
+    },
+    {
+      name: "adminCtoEvent";
       type: {
         kind: "struct";
         fields: [
@@ -7998,7 +8872,7 @@ export interface Pump {
             type: "i64";
           },
           {
-            name: "adminSetCreatorAuthority";
+            name: "authority";
             type: "pubkey";
           },
           {
@@ -8016,6 +8890,34 @@ export interface Pump {
           {
             name: "newCreator";
             type: "pubkey";
+          },
+          {
+            name: "isHolderReward";
+            type: "bool";
+          },
+          {
+            name: "isCashbackCoin";
+            type: "bool";
+          },
+          {
+            name: "oldCreatorFeeBps";
+            type: "u64";
+          },
+          {
+            name: "newCreatorFeeBps";
+            type: "u64";
+          },
+          {
+            name: "sharingConfigReset";
+            type: "bool";
+          },
+          {
+            name: "sweptToHolderVault";
+            type: "u64";
+          },
+          {
+            name: "poolUpdated";
+            type: "bool";
           },
         ];
       };
@@ -8112,6 +9014,18 @@ export interface Pump {
           {
             name: "quoteMint";
             type: "pubkey";
+          },
+          {
+            name: "creatorFeeBps";
+            type: "u64";
+          },
+          {
+            name: "canEditCreatorFee";
+            type: "bool";
+          },
+          {
+            name: "isHolderReward";
+            type: "bool";
           },
         ];
       };
@@ -8279,6 +9193,11 @@ export interface Pump {
           },
           {
             name: "solAmount";
+            docs: [
+              "The variable is interpreted as `amount` in the offchain services",
+              "It is amount in terms of quoteMint for the bondingCurve",
+              "The rename is not done yet to avoid breaking changes in offchain services.",
+            ];
             type: "u64";
           },
           {
@@ -8391,6 +9310,14 @@ export interface Pump {
             name: "virtualQuoteReserves";
             type: "u64";
           },
+          {
+            name: "creatorFeeBps";
+            type: "u64";
+          },
+          {
+            name: "isHolderReward";
+            type: "bool";
+          },
         ];
       };
     },
@@ -8436,6 +9363,34 @@ export interface Pump {
           {
             name: "quoteMint";
             type: "pubkey";
+          },
+        ];
+      };
+    },
+    {
+      name: "distributeFeeToHoldersEvent";
+      type: {
+        kind: "struct";
+        fields: [
+          {
+            name: "timestamp";
+            type: "i64";
+          },
+          {
+            name: "mint";
+            type: "pubkey";
+          },
+          {
+            name: "quoteMint";
+            type: "pubkey";
+          },
+          {
+            name: "recipients";
+            type: "u64";
+          },
+          {
+            name: "total";
+            type: "u64";
           },
         ];
       };
@@ -8506,6 +9461,14 @@ export interface Pump {
                 defined: {
                   name: "feeTier";
                 };
+              };
+            };
+          },
+          {
+            name: "exoticFlatFees";
+            type: {
+              defined: {
+                name: "fees";
               };
             };
           },
@@ -8667,6 +9630,22 @@ export interface Pump {
               array: ["pubkey", 1];
             };
           },
+          {
+            name: "creatorFeeConfigurable";
+            type: "bool";
+          },
+          {
+            name: "maxConfigurableCreatorFeeBps";
+            type: "u64";
+          },
+          {
+            name: "holderRewardClaimAuthority";
+            type: "pubkey";
+          },
+          {
+            name: "isHolderRewardEnabled";
+            type: "bool";
+          },
         ];
       };
     },
@@ -8783,6 +9762,81 @@ export interface Pump {
       type: {
         kind: "struct";
         fields: ["bool"];
+      };
+    },
+    {
+      name: "optionU64";
+      type: {
+        kind: "struct";
+        fields: ["u64"];
+      };
+    },
+    {
+      name: "quoteControl";
+      type: {
+        kind: "struct";
+        fields: [
+          {
+            name: "admin";
+            type: "pubkey";
+          },
+          {
+            name: "reserved";
+            type: {
+              array: ["u8", 64];
+            };
+          },
+          {
+            name: "mints";
+            type: {
+              vec: {
+                defined: {
+                  name: "quoteControlMint";
+                };
+              };
+            };
+          },
+        ];
+      };
+    },
+    {
+      name: "quoteControlMint";
+      type: {
+        kind: "struct";
+        fields: [
+          {
+            name: "mint";
+            type: "pubkey";
+          },
+          {
+            name: "initialVirtualQuoteReserves";
+            type: "u64";
+          },
+        ];
+      };
+    },
+    {
+      name: "removeQuoteControlMintEvent";
+      type: {
+        kind: "struct";
+        fields: [
+          {
+            name: "quoteControl";
+            type: "pubkey";
+          },
+          {
+            name: "authority";
+            type: "pubkey";
+          },
+          {
+            name: "quoteMint";
+            type: "pubkey";
+          },
+          {
+            name: "timestamp";
+            type: "i64";
+          },
+        ];
       };
     },
     {
@@ -8921,6 +9975,34 @@ export interface Pump {
           {
             name: "adminSetCreatorAuthority";
             type: "pubkey";
+          },
+        ];
+      };
+    },
+    {
+      name: "setQuoteControlAdminEvent";
+      type: {
+        kind: "struct";
+        fields: [
+          {
+            name: "quoteControl";
+            type: "pubkey";
+          },
+          {
+            name: "authority";
+            type: "pubkey";
+          },
+          {
+            name: "oldAdmin";
+            type: "pubkey";
+          },
+          {
+            name: "newAdmin";
+            type: "pubkey";
+          },
+          {
+            name: "timestamp";
+            type: "i64";
           },
         ];
       };
@@ -9151,6 +10233,38 @@ export interface Pump {
             name: "realQuoteReserves";
             type: "u64";
           },
+          {
+            name: "holderRewardsBps";
+            type: "u64";
+          },
+          {
+            name: "holderRewards";
+            type: "u64";
+          },
+        ];
+      };
+    },
+    {
+      name: "updateCreatorFeeConfigEvent";
+      type: {
+        kind: "struct";
+        fields: [
+          {
+            name: "timestamp";
+            type: "i64";
+          },
+          {
+            name: "authority";
+            type: "pubkey";
+          },
+          {
+            name: "creatorFeeConfigurable";
+            type: "bool";
+          },
+          {
+            name: "maxConfigurableCreatorFeeBps";
+            type: "u64";
+          },
         ];
       };
     },
@@ -9257,6 +10371,14 @@ export interface Pump {
           },
           {
             name: "totalCashbackClaimed";
+            type: "u64";
+          },
+          {
+            name: "stableCashbackEarned";
+            type: "u64";
+          },
+          {
+            name: "totalStableCashbackClaimed";
             type: "u64";
           },
         ];

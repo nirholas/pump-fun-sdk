@@ -38,12 +38,17 @@ export function makeGlobal(overrides: Partial<Global> = {}): Global {
     reservedFeeRecipient: TEST_PUBKEY,
     mayhemModeEnabled: false,
     reservedFeeRecipients: [TEST_PUBKEY],
+    isCashbackEnabled: false,
     buybackFeeRecipients: [TEST_PUBKEY],
     buybackBasisPoints: new BN(0),
     initialVirtualQuoteReserves: new BN("30000000000"),
     // No non-SOL quote mint is whitelisted on mainnet yet, so the default
     // fixture mirrors that: the slot the program reserves is the zero key.
     whitelistedQuoteMints: [PublicKey.default],
+    creatorFeeConfigurable: false,
+    maxConfigurableCreatorFeeBps: new BN(0),
+    holderRewardClaimAuthority: TEST_PUBKEY,
+    isHolderRewardEnabled: true,
     ...overrides,
   };
 }
@@ -64,6 +69,9 @@ export function makeBondingCurve(
     isCashbackCoin: false,
     // The zero key is how the program stores a SOL-quoted curve.
     quoteMint: PublicKey.default,
+    creatorFeeBps: new BN(0),
+    canEditCreatorFee: false,
+    isHolderReward: false,
     ...overrides,
   };
 }

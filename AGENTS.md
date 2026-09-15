@@ -64,6 +64,7 @@ The repository also includes:
 | Cashback rewards | `docs/pump-official/PUMP_CASHBACK_README.md` |
 | CU optimization FAQ | `docs/pump-official/FAQ.md` |
 | create_v2, mayhem mode, Token2022, social fees | `docs/pump-official/OVERVIEW.md` |
+| Holder rewards and cashback deprecation | `docs/pump-official/HOLDER_REWARDS_README.md` |
 | Official IDL files | `docs/pump-official/idl/pump.json`, `pump_amm.json`, `pump_fees.json` |
 ## SDK Design
 
@@ -137,5 +138,4 @@ posts do not belong in the claims channel.
 - Test changes before submitting PRs
 - Update documentation when adding features
 - See [CONTRIBUTING.md](CONTRIBUTING.md) for full guidelines
-
 

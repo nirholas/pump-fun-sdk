@@ -5,6 +5,24 @@
 import type { PublicKey } from "@solana/web3.js";
 import type BN from "bn.js";
 
+/** `create_v2` no longer permits new cashback coins (Pump error 6082). */
+export class CashbackDeprecatedError extends Error {
+  constructor() {
+    super(
+      "Cashback launches are deprecated; create a holder-reward coin instead",
+    );
+    this.name = "CashbackDeprecatedError";
+  }
+}
+
+/** Holder-reward creation is currently disabled in the Pump global state. */
+export class HolderRewardDisabledError extends Error {
+  constructor() {
+    super("Holder-reward coin creation is disabled by the Pump program");
+    this.name = "HolderRewardDisabledError";
+  }
+}
+
 export class NoShareholdersError extends Error {
   constructor() {
     super("No shareholders provided");

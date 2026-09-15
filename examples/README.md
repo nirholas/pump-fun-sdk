@@ -1,6 +1,6 @@
 # Runnable Examples
 
-Fifty self-contained, tested examples covering the full surface of `@nirholas/pump-sdk`: token creation, bonding curve trading, curve math, fees, PDAs, account decoding, event parsing, live mainnet reads, AMM pools, fee sharing, incentives, and vanity mints.
+Fifty-one self-contained, tested examples covering the full surface of `@nirholas/pump-sdk`: token creation, holder rewards, bonding curve trading, curve math, fees, PDAs, account decoding, event parsing, live mainnet reads, AMM pools, fee sharing, incentives, and vanity mints.
 
 Every example:
 
@@ -51,6 +51,6 @@ The example tests are fully offline and deterministic: they exercise the exporte
 | 11-20 | Curve Math & Fees | offline quotes, market cap, fee tiers, breaking fee recipients, price impact |
 | 21-30 | Accounts & Events | every PDA, decoding all account types, parsing all protocol events |
 | 31-40 | Live Data | mainnet reads: global state, curve summaries, graduation, prices, batch fetches, WebSocket feeds |
-| 41-50 | AMM & Advanced | AMM trading and liquidity, fee sharing, creator fees, incentives, vanity mints |
+| 41-51 | AMM & Advanced | AMM trading and liquidity, fee sharing, creator fees, incentives, vanity mints, holder rewards |
 
 The shared helpers live in [`_lib/`](_lib/): connection, wallet loading, and BN-safe formatting.

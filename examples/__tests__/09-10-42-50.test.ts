@@ -43,7 +43,6 @@ import {
 } from "../09-mayhem-mode";
 import {
   cashbackAccumulators,
-  changedDataOffsets,
   encodeClaimCashbackEvent,
   readCashbackPosition,
   main as example10,
@@ -186,7 +185,7 @@ describe("example 10: cashback tokens", () => {
     ).toBe(false);
   });
 
-  it("flips exactly one data byte when cashback is enabled", async () => {
+  it("rejects deprecated cashback launches", async () => {
     const params = {
       mint,
       name: "Cashback Example",
@@ -196,10 +195,9 @@ describe("example 10: cashback tokens", () => {
       user: wallet,
       mayhemMode: false,
     };
-    const off = await PUMP_SDK.createV2Instruction({ ...params, cashback: false });
-    const on = await PUMP_SDK.createV2Instruction({ ...params, cashback: true });
-    expect(off.data.length).toBe(on.data.length);
-    expect(changedDataOffsets(off.data, on.data)).toHaveLength(1);
+    await expect(
+      PUMP_SDK.createV2Instruction({ ...params, cashback: true }),
+    ).rejects.toThrow("Cashback launches are deprecated");
   });
 
   it("round trips a ClaimCashbackEvent through the program's coder", () => {

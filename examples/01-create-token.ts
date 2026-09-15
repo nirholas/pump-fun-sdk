@@ -32,8 +32,10 @@ export interface TokenLaunchParams {
   user: PublicKey;
   /** Opt the token into mayhem mode at launch. */
   mayhemMode?: boolean;
-  /** Opt the token into cashback rewards at launch. */
+  /** @deprecated New cashback launches are rejected by the Pump program. */
   cashback?: boolean;
+  /** Route creator fees to holders through Pump.fun-managed distributions. */
+  holderReward?: boolean;
 }
 
 /**
@@ -54,6 +56,7 @@ export async function buildCreateTokenInstruction(
     user: params.user,
     mayhemMode: params.mayhemMode ?? false,
     cashback: params.cashback ?? false,
+    holderReward: params.holderReward ?? false,
   });
 }
 

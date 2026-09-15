@@ -228,7 +228,7 @@ pump create \
 
 `--uri` is the metadata **JSON** URL, not the image URL. The JSON holds the image URL. Passing an image directly is the single most common launch mistake, so the CLI rejects anything that is not an http(s) URL up front.
 
-Other options: `--creator <address>` to route the creator fee somewhere other than the signer, `--mayhem` for mayhem mode, `--cashback` to opt the token into cashback, and `--vanity-suffix <suffix>` to grind inline instead of preparing a keypair first (the ground key is still written to disk before the transaction is submitted, so a crash cannot lose an address you just paid for).
+Other options: `--creator <address>` to route the creator fee somewhere other than the signer, `--mayhem` for mayhem mode, `--holder-reward` to distribute creator fees to holders, and `--vanity-suffix <suffix>` to grind inline instead of preparing a keypair first (the ground key is still written to disk before the transaction is submitted, so a crash cannot lose an address you just paid for). New cashback launches are deprecated; existing cashback coins remain tradeable and claimable.
 
 ---
 

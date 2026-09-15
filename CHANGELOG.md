@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Pump SDK 2 holder-reward launches with correct holder-vault routing for an
+  atomic create-and-buy transaction.
+- `holderRewardsPda`, `adminCtoInstruction`, and
+  `distributeFeeToHoldersInstruction`.
+- Runnable offline example 51 and dedicated tests for launch encoding, global
+  gating, CTO conversion, and multi-holder payouts.
+- `pump create --holder-reward` for simulation-first holder-reward launches.
+
+### Changed
+
+- Synced the Pump IDL to the deployed 47-instruction program and upgraded
+  `@pump-fun/pump-swap-sdk` to 1.20.
+- New cashback launches now fail locally with `CashbackDeprecatedError`;
+  trading and claims for existing cashback coins remain supported.
+- Replaced retired admin-set-creator event handling with the unified CTO and
+  holder-distribution events.
+
 ## [1.36.0] - 2026-08-04
 
 Ships a command-line interface, and fixes three bugs it surfaced along the way.

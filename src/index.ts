@@ -100,6 +100,8 @@ export {
   SyncUserVolumeAccumulatorEvent,
   CloseUserVolumeAccumulatorEvent,
   AdminSetCreatorEvent,
+  AdminCtoEvent,
+  DistributeFeeToHoldersEvent,
   MigrateBondingCurveCreatorEvent,
   AmmBuyEvent,
   AmmSellEvent,
@@ -181,5 +183,4 @@ export {
   parseEndpoints,
 } from "./fallback";
 export type { FallbackConfig } from "./fallback";
-
 

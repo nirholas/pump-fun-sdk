@@ -108,7 +108,7 @@ export async function main(): Promise<void> {
   const sdk = new OnlinePumpSdk(connection);
   const mint = Keypair.generate();
 
-  heading("Launching with cashback enabled");
+  heading("Cashback launch deprecation");
   row("Mint (new keypair)", mint.publicKey.toBase58());
   row("Creator / payer", wallet.publicKey.toBase58());
 
@@ -121,30 +121,14 @@ export async function main(): Promise<void> {
     user: wallet.publicKey,
     mayhemMode: false,
   };
-  const [plain, cashback] = await Promise.all([
-    PUMP_SDK.createV2Instruction({ ...params, cashback: false }),
-    PUMP_SDK.createV2Instruction({ ...params, cashback: true }),
-  ]);
-  row("Accounts (cashback off)", plain.keys.length);
-  row("Accounts (cashback on)", cashback.keys.length);
-  row("Data bytes (cashback off)", plain.data.length);
-  row("Data bytes (cashback on)", cashback.data.length);
-  for (const offset of changedDataOffsets(plain.data, cashback.data)) {
-    row(
-      `  data[${offset}]`,
-      `${String(plain.data[offset])} -> ${String(cashback.data[offset])}`,
-    );
+  await PUMP_SDK.createV2Instruction({ ...params, cashback: false });
+  try {
+    await PUMP_SDK.createV2Instruction({ ...params, cashback: true });
+  } catch (error) {
+    row("New cashback launch", error instanceof Error ? error.message : error);
   }
-  console.log(
-    "\ncreate_v2 takes cashback as an OptionBool. The SDK always encodes the",
-  );
-  console.log(
-    "option as present, so both variants are the same length and the flag is",
-  );
-  console.log(
-    "a single byte. Turning it on sends the creator fee back to whoever",
-  );
-  console.log("trades the coin instead of to the creator.");
+  console.log("\nExisting cashback coins keep trading and remain claimable.");
+  console.log("For new launches, use holderReward: true instead.");
 
   heading("Where the rebate accrues");
   const accumulators = cashbackAccumulators(wallet.publicKey);

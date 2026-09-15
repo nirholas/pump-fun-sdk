@@ -60,6 +60,7 @@ export interface Global {
   reservedFeeRecipient: PublicKey;
   mayhemModeEnabled: boolean;
   reservedFeeRecipients: PublicKey[];
+  isCashbackEnabled: boolean;
   buybackFeeRecipients: PublicKey[];
   buybackBasisPoints: BN;
   /**
@@ -70,6 +71,12 @@ export interface Global {
   initialVirtualQuoteReserves: BN;
   /** Non-SOL mints `create_v2` accepts as a curve's quote token. */
   whitelistedQuoteMints: PublicKey[];
+  creatorFeeConfigurable: boolean;
+  maxConfigurableCreatorFeeBps: BN;
+  /** Authority that signs scheduled holder-reward distributions. */
+  holderRewardClaimAuthority: PublicKey;
+  /** Global gate for holder-reward launches and CTO conversions. */
+  isHolderRewardEnabled: boolean;
 }
 
 export interface BondingCurve {
@@ -95,6 +102,11 @@ export interface BondingCurve {
    * `normalizeQuoteMint` before deriving a PDA or an ATA from it.
    */
   quoteMint: PublicKey;
+  /** Per-coin creator fee selected at launch or through the CTO flow. */
+  creatorFeeBps: BN;
+  canEditCreatorFee: boolean;
+  /** True when creator fees are distributed to holders by Pump.fun. */
+  isHolderReward: boolean;
 }
 
 export interface GlobalVolumeAccumulator {
@@ -181,6 +193,8 @@ export interface Pool {
   coinCreator: PublicKey;
   isMayhemMode: boolean;
   isCashbackCoin: boolean;
+  /** Appended by PumpSwap 1.20; absent on pre-upgrade decoder results. */
+  isHolderReward?: boolean;
 }
 
 export interface AmmGlobalConfig {
@@ -247,6 +261,8 @@ export interface TradeEvent {
   mayhemMode: boolean;
   cashbackFeeBasisPoints: BN;
   cashback: BN;
+  holderRewardsBps: BN;
+  holderRewards: BN;
 }
 
 export interface CreateEvent {
@@ -265,6 +281,7 @@ export interface CreateEvent {
   tokenProgram: PublicKey;
   isMayhemMode: boolean;
   isCashbackEnabled: boolean;
+  isHolderReward: boolean;
 }
 
 export interface CompleteEvent {
@@ -354,6 +371,30 @@ export interface AdminSetCreatorEvent {
   newCreator: PublicKey;
 }
 
+export interface AdminCtoEvent {
+  timestamp: BN;
+  authority: PublicKey;
+  mint: PublicKey;
+  bondingCurve: PublicKey;
+  oldCreator: PublicKey;
+  newCreator: PublicKey;
+  isHolderReward: boolean;
+  isCashbackCoin: boolean;
+  oldCreatorFeeBps: BN;
+  newCreatorFeeBps: BN;
+  sharingConfigReset: boolean;
+  sweptToHolderVault: BN;
+  poolUpdated: boolean;
+}
+
+export interface DistributeFeeToHoldersEvent {
+  timestamp: BN;
+  mint: PublicKey;
+  quoteMint: PublicKey;
+  recipients: BN;
+  total: BN;
+}
+
 export interface MigrateBondingCurveCreatorEvent {
   timestamp: BN;
   mint: PublicKey;
@@ -398,6 +439,8 @@ export interface AmmBuyEvent {
   ixName: string;
   cashbackFeeBasisPoints: BN;
   cashback: BN;
+  holderRewardsBps: BN;
+  holderRewards: BN;
 }
 
 export interface AmmSellEvent {
@@ -426,6 +469,8 @@ export interface AmmSellEvent {
   coinCreatorFee: BN;
   cashbackFeeBasisPoints: BN;
   cashback: BN;
+  holderRewardsBps: BN;
+  holderRewards: BN;
 }
 
 export interface DepositEvent {

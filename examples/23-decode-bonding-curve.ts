@@ -22,9 +22,10 @@ import { formatSol, formatTokens, heading, row } from "./_lib/format";
 
 /**
  * The serialised size of a current-layout BondingCurve account:
- * 8 discriminator + 5 u64 + 1 bool + 32 pubkey + 2 bool.
+ * 8 discriminator + 5 u64 + 1 bool + 32 pubkey + 2 bool + 32 pubkey
+ * + 1 u64 + 2 bool.
  */
-export const BONDING_CURVE_DATA_LEN = 83;
+export const BONDING_CURVE_DATA_LEN = 125;
 
 /** Where a curve sits in its life. */
 export type CurveStatus = "fresh" | "active" | "complete";
@@ -121,6 +122,10 @@ export function encodeBondingCurveAccount(bondingCurve: BondingCurve): Buffer {
     bondingCurve.creator.toBuffer(),
     Buffer.from([bondingCurve.isMayhemMode ? 1 : 0]),
     Buffer.from([bondingCurve.isCashbackCoin ? 1 : 0]),
+    bondingCurve.quoteMint.toBuffer(),
+    u64(bondingCurve.creatorFeeBps),
+    Buffer.from([bondingCurve.canEditCreatorFee ? 1 : 0]),
+    Buffer.from([bondingCurve.isHolderReward ? 1 : 0]),
   ]);
 }
 

@@ -94,9 +94,13 @@ const ix = await PUMP_SDK.createV2Instruction({
   creator,                // PublicKey - creator wallet
   user,                   // PublicKey - fee payer
   mayhemMode: false,      // boolean - enable mayhem mode
-  cashback: false,        // boolean, optional - enable cashback (default: false)
+  creatorFeeBps,          // BN, optional - custom-pair creator fee
+  holderReward: true,     // boolean, optional - distribute fees to holders
 });
 ```
+
+New cashback launches are rejected. Existing cashback coins remain tradeable
+and their accrued cashback remains claimable.
 
 ##### `createV2AndBuyInstructions(params)`
 
@@ -109,9 +113,19 @@ const ixs = await PUMP_SDK.createV2AndBuyInstructions({
   amount,                 // BN - token amount to buy
   solAmount,              // BN - SOL to spend (lamports)
   mayhemMode: false,
-  cashback: false,        // optional
+  holderReward: true,     // routes the first buy to the holder PDA vault
 });
 ```
+
+##### `adminCtoInstruction(params)`
+
+Builds the unified community-takeover instruction for a new creator, a custom
+pair creator-fee change, or a permanent conversion to holder rewards.
+
+##### `distributeFeeToHoldersInstruction(params)`
+
+Builds a Pump.fun-authority-signed payout. Each recipient is paired with its
+quote-token account automatically; SOL payouts mark the wallet writable.
 
 ##### `createInstruction(params)` *(deprecated)*
 

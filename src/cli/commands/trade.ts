@@ -74,7 +74,7 @@ export function registerTradeCommands(
     .option("--buy <sol>", "SOL of the first buy, in the same transaction", parsePositive)
     .option("--creator <address>", "Creator that earns the creator fee (default: signer)")
     .option("--mayhem", "Launch with mayhem mode enabled")
-    .option("--cashback", "Opt the token into cashback")
+    .option("--holder-reward", "Distribute creator fees to token holders")
     .action(async (options: CreateOptions) => {
       await runCreate(getContext(), options);
     });
@@ -89,7 +89,7 @@ interface CreateOptions {
   buy?: number;
   creator?: string;
   mayhem?: boolean;
-  cashback?: boolean;
+  holderReward?: boolean;
 }
 
 function parsePositive(value: string): number {
@@ -297,7 +297,7 @@ async function runCreate(ctx: CliContext, options: CreateOptions): Promise<void>
     creator,
     user: signer.publicKey,
     mayhemMode: options.mayhem === true,
-    cashback: options.cashback === true,
+    holderReward: options.holderReward === true,
   };
 
   let instructions;
@@ -348,6 +348,9 @@ async function runCreate(ctx: CliContext, options: CreateOptions): Promise<void>
       ...(options.mayhem === true
         ? [{ label: "Mayhem mode", value: c.magenta("enabled") }]
         : []),
+      ...(options.holderReward === true
+        ? [{ label: "Holder rewards", value: c.green("enabled") }]
+        : []),
     ],
     instructions,
     signer,
@@ -363,6 +366,7 @@ async function runCreate(ctx: CliContext, options: CreateOptions): Promise<void>
         symbol: options.symbol,
         uri: options.uri,
         creator: creator.toBase58(),
+        holderReward: options.holderReward === true,
         signature: result.signature ?? null,
         simulatedOnly: result.simulated,
       })}\n`,

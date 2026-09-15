@@ -89,7 +89,7 @@ flowchart LR
   A -- "complete = true\nmigration" --> B
 ```
 
-1. **Creation**: a new token is created with `createV2Instruction`. It starts on a bonding curve. Optionally enable cashback.
+1. **Creation**: a new token is created with `createV2Instruction`. It starts on a bonding curve and can permanently route creator fees to holders. New cashback launches are deprecated.
 2. **Trading**: users buy and sell via `buyInstructions` / `sellInstructions` / `buyExactSolInInstruction`. Prices follow the bonding curve math.
 3. **Graduation**: when `bondingCurve.complete` becomes `true`, the token graduates.
 4. **Migration**: `migrateInstruction` moves the token to the canonical AMM pool derived by `canonicalPumpPoolPda(mint)`.

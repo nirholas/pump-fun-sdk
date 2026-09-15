@@ -13,6 +13,7 @@ import {
 } from "@solana/spl-token";
 import type {
   AccountInfo,
+  AccountMeta,
   Connection,
   TransactionInstruction} from "@solana/web3.js";
 import {
@@ -28,6 +29,8 @@ import {
   ZeroShareError,
   InvalidShareTotalError,
   DuplicateShareholderError,
+  CashbackDeprecatedError,
+  HolderRewardDisabledError,
 } from "./errors";
 import {
   buildAmmBreakingFeeRecipientAccounts,
@@ -48,6 +51,7 @@ import {
   bondingCurvePda,
   canonicalPumpPoolPda,
   creatorVaultPda,
+  holderRewardsPda,
   getGlobalParamsPda,
   getMayhemStatePda,
   getSolVaultPda,
@@ -87,7 +91,8 @@ import type {
   InitUserVolumeAccumulatorEvent,
   SyncUserVolumeAccumulatorEvent,
   CloseUserVolumeAccumulatorEvent,
-  AdminSetCreatorEvent,
+  AdminCtoEvent,
+  DistributeFeeToHoldersEvent,
   MigrateBondingCurveCreatorEvent,
   AmmBuyEvent,
   AmmSellEvent,
@@ -361,6 +366,8 @@ export class PumpSdk {
     user,
     mayhemMode,
     cashback = false,
+    creatorFeeBps = new BN(0),
+    holderReward = false,
   }: {
     mint: PublicKey;
     name: string;
@@ -370,9 +377,21 @@ export class PumpSdk {
     user: PublicKey;
     mayhemMode: boolean;
     cashback?: boolean;
+    creatorFeeBps?: BN;
+    holderReward?: boolean;
   }): Promise<TransactionInstruction> {
+    if (cashback) throw new CashbackDeprecatedError();
     return await this.offlinePumpProgram.methods
-      .createV2(name, symbol, uri, creator, mayhemMode, [cashback ?? false])
+      .createV2(
+        name,
+        symbol,
+        uri,
+        creator,
+        mayhemMode,
+        [false],
+        [creatorFeeBps],
+        [holderReward],
+      )
       .accountsPartial({
         mint,
         user,
@@ -469,6 +488,8 @@ export class PumpSdk {
     solAmount,
     mayhemMode,
     cashback = false,
+    creatorFeeBps = new BN(0),
+    holderReward = false,
   }: {
     global: Global;
     mint: PublicKey;
@@ -481,7 +502,14 @@ export class PumpSdk {
     solAmount: BN;
     mayhemMode: boolean;
     cashback?: boolean;
+    creatorFeeBps?: BN;
+    holderReward?: boolean;
   }): Promise<TransactionInstruction[]> {
+    if (cashback) throw new CashbackDeprecatedError();
+    if (holderReward && !global.isHolderRewardEnabled) {
+      throw new HolderRewardDisabledError();
+    }
+    const launchCreator = holderReward ? holderRewardsPda(mint) : creator;
     const associatedUser = getAssociatedTokenAddressSync(
       mint,
       user,
@@ -498,6 +526,8 @@ export class PumpSdk {
         user,
         mayhemMode,
         cashback,
+        creatorFeeBps,
+        holderReward,
       }),
       await this.extendAccountInstruction({
         account: bondingCurvePda(mint),
@@ -513,7 +543,7 @@ export class PumpSdk {
       await this.buyInstruction({
         global,
         mint,
-        creator,
+        creator: launchCreator,
         user,
         associatedUser,
         amount,
@@ -823,9 +853,114 @@ export class PumpSdk {
     mint: PublicKey;
     creator: PublicKey;
   }): Promise<TransactionInstruction> {
+    void authority;
+    void mint;
+    void creator;
+    throw new Error(
+      "admin_set_creator was retired; use adminCtoInstruction with current creator and quote accounts",
+    );
+  }
+
+  /** Build the protocol's unified community-takeover instruction. */
+  async adminCtoInstruction({
+    adminSetCreatorAuthority,
+    mint,
+    currentCreator,
+    quoteMint = NATIVE_MINT,
+    quoteTokenProgram = TOKEN_PROGRAM_ID,
+    isHolderReward,
+    creatorFeeBps,
+    newCreator,
+  }: {
+    adminSetCreatorAuthority: PublicKey;
+    mint: PublicKey;
+    currentCreator: PublicKey;
+    quoteMint?: PublicKey;
+    quoteTokenProgram?: PublicKey;
+    isHolderReward?: boolean;
+    creatorFeeBps?: BN;
+    newCreator?: PublicKey;
+  }): Promise<TransactionInstruction> {
+    const creatorVault = creatorVaultPda(currentCreator);
+    const holderCreatorVault = creatorVaultPda(holderRewardsPda(mint));
+    const coinCreatorVaultAuthority = coinCreatorVaultAuthorityPda(currentCreator);
+    const ata = (owner: PublicKey) =>
+      getAssociatedTokenAddressSync(quoteMint, owner, true, quoteTokenProgram);
+
+    const instruction = await this.offlinePumpProgram.methods
+      .adminCto(
+        isHolderReward ?? null,
+        creatorFeeBps ?? null,
+        newCreator ?? null,
+      )
+      .accountsPartial({
+        adminSetCreatorAuthority,
+        mint,
+        quoteMint,
+        quoteTokenProgram,
+        currentCreator,
+        currentCreatorQuoteTokenAccount: ata(currentCreator),
+        creatorVault,
+        creatorVaultQuoteTokenAccount: ata(creatorVault),
+        holderCreatorVault,
+        holderCreatorVaultQuoteTokenAccount: ata(holderCreatorVault),
+        coinCreatorVaultAuthority,
+        coinCreatorVaultAta: ata(coinCreatorVaultAuthority),
+        sharingConfig: feeSharingConfigPda(mint),
+      })
+      .instruction();
+
+    if (!currentCreator.equals(PublicKey.default)) {
+      const currentCreatorMeta = instruction.keys.find(({ pubkey }) =>
+        pubkey.equals(currentCreator),
+      );
+      if (currentCreatorMeta) currentCreatorMeta.isWritable = true;
+    }
+    return instruction;
+  }
+
+  /** Build a signed Pump.fun payout from a holder-reward PDA to holders. */
+  async distributeFeeToHoldersInstruction({
+    holderRewardClaimAuthority,
+    mint,
+    quoteMint = NATIVE_MINT,
+    quoteTokenProgram = TOKEN_PROGRAM_ID,
+    recipients,
+    holderRewardsTokenAccount,
+  }: {
+    holderRewardClaimAuthority: PublicKey;
+    mint: PublicKey;
+    quoteMint?: PublicKey;
+    quoteTokenProgram?: PublicKey;
+    recipients: readonly { owner: PublicKey; amount: BN }[];
+    holderRewardsTokenAccount?: PublicKey;
+  }): Promise<TransactionInstruction> {
+    const isNative = quoteMint.equals(NATIVE_MINT);
+    const remainingAccounts: AccountMeta[] = recipients.flatMap(({ owner }) => [
+      { pubkey: owner, isSigner: false, isWritable: isNative },
+      {
+        pubkey: getAssociatedTokenAddressSync(
+          quoteMint,
+          owner,
+          true,
+          quoteTokenProgram,
+        ),
+        isSigner: false,
+        isWritable: !isNative,
+      },
+    ]);
+
     return await this.offlinePumpProgram.methods
-      .adminSetCreator(creator)
-      .accountsPartial({ adminSetCreatorAuthority: authority, mint })
+      .distributeFeeToHolders(recipients.map(({ amount }) => amount))
+      .accountsPartial({
+        holderRewardClaimAuthority,
+        mint,
+        holderRewards: holderRewardsPda(mint),
+        holderRewardsTokenAccount: holderRewardsTokenAccount ?? null,
+        quoteMint,
+        quoteTokenProgram,
+      })
+      .remainingAccounts(remainingAccounts)
       .instruction();
   }
 
@@ -1302,9 +1437,18 @@ export class PumpSdk {
     );
   }
 
-  decodeAdminSetCreatorEvent(data: Buffer): AdminSetCreatorEvent {
-    return this.offlinePumpProgram.coder.types.decode<AdminSetCreatorEvent>(
-      "adminSetCreatorEvent",
+  decodeAdminCtoEvent(data: Buffer): AdminCtoEvent {
+    return this.offlinePumpProgram.coder.types.decode<AdminCtoEvent>(
+      "adminCtoEvent",
+      data,
+    );
+  }
+
+  decodeDistributeFeeToHoldersEvent(
+    data: Buffer,
+  ): DistributeFeeToHoldersEvent {
+    return this.offlinePumpProgram.coder.types.decode<DistributeFeeToHoldersEvent>(
+      "distributeFeeToHoldersEvent",
       data,
     );
   }
@@ -3032,5 +3176,3 @@ export function isSharingConfigEditable({
   if (sharingConfig.version === 2 && sharingConfig.adminRevoked) return false;
   return true;
 }
-
-

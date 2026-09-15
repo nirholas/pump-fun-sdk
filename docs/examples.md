@@ -1,6 +1,6 @@
 # Runnable Examples
 
-> Fifty tested, runnable examples covering the full SDK surface, from your first createV2 instruction to AMM liquidity, fee sharing, and live WebSocket trade feeds.
+> Fifty-one tested, runnable examples covering the full SDK surface, from your first createV2 instruction to AMM liquidity, holder rewards, fee sharing, and live WebSocket trade feeds.
 
 Every example lives in [`examples/`](https://github.com/nirholas/pump-fun-sdk/tree/main/examples) at the repo root and follows the same contract:
 
@@ -42,7 +42,7 @@ MINT=<mint address>    npm run example 32          # inspect a specific token
 | 07 | sell-all | Full exit, and why maxSafeSellAmount exists |
 | 08 | sell-to-target-sol | Extract a target SOL amount; chunked exits |
 | 09 | mayhem-mode | Mayhem-mode launches and their extra PDAs |
-| 10 | cashback-token | Cashback launches and claim events |
+| 10 | cashback-token | Cashback deprecation and existing-coin claim events |
 
 ### Curve Math & Fees (11-20)
 

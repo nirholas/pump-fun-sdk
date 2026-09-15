@@ -72,6 +72,15 @@ export function creatorVaultPda(creator: PublicKey) {
   return pumpPda([Buffer.from("creator-vault"), creator.toBuffer()]);
 }
 
+/**
+ * Derive the per-mint holder-rewards PDA used as the immutable creator of a
+ * holder-reward coin. Creator fees accrue to the creator vault owned by this
+ * PDA and are distributed by Pump.fun; holders never need to claim them.
+ */
+export function holderRewardsPda(mint: PublicKey): PublicKey {
+  return pumpPda([Buffer.from("holder-rewards"), mint.toBuffer()]);
+}
+
 /** Derive the pool authority PDA used during AMM graduation. */
 export function pumpPoolAuthorityPda(mint: PublicKey): PublicKey {
   return pumpPda([Buffer.from("pool-authority"), mint.toBuffer()]);
@@ -203,5 +212,4 @@ export function poolV2Pda(baseMint: PublicKeyInitData): PublicKey {
     new PublicKey(baseMint).toBuffer(),
   ]);
 }
-
 

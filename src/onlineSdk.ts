@@ -86,7 +86,8 @@ import pumpIdlJson from "./idl/pump.json";
 import pumpAmmIdlJson from "./idl/pump_amm.json";
 import pumpFeesIdlJson from "./idl/pump_fees.json";
 import type {
-  AdminSetCreatorEvent,
+  AdminCtoEvent,
+  DistributeFeeToHoldersEvent,
   AmmBuyEvent,
   AmmGlobalConfig,
   AmmSellEvent,
@@ -538,18 +539,11 @@ export class OnlinePumpSdk {
     newCoinCreator: PublicKey,
     mint: PublicKey,
   ): Promise<TransactionInstruction[]> {
-    const global = await this.fetchGlobal();
-
-    return [
-      await this.offlinePumpProgram.methods
-        .adminSetCreator(newCoinCreator)
-        .accountsPartial({
-          adminSetCreatorAuthority: global.adminSetCreatorAuthority,
-          mint,
-        })
-        .instruction(),
-      await this.pumpAmmAdminSdk.adminSetCoinCreator(mint, newCoinCreator),
-    ];
+    void newCoinCreator;
+    void mint;
+    throw new Error(
+      "admin_set_creator was retired; use PUMP_SDK.adminCtoInstruction with current on-chain state",
+    );
   }
 
   async getCreatorVaultBalance(creator: PublicKey): Promise<BN> {
@@ -2377,6 +2371,8 @@ export class OnlinePumpSdk {
     user,
     mayhemMode = false,
     cashback = false,
+    creatorFeeBps = new BN(0),
+    holderReward = false,
   }: {
     mint: PublicKey;
     name: string;
@@ -2386,6 +2382,8 @@ export class OnlinePumpSdk {
     user: PublicKey;
     mayhemMode?: boolean;
     cashback?: boolean;
+    creatorFeeBps?: BN;
+    holderReward?: boolean;
   }): Promise<TransactionInstruction> {
     return PUMP_SDK.createV2Instruction({
       mint,
@@ -2396,6 +2394,8 @@ export class OnlinePumpSdk {
       user,
       mayhemMode,
       cashback,
+      creatorFeeBps,
+      holderReward,
     });
   }
 
@@ -2423,6 +2423,8 @@ export class OnlinePumpSdk {
     solAmount,
     mayhemMode = false,
     cashback = false,
+    creatorFeeBps = new BN(0),
+    holderReward = false,
   }: {
     mint: PublicKey;
     name: string;
@@ -2433,6 +2435,8 @@ export class OnlinePumpSdk {
     solAmount: BN;
     mayhemMode?: boolean;
     cashback?: boolean;
+    creatorFeeBps?: BN;
+    holderReward?: boolean;
   }): Promise<TransactionInstruction[]> {
     const [global, feeConfig] = await Promise.all([
       this.fetchGlobal(),
@@ -2461,6 +2465,8 @@ export class OnlinePumpSdk {
       solAmount,
       mayhemMode,
       cashback,
+      creatorFeeBps,
+      holderReward,
     });
   }
 
@@ -2747,7 +2753,8 @@ export type PumpEvent =
   | { type: "initUserVolumeAccumulator"; data: InitUserVolumeAccumulatorEvent }
   | { type: "syncUserVolumeAccumulator"; data: SyncUserVolumeAccumulatorEvent }
   | { type: "closeUserVolumeAccumulator"; data: CloseUserVolumeAccumulatorEvent }
-  | { type: "adminSetCreator"; data: AdminSetCreatorEvent }
+  | { type: "adminCto"; data: AdminCtoEvent }
+  | { type: "distributeFeeToHolders"; data: DistributeFeeToHoldersEvent }
   | { type: "migrateBondingCurveCreator"; data: MigrateBondingCurveCreatorEvent }
   | { type: "distributeCreatorFees"; data: DistributeCreatorFeesEvent }
   // ── PumpAMM ─────────────────────────────────────────────────────────
@@ -2859,7 +2866,8 @@ const PUMP_EVENT_WRAPPERS: Record<string, EventWrap> = {
   InitUserVolumeAccumulatorEvent: (d) => ({ type: "initUserVolumeAccumulator", data: PUMP_SDK.decodeInitUserVolumeAccumulatorEvent(d) }),
   SyncUserVolumeAccumulatorEvent: (d) => ({ type: "syncUserVolumeAccumulator", data: PUMP_SDK.decodeSyncUserVolumeAccumulatorEvent(d) }),
   CloseUserVolumeAccumulatorEvent: (d) => ({ type: "closeUserVolumeAccumulator", data: PUMP_SDK.decodeCloseUserVolumeAccumulatorEvent(d) }),
-  AdminSetCreatorEvent: (d) => ({ type: "adminSetCreator", data: PUMP_SDK.decodeAdminSetCreatorEvent(d) }),
+  AdminCtoEvent: (d) => ({ type: "adminCto", data: PUMP_SDK.decodeAdminCtoEvent(d) }),
+  DistributeFeeToHoldersEvent: (d) => ({ type: "distributeFeeToHolders", data: PUMP_SDK.decodeDistributeFeeToHoldersEvent(d) }),
   MigrateBondingCurveCreatorEvent: (d) => ({ type: "migrateBondingCurveCreator", data: PUMP_SDK.decodeMigrateBondingCurveCreatorEvent(d) }),
   DistributeCreatorFeesEvent: (d) => ({ type: "distributeCreatorFees", data: PUMP_SDK.decodeDistributeCreatorFeesEvent(d) }),
 };
@@ -2935,7 +2943,3 @@ function decodePumpEventData(
   }
   return null;
 }
-
-
-
-

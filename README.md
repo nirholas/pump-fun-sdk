@@ -245,6 +245,33 @@ const createIx = await PUMP_SDK.createV2Instruction({
 
 > **Warning**: Do NOT use `createInstruction` — it is deprecated (v1). Always use `createV2Instruction`.
 
+### Create a Holder-Reward Token
+
+Set `holderReward: true` to direct creator fees to the protocol-derived holder
+rewards PDA. Pump.fun distributes those fees to holders automatically; holders
+do not need to submit claims.
+
+```typescript
+const createIx = await PUMP_SDK.createV2Instruction({
+  mint: mintKeypair.publicKey,
+  name: "Holder Helper",
+  symbol: "HOLD",
+  uri: "https://example.com/holder-helper.json",
+  creator: wallet.publicKey,
+  user: wallet.publicKey,
+  mayhemMode: false,
+  holderReward: true,
+});
+```
+
+For an atomic launch and initial buy, pass the same flag to
+`createV2AndBuyInstructions`; the SDK routes the buy through
+`creatorVaultPda(holderRewardsPda(mint))`. Run the complete broadcast-free demo
+with `npm run example 51`.
+
+New cashback launches are deprecated and rejected. Existing cashback coins
+remain tradeable and accrued cashback remains claimable.
+
 ### Create a Token With a `...pump` Vanity Mint
 
 Mint addresses ending in `pump` (like the ones on pump.fun) are produced by
