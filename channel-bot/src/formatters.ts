@@ -1163,8 +1163,12 @@ function timeAgo(unixSeconds: number): string {
     return `${Math.floor(diff / 31536000)}y ago`;
 }
 
+// Built once at import: the first en-US format loads ICU data, which can take
+// seconds on a cold container and would otherwise stall the first card sent.
+const USD_2DP = new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
 function formatCompact(n: number): string {
-    if (n >= 1) return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    if (n >= 1) return USD_2DP.format(n);
     return n.toFixed(2);
 }
 
