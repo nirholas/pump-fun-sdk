@@ -23,7 +23,7 @@ import bs58 from 'bs58';
 
 import type { ChannelBotConfig } from './config.js';
 import { log } from './logger.js';
-import { RpcFallback } from './rpc-fallback.js';
+import { MAX_SUPPORTED_TRANSACTION_VERSION, RpcFallback } from './rpc-fallback.js';
 import type {
     FeeDistributionEvent,
     GraduationEvent,
@@ -358,7 +358,7 @@ export class EventMonitor {
         try {
             const tx = await this.rpc.withFallback((conn) => conn.getParsedTransaction(signature, {
                 commitment: 'confirmed',
-                maxSupportedTransactionVersion: 0,
+                maxSupportedTransactionVersion: MAX_SUPPORTED_TRANSACTION_VERSION,
             }));
             if (!tx?.meta || tx.meta.err) return;
 

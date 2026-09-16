@@ -8,6 +8,15 @@
 import { Connection, type ConnectionConfig } from '@solana/web3.js';
 import { log } from './logger.js';
 
+/**
+ * Highest Solana transaction version the bot asks the RPC to return.
+ *
+ * Mainnet now carries v1 transactions. Asking for anything lower makes the RPC
+ * refuse the fetch (JSON-RPC -32015), and a claim sent in a v1 transaction was
+ * silently dropped. @solana/web3.js accepts v1 responses from 1.99.0 onward.
+ */
+export const MAX_SUPPORTED_TRANSACTION_VERSION = 1;
+
 const MAX_CONSECUTIVE_FAILS = 3;
 const COOLDOWN_MS = 60_000;
 
