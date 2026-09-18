@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-09-18
+
+### Breaking
+
+- Tracks the Pump program's 2.0 upgrade. A launch that asks for cashback now
+  throws `CashbackDeprecatedError` before any instruction is built, because the
+  on-chain `create_v2` rejects it. Pass `holderReward: true` instead.
+- `adminSetCreatorInstruction` now throws because the program retired
+  `admin_set_creator`. Use the unified CTO builder `adminCtoInstruction`.
+
 ### Added
 
 - Pump SDK 2 holder-reward launches with correct holder-vault routing for an
