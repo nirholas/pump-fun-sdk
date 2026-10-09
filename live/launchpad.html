@@ -252,7 +252,7 @@
       </details>
       <div class="toggles">
         <label class="toggle"><input id="l-mayhem" type="checkbox" /> Mayhem mode</label>
-        <label class="toggle"><input id="l-cashback" type="checkbox" /> Cashback</label>
+        <label class="toggle" title="Route the creator fee to the coin's holders instead of the creator"><input id="l-holder-reward" type="checkbox" /> Holder rewards</label>
       </div>
       <div class="actions">
         <button id="l-review" class="primary">Review launch</button>
@@ -497,7 +497,12 @@ $("l-review").addEventListener("click", async () => {
     const creator = walletPubkey ?? PublicKey.default;
     const global = await online.fetchGlobal();
     const mayhemMode = $("l-mayhem").checked;
-    const cashback = $("l-cashback").checked;
+    // Cashback launches are retired (create_v2 refuses them with 6082);
+    // holder rewards replaced them and are gated by Global.
+    const holderReward = $("l-holder-reward").checked;
+    if (holderReward && !global.isHolderRewardEnabled) {
+      throw new Error("Holder-reward launches are switched off by the Pump program right now");
+    }
 
     let ixs;
     let expectedTokens = null;
@@ -511,12 +516,12 @@ $("l-review").addEventListener("click", async () => {
       ixs = await PUMP_SDK.createV2AndBuyInstructions({
         global, mint: mintKp.publicKey, name, symbol, uri,
         creator, user: creator, amount: expectedTokens,
-        solAmount: devBuyLamports, mayhemMode, cashback,
+        solAmount: devBuyLamports, mayhemMode, holderReward,
       });
     } else {
       ixs = [await PUMP_SDK.createV2Instruction({
         mint: mintKp.publicKey, name, symbol, uri,
-        creator, user: creator, mayhemMode, cashback,
+        creator, user: creator, mayhemMode, holderReward,
       })];
     }
 
@@ -526,7 +531,7 @@ $("l-review").addEventListener("click", async () => {
       ["Bonding curve", short(bondingCurvePda(mintKp.publicKey).toBase58())],
       ["Name / symbol", `${name} · ${symbol}`],
       ["Instructions", String(ixs.length)],
-      ["Mayhem / cashback", `${mayhemMode ? "yes" : "no"} / ${cashback ? "yes" : "no"}`],
+      ["Mayhem / holder rewards", `${mayhemMode ? "yes" : "no"} / ${holderReward ? "yes" : "no"}`],
     ];
     if (expectedTokens) {
       entries.push(["Dev buy", fmtSol(devBuyLamports), "neg"]);

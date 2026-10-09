@@ -1,4 +1,5 @@
 import { AnchorProvider, Program } from "@coral-xyz/anchor";
+import type { BorshInstructionCoder } from "@coral-xyz/anchor";
 import {
   coinCreatorVaultAtaPda,
   coinCreatorVaultAuthorityPda,
@@ -461,6 +462,98 @@ export function tradeV3Accounts({
 }
 
 /**
+ * The named accounts `buy_v2`, `buy_exact_quote_in_v2` and `sell_v2` share;
+ * Anchor resolves the rest (`global`, `bonding_curve`, `sharing_config`,
+ * `user_volume_accumulator`, `fee_config`, ...). `quoteMint` may be the
+ * curve's stored quote (the zero key is SOL).
+ *
+ * Unlike v3, a v2 trade pays the protocol and creator fees out in the trade,
+ * so it names the fee recipient, the creator vault (from the curve's
+ * `creator`) and their quote ATAs. The program creates the fee recipient's,
+ * the creator vault's and the volume accumulator's ATAs when missing, but
+ * never the buyback recipient's.
+ *
+ * @param params.feeRecipient - One of `Global.feeRecipients` (random by
+ *   default); a mayhem coin needs one of `Global.reservedFeeRecipients`
+ *   (`getFeeRecipient(global, true)`).
+ * @param params.buybackFeeRecipient - A listed `Global.buybackFeeRecipients`
+ *   wallet: random by default on a SOL curve, the first listed wallet on a
+ *   token quote (whose ATA must exist).
+ */
+export function tradeV2Accounts({
+  user,
+  mint,
+  creator,
+  tokenProgram = TOKEN_2022_PROGRAM_ID,
+  quoteMint = NATIVE_MINT,
+  quoteTokenProgram = TOKEN_PROGRAM_ID,
+  feeRecipient = getStaticRandomFeeRecipient(),
+  buybackFeeRecipient,
+}: {
+  user: PublicKey;
+  mint: PublicKey;
+  creator: PublicKey;
+  tokenProgram?: PublicKey;
+  quoteMint?: PublicKey;
+  quoteTokenProgram?: PublicKey;
+  feeRecipient?: PublicKey;
+  buybackFeeRecipient?: PublicKey;
+}) {
+  const quote = normalizeQuoteMint(quoteMint);
+  const bondingCurve = bondingCurvePda(mint);
+  const creatorVault = creatorVaultPda(creator);
+  const buyback =
+    buybackFeeRecipient ??
+    (isLegacyQuoteMint(quote)
+      ? getStaticRandomFeeRecipientForBuyback()
+      : getBuybackFeeRecipientForTokenQuote());
+  return {
+    baseMint: mint,
+    quoteMint: quote,
+    baseTokenProgram: tokenProgram,
+    quoteTokenProgram,
+    feeRecipient,
+    associatedQuoteFeeRecipient: quoteAta(
+      feeRecipient,
+      quote,
+      quoteTokenProgram,
+    ),
+    buybackFeeRecipient: buyback,
+    associatedQuoteBuybackFeeRecipient: quoteAta(
+      buyback,
+      quote,
+      quoteTokenProgram,
+    ),
+    associatedBaseBondingCurve: getAssociatedTokenAddressSync(
+      mint,
+      bondingCurve,
+      true,
+      tokenProgram,
+    ),
+    associatedQuoteBondingCurve: quoteAta(
+      bondingCurve,
+      quote,
+      quoteTokenProgram,
+    ),
+    user,
+    associatedBaseUser: getAssociatedTokenAddressSync(
+      mint,
+      user,
+      true,
+      tokenProgram,
+    ),
+    associatedQuoteUser: quoteAta(user, quote, quoteTokenProgram),
+    creatorVault,
+    associatedCreatorVault: quoteAta(creatorVault, quote, quoteTokenProgram),
+    associatedUserVolumeAccumulator: quoteAta(
+      userVolumeAccumulatorPda(user),
+      quote,
+      quoteTokenProgram,
+    ),
+  };
+}
+
+/**
  * An idempotent create of the buyback recipient's quote ATA that a
  * token-quoted v3 trade or a multi-hop route pays its buyback slice into (the
  * programs refuse a missing one and never create it). None for a v3 trade on
@@ -567,6 +660,23 @@ export interface MultiHopHop {
  * route trades the same way.
  */
 export type MultiHopSide = "buy" | "sell";
+
+/**
+ * A pump `multi_hop_curve_swap` read by `decodeMultiHopCurveSwapInstruction`:
+ * the curve leg PumpSwap's `multi_hop_swap` runs by CPI.
+ */
+export interface MultiHopCurveSwapCall {
+  amountIn: BN;
+  /** The program's opaque per-hop fee plan. */
+  hopFees: Buffer;
+  user: PublicKey;
+  sourceAuthority: PublicKey;
+  source: PublicKey;
+  destination: PublicKey;
+  buybackFeeRecipient: PublicKey;
+  /** The route accounts PumpSwap passes after the 13 named ones. */
+  remainingAccounts: AccountMeta[];
+}
 
 /** A mint and the token program that owns it. */
 export interface MintWithProgram {
@@ -3302,6 +3412,382 @@ export class PumpSdk {
         }),
       )
       .instruction();
+  }
+
+  /**
+   * `buy_v2`: buys `amount` tokens for at most `quoteAmount` plus `slippage`
+   * percent (0.1% steps). The fees are paid out in the trade (see
+   * `tradeV2Accounts`); the fee recipient is `getFeeRecipient(global,
+   * bondingCurve.isMayhemMode)`.
+   *
+   * The v2 trades are the lane for cashback coins, which the v3 trades
+   * refuse (6094). Every other coin can use the smaller v3 trades.
+   *
+   * Prepends an idempotent create of the user's base ATA when it is missing
+   * and, on a token quote, of the buyback recipient's quote ATA.
+   *
+   * @param params.partialFill - Set, a buy past the remaining supply stops
+   *   there; unset, it fails with 6021 `NotEnoughTokensToBuy`.
+   */
+  async buyV2Instructions({
+    global,
+    bondingCurve,
+    associatedUserAccountInfo,
+    mint,
+    user,
+    amount,
+    quoteAmount,
+    slippage,
+    tokenProgram = TOKEN_2022_PROGRAM_ID,
+    quoteTokenProgram = TOKEN_PROGRAM_ID,
+    partialFill = false,
+    buybackFeeRecipient,
+  }: {
+    global: Global;
+    bondingCurve: BondingCurve;
+    associatedUserAccountInfo: AccountInfo<Buffer> | null;
+    mint: PublicKey;
+    user: PublicKey;
+    amount: BN;
+    quoteAmount: BN;
+    slippage: number;
+    tokenProgram?: PublicKey;
+    quoteTokenProgram?: PublicKey;
+    partialFill?: boolean;
+    buybackFeeRecipient?: PublicKey;
+  }): Promise<TransactionInstruction[]> {
+    return [
+      ...this.baseAtaInstructions(
+        associatedUserAccountInfo,
+        mint,
+        user,
+        tokenProgram,
+      ),
+      ...buybackAtaInstructions(
+        user,
+        bondingCurve.quoteMint,
+        quoteTokenProgram,
+        buybackFeeRecipient,
+      ),
+      await this.getBuyV2InstructionRaw({
+        user,
+        mint,
+        creator: bondingCurve.creator,
+        amount,
+        quoteAmount: plusSlippage(quoteAmount, slippage),
+        feeRecipient: getFeeRecipient(global, bondingCurve.isMayhemMode),
+        buybackFeeRecipient,
+        tokenProgram,
+        quoteMint: bondingCurve.quoteMint,
+        quoteTokenProgram,
+        partialFill,
+      }),
+    ];
+  }
+
+  /**
+   * `buy_exact_quote_in_v2`: spends at most `quoteAmount` (fees included)
+   * and requires at least `amount` tokens less `slippage` percent. Same
+   * accounts, fees and prepended ATAs as `buyV2Instructions`.
+   */
+  async buyExactQuoteInV2Instructions({
+    global,
+    bondingCurve,
+    associatedUserAccountInfo,
+    mint,
+    user,
+    amount,
+    quoteAmount,
+    slippage,
+    tokenProgram = TOKEN_2022_PROGRAM_ID,
+    quoteTokenProgram = TOKEN_PROGRAM_ID,
+    partialFill = false,
+    buybackFeeRecipient,
+  }: {
+    global: Global;
+    bondingCurve: BondingCurve;
+    associatedUserAccountInfo: AccountInfo<Buffer> | null;
+    mint: PublicKey;
+    user: PublicKey;
+    amount: BN;
+    quoteAmount: BN;
+    slippage: number;
+    tokenProgram?: PublicKey;
+    quoteTokenProgram?: PublicKey;
+    partialFill?: boolean;
+    buybackFeeRecipient?: PublicKey;
+  }): Promise<TransactionInstruction[]> {
+    return [
+      ...this.baseAtaInstructions(
+        associatedUserAccountInfo,
+        mint,
+        user,
+        tokenProgram,
+      ),
+      ...buybackAtaInstructions(
+        user,
+        bondingCurve.quoteMint,
+        quoteTokenProgram,
+        buybackFeeRecipient,
+      ),
+      await this.getBuyExactQuoteInV2InstructionRaw({
+        user,
+        mint,
+        creator: bondingCurve.creator,
+        spendableQuoteIn: quoteAmount,
+        minTokensOut: lessSlippage(amount, slippage, 1),
+        feeRecipient: getFeeRecipient(global, bondingCurve.isMayhemMode),
+        buybackFeeRecipient,
+        tokenProgram,
+        quoteMint: bondingCurve.quoteMint,
+        quoteTokenProgram,
+        partialFill,
+      }),
+    ];
+  }
+
+  /**
+   * `sell_v2`: sells `amount` tokens for at least `quoteAmount` less
+   * `slippage` percent (net of fees). On a token quote it first creates,
+   * when missing, the seller's quote ATA and the buyback recipient's
+   * (idempotent).
+   */
+  async sellV2Instructions({
+    global,
+    bondingCurve,
+    mint,
+    user,
+    amount,
+    quoteAmount,
+    slippage,
+    tokenProgram = TOKEN_2022_PROGRAM_ID,
+    quoteTokenProgram = TOKEN_PROGRAM_ID,
+    buybackFeeRecipient,
+  }: {
+    global: Global;
+    bondingCurve: BondingCurve;
+    mint: PublicKey;
+    user: PublicKey;
+    amount: BN;
+    quoteAmount: BN;
+    slippage: number;
+    tokenProgram?: PublicKey;
+    quoteTokenProgram?: PublicKey;
+    buybackFeeRecipient?: PublicKey;
+  }): Promise<TransactionInstruction[]> {
+    validateSellAmount(amount, bondingCurve);
+    const quote = normalizeQuoteMint(bondingCurve.quoteMint);
+    const sellerQuoteAta = isLegacyQuoteMint(quote)
+      ? []
+      : [
+          createAssociatedTokenAccountIdempotentInstruction(
+            user,
+            quoteAta(user, quote, quoteTokenProgram),
+            user,
+            quote,
+            quoteTokenProgram,
+          ),
+        ];
+    return [
+      ...sellerQuoteAta,
+      ...buybackAtaInstructions(
+        user,
+        bondingCurve.quoteMint,
+        quoteTokenProgram,
+        buybackFeeRecipient,
+      ),
+      await this.getSellV2InstructionRaw({
+        user,
+        mint,
+        creator: bondingCurve.creator,
+        amount,
+        quoteAmount: lessSlippage(quoteAmount, slippage),
+        feeRecipient: getFeeRecipient(global, bondingCurve.isMayhemMode),
+        buybackFeeRecipient,
+        tokenProgram,
+        quoteMint: bondingCurve.quoteMint,
+        quoteTokenProgram,
+      }),
+    ];
+  }
+
+  /**
+   * `buy_v2` with `quoteAmount` as the exact `max_sol_cost` (fees included).
+   * The 27 accounts come from `tradeV2Accounts`; `creator` is the curve's
+   * `creator` (it seeds the creator vault).
+   */
+  async getBuyV2InstructionRaw({
+    user,
+    mint,
+    creator,
+    amount,
+    quoteAmount,
+    feeRecipient,
+    buybackFeeRecipient,
+    tokenProgram = TOKEN_2022_PROGRAM_ID,
+    quoteMint = NATIVE_MINT,
+    quoteTokenProgram = TOKEN_PROGRAM_ID,
+    partialFill = false,
+  }: {
+    user: PublicKey;
+    mint: PublicKey;
+    creator: PublicKey;
+    amount: BN;
+    quoteAmount: BN;
+    feeRecipient?: PublicKey;
+    buybackFeeRecipient?: PublicKey;
+    tokenProgram?: PublicKey;
+    quoteMint?: PublicKey;
+    quoteTokenProgram?: PublicKey;
+    partialFill?: boolean;
+  }): Promise<TransactionInstruction> {
+    return await this.offlinePumpProgram.methods
+      .buyV2(amount, quoteAmount, { 0: partialFill })
+      .accountsPartial(
+        tradeV2Accounts({
+          user,
+          mint,
+          creator,
+          tokenProgram,
+          quoteMint,
+          quoteTokenProgram,
+          feeRecipient,
+          buybackFeeRecipient,
+        }),
+      )
+      .instruction();
+  }
+
+  /**
+   * `buy_exact_quote_in_v2` with exact `spendable_quote_in` /
+   * `min_tokens_out`. Accounts as in `getBuyV2InstructionRaw`.
+   */
+  async getBuyExactQuoteInV2InstructionRaw({
+    user,
+    mint,
+    creator,
+    spendableQuoteIn,
+    minTokensOut,
+    feeRecipient,
+    buybackFeeRecipient,
+    tokenProgram = TOKEN_2022_PROGRAM_ID,
+    quoteMint = NATIVE_MINT,
+    quoteTokenProgram = TOKEN_PROGRAM_ID,
+    partialFill = false,
+  }: {
+    user: PublicKey;
+    mint: PublicKey;
+    creator: PublicKey;
+    spendableQuoteIn: BN;
+    minTokensOut: BN;
+    feeRecipient?: PublicKey;
+    buybackFeeRecipient?: PublicKey;
+    tokenProgram?: PublicKey;
+    quoteMint?: PublicKey;
+    quoteTokenProgram?: PublicKey;
+    partialFill?: boolean;
+  }): Promise<TransactionInstruction> {
+    return await this.offlinePumpProgram.methods
+      .buyExactQuoteInV2(spendableQuoteIn, minTokensOut, { 0: partialFill })
+      .accountsPartial(
+        tradeV2Accounts({
+          user,
+          mint,
+          creator,
+          tokenProgram,
+          quoteMint,
+          quoteTokenProgram,
+          feeRecipient,
+          buybackFeeRecipient,
+        }),
+      )
+      .instruction();
+  }
+
+  /**
+   * `sell_v2` with `quoteAmount` as the exact `min_sol_output` (net of
+   * fees). Accounts as in `getBuyV2InstructionRaw`, less
+   * `global_volume_accumulator` (26).
+   */
+  async getSellV2InstructionRaw({
+    user,
+    mint,
+    creator,
+    amount,
+    quoteAmount,
+    feeRecipient,
+    buybackFeeRecipient,
+    tokenProgram = TOKEN_2022_PROGRAM_ID,
+    quoteMint = NATIVE_MINT,
+    quoteTokenProgram = TOKEN_PROGRAM_ID,
+  }: {
+    user: PublicKey;
+    mint: PublicKey;
+    creator: PublicKey;
+    amount: BN;
+    quoteAmount: BN;
+    feeRecipient?: PublicKey;
+    buybackFeeRecipient?: PublicKey;
+    tokenProgram?: PublicKey;
+    quoteMint?: PublicKey;
+    quoteTokenProgram?: PublicKey;
+  }): Promise<TransactionInstruction> {
+    return await this.offlinePumpProgram.methods
+      .sellV2(amount, quoteAmount)
+      .accountsPartial(
+        tradeV2Accounts({
+          user,
+          mint,
+          creator,
+          tokenProgram,
+          quoteMint,
+          quoteTokenProgram,
+          feeRecipient,
+          buybackFeeRecipient,
+        }),
+      )
+      .instruction();
+  }
+
+  /**
+   * Reads a pump `multi_hop_curve_swap` instruction, or returns `null` for
+   * any other instruction.
+   *
+   * There is deliberately no builder for it: the program requires PumpSwap's
+   * `global_config` PDA as a signer, so only PumpSwap's `multi_hop_swap` can
+   * issue it, by CPI. A transaction that carries it directly always fails.
+   * Build routes with `multiHopSwapInstructions`; this decoder is for
+   * indexers reading the inner instructions such a route produces.
+   * `hopFees` is the program's opaque per-hop fee plan, returned as bytes.
+   */
+  decodeMultiHopCurveSwapInstruction(
+    ix: TransactionInstruction,
+  ): MultiHopCurveSwapCall | null {
+    if (!ix.programId.equals(PUMP_PROGRAM_ID)) return null;
+    const decoded = (
+      this.offlinePumpProgram.coder.instruction as BorshInstructionCoder
+    ).decode(ix.data);
+    if (decoded?.name !== "multiHopCurveSwap") return null;
+    const data = decoded.data as { amountIn: BN; hopFees: Buffer };
+    const key = (index: number): PublicKey => {
+      const meta = ix.keys[index];
+      if (!meta) {
+        throw new Error(
+          `multi_hop_curve_swap is missing account #${index + 1} (has ${ix.keys.length})`,
+        );
+      }
+      return meta.pubkey;
+    };
+    return {
+      amountIn: data.amountIn,
+      hopFees: Buffer.from(data.hopFees),
+      user: key(3),
+      sourceAuthority: key(4),
+      source: key(5),
+      destination: key(6),
+      buybackFeeRecipient: key(7),
+      remainingAccounts: ix.keys.slice(13),
+    };
   }
 
   // An idempotent create of the user's base ATA when it is missing.

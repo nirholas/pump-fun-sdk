@@ -486,6 +486,7 @@ See [docs/api-reference.md](./docs/api-reference.md) for the complete API docume
 | Builder | Description |
 |---------|-------------|
 | `buyV3Instructions` / `buyExactQuoteInV3Instructions` / `sellV3Instructions` | v3 curve trades for SOL and token-quoted curves; fees stay on the curve for a sweep |
+| `buyV2Instructions` / `buyExactQuoteInV2Instructions` / `sellV2Instructions` | v2 curve trades that pay fees out in the trade; the lane for cashback coins |
 | `ammBuyV2Instruction` / `ammBuyExactQuoteInV2Instruction` / `ammSellV2Instruction` | PumpSwap v2 trades; fees stay in the pool for a sweep |
 | `multiHopSwapInstructions` | One exact-input route through pump pools and pump-coin quoted curves |
 | `sweepCreatorFeeInstruction` / `ammSweepCreatorFeeInstruction` (and the protocol variants) | Pay fees left by v3 / v2 trades out to the creator vault or protocol recipients |

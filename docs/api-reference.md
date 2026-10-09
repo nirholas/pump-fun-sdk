@@ -266,6 +266,51 @@ const ixs = await PUMP_SDK.sellV3Instructions({
 
 `getBuyV3InstructionRaw({ user, mint, amount, quoteAmount, ... })`, `getBuyExactQuoteInV3InstructionRaw({ user, mint, spendableQuoteIn, minTokensOut, ... })` and `getSellV3InstructionRaw({ user, mint, amount, quoteAmount, ... })` build the single instruction with exact limits and no ATA handling. All take optional `tokenProgram`, `quoteMint` (`bondingCurve.quoteMint` can be passed as is; the zero key is SOL), `quoteTokenProgram` and `buybackFeeRecipient`; the buys also take `partialFill`. `tradeV3Accounts(params)` returns the named accounts they share.
 
+#### v2 Curve Trades
+
+`buy_v2`, `buy_exact_quote_in_v2` and `sell_v2` are the 27/26-account curve trades that pay the protocol and creator fees out in the trade: to a listed fee recipient, to the buyback recipient and to the creator vault (seeded by the curve's `creator`). They price exactly like `buy` / `sell`, take the curve's quote mint (SOL or a token quote) and are the lane for cashback coins, which the v3 trades refuse with 6094. Every other coin can use the smaller [v3 trades](#v3-curve-trades). The full guides are `docs/pump-official/docs/instructions/BUY.md` and `SELL.md`.
+
+##### `buyV2Instructions(params)` / `buyExactQuoteInV2Instructions(params)`
+
+```typescript
+const global = await sdk.fetchGlobal();
+const state = await sdk.fetchBuyState(mint, user);
+
+const ixs = await PUMP_SDK.buyV2Instructions({
+  global,
+  bondingCurve: state.bondingCurve,
+  associatedUserAccountInfo: state.associatedUserAccountInfo,
+  mint, user,
+  amount,                       // BN - tokens to buy
+  quoteAmount,                  // BN - expected cost, fees included
+  slippage: 1,                  // percent, in 0.1% steps
+  tokenProgram: state.tokenProgram,
+  quoteTokenProgram: state.quoteTokenProgram,
+  partialFill: false,           // optional; set to stop at the remaining supply instead of failing (6021)
+  buybackFeeRecipient,          // optional; a listed Global.buybackFeeRecipients wallet
+});
+```
+
+The fee recipient is `getFeeRecipient(global, bondingCurve.isMayhemMode)`, so a mayhem coin pays a reserved recipient. The builder creates the user's base ATA when it is missing and, on a token quote, the buyback recipient's quote ATA (the program never creates that one; it creates the fee recipient's, the creator vault's and the volume accumulator's itself). `buyExactQuoteInV2Instructions` takes the same parameters, spends at most `quoteAmount` and requires at least `amount` tokens less `slippage` percent.
+
+##### `sellV2Instructions(params)`
+
+```typescript
+const ixs = await PUMP_SDK.sellV2Instructions({
+  global, bondingCurve, mint, user,
+  amount,                 // BN - tokens to sell
+  quoteAmount,            // BN - expected quote out, net of fees
+  slippage: 1,
+  tokenProgram, quoteTokenProgram,
+});
+```
+
+On a token quote it first creates, when missing, the seller's quote ATA and the buyback recipient's.
+
+##### Raw v2 builders
+
+`getBuyV2InstructionRaw({ user, mint, creator, amount, quoteAmount, ... })`, `getBuyExactQuoteInV2InstructionRaw({ user, mint, creator, spendableQuoteIn, minTokensOut, ... })` and `getSellV2InstructionRaw({ user, mint, creator, amount, quoteAmount, ... })` build the single instruction with exact limits and no ATA handling. `creator` is `bondingCurve.creator`. All take optional `feeRecipient` (random normal recipient by default; pass `getFeeRecipient(global, true)` for a mayhem coin), `buybackFeeRecipient`, `tokenProgram`, `quoteMint` (the zero key is SOL) and `quoteTokenProgram`; the buys also take `partialFill`. `tradeV2Accounts(params)` returns the named accounts they share.
+
 #### Migration
 
 ##### `migrateInstruction(params)`
@@ -548,6 +593,10 @@ const ixs = await PUMP_SDK.multiHopSwapInstructions({
 ```
 
 `multiHopSwapInstructions` also creates the user's output account (and the WSOL account when SOL is an end), the buyback recipient's ATA for the user's currency, wraps SOL first and closes the WSOL account afterwards. `multiHopSwapInstruction` builds only the swap and expects those accounts to exist. Hops that do not chain throw `MultiHopDiscontinuousPathError` before anything is sent. `multiHopRouteEnds(hops, side)` and `multiHopHopAccounts(hop)` expose the route checks and per-hop accounts. Full guide: `docs/pump-official/docs/instructions/MULTI_HOP_SWAP.md`.
+
+##### `decodeMultiHopCurveSwapInstruction(ix)`
+
+The pump program's `multi_hop_curve_swap` is the curve leg PumpSwap's `multi_hop_swap` runs by CPI. It requires PumpSwap's `global_config` PDA as a signer, so no wallet can send it and the SDK has no builder for it: build routes with `multiHopSwapInstructions`. For indexers reading a route's inner instructions, `decodeMultiHopCurveSwapInstruction` returns `{ amountIn, hopFees, user, sourceAuthority, source, destination, buybackFeeRecipient, remainingAccounts }` (a `MultiHopCurveSwapCall`), or `null` for any other instruction. `hopFees` is the program's opaque per-hop fee plan.
 
 ##### AMM creator & volume management
 

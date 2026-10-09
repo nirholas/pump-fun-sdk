@@ -42,6 +42,7 @@ export {
   POOL_SIZE,
   AMM_GLOBAL_CONFIG_SIZE,
   createV2QuoteRemainingAccounts,
+  tradeV2Accounts,
   tradeV3Accounts,
   ammTradeV2Accounts,
   multiHopRouteEnds,
@@ -59,6 +60,7 @@ export type {
   PumpQuoteAccounts,
   MultiHopHop,
   MultiHopSide,
+  MultiHopCurveSwapCall,
   MintWithProgram,
 } from "./sdk";
 export {

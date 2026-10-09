@@ -45,12 +45,22 @@ Tracks the October 2026 Pump, PumpSwap and PumpFees program upgrade, using
 - v3 curve trades for SOL and token-quoted curves: `buyV3Instructions`,
   `buyExactQuoteInV3Instructions`, `sellV3Instructions`, the raw builders and
   `tradeV3Accounts`.
+- v2 curve trades, the lane for cashback coins: `buyV2Instructions`,
+  `buyExactQuoteInV2Instructions`, `sellV2Instructions`, the raw builders
+  (`getBuyV2InstructionRaw`, `getBuyExactQuoteInV2InstructionRaw`,
+  `getSellV2InstructionRaw`) and `tradeV2Accounts`. They pay a reserved fee
+  recipient on mayhem coins and create the buyback recipient's ATA on a
+  token quote.
 - PumpSwap v2 trades: `ammBuyV2Instruction`,
   `ammBuyExactQuoteInV2Instruction`, `ammSellV2Instruction` and
   `ammTradeV2Accounts`.
 - `multiHopSwapInstruction` / `multiHopSwapInstructions` with route checks
   (`multiHopRouteEnds`, `MultiHopDiscontinuousPathError`) and
   `multiHopHopAccounts`.
+- `decodeMultiHopCurveSwapInstruction` reads the pump
+  `multi_hop_curve_swap` that PumpSwap issues by CPI. There is no builder for
+  it: it needs PumpSwap's `global_config` PDA as a signer, so only
+  `multi_hop_swap` can send it.
 - Fee sweeps: `sweepCreatorFeeInstruction`, `sweepProtocolFeeInstruction`,
   `ammSweepCreatorFeeInstruction`, `ammSweepProtocolFeeInstruction` and
   `OnlinePumpSdk.creatorFeeSweepInstructions`, plus the sweep events.
@@ -76,6 +86,10 @@ Tracks the October 2026 Pump, PumpSwap and PumpFees program upgrade, using
 - Synced `src/idl/` to the pump-public-docs IDLs; `scripts/sync-idl.mjs` now
   reads them by default (`--source chain` reads the on-chain IDL accounts).
 - Upgraded `@pump-fun/pump-swap-sdk` to 2.1.
+- Rebuilt the browser bundle (`website/vendor` and `live/vendor`
+  `pump-sdk.browser.mjs`, `npm run build:bundle`) from 3.0.0. The live
+  launchpad's retired Cashback toggle, which always failed with 6082, is now
+  a Holder rewards toggle.
 - Refreshed the mirrored official docs and updated the API reference, AMM
   trading, bonding curve math, fee sharing and error guides.
 

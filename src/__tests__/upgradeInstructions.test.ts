@@ -24,6 +24,8 @@ import {
   QUOTE_CONTROL_PDA,
   bondingCurvePda,
   canonicalPumpPoolPdaWithQuote,
+  creatorVaultPda,
+  userVolumeAccumulatorPda,
 } from "../pda";
 import {
   AMM_GLOBAL_CONFIG_SIZE,
@@ -37,10 +39,12 @@ import {
   createV2QuoteRemainingAccounts,
   multiHopHopAccounts,
   multiHopRouteEnds,
+  tradeV2Accounts,
   tradeV3Accounts,
 } from "../sdk";
 import type { MultiHopHop } from "../sdk";
 import { poolQuoteTerms } from "../onlineSdk";
+import { getBuybackFeeRecipientForTokenQuote } from "../fees";
 import {
   CashbackCoinNotSupportedError,
   MultiHopDiscontinuousPathError,
@@ -279,6 +283,379 @@ describe("bonding curve v3 trades", () => {
         slippage: 1,
       }),
     ).rejects.toThrow(CashbackCoinNotSupportedError);
+  });
+});
+
+/** The key `ix` passes for the IDL account `name` (fixed accounts only). */
+function keyFor(
+  ix: TransactionInstruction,
+  idl: IdlWithInstructions,
+  instruction: string,
+  name: string,
+) {
+  const accounts = idlInstruction(idl, instruction).accounts as {
+    name: string;
+  }[];
+  const index = accounts.findIndex((account) => account.name === name);
+  if (index < 0) throw new Error(`${instruction} has no account ${name}`);
+  return ix.keys[index]!;
+}
+
+describe("bonding curve v2 trades", () => {
+  const FEE_RECIPIENT = Keypair.generate().publicKey;
+  const RESERVED_RECIPIENT = Keypair.generate().publicKey;
+  const global = makeGlobal({
+    feeRecipient: FEE_RECIPIENT,
+    feeRecipients: [FEE_RECIPIENT],
+    reservedFeeRecipient: RESERVED_RECIPIENT,
+    reservedFeeRecipients: [RESERVED_RECIPIENT],
+  });
+
+  it("builds buy_v2 and buy_exact_quote_in_v2 with 27 accounts and sell_v2 with 26", async () => {
+    const params = {
+      user: USER,
+      mint: MINT,
+      creator: TEST_CREATOR,
+      amount: new BN(1_000_000),
+      quoteAmount: new BN(10_000_000),
+    };
+    const buy = await PUMP_SDK.getBuyV2InstructionRaw(params);
+    expectInstruction(buy, pumpIdl, "buy_v2");
+    expect(buy.keys).toHaveLength(27);
+    expectInstruction(
+      await PUMP_SDK.getBuyExactQuoteInV2InstructionRaw({
+        user: USER,
+        mint: MINT,
+        creator: TEST_CREATOR,
+        spendableQuoteIn: new BN(10_000_000),
+        minTokensOut: new BN(1),
+      }),
+      pumpIdl,
+      "buy_exact_quote_in_v2",
+    );
+    const sell = await PUMP_SDK.getSellV2InstructionRaw(params);
+    expectInstruction(sell, pumpIdl, "sell_v2");
+    expect(sell.keys).toHaveLength(26);
+  });
+
+  it("encodes buy_v2 and buy_exact_quote_in_v2 args in program order", async () => {
+    const buy = pumpInstructionCoder.decode(
+      (
+        await PUMP_SDK.getBuyV2InstructionRaw({
+          user: USER,
+          mint: MINT,
+          creator: TEST_CREATOR,
+          amount: new BN(123),
+          quoteAmount: new BN(456),
+          partialFill: true,
+        })
+      ).data,
+    );
+    expect(buy?.name).toBe("buyV2");
+    const buyData = buy?.data as {
+      amount: BN;
+      maxSolCost: BN;
+      partialFill: { 0: boolean };
+    };
+    expect(buyData.amount.eqn(123)).toBe(true);
+    expect(buyData.maxSolCost.eqn(456)).toBe(true);
+    expect(buyData.partialFill).toEqual({ 0: true });
+
+    const exact = pumpInstructionCoder.decode(
+      (
+        await PUMP_SDK.getBuyExactQuoteInV2InstructionRaw({
+          user: USER,
+          mint: MINT,
+          creator: TEST_CREATOR,
+          spendableQuoteIn: new BN(789),
+          minTokensOut: new BN(10),
+        })
+      ).data,
+    );
+    expect(exact?.name).toBe("buyExactQuoteInV2");
+    const exactData = exact?.data as {
+      spendableQuoteIn: BN;
+      minTokensOut: BN;
+      partialFill: { 0: boolean };
+    };
+    expect(exactData.spendableQuoteIn.eqn(789)).toBe(true);
+    expect(exactData.minTokensOut.eqn(10)).toBe(true);
+    expect(exactData.partialFill).toEqual({ 0: false });
+  });
+
+  it("pays the fee recipient, buyback wallet and creator vault in WSOL on a SOL curve", async () => {
+    const buyback = Keypair.generate().publicKey;
+    const ix = await PUMP_SDK.getBuyV2InstructionRaw({
+      user: USER,
+      mint: MINT,
+      creator: TEST_CREATOR,
+      amount: new BN(1),
+      quoteAmount: new BN(1),
+      feeRecipient: FEE_RECIPIENT,
+      buybackFeeRecipient: buyback,
+      quoteMint: PublicKey.default,
+    });
+    const key = (name: string) => keyFor(ix, pumpIdl, "buy_v2", name);
+    const wsolAta = (owner: PublicKey) =>
+      getAssociatedTokenAddressSync(NATIVE_MINT, owner, true, TOKEN_PROGRAM_ID);
+    const creatorVault = creatorVaultPda(TEST_CREATOR);
+
+    expect(key("quote_mint").pubkey.equals(NATIVE_MINT)).toBe(true);
+    expect(key("fee_recipient").pubkey.equals(FEE_RECIPIENT)).toBe(true);
+    expect(
+      key("associated_quote_fee_recipient").pubkey.equals(
+        wsolAta(FEE_RECIPIENT),
+      ),
+    ).toBe(true);
+    expect(key("buyback_fee_recipient").pubkey.equals(buyback)).toBe(true);
+    expect(
+      key("associated_quote_buyback_fee_recipient").pubkey.equals(
+        wsolAta(buyback),
+      ),
+    ).toBe(true);
+    expect(key("bonding_curve").pubkey.equals(bondingCurvePda(MINT))).toBe(
+      true,
+    );
+    expect(key("creator_vault").pubkey.equals(creatorVault)).toBe(true);
+    expect(
+      key("associated_creator_vault").pubkey.equals(wsolAta(creatorVault)),
+    ).toBe(true);
+    expect(
+      key("associated_user_volume_accumulator").pubkey.equals(
+        wsolAta(userVolumeAccumulatorPda(USER)),
+      ),
+    ).toBe(true);
+    expect(
+      key("associated_base_user").pubkey.equals(
+        getAssociatedTokenAddressSync(MINT, USER, true, TOKEN_2022_PROGRAM_ID),
+      ),
+    ).toBe(true);
+    expect(key("user").isSigner).toBe(true);
+    expect(key("user").isWritable).toBe(true);
+  });
+
+  it("defaults a token quote's buyback to the first listed wallet's ATA", async () => {
+    const accounts = tradeV2Accounts({
+      user: USER,
+      mint: MINT,
+      creator: TEST_CREATOR,
+      quoteMint: QUOTE_MINT,
+    });
+    const recipient = getBuybackFeeRecipientForTokenQuote();
+    expect(accounts.buybackFeeRecipient.equals(recipient)).toBe(true);
+    expect(
+      accounts.associatedQuoteBuybackFeeRecipient.equals(
+        getAssociatedTokenAddressSync(
+          QUOTE_MINT,
+          recipient,
+          true,
+          TOKEN_PROGRAM_ID,
+        ),
+      ),
+    ).toBe(true);
+    expect(
+      accounts.associatedQuoteBondingCurve.equals(
+        getAssociatedTokenAddressSync(
+          QUOTE_MINT,
+          bondingCurvePda(MINT),
+          true,
+          TOKEN_PROGRAM_ID,
+        ),
+      ),
+    ).toBe(true);
+  });
+
+  it("creates the user's ATA and the buyback ATA before a token-quoted buy", async () => {
+    const instructions = await PUMP_SDK.buyV2Instructions({
+      global,
+      bondingCurve: makeBondingCurve({
+        quoteMint: QUOTE_MINT,
+        creator: TEST_CREATOR,
+      }),
+      associatedUserAccountInfo: null,
+      mint: MINT,
+      user: USER,
+      amount: new BN(1_000_000),
+      quoteAmount: new BN(10_000_000),
+      slippage: 1,
+    });
+    expect(instructions).toHaveLength(3);
+    const last = instructions[2] as TransactionInstruction;
+    expectInstruction(last, pumpIdl, "buy_v2");
+    // 1% slippage on the quote cap, in 0.1% steps.
+    const decoded = pumpInstructionCoder.decode(last.data)?.data as {
+      maxSolCost: BN;
+    };
+    expect(decoded.maxSolCost.eqn(10_100_000)).toBe(true);
+    expect(
+      keyFor(last, pumpIdl, "buy_v2", "fee_recipient").pubkey.equals(
+        FEE_RECIPIENT,
+      ),
+    ).toBe(true);
+  });
+
+  it("needs no extra instruction before a SOL-quoted buy into an existing ATA", async () => {
+    const instructions = await PUMP_SDK.buyExactQuoteInV2Instructions({
+      global,
+      bondingCurve: makeBondingCurve({ creator: TEST_CREATOR }),
+      associatedUserAccountInfo: accountInfo(
+        Buffer.alloc(165),
+        TOKEN_2022_PROGRAM_ID,
+      ),
+      mint: MINT,
+      user: USER,
+      amount: new BN(1_000_000),
+      quoteAmount: new BN(10_000_000),
+      slippage: 1,
+    });
+    expect(instructions).toHaveLength(1);
+    const decoded = pumpInstructionCoder.decode(instructions[0]!.data)
+      ?.data as { spendableQuoteIn: BN; minTokensOut: BN };
+    expect(decoded.spendableQuoteIn.eqn(10_000_000)).toBe(true);
+    expect(decoded.minTokensOut.eqn(990_000)).toBe(true);
+  });
+
+  it("pays a mayhem coin's fee to a reserved recipient", async () => {
+    const [ix] = await PUMP_SDK.sellV2Instructions({
+      global,
+      bondingCurve: makeBondingCurve({
+        creator: TEST_CREATOR,
+        isMayhemMode: true,
+      }),
+      mint: MINT,
+      user: USER,
+      amount: new BN(1_000_000),
+      quoteAmount: new BN(10_000_000),
+      slippage: 1,
+    });
+    expect(
+      keyFor(ix!, pumpIdl, "sell_v2", "fee_recipient").pubkey.equals(
+        RESERVED_RECIPIENT,
+      ),
+    ).toBe(true);
+    const decoded = pumpInstructionCoder.decode(ix!.data)?.data as {
+      minSolOutput: BN;
+    };
+    expect(decoded.minSolOutput.eqn(9_900_000)).toBe(true);
+  });
+
+  it("trades cashback coins, which v3 refuses", async () => {
+    const bondingCurve = makeBondingCurve({
+      creator: TEST_CREATOR,
+      isCashbackCoin: true,
+    });
+    const buy = await PUMP_SDK.buyV2Instructions({
+      global,
+      bondingCurve,
+      associatedUserAccountInfo: null,
+      mint: MINT,
+      user: USER,
+      amount: new BN(1_000_000),
+      quoteAmount: new BN(10_000_000),
+      slippage: 1,
+    });
+    expectInstruction(buy[buy.length - 1]!, pumpIdl, "buy_v2");
+    const sell = await PUMP_SDK.sellV2Instructions({
+      global,
+      bondingCurve,
+      mint: MINT,
+      user: USER,
+      amount: new BN(1_000_000),
+      quoteAmount: new BN(10_000_000),
+      slippage: 1,
+    });
+    expect(sell).toHaveLength(1);
+    expectInstruction(sell[0]!, pumpIdl, "sell_v2");
+  });
+
+  it("creates the seller's and the buyback quote ATAs before a token-quoted sell", async () => {
+    const instructions = await PUMP_SDK.sellV2Instructions({
+      global,
+      bondingCurve: makeBondingCurve({
+        quoteMint: QUOTE_MINT,
+        creator: TEST_CREATOR,
+      }),
+      mint: MINT,
+      user: USER,
+      amount: new BN(1_000_000),
+      quoteAmount: new BN(10_000_000),
+      slippage: 1,
+    });
+    expect(instructions).toHaveLength(3);
+    expectInstruction(instructions[2]!, pumpIdl, "sell_v2");
+  });
+});
+
+describe("multi_hop_curve_swap", () => {
+  function curveSwapInstruction(
+    amountIn: BN,
+    hopFees: Buffer,
+    extra: number,
+  ): TransactionInstruction {
+    const keys = idlInstruction(pumpIdl, "multi_hop_curve_swap").accounts.map(
+      () => ({
+        pubkey: Keypair.generate().publicKey,
+        isSigner: false,
+        isWritable: false,
+      }),
+    );
+    for (let i = 0; i < extra; i++) {
+      keys.push({
+        pubkey: Keypair.generate().publicKey,
+        isSigner: false,
+        isWritable: true,
+      });
+    }
+    return {
+      programId: PUMP_PROGRAM_ID,
+      keys,
+      data: pumpInstructionCoder.encode("multiHopCurveSwap", {
+        amountIn,
+        hopFees,
+      }),
+    } as TransactionInstruction;
+  }
+
+  it("reads the amount, fee plan and named accounts of PumpSwap's CPI", () => {
+    const ix = curveSwapInstruction(new BN(5_000), Buffer.from([1, 2, 3]), 5);
+    const call = PUMP_SDK.decodeMultiHopCurveSwapInstruction(ix);
+    expect(call).not.toBeNull();
+    expect(call!.amountIn.eqn(5_000)).toBe(true);
+    expect([...call!.hopFees]).toEqual([1, 2, 3]);
+    expect(call!.user.equals(ix.keys[3]!.pubkey)).toBe(true);
+    expect(call!.sourceAuthority.equals(ix.keys[4]!.pubkey)).toBe(true);
+    expect(call!.source.equals(ix.keys[5]!.pubkey)).toBe(true);
+    expect(call!.destination.equals(ix.keys[6]!.pubkey)).toBe(true);
+    expect(call!.buybackFeeRecipient.equals(ix.keys[7]!.pubkey)).toBe(true);
+    expect(call!.remainingAccounts).toHaveLength(5);
+  });
+
+  it("returns null for other pump instructions and other programs", async () => {
+    const buy = await PUMP_SDK.getBuyV2InstructionRaw({
+      user: USER,
+      mint: MINT,
+      creator: TEST_CREATOR,
+      amount: new BN(1),
+      quoteAmount: new BN(1),
+    });
+    expect(PUMP_SDK.decodeMultiHopCurveSwapInstruction(buy)).toBeNull();
+    const ix = curveSwapInstruction(new BN(1), Buffer.alloc(0), 0);
+    expect(
+      PUMP_SDK.decodeMultiHopCurveSwapInstruction({
+        ...ix,
+        programId: PUMP_AMM_PROGRAM_ID,
+      } as TransactionInstruction),
+    ).toBeNull();
+  });
+
+  it("is declared CPI-only: PumpSwap's global_config must sign", () => {
+    const accounts = idlInstruction(pumpIdl, "multi_hop_curve_swap")
+      .accounts as { name: string; signer?: boolean }[];
+    const config = accounts.find(
+      (account) => account.name === "pump_amm_global_config",
+    );
+    expect(config?.signer).toBe(true);
+    expect(accounts).toHaveLength(13);
   });
 });
 
