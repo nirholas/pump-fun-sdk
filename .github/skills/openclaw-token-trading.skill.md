@@ -50,9 +50,10 @@ const instructions = await PUMP_SDK.buyInstructions({
 ```
 
 The returned instructions include (as needed):
-1. `extendAccount` — If bonding curve account is undersized (< 151 bytes)
-2. `createAssociatedTokenAccountIdempotent` — If user doesn't have an ATA
-3. `buy` — The actual purchase instruction
+1. `createAssociatedTokenAccountIdempotent`: if the user doesn't have an ATA
+2. `buy`: the actual purchase instruction
+
+No `extendAccount` is prepended any more: the program grows a pre-upgrade bonding curve (to 166 bytes) on its first new-style trade.
 
 ### Slippage Calculation
 
@@ -200,7 +201,6 @@ if (bondingCurve.virtualTokenReserves.eq(new BN(0))) {
 
 - Trading on a graduated token (`complete === true`) — the bonding curve is closed
 - Using wrong `tokenProgram` — Token-2022 tokens fail with SPL Token program and vice versa
-- Forgetting `extendAccount` for old bonding curves (< 151 bytes)
 - Setting slippage to 0 — transactions will fail on any price movement
 - Passing token amount where SOL amount is expected, or vice versa
 - Not accounting for fees in quote calculations — net received differs from gross

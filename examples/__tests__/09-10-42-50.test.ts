@@ -15,6 +15,7 @@ import {
   PUMP_FEE_PROGRAM_ID,
   PUMP_PROGRAM_ID,
   Platform,
+  bondingCurvePda,
   canonicalPumpPoolPda,
   creatorVaultPda,
   currentDayTokens,
@@ -637,9 +638,13 @@ describe("example 47: fee sharing distribution", () => {
         admin: wallet,
         shareholders,
         distributed: new BN(2_500_000),
+        bondingCurve: bondingCurvePda(mint),
+        quoteMint: PublicKey.default,
       }),
     );
     expect(decoded.shareholders).toHaveLength(3);
+    expect(decoded.bondingCurve.equals(bondingCurvePda(mint))).toBe(true);
+    expect(decoded.quoteMint.equals(PublicKey.default)).toBe(true);
     expect(decoded.distributed.eq(new BN(2_500_000))).toBe(true);
     expect(decoded.sharingConfig.equals(feeSharingConfigPda(mint))).toBe(true);
   });

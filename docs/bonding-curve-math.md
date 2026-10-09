@@ -15,11 +15,13 @@ The bonding curve tracks two sets of reserves:
 | Reserve | Purpose |
 |---------|---------|
 | `virtualTokenReserves` | Token side of the constant-product formula; includes both real and virtual liquidity |
-| `virtualSolReserves` | SOL side of the constant-product formula; includes both real and virtual liquidity |
+| `virtualQuoteReserves` | Quote side of the constant-product formula; includes both real and virtual liquidity |
 | `realTokenReserves` | Actual tokens available for purchase; decreases as users buy |
-| `realSolReserves` | Actual SOL deposited by buyers; increases as users buy |
+| `realQuoteReserves` | Actual quote deposited by buyers; increases as users buy |
 
 The "virtual" reserves are larger than the "real" reserves. This virtual liquidity ensures the price starts at a reasonable level instead of zero.
+
+The quote side is denominated in `bondingCurve.quoteMint`. For most coins that is SOL (stored as `PublicKey.default`, amounts in lamports), but a curve can also be quoted in a whitelisted mint, a `QuoteControl`-listed mint, or another pump coin. These fields were called `virtualSolReserves` / `realSolReserves` before pump generalized curves beyond SOL; the byte layout is unchanged. The formulas below say "SOL" for readability; read it as "the curve's quote token".
 
 ### Initial State
 
@@ -31,15 +33,27 @@ import { newBondingCurve } from "@nirholas/pump-sdk";
 const curve = newBondingCurve(global);
 // {
 //   virtualTokenReserves: global.initialVirtualTokenReserves,
-//   virtualSolReserves: global.initialVirtualSolReserves,
+//   virtualQuoteReserves: global.initialVirtualSolReserves,
 //   realTokenReserves: global.initialRealTokenReserves,
-//   realSolReserves: BN(0),
+//   realQuoteReserves: BN(0),
 //   tokenTotalSupply: global.tokenTotalSupply,
 //   complete: false,
 //   creator: PublicKey.default,
 //   isMayhemMode: global.mayhemModeEnabled,
 //   isCashbackCoin: false,
+//   quoteMint: PublicKey.default,        // SOL
+//   depth: 0,
+//   creatorFee: BN(0), protocolFees: BN(0),
+//   ...
 // }
+```
+
+The starting quote reserves depend on the quote mint: `Global.initialVirtualSolReserves` for SOL, `Global.initialVirtualQuoteReserves` for a whitelisted mint, the mint's `QuoteControl` entry for a listed mint, and a derived seed for a pump coin (see [Pump-coin quotes](#pump-coin-quotes)):
+
+```typescript
+// newBondingCurve(global, quoteMint?, quoteControl?, creatorFeeBps?, isHolderReward?, pumpQuote?)
+const quoteControl = await onlineSdk.fetchQuoteControl();
+const usdcCurve = newBondingCurve(global, usdcMint, quoteControl);
 ```
 
 ### The Constant Product
@@ -145,7 +159,7 @@ The sell multiply `amount * virtualSolReserves` is widened to u128 on-chain, whi
 import { maxSafeSellAmount, validateSellAmount, getTokenAmountForTargetSol } from "@nirholas/pump-sdk";
 
 // Largest amount sellable in one instruction (with a 10% safety margin)
-const max = maxSafeSellAmount(bondingCurve.virtualSolReserves);
+const max = maxSafeSellAmount(bondingCurve.virtualQuoteReserves);
 
 // Throws SellOverflowError if amount is too large; sellInstructions calls this for you
 validateSellAmount(amount, bondingCurve);
@@ -164,13 +178,98 @@ import { bondingCurveMarketCap } from "@nirholas/pump-sdk";
 
 const mcap = bondingCurveMarketCap({
   mintSupply: bondingCurve.tokenTotalSupply,
-  virtualSolReserves: bondingCurve.virtualSolReserves,
+  virtualQuoteReserves: bondingCurve.virtualQuoteReserves,
   virtualTokenReserves: bondingCurve.virtualTokenReserves,
 });
-// Returns BN in lamports
+// Returns BN in the quote mint's base units (lamports for SOL)
 ```
 
 The market cap is used by the [fee tier system](./fee-tiers.md) to determine which fee rates apply.
+
+### Which fee schedule applies
+
+Since the October 2026 upgrade the fee schedule follows the curve's quote mint, mirroring `FeeConfig::fees_for_quote_mint`:
+
+| Quote mint | Schedule |
+|------------|----------|
+| SOL-like (`SOL_LIKE_QUOTE_MINTS`, including the zero key) | `feeConfig.feeTiers`, by market cap in lamports |
+| A listed stable (`STABLE_QUOTE_MINTS`) | `feeConfig.stableFeeTiers`, by market cap in the stable's base units |
+| Anything else, pump coins included | `feeConfig.exoticFlatFees` (or `flatFees` while unset) |
+
+```typescript
+import { selectCurveFeeSchedule } from "@nirholas/pump-sdk";
+
+const fees = selectCurveFeeSchedule({ feeConfig, quoteMint: bondingCurve.quoteMint, marketCap: mcap });
+// { lpFeeBps, protocolFeeBps, creatorFeeBps }
+```
+
+Every quote function on this page takes the quote mint from `bondingCurve.quoteMint`, so it picks the right schedule without extra arguments.
+
+## v3 Trades and Synthetic Migration
+
+`buy_v3`, `buy_exact_quote_in_v3` and `sell_v3` use the same curve formula as `buy` / `sell`, with two differences that matter for quoting:
+
+1. **The fee schedule always comes from `FeeConfig`**, and a curve without a creator pays no creator fee.
+2. **A buy may cross the end of the curve.** When it asks for more than `realTokenReserves`, the program sells the remaining supply at the curve's price, completes the curve, and buys the rest from the pool the migration will create (a *synthetic migration*). The transaction logs `CompleteEvent` followed by `PostCompleteBuyEvent`. Mayhem curves stop at the remaining supply instead (send `partialFill` to accept a partial fill).
+
+The pool-to-be holds what the migration would deposit:
+
+$$poolBase = curveBaseTokenBalance - curveTokens$$
+$$poolQuote = realQuoteReserves + curveNet - poolMigrationFee$$
+
+(`poolMigrationFee` only applies to SOL curves.) The post-curve leg is priced like a PumpSwap `buy`:
+
+$$legCost = \left\lceil \frac{poolQuote \times pastCurve}{poolBase - pastCurve} \right\rceil$$
+
+and fees are added to the curve leg and the post-curve leg separately. Asking for the whole pool-to-be fails on chain with 6021 `NotEnoughTokensToBuy`; the SDK throws before you send.
+
+```typescript
+import { getBuyV3QuoteAmountFromTokenAmount, getBuyV3TokenAmountFromQuoteAmount } from "@nirholas/pump-sdk";
+
+const state = await onlineSdk.fetchBuyState(mint, user);  // includes curveBaseTokenBalance
+
+// Cost of `amount` tokens, fees included (send as max_quote_cost before slippage)
+const cost = getBuyV3QuoteAmountFromTokenAmount({
+  global, feeConfig,
+  mintSupply: state.bondingCurve.tokenTotalSupply,
+  bondingCurve: state.bondingCurve,
+  amount,
+  curveBaseTokenBalance: state.curveBaseTokenBalance,
+});
+
+// Tokens a quote budget buys (apply slippage for min_tokens_out)
+const tokens = getBuyV3TokenAmountFromQuoteAmount({
+  global, feeConfig,
+  mintSupply: state.bondingCurve.tokenTotalSupply,
+  bondingCurve: state.bondingCurve,
+  amount: budget,
+  curveBaseTokenBalance: state.curveBaseTokenBalance,
+});
+```
+
+Both return zero on a complete or migrated curve. A v3 sell cannot cross, so `getSellSolAmountFromTokenAmount` (with `feeConfig` passed) quotes `sell_v3` too. See [TRADE_V3.md](./pump-official/docs/instructions/TRADE_V3.md) and [SYNTHETIC_MIGRATION.md](./pump-official/docs/SYNTHETIC_MIGRATION.md).
+
+## Pump-coin Quotes
+
+`create_v2` can quote a new coin X in another pump coin Q. X does not start from a fixed seed: its `virtualQuoteReserves` is derived so that X's graduation raise is worth about what a fresh coin in Q's own quote would raise. The program:
+
+1. Checks the depth: X gets `Q.depth + 1`, which must not exceed `Global.maxCurveDepth` (6105 `CurveDepthExceeded`).
+2. Checks eligibility: Q must not be in mayhem mode, and a depth-0 Q's own quote must be SOL, whitelisted, or `QuoteControl`-listed (6100 `QuoteBondingCurveNotEligible`).
+3. Takes the reference seed: Q's own `initialVirtualQuoteReserves` when Q is deeper than 0, otherwise the seed a fresh coin in Q's quote would get.
+4. Buys the seed's graduation raise on Q's constant product (Q's pool once migrated, with the pool's signed `virtualQuoteReserves` added; Q's curve before) and scales it back by the raise ratio. A complete but not yet migrated Q is refused (6107 `QuoteCurveAwaitingMigration`), and a result below 1 with 6104 `QuoteReservesOutOfRange`.
+
+```typescript
+import { newBondingCurve, pumpQuoteReserves } from "@nirholas/pump-sdk";
+
+const pumpQuote = await onlineSdk.fetchPumpQuote(q);   // Q's curve, pool and QuoteControl, or null
+if (pumpQuote) {
+  const { virtualQuoteReserves, depth } = pumpQuoteReserves(global, pumpQuote.curve);
+  // Or the whole starting curve, to quote the create-and-buy:
+  const curve = newBondingCurve(global, q, undefined, undefined, false, pumpQuote.curve);
+}
+```
+
+Each step throws the typed error the program's refusal maps to (`CurveDepthExceededError`, `QuoteBondingCurveNotEligibleError`, `QuoteCurveAwaitingMigrationError`, `QuoteReservesOutOfRangeError`). `pumpQuoteAdmission(global, pumpQuote.curve)` runs only steps 1 to 3, before Q's pool is fetched. See [CREATE_WITH_PUMP_COIN_QUOTE.md](./pump-official/docs/instructions/CREATE_WITH_PUMP_COIN_QUOTE.md).
 
 ## Graduation
 
@@ -206,7 +305,7 @@ const progress = getGraduationProgress(global, bondingCurve, feeConfig);
 
 ## Migrated Curves
 
-Once a bonding curve has been migrated, its `virtualTokenReserves` is set to zero. All SDK math functions return `BN(0)` when they detect this:
+Once a bonding curve has been migrated, its reserves are set to zero (`isBondingCurveMigrated(bondingCurve)` checks all four). All SDK math functions return `BN(0)` when they detect this:
 
 ```typescript
 // migrated bonding curve

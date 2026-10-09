@@ -13,7 +13,6 @@
 import {
   AMM_FEE_CONFIG_PDA,
   AMM_GLOBAL_CONFIG_PDA,
-  AMM_GLOBAL_PDA,
   AMM_GLOBAL_VOLUME_ACCUMULATOR_PDA,
   CANONICAL_POOL_INDEX,
   GLOBAL_PDA,
@@ -129,13 +128,6 @@ export function buildPdaTable(inputs: PdaInputs): PdaEntry[] {
       address: PUMP_EVENT_AUTHORITY_PDA,
       seeds: ["__event_authority"],
       program: PUMP_PROGRAM_ID,
-    },
-    {
-      group: "amm",
-      name: "AMM_GLOBAL_PDA",
-      address: AMM_GLOBAL_PDA,
-      seeds: ["amm_global"],
-      program: PUMP_AMM_PROGRAM_ID,
     },
     {
       group: "amm",

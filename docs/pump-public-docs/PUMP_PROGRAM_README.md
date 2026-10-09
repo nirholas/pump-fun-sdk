@@ -1,6 +1,13 @@
 # Pump program
 
-Pump program is the bonding curve program deployed at address `6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P` on
+Pump program allows creating SPL coins that are instantly tradeable on a bonding curve without having to seed liquidity.
+When the coin hits a certain market cap the liquidity from the bonding curve is migrated to PumpSwap (an AMM on Solana).
+The LP tokens received from the PumpSwap pool are then burnt.
+
+The bonding curve formula is based on Uniswap V2 and uses synthetic x and y reserves to ensure that there is liquidity
+for the coin.
+
+Pump program is deployed at address `6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P` on
 both [Mainnet](https://solscan.io/account/6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P)
 and [Devnet](https://solscan.io/account/6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P?cluster=devnet).
 
@@ -96,7 +103,8 @@ on [Mainnet Solscan](https://solscan.io/account/4wTV1YmiEkRvAtNtsSGPtUrqRYQMe5SK
   instruction. Currently, it is set to `true`.
 - The `pool_migration_fee` are the minimum lamports necessary to pay for all accounts created during `migrate`
   instruction. It is currently set the minimum of `15000001`, less than `MAX_MIGRATE_FEES == 15_000_000`, which
-  represents the maximum cost of all accounts created during a `migrate` instruction.
+  represents
+  the maximum cost of all accounts created during a `migrate` instruction.
 - The `creator_fee` is set to `0` and is not used.
 
 ### Bonding curve
@@ -130,24 +138,40 @@ at https://solscan.io/account/EsmVk4MTsoT71JFaRM5DWFZboKpMQjfY6EYzAgUuksXw#accou
   "complete": {
     "type": "bool",
     "data": false
-  },
-  "creator": {
-    "type": "pubkey",
-    "data": "<creator_pubkey>"
-  },
-  "is_mayhem_mode": {
-    "type": "bool",
-    "data": false
-  },
-  "is_cashback_coin": {
-    "type": "bool",
-    "data": false
   }
 }
 ```
 
+- The `virtual_token_reserves`, `virtual_sol_reserves`, `real_token_reserves` and `token_total_supply` fields are
+  initialized on coin creation to the corresponding values from `Global` account. The initial `real_sol_reserves` is set
+  to `0`.
+- On each `buy` operation, `virtual_sol_reserves` and `real_sol_reverses` increase with the same lamports amount
+  according to
+  the bonding curve formula, while `virtual_token_reserves` and `real_token_reserves` decrease with the same coin
+  amount.
+- On each `sell` operation, `virtual_sol_reserves` and `real_sol_reverses` decrease with the same lamports amount
+  according to
+  the bonding curve formula, while `virtual_token_reserves` and `real_token_reserves` increase with the same coin
+  amount.
 - The `complete` field is initially set to `false`. It is set to `true` at the end of a `buy` instruction, when
   `real_token_reserves == 0`, so there are no more real tokens left in the bonding curve.
+
+Fields appended to `BondingCurve` by later upgrades (accounts written before a field existed are shorter; read the
+missing trailing fields as `0` / `false` / `Pubkey::default()`):
+
+- `creator` (`pubkey`): the address the coin's creator fees accrue to, see
+  [PUMP_CREATOR_FEE_README.md](PUMP_CREATOR_FEE_README.md).
+- `is_mayhem_mode` (`bool`): whether the coin is a mayhem coin.
+- `is_cashback_coin` (`bool`): whether the coin routes its creator fee to buyers as cashback. Cashback mode is
+  deprecated and no new cashback coins can be created, see [PUMP_CASHBACK_README.md](PUMP_CASHBACK_README.md).
+- `quote_mint` (`pubkey`): the coin's quote asset; `Pubkey::default()` for SOL-paired coins.
+- `creator_fee_bps` (`u64`): the coin's own creator fee rate for coins on a custom pair (a quote asset other than SOL or
+  USDC). `0` means the standard fee schedule applies, which is always the case for SOL- and USDC-paired coins. Contact
+  the CTO team to change it.
+- `can_edit_creator_fee` (`bool`): reserved, always `false`.
+- `is_holder_reward` (`bool`): whether the coin is a [holder rewards coin](HOLDER_REWARDS_README.md) whose creator fee
+  is set aside for its holders instead of a creator wallet. Trading is unchanged; `TradeEvent` additionally reports the
+  fee in `holder_rewards_bps` / `holder_rewards` on such coins.
 
 ## Instructions
 
@@ -160,22 +184,8 @@ at https://solscan.io/account/EsmVk4MTsoT71JFaRM5DWFZboKpMQjfY6EYzAgUuksXw#accou
       pubkey is not required to be a signer for this instruction, as the original creator cannot sign the tx of the
       first coin buyer.
 
-- `create_v2(user, name, symbol, uri, creator, is_mayhem_mode, is_cashback_enabled)` creates a new Token2022-based coin with optional mayhem mode and cashback support.
-
 - `buy(user, associated_user, mint, amount, max_sol_cost)` allows a `user` to buy the exact `amount` of coins from the
   bonding curve of the given `mint`, using at most `max_sol_cost` lamports.
-
-- `buy_exact_sol_in(user, associated_user, mint, spendable_sol_in, min_tokens_out)` — Given a budget of spendable SOL, buy at least `min_tokens_out` tokens. Fees are deducted from `spendable_sol_in`.
-
-  **SOL → tokens quote:**
-  1. `net_sol = floor(spendable_sol_in * 10_000 / (10_000 + total_fee_bps))`
-  2. `fees = ceil(net_sol * protocol_fee_bps / 10_000) + ceil(net_sol * creator_fee_bps / 10_000)`
-  3. `if net_sol + fees > spendable_sol_in: net_sol = net_sol - (net_sol + fees - spendable_sol_in)`
-  4. `tokens_out = floor((net_sol - 1) * virtual_token_reserves / (virtual_sol_reserves + net_sol - 1))`
-
-  **Reverse quote (tokens → SOL):**
-  1. `net_sol = ceil(tokens * virtual_sol_reserves / (virtual_token_reserves - tokens)) + 1`
-  2. `spendable_sol_in = ceil(net_sol * (10_000 + total_fee_bps) / 10_000)`
 
 - `sell(user, associated_user, mint, amount, min_sol_output)` allows a `user` to sell the exact `amount` of coins to
   the bonding curve of the given `mint`, receiving at least `min_sol_output` lamports.
@@ -186,28 +196,16 @@ at https://solscan.io/account/EsmVk4MTsoT71JFaRM5DWFZboKpMQjfY6EYzAgUuksXw#accou
 - `migrate(user, mint)` allows any `user` to migrate the liquidity of a completed bonding curve of the given `mint` to
   PumpSwap AMM. A completed bonding curve is a bonding curve with `complete == true` and `real_token_reserves == 0`. The
   `migrate` instruction is idempotent, meaning that running it on a completed and migrated bonding curve does nothing.
-  It is also permissionless, so anyone can migrate a completed bonding curve.
+  It is also permisionless, so anyone can migrate a completed bonding curve.
 
 - `extend_account(user, account)` allows anyone to extend the data size of any program-owned account (`Global` or
   `BondingCurve`) in order to allow adding new fields to the existing account types.
 
-- `initialize(user, global)` initializes the sole `Global` account on Pump program deployment and can be executed by
+- `initialize(user, global)` initialized the sole `Global` account on Pump program deployment and can be executed by
   anyone. The first pubkey which successfully executes `initialize` is the one which sets the `Global::authority` field.
   This instruction cannot be called more than once because the second time it is called, the `Global` account already
   exists.
-
 - `update_global_authority(global, authority, new_authority)` allows the current `Global::authority` to update the
   `Global::authority` field to a new pubkey.
-
 - `set_params(global, authority)` allows updating all the `Global` account fields, apart from `Global::authority`, which
   is updated using `update_global_authority` instruction.
-
-- `collect_creator_fee(creator)` collects `creator_fee` from `creator_vault` to the coin creator account. The `creator` needs to sign the transaction.
-
-- `distribute_creator_fees(mint)` distributes creator fees to shareholders based on their share percentages. The creator vault needs to have at least the minimum distributable amount.
-
-- `set_creator(set_creator_authority, mint)` allows `Global::set_creator_authority` to set the bonding curve creator from Metaplex metadata or input argument.
-
-- `set_metaplex_creator(mint)` syncs the bonding curve creator with the Metaplex metadata creator if it exists.
-
-- `claim_cashback(user)` transfers native lamports from the `UserVolumeAccumulator` to the user. No parameters needed.

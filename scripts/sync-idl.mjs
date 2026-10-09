@@ -1,18 +1,28 @@
 #!/usr/bin/env node
 /**
- * Refresh `src/idl/*.json` and `src/idl/*.ts` from the Anchor IDL accounts the
- * pump programs publish on Solana mainnet.
+ * Refresh `src/idl/*.json` and `src/idl/*.ts` from the IDLs pump publishes.
  *
- * The on-chain IDL is the only source that describes the program as it is
- * actually deployed. Vendor packages run ahead of it (they ship types for
- * instructions that are written but not yet live), and a hand-edited copy runs
- * behind it, which is how this repo ended up unable to build `buy_v2` /
- * `sell_v2` while roughly a third of live pump trades used them.
+ * Two sources are supported:
+ *
+ * - `docs` (default): the `idl/` folder of github.com/pump-fun/pump-public-docs,
+ *   which pump updates in the same change that ships a program upgrade. The
+ *   October 2026 upgrade (v3 curve trades, PumpSwap v2 trades, multi-hop
+ *   swaps, fee sweeps, pump-coin quotes) went live on mainnet while the
+ *   Anchor IDL accounts still described the previous release, so the docs repo
+ *   is the source that matches the deployed programs.
+ * - `chain`: the Anchor IDL accounts the programs publish on Solana mainnet.
+ *   Useful to confirm what the accounts say, but they can lag a deploy.
+ *
+ * A hand-edited copy runs behind both, which is how this repo once ended up
+ * unable to build `buy_v2` / `sell_v2` while a third of live trades used them.
  *
  * Usage:
- *   node scripts/sync-idl.mjs            # rewrite the IDL files in place
- *   node scripts/sync-idl.mjs --check    # exit 1 if the checked-in files drifted
- *   node scripts/sync-idl.mjs --rpc URL  # override the RPC endpoint
+ *   node scripts/sync-idl.mjs                    # rewrite from pump-public-docs
+ *   node scripts/sync-idl.mjs --check            # exit 1 if the checked-in files drifted
+ *   node scripts/sync-idl.mjs --source chain     # read the on-chain IDL accounts instead
+ *   node scripts/sync-idl.mjs --dir PATH         # read <PATH>/<program>.json from a local clone
+ *   node scripts/sync-idl.mjs --ref BRANCH       # pump-public-docs git ref (default main)
+ *   node scripts/sync-idl.mjs --rpc URL          # override the RPC endpoint (chain source)
  */
 import { readFileSync, writeFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
@@ -40,6 +50,28 @@ const DEFAULT_ENDPOINTS = [
   "https://solana-rpc.publicnode.com",
   "https://solana.leorpc.com/?api_key=FREE",
 ];
+
+function flag(name) {
+  const index = process.argv.indexOf(name);
+  return index !== -1 ? process.argv[index + 1] : undefined;
+}
+
+const DOCS_RAW = "https://raw.githubusercontent.com/pump-fun/pump-public-docs";
+
+/** Reads `<file>.json` from a local directory or the pump-public-docs repo. */
+async function fetchDocsIdl(file) {
+  const dir = flag("--dir");
+  if (dir) return { idl: JSON.parse(readFileSync(join(dir, `${file}.json`), "utf8")), origin: join(dir, `${file}.json`) };
+  const url = `${DOCS_RAW}/${flag("--ref") ?? "main"}/idl/${file}.json`;
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`${url}: HTTP ${response.status}`);
+  return { idl: await response.json(), origin: url };
+}
+
+async function fetchChainIdl(programId, urls) {
+  const address = await idlAddress(new PublicKey(programId));
+  return { idl: decodeIdlAccount(await fetchAccount(address, urls)), origin: `on-chain IDL ${address.toBase58()}` };
+}
 
 function endpoints() {
   const flagIndex = process.argv.indexOf("--rpc");
@@ -171,12 +203,13 @@ function instructionNames(idl) {
 
 async function main() {
   const check = process.argv.includes("--check");
+  const source = flag("--source") ?? (flag("--rpc") ? "chain" : "docs");
+  if (source !== "docs" && source !== "chain") throw new Error(`unknown --source ${source} (expected docs or chain)`);
   const urls = endpoints();
   let drifted = 0;
 
   for (const { file, typeName, programId } of PROGRAMS) {
-    const address = await idlAddress(new PublicKey(programId));
-    const idl = decodeIdlAccount(await fetchAccount(address, urls));
+    const { idl, origin } = source === "chain" ? await fetchChainIdl(programId, urls) : await fetchDocsIdl(file);
 
     const jsonPath = join(IDL_DIR, `${file}.json`);
     const tsPath = join(IDL_DIR, `${file}.ts`);
@@ -184,9 +217,9 @@ async function main() {
     const nextTs = prettify(renderTsFile(idl, typeName, file), tsPath);
 
     const previousJson = readIfPresent(jsonPath);
-    const gained = previousJson
-      ? [...instructionNames(idl)].filter((name) => !instructionNames(JSON.parse(previousJson)).has(name))
-      : [];
+    const previousNames = previousJson ? instructionNames(JSON.parse(previousJson)) : new Set();
+    const gained = previousJson ? [...instructionNames(idl)].filter((name) => !previousNames.has(name)) : [];
+    const lost = [...previousNames].filter((name) => !instructionNames(idl).has(name));
     const changed = previousJson !== nextJson || readIfPresent(tsPath) !== nextTs;
 
     if (!changed) {
@@ -194,14 +227,16 @@ async function main() {
       continue;
     }
     drifted += 1;
-    const summary = gained.length ? ` new instructions: ${gained.join(", ")}` : "";
+    const summary =
+      (gained.length ? ` new instructions: ${gained.join(", ")}.` : "") +
+      (lost.length ? ` removed instructions: ${lost.join(", ")}.` : "");
     if (check) {
-      console.error(`${file}: DRIFT against on-chain IDL ${address.toBase58()}.${summary}`);
+      console.error(`${file}: DRIFT against ${origin}.${summary}`);
       continue;
     }
     writeFileSync(jsonPath, nextJson);
     writeFileSync(tsPath, nextTs);
-    console.log(`${file}: updated to ${idl.instructions.length} instructions.${summary}`);
+    console.log(`${file}: updated to ${idl.instructions.length} instructions from ${origin}.${summary}`);
   }
 
   if (check && drifted > 0) {

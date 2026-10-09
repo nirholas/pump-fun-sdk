@@ -1,5 +1,3 @@
-# PumpSwap Creator Fee Update
-
 PumpSwap (Pump AMM) program will have a breaking upgrade to add support for coin creator fees. Each swap on canonical
 Pump pools will send a fee to a coin creator vault account, apart from the already existing lp fee and protocol fee.
 
@@ -20,7 +18,7 @@ Canonical Pump pools are pools created by Pump program `migrate` instruction for
 `Pool` accounts will be extended to `300` bytes to support future protocol updates, including this one. So
 you need to prepend an `extendAccount(pool)` instruction to your buy / sell txs if the `pool.dataLen < 300`.
 
-Both `buy` and `sell` instructions will need to append two new input accounts (input account indexes `17` and `18`):
+Both `buy` and `sell` instructions will be need to append two new inputs accounts (input account indexes `17` and `18`):
 
 ```rust
     #[account(
@@ -37,7 +35,7 @@ Both `buy` and `sell` instructions will need to append two new input accounts (i
         ],
         bump
     )]
-    pub coin_creator_vault_authority: AccountInfo<'info>,
+    pub coin_creator_vault_authority: AccountInfo<'info >,
 ```
 
 So the `coin_creator_vault_authority` PDA is dependent on a new `Pool::coin_creator` field. The updated `Pool` struct
@@ -55,7 +53,7 @@ pub struct Pool {
     pub pool_base_token_account: Pubkey,
     pub pool_quote_token_account: Pubkey,
     pub lp_supply: u64,
-    pub coin_creator: Pubkey, // new coin creator field, set only for canonical pools, otherwise Pubkey::default()
+    pub coin_creator: Pubkey, // new coin creator field, set only for canonical pools, otherwise set to Pubkey::default()
 }
 ```
 
@@ -98,3 +96,7 @@ The currently deployed PumpSwap program
 on [Mainnet](https://solscan.io/account/pAMMBay6oceH9fJKBRHGP5D4bD4sWpmSwMn52FMfXEA)
 is backwards-compatible with the new update, so you can start using the new IDL from now, to be ready and not experience
 any downtime when the coin creator fee update gets released.
+
+We already updated the Devnet program, so you have time until Monday to implement the changes above. Ideally, the
+same code should work on both the creator fee update on Devnet and the current Mainnet program, before we update
+PumpSwap program on Mainnet to the coin creator fee update.

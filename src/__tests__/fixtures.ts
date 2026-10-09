@@ -49,6 +49,7 @@ export function makeGlobal(overrides: Partial<Global> = {}): Global {
     maxConfigurableCreatorFeeBps: new BN(0),
     holderRewardClaimAuthority: TEST_PUBKEY,
     isHolderRewardEnabled: true,
+    maxCurveDepth: 0,
     ...overrides,
   };
 }
@@ -72,6 +73,12 @@ export function makeBondingCurve(
     creatorFeeBps: new BN(0),
     canEditCreatorFee: false,
     isHolderReward: false,
+    creatorFee: new BN(0),
+    protocolFees: new BN(0),
+    depth: 0,
+    initialVirtualQuoteReserves: new BN("30000000000"),
+    postCompleteBaseOut: new BN(0),
+    postCompleteQuoteIn: new BN(0),
     ...overrides,
   };
 }

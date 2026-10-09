@@ -66,6 +66,8 @@ export const EVENT_DECODERS: readonly CatalogEntry[] = [
   { method: "decodeDistributeFeeToHoldersEvent", program: "pump", idlEvent: "DistributeFeeToHoldersEvent", eventType: "distributeFeeToHolders" },
   { method: "decodeMigrateBondingCurveCreatorEvent", program: "pump", idlEvent: "MigrateBondingCurveCreatorEvent", eventType: "migrateBondingCurveCreator" },
   { method: "decodeDistributeCreatorFeesEvent", program: "pump", idlEvent: "DistributeCreatorFeesEvent", eventType: "distributeCreatorFees" },
+  { method: "decodePostCompleteBuyEvent", program: "pump", idlEvent: "PostCompleteBuyEvent", eventType: "postCompleteBuy" },
+  { method: "decodeSweepBondingCurveFeeEvent", program: "pump", idlEvent: "SweepBondingCurveFeeEvent", eventType: "sweepBondingCurveFee" },
 
   // PumpAMM program
   { method: "decodeAmmBuyEvent", program: "amm", idlEvent: "BuyEvent", eventType: "ammBuy" },
@@ -73,7 +75,7 @@ export const EVENT_DECODERS: readonly CatalogEntry[] = [
   { method: "decodeDepositEvent", program: "amm", idlEvent: "DepositEvent", eventType: "deposit" },
   { method: "decodeWithdrawEvent", program: "amm", idlEvent: "WithdrawEvent", eventType: "withdraw" },
   { method: "decodeCreatePoolEvent", program: "amm", idlEvent: "CreatePoolEvent", eventType: "createPool" },
-  { method: "decodeAmmAdminSetCoinCreatorEvent", program: "amm", idlEvent: "AdminSetCoinCreatorEvent", eventType: "ammAdminSetCoinCreator" },
+  { method: "decodeSweepPoolFeeEvent", program: "amm", idlEvent: "SweepPoolFeeEvent", eventType: "sweepPoolFee" },
   { method: "decodeAmmAdminUpdateTokenIncentivesEvent", program: "amm", idlEvent: "AdminUpdateTokenIncentivesEvent", eventType: "ammAdminUpdateTokenIncentives" },
   { method: "decodeAmmClaimCashbackEvent", program: "amm", idlEvent: "ClaimCashbackEvent", eventType: "ammClaimCashback" },
   { method: "decodeAmmClaimTokenIncentivesEvent", program: "amm", idlEvent: "ClaimTokenIncentivesEvent", eventType: "ammClaimTokenIncentives" },

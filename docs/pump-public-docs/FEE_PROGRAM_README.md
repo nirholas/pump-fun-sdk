@@ -1,200 +1,208 @@
-# Fee Program
+Hello. We pushed again the update to both Pump and PumpSwap programs which adds the 2 new additional accounts on buy / sell.
 
-The fee program (`pfeeUxB6jkeY1Hxd7CsFCAjcbHA9rWtchMGdZ6VojVZ`) manages dynamic fee tiers based on market cap and fee sharing between creators and shareholders.
+On Monday, September 1, 20:00 UTC, these 2 accounts will become mandatory and the programs fee structure will change from the existing one to a dynamic fee structure depending on the current market cap of the coin in lamports. This new fee structure applies only to:
+- Pump bonding curves
+- PumpSwap canonical pools, where a canonical pool is defined as a pool whose `pool.creator` (NOT `pool.coinCreator`) is defined as:
+```Typescript
+export function isPumpPool(
+ baseMint: PublicKey,
+ poolCreator: PublicKey,
+): boolean {
+ return pumpPoolAuthorityPda(baseMint)[0].equals(poolCreator);
+}
+```
 
-## Fee Calculation
+The new fee structure code is present in both our Typescript SDKs:
+- https://www.npmjs.com/package/@pump-fun/pump-sdk?activeTab=code
+- https://www.npmjs.com/package/@pump-fun/pump-swap-sdk?activeTab=code
 
-### Bonding Curve Fees
+The market cap in lamports for bonding curve is computed as follows:
+```Typescript
+export function bondingCurveMarketCap({
+ mintSupply,
+ virtualSolReserves,
+ virtualTokenReserves,
+}: {
+ mintSupply: BN;
+ virtualSolReserves: BN;
+ virtualTokenReserves: BN;
+}): BN {
+ if (virtualTokenReserves.isZero()) {
+   throw new Error("Division by zero: virtual token reserves cannot be zero");
+ }
+ return virtualSolReserves.mul(mintSupply).div(virtualTokenReserves);
+}
+```
+
+The market in lamports for a PumpSwap canonical pool is:
+```Typescript
+export function poolMarketCap({
+ baseMintSupply,
+ baseReserve,
+ quoteReserve,
+}: {
+ baseMintSupply: BN;
+ baseReserve: BN;
+ quoteReserve: BN;
+}): BN {
+ if (baseReserve.isZero()) {
+   throw new Error(
+     "Division by zero: pool base token reserves cannot be zero",
+   );
+ }
+ return quoteReserve.mul(baseMintSupply).div(baseReserve);
+}
+```
 
 For bonding curve program, the fee bps for protocol and creator fees will be computed using the following logic:
-
-```typescript
+```Typescript
 export function computeFeesBps({
-  global,
-  feeConfig,
-  mintSupply,
-  virtualSolReserves,
-  virtualTokenReserves,
+ global,
+ feeConfig,
+ mintSupply,
+ virtualSolReserves,
+ virtualTokenReserves,
 }: {
-  global: Global;
-  feeConfig: FeeConfig | null;
-  mintSupply: BN;
-  virtualSolReserves: BN;
-  virtualTokenReserves: BN;
+ global: Global;
+ feeConfig: FeeConfig | null;
+ mintSupply: BN;
+ virtualSolReserves: BN;
+ virtualTokenReserves: BN;
 }): CalculatedFeesBps {
-  if (feeConfig != null) {
-    const marketCap = bondingCurveMarketCap({
-      mintSupply,
-      virtualSolReserves,
-      virtualTokenReserves,
-    });
+ if (feeConfig != null) {
+   const marketCap = bondingCurveMarketCap({
+     mintSupply,
+     virtualSolReserves,
+     virtualTokenReserves,
+   });
 
-    return calculateFeeTier({
-      feeTiers: feeConfig.feeTiers,
-      marketCap,
-    });
-  }
+   return calculateFeeTier({
+     feeTiers: feeConfig.feeTiers,
+     marketCap,
+   });
+ }
 
-  return {
-    protocolFeeBps: global.feeBasisPoints,
-    creatorFeeBps: global.creatorFeeBasisPoints,
-  };
-}
-```
-
-### AMM Pool Fees
-
-For PumpSwap AMM pools:
-
-```typescript
-export function computeAmmFeesBps({
-  globalConfig,
-  feeConfig,
-  baseMint,
-  creator,
-  marketCap,
-  tradeSize,
-}: {
-  globalConfig: GlobalConfig;
-  feeConfig: FeeConfig | null;
-  baseMint: PublicKey;
-  creator: PublicKey;
-  marketCap: BN;
-  tradeSize: BN;
-}): CalculatedFeesBps {
-  if (feeConfig != null) {
-    return getFees({
-      feeConfig,
-      isPumpPool: isPumpPool(baseMint, creator),
-      marketCap,
-      tradeSize,
-    });
-  }
-
-  return {
-    lpFeeBps: globalConfig.lpFeeBasisPoints,
-    protocolFeeBps: globalConfig.protocolFeeBasisPoints,
-    creatorFeeBps: globalConfig.coinCreatorFeeBasisPoints,
-  };
-}
-```
-
-### Fee Tier Calculation
-
-```typescript
-/// rust reference: pump-fees::get_fees()
-function getFees({
-  feeConfig,
-  isPumpPool,
-  marketCap,
-}: {
-  feeConfig: FeeConfig;
-  isPumpPool: boolean;
-  marketCap: BN;
-  tradeSize: BN;
-}): Fees {
-  if (isPumpPool) {
-    return calculateFeeTier({
-      feeTiers: feeConfig.feeTiers,
-      marketCap,
-    });
-  } else {
-    return feeConfig.flatFees;
-  }
+ return {
+   protocolFeeBps: global.feeBasisPoints,
+   creatorFeeBps: global.creatorFeeBasisPoints,
+ };
 }
 
 /// rust reference: pump-fees-math::calculate_fee_tier()
 export function calculateFeeTier({
-  feeTiers,
-  marketCap,
+ feeTiers,
+ marketCap,
 }: {
-  feeTiers: FeeTier[];
-  marketCap: BN;
+ feeTiers: FeeTier[];
+ marketCap: BN;
 }): Fees {
-  const firstTier = feeTiers[0];
+ const firstTier = feeTiers[0];
 
-  if (marketCap.lt(firstTier.marketCapLamportsThreshold)) {
-    return firstTier.fees;
-  }
+ if (marketCap.lt(firstTier.marketCapLamportsThreshold)) {
+   return firstTier.fees;
+ }
 
-  for (const tier of feeTiers.slice().reverse()) {
-    if (marketCap.gte(tier.marketCapLamportsThreshold)) {
-      return tier.fees;
-    }
-  }
+ for (const tier of feeTiers.slice().reverse()) {
+   if (marketCap.gte(tier.marketCapLamportsThreshold)) {
+     return tier.fees;
+   }
+ }
 
-  return firstTier.fees;
+ return firstTier.fees;
 }
 ```
 
-## Fee Config State
+A similar logic will be used for PumpSwap canonical pools too:
+```Typescript
+export function computeFeesBps({
+ globalConfig,
+ feeConfig,
+ creator,
+ baseMintSupply,
+ baseMint,
+ baseReserve,
+ quoteReserve,
+ tradeSize,
+}: {
+ globalConfig: GlobalConfig;
+ feeConfig: FeeConfig | null;
+ creator: PublicKey;
+ baseMintSupply: BN;
+ baseMint: PublicKey;
+ baseReserve: BN;
+ quoteReserve: BN;
+ tradeSize: BN;
+}): Fees {
+ if (feeConfig != null) {
+   const marketCap = poolMarketCap({
+     baseMintSupply,
+     baseReserve,
+     quoteReserve,
+   });
 
-```typescript
-interface FeeConfig {
-  bump: number;
-  admin: PublicKey;
-  flatFees: Fees;    // flat fees for non-pump pools
-  feeTiers: FeeTier[];  // tiered fees for pump pools
+   return getFees({
+     feeConfig,
+     isPumpPool: isPumpPool(baseMint, creator),
+     marketCap,
+     tradeSize,
+   });
+ }
+
+ return {
+   lpFeeBps: globalConfig.lpFeeBasisPoints,
+   protocolFeeBps: globalConfig.protocolFeeBasisPoints,
+   creatorFeeBps: globalConfig.coinCreatorFeeBasisPoints,
+ };
 }
 
-interface FeeTier {
-  marketCapLamportsThreshold: BN; // u128
-  fees: Fees;
+/// rust reference: pump-fees::get_fees()
+function getFees({
+ feeConfig,
+ isPumpPool,
+ marketCap,
+}: {
+ feeConfig: FeeConfig;
+ isPumpPool: boolean;
+ marketCap: BN;
+ tradeSize: BN;
+}): Fees {
+ if (isPumpPool) {
+   return calculateFeeTier({
+     feeTiers: feeConfig.feeTiers,
+     marketCap,
+   });
+ } else {
+   return feeConfig.flatFees;
+ }
 }
 
-interface Fees {
-  lpFeeBps: BN;
-  protocolFeeBps: BN;
-  creatorFeeBps: BN;
+/// rust reference: pump-fees-math::calculate_fee_tier()
+export function calculateFeeTier({
+ feeTiers,
+ marketCap,
+}: {
+ feeTiers: FeeTier[];
+ marketCap: BN;
+}): Fees {
+ const firstTier = feeTiers[0];
+
+ if (marketCap.lt(firstTier.marketCapLamportsThreshold)) {
+   return firstTier.fees;
+ }
+
+ for (const tier of feeTiers.slice().reverse()) {
+   if (marketCap.gte(tier.marketCapLamportsThreshold)) {
+     return tier.fees;
+   }
+ }
+
+ return firstTier.fees;
 }
 ```
 
-## Fee Sharing
+We will use the following fee tiers starting from Monday:
+![Fee Tiers](fees.png)
 
-Fee sharing allows creators to distribute fees among multiple shareholders. The sharing config is a PDA derived from `["sharing-config", mint]`.
+In order to avoid possible issues created by the new fee structure, until you make sure it's implemented correctly, you can increase the slippage tolerance on buy / sell instructions as a temporary mitigation.
 
-```typescript
-interface SharingConfig {
-  bump: number;
-  version: number;
-  status: ConfigStatus; // "paused" | "active"
-  mint: PublicKey;
-  admin: PublicKey;
-  adminRevoked: boolean;
-  shareholders: Shareholder[];
-}
-
-interface Shareholder {
-  address: PublicKey;
-  shareBps: number; // u16, all must sum to exactly 10,000
-}
-```
-
-### Fee Sharing Instructions
-
-- `createFeeSharingConfig` — Create a new fee sharing config for a mint
-- `updateFeeShares` — Update fee shares (distribute all fees before calling this)
-- `resetFeeSharingConfig` — Reset fee sharing config (distribute all fees before calling this)
-- `revokeFeeSharingAuthority` — Revoke the admin's ability to update shares
-- `transferFeeSharingAuthority` — Transfer admin authority to a new address
-- `createSocialFeePda` — Create a social fee PDA for GitHub recipients
-
-### Important Rules
-
-- All shareholder `shareBps` must sum to exactly **10,000** basis points
-- No duplicate shareholder addresses
-- No shareholder can have zero share
-- GitHub organizations are **not supported** as social fee recipients
-- Only `Platform.GitHub` is supported for social fees
-
-## Fee Program Events
-
-- `createFeeSharingConfigEvent`
-- `resetFeeSharingConfigEvent`
-- `updateFeeSharesEvent`
-- `revokeFeeSharingAuthorityEvent`
-- `transferFeeSharingAuthorityEvent`
-- `initializeFeeConfigEvent`
-- `updateFeeConfigEvent`
-- `upsertFeeTiersEvent`
-- `socialFeePdaCreated`
+If you implement the fee logic correctly, any future change to the fee tiers structure above should not affect your code.

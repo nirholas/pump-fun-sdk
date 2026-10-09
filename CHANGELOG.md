@@ -7,6 +7,78 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.0] - 2026-10-09
+
+Tracks the October 2026 Pump, PumpSwap and PumpFees program upgrade, using
+`@pump-fun/pump-sdk` 4.0.0 and the pump-public-docs IDLs as the reference.
+
+### Breaking
+
+- `BondingCurve` gained `creatorFee`, `protocolFees`, `depth`,
+  `initialVirtualQuoteReserves`, `postCompleteBaseOut` and
+  `postCompleteQuoteIn`; `Global`, `Pool`, `AmmGlobalConfig` and `FeeConfig`
+  gained the new upgrade fields (`maxCurveDepth`, buyback recipients, the
+  signed `Pool.virtualQuoteReserves`, `Pool.protocolFees` / `creatorFees`,
+  stable and exotic fee schedules). Code that builds these objects by hand
+  must set them. Decoders accept every older and longer layout.
+- `BONDING_CURVE_NEW_SIZE` is 166 (was 151). `buyInstructions` and
+  `sellInstructions` no longer prepend `extendAccount`: the program grows a
+  pre-upgrade curve on its first new-style trade. `bondingCurveAccountInfo`
+  is still accepted for compatibility.
+- `createV2AndBuyInstructions` returns `[createV2, ATA, buy]` for a SOL quote
+  and create, ATA, buyback ATAs and `buy_v3` for a token quote.
+- `OnlinePumpSdk.buildDistributeCreatorFeesInstructions(mint, payer?)` throws
+  when the curve holds creator fees that were never swept and no `payer` is
+  passed; with a `payer` it puts the sweeps in front of the distribution.
+- Removed `ammAdminSetCoinCreatorInstruction`,
+  `resetFeeSharingConfigInstruction`,
+  `OnlinePumpSdk.adminSetCoinCreatorInstructions`,
+  `decodeAmmAdminSetCoinCreatorEvent` and `AmmAdminSetCoinCreatorEvent`: the
+  programs no longer declare them. Use `adminCtoInstruction` with
+  `creatorFeeSweepInstructions` in front.
+- `AMM_GLOBAL_PDA` is now a deprecated alias of `AMM_GLOBAL_CONFIG_PDA`
+  (seed `global_config`); it previously derived from the wrong seed. The
+  `pump pda` CLI lists `quote-control` instead of `amm-global`.
+
+### Added
+
+- v3 curve trades for SOL and token-quoted curves: `buyV3Instructions`,
+  `buyExactQuoteInV3Instructions`, `sellV3Instructions`, the raw builders and
+  `tradeV3Accounts`.
+- PumpSwap v2 trades: `ammBuyV2Instruction`,
+  `ammBuyExactQuoteInV2Instruction`, `ammSellV2Instruction` and
+  `ammTradeV2Accounts`.
+- `multiHopSwapInstruction` / `multiHopSwapInstructions` with route checks
+  (`multiHopRouteEnds`, `MultiHopDiscontinuousPathError`) and
+  `multiHopHopAccounts`.
+- Fee sweeps: `sweepCreatorFeeInstruction`, `sweepProtocolFeeInstruction`,
+  `ammSweepCreatorFeeInstruction`, `ammSweepProtocolFeeInstruction` and
+  `OnlinePumpSdk.creatorFeeSweepInstructions`, plus the sweep events.
+- `create_v2` quoted in a whitelisted, `QuoteControl`-listed or pump coin
+  mint (`quoteMint`, `quoteTokenProgram`, `pumpQuote`), with
+  `pumpQuoteAdmission`, `pumpQuoteReserves`, `OnlinePumpSdk.fetchPumpQuote`,
+  `fetchQuoteControl` and `fetchQuoteTokenProgram`.
+- Synthetic-migration buy quoting: `getBuyV3QuoteAmountFromTokenAmount` and
+  `getBuyV3TokenAmountFromQuoteAmount`, with `fetchBuyState` returning
+  `curveBaseTokenBalance`, `quoteMint` and `quoteTokenProgram`.
+- Quote-mint fee schedules (`selectCurveFeeSchedule`, `isSolLikeQuoteMint`,
+  `isStableQuoteMint`, `isExoticQuoteMint`) and `poolQuoteTerms` for the
+  signed pool virtual quote reserves.
+- `QUOTE_CONTROL_PDA`, `decodeQuoteControl`, the `QuoteControl` and
+  `setMaxCurveDepth` admin builders, `isBondingCurveMigrated`.
+- Typed errors for the new program codes and `getPumpProgramError` to map a
+  custom error code to its name and message.
+- Tests for every new builder and the v3 quote math (`upgradeInstructions`,
+  `v3QuoteMath`).
+
+### Changed
+
+- Synced `src/idl/` to the pump-public-docs IDLs; `scripts/sync-idl.mjs` now
+  reads them by default (`--source chain` reads the on-chain IDL accounts).
+- Upgraded `@pump-fun/pump-swap-sdk` to 2.1.
+- Refreshed the mirrored official docs and updated the API reference, AMM
+  trading, bonding curve math, fee sharing and error guides.
+
 ## [2.0.0] - 2026-09-18
 
 ### Breaking

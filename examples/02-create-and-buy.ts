@@ -3,9 +3,9 @@
  *
  * Category: Token Lifecycle
  *
- * Builds the four-instruction bundle that launches a token AND makes the
- * creator's first buy atomically: createV2, extend the curve account,
- * create the buyer's token account, then buy. The dev-buy quote is pure
+ * Builds the three-instruction bundle that launches a token AND makes the
+ * creator's first buy atomically: createV2, create the buyer's token
+ * account, then buy. The dev-buy quote is pure
  * math on a brand-new curve, so you know your token allocation before
  * spending anything.
  *
@@ -69,7 +69,8 @@ export function quoteDevBuy({
  * Build the full create-and-buy instruction list.
  *
  * Wraps `PUMP_SDK.createV2AndBuyInstructions`, which returns exactly:
- * [createV2, extendAccount, createAssociatedTokenAccountIdempotent, buy].
+ * [createV2, createAssociatedTokenAccountIdempotent, buy]. createV2 already
+ * allocates the curve at its full size, so no extendAccount is needed.
  * `devBuyTokens` is the token amount the buy expects (from `quoteDevBuy`).
  */
 export async function buildCreateAndBuyInstructions({
@@ -156,7 +157,6 @@ export async function main(): Promise<void> {
   heading("Instruction bundle");
   const labels = [
     "createV2 (launch the token)",
-    "extendAccount (resize curve account)",
     "createAssociatedTokenAccount (buyer ATA)",
     "buy (the dev buy)",
   ];
@@ -169,7 +169,7 @@ export async function main(): Promise<void> {
 
   heading("Next step (not performed here)");
   console.log(
-    "Put all four instructions in ONE transaction, sign with the wallet AND",
+    "Put all three instructions in ONE transaction, sign with the wallet AND",
   );
   console.log(
     "the mint keypair, then send. Atomicity means nobody can buy before you.",

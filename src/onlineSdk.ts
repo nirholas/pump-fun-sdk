@@ -20,6 +20,7 @@ import {
   NATIVE_MINT,
   TOKEN_2022_PROGRAM_ID,
   TOKEN_PROGRAM_ID,
+  unpackAccount,
 } from "@solana/spl-token";
 import type {
   AccountInfo,
@@ -45,10 +46,15 @@ import {
   getBuyTokenAmountFromSolAmount,
   getTokenAmountForTargetSol,
   getSellSolAmountFromTokenAmount,
+  getBuyV3TokenAmountFromQuoteAmount,
+  isBondingCurveMigrated,
   maxSafeSellAmount,
+  pumpQuoteAdmission,
   validateSellAmount,
   newBondingCurve,
 } from "./bondingCurve";
+import type { PumpQuoteCurve } from "./bondingCurve";
+import { QuotePoolNotFoundError, UnsupportedQuoteMintError } from "./errors";
 import type {
   BondingCurveSummary,
   GraduationProgress,
@@ -62,12 +68,16 @@ import {
   AMM_GLOBAL_CONFIG_PDA,
   bondingCurvePda,
   canonicalPumpPoolPda,
+  canonicalPumpPoolPdaWithQuote,
   creatorVaultPda,
   feeProgramGlobalPda,
   feeSharingConfigPda,
   GLOBAL_PDA,
   GLOBAL_VOLUME_ACCUMULATOR_PDA,
+  isLegacyQuoteMint,
+  normalizeQuoteMint,
   PUMP_FEE_CONFIG_PDA,
+  QUOTE_CONTROL_PDA,
   socialFeePda,
   userVolumeAccumulatorPda,
 } from "./pda";
@@ -82,6 +92,7 @@ import {
   PUMP_AMM_PROGRAM_ID,
   PUMP_FEE_PROGRAM_ID,
 } from "./sdk";
+import type { PumpQuoteAccounts } from "./sdk";
 import pumpIdlJson from "./idl/pump.json";
 import pumpAmmIdlJson from "./idl/pump_amm.json";
 import pumpFeesIdlJson from "./idl/pump_fees.json";
@@ -112,18 +123,21 @@ import type {
   MigrateBondingCurveCreatorEvent,
   MinimumDistributableFeeEvent,
   Pool,
+  PostCompleteBuyEvent,
+  QuoteControl,
   ResetFeeSharingConfigEvent,
   SetCreatorEvent,
   SocialFeePda,
   SocialFeePdaClaimedEvent,
   SocialFeePdaCreatedEvent,
+  SweepBondingCurveFeeEvent,
+  SweepPoolFeeEvent,
   SyncUserVolumeAccumulatorEvent,
   TradeEvent,
   UpdateFeeSharesEvent,
   UserVolumeAccumulator,
   UserVolumeAccumulatorTotalStats,
   WithdrawEvent,
-  AmmAdminSetCoinCreatorEvent,
   AmmAdminUpdateTokenIncentivesEvent,
   AmmClaimCashbackEvent,
   AmmClaimTokenIncentivesEvent,
@@ -157,6 +171,32 @@ import {
 } from "./fallback";
 
 export const OFFLINE_PUMP_PROGRAM = getPumpProgram(null as any as Connection);
+
+/**
+ * The pool fields the PumpSwap quote math needs beyond the reserves: the
+ * signed `virtualQuoteReserves` (nonzero only on a pool a synthetic migration
+ * created, and negative once its real quote outgrows the virtual offset), the
+ * quote mint that selects the fee schedule, the mayhem flag, and the per-pool
+ * creator fee rate. Leaving them out prices every pool as a plain SOL pool.
+ */
+export function poolQuoteTerms(pool: {
+  virtualQuoteReserves: BN;
+  quoteMint: PublicKey;
+  isMayhemMode: boolean;
+  creatorFeeBps: BN;
+}): {
+  virtualQuoteReserves: BN;
+  quoteMint: PublicKey;
+  isMayhemMode: boolean;
+  creatorFeeBps: BN;
+} {
+  return {
+    virtualQuoteReserves: pool.virtualQuoteReserves,
+    quoteMint: pool.quoteMint,
+    isMayhemMode: pool.isMayhemMode,
+    creatorFeeBps: pool.creatorFeeBps,
+  };
+}
 
 export class OnlinePumpSdk {
   private readonly connection: Connection;
@@ -203,18 +243,132 @@ export class OnlinePumpSdk {
     return new OnlinePumpSdk(connection);
   }
 
+  /**
+   * The pump `Global` account, decoded through `PumpSdk.decodeGlobal` so it
+   * still decodes while the live account is shorter than the bundled IDL's
+   * layout (the newest trailing fields read as zero).
+   */
   async fetchGlobal(): Promise<Global> {
-    return await this.pumpProgram.account.global.fetch(GLOBAL_PDA);
+    const accountInfo = await this.connection.getAccountInfo(GLOBAL_PDA);
+    if (!accountInfo) {
+      throw new Error(`Global account not found: ${GLOBAL_PDA.toBase58()}`);
+    }
+    return PUMP_SDK.decodeGlobal(accountInfo);
   }
 
+  /**
+   * The pump `FeeConfig`, decoded through `PumpSdk.decodeFeeConfig`, which
+   * reads the account under each layout it has had (before and after the
+   * stable and exotic fee schedules were added).
+   */
   async fetchFeeConfig(): Promise<FeeConfig> {
-    return await this.pumpProgram.account.feeConfig.fetch(PUMP_FEE_CONFIG_PDA);
+    const accountInfo =
+      await this.connection.getAccountInfo(PUMP_FEE_CONFIG_PDA);
+    if (!accountInfo) {
+      throw new Error(
+        `Fee config account not found: ${PUMP_FEE_CONFIG_PDA.toBase58()}`,
+      );
+    }
+    return PUMP_SDK.decodeFeeConfig(accountInfo);
   }
 
+  /**
+   * A bonding curve, decoded through `PumpSdk.decodeBondingCurve` so a curve
+   * written before the quote-mint, fee-bucket and synthetic-migration fields
+   * (shorter than 166 bytes) decodes with those fields at zero.
+   */
   async fetchBondingCurve(mint: PublicKeyInitData): Promise<BondingCurve> {
-    return await this.pumpProgram.account.bondingCurve.fetch(
-      bondingCurvePda(mint),
+    const address = bondingCurvePda(mint);
+    const accountInfo = await this.connection.getAccountInfo(address);
+    if (!accountInfo) {
+      throw new Error(`Bonding curve account not found: ${address.toBase58()}`);
+    }
+    return PUMP_SDK.decodeBondingCurve(accountInfo);
+  }
+
+  /**
+   * The pump `QuoteControl` PDA (the quote mints admitted beyond
+   * `Global.whitelistedQuoteMints`), or `null` while it is uninitialized: the
+   * program treats a missing account as an empty list.
+   */
+  async fetchQuoteControl(): Promise<QuoteControl | null> {
+    return PUMP_SDK.decodeQuoteControlNullable(
+      await this.connection.getAccountInfo(QUOTE_CONTROL_PDA),
     );
+  }
+
+  /**
+   * The token program that owns `quoteMint`, which every quote-side ATA and
+   * `quoteTokenProgram` parameter must use. SOL (WSOL or the zero key a
+   * legacy curve stores) resolves to `TOKEN_PROGRAM_ID` without an RPC call.
+   *
+   * @throws when the mint account is missing or owned by neither SPL Token
+   *   nor Token-2022.
+   */
+  async fetchQuoteTokenProgram(quoteMint: PublicKey): Promise<PublicKey> {
+    if (isLegacyQuoteMint(quoteMint)) {
+      return TOKEN_PROGRAM_ID;
+    }
+    const accountInfo = await this.connection.getAccountInfo(quoteMint);
+    if (!accountInfo) {
+      throw new Error(`Quote mint account not found: ${quoteMint.toBase58()}`);
+    }
+    if (
+      !accountInfo.owner.equals(TOKEN_PROGRAM_ID) &&
+      !accountInfo.owner.equals(TOKEN_2022_PROGRAM_ID)
+    ) {
+      throw new Error(
+        `Quote mint ${quoteMint.toBase58()} is owned by ${accountInfo.owner.toBase58()}, not a token program`,
+      );
+    }
+    return accountInfo.owner;
+  }
+
+  /**
+   * The creator-fee sweeps that must run first, in the same transaction, in
+   * front of a distribution, CTO or fee-sharing change on `mint`: pump
+   * `sweep_creator_fee` when v3 trades left creator fees on the curve
+   * (6095 `CreatorFeesNotSwept` otherwise), and pump-amm `sweep_creator_fee`
+   * when PumpSwap v2 trades left some in the canonical pool (pump-amm 6081).
+   * Empty buckets need no sweep, so a coin without such trades gets `[]`.
+   */
+  async creatorFeeSweepInstructions(
+    mint: PublicKey,
+    payer: PublicKey,
+  ): Promise<TransactionInstruction[]> {
+    const [curveInfo, poolInfo] = await this.connection.getMultipleAccountsInfo(
+      [bondingCurvePda(mint), canonicalPumpPoolPda(mint)],
+    );
+    const bondingCurve = curveInfo
+      ? PUMP_SDK.decodeBondingCurve(curveInfo)
+      : null;
+    const pool = poolInfo ? PUMP_SDK.decodePool(poolInfo) : null;
+    const instructions: TransactionInstruction[] = [];
+
+    if (bondingCurve && !bondingCurve.creatorFee.isZero()) {
+      const quoteMint = normalizeQuoteMint(bondingCurve.quoteMint);
+      instructions.push(
+        await PUMP_SDK.sweepCreatorFeeInstruction({
+          payer,
+          mint,
+          creator: bondingCurve.creator,
+          quoteMint,
+          quoteTokenProgram: await this.fetchQuoteTokenProgram(quoteMint),
+        }),
+      );
+    }
+    if (pool && !pool.creatorFees.isZero()) {
+      instructions.push(
+        await PUMP_SDK.ammSweepCreatorFeeInstruction({
+          payer,
+          mint,
+          coinCreator: pool.coinCreator,
+          quoteMint: pool.quoteMint,
+          quoteTokenProgram: await this.fetchQuoteTokenProgram(pool.quoteMint),
+        }),
+      );
+    }
+    return instructions;
   }
 
   async fetchBuyState(
@@ -230,11 +384,21 @@ export class OnlinePumpSdk {
         : TOKEN_PROGRAM_ID;
     }
 
-    const [bondingCurveAccountInfo, associatedUserAccountInfo] =
-      await this.connection.getMultipleAccountsInfo([
-        bondingCurvePda(mint),
-        getAssociatedTokenAddressSync(mint, user, true, tokenProgram),
-      ]);
+    const curveBaseAta = getAssociatedTokenAddressSync(
+      mint,
+      bondingCurvePda(mint),
+      true,
+      tokenProgram,
+    );
+    const [
+      bondingCurveAccountInfo,
+      associatedUserAccountInfo,
+      curveBaseAtaAccountInfo,
+    ] = await this.connection.getMultipleAccountsInfo([
+      bondingCurvePda(mint),
+      getAssociatedTokenAddressSync(mint, user, true, tokenProgram),
+      curveBaseAta,
+    ]);
 
     if (!bondingCurveAccountInfo) {
       throw new Error(
@@ -243,7 +407,26 @@ export class OnlinePumpSdk {
     }
 
     const bondingCurve = PUMP_SDK.decodeBondingCurve(bondingCurveAccountInfo);
-    return { bondingCurveAccountInfo, bondingCurve, associatedUserAccountInfo: associatedUserAccountInfo ?? null, tokenProgram };
+    const quoteMint = normalizeQuoteMint(bondingCurve.quoteMint);
+    return {
+      bondingCurveAccountInfo,
+      bondingCurve,
+      associatedUserAccountInfo: associatedUserAccountInfo ?? null,
+      tokenProgram,
+      // The curve's base ATA balance prices a v3 buy's post-completion leg
+      // (`getBuyV3QuoteAmountFromTokenAmount`'s `curveBaseTokenBalance`).
+      curveBaseTokenBalance: curveBaseAtaAccountInfo
+        ? new BN(
+            unpackAccount(
+              curveBaseAta,
+              curveBaseAtaAccountInfo,
+              tokenProgram,
+            ).amount.toString(),
+          )
+        : new BN(0),
+      quoteMint,
+      quoteTokenProgram: await this.fetchQuoteTokenProgram(quoteMint),
+    };
   }
 
   async fetchSellState(
@@ -278,7 +461,104 @@ export class OnlinePumpSdk {
     }
 
     const bondingCurve = PUMP_SDK.decodeBondingCurve(bondingCurveAccountInfo);
-    return { bondingCurveAccountInfo, bondingCurve, tokenProgram };
+    const quoteMint = normalizeQuoteMint(bondingCurve.quoteMint);
+    return {
+      bondingCurveAccountInfo,
+      bondingCurve,
+      tokenProgram,
+      quoteMint,
+      quoteTokenProgram: await this.fetchQuoteTokenProgram(quoteMint),
+    };
+  }
+
+  /**
+   * Pump coin `quoteMint` as a `create_v2` quote: its curve, the
+   * `QuoteControl` PDA and, once migrated, its canonical pool's reserves (the
+   * inputs of `pumpQuoteReserves` / `newBondingCurve`), plus the accounts
+   * `createV2Instruction`'s `pumpQuote` takes. `null` when `quoteMint` has no
+   * pump bonding curve.
+   *
+   * @param options.global - When given, the program's depth and eligibility
+   *   checks (`pumpQuoteAdmission`) run before the pool is read, so their
+   *   typed errors win, as on chain.
+   * @throws {QuotePoolNotFoundError} when the coin migrated but has no
+   *   PumpSwap pool (6102), or an error when a pool vault is missing,
+   *   uninitialized or frozen (6103 `InvalidQuotePool`).
+   */
+  async fetchPumpQuote(
+    quoteMint: PublicKey,
+    { global }: { global?: Global } = {},
+  ): Promise<{ curve: PumpQuoteCurve; accounts: PumpQuoteAccounts } | null> {
+    const [curveAccountInfo, quoteControlAccountInfo] =
+      await this.connection.getMultipleAccountsInfo([
+        bondingCurvePda(quoteMint),
+        QUOTE_CONTROL_PDA,
+      ]);
+    if (!curveAccountInfo || !curveAccountInfo.owner.equals(PUMP_PROGRAM_ID)) {
+      return null;
+    }
+    const bondingCurve = PUMP_SDK.decodeBondingCurve(curveAccountInfo);
+    const quoteControl = PUMP_SDK.decodeQuoteControlNullable(
+      quoteControlAccountInfo ?? null,
+    );
+    if (global) {
+      pumpQuoteAdmission(global, { mint: quoteMint, bondingCurve, quoteControl });
+    }
+    if (!isBondingCurveMigrated(bondingCurve)) {
+      return {
+        curve: { mint: quoteMint, bondingCurve, quoteControl },
+        accounts: {},
+      };
+    }
+
+    // A SOL curve stores the zero key but migrates into a WSOL pool.
+    const pool = canonicalPumpPoolPdaWithQuote(
+      quoteMint,
+      normalizeQuoteMint(bondingCurve.quoteMint),
+    );
+    const poolAccountInfo = await this.connection.getAccountInfo(pool);
+    if (!poolAccountInfo || !poolAccountInfo.owner.equals(PUMP_AMM_PROGRAM_ID)) {
+      throw new QuotePoolNotFoundError(quoteMint, pool);
+    }
+    const decodedPool = PUMP_SDK.decodePool(poolAccountInfo);
+    const baseVault = decodedPool.poolBaseTokenAccount;
+    const quoteVault = decodedPool.poolQuoteTokenAccount;
+    const vaultInfos = await this.connection.getMultipleAccountsInfo([
+      baseVault,
+      quoteVault,
+    ]);
+    const [baseReserves, quoteReserves] = [baseVault, quoteVault].map(
+      (vault, index) => {
+        const info = vaultInfos[index];
+        const isTokenAccount =
+          info !== null &&
+          info !== undefined &&
+          (info.owner.equals(TOKEN_PROGRAM_ID) ||
+            info.owner.equals(TOKEN_2022_PROGRAM_ID));
+        const account = isTokenAccount
+          ? unpackAccount(vault, info, info.owner)
+          : null;
+        if (!account || !account.isInitialized || account.isFrozen) {
+          throw new Error(
+            `Pool vault ${vault.toBase58()} is missing, uninitialized or frozen (InvalidQuotePool)`,
+          );
+        }
+        return new BN(account.amount.toString());
+      },
+    ) as [BN, BN];
+    return {
+      curve: {
+        mint: quoteMint,
+        bondingCurve,
+        quoteControl,
+        pool: {
+          baseReserves,
+          quoteReserves,
+          virtualQuoteReserves: decodedPool.virtualQuoteReserves,
+        },
+      },
+      accounts: { pool: { pool, baseVault, quoteVault } },
+    };
   }
 
   /**
@@ -535,17 +815,6 @@ export class OnlinePumpSdk {
     ];
   }
 
-  async adminSetCoinCreatorInstructions(
-    newCoinCreator: PublicKey,
-    mint: PublicKey,
-  ): Promise<TransactionInstruction[]> {
-    void newCoinCreator;
-    void mint;
-    throw new Error(
-      "admin_set_creator was retired; use PUMP_SDK.adminCtoInstruction with current on-chain state",
-    );
-  }
-
   async getCreatorVaultBalance(creator: PublicKey): Promise<BN> {
     const creatorVault = creatorVaultPda(creator);
     const accountInfo = await this.connection.getAccountInfo(creatorVault);
@@ -794,10 +1063,13 @@ export class OnlinePumpSdk {
       sharingConfigAccountInfo,
     );
 
-    const instructions: TransactionInstruction[] = [];
+    // Fees v3 trades and PumpSwap v2 trades left in their buckets reach the
+    // vaults only through the sweeps, so the simulation runs them first.
+    const instructions: TransactionInstruction[] =
+      await this.creatorFeeSweepInstructions(mint, simulationSigner);
 
     const isGraduated = poolAccountInfo !== null;
-    if (isGraduated && ammVaultAtaInfo) {
+    if (isGraduated && (ammVaultAtaInfo || instructions.length > 0)) {
       // Consolidate fees from AMM to bonding curve program for distribution
       const transferCreatorFeesToPumpIx = await this.pumpAmmProgram.methods
         .transferCreatorFeesToPump()
@@ -857,11 +1129,19 @@ export class OnlinePumpSdk {
    * For graduated tokens, it automatically includes an instruction to consolidate fees
    * from the AMM vault before distributing.
    *
+   * Creator fees that v3 curve trades or PumpSwap v2 trades left in their
+   * buckets are swept first (`creatorFeeSweepInstructions`); the program
+   * refuses to distribute while the curve bucket is nonzero. The sweeps need
+   * a signer, so pass `payer` whenever the coin may have such trades.
+   *
    * @param mint - The mint address of the token
+   * @param payer - Signer that pays for the sweeps (and a missing vault ATA)
    * @returns The instructions to distribute creator fees and whether the token is graduated
+   * @throws when a sweep is needed and no `payer` was given
    */
   async buildDistributeCreatorFeesInstructions(
     mint: PublicKey,
+    payer?: PublicKey,
   ): Promise<DistributeCreatorFeeResult> {
     const sharingConfigPubkey = feeSharingConfigPda(mint);
     const poolAddress = canonicalPumpPoolPda(mint);
@@ -889,9 +1169,19 @@ export class OnlinePumpSdk {
     );
 
     const instructions: TransactionInstruction[] = [];
+    if (payer) {
+      instructions.push(...(await this.creatorFeeSweepInstructions(mint, payer)));
+    } else {
+      const bondingCurve = await this.fetchBondingCurve(mint).catch(() => null);
+      if (bondingCurve && !bondingCurve.creatorFee.isZero()) {
+        throw new Error(
+          `payer is required: ${mint.toBase58()} has un-swept creator fees on its bonding curve, and the sweep that must come first needs a signer`,
+        );
+      }
+    }
 
     const isGraduated = poolAccountInfo !== null;
-    if (isGraduated && ammVaultAtaInfo) {
+    if (isGraduated && (ammVaultAtaInfo || instructions.length > 0)) {
       // Consolidate fees from AMM to bonding curve program for distribution
       const transferCreatorFeesToPumpIx = await this.pumpAmmProgram.methods
         .transferCreatorFeesToPump()
@@ -1967,6 +2257,7 @@ export class OnlinePumpSdk {
       coinCreator: swapState.pool.coinCreator,
       creator: swapState.pool.creator,
       feeConfig: swapState.feeConfig,
+      ...poolQuoteTerms(swapState.pool),
     });
     return {
       tokensOut: result.base,
@@ -2010,6 +2301,7 @@ export class OnlinePumpSdk {
       coinCreator: swapState.pool.coinCreator,
       creator: swapState.pool.creator,
       feeConfig: swapState.feeConfig,
+      ...poolQuoteTerms(swapState.pool),
     });
     return {
       solOut: result.uiQuote,
@@ -2373,6 +2665,7 @@ export class OnlinePumpSdk {
     cashback = false,
     creatorFeeBps = new BN(0),
     holderReward = false,
+    quoteMint,
   }: {
     mint: PublicKey;
     name: string;
@@ -2384,7 +2677,14 @@ export class OnlinePumpSdk {
     cashback?: boolean;
     creatorFeeBps?: BN;
     holderReward?: boolean;
+    /**
+     * The curve's quote mint: a `Global` whitelisted mint, a `QuoteControl`
+     * mint or a pump coin. Omitted or SOL launches a SOL curve. The token
+     * program and, for a pump coin, its quote accounts are resolved here.
+     */
+    quoteMint?: PublicKey;
   }): Promise<TransactionInstruction> {
+    const quote = await this.resolveCreateQuote(quoteMint);
     return PUMP_SDK.createV2Instruction({
       mint,
       name,
@@ -2396,7 +2696,48 @@ export class OnlinePumpSdk {
       cashback,
       creatorFeeBps,
       holderReward,
+      ...quote.params,
     });
+  }
+
+  /**
+   * What `create_v2` needs for `quoteMint` beyond the mint itself: its token
+   * program and, for a pump coin listed neither on `Global` nor in
+   * `QuoteControl`, its quote accounts and curve. SOL needs nothing.
+   */
+  private async resolveCreateQuote(quoteMint: PublicKey | undefined): Promise<{
+    params: {
+      quoteMint?: PublicKey;
+      quoteTokenProgram?: PublicKey;
+      pumpQuote?: PumpQuoteAccounts;
+    };
+    quoteControl: QuoteControl | null;
+    pumpQuoteCurve?: PumpQuoteCurve;
+  }> {
+    if (!quoteMint || isLegacyQuoteMint(quoteMint)) {
+      return { params: {}, quoteControl: null };
+    }
+    const [global, quoteControl, quoteTokenProgram] = await Promise.all([
+      this.fetchGlobal(),
+      this.fetchQuoteControl(),
+      this.fetchQuoteTokenProgram(quoteMint),
+    ]);
+    const listed =
+      global.whitelistedQuoteMints.some((mint) => mint.equals(quoteMint)) ||
+      (quoteControl?.mints.some(({ mint }) => mint.equals(quoteMint)) ??
+        false);
+    if (listed) {
+      return { params: { quoteMint, quoteTokenProgram }, quoteControl };
+    }
+    const pumpQuote = await this.fetchPumpQuote(quoteMint, { global });
+    if (!pumpQuote) {
+      throw new UnsupportedQuoteMintError(quoteMint);
+    }
+    return {
+      params: { quoteMint, quoteTokenProgram, pumpQuote: pumpQuote.accounts },
+      quoteControl,
+      pumpQuoteCurve: pumpQuote.curve,
+    };
   }
 
   /**
@@ -2425,6 +2766,7 @@ export class OnlinePumpSdk {
     cashback = false,
     creatorFeeBps = new BN(0),
     holderReward = false,
+    quoteMint,
   }: {
     mint: PublicKey;
     name: string;
@@ -2437,21 +2779,44 @@ export class OnlinePumpSdk {
     cashback?: boolean;
     creatorFeeBps?: BN;
     holderReward?: boolean;
+    /**
+     * The curve's quote mint (see `createV2Instruction`). On a token quote
+     * `solAmount` is the amount of that token the first buy spends, and the
+     * buy is a `buy_v3`.
+     */
+    quoteMint?: PublicKey;
   }): Promise<TransactionInstruction[]> {
-    const [global, feeConfig] = await Promise.all([
+    const [global, feeConfig, quote] = await Promise.all([
       this.fetchGlobal(),
       this.fetchFeeConfig(),
+      this.resolveCreateQuote(quoteMint),
     ]);
 
     // Compute expected tokens at the initial bonding curve state
-    const initialBc: BondingCurve = newBondingCurve(global);
-    const tokensOut = getBuyTokenAmountFromSolAmount({
+    const initialBc: BondingCurve = newBondingCurve(
       global,
-      feeConfig,
-      mintSupply: global.tokenTotalSupply,
-      bondingCurve: initialBc,
-      amount: solAmount,
-    });
+      quote.params.quoteMint ?? PublicKey.default,
+      quote.quoteControl,
+      creatorFeeBps,
+      holderReward,
+      quote.pumpQuoteCurve,
+    );
+    const tokensOut = quote.params.quoteMint
+      ? getBuyV3TokenAmountFromQuoteAmount({
+          global,
+          feeConfig,
+          mintSupply: global.tokenTotalSupply,
+          bondingCurve: initialBc,
+          amount: solAmount,
+          curveBaseTokenBalance: global.tokenTotalSupply,
+        })
+      : getBuyTokenAmountFromSolAmount({
+          global,
+          feeConfig,
+          mintSupply: global.tokenTotalSupply,
+          bondingCurve: initialBc,
+          amount: solAmount,
+        });
 
     return PUMP_SDK.createV2AndBuyInstructions({
       global,
@@ -2467,6 +2832,7 @@ export class OnlinePumpSdk {
       cashback,
       creatorFeeBps,
       holderReward,
+      ...quote.params,
     });
   }
 
@@ -2757,12 +3123,15 @@ export type PumpEvent =
   | { type: "distributeFeeToHolders"; data: DistributeFeeToHoldersEvent }
   | { type: "migrateBondingCurveCreator"; data: MigrateBondingCurveCreatorEvent }
   | { type: "distributeCreatorFees"; data: DistributeCreatorFeesEvent }
+  | { type: "postCompleteBuy"; data: PostCompleteBuyEvent }
+  | { type: "sweepBondingCurveFee"; data: SweepBondingCurveFeeEvent }
   // ── PumpAMM ─────────────────────────────────────────────────────────
   | { type: "ammBuy"; data: AmmBuyEvent }
   | { type: "ammSell"; data: AmmSellEvent }
   | { type: "deposit"; data: DepositEvent }
   | { type: "withdraw"; data: WithdrawEvent }
   | { type: "createPool"; data: CreatePoolEvent }
+  | { type: "sweepPoolFee"; data: SweepPoolFeeEvent }
   // ── PumpFees ─────────────────────────────────────────────────────────
   | { type: "createFeeSharingConfig"; data: CreateFeeSharingConfigEvent }
   | { type: "updateFeeShares"; data: UpdateFeeSharesEvent }
@@ -2770,7 +3139,6 @@ export type PumpEvent =
   | { type: "socialFeePdaCreated"; data: SocialFeePdaCreatedEvent }
   | { type: "socialFeePdaClaimed"; data: SocialFeePdaClaimedEvent }
   // ── PumpAMM extra ────────────────────────────────────────────────────
-  | { type: "ammAdminSetCoinCreator"; data: AmmAdminSetCoinCreatorEvent }
   | { type: "ammAdminUpdateTokenIncentives"; data: AmmAdminUpdateTokenIncentivesEvent }
   | { type: "ammClaimCashback"; data: AmmClaimCashbackEvent }
   | { type: "ammClaimTokenIncentives"; data: AmmClaimTokenIncentivesEvent }
@@ -2870,6 +3238,8 @@ const PUMP_EVENT_WRAPPERS: Record<string, EventWrap> = {
   DistributeFeeToHoldersEvent: (d) => ({ type: "distributeFeeToHolders", data: PUMP_SDK.decodeDistributeFeeToHoldersEvent(d) }),
   MigrateBondingCurveCreatorEvent: (d) => ({ type: "migrateBondingCurveCreator", data: PUMP_SDK.decodeMigrateBondingCurveCreatorEvent(d) }),
   DistributeCreatorFeesEvent: (d) => ({ type: "distributeCreatorFees", data: PUMP_SDK.decodeDistributeCreatorFeesEvent(d) }),
+  PostCompleteBuyEvent: (d) => ({ type: "postCompleteBuy", data: PUMP_SDK.decodePostCompleteBuyEvent(d) }),
+  SweepBondingCurveFeeEvent: (d) => ({ type: "sweepBondingCurveFee", data: PUMP_SDK.decodeSweepBondingCurveFeeEvent(d) }),
 };
 
 const AMM_EVENT_WRAPPERS: Record<string, EventWrap> = {
@@ -2878,7 +3248,7 @@ const AMM_EVENT_WRAPPERS: Record<string, EventWrap> = {
   DepositEvent: (d) => ({ type: "deposit", data: PUMP_SDK.decodeDepositEvent(d) }),
   WithdrawEvent: (d) => ({ type: "withdraw", data: PUMP_SDK.decodeWithdrawEvent(d) }),
   CreatePoolEvent: (d) => ({ type: "createPool", data: PUMP_SDK.decodeCreatePoolEvent(d) }),
-  AdminSetCoinCreatorEvent: (d) => ({ type: "ammAdminSetCoinCreator", data: PUMP_SDK.decodeAmmAdminSetCoinCreatorEvent(d) }),
+  SweepPoolFeeEvent: (d) => ({ type: "sweepPoolFee", data: PUMP_SDK.decodeSweepPoolFeeEvent(d) }),
   AdminUpdateTokenIncentivesEvent: (d) => ({ type: "ammAdminUpdateTokenIncentives", data: PUMP_SDK.decodeAmmAdminUpdateTokenIncentivesEvent(d) }),
   ClaimCashbackEvent: (d) => ({ type: "ammClaimCashback", data: PUMP_SDK.decodeAmmClaimCashbackEvent(d) }),
   ClaimTokenIncentivesEvent: (d) => ({ type: "ammClaimTokenIncentives", data: PUMP_SDK.decodeAmmClaimTokenIncentivesEvent(d) }),

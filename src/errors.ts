@@ -5,6 +5,10 @@
 import type { PublicKey } from "@solana/web3.js";
 import type BN from "bn.js";
 
+import pumpIdl from "./idl/pump.json";
+import pumpAmmIdl from "./idl/pump_amm.json";
+import pumpFeesIdl from "./idl/pump_fees.json";
+
 /** `create_v2` no longer permits new cashback coins (Pump error 6082). */
 export class CashbackDeprecatedError extends Error {
   constructor() {
@@ -131,4 +135,162 @@ export class UnsupportedQuoteMintError extends Error {
     this.name = "UnsupportedQuoteMintError";
     this.quoteMint = quoteMint;
   }
+}
+
+/**
+ * Mirrors pump error 6094: the v3 trades refuse cashback coins (they never
+ * credit the buyer's volume accumulator). Trade those with the v1/v2
+ * instructions.
+ */
+export class CashbackCoinNotSupportedError extends Error {
+  readonly mint: PublicKey;
+
+  constructor(mint: PublicKey) {
+    super(
+      `v3 trades do not support cashback coin ${mint.toBase58()}; use buyInstructions / sellInstructions`,
+    );
+    this.name = "CashbackCoinNotSupportedError";
+    this.mint = mint;
+  }
+}
+
+/**
+ * Mirrors pump error 6105: a coin quoted in pump coin Q would sit at depth
+ * `Q.depth + 1`, above `Global.maxCurveDepth` (0 disables pump-coin quotes).
+ */
+export class CurveDepthExceededError extends Error {
+  readonly depth: number;
+  readonly maxCurveDepth: number;
+
+  constructor(depth: number, maxCurveDepth: number) {
+    super(`Curve depth ${depth} exceeds Global.maxCurveDepth ${maxCurveDepth}`);
+    this.name = "CurveDepthExceededError";
+    this.depth = depth;
+    this.maxCurveDepth = maxCurveDepth;
+  }
+}
+
+/**
+ * Mirrors pump error 6100: pump coin Q cannot quote a new coin (its curve is
+ * mayhem mode, or it is a depth-0 coin whose own quote no list admits).
+ */
+export class QuoteBondingCurveNotEligibleError extends Error {
+  readonly quoteMint: PublicKey;
+
+  constructor(quoteMint: PublicKey) {
+    super(
+      `Pump coin ${quoteMint.toBase58()} is not eligible as a quote: mayhem mode, or its own quote is not listed`,
+    );
+    this.name = "QuoteBondingCurveNotEligibleError";
+    this.quoteMint = quoteMint;
+  }
+}
+
+/**
+ * Mirrors pump error 6107: pump coin Q's curve is complete but not migrated
+ * yet, so it has no price. Retry once `migrate` creates its pool.
+ */
+export class QuoteCurveAwaitingMigrationError extends Error {
+  readonly quoteMint: PublicKey;
+
+  constructor(quoteMint: PublicKey) {
+    super(
+      `Pump coin ${quoteMint.toBase58()} has completed its curve but is not migrated yet`,
+    );
+    this.name = "QuoteCurveAwaitingMigrationError";
+    this.quoteMint = quoteMint;
+  }
+}
+
+/** Mirrors pump error 6104: the reserves derived from pump coin Q are zero. */
+export class QuoteReservesOutOfRangeError extends Error {
+  readonly quoteMint: PublicKey;
+  readonly derived: BN;
+
+  constructor(quoteMint: PublicKey, derived: BN) {
+    super(
+      `Reserves ${derived.toString()} derived from pump coin ${quoteMint.toBase58()} are out of range`,
+    );
+    this.name = "QuoteReservesOutOfRangeError";
+    this.quoteMint = quoteMint;
+    this.derived = derived;
+  }
+}
+
+/**
+ * Mirrors pump error 6102: pump coin Q's curve migrated but its canonical
+ * PumpSwap pool does not exist, so Q has no price the program can read.
+ */
+export class QuotePoolNotFoundError extends Error {
+  readonly quoteMint: PublicKey;
+  readonly pool: PublicKey;
+
+  constructor(quoteMint: PublicKey, pool: PublicKey) {
+    super(
+      `Pump coin ${quoteMint.toBase58()} migrated but has no PumpSwap pool at ${pool.toBase58()}`,
+    );
+    this.name = "QuotePoolNotFoundError";
+    this.quoteMint = quoteMint;
+    this.pool = pool;
+  }
+}
+
+/**
+ * Mirrors pump 6098 / pump-amm 6084 (`MultiHopDiscontinuousPath`): each hop
+ * of a multi-hop route must start in the mint the previous hop ended in.
+ */
+export class MultiHopDiscontinuousPathError extends Error {
+  readonly hopIndex: number;
+
+  constructor(hopIndex: number, expected: PublicKey, actual: PublicKey) {
+    super(
+      `Multi-hop route is discontinuous at hop ${hopIndex}: expected ${expected.toBase58()}, got ${actual.toBase58()}`,
+    );
+    this.name = "MultiHopDiscontinuousPathError";
+    this.hopIndex = hopIndex;
+  }
+}
+
+/** A custom error a Pump program can return, as its IDL declares it. */
+export interface PumpProgramError {
+  program: "pump" | "pumpAmm" | "pumpFees";
+  code: number;
+  name: string;
+  msg?: string;
+}
+
+const PROGRAM_ERROR_TABLES: Record<
+  PumpProgramError["program"],
+  { id: string; errors: { code: number; name: string; msg?: string }[] }
+> = {
+  pump: { id: pumpIdl.address, errors: pumpIdl.errors },
+  pumpAmm: { id: pumpAmmIdl.address, errors: pumpAmmIdl.errors },
+  pumpFees: { id: pumpFeesIdl.address, errors: pumpFeesIdl.errors },
+};
+
+/**
+ * Resolve a failed transaction's `InstructionError: Custom(code)` to the
+ * named error the program declares, from the bundled IDLs. Covers every code,
+ * including the ones the October 2026 upgrade added (pump 6094 to 6108,
+ * pump-amm 6059 to 6087, pump-fees 6031 to 6034).
+ *
+ * @param program - `"pump"`, `"pumpAmm"`, `"pumpFees"`, or the program id.
+ * @returns The error, or `undefined` for a code the program does not declare
+ *   (Anchor framework codes below 6000, for instance).
+ */
+export function getPumpProgramError(
+  program: PumpProgramError["program"] | PublicKey,
+  code: number,
+): PumpProgramError | undefined {
+  const key =
+    typeof program === "string"
+      ? program
+      : (
+          Object.keys(PROGRAM_ERROR_TABLES) as PumpProgramError["program"][]
+        ).find((name) => PROGRAM_ERROR_TABLES[name].id === program.toBase58());
+  if (key === undefined) return undefined;
+  const found = PROGRAM_ERROR_TABLES[key].errors.find((e) => e.code === code);
+  return found
+    ? { program: key, code: found.code, name: found.name, msg: found.msg }
+    : undefined;
 }

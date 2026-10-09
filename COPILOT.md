@@ -83,7 +83,9 @@ All token/SOL amounts use `BN` (bn.js). Never use JavaScript `number` for financ
 | Cashback rewards, UserVolumeAccumulator PDA | `docs/pump-official/PUMP_CASHBACK_README.md` |
 | CU optimization, PDA bump effects | `docs/pump-official/FAQ.md` |
 | create_v2, Token2022, mayhem mode, social fees | `docs/pump-official/README.md` |
-| Official IDL files | `docs/pump-official/idl/pump.json`, `pump_amm.json`, `pump_fees.json` |
+| v3 curve trades, PumpSwap v2 trades, multi-hop swaps, fee sweeps, pump-coin quotes (October 2026 upgrade) | `docs/pump-official/docs/instructions/` (`TRADE_V3.md`, `PUMP_SWAP_TRADE_V2.md`, `MULTI_HOP_SWAP.md`, `SWEEP_FEES.md`, `CREATE_WITH_PUMP_COIN_QUOTE.md`) |
+| Synthetic migration, signed pool virtual quote reserves | `docs/pump-official/docs/SYNTHETIC_MIGRATION.md`, `docs/pump-official/docs/NEGATIVE_VIRTUAL_QUOTE_RESERVES.md` |
+| Official IDL files | `docs/pump-official/idl/pump.json`, `pump_amm.json`, `pump_fees.json` (refresh with `node scripts/sync-idl.mjs`) |
 
 ## Security Rules
 
@@ -143,7 +145,7 @@ cd rust && cargo test
 
 - `createInstruction` (v1) is deprecated — use `createV2Instruction` (Token-2022)
 - `BondingCurve.complete === true` means graduated — bonding curve trading will fail
-- `BONDING_CURVE_NEW_SIZE = 151` — accounts may need extension before migration
+- `BONDING_CURVE_NEW_SIZE = 166`: the program grows older curves on their first new-style trade; buy/sell builders no longer prepend `extendAccount`
 - Buy instruction passes `{ 0: true }` flags — this is intentional, not a bug
 - Shares must total exactly 10,000 BPS (not 100 or 1,000,000)
 - Circular dependency between `sdk.ts` and `onlineSdk.ts` — handle imports carefully

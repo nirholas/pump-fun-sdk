@@ -12,12 +12,12 @@ import type { Command } from "commander";
 import {
   AMM_FEE_CONFIG_PDA,
   AMM_GLOBAL_CONFIG_PDA,
-  AMM_GLOBAL_PDA,
   AMM_GLOBAL_VOLUME_ACCUMULATOR_PDA,
   GLOBAL_PDA,
   GLOBAL_VOLUME_ACCUMULATOR_PDA,
   PUMP_EVENT_AUTHORITY_PDA,
   PUMP_FEE_CONFIG_PDA,
+  QUOTE_CONTROL_PDA,
   ammCreatorVaultPda,
   ammUserVolumeAccumulatorPda,
   bondingCurvePda,
@@ -71,7 +71,7 @@ const WITH_ARGUMENT: Record<string, { describe: string; derive: (key: string) =>
 /** Fixed protocol accounts, no argument needed. */
 const CONSTANTS: Record<string, { describe: string; address: string }> = {
   global: { describe: "Pump global config", address: GLOBAL_PDA.toBase58() },
-  "amm-global": { describe: "PumpAMM global", address: AMM_GLOBAL_PDA.toBase58() },
+  "quote-control": { describe: "Pump quote control (admitted quote mints)", address: QUOTE_CONTROL_PDA.toBase58() },
   "amm-global-config": {
     describe: "PumpAMM global config",
     address: AMM_GLOBAL_CONFIG_PDA.toBase58(),

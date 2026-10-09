@@ -23,8 +23,20 @@ import {
 /** PDA for the Pump program global state account. */
 export const GLOBAL_PDA = pumpPda([Buffer.from("global")]);
 
-/** PDA for the PumpAMM program global state account. */
-export const AMM_GLOBAL_PDA = pumpAmmPda([Buffer.from("amm_global")]);
+/**
+ * The pump `QuoteControl` PDA (seeds `["quote-control"]`), which lists the
+ * quote mints `create_v2` accepts beyond SOL and the `Global` whitelist.
+ */
+export const QUOTE_CONTROL_PDA = pumpPda([Buffer.from("quote-control")]);
+
+/**
+ * PumpAMM `GlobalConfig` PDA (seeds `["global_config"]`).
+ *
+ * @deprecated Use `AMM_GLOBAL_CONFIG_PDA`. Before 3.0.0 this constant was
+ * derived from the seed `amm_global`, an account that does not exist on
+ * chain; it now resolves to the real global config account.
+ */
+export const AMM_GLOBAL_PDA = pumpAmmPda([Buffer.from("global_config")]);
 
 /** PDA for the PumpFees program fee configuration account. */
 export const PUMP_FEE_CONFIG_PDA = pumpFeePda([
@@ -97,6 +109,28 @@ export function canonicalPumpPoolPda(mint: PublicKey): PublicKey {
     mint,
     NATIVE_MINT,
   );
+}
+
+/**
+ * Derive the canonical PumpAMM pool PDA for a mint quoted in `quoteMint`. A
+ * curve created with a non-SOL quote migrates into this pool, and multi-hop
+ * routes address pool hops through it.
+ */
+export function canonicalPumpPoolPdaWithQuote(
+  mint: PublicKey,
+  quoteMint: PublicKey,
+): PublicKey {
+  return poolPda(
+    CANONICAL_POOL_INDEX,
+    pumpPoolAuthorityPda(mint),
+    mint,
+    normalizeQuoteMint(quoteMint),
+  );
+}
+
+/** Derive the PumpAMM boost vault authority PDA for a pool. */
+export function boostVaultAuthorityPda(pool: PublicKey): PublicKey {
+  return pumpAmmPda([Buffer.from("boost_vault"), pool.toBuffer()]);
 }
 
 /** Derive the user volume accumulator PDA for token incentive tracking. */
@@ -178,7 +212,6 @@ export const AMM_GLOBAL_CONFIG_PDA = pumpAmmPda([
   Buffer.from("global_config"),
 ]);
 
-/** Derive the bonding curve v2 PDA for a given token mint. */
 /**
  * Whether a stored quote mint means "this curve is quoted in SOL". The program
  * writes the zero key on SOL curves and wrapped SOL is equivalent, so both
@@ -198,6 +231,18 @@ export const normalizeQuoteMint = (
 ): PublicKey =>
   !quoteMint || isLegacyQuoteMint(quoteMint) ? NATIVE_MINT : quoteMint;
 
+/**
+ * Associated token account of `owner` for `quoteMint` under
+ * `quoteTokenProgram`. Off-curve owners (curves, pools, PDAs) are allowed.
+ */
+export const quoteAta = (
+  owner: PublicKey,
+  quoteMint: PublicKey,
+  quoteTokenProgram: PublicKey,
+): PublicKey =>
+  getAssociatedTokenAddressSync(quoteMint, owner, true, quoteTokenProgram);
+
+/** Derive the bonding curve v2 PDA for a given token mint. */
 export function bondingCurveV2Pda(mint: PublicKeyInitData): PublicKey {
   return pumpPda([
     Buffer.from("bonding-curve-v2"),

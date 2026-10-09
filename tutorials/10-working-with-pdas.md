@@ -163,7 +163,7 @@ These PDAs are the same for every user — they're computed once:
 ```typescript
 import {
   GLOBAL_PDA,
-  AMM_GLOBAL_PDA,
+  QUOTE_CONTROL_PDA,
   PUMP_FEE_CONFIG_PDA,
   AMM_FEE_CONFIG_PDA,
   GLOBAL_VOLUME_ACCUMULATOR_PDA,
@@ -175,7 +175,7 @@ import {
 } from "@nirholas/pump-sdk";
 
 console.log("Pump global:", GLOBAL_PDA.toBase58());
-console.log("AMM global:", AMM_GLOBAL_PDA.toBase58());
+console.log("Quote control:", QUOTE_CONTROL_PDA.toBase58());
 console.log("Fee config:", PUMP_FEE_CONFIG_PDA.toBase58());
 console.log("AMM fee config:", AMM_FEE_CONFIG_PDA.toBase58());
 console.log("Volume accumulator:", GLOBAL_VOLUME_ACCUMULATOR_PDA.toBase58());

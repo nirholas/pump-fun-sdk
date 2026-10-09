@@ -15,6 +15,7 @@ import {
   OnlinePumpSdk,
   PUMP_SDK,
   getPumpProgram,
+  bondingCurvePda,
   creatorVaultPda,
   feeSharingConfigPda,
   isSharingConfigEditable,
@@ -225,6 +226,9 @@ export async function main(): Promise<void> {
       admin: sharingConfig.admin,
       shareholders: sharingConfig.shareholders,
       distributed,
+      bondingCurve: bondingCurvePda(mint),
+      // The zero key is how the program records a SOL-quoted curve.
+      quoteMint: PublicKey.default,
     }),
   );
   const holderCount = feesEvent.shareholders.length;

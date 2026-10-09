@@ -77,6 +77,12 @@ export interface Global {
   holderRewardClaimAuthority: PublicKey;
   /** Global gate for holder-reward launches and CTO conversions. */
   isHolderRewardEnabled: boolean;
+  /**
+   * Deepest pump-coin quote chain `create_v2` admits. A coin quoted in pump
+   * coin Q sits at depth `Q.depth + 1`; 0 disables pump-coin quotes. Reads 0
+   * on a Global decoded from an account written before the field existed.
+   */
+  maxCurveDepth: number;
 }
 
 export interface BondingCurve {
@@ -107,6 +113,49 @@ export interface BondingCurve {
   canEditCreatorFee: boolean;
   /** True when creator fees are distributed to holders by Pump.fun. */
   isHolderReward: boolean;
+  /**
+   * Creator fees the v3 trades accrued in the curve's quote token account and
+   * have not swept to the creator vault yet (`sweep_creator_fee`).
+   */
+  creatorFee: BN;
+  /**
+   * Protocol fees the v3 trades accrued in the curve's quote token account and
+   * have not swept yet (`sweep_protocol_fee`).
+   */
+  protocolFees: BN;
+  /**
+   * Position in a pump-coin quote chain: 0 for a coin quoted in SOL or a listed
+   * mint, `Q.depth + 1` for a coin quoted in pump coin Q.
+   */
+  depth: number;
+  /**
+   * The virtual quote reserves the curve was created with. Synthetic
+   * migration quotes the pool-to-be from it once the curve completes.
+   */
+  initialVirtualQuoteReserves: BN;
+  /** Base tokens bought through the synthetic pool after the curve completed. */
+  postCompleteBaseOut: BN;
+  /** Quote paid into the synthetic pool after the curve completed. */
+  postCompleteQuoteIn: BN;
+}
+
+/** A mint `QuoteControl` admits as a curve quote, with its starting reserves. */
+export interface QuoteControlMint {
+  mint: PublicKey;
+  initialVirtualQuoteReserves: BN;
+}
+
+/**
+ * The pump `QuoteControl` account (PDA `["quote-control"]`): the list of
+ * quote mints admitted beyond `Global.whitelistedQuoteMints`, each with the
+ * virtual quote reserves its curves start from.
+ */
+export interface QuoteControl {
+  admin: PublicKey;
+  /** Authority allowed to retune a listed mint's starting reserves. */
+  reservesAdmin: PublicKey;
+  reserved: number[];
+  mints: QuoteControlMint[];
 }
 
 export interface GlobalVolumeAccumulator {
@@ -135,8 +184,21 @@ export interface UserVolumeAccumulatorTotalStats {
 
 export interface FeeConfig {
   admin: PublicKey;
+  /** Flat schedule for non-pump pools, and exotic quotes while `exoticFlatFees` is unset. */
   flatFees: Fees;
+  /** Market-cap tiers SOL-like quotes pay. */
   feeTiers: FeeTier[];
+  /**
+   * Market-cap tiers listed stable quotes (mainnet USDC) pay. Empty or absent
+   * on a FeeConfig written before stable tiers existed, in which case stable
+   * quotes fall back to `feeTiers`.
+   */
+  stableFeeTiers?: FeeTier[];
+  /**
+   * Flat schedule every other quote (pump coins, QuoteControl mints) pays. An
+   * all-zero or absent value means unset, and `flatFees` applies.
+   */
+  exoticFlatFees?: Fees;
 }
 
 export interface FeeTier {
@@ -170,6 +232,8 @@ export interface DistributeCreatorFeesEvent {
   admin: PublicKey;
   shareholders: Shareholder[];
   distributed: BN;
+  bondingCurve: PublicKey;
+  quoteMint: PublicKey;
 }
 
 export interface MinimumDistributableFeeEvent {
@@ -193,8 +257,22 @@ export interface Pool {
   coinCreator: PublicKey;
   isMayhemMode: boolean;
   isCashbackCoin: boolean;
-  /** Appended by PumpSwap 1.20; absent on pre-upgrade decoder results. */
-  isHolderReward?: boolean;
+  /** True when the coin's creator fees go to its holders. */
+  isHolderReward: boolean;
+  /**
+   * Signed virtual quote reserves (i128 on chain) added to the pool's real
+   * quote balance when pricing: `effective = quote_vault.amount +
+   * virtualQuoteReserves`. Zero for every pool but a synthetic migration's,
+   * where it is negative when the curve's raise ran short of the target.
+   */
+  virtualQuoteReserves: BN;
+  /** Per-pool creator fee rate (bps); 0 means the fee schedule rate applies. */
+  creatorFeeBps: BN;
+  canEditCreatorFee: boolean;
+  /** Protocol fees v2 trades accrued in the pool vault, swept by `sweep_protocol_fee`. */
+  protocolFees: BN;
+  /** Creator fees v2 trades accrued in the pool vault, swept by `sweep_creator_fee`. */
+  creatorFees: BN;
 }
 
 export interface AmmGlobalConfig {
@@ -210,6 +288,12 @@ export interface AmmGlobalConfig {
   mayhemModeEnabled: boolean;
   reservedFeeRecipients: PublicKey[];
   isCashbackEnabled: boolean;
+  buybackFeeRecipients: PublicKey[];
+  buybackBasisPoints: BN;
+  boostAuthority: PublicKey;
+  boostEnabled: boolean;
+  creatorFeeConfigurable: boolean;
+  maxConfigurableCreatorFeeBps: BN;
 }
 
 // ─── PumpFees Account Types ─────────────────────────────────────────────────
@@ -261,8 +345,22 @@ export interface TradeEvent {
   mayhemMode: boolean;
   cashbackFeeBasisPoints: BN;
   cashback: BN;
+  buybackFeeBasisPoints: BN;
+  buybackFee: BN;
+  shareholders: Shareholder[];
+  /** Quote mint of the curve (`PublicKey.default` for legacy SOL curves). */
+  quoteMint: PublicKey;
+  /** Quote amount of the trade, in the quote mint's base units. */
+  quoteAmount: BN;
+  virtualQuoteReserves: BN;
+  realQuoteReserves: BN;
   holderRewardsBps: BN;
   holderRewards: BN;
+  /**
+   * Creator fees left in the curve after this trade, waiting for
+   * `sweep_creator_fee`. Zero on events emitted before the v3 trades.
+   */
+  creatorFeeUnclaimed: BN;
 }
 
 export interface CreateEvent {
@@ -281,7 +379,12 @@ export interface CreateEvent {
   tokenProgram: PublicKey;
   isMayhemMode: boolean;
   isCashbackEnabled: boolean;
+  quoteMint: PublicKey;
+  virtualQuoteReserves: BN;
+  creatorFeeBps: BN;
   isHolderReward: boolean;
+  /** Pump-coin quote depth (0 unless the coin is quoted in a pump coin). */
+  depth: number;
 }
 
 export interface CompleteEvent {
@@ -289,6 +392,59 @@ export interface CompleteEvent {
   mint: PublicKey;
   bondingCurve: PublicKey;
   timestamp: BN;
+  quoteMint: PublicKey;
+}
+
+/**
+ * Emitted by a v3 buy on a curve that completed but has not migrated: the
+ * buy fills against the synthetic pool-to-be instead of the curve.
+ */
+export interface PostCompleteBuyEvent {
+  user: PublicKey;
+  mint: PublicKey;
+  bondingCurve: PublicKey;
+  quoteMint: PublicKey;
+  timestamp: BN;
+  baseOut: BN;
+  quoteIn: BN;
+  feeBasisPoints: BN;
+  fee: BN;
+  creatorFeeBasisPoints: BN;
+  creatorFee: BN;
+  buybackFee: BN;
+  poolBaseReservesBefore: BN;
+  poolQuoteReservesBefore: BN;
+  poolBaseReservesAfter: BN;
+  poolQuoteReservesAfter: BN;
+}
+
+/** Bucket a fee sweep drained: protocol fees or creator fees. */
+export enum SweepFeeBucket {
+  Protocol = 0,
+  Creator = 1,
+}
+
+/** Emitted by pump `sweep_protocol_fee` / `sweep_creator_fee`. */
+export interface SweepBondingCurveFeeEvent {
+  timestamp: BN;
+  mint: PublicKey;
+  bondingCurve: PublicKey;
+  quoteMint: PublicKey;
+  recipient: PublicKey;
+  amount: BN;
+  bucket: number;
+}
+
+/** Emitted by pump-amm `sweep_protocol_fee` / `sweep_creator_fee`. */
+export interface SweepPoolFeeEvent {
+  timestamp: BN;
+  pool: PublicKey;
+  baseMint: PublicKey;
+  quoteMint: PublicKey;
+  recipient: PublicKey;
+  payer: PublicKey;
+  amount: BN;
+  bucket: number;
 }
 
 export interface CompletePumpAmmMigrationEvent {
@@ -300,6 +456,7 @@ export interface CompletePumpAmmMigrationEvent {
   bondingCurve: PublicKey;
   timestamp: BN;
   pool: PublicKey;
+  quoteMint: PublicKey;
 }
 
 export interface SetCreatorEvent {
@@ -313,6 +470,7 @@ export interface CollectCreatorFeeEvent {
   timestamp: BN;
   creator: PublicKey;
   creatorFee: BN;
+  quoteMint: PublicKey;
 }
 
 export interface ClaimTokenIncentivesEvent {
@@ -439,8 +597,16 @@ export interface AmmBuyEvent {
   ixName: string;
   cashbackFeeBasisPoints: BN;
   cashback: BN;
+  buybackFeeBasisPoints: BN;
+  buybackFee: BN;
+  /** Pool's signed virtual quote reserves at the time of the trade. */
+  virtualQuoteReserves: BN;
+  canBoost: boolean;
+  baseSupply: BN;
   holderRewardsBps: BN;
   holderRewards: BN;
+  /** Creator fees left in the pool after this trade, waiting for a sweep. */
+  creatorFeeUnclaimed: BN;
 }
 
 export interface AmmSellEvent {
@@ -469,8 +635,16 @@ export interface AmmSellEvent {
   coinCreatorFee: BN;
   cashbackFeeBasisPoints: BN;
   cashback: BN;
+  buybackFeeBasisPoints: BN;
+  buybackFee: BN;
+  /** Pool's signed virtual quote reserves at the time of the trade. */
+  virtualQuoteReserves: BN;
+  canBoost: boolean;
+  baseSupply: BN;
   holderRewardsBps: BN;
   holderRewards: BN;
+  /** Creator fees left in the pool after this trade, waiting for a sweep. */
+  creatorFeeUnclaimed: BN;
 }
 
 export interface DepositEvent {
@@ -533,6 +707,9 @@ export interface CreatePoolEvent {
   userQuoteTokenAccount: PublicKey;
   coinCreator: PublicKey;
   isMayhemMode: boolean;
+  creatorFeeBps: BN;
+  canEditCreatorFee: boolean;
+  isHolderReward: boolean;
 }
 
 // PumpFees Events
@@ -589,15 +766,6 @@ export interface SocialFeePdaClaimedEvent {
 }
 
 // ─── PumpAMM Extra Events ─────────────────────────────────────────────────────
-
-export interface AmmAdminSetCoinCreatorEvent {
-  timestamp: BN;
-  adminSetCoinCreatorAuthority: PublicKey;
-  baseMint: PublicKey;
-  pool: PublicKey;
-  oldCoinCreator: PublicKey;
-  newCoinCreator: PublicKey;
-}
 
 export interface AmmAdminUpdateTokenIncentivesEvent {
   startTime: BN;

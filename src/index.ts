@@ -16,7 +16,13 @@ export {
   getStaticRandomFeeRecipient,
   maxSafeSellAmount,
   validateSellAmount,
+  getBuyV3QuoteAmountFromTokenAmount,
+  getBuyV3TokenAmountFromQuoteAmount,
+  isBondingCurveMigrated,
+  pumpQuoteAdmission,
+  pumpQuoteReserves,
 } from "./bondingCurve";
+export type { PumpQuoteCurve } from "./bondingCurve";
 export * from "./pda";
 export {
   getPumpProgram,
@@ -27,6 +33,19 @@ export {
   PUMP_FEE_PROGRAM_ID,
   MAYHEM_PROGRAM_ID,
   BONDING_CURVE_NEW_SIZE,
+  BONDING_CURVE_SIZE,
+  BONDING_CURVE_INITIALIZE_SIZE,
+  GLOBAL_SIZE,
+  FEE_CONFIG_INITIALIZE_SIZE,
+  FEE_CONFIG_POST_STABLE_SIZE,
+  FEE_CONFIG_CURRENT_SIZE,
+  POOL_SIZE,
+  AMM_GLOBAL_CONFIG_SIZE,
+  createV2QuoteRemainingAccounts,
+  tradeV3Accounts,
+  ammTradeV2Accounts,
+  multiHopRouteEnds,
+  multiHopHopAccounts,
   PumpSdk,
   PUMP_SDK,
   isCreatorUsingSharingConfig,
@@ -35,12 +54,26 @@ export {
   PUMP_TOKEN_MINT,
   MAX_SHAREHOLDERS,
 } from "./sdk";
-export type { SocialShareholderInput } from "./sdk";
+export type {
+  SocialShareholderInput,
+  PumpQuoteAccounts,
+  MultiHopHop,
+  MultiHopSide,
+  MintWithProgram,
+} from "./sdk";
 export {
   getFee,
   getFeeRecipient,
   computeFeesBps,
   calculateFeeTier,
+  selectCurveFeeSchedule,
+  SOL_LIKE_QUOTE_MINTS,
+  STABLE_QUOTE_MINTS,
+  isSolLikeQuoteMint,
+  isStableQuoteMint,
+  isExoticQuoteMint,
+  getStaticRandomFeeRecipientForBuyback,
+  getBuybackFeeRecipientForTokenQuote,
   ONE_BILLION_SUPPLY,
   BREAKING_FEE_RECIPIENTS,
   BREAKING_FEE_RECIPIENT_WSOL_ATAS,
@@ -56,6 +89,7 @@ export type { CalculatedFeesBps, BreakingFeeValidation } from "./fees";
 export {
   OnlinePumpSdk,
   parsePumpEventsFromLogs,
+  poolQuoteTerms,
   MinimumDistributableFeeResult,
   DistributeCreatorFeeResult,
 } from "./onlineSdk";
@@ -113,7 +147,12 @@ export {
   ResetFeeSharingConfigEvent,
   SocialFeePdaCreatedEvent,
   SocialFeePdaClaimedEvent,
-  AmmAdminSetCoinCreatorEvent,
+  QuoteControl,
+  QuoteControlMint,
+  PostCompleteBuyEvent,
+  SweepFeeBucket,
+  SweepBondingCurveFeeEvent,
+  SweepPoolFeeEvent,
   AmmAdminUpdateTokenIncentivesEvent,
   AmmClaimCashbackEvent,
   AmmClaimTokenIncentivesEvent,

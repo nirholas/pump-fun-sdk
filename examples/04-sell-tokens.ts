@@ -62,9 +62,9 @@ export function quoteSellSol({
  *
  * `PUMP_SDK.sellInstructions` first validates the amount against the u64
  * overflow bound (throws SellOverflowError instead of letting the chain
- * abort after tokens moved), prepends extendAccount for old curve
- * accounts, and applies `slippage` (percent) as the minimum acceptable
- * SOL out: quoted SOL minus slippage%.
+ * abort after tokens moved) and applies `slippage` (percent) as the
+ * minimum acceptable SOL out: quoted SOL minus slippage%. Older curve
+ * accounts need no extendAccount: the program grows them on the trade.
  */
 export async function buildSellInstructions({
   global,

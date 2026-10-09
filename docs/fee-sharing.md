@@ -106,13 +106,39 @@ When fees are ready, build and send the distribution transaction:
 
 ```typescript
 const { instructions, isGraduated } =
-  await onlineSdk.buildDistributeCreatorFeesInstructions(mint);
+  await onlineSdk.buildDistributeCreatorFeesInstructions(mint, wallet.publicKey);
 
 const tx = new Transaction().add(...instructions);
 const sig = await sendAndConfirmTransaction(connection, tx, [wallet]);
 ```
 
 For graduated tokens, the method automatically includes a `transferCreatorFeesToPump` instruction to consolidate AMM vault fees before distributing.
+
+### Sweeping creator fees first
+
+Since the October 2026 upgrade, `buy_v3` / `sell_v3` on the curve and PumpSwap `buy_v2` / `sell_v2` keep the creator fee in the curve (`BondingCurve.creatorFee`) or pool (`Pool.creatorFees`) instead of paying it into the creator vault on every trade. A permissionless `sweep_creator_fee` moves it into the vault, and the distribution refuses to run while some is still waiting (pump 6095 `CreatorFeesNotSwept`).
+
+Pass a `payer` to `buildDistributeCreatorFeesInstructions` and it puts the sweeps the coin needs in front of the distribution. Without a `payer` it throws when the curve holds un-swept creator fees, rather than return a transaction that would fail on chain. The payer only covers small rent costs (a missing quote ATA, or growing a pre-upgrade curve). To build the sweeps yourself:
+
+```typescript
+// [] when neither the curve nor the canonical pool holds a creator fee
+const sweeps = await onlineSdk.creatorFeeSweepInstructions(mint, wallet.publicKey);
+
+// Or one by one with the offline SDK
+const curveSweep = await PUMP_SDK.sweepCreatorFeeInstruction({
+  payer: wallet.publicKey,
+  mint,
+  creator: bondingCurve.creator,          // the sharing config PDA once migrated to sharing
+  quoteMint: bondingCurve.quoteMint,
+});
+const poolSweep = await PUMP_SDK.ammSweepCreatorFeeInstruction({
+  payer: wallet.publicKey,
+  mint,
+  coinCreator: pool.coinCreator,
+});
+```
+
+The same rule applies to `createFeeSharingConfig` and `updateFeeShares` (pump-fees 6033 `PoolCreatorFeesNotSwept` on a graduated coin): sweep first, in the same transaction.
 
 ## Checking Fee Sharing Status
 
@@ -161,7 +187,7 @@ const ix = await PUMP_SDK.updateFeeShares({
 
 ## Collecting Creator Fees (Without Sharing)
 
-If fee sharing is not set up, creators can collect fees directly:
+If fee sharing is not set up, creators can collect fees directly. Fees that v3 curve trades or PumpSwap v2 trades left behind reach the vault only after a sweep, so put `onlineSdk.creatorFeeSweepInstructions(mint, payer)` for each of the creator's coins in front of the collect to include them:
 
 ```typescript
 // Collect from both Pump and AMM programs
@@ -225,17 +251,6 @@ const ix = await PUMP_SDK.transferFeeSharingAuthorityInstruction({
 });
 ```
 
-### Reset Config
-
-Reset the fee sharing configuration and assign a new admin:
-
-```typescript
-const ix = await PUMP_SDK.resetFeeSharingConfigInstruction({
-  authority: wallet.publicKey,
-  mint,
-  newAdmin: newAdminPublicKey,
-});
-```
 
 ### Revoke Authority (Irreversible)
 

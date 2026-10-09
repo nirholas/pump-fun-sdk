@@ -85,7 +85,7 @@ const balance = await onlineSdk.getCreatorVaultBalanceBothPrograms(creator);
 | `PUMP_PROGRAM_ID` | `6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P` | Bonding curve program |
 | `PUMP_AMM_PROGRAM_ID` | `pAMMBay6oceH9fJKBRHGP5D4bD4sWpmSwMn52FMfXEA` | AMM pool program |
 | `PUMP_FEE_PROGRAM_ID` | `pfeeUxB6jkeY1Hxd7CsFCAjcbHA9rWtchMGdZ6VojVZ` | Fee sharing program |
-| `BONDING_CURVE_NEW_SIZE` | `151` | Extended account size |
+| `BONDING_CURVE_NEW_SIZE` | `166` | Account size since the October 2026 upgrade |
 
 ## State Transition Diagram
 

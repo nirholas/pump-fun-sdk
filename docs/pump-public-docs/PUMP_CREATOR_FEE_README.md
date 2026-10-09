@@ -1,5 +1,3 @@
-# Pump Creator Fee Update
-
 Pump program will have a breaking upgrade to add support for coin creator fees. Each swap on a not-yet-completed
 bonding curve will send a fee to a coin creator vault account, apart from the already existing protocol fee.
 
@@ -24,10 +22,10 @@ Both `Buy::creator_vault` and `Sell::creator_vault` accounts are PDA accounts wi
         ],
         bump
     )]
-    pub creator_vault: AccountInfo<'info>,
+    pub creator_vault: AccountInfo<'info >,
 ```
 
-So the `creator_vault` PDA is dependent on a new `BondingCurve::creator` field. The updated `BondingCurve` struct will
+So the creator_vault PDA is dependent on a new `BondingCurve::creator` field. The updated `BondingCurve` struct will
 look like this:
 
 ```rust
@@ -67,7 +65,7 @@ pub struct Global {
 ```
 
 Currently, the `Global::creator_fee_basis_points` field is set to `0`. But you can start using the new fee calculation
-logic from now to be ready for the creator fee update. The latest version of our Typescript SDK includes the updated fee
+logic from now to be ready for the creator fee update. The latest version of our Typescript SDK includes the updated fee 
 logic: [Pump SDK](https://www.npmjs.com/package/@pump-fun/pump-sdk) (including the source code of the SDK).
 
 These functions do not include slippage in their calculations, but the slippage needs to be applied to sol amount for
@@ -81,35 +79,50 @@ The `BondingCurve::creator` parameter will be populated from:
 - the `creator` argument passed to `create` instruction for newly created coins. So be careful what `creator` pubkey
   you pass to the `create` instruction, as that pubkey will receive all the creator fees for that coin.
 - the Metaplex creator metadata for coins which have it, by using the `set_metaplex_creator` instruction. You can
-  include this instruction in your transactions, but it's not needed, as our backend service will listen for `TradeEvent`s and
+  include
+  this instruction in your transactions, but it's not needed, as our backend service will listen for `TradeEvent`s and
   will set the `BondingCurve::creator` dynamically for coins missing it.
 - our coins storage for coins created in the past and don't have Metaplex creator metadata. The backend service will
   listen for `TradeEvent`s and will set the `BondingCurve::creator` dynamically for coins missing it using the admin
   `set_creator` instruction.
 
-The fees accumulated in a creator vault account can be transferred to the creator's wallet using the
+The fees accumulated in a creator vault account can be transferred to the creator's wallet using the 
 `collectCreatorFee(creator)` instruction. The `creator` needs to sign the transaction including this instruction.
 
 The currently deployed Pump program on [Mainnet](https://solscan.io/account/6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P)
 is backwards-compatible with the new update, so you can start using the new IDL from now, to be ready and not experience
 any downtime when the creator fee update gets released.
 
+We already updated the Devnet program, so you have time until Monday to implement the changes above. Ideally, the
+same code should work on both the creator fee update on Devnet and the current Mainnet program, before we update Pump
+program on Mainnet to the creator fee update.
+
+We are also trying to release the Pump program Typescript SDK by Monday, so you can use it. The 
+[bondingCurve.ts](bondingCurve.ts) file is part of the upcoming Pump program Typescript SDK.
+
 ## Coin creator fees update
 
-We will deploy a breaking update to both Pump and PumpSwap (Pump AMM) programs to add support for coin creator fees.
+We will deploy a breaking update to both Pump and PumpSwap (Pump AMM) programs to add support for coin creator fees on
+Mainnet on Monday, May 12, 11:00 AM UTC.
+
+On Devnet, both programs have already been updated to support coin creator fees.
 
 Who will receive coin creator fees?
 - all non-completed Pump bonding curves;
-- all canonical PumpSwap pools. Canonical PumpSwap pools are pools created by Pump program `migrate` instruction
+- all canonical PumpSwap pools will. Canonical PumpSwap pools are pools created by Pump program `migrate` instruction
   for completed bonding curves.
 
 Who will not receive coin creator fees?
 - coins already migrated to Raydium, as that program is not under our control.
 - normal PumpSwap pools which are not created by Pump program `migrate` instruction.
 
-You should start by using the latest IDL files for both programs. They are
+You should start by using the latest IDL files for both programs from the [idl](idl) directory. They are
 backwards-compatible with current programs deployed on Mainnet, so you can start using them now.
 
 You can also use our Typescript SDKs for easier integration:
 - [Pump SDK](https://www.npmjs.com/package/@pump-fun/pump-sdk)
 - [PumpSwap SDK](https://www.npmjs.com/package/@pump-fun/pump-swap-sdk)
+
+If you implement and test the changes described in these two documents on Devnet before the creator fee upgrade, you
+should not experience any downtime. Ideally, you should use exactly the same code for both Devnet and Mainnet, before
+we update the programs on Mainnet.

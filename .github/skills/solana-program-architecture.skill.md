@@ -35,7 +35,8 @@ The Pump protocol spans multiple on-chain programs that coordinate through share
 
 **Global singletons** (no dynamic seeds):
 - `GLOBAL_PDA` — `["global"]` on Pump
-- `AMM_GLOBAL_PDA` — `["amm_global"]` on PumpAMM
+- `AMM_GLOBAL_PDA` (deprecated) is `["global_config"]` on PumpAMM, the same address as `AMM_GLOBAL_CONFIG_PDA`
+- `QUOTE_CONTROL_PDA` is `["quote-control"]` on Pump: the quote mints `create_v2` admits beyond `Global.whitelistedQuoteMints`
 - `PUMP_FEE_CONFIG_PDA` — `["fee_config", PUMP_PROGRAM_ID]` on PumpFees
 - `GLOBAL_VOLUME_ACCUMULATOR_PDA` — `["global_volume_accumulator"]` on Pump
 - Event authority PDAs — `["__event_authority"]` on each program
@@ -89,7 +90,7 @@ Many operations need data from both the bonding curve and AMM programs. The `Onl
 
 ### Account Extension
 
-Bonding curve accounts may need to be extended to `BONDING_CURVE_NEW_SIZE = 151` bytes before certain operations (e.g., setting creator). The `extendAccountInstruction` handles this via the system program's `allocate` equivalent.
+Bonding curve accounts grew to `BONDING_CURVE_NEW_SIZE = 166` bytes in the October 2026 upgrade. The program grows a pre-upgrade curve on its first new-style trade, so the SDK's buy and sell builders no longer prepend `extendAccountInstruction`; add it yourself only in front of an instruction that does not grow the account. Pools grew to `POOL_SIZE = 287`; put `ammExtendAccountInstruction` in front of a deposit or withdraw on a pool nobody has traded since.
 
 ## Patterns to Follow
 

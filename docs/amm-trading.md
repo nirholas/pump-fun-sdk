@@ -123,9 +123,86 @@ const ix = await PUMP_SDK.ammSellInstruction({
 });
 ```
 
+### PumpSwap v2 trades
+
+The October 2026 upgrade added `buy_v2`, `buy_exact_quote_in_v2` and `sell_v2`. Prices and fee rates match the v1 instructions above; the difference is where the fees go. The protocol and creator fees stay in the pool (`Pool.protocolFees` / `Pool.creatorFees`) until a permissionless sweep pays them out, and only the buyback slice leaves during the trade, into the quote ATA of one of the `AmmGlobalConfig.buybackFeeRecipients` wallets (picked at random when you do not pass one). That makes the account list a fixed 17 accounts with no protocol fee recipient, creator vault or remaining accounts.
+
+```typescript
+// Exact tokens out, fees included in the cap
+const buy = await PUMP_SDK.ammBuyV2Instruction({
+  user: walletPublicKey,
+  pool: poolAddress,
+  mint: tokenMint,
+  baseAmountOut: new BN(1_000_000),
+  maxQuoteAmountIn: new BN(110_000),
+  quoteMint,            // optional, default WSOL; pass the pool's quote mint for pump-coin quoted pools
+  quoteTokenProgram,    // optional, default TOKEN_PROGRAM_ID (TOKEN_2022_PROGRAM_ID for a pump-coin quote)
+});
+
+// Exact quote in
+const exactIn = await PUMP_SDK.ammBuyExactQuoteInV2Instruction({
+  user: walletPublicKey, pool: poolAddress, mint: tokenMint,
+  spendableQuoteIn: new BN(100_000),
+  minBaseAmountOut: new BN(900_000),
+});
+
+// Sell
+const sell = await PUMP_SDK.ammSellV2Instruction({
+  user: walletPublicKey, pool: poolAddress, mint: tokenMint,
+  baseAmountIn: new BN(1_000_000),
+  minQuoteAmountOut: new BN(90_000),
+});
+```
+
+Rules to know:
+
+- v2 trades work on every pool, mayhem pools included, except pools of cashback coins, which fail with pump-amm 6079 `CashbackCoinNotSupported`. Use the v1 builders for those.
+- The buyback recipient's quote ATA is checked on every trade and never created. It already exists for WSOL; when the quote is a pump coin, put an idempotent ATA create for it in front of the trade.
+- Creator fees from v2 trades only reach the creator vault after a sweep (see [Sweeping pool fees](#sweeping-pool-fees)).
+
+Full program guide: [PUMP_SWAP_TRADE_V2.md](./pump-official/docs/instructions/PUMP_SWAP_TRADE_V2.md).
+
+### Multi-hop swaps
+
+`multi_hop_swap` routes an exact input through a chain of canonical pump pools and pump-coin quoted bonding curves in one instruction. Every hop trades the same way (`side: "buy"` walks up a quote chain, `side: "sell"` walks down), and the whole route refuses to finish below `minAmountOut`. The protocol fee is charged once, on the leg that trades the user's currency; the creator fee (and a pool's LP fee) once, on the leg that trades the coin at the far end. Middle hops are fee-free.
+
+```typescript
+import { PUMP_SDK, type MultiHopHop } from "@nirholas/pump-sdk";
+import { NATIVE_MINT, TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from "@solana/spl-token";
+
+// SOL -> Q on Q's pool, then Q -> X on X's Q-quoted bonding curve
+const hops: MultiHopHop[] = [
+  { venue: "pool", baseMint: q, quoteMint: NATIVE_MINT,
+    baseTokenProgram: TOKEN_2022_PROGRAM_ID, quoteTokenProgram: TOKEN_PROGRAM_ID },
+  { venue: "curve", baseMint: x, quoteMint: q,
+    baseTokenProgram: TOKEN_2022_PROGRAM_ID, quoteTokenProgram: TOKEN_2022_PROGRAM_ID },
+];
+
+const ixs = await PUMP_SDK.multiHopSwapInstructions({
+  user: walletPublicKey,
+  hops,
+  side: "buy",
+  amountIn: new BN(100_000_000),   // 0.1 SOL
+  minAmountOut,                    // X tokens, after your slippage
+});
+```
+
+- **Chaining:** on a buy, each hop's `quoteMint` must be the previous hop's `baseMint`; on a sell, each hop's `baseMint` must be the previous hop's `quoteMint`. The SDK checks this before building and throws `MultiHopDiscontinuousPathError` (the program's 6084 `MultiHopDiscontinuousPath`).
+- **Not allowed as hops:** mayhem pools (pump-amm 6080) and mayhem curves (pump 6108).
+- **Accounts:** 16 fixed plus 5 per hop. Routes longer than three hops need a v0 transaction with an address lookup table.
+- `multiHopSwapInstructions` also creates the output ATA, the buyback recipient ATA for the user's currency, and wraps and unwraps SOL when SOL is an end of the route. `multiHopSwapInstruction` builds only the swap.
+
+Full program guide: [MULTI_HOP_SWAP.md](./pump-official/docs/instructions/MULTI_HOP_SWAP.md).
+
+### Pools from a synthetic migration
+
+A pool created by a synthetic migration (a pump-coin quoted curve that completed) carries a signed `Pool.virtualQuoteReserves` that the price adds to the quote vault balance. It turns negative once real quote outgrows the virtual offset, so read it as a signed `BN`. The online quote helpers include it; when you price a pool yourself, pass `poolQuoteTerms(pool)` (virtual quote reserves, quote mint, mayhem flag, creator fee rate) along with the reserves, or the pool is priced as a plain SOL pool. See [NEGATIVE_VIRTUAL_QUOTE_RESERVES.md](./pump-official/docs/NEGATIVE_VIRTUAL_QUOTE_RESERVES.md).
+
 ---
 
 ## Liquidity Provision
+
+Pool accounts grew to `POOL_SIZE` (287 bytes) in the October 2026 upgrade. Trades grow a pool themselves; deposits and withdrawals do not, so on a pool nobody has traded since the upgrade put `PUMP_SDK.ammExtendAccountInstruction({ account: poolAddress, user: walletPublicKey })` in front of them.
 
 ### Deposit (Add Liquidity)
 
@@ -199,6 +276,30 @@ const ix = await PUMP_SDK.ammTransferCreatorFeesToPumpInstruction({
   coinCreator: creatorWallet,
 });
 ```
+
+### Sweeping pool fees
+
+v2 trades leave the protocol and creator fees in the pool. Two permissionless instructions pay them out, and nothing moves when a bucket is empty:
+
+```typescript
+// Pool.creatorFees -> the coin creator vault
+const creatorSweep = await PUMP_SDK.ammSweepCreatorFeeInstruction({
+  payer: walletPublicKey,
+  mint: tokenMint,
+  coinCreator: pool.coinCreator,
+  quoteMint: pool.quoteMint,             // optional, default WSOL
+});
+
+// Pool.protocolFees -> a listed protocol fee recipient (pump.fun runs these itself)
+const protocolSweep = await PUMP_SDK.ammSweepProtocolFeeInstruction({
+  payer: walletPublicKey,
+  mint: tokenMint,
+  recipient: globalConfig.protocolFeeRecipients[0],
+  quoteMint: pool.quoteMint,
+});
+```
+
+Put the creator sweep first, in the same transaction, in front of `adminCtoInstruction`, `createFeeSharingConfig` (pump-amm 6081 `CreatorFeesNotSwept` while fees wait) and `updateFeeShares` (pump-fees 6033 `PoolCreatorFeesNotSwept`). In front of `ammCollectCoinCreatorFeeInstruction` or `ammTransferCreatorFeesToPumpInstruction` it makes the claim include the waiting fees. `onlineSdk.creatorFeeSweepInstructions(mint, payer)` returns exactly the sweeps a coin needs (curve and pool), or `[]`. Each sweep emits `SweepPoolFeeEvent` (`decodeSweepPoolFeeEvent`). See [SWEEP_FEES.md](./pump-official/docs/instructions/SWEEP_FEES.md).
 
 ### Set Coin Creator
 

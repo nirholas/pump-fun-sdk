@@ -73,6 +73,9 @@ export function mainnetGlobal(overrides: Partial<Global> = {}): Global {
     maxConfigurableCreatorFeeBps: new BN(0),
     holderRewardClaimAuthority: PublicKey.default,
     isHolderRewardEnabled: true,
+    // Mainnet allows one level of pump-coin quoting: a coin may be quoted in a
+    // SOL- or stable-quoted pump coin, not in a coin that is itself pump-quoted.
+    maxCurveDepth: 1,
     ...overrides,
   };
 }
@@ -96,6 +99,14 @@ export function launchBondingCurve(
     creatorFeeBps: new BN(0),
     canEditCreatorFee: false,
     isHolderReward: false,
+    // Fees the October 2026 trade instructions keep on the curve until swept.
+    creatorFee: new BN(0),
+    protocolFees: new BN(0),
+    // A SOL-quoted curve is depth 0; a coin quoted in a pump coin is one deeper.
+    depth: 0,
+    initialVirtualQuoteReserves: new BN("30000000000"),
+    postCompleteBaseOut: new BN(0),
+    postCompleteQuoteIn: new BN(0),
     ...overrides,
   };
 }

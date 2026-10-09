@@ -9,6 +9,7 @@
 import { AnchorProvider, Program } from "@coral-xyz/anchor";
 import type { AccountInfo} from "@solana/web3.js";
 import { PublicKey } from "@solana/web3.js";
+import { NATIVE_MINT } from "@solana/spl-token";
 import BN from "bn.js";
 
 import type { BuyQuote } from "../onlineSdk";
@@ -69,6 +70,9 @@ describe("OnlinePumpSdk.quoteBuy", () => {
       bondingCurve: bc,
       associatedUserAccountInfo: null,
       tokenProgram: new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"),
+      curveBaseTokenBalance: new BN(0),
+      quoteMint: NATIVE_MINT,
+      quoteTokenProgram: new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"),
     });
     jest.spyOn(sdk, "fetchGlobal").mockResolvedValue(global);
     jest.spyOn(sdk, "fetchFeeConfig").mockResolvedValue(feeConfig);
@@ -96,6 +100,9 @@ describe("OnlinePumpSdk.quoteBuy", () => {
       bondingCurve: bc,
       associatedUserAccountInfo: null,
       tokenProgram: new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"),
+      curveBaseTokenBalance: new BN(0),
+      quoteMint: NATIVE_MINT,
+      quoteTokenProgram: new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"),
     });
     jest.spyOn(sdk, "fetchGlobal").mockResolvedValue(makeGlobal());
     jest.spyOn(sdk, "fetchFeeConfig").mockResolvedValue(makeFeeConfig());
@@ -124,6 +131,9 @@ describe("OnlinePumpSdk.buyBySolAmount", () => {
       bondingCurve: bc,
       associatedUserAccountInfo: null,
       tokenProgram: new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"),
+      curveBaseTokenBalance: new BN(0),
+      quoteMint: NATIVE_MINT,
+      quoteTokenProgram: new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"),
     });
     jest.spyOn(sdk, "fetchGlobal").mockResolvedValue(makeGlobal());
     jest.spyOn(sdk, "fetchFeeConfig").mockResolvedValue(makeFeeConfig());
@@ -156,6 +166,9 @@ describe("OnlinePumpSdk.buyBySolAmount", () => {
       bondingCurve: bc,
       associatedUserAccountInfo: null,
       tokenProgram: new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"),
+      curveBaseTokenBalance: new BN(0),
+      quoteMint: NATIVE_MINT,
+      quoteTokenProgram: new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"),
     });
     jest.spyOn(sdk, "fetchGlobal").mockResolvedValue(makeGlobal());
     jest.spyOn(sdk, "fetchFeeConfig").mockResolvedValue(makeFeeConfig());
@@ -193,6 +206,9 @@ describe("OnlinePumpSdk.routedBuyInstructions", () => {
       bondingCurve: bc,
       associatedUserAccountInfo: null,
       tokenProgram: new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"),
+      curveBaseTokenBalance: new BN(0),
+      quoteMint: NATIVE_MINT,
+      quoteTokenProgram: new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"),
     });
     jest.spyOn(sdk, "fetchGlobal").mockResolvedValue(makeGlobal());
     jest.spyOn(sdk, "fetchFeeConfig").mockResolvedValue(makeFeeConfig());
@@ -222,6 +238,9 @@ describe("OnlinePumpSdk.routedBuyInstructions", () => {
       bondingCurve: bc,
       associatedUserAccountInfo: null,
       tokenProgram: new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"),
+      curveBaseTokenBalance: new BN(0),
+      quoteMint: NATIVE_MINT,
+      quoteTokenProgram: new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"),
     });
     jest.spyOn(sdk, "fetchGlobal").mockResolvedValue(makeGlobal());
     jest.spyOn(sdk, "fetchFeeConfig").mockResolvedValue(makeFeeConfig());
@@ -264,6 +283,8 @@ describe("OnlinePumpSdk.routedSellInstructions", () => {
       bondingCurveAccountInfo: acctInfo,
       bondingCurve: bc,
       tokenProgram: new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"),
+      quoteMint: NATIVE_MINT,
+      quoteTokenProgram: new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"),
     });
     jest.spyOn(sdk, "fetchGlobal").mockResolvedValue(makeGlobal());
     jest.spyOn(sdk, "fetchFeeConfig").mockResolvedValue(makeFeeConfig());
@@ -682,6 +703,8 @@ describe("OnlinePumpSdk.quoteSell", () => {
       bondingCurveAccountInfo: makeBcAccountInfo(bc),
       bondingCurve: bc,
       tokenProgram: new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"),
+      quoteMint: NATIVE_MINT,
+      quoteTokenProgram: new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"),
     });
     jest.spyOn(sdk, "fetchGlobal").mockResolvedValue(makeGlobal());
     jest.spyOn(sdk, "fetchFeeConfig").mockResolvedValue(makeFeeConfig());
@@ -708,6 +731,8 @@ describe("OnlinePumpSdk.quoteSell", () => {
       bondingCurveAccountInfo: makeBcAccountInfo(bc),
       bondingCurve: bc,
       tokenProgram: new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"),
+      quoteMint: NATIVE_MINT,
+      quoteTokenProgram: new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"),
     });
     jest.spyOn(sdk, "fetchGlobal").mockResolvedValue(makeGlobal());
     jest.spyOn(sdk, "fetchFeeConfig").mockResolvedValue(makeFeeConfig());

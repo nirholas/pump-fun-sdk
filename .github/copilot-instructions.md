@@ -28,6 +28,7 @@ The Pump SDK (`@nirholas/pump-sdk`) is a TypeScript SDK for the Pump protocol on
 - `docs/pump-official/OVERVIEW.md` — create_v2, Token2022, mayhem mode, social fees
 - `docs/pump-official/FAQ.md` — CU optimization tips
 - `docs/pump-official/idl/` — Official Anchor IDL files (pump.json, pump_amm.json, pump_fees.json)
+- `docs/pump-official/docs/instructions/`: October 2026 upgrade guides (`TRADE_V3.md`, `PUMP_SWAP_TRADE_V2.md`, `MULTI_HOP_SWAP.md`, `SWEEP_FEES.md`, `CREATE_WITH_PUMP_COIN_QUOTE.md`); refresh `src/idl/` with `node scripts/sync-idl.mjs`
 
 ## SDK Pattern
 

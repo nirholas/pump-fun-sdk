@@ -102,26 +102,89 @@ at https://solscan.io/account/GseMAnNDvntR5uFePZ51yZBXzNSn7GdFPkfHwfr6d77J#accou
   },
   "lp_supply": {
     "type": "u64",
-    "data": "4193388284800"
+    "data": "4194352106721"
+  },
+  "coin_creator": {
+    "type": "pubkey",
+    "data": "5L5k7gtNLbeXdzpvNrFshg1E1id1ceUDfc6vPUTxp98q"
+  },
+  "is_mayhem_mode": {
+    "type": "bool",
+    "data": false
+  },
+  "is_cashback_coin": {
+    "type": "bool",
+    "data": false
+  },
+  "virtual_quote_reserves": {
+    "type": "i128",
+    "data": "0"
   }
 }
 ```
 
 - The `pool_bump` is the bump seed used to derive the pool PDA.
 - The `index` is the index of the pool, which is used to derive the pool PDA. PumpSwap pools created using Pump program
-  `migrate` instruction use a `CANONICAL_POOL_INDEX == 0`.
+  `migrate` instruction use a `CANONONICAL_POOL_INDEX == 0`.
 - The `creator` is the pubkey of the pool creator, which is also used to derive the pool PDA.
 - The `base_mint` and `quote_mint` are the mint addresses of the base and quote tokens of the pool.
-- The `lp_mint` is the mint address of the LP token, which represents liquidity in the pool.
-- The `pool_base_token_account` and `pool_quote_token_account` are the token accounts of the pool which hold the base and quote tokens.
-- The `lp_supply` is the current supply of the LP token.
+- The `lp_mint` is the mint address of the LP token, which is used to represent the liquidity of the pool. The LP mint
+  address can also be PDA-derived from the `["pool_lp_mint", pool_key]` seeds, but it is stored in `Pool` account for
+  simpler pubkey equality checks on PumpSwap program instructions.
+- The `pool_base_token_account` and `pool_quote_token_account` are the ATAs (associated token accounts) of
+  the base and quote mints of the `pool` account, respectively. They again could be PDA-derived from the `pool`,
+  `base_mint` and `quote_mint` pubkeys, but they are stored in the `Pool` account for easier pubkey equality checks on
+  PumpSwap program instructions.
+- The `lp_supply` is the total supply of the `lp_mint` without burns and lock-ups. This means that if someone deposits
+  into the pool, then they burn their `lp_mint` tokens, the `Pool::lp_supply` will still reflect the original supply
+  of the `lp_mint`. This way, the pool differentiates between `lp_mint` tokens burnt by users directly and those burnt
+  by the `withdraw` instruction.
+- The `coin_creator` is the pubkey that accrues the coin-creator fees for this pool (see
+  [PUMP_SWAP_CREATOR_FEE_README](PUMP_SWAP_CREATOR_FEE_README.md)). On pools that predate coin-creator fees it is
+  `Pubkey::default()` (`11111111111111111111111111111111`).
+- The `is_mayhem_mode` flag indicates whether the pool operates in mayhem mode.
+- The `is_cashback_coin` flag indicates whether the coin's creator fee is routed as cashback (see
+  [PUMP_CASHBACK_README](PUMP_CASHBACK_README.md)).
+- The `virtual_quote_reserves` (`i128`) is an additional (appended) quote-reserve amount that a pool may carry. Quotes must be
+  computed against the pool's **effective quote reserves**, not the raw quote-vault token balance, see
+  [Quoting: effective quote reserves](#quoting-effective-quote-reserves). It is `0` on all pools today, so effective
+  quote reserves currently equal the raw vault balance; some pools may carry a non-zero value in the future.
+- The `creator_fee_bps` (`u64`, appended) is the pool's own creator fee rate for coins on a custom pair (a quote asset
+  other than SOL or USDC), carried over from the bonding curve. `0` means the standard fee schedule applies, which is
+  always the case for SOL- and USDC-paired coins. Contact the CTO team to change it.
+- The `can_edit_creator_fee` (`bool`, appended) is reserved and always `false`.
+- The `is_holder_reward` (`bool`, appended) flag indicates whether the coin is a
+  [holder rewards coin](HOLDER_REWARDS_README.md): its creator fee is set aside for the coin's holders instead of a
+  creator wallet. Trading is unchanged; `BuyEvent` / `SellEvent` additionally report the fee in
+  `holder_rewards_bps` / `holder_rewards` on such pools.
+- Pools written before an appended field existed are shorter than the current layout; read the missing trailing fields
+  as `0` / `false`.
+
+## Quoting: effective quote reserves
+
+Buys and sells are priced on the pool's **effective quote reserves**, which are the raw quote-vault token balance plus
+`Pool::virtual_quote_reserves`:
+
+```text
+effective_quote_reserves = pool_quote_token_account.amount + Pool::virtual_quote_reserves
+```
+
+- Use `effective_quote_reserves` (not the raw `pool_quote_token_account.amount`) wherever you quote, price, or index a
+  pool, for both `buy` and `sell`.
+- `virtual_quote_reserves` is `0` on all pools today, so effective quote reserves equal the raw vault balance and quotes
+  are unchanged. Integrating against effective quote reserves now is safe and keeps your quotes correct if a pool later
+  carries a non-zero `virtual_quote_reserves`.
+- The base side is unchanged: base reserves are still the raw `pool_base_token_account.amount`.
+
+Indexers: the `BuyEvent` and `SellEvent` logs include `virtual_quote_reserves` (appended field), so effective quote
+reserves can be reconstructed directly from the event stream.
 
 ## Instructions
 
 It supports the following Anchor program instructions:
 
 - `create_pool(index, creator, baseMint, quoteMint, baseIn, quoteIn)`.
-    - This allows creating a new AMM pool for the `(baseMint, quoteMint)` pair.
+    - This allows creating a new AMM pool for the`(baseMint, quoteMint)` pair.
     - The `poolId` is PDA-derived from the tuple `(index, creator, baseMint, quoteMint)`. The `index` allows the same
       `creator` to create multiple pools for the same `(baseMint, quoteMint)` pair.
     - The `creator` is the pubkey of the pool creator and also the payer for pool creation costs.
@@ -146,15 +209,19 @@ It supports the following Anchor program instructions:
     - `extend_account(user, account)` allows any user to extend the data array of a program-owned account (
       `GlobalConfig` or `Pool` account) to allow for future fields to be added to those account types.
 
-- Admin instructions (can be executed only by `GlobalConfig::admin` pubkey):
+- Admin instructions (can be executed only to `GlobalConfig::admin` pubkey):
     - `create_config(hardcoded_admin, global_config)` allows creating the sole `GlobalConfig` account on initial
       PumpSwap program deployment. The `hardcoded_admin` is a hardcoded pubkey into PumpSwap program itself, which is
       allowed to create the `GlobalConfig` account and will initialize `GlobalConfig::admin` to the `hardcoded_admin`
-      pubkey.
-
-- Cashback instructions:
-    - `claim_cashback(user)` transfers WSOL from the WSOL ATA of the `UserVolumeAccumulator` to the user's WSOL ATA.
-      The user's WSOL ATA is expected to exist beforehand.
+      pubkey. This instruction can be run only once, because it will fail the second time, since `GlobalConfig` already
+      exists.
+    - `disable(admin, disable_create_pool, disable_deposit, disable_withdraw, disable_buy, disable_sell)` allows the
+      `admin` to globally disable any Pump Swap operation.
+    - `update_admin(admin, new_admin, global_config)` allows the `admin` to update the `GlobalConfig::admin` pubkey to a
+      new one.
+    - `update_fee_config(admin, lp_fee_basis_points, protocol_fee_basis_points, protocol_fee_recipients)` allows the
+      `admin` to update the `GlobalConfig::lp_fee_basis_points`, `GlobalConfig::protocol_fee_basis_points` and
+      `GlobalConfig::protocol_fee_recipients`.
 
 ## Mapping PumpSwap SDK methods to Anchor instructions
 
@@ -168,6 +235,24 @@ It supports the following Anchor program instructions:
 - `PumpAmmAdminSdk.withdrawInstructions(pool, user, lpTokenIn, slippage)` returns a
   `withdraw(pool, user, lpTokenIn, minBaseOut, minQuoteOut)` instruction, where `minBaseOut` and `minQuoteOut` are
   computed using `lpTokenIn`, `slippage` and the current pool balances.
+
+- `PumpAmmInternalSdk.buyBaseInput(pool, user, baseOut, slippage)` returns a `buy(pool, user, baseOut, maxQuoteIn)`
+  instruction, where `maxQouteIn` is computed using `baseOut`, `slippage` and the current pool balances.
+- `PumpAmmInternalSdk.buyQuoteInput(pool, user, quote, slippage)` returns a `buy(pool, user, baseOut, maxQuoteIn)`
+  instruction, where `baseOut` is computed using `quote`, `slippage` and the current pool balances and `maxQuoteIn`
+  is `quote` scaled with `slippage`.
+- `PumpAmmInternalSdk.sellBaseInput(pool, user, baseIn, slippage)` returns a `sell(pool, user, baseIn, minQuoteOut)`
+  instruction, where `minQuoteOut` is computed using `baseIn`, `slippage` and the current pool balances.
+- `PumpAmmInternalSdk.sellQuoteInput(pool, user, quote, slippage)` returns a `sell(pool, user, baseIn, minQuoteOut)`
+  instruction, where `baseIn` is computed using `quote`, `slippage` and the current pool balances and
+  `minQuoteOut` is `quote` scaled with `slippage`.
+
+- `PumpAmmSdk.swapBaseInstructions(pool, user, base, slippage, direction)` calls either
+  `PumpAmmInternalSdk.buyBaseInput(pool, user, base, slippage)` (`if (direction == "quoteToBase")`) or
+  `PumpAmmInternalSdk.sellBaseInput(pool, user, base, slippage)` (`if (direction == "baseToQuote")`).
+- `PumpAmmSdk.swapQuoteInstructions(pool, user, quote, slippage, direction)` calls either
+  `PumpAmmInternalSdk.buyQuoteInput(pool, user, quote, slippage)` (`if (direction == "quoteToBase")`) or
+  `PumpAmmInternalSdk.sellQuoteInput(pool, user, quote, slippage)` (`if (direction == "baseToQuote")`).
 
 ## PumpSwap SDK autocomplete UI helpers
 
@@ -185,3 +270,13 @@ Each Anchor instruction has a set of corresponding autocomplete methods that can
   corresponding `base` value in the UI when the `quote` input changes on swap UI.
 - `PumpAmmSdk.swapAutocompleteQuoteFromBase(pool, base, slippage, swapDirection)` is used to autocomplete the
   corresponding `quote` value in the UI when the `base` input changes on swap UI.
+
+- `PumpAmmSdk.swapAutocompleteBaseFromQuote(pool, quote, slippage, swapDirection)` calls either
+  `PumpAmmInternalSdk.buyAutocompleteBaseFromQuote(pool, quote, slippage)` (`if (swapDirection == "quoteToBase")`) or
+  `PumpAmmInternalSdk.sellAutocompleteBaseFromQuote(pool, quote, slippage)` (`if (swapDirection == "baseToQuote")`).
+- `PumpAmmSdk.swapAutocompleteQuoteFromBase(pool, base, slippage, swapDirection)` calls either
+  `PumpAmmInternalSdk.buyAutocompleteQuoteFromBase(pool, base, slippage)` (`if (swapDirection == "quoteToBase")`) or
+  `PumpAmmInternalSdk.sellAutocompleteQuoteFromBase(pool, base, slippage)` (`if (swapDirection == "baseToQuote")`).
+
+- `PumpAmmSdk.withdrawAutoCompleteBaseAndQuoteFromLpToken(pool, lpToken, slippage)` is used to autocomplete the
+  corresponding `base` and `quote` values in the UI when the `lpToken` input changes on withdraw UI.

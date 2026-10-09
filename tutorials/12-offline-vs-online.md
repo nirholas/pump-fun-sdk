@@ -121,7 +121,7 @@ onlineSdk.syncUserVolumeAccumulatorBothPrograms(user);
 // Admin
 onlineSdk.adminUpdateTokenIncentives({...});
 onlineSdk.adminUpdateTokenIncentivesBothPrograms({...});
-onlineSdk.adminSetCoinCreatorInstructions({...});
+onlineSdk.creatorFeeSweepInstructions(mint, payer);
 ```
 
 ## Pattern: Hybrid Approach

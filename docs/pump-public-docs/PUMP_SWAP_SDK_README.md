@@ -15,8 +15,17 @@ the initial pool price based on the initial `base` and `quote` inputs.
 
 ## Deposit
 
-For depositing into a `(base, quote)` pool, you can use:
-`const depositInstructions = await pumpAmmSdk.depositInstructions(pool, user, lpTokenOut, slippage)`.
+For depositing into a `(quote, base)` pool:
+- when the `base` input changes, you need to call
+  `const {quote, lpToken} = await pumpAmmSdk.depositAutocompleteQuoteAndLpTokenFromBase(pool, base, slippage)` in order to
+  autocomplete the corresponding `quote` and `lpToken` values in the UI.
+- when the `quote` input changes, you need to call
+  `const {base, lpToken} = await pumpAmmSdk.depositAutocompleteBaseAndLpTokenFromQuote(pool, quote, slippage)` in order to
+  autocomplete the corresponding `base` and `lpToken` values in the UI.
+
+No matter which input is changed, when hitting deposit, you need to call
+`const depositInstructions = await pumpAmmSdk.depositInstructions(pool, lpToken, slippage, user)`
+to build the AMM deposit instruction, because `lpToken` is the only fixed input required by the `deposit` instruction.
 
 ## Swap
 
@@ -41,8 +50,8 @@ or `baseToQuote` (⬆️).
   `const quote = await pumpAmmSdk.swapAutocompleteQuoteFromBase(pool, base, slippage, swapDirection)`.
 
 No matter which input is changed, when hitting swap, you can call
-`const swapInstructions = await pumpAmmSdk.swapBaseInstructions(pool, base, slippage, swapDirection, user)` or
-`const swapInstructions = await pumpAmmSdk.swapBaseInstructions(pool, quote, slippage, swapDirection, user)` to
+`const swapInstructions = await pumpAmmSdk.swapBaseInstructions(pool, base, slippage, swapDirection, user)` or 
+`const swapInstructions = await pumpAmmSdk.swapBaseInstructions(pool, quote, slippage, swapDirection, user)` to 
 build the AMM swap instructions.
 
 The `swapDirection` can be toggled in the UI either by making the arrow point upward or by swapping the base and quote

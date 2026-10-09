@@ -13,7 +13,7 @@ The Pump protocol has several admin-gated operations that require specific autho
 
 ## Key Files
 
-- [src/onlineSdk.ts](src/onlineSdk.ts) — `OnlinePumpSdk` with admin methods (`adminSetCoinCreatorInstructions`, `adminUpdateTokenIncentives`, etc.)
+- [src/onlineSdk.ts](src/onlineSdk.ts): `OnlinePumpSdk` with admin methods (`adminUpdateTokenIncentives`, `creatorFeeSweepInstructions`, etc.)
 - [src/sdk.ts](src/sdk.ts) — `PumpSdk` with offline instruction builders, `claimCashbackInstruction`
 - [src/state.ts](src/state.ts) — `Global` interface with authority fields
 - [src/pda.ts](src/pda.ts) — PDA derivations for admin-related accounts
@@ -52,28 +52,17 @@ interface Global {
 
 ### 1. Set Coin Creator
 
-Override the creator address on a bonding curve. Requires `adminSetCreatorAuthority`. Updates both Pump and PumpAMM simultaneously:
+Override the creator address on a bonding curve. Requires `adminSetCreatorAuthority`. The programs retired `admin_set_creator` and pump-amm `admin_set_coin_creator`; the unified community-takeover instruction `admin_cto` replaces both. Creator fees that v3 curve trades or PumpSwap v2 trades left behind must be swept first, in the same transaction (pump 6095 / pump-amm 6081 `CreatorFeesNotSwept` otherwise):
 
 ```typescript
-// OnlinePumpSdk
-async adminSetCoinCreatorInstructions(
-  newCoinCreator: PublicKey,
-  mint: PublicKey,
-): Promise<TransactionInstruction[]> {
-  const global = await this.fetchGlobal();
-  return [
-    // Pump program: adminSetCreator
-    await this.offlinePumpProgram.methods
-      .adminSetCreator(newCoinCreator)
-      .accountsPartial({
-        adminSetCreatorAuthority: global.adminSetCreatorAuthority,
-        mint,
-      })
-      .instruction(),
-    // PumpAMM program: mirrored call
-    await this.pumpAmmAdminSdk.adminSetCoinCreator(mint, newCoinCreator),
-  ];
-}
+const sweeps = await onlineSdk.creatorFeeSweepInstructions(mint, admin);
+const cto = await PUMP_SDK.adminCtoInstruction({
+  adminSetCreatorAuthority: global.adminSetCreatorAuthority,
+  mint,
+  currentCreator: bondingCurve.creator,
+  newCreator,
+});
+const ixs = [...sweeps, cto];
 ```
 
 **Use case**: When a creator loses access to their wallet or needs to transfer token ownership, the admin can reassign the creator address — which controls fee collection rights.
@@ -153,7 +142,7 @@ Admin operations that affect both Pump and PumpAMM follow a consistent pattern �
 ```
 Method                                          → Pump IX + PumpAMM IX
 ─────────────────────────────────────────────────────────────────────
-adminSetCoinCreatorInstructions()                → adminSetCreator + adminSetCoinCreator
+creatorFeeSweepInstructions(mint, payer)        → sweepCreatorFee (Pump) + sweepCreatorFee (PumpAMM), as needed
 adminUpdateTokenIncentivesBothPrograms()         → adminUpdateTokenIncentives × 2
 syncUserVolumeAccumulatorBothPrograms()          → syncUserVolumeAccumulator × 2
 claimTokenIncentivesBothPrograms()               → claimTokenIncentives × 2

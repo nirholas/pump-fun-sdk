@@ -6,6 +6,8 @@ import {
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
   createAssociatedTokenAccountIdempotentInstruction,
+  createCloseAccountInstruction,
+  createSyncNativeInstruction,
   getAssociatedTokenAddressSync,
   NATIVE_MINT,
   TOKEN_2022_PROGRAM_ID,
@@ -24,6 +26,8 @@ import BN from "bn.js";
 
 import { getStaticRandomFeeRecipient, validateSellAmount } from "./bondingCurve";
 import {
+  CashbackCoinNotSupportedError,
+  MultiHopDiscontinuousPathError,
   NoShareholdersError,
   TooManyShareholdersError,
   ZeroShareError,
@@ -34,7 +38,9 @@ import {
 } from "./errors";
 import {
   buildAmmBreakingFeeRecipientAccounts,
+  getBuybackFeeRecipientForTokenQuote,
   getFeeRecipient,
+  getStaticRandomFeeRecipientForBuyback,
   pickBreakingFeeRecipient,
 } from "./fees";
 import type { Pump } from "./idl/pump";
@@ -48,9 +54,18 @@ import {
   AMM_FEE_CONFIG_PDA,
   AMM_GLOBAL_CONFIG_PDA,
   AMM_GLOBAL_VOLUME_ACCUMULATOR_PDA,
+  ammCreatorVaultPda,
   bondingCurvePda,
   canonicalPumpPoolPda,
+  canonicalPumpPoolPdaWithQuote,
   creatorVaultPda,
+  GLOBAL_PDA,
+  isLegacyQuoteMint,
+  normalizeQuoteMint,
+  PUMP_EVENT_AUTHORITY_PDA,
+  PUMP_FEE_CONFIG_PDA,
+  QUOTE_CONTROL_PDA,
+  quoteAta,
   holderRewardsPda,
   getGlobalParamsPda,
   getMayhemStatePda,
@@ -104,7 +119,10 @@ import type {
   ResetFeeSharingConfigEvent,
   SocialFeePdaCreatedEvent,
   SocialFeePdaClaimedEvent,
-  AmmAdminSetCoinCreatorEvent,
+  PostCompleteBuyEvent,
+  QuoteControl,
+  SweepBondingCurveFeeEvent,
+  SweepPoolFeeEvent,
   AmmAdminUpdateTokenIncentivesEvent,
   AmmClaimCashbackEvent,
   AmmClaimTokenIncentivesEvent,
@@ -168,8 +186,12 @@ export function getPumpFeeProgram(connection: Connection): Program<PumpFees> {
   );
 }
 
-/** Account size in bytes for a bonding curve account. */
-export const BONDING_CURVE_NEW_SIZE = 151;
+/**
+ * pump `BondingCurve::NEW_SIZE`: what `extend_account` grows a curve to. Since
+ * the October 2026 upgrade every trade and sweep grows a shorter curve on its
+ * own, so the builders no longer prepend `extend_account`.
+ */
+export const BONDING_CURVE_NEW_SIZE = 166;
 
 /** PUMP token mint address used for token incentive rewards. */
 export const PUMP_TOKEN_MINT = new PublicKey(
@@ -178,6 +200,564 @@ export const PUMP_TOKEN_MINT = new PublicKey(
 
 /** Maximum number of shareholders allowed in a fee-sharing config. */
 export const MAX_SHAREHOLDERS = 10;
+
+/** pump-amm `Pool` serialized length with every field the bundled IDL declares. */
+export const POOL_SIZE = 287;
+
+/** pump-amm `GlobalConfig` serialized length with every field the bundled IDL declares. */
+export const AMM_GLOBAL_CONFIG_SIZE = 949;
+
+/**
+ * pump `BondingCurve::SIZE`: the full serialized length, discriminator
+ * included. Every older layout is a prefix of this one and the program reads
+ * the fields a shorter curve lacks at their defaults (zero, `false`, the zero
+ * key), which is exactly what zero-padding to this length yields.
+ */
+export const BONDING_CURVE_SIZE = 166;
+
+/**
+ * The shortest `BondingCurve` layout the program ever wrote
+ * (`BondingCurve::INITIALIZE_SIZE`); its reader rejects anything shorter.
+ */
+export const BONDING_CURVE_INITIALIZE_SIZE = 49;
+
+/**
+ * pump `Global::SIZE` with every field the bundled IDL declares. A live
+ * account written before `max_curve_depth` existed is shorter; zero-padding
+ * it reads the missing fields at the program's defaults.
+ */
+export const GLOBAL_SIZE = 1088;
+
+/**
+ * `FeeConfig` account lengths (pump-fees `FeeConfig::{INITIALIZE_SIZE,
+ * POST_STABLE_SIZE, CURRENT_SIZE}`). The program selects the layout version
+ * from the account length: each version is a prefix of the next and the
+ * fields a version lacks read as their defaults.
+ */
+export const FEE_CONFIG_INITIALIZE_SIZE = 2512;
+export const FEE_CONFIG_POST_STABLE_SIZE = 4073;
+export const FEE_CONFIG_CURRENT_SIZE = 4097;
+
+// `FeeConfig` borsh layout: discriminator (8) + bump (1) + admin (32) +
+// flat_fees (24), then `fee_tiers` and `stable_fee_tiers` (u32 length prefix
+// plus 40-byte tiers each), then `exotic_flat_fees` (24).
+const FEE_CONFIG_FEE_TIERS_OFFSET = 8 + 1 + 32 + 24;
+const FEE_TIER_LEN = 16 + 24;
+const FEES_LEN = 24;
+const VEC_LEN_PREFIX = 4;
+// pump-fees `MAX_FEE_TIERS_SUPPORTED`: no upsert ever writes a longer vector.
+const MAX_FEE_TIERS_SUPPORTED = 50;
+
+// `QuoteControl` borsh layout: discriminator (8) + admin (32) +
+// reserves_admin (32) + _reserved (32) + the `mints` length prefix (4), then
+// 40-byte entries (mint + u64 initial_virtual_quote_reserves).
+const QUOTE_CONTROL_HEADER_LEN = 8 + 32 + 32 + 32 + VEC_LEN_PREFIX;
+const QUOTE_CONTROL_LEN_OFFSET = QUOTE_CONTROL_HEADER_LEN - VEC_LEN_PREFIX;
+const QUOTE_CONTROL_ENTRY_LEN = 32 + 8;
+
+// How many zero bytes make an older event layout decode under the bundled
+// one, tried shortest first. Events only ever gain trailing fields, each
+// defaulting to zero or `false`.
+//
+// pump `TradeEvent`: none; 8 (no `creator_fee_unclaimed`); 24 (no
+// `holder_rewards_bps` / `holder_rewards` either); 80 (no quote fields
+// either: quote_mint, quote_amount, virtual and real quote reserves); 100 (no
+// buyback fields or `shareholders` either); 116 (no cashback fields either).
+const TRADE_EVENT_LAYOUT_PADDINGS: readonly number[] = [0, 8, 24, 80, 100, 116];
+// pump-amm `BuyEvent` / `SellEvent`: none; 8 (no `creator_fee_unclaimed`);
+// 24 (no holder-reward fields); 32 (no `base_supply`); 33 (no `can_boost`);
+// 49 (no signed `virtual_quote_reserves` either, every pre-v2 event).
+const AMM_TRADE_EVENT_LAYOUT_PADDINGS: readonly number[] = [
+  0, 8, 24, 32, 33, 49,
+];
+// pump `CreateEvent`: none; 1 (no `depth`); 2 (no `is_holder_reward`); 10
+// (no `creator_fee_bps` either).
+const CREATE_EVENT_LAYOUT_PADDINGS: readonly number[] = [0, 1, 2, 10];
+// pump-amm `CreatePoolEvent`: none; 1 (no `is_holder_reward`); 10 (no
+// `creator_fee_bps` / `can_edit_creator_fee` either).
+const CREATE_POOL_EVENT_LAYOUT_PADDINGS: readonly number[] = [0, 1, 10];
+
+/** `data` zero-padded to `size` bytes, or `data` itself when long enough. */
+function zeroPadded(data: Buffer, size: number): Buffer {
+  return data.length >= size
+    ? data
+    : Buffer.concat([data, Buffer.alloc(size - data.length)]);
+}
+
+// Checked by name rather than `instanceof`: the error is raised in the
+// buffer's realm, which is not ours under jest or a vm context.
+function isRangeError(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    (error as { name?: unknown }).name === "RangeError"
+  );
+}
+
+/**
+ * Decodes an event whose layout has only ever gained trailing fields: tries
+ * `decode` with each of `paddings` zero bytes appended, shortest first,
+ * until the borsh coder stops running out of bytes. Anything but a
+ * RangeError is rethrown at once; when every padding runs out the event is
+ * truncated inside a field and the last RangeError is thrown.
+ */
+function decodeWithTrailingDefaults<T>(
+  data: Buffer,
+  paddings: readonly number[],
+  decode: (bytes: Buffer) => T,
+): T {
+  let rangeError: unknown;
+  for (const padding of paddings) {
+    try {
+      return decode(
+        padding === 0 ? data : Buffer.concat([data, Buffer.alloc(padding)]),
+      );
+    } catch (error) {
+      if (!isRangeError(error)) {
+        throw error;
+      }
+      rangeError = error;
+    }
+  }
+  throw rangeError;
+}
+
+/**
+ * End offset of the `Vec<FeeTier>` whose length prefix sits at `offset`.
+ * Rejects a vector the program could not have written (longer than
+ * `MAX_FEE_TIERS_SUPPORTED` or running past the data), which would otherwise
+ * make the borsh coder allocate until the process dies.
+ */
+function feeTierVecEnd(data: Buffer, offset: number): number {
+  const count = data.readUInt32LE(offset);
+  const end = offset + VEC_LEN_PREFIX + count * FEE_TIER_LEN;
+  if (count > MAX_FEE_TIERS_SUPPORTED || end > data.length) {
+    throw new Error(
+      `Invalid FeeConfig account: ${count} fee tiers declared at offset ${offset} in ${data.length} bytes`,
+    );
+  }
+  return end;
+}
+
+/**
+ * The extra `create_v2` accounts that admit a pump coin Q as the quote mint
+ * when Q is listed neither on `Global` nor in `QuoteControl`: Q's bonding
+ * curve is always sent, and once Q's curve has migrated its canonical
+ * PumpAMM pool and the pool's two vaults price it.
+ * `OnlinePumpSdk.fetchPumpQuote` resolves them.
+ */
+export interface PumpQuoteAccounts {
+  pool?: { pool: PublicKey; baseVault: PublicKey; quoteVault: PublicKey };
+}
+
+/**
+ * The `create_v2` remaining accounts that select a non-SOL quote, in the
+ * program's positional order: the quote mint, the bonding curve's quote ATA
+ * (the program creates it), the quote token program and the `QuoteControl`
+ * PDA, then the pump-coin quote accounts when `pumpQuote` is set.
+ */
+export function createV2QuoteRemainingAccounts({
+  mint,
+  quoteMint,
+  quoteTokenProgram = TOKEN_PROGRAM_ID,
+  pumpQuote,
+}: {
+  mint: PublicKey;
+  quoteMint: PublicKey;
+  quoteTokenProgram?: PublicKey;
+  pumpQuote?: PumpQuoteAccounts;
+}): AccountMeta[] {
+  const readonly = (pubkey: PublicKey): AccountMeta => ({
+    pubkey,
+    isWritable: false,
+    isSigner: false,
+  });
+  const pumpQuoteAccounts = pumpQuote
+    ? [
+        readonly(bondingCurvePda(quoteMint)),
+        ...(pumpQuote.pool
+          ? [
+              readonly(pumpQuote.pool.pool),
+              readonly(pumpQuote.pool.baseVault),
+              readonly(pumpQuote.pool.quoteVault),
+            ]
+          : []),
+      ]
+    : [];
+  return [
+    readonly(quoteMint),
+    {
+      pubkey: quoteAta(bondingCurvePda(mint), quoteMint, quoteTokenProgram),
+      isWritable: true,
+      isSigner: false,
+    },
+    readonly(quoteTokenProgram),
+    readonly(QUOTE_CONTROL_PDA),
+    ...pumpQuoteAccounts,
+  ];
+}
+
+/**
+ * The named accounts `buy_v3`, `buy_exact_quote_in_v3` and `sell_v3` share;
+ * Anchor resolves the rest (`global`, `bonding_curve`, `fee_config`,
+ * `user_volume_accumulator`, ...). `quoteMint` may be the curve's stored
+ * quote (the zero key is SOL).
+ *
+ * `buyback_fee_recipient` takes the buyback slice in the trade: on a SOL
+ * curve a listed `Global.buybackFeeRecipients` wallet itself (random by
+ * default), on a token quote that wallet's `quoteMint` ATA (the first listed
+ * wallet by default). The program refuses anything else and never creates
+ * the ATA.
+ */
+export function tradeV3Accounts({
+  user,
+  mint,
+  tokenProgram = TOKEN_2022_PROGRAM_ID,
+  quoteMint = NATIVE_MINT,
+  quoteTokenProgram = TOKEN_PROGRAM_ID,
+  buybackFeeRecipient,
+}: {
+  user: PublicKey;
+  mint: PublicKey;
+  tokenProgram?: PublicKey;
+  quoteMint?: PublicKey;
+  quoteTokenProgram?: PublicKey;
+  buybackFeeRecipient?: PublicKey;
+}) {
+  const quote = normalizeQuoteMint(quoteMint);
+  const bondingCurve = bondingCurvePda(mint);
+  return {
+    baseMint: mint,
+    quoteMint: quote,
+    baseTokenProgram: tokenProgram,
+    quoteTokenProgram,
+    associatedBaseBondingCurve: getAssociatedTokenAddressSync(
+      mint,
+      bondingCurve,
+      true,
+      tokenProgram,
+    ),
+    associatedQuoteBondingCurve: quoteAta(
+      bondingCurve,
+      quote,
+      quoteTokenProgram,
+    ),
+    user,
+    associatedBaseUser: getAssociatedTokenAddressSync(
+      mint,
+      user,
+      true,
+      tokenProgram,
+    ),
+    associatedQuoteUser: quoteAta(user, quote, quoteTokenProgram),
+    buybackFeeRecipient: isLegacyQuoteMint(quote)
+      ? (buybackFeeRecipient ?? getStaticRandomFeeRecipientForBuyback())
+      : quoteAta(
+          buybackFeeRecipient ?? getBuybackFeeRecipientForTokenQuote(),
+          quote,
+          quoteTokenProgram,
+        ),
+  };
+}
+
+/**
+ * An idempotent create of the buyback recipient's quote ATA that a
+ * token-quoted v3 trade or a multi-hop route pays its buyback slice into (the
+ * programs refuse a missing one and never create it). None for a v3 trade on
+ * a SOL curve, which pays the wallet itself; a route always pays an ATA (WSOL
+ * for SOL), so `route` keeps it.
+ */
+function buybackAtaInstructions(
+  payer: PublicKey,
+  quoteMint: PublicKey,
+  quoteTokenProgram: PublicKey,
+  buybackFeeRecipient?: PublicKey,
+  route = false,
+): TransactionInstruction[] {
+  const quote = normalizeQuoteMint(quoteMint);
+  if (isLegacyQuoteMint(quote) && !route) {
+    return [];
+  }
+  const recipient =
+    buybackFeeRecipient ?? getBuybackFeeRecipientForTokenQuote();
+  return [
+    createAssociatedTokenAccountIdempotentInstruction(
+      payer,
+      quoteAta(recipient, quote, quoteTokenProgram),
+      recipient,
+      quote,
+      quoteTokenProgram,
+    ),
+  ];
+}
+
+/**
+ * `amount` raised by `slippage` percent, in the 0.1% steps the v3 builders
+ * use (a buy's maximum cost).
+ */
+function plusSlippage(amount: BN, slippage: number): BN {
+  return amount.add(
+    amount.mul(new BN(Math.floor(slippage * 10))).div(new BN(1000)),
+  );
+}
+
+/**
+ * `amount` lowered by `slippage` percent, never below `floor` (a buy's
+ * `min_tokens_out` must be at least 1, a sell's minimum may be 0).
+ */
+function lessSlippage(amount: BN, slippage: number, floor = 0): BN {
+  return BN.max(
+    amount.sub(amount.mul(new BN(Math.floor(slippage * 10))).div(new BN(1000))),
+    new BN(floor),
+  );
+}
+
+/**
+ * The accounts pump `sweep_protocol_fee` and `sweep_creator_fee` share.
+ * `quoteMint` may be the curve's stored quote (the zero key is SOL).
+ */
+function sweepBondingCurveFeeAccounts({
+  payer,
+  mint,
+  recipient,
+  quoteMint,
+  quoteTokenProgram,
+}: {
+  payer: PublicKey;
+  mint: PublicKey;
+  recipient: PublicKey;
+  quoteMint: PublicKey;
+  quoteTokenProgram: PublicKey;
+}) {
+  const quote = normalizeQuoteMint(quoteMint);
+  return {
+    payer,
+    baseMint: mint,
+    quoteMint: quote,
+    quoteTokenProgram,
+    associatedQuoteBondingCurve: quoteAta(
+      bondingCurvePda(mint),
+      quote,
+      quoteTokenProgram,
+    ),
+    recipient,
+    associatedQuoteRecipient: quoteAta(recipient, quote, quoteTokenProgram),
+    eventAuthority: PUMP_EVENT_AUTHORITY_PDA,
+    program: PUMP_PROGRAM_ID,
+  };
+}
+
+/**
+ * One hop of a PumpAMM `multi_hop_swap` route: a coin (`baseMint`) traded
+ * against its quote (`quoteMint`) on its canonical PumpAMM pool or on its
+ * pump bonding curve. SOL is WSOL in a route (the zero key a SOL curve stores
+ * is read as WSOL under SPL Token).
+ */
+export interface MultiHopHop {
+  venue: "pool" | "curve";
+  baseMint: PublicKey;
+  quoteMint: PublicKey;
+  baseTokenProgram: PublicKey;
+  quoteTokenProgram: PublicKey;
+}
+
+/**
+ * A route's direction: `buy` walks a quote chain up (each hop buys a coin
+ * quoted in the previous hop's coin), `sell` walks it down. Every hop of a
+ * route trades the same way.
+ */
+export type MultiHopSide = "buy" | "sell";
+
+/** A mint and the token program that owns it. */
+export interface MintWithProgram {
+  mint: PublicKey;
+  tokenProgram: PublicKey;
+}
+
+function normalizeHopSide(
+  mint: PublicKey,
+  tokenProgram: PublicKey,
+): MintWithProgram {
+  return isLegacyQuoteMint(mint)
+    ? { mint: NATIVE_MINT, tokenProgram: TOKEN_PROGRAM_ID }
+    : { mint, tokenProgram };
+}
+
+function normalizeHop(hop: MultiHopHop): MultiHopHop {
+  const base = normalizeHopSide(hop.baseMint, hop.baseTokenProgram);
+  const quote = normalizeHopSide(hop.quoteMint, hop.quoteTokenProgram);
+  return {
+    venue: hop.venue,
+    baseMint: base.mint,
+    baseTokenProgram: base.tokenProgram,
+    quoteMint: quote.mint,
+    quoteTokenProgram: quote.tokenProgram,
+  };
+}
+
+/**
+ * The mints a route starts and ends in, after checking that the hops chain
+ * (pump-amm 6084 `MultiHopDiscontinuousPath` otherwise). SOL may be given as
+ * WSOL or as the zero key; it comes back as WSOL. `currency` is the side the
+ * protocol leg trades (first hop of a buy, last of a sell): the user's
+ * currency, whose ATA of the buyback recipient takes the buyback slice.
+ *
+ * @throws {MultiHopDiscontinuousPathError} when a hop does not continue from
+ *   the one before it.
+ */
+export function multiHopRouteEnds(
+  rawHops: readonly MultiHopHop[],
+  side: MultiHopSide,
+): {
+  input: MintWithProgram;
+  output: MintWithProgram;
+  currency: MintWithProgram;
+} {
+  const hops = rawHops.map(normalizeHop);
+  const first = hops[0];
+  const last = hops[hops.length - 1];
+  if (!first || !last) {
+    throw new Error("multi_hop_swap: a route needs at least one hop");
+  }
+  const isBuy = side === "buy";
+  hops.forEach((hop, index) => {
+    const next = hops[index + 1];
+    if (!next) {
+      return;
+    }
+    const expected = isBuy ? hop.baseMint : hop.quoteMint;
+    const actual = isBuy ? next.quoteMint : next.baseMint;
+    if (!actual.equals(expected)) {
+      throw new MultiHopDiscontinuousPathError(index + 1, expected, actual);
+    }
+  });
+  const input = isBuy
+    ? { mint: first.quoteMint, tokenProgram: first.quoteTokenProgram }
+    : { mint: first.baseMint, tokenProgram: first.baseTokenProgram };
+  const output = isBuy
+    ? { mint: last.baseMint, tokenProgram: last.baseTokenProgram }
+    : { mint: last.quoteMint, tokenProgram: last.quoteTokenProgram };
+  return { input, output, currency: isBuy ? input : output };
+}
+
+/**
+ * One hop's 5-account group, in program order: base mint, quote mint, venue
+ * (pool or bonding curve), base vault, quote vault. Canonical pools and
+ * curves hold their vaults at their ATAs.
+ */
+export function multiHopHopAccounts(rawHop: MultiHopHop): AccountMeta[] {
+  const hop = normalizeHop(rawHop);
+  const venue =
+    hop.venue === "pool"
+      ? canonicalPumpPoolPdaWithQuote(hop.baseMint, hop.quoteMint)
+      : bondingCurvePda(hop.baseMint);
+  const writable = (pubkey: PublicKey): AccountMeta => ({
+    pubkey,
+    isWritable: true,
+    isSigner: false,
+  });
+  return [
+    { pubkey: hop.baseMint, isWritable: false, isSigner: false },
+    { pubkey: hop.quoteMint, isWritable: false, isSigner: false },
+    writable(venue),
+    writable(quoteAta(venue, hop.baseMint, hop.baseTokenProgram)),
+    writable(quoteAta(venue, hop.quoteMint, hop.quoteTokenProgram)),
+  ];
+}
+
+/**
+ * The accounts pump-amm `sweep_protocol_fee` and `sweep_creator_fee` share,
+ * for `mint`'s canonical pool quoted in `quoteMint`.
+ */
+function sweepPoolFeeAccounts({
+  payer,
+  mint,
+  recipient,
+  quoteMint,
+  quoteTokenProgram,
+}: {
+  payer: PublicKey;
+  mint: PublicKey;
+  recipient: PublicKey;
+  quoteMint: PublicKey;
+  quoteTokenProgram: PublicKey;
+}) {
+  const quote = normalizeQuoteMint(quoteMint);
+  const pool = canonicalPumpPoolPdaWithQuote(mint, quote);
+  return {
+    payer,
+    globalConfig: AMM_GLOBAL_CONFIG_PDA,
+    pool,
+    quoteMint: quote,
+    quoteTokenProgram,
+    poolQuoteTokenAccount: quoteAta(pool, quote, quoteTokenProgram),
+    recipient,
+    recipientTokenAccount: quoteAta(recipient, quote, quoteTokenProgram),
+    eventAuthority: PUMP_AMM_EVENT_AUTHORITY_PDA,
+    program: PUMP_AMM_PROGRAM_ID,
+  };
+}
+
+/**
+ * The 17 accounts PumpSwap `buy_v2`, `sell_v2` and `buy_exact_quote_in_v2`
+ * share. Unlike v1 there is no protocol fee recipient, creator vault or
+ * remaining accounts: the protocol and creator fees stay in the pool
+ * (`Pool.protocolFees` / `creatorFees`) until `ammSweepProtocolFeeInstruction`
+ * / `ammSweepCreatorFeeInstruction` pay them out, and only the buyback slice
+ * leaves in the trade, into `buyback_fee_recipient`: the `quoteMint` ATA of a
+ * listed `GlobalConfig.buybackFeeRecipients` wallet (random by default).
+ */
+export function ammTradeV2Accounts({
+  user,
+  pool,
+  mint,
+  quoteMint = NATIVE_MINT,
+  baseTokenProgram = TOKEN_2022_PROGRAM_ID,
+  quoteTokenProgram = TOKEN_PROGRAM_ID,
+  buybackFeeRecipient,
+}: {
+  user: PublicKey;
+  pool: PublicKey;
+  mint: PublicKey;
+  quoteMint?: PublicKey;
+  baseTokenProgram?: PublicKey;
+  quoteTokenProgram?: PublicKey;
+  buybackFeeRecipient?: PublicKey;
+}) {
+  const quote = normalizeQuoteMint(quoteMint);
+  return {
+    pool,
+    user,
+    globalConfig: AMM_GLOBAL_CONFIG_PDA,
+    baseMint: mint,
+    quoteMint: quote,
+    userBaseTokenAccount: getAssociatedTokenAddressSync(
+      mint,
+      user,
+      true,
+      baseTokenProgram,
+    ),
+    userQuoteTokenAccount: quoteAta(user, quote, quoteTokenProgram),
+    poolBaseTokenAccount: getAssociatedTokenAddressSync(
+      mint,
+      pool,
+      true,
+      baseTokenProgram,
+    ),
+    poolQuoteTokenAccount: quoteAta(pool, quote, quoteTokenProgram),
+    baseTokenProgram,
+    quoteTokenProgram,
+    userVolumeAccumulator: ammUserVolumeAccumulatorPda(user),
+    feeConfig: AMM_FEE_CONFIG_PDA,
+    buybackFeeRecipient: quoteAta(
+      buybackFeeRecipient ?? pickBreakingFeeRecipient(),
+      quote,
+      quoteTokenProgram,
+    ),
+    eventAuthority: PUMP_AMM_EVENT_AUTHORITY_PDA,
+    program: PUMP_AMM_PROGRAM_ID,
+  };
+}
 
 /**
  * Offline-first SDK for building Pump protocol transaction instructions.
@@ -220,24 +800,74 @@ export class PumpSdk {
     return this.lazyOfflinePumpProgram;
   }
 
+  /**
+   * Decodes the pump `Global` account. A live account written before the
+   * newest trailing fields (`max_curve_depth`, the creator-fee gate) is
+   * shorter than `GLOBAL_SIZE`; it is zero-padded so those fields read as
+   * the program's defaults.
+   */
   decodeGlobal(accountInfo: AccountInfo<Buffer>): Global {
     return this.offlinePumpProgram.coder.accounts.decode<Global>(
       "global",
-      accountInfo.data,
+      zeroPadded(accountInfo.data, GLOBAL_SIZE),
     );
   }
 
+  /**
+   * Decodes a pump-fees `FeeConfig` the way the program does
+   * (`FeeConfig::deserialize_versioned`): the account length selects the
+   * layout version and the bytes after that version's last field are never
+   * read. `stableFeeTiers` is empty below `FEE_CONFIG_POST_STABLE_SIZE` and
+   * `exoticFlatFees` is all-zero (unset) below `FEE_CONFIG_CURRENT_SIZE`.
+   * Throws on data shorter than `FEE_CONFIG_INITIALIZE_SIZE` or a tier
+   * vector the program could not have written.
+   */
   decodeFeeConfig(accountInfo: AccountInfo<Buffer>): FeeConfig {
+    const { data } = accountInfo;
+    if (data.length < FEE_CONFIG_INITIALIZE_SIZE) {
+      throw new Error(
+        `Invalid FeeConfig account: ${data.length} bytes, expected at least ${FEE_CONFIG_INITIALIZE_SIZE}`,
+      );
+    }
+    const feeTiersEnd = feeTierVecEnd(data, FEE_CONFIG_FEE_TIERS_OFFSET);
+    let readEnd = feeTiersEnd;
+    if (data.length >= FEE_CONFIG_POST_STABLE_SIZE) {
+      const stableFeeTiersEnd = feeTierVecEnd(data, feeTiersEnd);
+      readEnd =
+        data.length < FEE_CONFIG_CURRENT_SIZE
+          ? stableFeeTiersEnd
+          : stableFeeTiersEnd + FEES_LEN;
+    }
+    // Exactly the bytes the program reads, then zeros: a missing
+    // `stable_fee_tiers` decodes as an empty vector and a missing
+    // `exotic_flat_fees` as all-zero, the program's defaults.
     return this.offlinePumpProgram.coder.accounts.decode<FeeConfig>(
       "feeConfig",
-      accountInfo.data,
+      Buffer.concat([
+        data.subarray(0, readEnd),
+        Buffer.alloc(VEC_LEN_PREFIX + FEES_LEN),
+      ]),
     );
   }
 
+  /**
+   * Decodes a `BondingCurve` of every length the program has written (49,
+   * 81, 82, 83, 115, 124, 125, 141, the extended 151 and the current 166
+   * bytes): every layout is a prefix of the next and the fields a shorter
+   * curve lacks read as their defaults, so the data is zero-padded to
+   * `BONDING_CURVE_SIZE`. Throws below the 49-byte initial layout, as the
+   * program does.
+   */
   decodeBondingCurve(accountInfo: AccountInfo<Buffer>): BondingCurve {
+    const { data } = accountInfo;
+    if (data.length < BONDING_CURVE_INITIALIZE_SIZE) {
+      throw new Error(
+        `Invalid BondingCurve account: ${data.length} bytes, expected at least ${BONDING_CURVE_INITIALIZE_SIZE}`,
+      );
+    }
     return this.offlinePumpProgram.coder.accounts.decode<BondingCurve>(
       "bondingCurve",
-      accountInfo.data,
+      zeroPadded(data, BONDING_CURVE_SIZE),
     );
   }
 
@@ -245,20 +875,57 @@ export class PumpSdk {
     accountInfo: AccountInfo<Buffer>,
   ): BondingCurve | null {
     try {
-      const data = accountInfo.data;
-      // Ensure buffer is at least 82 bytes
-      if (data.length < 82) {
-        const padded = Buffer.alloc(82);
-        data.copy(padded);
-        accountInfo = {
-          ...accountInfo,
-          data: padded,
-        };
-      }
-
       return this.decodeBondingCurve(accountInfo);
     } catch (error) {
       console.warn("Failed to decode bonding curve", error);
+      return null;
+    }
+  }
+
+  /**
+   * Decodes the pump `QuoteControl` PDA (`QUOTE_CONTROL_PDA`): the mints
+   * `create_v2` admits as quotes beyond those `Global` lists, each with the
+   * virtual quote reserves a new curve quoted in it starts from. Like the
+   * program's reader (6075 `InvalidQuoteControl`), the declared `mints`
+   * length must fit in the data; the pre-allocated tail past it is ignored.
+   */
+  decodeQuoteControl(accountInfo: AccountInfo<Buffer>): QuoteControl {
+    const { data } = accountInfo;
+    if (data.length < QUOTE_CONTROL_HEADER_LEN) {
+      throw new Error(
+        `Invalid QuoteControl account: ${data.length} bytes, expected at least ${QUOTE_CONTROL_HEADER_LEN}`,
+      );
+    }
+    const count = data.readUInt32LE(QUOTE_CONTROL_LEN_OFFSET);
+    if (
+      QUOTE_CONTROL_HEADER_LEN + count * QUOTE_CONTROL_ENTRY_LEN >
+      data.length
+    ) {
+      throw new Error(
+        `Invalid QuoteControl account: ${count} entries declared in ${data.length} bytes`,
+      );
+    }
+    return this.offlinePumpProgram.coder.accounts.decode<QuoteControl>(
+      "quoteControl",
+      data,
+    );
+  }
+
+  /**
+   * `null` when the account is missing (the PDA is not initialized, which
+   * the program treats as an empty list) or does not decode as a
+   * `QuoteControl` (logged with `console.warn`).
+   */
+  decodeQuoteControlNullable(
+    accountInfo: AccountInfo<Buffer> | null,
+  ): QuoteControl | null {
+    if (!accountInfo) {
+      return null;
+    }
+    try {
+      return this.decodeQuoteControl(accountInfo);
+    } catch (error) {
+      console.warn("Failed to decode quote control", error);
       return null;
     }
   }
@@ -299,17 +966,29 @@ export class PumpSdk {
     );
   }
 
+  /**
+   * Decodes a pump-amm `Pool`. Pools created before the v2 fee buckets and
+   * configurable creator fees are shorter than `POOL_SIZE`; they are
+   * zero-padded so the missing trailing fields (`virtualQuoteReserves`,
+   * `creatorFeeBps`, `protocolFees`, `creatorFees`, ...) read as the
+   * program's defaults.
+   */
   decodePool(accountInfo: AccountInfo<Buffer>): Pool {
     return this.offlinePumpAmmProgram.coder.accounts.decode<Pool>(
       "pool",
-      accountInfo.data,
+      zeroPadded(accountInfo.data, POOL_SIZE),
     );
   }
 
+  /**
+   * Decodes the pump-amm `GlobalConfig`, zero-padded to
+   * `AMM_GLOBAL_CONFIG_SIZE` so an account written before the boost and
+   * creator-fee fields reads them at their defaults.
+   */
   decodeAmmGlobalConfig(accountInfo: AccountInfo<Buffer>): AmmGlobalConfig {
     return this.offlinePumpAmmProgram.coder.accounts.decode<AmmGlobalConfig>(
       "globalConfig",
-      accountInfo.data,
+      zeroPadded(accountInfo.data, AMM_GLOBAL_CONFIG_SIZE),
     );
   }
 
@@ -357,6 +1036,23 @@ export class PumpSdk {
       .instruction();
   }
 
+  /**
+   * `create_v2`: launches a Token-2022 coin on a new bonding curve.
+   *
+   * @param params.quoteMint - The quote the curve trades in. Omitted, WSOL or
+   *   the zero key launch a SOL curve. Any other mint appends the quote
+   *   remaining accounts (`createV2QuoteRemainingAccounts`): it must be
+   *   whitelisted on `Global`, listed in `QuoteControl`, or be a pump coin
+   *   passed with `pumpQuote` (6063 `UnsupportedQuoteMint` otherwise).
+   * @param params.quoteTokenProgram - The token program that owns
+   *   `quoteMint` (`OnlinePumpSdk.fetchQuoteTokenProgram`). Ignored for SOL.
+   * @param params.pumpQuote - Set when `quoteMint` is a pump coin listed
+   *   nowhere (`OnlinePumpSdk.fetchPumpQuote`): appends its bonding curve
+   *   and, once it migrated, its pool and vaults. The new curve seeds its
+   *   reserves from the quote coin's live price, stores
+   *   `depth = Q.depth + 1` (at most `Global.maxCurveDepth`, 6105
+   *   `CurveDepthExceeded`) and cannot be mayhem mode.
+   */
   async createV2Instruction({
     mint,
     name,
@@ -368,6 +1064,9 @@ export class PumpSdk {
     cashback = false,
     creatorFeeBps = new BN(0),
     holderReward = false,
+    quoteMint,
+    quoteTokenProgram = TOKEN_PROGRAM_ID,
+    pumpQuote,
   }: {
     mint: PublicKey;
     name: string;
@@ -379,8 +1078,20 @@ export class PumpSdk {
     cashback?: boolean;
     creatorFeeBps?: BN;
     holderReward?: boolean;
+    quoteMint?: PublicKey;
+    quoteTokenProgram?: PublicKey;
+    pumpQuote?: PumpQuoteAccounts;
   }): Promise<TransactionInstruction> {
     if (cashback) throw new CashbackDeprecatedError();
+    const remainingAccounts =
+      quoteMint && !isLegacyQuoteMint(quoteMint)
+        ? createV2QuoteRemainingAccounts({
+            mint,
+            quoteMint,
+            quoteTokenProgram,
+            pumpQuote,
+          })
+        : [];
     return await this.offlinePumpProgram.methods
       .createV2(
         name,
@@ -402,12 +1113,12 @@ export class PumpSdk {
         mayhemState: getMayhemStatePda(mint),
         mayhemTokenVault: getTokenVaultPda(mint),
       })
+      .remainingAccounts(remainingAccounts)
       .instruction();
   }
 
   async buyInstructions({
     global,
-    bondingCurveAccountInfo,
     bondingCurve,
     associatedUserAccountInfo,
     mint,
@@ -418,6 +1129,11 @@ export class PumpSdk {
     tokenProgram = TOKEN_PROGRAM_ID,
   }: {
     global: Global;
+    /**
+     * Kept for API compatibility. Since the October 2026 upgrade the program
+     * grows an older curve account on its first new-style trade, so no
+     * `extend_account` instruction is prepended any more.
+     */
     bondingCurveAccountInfo: AccountInfo<Buffer>;
     bondingCurve: BondingCurve;
     associatedUserAccountInfo: AccountInfo<Buffer> | null;
@@ -429,15 +1145,6 @@ export class PumpSdk {
     tokenProgram: PublicKey;
   }): Promise<TransactionInstruction[]> {
     const instructions: TransactionInstruction[] = [];
-
-    if (bondingCurveAccountInfo.data.length < BONDING_CURVE_NEW_SIZE) {
-      instructions.push(
-        await this.extendAccountInstruction({
-          account: bondingCurvePda(mint),
-          user,
-        }),
-      );
-    }
 
     const associatedUser = getAssociatedTokenAddressSync(
       mint,
@@ -490,6 +1197,9 @@ export class PumpSdk {
     cashback = false,
     creatorFeeBps = new BN(0),
     holderReward = false,
+    quoteMint,
+    quoteTokenProgram = TOKEN_PROGRAM_ID,
+    pumpQuote,
   }: {
     global: Global;
     mint: PublicKey;
@@ -504,6 +1214,9 @@ export class PumpSdk {
     cashback?: boolean;
     creatorFeeBps?: BN;
     holderReward?: boolean;
+    quoteMint?: PublicKey;
+    quoteTokenProgram?: PublicKey;
+    pumpQuote?: PumpQuoteAccounts;
   }): Promise<TransactionInstruction[]> {
     if (cashback) throw new CashbackDeprecatedError();
     if (holderReward && !global.isHolderRewardEnabled) {
@@ -516,23 +1229,49 @@ export class PumpSdk {
       true,
       TOKEN_2022_PROGRAM_ID,
     );
+    const create = await this.createV2Instruction({
+      mint,
+      name,
+      symbol,
+      uri,
+      creator,
+      user,
+      mayhemMode,
+      cashback,
+      creatorFeeBps,
+      holderReward,
+      quoteMint,
+      quoteTokenProgram,
+      pumpQuote,
+    });
+
+    // A token-quoted curve trades only through the v3 instructions: the
+    // first buy spends `solAmount` of the quote token plus 1% slippage.
+    if (quoteMint && !isLegacyQuoteMint(quoteMint)) {
+      return [
+        create,
+        createAssociatedTokenAccountIdempotentInstruction(
+          user,
+          associatedUser,
+          user,
+          mint,
+          TOKEN_2022_PROGRAM_ID,
+        ),
+        ...buybackAtaInstructions(user, quoteMint, quoteTokenProgram),
+        await this.getBuyV3InstructionRaw({
+          user,
+          mint,
+          amount,
+          quoteAmount: plusSlippage(solAmount, 1),
+          tokenProgram: TOKEN_2022_PROGRAM_ID,
+          quoteMint,
+          quoteTokenProgram,
+        }),
+      ];
+    }
+
     return [
-      await this.createV2Instruction({
-        mint,
-        name,
-        symbol,
-        uri,
-        creator,
-        user,
-        mayhemMode,
-        cashback,
-        creatorFeeBps,
-        holderReward,
-      }),
-      await this.extendAccountInstruction({
-        account: bondingCurvePda(mint),
-        user,
-      }),
+      create,
       createAssociatedTokenAccountIdempotentInstruction(
         user,
         associatedUser,
@@ -582,10 +1321,6 @@ export class PumpSdk {
     const associatedUser = getAssociatedTokenAddressSync(mint, user, true);
     return [
       await this.createInstruction({ mint, name, symbol, uri, creator, user }),
-      await this.extendAccountInstruction({
-        account: bondingCurvePda(mint),
-        user,
-      }),
       createAssociatedTokenAccountIdempotentInstruction(
         user,
         associatedUser,
@@ -646,7 +1381,6 @@ export class PumpSdk {
 
   async sellInstructions({
     global,
-    bondingCurveAccountInfo,
     bondingCurve,
     mint,
     user,
@@ -657,6 +1391,11 @@ export class PumpSdk {
     cashback = false,
   }: {
     global: Global;
+    /**
+     * Kept for API compatibility. Since the October 2026 upgrade the program
+     * grows an older curve account on its first new-style trade, so no
+     * `extend_account` instruction is prepended any more.
+     */
     bondingCurveAccountInfo: AccountInfo<Buffer>;
     bondingCurve: BondingCurve;
     mint: PublicKey;
@@ -673,15 +1412,6 @@ export class PumpSdk {
     validateSellAmount(amount, bondingCurve);
 
     const instructions: TransactionInstruction[] = [];
-
-    if (bondingCurveAccountInfo.data.length < BONDING_CURVE_NEW_SIZE) {
-      instructions.push(
-        await this.extendAccountInstruction({
-          account: bondingCurvePda(mint),
-          user,
-        }),
-      );
-    }
 
     instructions.push(
       await this.getSellInstructionInternal({
@@ -1025,6 +1755,7 @@ export class PumpSdk {
       feeRecipient,
       amount,
       solAmount,
+      tokenProgram,
     });
   }
 
@@ -1048,7 +1779,7 @@ export class PumpSdk {
     tokenProgram?: PublicKey;
   }): Promise<TransactionInstruction> {
     return await this.offlinePumpProgram.methods
-      .buy(amount, solAmount, { 0: true })
+      .buy(amount, solAmount, { 0: true }, { 0: false })
       .accountsPartial({
         feeRecipient,
         mint,
@@ -1345,23 +2076,55 @@ export class PumpSdk {
 
   // ─── Pump Program Event Decoders ──────────────────────────────────
 
+  /**
+   * Decodes a pump `TradeEvent` emitted under any deployment's layout: the
+   * event only ever gains trailing fields (the quote fields, holder rewards,
+   * `creator_fee_unclaimed`), and an older, shorter event decodes with the
+   * fields it lacks at zero.
+   */
   decodeTradeEvent(data: Buffer): TradeEvent {
-    return this.offlinePumpProgram.coder.types.decode<TradeEvent>(
-      "tradeEvent",
-      data,
+    return decodeWithTrailingDefaults(data, TRADE_EVENT_LAYOUT_PADDINGS, (bytes) =>
+      this.offlinePumpProgram.coder.types.decode<TradeEvent>("tradeEvent", bytes),
     );
   }
 
+  /**
+   * Decodes a pump `CreateEvent` under any deployment's layout: an event
+   * without the trailing `creator_fee_bps`, `is_holder_reward` or `depth`
+   * decodes with them at zero / `false`.
+   */
   decodeCreateEvent(data: Buffer): CreateEvent {
-    return this.offlinePumpProgram.coder.types.decode<CreateEvent>(
-      "createEvent",
-      data,
+    return decodeWithTrailingDefaults(data, CREATE_EVENT_LAYOUT_PADDINGS, (bytes) =>
+      this.offlinePumpProgram.coder.types.decode<CreateEvent>("createEvent", bytes),
     );
   }
 
   decodeCompleteEvent(data: Buffer): CompleteEvent {
     return this.offlinePumpProgram.coder.types.decode<CompleteEvent>(
       "completeEvent",
+      data,
+    );
+  }
+
+  /**
+   * Decodes a pump `PostCompleteBuyEvent`: the leg of a v3 buy that ran past
+   * the remaining supply and filled against the pool the migration will
+   * create. It follows the `CompleteEvent` in the same transaction.
+   */
+  decodePostCompleteBuyEvent(data: Buffer): PostCompleteBuyEvent {
+    return this.offlinePumpProgram.coder.types.decode<PostCompleteBuyEvent>(
+      "postCompleteBuyEvent",
+      data,
+    );
+  }
+
+  /**
+   * Decodes a pump `SweepBondingCurveFeeEvent` (`sweep_protocol_fee` /
+   * `sweep_creator_fee`); `bucket` is a `SweepFeeBucket`.
+   */
+  decodeSweepBondingCurveFeeEvent(data: Buffer): SweepBondingCurveFeeEvent {
+    return this.offlinePumpProgram.coder.types.decode<SweepBondingCurveFeeEvent>(
+      "sweepBondingCurveFeeEvent",
       data,
     );
   }
@@ -1464,16 +2227,32 @@ export class PumpSdk {
 
   // ─── PumpAMM Event Decoders ───────────────────────────────────────
 
+  /**
+   * Decodes a PumpSwap `BuyEvent` under any deployment's layout: an event
+   * emitted before the signed `virtual_quote_reserves`, `can_boost`,
+   * `base_supply`, holder-reward or `creator_fee_unclaimed` fields decodes
+   * with them at zero / `false`.
+   */
   decodeAmmBuyEvent(data: Buffer): AmmBuyEvent {
-    return this.offlinePumpAmmProgram.coder.types.decode<AmmBuyEvent>(
-      "buyEvent",
-      data,
+    return decodeWithTrailingDefaults(data, AMM_TRADE_EVENT_LAYOUT_PADDINGS, (bytes) =>
+      this.offlinePumpAmmProgram.coder.types.decode<AmmBuyEvent>("buyEvent", bytes),
     );
   }
 
+  /** Like `decodeAmmBuyEvent`, for `SellEvent`. */
   decodeAmmSellEvent(data: Buffer): AmmSellEvent {
-    return this.offlinePumpAmmProgram.coder.types.decode<AmmSellEvent>(
-      "sellEvent",
+    return decodeWithTrailingDefaults(data, AMM_TRADE_EVENT_LAYOUT_PADDINGS, (bytes) =>
+      this.offlinePumpAmmProgram.coder.types.decode<AmmSellEvent>("sellEvent", bytes),
+    );
+  }
+
+  /**
+   * Decodes a PumpSwap `SweepPoolFeeEvent` (pump-amm `sweep_protocol_fee` /
+   * `sweep_creator_fee`); `bucket` is a `SweepFeeBucket`.
+   */
+  decodeSweepPoolFeeEvent(data: Buffer): SweepPoolFeeEvent {
+    return this.offlinePumpAmmProgram.coder.types.decode<SweepPoolFeeEvent>(
+      "sweepPoolFeeEvent",
       data,
     );
   }
@@ -1492,10 +2271,14 @@ export class PumpSdk {
     );
   }
 
+  /**
+   * Decodes a PumpSwap `CreatePoolEvent` under any deployment's layout: an
+   * event without `creator_fee_bps` / `can_edit_creator_fee` /
+   * `is_holder_reward` decodes with them at zero / `false`.
+   */
   decodeCreatePoolEvent(data: Buffer): CreatePoolEvent {
-    return this.offlinePumpAmmProgram.coder.types.decode<CreatePoolEvent>(
-      "createPoolEvent",
-      data,
+    return decodeWithTrailingDefaults(data, CREATE_POOL_EVENT_LAYOUT_PADDINGS, (bytes) =>
+      this.offlinePumpAmmProgram.coder.types.decode<CreatePoolEvent>("createPoolEvent", bytes),
     );
   }
 
@@ -1541,12 +2324,6 @@ export class PumpSdk {
   }
 
   // ─── PumpAMM Extra Event Decoders ─────────────────────────────────────────
-
-  decodeAmmAdminSetCoinCreatorEvent(data: Buffer): AmmAdminSetCoinCreatorEvent {
-    return this.offlinePumpAmmProgram.coder.types.decode<AmmAdminSetCoinCreatorEvent>(
-      "adminSetCoinCreatorEvent", data,
-    );
-  }
 
   decodeAmmAdminUpdateTokenIncentivesEvent(data: Buffer): AmmAdminUpdateTokenIncentivesEvent {
     return this.offlinePumpAmmProgram.coder.types.decode<AmmAdminUpdateTokenIncentivesEvent>(
@@ -1776,7 +2553,7 @@ export class PumpSdk {
       tokenProgram,
     );
     return await this.offlinePumpProgram.methods
-      .buyExactSolIn(solAmount, minTokenAmount, { 0: true })
+      .buyExactSolIn(solAmount, minTokenAmount, { 0: true }, { 0: false })
       .accountsPartial({
         feeRecipient,
         mint,
@@ -2031,6 +2808,800 @@ export class PumpSdk {
       .instruction();
   }
 
+  // Quote Control and Curve Depth (admin)
+
+  /**
+   * `set_max_curve_depth`: how deep a pump-coin quote chain `create_v2` may
+   * build (`Global.maxCurveDepth`; 0 disables pump-coin quotes, 1 admits
+   * coins quoted in depth-0 coins only). `authority` signs and must be
+   * `Global.authority`.
+   */
+  async setMaxCurveDepthInstruction({
+    authority,
+    maxCurveDepth,
+  }: {
+    authority: PublicKey;
+    maxCurveDepth: number;
+  }): Promise<TransactionInstruction> {
+    return await this.offlinePumpProgram.methods
+      .setMaxCurveDepth(maxCurveDepth)
+      .accountsPartial({
+        global: GLOBAL_PDA,
+        authority,
+        eventAuthority: PUMP_EVENT_AUTHORITY_PDA,
+        program: PUMP_PROGRAM_ID,
+      })
+      .instruction();
+  }
+
+  /**
+   * `initialize_quote_control`: creates the `QuoteControl` PDA with no admin
+   * and an empty mint list. Permissionless and once only; `user` signs and
+   * pays the rent.
+   */
+  async initializeQuoteControlInstruction({
+    user,
+  }: {
+    user: PublicKey;
+  }): Promise<TransactionInstruction> {
+    return await this.offlinePumpProgram.methods
+      .initializeQuoteControl()
+      .accountsPartial({ quoteControl: QUOTE_CONTROL_PDA, user })
+      .instruction();
+  }
+
+  /**
+   * `set_quote_control_admin`: `authority` must sign and be
+   * `Global.authority`. The zero key revokes the admin.
+   */
+  async setQuoteControlAdminInstruction({
+    authority,
+    newAdmin,
+  }: {
+    authority: PublicKey;
+    newAdmin: PublicKey;
+  }): Promise<TransactionInstruction> {
+    return await this.offlinePumpProgram.methods
+      .setQuoteControlAdmin(newAdmin)
+      .accountsPartial({
+        authority,
+        global: GLOBAL_PDA,
+        quoteControl: QUOTE_CONTROL_PDA,
+        eventAuthority: PUMP_EVENT_AUTHORITY_PDA,
+        program: PUMP_PROGRAM_ID,
+      })
+      .instruction();
+  }
+
+  /**
+   * `add_quote_control_mint`: lists `quoteMint` as a `create_v2` quote with
+   * the virtual quote reserves (in the mint's base units) a new curve quoted
+   * in it starts from. `authority` signs and must be `QuoteControl.admin` or
+   * `Global.authority`.
+   */
+  async addQuoteControlMintInstruction({
+    authority,
+    quoteMint,
+    initialVirtualQuoteReserves,
+  }: {
+    authority: PublicKey;
+    quoteMint: PublicKey;
+    initialVirtualQuoteReserves: BN;
+  }): Promise<TransactionInstruction> {
+    return await this.offlinePumpProgram.methods
+      .addQuoteControlMint(quoteMint, initialVirtualQuoteReserves)
+      .accountsPartial({
+        authority,
+        global: GLOBAL_PDA,
+        quoteControl: QUOTE_CONTROL_PDA,
+        eventAuthority: PUMP_EVENT_AUTHORITY_PDA,
+        program: PUMP_PROGRAM_ID,
+      })
+      .instruction();
+  }
+
+  /**
+   * `remove_quote_control_mint`: de-lists `quoteMint`. Existing curves quoted
+   * in it keep trading; only new `create_v2` calls are refused.
+   */
+  async removeQuoteControlMintInstruction({
+    authority,
+    quoteMint,
+  }: {
+    authority: PublicKey;
+    quoteMint: PublicKey;
+  }): Promise<TransactionInstruction> {
+    return await this.offlinePumpProgram.methods
+      .removeQuoteControlMint(quoteMint)
+      .accountsPartial({
+        authority,
+        global: GLOBAL_PDA,
+        quoteControl: QUOTE_CONTROL_PDA,
+        eventAuthority: PUMP_EVENT_AUTHORITY_PDA,
+        program: PUMP_PROGRAM_ID,
+      })
+      .instruction();
+  }
+
+  /**
+   * `set_quote_control_mint_reserves`: changes the starting virtual quote
+   * reserves of a listed mint in place (curves created afterwards use the
+   * new value). `authority` signs and must be `QuoteControl.reservesAdmin`,
+   * `QuoteControl.admin` or `Global.authority`.
+   */
+  async setQuoteControlMintReservesInstruction({
+    authority,
+    quoteMint,
+    initialVirtualQuoteReserves,
+  }: {
+    authority: PublicKey;
+    quoteMint: PublicKey;
+    initialVirtualQuoteReserves: BN;
+  }): Promise<TransactionInstruction> {
+    return await this.offlinePumpProgram.methods
+      .setQuoteControlMintReserves(quoteMint, initialVirtualQuoteReserves)
+      .accountsPartial({
+        authority,
+        global: GLOBAL_PDA,
+        quoteControl: QUOTE_CONTROL_PDA,
+        eventAuthority: PUMP_EVENT_AUTHORITY_PDA,
+        program: PUMP_PROGRAM_ID,
+      })
+      .instruction();
+  }
+
+  /**
+   * `set_quote_control_reserves_admin`: assigns the key allowed to change
+   * listed mints' starting reserves (`QuoteControl.reservesAdmin`). The zero
+   * key revokes it.
+   */
+  async setQuoteControlReservesAdminInstruction({
+    authority,
+    newReservesAdmin,
+  }: {
+    authority: PublicKey;
+    newReservesAdmin: PublicKey;
+  }): Promise<TransactionInstruction> {
+    return await this.offlinePumpProgram.methods
+      .setQuoteControlReservesAdmin(newReservesAdmin)
+      .accountsPartial({
+        authority,
+        global: GLOBAL_PDA,
+        quoteControl: QUOTE_CONTROL_PDA,
+        eventAuthority: PUMP_EVENT_AUTHORITY_PDA,
+        program: PUMP_PROGRAM_ID,
+      })
+      .instruction();
+  }
+
+  // Bonding Curve v3 Trades
+
+  /**
+   * `buy_v3`: buys `amount` tokens for at most `quoteAmount` plus `slippage`
+   * percent. Prices and fees match `buy`, but only the buyback slice of the
+   * protocol fee leaves in the trade: the rest of the protocol fee and the
+   * creator fee stay on the curve (`BondingCurve.protocolFees` /
+   * `creatorFee`) until `sweepProtocolFeeInstruction` /
+   * `sweepCreatorFeeInstruction` pay them out. Works for SOL and token
+   * quotes (`bondingCurve.quoteMint`). Creates the user's base ATA when
+   * `associatedUserAccountInfo` is null and, on a token quote, the buyback
+   * recipient's quote ATA (idempotent; the program never creates it).
+   *
+   * A buy past the remaining supply completes the curve and buys the rest
+   * from the pool the migration will create (a `PostCompleteBuyEvent`
+   * follows `CompleteEvent`); quote it with
+   * `getBuyV3QuoteAmountFromTokenAmount`.
+   *
+   * @param params.partialFill - Matters only where there is no
+   *   post-completion leg (a mayhem curve): set, a buy past the remaining
+   *   supply stops there; unset, it fails with 6021 `NotEnoughTokensToBuy`.
+   * @throws {CashbackCoinNotSupportedError} for a cashback coin (6094).
+   */
+  async buyV3Instructions({
+    bondingCurve,
+    associatedUserAccountInfo,
+    mint,
+    user,
+    amount,
+    quoteAmount,
+    slippage,
+    tokenProgram = TOKEN_2022_PROGRAM_ID,
+    quoteTokenProgram = TOKEN_PROGRAM_ID,
+    partialFill = false,
+    buybackFeeRecipient,
+  }: {
+    bondingCurve: BondingCurve;
+    associatedUserAccountInfo: AccountInfo<Buffer> | null;
+    mint: PublicKey;
+    user: PublicKey;
+    amount: BN;
+    quoteAmount: BN;
+    slippage: number;
+    tokenProgram?: PublicKey;
+    quoteTokenProgram?: PublicKey;
+    partialFill?: boolean;
+    buybackFeeRecipient?: PublicKey;
+  }): Promise<TransactionInstruction[]> {
+    if (bondingCurve.isCashbackCoin) {
+      throw new CashbackCoinNotSupportedError(mint);
+    }
+    return [
+      ...this.baseAtaInstructions(
+        associatedUserAccountInfo,
+        mint,
+        user,
+        tokenProgram,
+      ),
+      ...buybackAtaInstructions(
+        user,
+        bondingCurve.quoteMint,
+        quoteTokenProgram,
+        buybackFeeRecipient,
+      ),
+      await this.getBuyV3InstructionRaw({
+        user,
+        mint,
+        amount,
+        quoteAmount: plusSlippage(quoteAmount, slippage),
+        tokenProgram,
+        quoteMint: bondingCurve.quoteMint,
+        quoteTokenProgram,
+        partialFill,
+        buybackFeeRecipient,
+      }),
+    ];
+  }
+
+  /**
+   * `buy_exact_quote_in_v3`: spends at most `quoteAmount` (fees included)
+   * and requires at least `amount` tokens less `slippage` percent, `amount`
+   * being the quote from `getBuyV3TokenAmountFromQuoteAmount`. Fees are kept
+   * as in `buyV3Instructions`.
+   *
+   * @throws {CashbackCoinNotSupportedError} for a cashback coin (6094).
+   */
+  async buyExactQuoteInV3Instructions({
+    bondingCurve,
+    associatedUserAccountInfo,
+    mint,
+    user,
+    amount,
+    quoteAmount,
+    slippage,
+    tokenProgram = TOKEN_2022_PROGRAM_ID,
+    quoteTokenProgram = TOKEN_PROGRAM_ID,
+    partialFill = false,
+    buybackFeeRecipient,
+  }: {
+    bondingCurve: BondingCurve;
+    associatedUserAccountInfo: AccountInfo<Buffer> | null;
+    mint: PublicKey;
+    user: PublicKey;
+    amount: BN;
+    quoteAmount: BN;
+    slippage: number;
+    tokenProgram?: PublicKey;
+    quoteTokenProgram?: PublicKey;
+    partialFill?: boolean;
+    buybackFeeRecipient?: PublicKey;
+  }): Promise<TransactionInstruction[]> {
+    if (bondingCurve.isCashbackCoin) {
+      throw new CashbackCoinNotSupportedError(mint);
+    }
+    return [
+      ...this.baseAtaInstructions(
+        associatedUserAccountInfo,
+        mint,
+        user,
+        tokenProgram,
+      ),
+      ...buybackAtaInstructions(
+        user,
+        bondingCurve.quoteMint,
+        quoteTokenProgram,
+        buybackFeeRecipient,
+      ),
+      await this.getBuyExactQuoteInV3InstructionRaw({
+        user,
+        mint,
+        spendableQuoteIn: quoteAmount,
+        minTokensOut: lessSlippage(amount, slippage, 1),
+        tokenProgram,
+        quoteMint: bondingCurve.quoteMint,
+        quoteTokenProgram,
+        partialFill,
+        buybackFeeRecipient,
+      }),
+    ];
+  }
+
+  /**
+   * `sell_v3`: sells `amount` tokens for at least `quoteAmount` less
+   * `slippage` percent. Fees are kept as in `buyV3Instructions`. On a token
+   * quote it first creates, when missing, the seller's quote ATA and the
+   * buyback recipient's (idempotent).
+   *
+   * @throws {CashbackCoinNotSupportedError} for a cashback coin (6094).
+   */
+  async sellV3Instructions({
+    bondingCurve,
+    mint,
+    user,
+    amount,
+    quoteAmount,
+    slippage,
+    tokenProgram = TOKEN_2022_PROGRAM_ID,
+    quoteTokenProgram = TOKEN_PROGRAM_ID,
+    buybackFeeRecipient,
+  }: {
+    bondingCurve: BondingCurve;
+    mint: PublicKey;
+    user: PublicKey;
+    amount: BN;
+    quoteAmount: BN;
+    slippage: number;
+    tokenProgram?: PublicKey;
+    quoteTokenProgram?: PublicKey;
+    buybackFeeRecipient?: PublicKey;
+  }): Promise<TransactionInstruction[]> {
+    if (bondingCurve.isCashbackCoin) {
+      throw new CashbackCoinNotSupportedError(mint);
+    }
+    validateSellAmount(amount, bondingCurve);
+    const quote = normalizeQuoteMint(bondingCurve.quoteMint);
+    const sellerQuoteAta = isLegacyQuoteMint(quote)
+      ? []
+      : [
+          createAssociatedTokenAccountIdempotentInstruction(
+            user,
+            quoteAta(user, quote, quoteTokenProgram),
+            user,
+            quote,
+            quoteTokenProgram,
+          ),
+        ];
+    return [
+      ...sellerQuoteAta,
+      ...buybackAtaInstructions(
+        user,
+        bondingCurve.quoteMint,
+        quoteTokenProgram,
+        buybackFeeRecipient,
+      ),
+      await this.getSellV3InstructionRaw({
+        user,
+        mint,
+        amount,
+        quoteAmount: lessSlippage(quoteAmount, slippage),
+        tokenProgram,
+        quoteMint: bondingCurve.quoteMint,
+        quoteTokenProgram,
+        buybackFeeRecipient,
+      }),
+    ];
+  }
+
+  /**
+   * `buy_v3` with `quoteAmount` as the exact `max_sol_cost` (fees included).
+   * The 17 accounts come from `tradeV3Accounts`.
+   *
+   * @param params.quoteMint - The curve's quote mint; `bondingCurve.quoteMint`
+   *   can be passed as is (the zero key is SOL).
+   * @param params.buybackFeeRecipient - A listed `Global.buybackFeeRecipients`
+   *   wallet (see `tradeV3Accounts`).
+   */
+  async getBuyV3InstructionRaw({
+    user,
+    mint,
+    amount,
+    quoteAmount,
+    tokenProgram = TOKEN_2022_PROGRAM_ID,
+    quoteMint = NATIVE_MINT,
+    quoteTokenProgram = TOKEN_PROGRAM_ID,
+    buybackFeeRecipient,
+    partialFill = false,
+  }: {
+    user: PublicKey;
+    mint: PublicKey;
+    amount: BN;
+    quoteAmount: BN;
+    tokenProgram?: PublicKey;
+    quoteMint?: PublicKey;
+    quoteTokenProgram?: PublicKey;
+    buybackFeeRecipient?: PublicKey;
+    partialFill?: boolean;
+  }): Promise<TransactionInstruction> {
+    return await this.offlinePumpProgram.methods
+      .buyV3(amount, quoteAmount, { 0: partialFill })
+      .accountsPartial(
+        tradeV3Accounts({
+          user,
+          mint,
+          tokenProgram,
+          quoteMint,
+          quoteTokenProgram,
+          buybackFeeRecipient,
+        }),
+      )
+      .instruction();
+  }
+
+  /**
+   * `buy_exact_quote_in_v3` with exact `spendable_quote_in` /
+   * `min_tokens_out`. Accounts as in `getBuyV3InstructionRaw`.
+   */
+  async getBuyExactQuoteInV3InstructionRaw({
+    user,
+    mint,
+    spendableQuoteIn,
+    minTokensOut,
+    tokenProgram = TOKEN_2022_PROGRAM_ID,
+    quoteMint = NATIVE_MINT,
+    quoteTokenProgram = TOKEN_PROGRAM_ID,
+    buybackFeeRecipient,
+    partialFill = false,
+  }: {
+    user: PublicKey;
+    mint: PublicKey;
+    spendableQuoteIn: BN;
+    minTokensOut: BN;
+    tokenProgram?: PublicKey;
+    quoteMint?: PublicKey;
+    quoteTokenProgram?: PublicKey;
+    buybackFeeRecipient?: PublicKey;
+    partialFill?: boolean;
+  }): Promise<TransactionInstruction> {
+    return await this.offlinePumpProgram.methods
+      .buyExactQuoteInV3(spendableQuoteIn, minTokensOut, { 0: partialFill })
+      .accountsPartial(
+        tradeV3Accounts({
+          user,
+          mint,
+          tokenProgram,
+          quoteMint,
+          quoteTokenProgram,
+          buybackFeeRecipient,
+        }),
+      )
+      .instruction();
+  }
+
+  /**
+   * `sell_v3` with `quoteAmount` as the exact `min_sol_output` (net of
+   * fees). Accounts as in `getBuyV3InstructionRaw`.
+   */
+  async getSellV3InstructionRaw({
+    user,
+    mint,
+    amount,
+    quoteAmount,
+    tokenProgram = TOKEN_2022_PROGRAM_ID,
+    quoteMint = NATIVE_MINT,
+    quoteTokenProgram = TOKEN_PROGRAM_ID,
+    buybackFeeRecipient,
+  }: {
+    user: PublicKey;
+    mint: PublicKey;
+    amount: BN;
+    quoteAmount: BN;
+    tokenProgram?: PublicKey;
+    quoteMint?: PublicKey;
+    quoteTokenProgram?: PublicKey;
+    buybackFeeRecipient?: PublicKey;
+  }): Promise<TransactionInstruction> {
+    return await this.offlinePumpProgram.methods
+      .sellV3(amount, quoteAmount)
+      .accountsPartial(
+        tradeV3Accounts({
+          user,
+          mint,
+          tokenProgram,
+          quoteMint,
+          quoteTokenProgram,
+          buybackFeeRecipient,
+        }),
+      )
+      .instruction();
+  }
+
+  // An idempotent create of the user's base ATA when it is missing.
+  private baseAtaInstructions(
+    associatedUserAccountInfo: AccountInfo<Buffer> | null,
+    mint: PublicKey,
+    user: PublicKey,
+    tokenProgram: PublicKey,
+  ): TransactionInstruction[] {
+    return associatedUserAccountInfo
+      ? []
+      : [
+          createAssociatedTokenAccountIdempotentInstruction(
+            user,
+            getAssociatedTokenAddressSync(mint, user, true, tokenProgram),
+            user,
+            mint,
+            tokenProgram,
+          ),
+        ];
+  }
+
+  // Fee Sweeps
+
+  /**
+   * pump `sweep_protocol_fee`: pays the protocol fees v3 trades left on
+   * `mint`'s curve (`BondingCurve.protocolFees`) to `recipient`, which must
+   * be a `Global` fee recipient for the curve:
+   * `getFeeRecipient(global, bondingCurve.isMayhemMode)`. Permissionless;
+   * `payer` covers growing a pre-upgrade curve and, on a token quote, the
+   * recipient's quote ATA. Nothing moves when the bucket is empty.
+   *
+   * @param params.quoteMint - The curve's quote mint; `bondingCurve.quoteMint`
+   *   can be passed as is (the zero key is SOL).
+   */
+  async sweepProtocolFeeInstruction({
+    payer,
+    mint,
+    recipient,
+    quoteMint,
+    quoteTokenProgram = TOKEN_PROGRAM_ID,
+  }: {
+    payer: PublicKey;
+    mint: PublicKey;
+    recipient: PublicKey;
+    quoteMint: PublicKey;
+    quoteTokenProgram?: PublicKey;
+  }): Promise<TransactionInstruction> {
+    return await this.offlinePumpProgram.methods
+      .sweepProtocolFee()
+      .accountsPartial(
+        sweepBondingCurveFeeAccounts({
+          payer,
+          mint,
+          recipient,
+          quoteMint,
+          quoteTokenProgram,
+        }),
+      )
+      .instruction();
+  }
+
+  /**
+   * pump `sweep_creator_fee`: pays the creator fees v3 trades left on
+   * `mint`'s curve (`BondingCurve.creatorFee`) into
+   * `creatorVaultPda(creator)`, `creator` being the curve's current
+   * `bondingCurve.creator` (a wallet, the sharing config or the
+   * holder-rewards PDA). Permissionless.
+   *
+   * Put it first, in the same transaction, in front of
+   * `distributeCreatorFees`, `adminCtoInstruction`, `createFeeSharingConfig`
+   * and `updateFeeShares` on a coin with v3 trades: they fail with 6095
+   * `CreatorFeesNotSwept` while the bucket is nonzero. In front of
+   * `collectCreatorFeeInstruction` it makes the claim include those fees.
+   * Harmless when the bucket is empty.
+   */
+  async sweepCreatorFeeInstruction({
+    payer,
+    mint,
+    creator,
+    quoteMint,
+    quoteTokenProgram = TOKEN_PROGRAM_ID,
+  }: {
+    payer: PublicKey;
+    mint: PublicKey;
+    creator: PublicKey;
+    quoteMint: PublicKey;
+    quoteTokenProgram?: PublicKey;
+  }): Promise<TransactionInstruction> {
+    return await this.offlinePumpProgram.methods
+      .sweepCreatorFee()
+      .accountsPartial(
+        sweepBondingCurveFeeAccounts({
+          payer,
+          mint,
+          recipient: creatorVaultPda(creator),
+          quoteMint,
+          quoteTokenProgram,
+        }),
+      )
+      .instruction();
+  }
+
+  /**
+   * pump-amm `sweep_protocol_fee`: pays the protocol fees PumpSwap v2 trades
+   * left in `mint`'s canonical pool (`Pool.protocolFees`) to `recipient`, a
+   * listed `GlobalConfig.protocolFeeRecipients` wallet, creating its quote
+   * ATA when missing (`payer` pays). Permissionless.
+   */
+  async ammSweepProtocolFeeInstruction({
+    payer,
+    mint,
+    recipient,
+    quoteMint = NATIVE_MINT,
+    quoteTokenProgram = TOKEN_PROGRAM_ID,
+  }: {
+    payer: PublicKey;
+    mint: PublicKey;
+    recipient: PublicKey;
+    quoteMint?: PublicKey;
+    quoteTokenProgram?: PublicKey;
+  }): Promise<TransactionInstruction> {
+    return await this.offlinePumpAmmProgram.methods
+      .sweepProtocolFee()
+      .accountsPartial(
+        sweepPoolFeeAccounts({
+          payer,
+          mint,
+          recipient,
+          quoteMint,
+          quoteTokenProgram,
+        }),
+      )
+      .instruction();
+  }
+
+  /**
+   * pump-amm `sweep_creator_fee`: pays the creator fees PumpSwap v2 trades
+   * left in `mint`'s canonical pool (`Pool.creatorFees`) into the coin
+   * creator vault of `coinCreator` (the pool's own `coinCreator`, read it
+   * with `decodePool`), creating the vault's quote ATA when missing.
+   * Permissionless.
+   *
+   * Put it first, in the same transaction, in front of
+   * `adminCtoInstruction` and `createFeeSharingConfig` on a graduated coin
+   * (pump-amm 6081 `CreatorFeesNotSwept`), in front of `updateFeeShares`
+   * (pump-fees 6033 `PoolCreatorFeesNotSwept`), and in front of
+   * `ammTransferCreatorFeesToPumpInstruction` so a distribution includes
+   * those fees.
+   */
+  async ammSweepCreatorFeeInstruction({
+    payer,
+    mint,
+    coinCreator,
+    quoteMint = NATIVE_MINT,
+    quoteTokenProgram = TOKEN_PROGRAM_ID,
+  }: {
+    payer: PublicKey;
+    mint: PublicKey;
+    coinCreator: PublicKey;
+    quoteMint?: PublicKey;
+    quoteTokenProgram?: PublicKey;
+  }): Promise<TransactionInstruction> {
+    return await this.offlinePumpAmmProgram.methods
+      .sweepCreatorFee()
+      .accountsPartial(
+        sweepPoolFeeAccounts({
+          payer,
+          mint,
+          recipient: ammCreatorVaultPda(coinCreator),
+          quoteMint,
+          quoteTokenProgram,
+        }),
+      )
+      .instruction();
+  }
+
+  // Multi-hop Routes
+
+  /**
+   * pump-amm `multi_hop_swap`: routes `amountIn` of the route's input mint
+   * through `hops` (canonical pump pools and token-quoted pump curves, all
+   * buys or all sells) into the output mint, exact-in, refusing less than
+   * `minAmountOut` at the end. The protocol fee is charged once, at the leg
+   * trading the user's currency; the creator fee (and a pool's LP fee) once,
+   * at the leg trading the coin at the far end; middle hops charge nothing.
+   *
+   * Both user token accounts must exist (`multiHopSwapInstructions` creates
+   * them and wraps / unwraps SOL). 16 fixed accounts plus 5 per hop: routes
+   * longer than three hops need a v0 transaction with a lookup table.
+   *
+   * @param params.buybackFeeRecipient - The listed buyback wallet whose ATA
+   *   for the user's currency takes the buyback slice (the first listed one
+   *   by default). The ATA must exist.
+   * @throws {MultiHopDiscontinuousPathError} when the hops do not chain.
+   */
+  async multiHopSwapInstruction({
+    user,
+    hops,
+    side,
+    amountIn,
+    minAmountOut,
+    buybackFeeRecipient,
+  }: {
+    user: PublicKey;
+    hops: readonly MultiHopHop[];
+    side: MultiHopSide;
+    amountIn: BN;
+    minAmountOut: BN;
+    buybackFeeRecipient?: PublicKey;
+  }): Promise<TransactionInstruction> {
+    const { input, output, currency } = multiHopRouteEnds(hops, side);
+    return await this.offlinePumpAmmProgram.methods
+      .multiHopSwap(amountIn, minAmountOut)
+      .accountsPartial({
+        user,
+        userInTokenAccount: quoteAta(user, input.mint, input.tokenProgram),
+        userOutTokenAccount: quoteAta(user, output.mint, output.tokenProgram),
+        globalConfig: AMM_GLOBAL_CONFIG_PDA,
+        feeConfig: AMM_FEE_CONFIG_PDA,
+        userVolumeAccumulator: ammUserVolumeAccumulatorPda(user),
+        buybackFeeRecipient: quoteAta(
+          buybackFeeRecipient ?? getBuybackFeeRecipientForTokenQuote(),
+          currency.mint,
+          currency.tokenProgram,
+        ),
+        pumpGlobal: GLOBAL_PDA,
+        pumpFeeConfig: PUMP_FEE_CONFIG_PDA,
+        pumpEventAuthority: PUMP_EVENT_AUTHORITY_PDA,
+      })
+      .remainingAccounts(hops.flatMap(multiHopHopAccounts))
+      .instruction();
+  }
+
+  /**
+   * `multiHopSwapInstruction` with the user's accounts handled: idempotent
+   * creates of the output token account, of the input one when it is SOL,
+   * and of the buyback recipient's ATA for the user's currency; SOL wrapped
+   * into the WSOL account first when the route starts at a WSOL pool; and
+   * the WSOL account closed afterwards when the input or the output is SOL.
+   * A token input must already hold `amountIn`. At a SOL-quoted curve end
+   * the program moves SOL as lamports and reads the WSOL account only for
+   * its mint, so it is created but not funded.
+   */
+  async multiHopSwapInstructions(params: {
+    user: PublicKey;
+    hops: readonly MultiHopHop[];
+    side: MultiHopSide;
+    amountIn: BN;
+    minAmountOut: BN;
+    buybackFeeRecipient?: PublicKey;
+  }): Promise<TransactionInstruction[]> {
+    const { user } = params;
+    const { input, output, currency } = multiHopRouteEnds(
+      params.hops,
+      params.side,
+    );
+    const ata = (end: MintWithProgram) =>
+      quoteAta(user, end.mint, end.tokenProgram);
+    const createAta = (end: MintWithProgram) =>
+      createAssociatedTokenAccountIdempotentInstruction(
+        user,
+        ata(end),
+        user,
+        end.mint,
+        end.tokenProgram,
+      );
+    const closeWsol = (end: MintWithProgram) =>
+      end.mint.equals(NATIVE_MINT)
+        ? [createCloseAccountInstruction(ata(end), user, user, [], end.tokenProgram)]
+        : [];
+    const solIn = input.mint.equals(NATIVE_MINT);
+    const wrapsInput = solIn && params.hops[0]?.venue === "pool";
+    const wrap = wrapsInput
+      ? [
+          SystemProgram.transfer({
+            fromPubkey: user,
+            toPubkey: ata(input),
+            lamports: BigInt(params.amountIn.toString()),
+          }),
+          createSyncNativeInstruction(ata(input), input.tokenProgram),
+        ]
+      : [];
+    return [
+      ...(solIn ? [createAta(input)] : []),
+      ...wrap,
+      createAta(output),
+      ...buybackAtaInstructions(
+        user,
+        currency.mint,
+        currency.tokenProgram,
+        params.buybackFeeRecipient,
+        true,
+      ),
+      await this.multiHopSwapInstruction(params),
+      ...closeWsol(input),
+      ...closeWsol(output),
+    ];
+  }
+
   // ─── PumpAMM Instructions ──────────────────────────────────────────
 
   /**
@@ -2237,6 +3808,135 @@ export class PumpSdk {
         feeProgram: PUMP_FEE_PROGRAM_ID,
       })
       .remainingAccounts(remainingAccounts)
+      .instruction();
+  }
+
+  // PumpSwap v2 Trades
+
+  /**
+   * PumpSwap `buy_v2`: buys exactly `baseAmountOut` for at most
+   * `maxQuoteAmountIn` (fees included). Same prices and fee rates as `buy`;
+   * the protocol and creator fees stay in the pool for a later sweep (see
+   * `ammTradeV2Accounts`). Works on any quote mint. Refused for cashback
+   * coins (use `ammBuyInstruction`).
+   */
+  async ammBuyV2Instruction({
+    user,
+    pool,
+    mint,
+    baseAmountOut,
+    maxQuoteAmountIn,
+    quoteMint,
+    baseTokenProgram,
+    quoteTokenProgram,
+    buybackFeeRecipient,
+  }: {
+    user: PublicKey;
+    pool: PublicKey;
+    mint: PublicKey;
+    baseAmountOut: BN;
+    maxQuoteAmountIn: BN;
+    quoteMint?: PublicKey;
+    baseTokenProgram?: PublicKey;
+    quoteTokenProgram?: PublicKey;
+    buybackFeeRecipient?: PublicKey;
+  }): Promise<TransactionInstruction> {
+    return await this.offlinePumpAmmProgram.methods
+      .buyV2(baseAmountOut, maxQuoteAmountIn)
+      .accountsPartial(
+        ammTradeV2Accounts({
+          user,
+          pool,
+          mint,
+          quoteMint,
+          baseTokenProgram,
+          quoteTokenProgram,
+          buybackFeeRecipient,
+        }),
+      )
+      .instruction();
+  }
+
+  /**
+   * PumpSwap `buy_exact_quote_in_v2`: spends exactly `spendableQuoteIn`
+   * (fees included) and requires at least `minBaseAmountOut`. Accounts as in
+   * `ammBuyV2Instruction`.
+   */
+  async ammBuyExactQuoteInV2Instruction({
+    user,
+    pool,
+    mint,
+    spendableQuoteIn,
+    minBaseAmountOut,
+    quoteMint,
+    baseTokenProgram,
+    quoteTokenProgram,
+    buybackFeeRecipient,
+  }: {
+    user: PublicKey;
+    pool: PublicKey;
+    mint: PublicKey;
+    spendableQuoteIn: BN;
+    minBaseAmountOut: BN;
+    quoteMint?: PublicKey;
+    baseTokenProgram?: PublicKey;
+    quoteTokenProgram?: PublicKey;
+    buybackFeeRecipient?: PublicKey;
+  }): Promise<TransactionInstruction> {
+    return await this.offlinePumpAmmProgram.methods
+      .buyExactQuoteInV2(spendableQuoteIn, minBaseAmountOut)
+      .accountsPartial(
+        ammTradeV2Accounts({
+          user,
+          pool,
+          mint,
+          quoteMint,
+          baseTokenProgram,
+          quoteTokenProgram,
+          buybackFeeRecipient,
+        }),
+      )
+      .instruction();
+  }
+
+  /**
+   * PumpSwap `sell_v2`: sells exactly `baseAmountIn` for at least
+   * `minQuoteAmountOut` (net of fees). Accounts as in `ammBuyV2Instruction`.
+   */
+  async ammSellV2Instruction({
+    user,
+    pool,
+    mint,
+    baseAmountIn,
+    minQuoteAmountOut,
+    quoteMint,
+    baseTokenProgram,
+    quoteTokenProgram,
+    buybackFeeRecipient,
+  }: {
+    user: PublicKey;
+    pool: PublicKey;
+    mint: PublicKey;
+    baseAmountIn: BN;
+    minQuoteAmountOut: BN;
+    quoteMint?: PublicKey;
+    baseTokenProgram?: PublicKey;
+    quoteTokenProgram?: PublicKey;
+    buybackFeeRecipient?: PublicKey;
+  }): Promise<TransactionInstruction> {
+    return await this.offlinePumpAmmProgram.methods
+      .sellV2(baseAmountIn, minQuoteAmountOut)
+      .accountsPartial(
+        ammTradeV2Accounts({
+          user,
+          pool,
+          mint,
+          quoteMint,
+          baseTokenProgram,
+          quoteTokenProgram,
+          buybackFeeRecipient,
+        }),
+      )
       .instruction();
   }
 
@@ -2607,21 +4307,6 @@ export class PumpSdk {
       .instruction();
   }
 
-  async ammAdminSetCoinCreatorInstruction({
-    authority,
-    pool,
-    coinCreator,
-  }: {
-    authority: PublicKey;
-    pool: PublicKey;
-    coinCreator: PublicKey;
-  }): Promise<TransactionInstruction> {
-    return await this.offlinePumpAmmProgram.methods
-      .adminSetCoinCreator(coinCreator)
-      .accountsPartial({ adminSetCoinCreatorAuthority: authority, pool })
-      .instruction();
-  }
-
   async ammAdminUpdateTokenIncentivesInstruction({
     admin,
     mint = PUMP_TOKEN_MINT,
@@ -2811,29 +4496,6 @@ export class PumpSdk {
     );
 
     return instructions;
-  }
-
-  /**
-   * Reset a fee sharing configuration.
-   */
-  async resetFeeSharingConfigInstruction({
-    authority,
-    mint,
-    newAdmin,
-  }: {
-    authority: PublicKey;
-    mint: PublicKey;
-    newAdmin: PublicKey;
-  }): Promise<TransactionInstruction> {
-    return await this.offlinePumpFeeProgram.methods
-      .resetFeeSharingConfig()
-      .accountsPartial({
-        authority,
-        mint,
-        newAdmin,
-        sharingConfig: feeSharingConfigPda(mint),
-      })
-      .instruction();
   }
 
   /**

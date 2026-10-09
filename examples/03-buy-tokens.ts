@@ -60,10 +60,10 @@ export function quoteBuyTokens({
 /**
  * Build the buy instruction list from explicit state. Pure compute: no RPC.
  *
- * `PUMP_SDK.buyInstructions` prepends an extendAccount instruction when the
- * curve account predates the current layout, and an idempotent
+ * `PUMP_SDK.buyInstructions` prepends an idempotent
  * create-associated-token-account instruction when the buyer has no token
- * account yet. `slippage` is in percent: 1 means the transaction may spend
+ * account yet. Older curve accounts need no extendAccount: the program
+ * grows them on the trade. `slippage` is in percent: 1 means the transaction may spend
  * up to 1% more SOL than quoted before it aborts.
  */
 export async function buildBuyInstructions({

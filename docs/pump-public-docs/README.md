@@ -15,6 +15,27 @@
 | [PUMP_CASHBACK_README.md](PUMP_CASHBACK_README.md) | Cashback rewards — user volume accumulator, claim instructions |
 | [FAQ.md](FAQ.md) | Frequently asked questions — CU optimization, fee calculations |
 | [BREAKING_FEE_RECIPIENT.md](BREAKING_FEE_RECIPIENT.md) | **2026-04-28 breaking upgrade** — new trailing fee-recipient accounts on every buy/sell |
+| [HOLDER_REWARDS_README.md](HOLDER_REWARDS_README.md) | Holder rewards coins: creator fees paid to holders, and the end of cashback launches |
+| [FEE_RECIPIENTS.md](FEE_RECIPIENTS.md) | Protocol, buyback and mayhem fee recipient sets |
+| [CPI_README.md](CPI_README.md) | Calling the pump programs from your own Anchor program |
+| [SYNTHETIC_MIGRATION.md](SYNTHETIC_MIGRATION.md) | **October 2026:** the last curve buy has no max size; the excess fills against the pool-to-be |
+| [NEGATIVE_VIRTUAL_QUOTE_RESERVES.md](NEGATIVE_VIRTUAL_QUOTE_RESERVES.md) | Signed `Pool.virtual_quote_reserves` and how pool prices use it |
+| [VIRTUAL_QUOTE_RESERVES_FEE_ADJUSTMENT.md](VIRTUAL_QUOTE_RESERVES_FEE_ADJUSTMENT.md) | Virtual quote reserves and fees kept in the pool |
+
+### Instruction references
+
+| Document | Description |
+|----------|-------------|
+| [instructions/TRADE_V3.md](instructions/TRADE_V3.md) | **October 2026:** `buy_v3`, `sell_v3`, `buy_exact_quote_in_v3`: smaller trades, partial fills, any quote mint |
+| [instructions/PUMP_SWAP_TRADE_V2.md](instructions/PUMP_SWAP_TRADE_V2.md) | **October 2026:** PumpSwap `buy_v2`, `sell_v2`, `buy_exact_quote_in_v2` |
+| [instructions/MULTI_HOP_SWAP.md](instructions/MULTI_HOP_SWAP.md) | **October 2026:** `multi_hop_swap` across PumpSwap pools |
+| [instructions/CREATE_WITH_PUMP_COIN_QUOTE.md](instructions/CREATE_WITH_PUMP_COIN_QUOTE.md) | **October 2026:** `create_v2` with a pump coin as the quote mint |
+| [instructions/SWEEP_FEES.md](instructions/SWEEP_FEES.md) | **October 2026:** fees kept on the curve and pool, and the sweep instructions |
+| [instructions/COIN_CREATION.md](instructions/COIN_CREATION.md) | `create_v2` accounts |
+| [instructions/BUY.md](instructions/BUY.md), [instructions/SELL.md](instructions/SELL.md) | Curve `buy_v2` / `sell_v2` accounts |
+| [instructions/COLLECT_CREATOR_FEE.md](instructions/COLLECT_CREATOR_FEE.md) | Collecting creator fees |
+| [instructions/CREATOR_FEE_SHARING.md](instructions/CREATOR_FEE_SHARING.md) | Creator fee sharing accounts |
+| [instructions/CLAIM_CASHBACK.md](instructions/CLAIM_CASHBACK.md) | Claiming cashback on existing cashback coins |
 
 ## Programs
 

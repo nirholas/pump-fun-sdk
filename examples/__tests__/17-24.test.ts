@@ -62,6 +62,7 @@ import { buildPdaTable, exampleInputs, pdasInGroup } from "../21-derive-pdas";
 import { interpretGlobal } from "../22-decode-global";
 import {
   BONDING_CURVE_DATA_LEN,
+  BONDING_CURVE_MIN_LEN,
   curveAccountInfo,
   curveReport,
   curveStatus,
@@ -546,6 +547,11 @@ describe("example 23: decode a bonding curve", () => {
       realQuoteReserves: SOL(7),
       creator: new PublicKey("BPFLoaderUpgradeab1e11111111111111111111111"),
       isMayhemMode: true,
+      creatorFee: new BN(12_345),
+      protocolFees: new BN(67_890),
+      depth: 1,
+      postCompleteBaseOut: new BN(1_000),
+      postCompleteQuoteIn: new BN(2_000),
     });
     const data = encodeBondingCurveAccount(curve);
     expect(data.length).toBe(BONDING_CURVE_DATA_LEN);
@@ -559,12 +565,34 @@ describe("example 23: decode a bonding curve", () => {
     expect(decoded.creator.equals(curve.creator)).toBe(true);
     expect(decoded.isMayhemMode).toBe(true);
     expect(decoded.complete).toBe(false);
+    expect(decoded.creatorFee.eq(new BN(12_345))).toBe(true);
+    expect(decoded.protocolFees.eq(new BN(67_890))).toBe(true);
+    expect(decoded.depth).toBe(1);
+    expect(decoded.initialVirtualQuoteReserves.eq(curve.initialVirtualQuoteReserves)).toBe(true);
+    expect(decoded.postCompleteBaseOut.eq(new BN(1_000))).toBe(true);
+    expect(decoded.postCompleteQuoteIn.eq(new BN(2_000))).toBe(true);
+  });
+
+  it("decodes the original 49-byte layout with the later fields zeroed", () => {
+    const data = encodeBondingCurveAccount(
+      makeBondingCurve({ creatorFee: new BN(5), depth: 1 }),
+    );
+    const decoded = PUMP_SDK.decodeBondingCurve(
+      curveAccountInfo(
+        Buffer.from(data.subarray(0, BONDING_CURVE_MIN_LEN)),
+        PUMP_PROGRAM_ID,
+      ),
+    );
+    expect(decoded.virtualTokenReserves.eq(makeBondingCurve().virtualTokenReserves)).toBe(true);
+    expect(decoded.creator.equals(PublicKey.default)).toBe(true);
+    expect(decoded.creatorFee.isZero()).toBe(true);
+    expect(decoded.depth).toBe(0);
   });
 
   it("returns null rather than throwing on a truncated account", () => {
     const data = encodeBondingCurveAccount(makeBondingCurve());
     const truncated = curveAccountInfo(
-      Buffer.from(data.subarray(0, 49)),
+      Buffer.from(data.subarray(0, BONDING_CURVE_MIN_LEN - 1)),
       PUMP_PROGRAM_ID,
     );
     const warn = jest.spyOn(console, "warn").mockImplementation(() => undefined);

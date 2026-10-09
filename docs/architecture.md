@@ -115,7 +115,8 @@ All Program Derived Addresses are computed deterministically in `pda.ts`. Key PD
 | `socialFeePda(userId, platform)` | Seeds from fee program | Social fee PDA for platform-based collection |
 | `userVolumeAccumulatorPda(user)` | Seeds from Pump program | User's trading volume tracker |
 | `GLOBAL_PDA` | Constant | Global configuration account |
-| `AMM_GLOBAL_PDA` | Constant | AMM global configuration |
+| `AMM_GLOBAL_PDA` | Constant | Deprecated alias of `AMM_GLOBAL_CONFIG_PDA` (seed `global_config`) |
+| `QUOTE_CONTROL_PDA` | Constant | Pump `QuoteControl`: quote mints admitted beyond `Global.whitelistedQuoteMints` |
 
 ### Fee System
 

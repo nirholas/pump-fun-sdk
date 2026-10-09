@@ -1,5 +1,6 @@
 import {
   NATIVE_MINT,
+  NATIVE_MINT_2022,
   TOKEN_PROGRAM_ID,
   getAssociatedTokenAddressSync,
 } from "@solana/spl-token";
@@ -11,6 +12,43 @@ import type { FeeConfig, Global, Fees, BondingCurve, FeeTier } from "./state";
 
 /** Constant: 1 billion token supply with 6 decimals (1,000,000,000 * 10^6). */
 export const ONE_BILLION_SUPPLY = new BN(1_000_000_000_000_000);
+
+/**
+ * Quote mints pump-fees charges `feeTiers` for on a canonical pump curve or
+ * pool: the zero key legacy curves store for SOL, WSOL and the Token-2022
+ * native mint (`pump_fees::state::is_sol_like_quote_mint`).
+ */
+export const SOL_LIKE_QUOTE_MINTS: readonly PublicKey[] = Object.freeze([
+  PublicKey.default,
+  NATIVE_MINT,
+  NATIVE_MINT_2022,
+]);
+
+/**
+ * Quote mints pump-fees charges `stableFeeTiers` for. Hardcoded on chain
+ * (`pump_fees::state::STABLE_QUOTE_MINTS`), so widening it is a program
+ * upgrade: mainnet USDC only.
+ */
+export const STABLE_QUOTE_MINTS: readonly PublicKey[] = Object.freeze([
+  new PublicKey("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"),
+]);
+
+export function isSolLikeQuoteMint(quoteMint: PublicKey): boolean {
+  return SOL_LIKE_QUOTE_MINTS.some((mint) => mint.equals(quoteMint));
+}
+
+export function isStableQuoteMint(quoteMint: PublicKey): boolean {
+  return STABLE_QUOTE_MINTS.some((mint) => mint.equals(quoteMint));
+}
+
+/**
+ * A quote that is neither SOL-like nor a listed stable (pump coins,
+ * QuoteControl mints): pump-fees charges it `exoticFlatFees`, or `flatFees`
+ * while that schedule is unset.
+ */
+export function isExoticQuoteMint(quoteMint: PublicKey): boolean {
+  return !isSolLikeQuoteMint(quoteMint) && !isStableQuoteMint(quoteMint);
+}
 
 export interface CalculatedFeesBps {
   protocolFeeBps: BN;
@@ -44,6 +82,8 @@ export function getFee({
     mintSupply: isMayhemMode ? mintSupply : ONE_BILLION_SUPPLY,
     virtualQuoteReserves,
     virtualTokenReserves,
+    quoteMint: bondingCurve.quoteMint,
+    creatorFeeBps: bondingCurve.creatorFeeBps,
   });
 
   return fee(amount, protocolFeeBps).add(
@@ -55,7 +95,17 @@ export function getFee({
 
 /**
  * Compute the protocol and creator fee rates in basis points.
- * Uses tiered fees from FeeConfig when available, otherwise falls back to global defaults.
+ * Uses the FeeConfig schedule when available, otherwise falls back to global
+ * defaults.
+ *
+ * @param params.quoteMint - The curve's quote mint as stored on chain
+ *   (`PublicKey.default` for SOL). Selects the schedule the way pump-fees
+ *   does: SOL-like quotes pay `feeTiers`, listed stables `stableFeeTiers`,
+ *   everything else `exoticFlatFees`. Omitted means SOL.
+ * @param params.creatorFeeBps - The curve's own creator rate. While
+ *   `global.creatorFeeConfigurable` is on, a nonzero value replaces the
+ *   schedule's creator rate, as pump's `compute_fees` does. The protocol rate
+ *   is never affected.
  */
 export function computeFeesBps({
   global,
@@ -63,12 +113,49 @@ export function computeFeesBps({
   mintSupply,
   virtualQuoteReserves,
   virtualTokenReserves,
+  quoteMint,
+  creatorFeeBps,
 }: {
   global: Global;
   feeConfig: FeeConfig | null;
   mintSupply: BN;
   virtualQuoteReserves: BN;
   virtualTokenReserves: BN;
+  quoteMint?: PublicKey;
+  creatorFeeBps?: BN;
+}): CalculatedFeesBps {
+  const schedule = scheduleFeesBps({
+    global,
+    feeConfig,
+    mintSupply,
+    virtualQuoteReserves,
+    virtualTokenReserves,
+    quoteMint: quoteMint ?? PublicKey.default,
+  });
+  if (
+    !global.creatorFeeConfigurable ||
+    creatorFeeBps == null ||
+    creatorFeeBps.isZero()
+  ) {
+    return schedule;
+  }
+  return { protocolFeeBps: schedule.protocolFeeBps, creatorFeeBps };
+}
+
+function scheduleFeesBps({
+  global,
+  feeConfig,
+  mintSupply,
+  virtualQuoteReserves,
+  virtualTokenReserves,
+  quoteMint,
+}: {
+  global: Global;
+  feeConfig: FeeConfig | null;
+  mintSupply: BN;
+  virtualQuoteReserves: BN;
+  virtualTokenReserves: BN;
+  quoteMint: PublicKey;
 }): CalculatedFeesBps {
   if (feeConfig != null) {
     // A graduated curve has zeroed reserves, so its market cap is undefined
@@ -83,16 +170,49 @@ export function computeFeesBps({
           virtualTokenReserves,
         });
 
-    return calculateFeeTier({
-      feeTiers: feeConfig.feeTiers,
-      marketCap,
-    });
+    return selectCurveFeeSchedule({ feeConfig, quoteMint, marketCap });
   }
 
   return {
     protocolFeeBps: global.feeBasisPoints,
     creatorFeeBps: global.creatorFeeBasisPoints,
   };
+}
+
+/**
+ * The schedule a canonical pump curve (or its canonical pool) pays, chosen by
+ * quote mint the way `FeeConfig::fees_for_quote_mint` does with
+ * `is_pump_pool = true`.
+ *
+ * @param params.marketCap - Market cap in the quote mint's base units.
+ */
+export function selectCurveFeeSchedule({
+  feeConfig,
+  quoteMint,
+  marketCap,
+}: {
+  feeConfig: FeeConfig;
+  quoteMint: PublicKey;
+  marketCap: BN;
+}): Fees {
+  if (isSolLikeQuoteMint(quoteMint)) {
+    return calculateFeeTier({ feeTiers: feeConfig.feeTiers, marketCap });
+  }
+  if (isStableQuoteMint(quoteMint)) {
+    // A FeeConfig written before stable tiers existed decodes to an empty
+    // list; such an account charged the SOL tiers.
+    const stable = feeConfig.stableFeeTiers ?? [];
+    return calculateFeeTier({
+      feeTiers: stable.length > 0 ? stable : feeConfig.feeTiers,
+      marketCap,
+    });
+  }
+  const exotic = feeConfig.exoticFlatFees;
+  return exotic == null || isZeroFees(exotic) ? feeConfig.flatFees : exotic;
+}
+
+function isZeroFees({ lpFeeBps, protocolFeeBps, creatorFeeBps }: Fees) {
+  return lpFeeBps.isZero() && protocolFeeBps.isZero() && creatorFeeBps.isZero();
 }
 
 /**
@@ -175,6 +295,24 @@ export function isBreakingFeeRecipient(pubkey: PublicKey): boolean {
   return BREAKING_FEE_RECIPIENTS.some((r) => r.toBase58() === b58);
 }
 
+/**
+ * A buyback fee recipient for a v3 trade on a SOL curve: any listed wallet
+ * (`Global.buybackFeeRecipients`), picked at random to spread write locks.
+ */
+export function getStaticRandomFeeRecipientForBuyback(): PublicKey {
+  return pickBreakingFeeRecipient();
+}
+
+/**
+ * The buyback recipient whose quote ATA the v3 trades pay on a token quote:
+ * always the first listed entry (`Global.buybackFeeRecipients[0]`), so one ATA
+ * per quote mint must exist. SOL curves pay any listed wallet
+ * (`getStaticRandomFeeRecipientForBuyback`).
+ */
+export function getBuybackFeeRecipientForTokenQuote(): PublicKey {
+  return BREAKING_FEE_RECIPIENTS[0]!;
+}
+
 /** Pick one of the 8 breaking fee recipients at random. */
 export function pickBreakingFeeRecipient(): PublicKey {
   return BREAKING_FEE_RECIPIENTS[
@@ -220,7 +358,8 @@ export function buildAmmBreakingFeeRecipientAccounts(
       isSigner: false,
     },
     {
-      pubkey: BREAKING_FEE_RECIPIENT_WSOL_ATAS.get(feeRecipient.toBase58()) ??
+      pubkey:
+        BREAKING_FEE_RECIPIENT_WSOL_ATAS.get(feeRecipient.toBase58()) ??
         getAssociatedTokenAddressSync(
           NATIVE_MINT,
           feeRecipient,

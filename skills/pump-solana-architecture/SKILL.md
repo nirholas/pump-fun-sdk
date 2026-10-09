@@ -68,12 +68,12 @@ Pump Program                    PumpAMM Program
 
 ## Account Extension
 
-Bonding curve accounts may need extension to `BONDING_CURVE_NEW_SIZE` (151 bytes) before certain operations:
+Bonding curve accounts grew to `BONDING_CURVE_NEW_SIZE` (166 bytes) in the October 2026 upgrade. The program grows a pre-upgrade curve on its first new-style trade. An instruction that reads the new fields without growing the account first needs:
 
 ```typescript
 const extendIx = await PUMP_SDK.extendAccountInstruction({
-    bondingCurvePda: bondingCurvePda(mint),
-    bondingCurveAccountInfo
+    account: bondingCurvePda(mint),
+    user,
 });
 ```
 
@@ -82,7 +82,7 @@ const extendIx = await PUMP_SDK.extendAccountInstruction({
 - Use `findProgramAddressSync` for all PDA derivation — never manually compute bump seeds
 - Group related account fetches into a single `getMultipleAccountsInfo` call
 - Always check account existence before decoding — use nullable decoders
-- Extend accounts before migration or setCreator operations
+- Extend a pre-upgrade account only in front of an instruction that does not grow it itself
 
 ## Common Pitfalls
 

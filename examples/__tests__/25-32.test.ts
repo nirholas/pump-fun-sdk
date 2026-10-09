@@ -199,6 +199,12 @@ function makePool(overrides: Partial<Pool> = {}): Pool {
     coinCreator: TEST_CREATOR,
     isMayhemMode: false,
     isCashbackCoin: false,
+    isHolderReward: false,
+    virtualQuoteReserves: new BN(0),
+    creatorFeeBps: new BN(0),
+    canEditCreatorFee: false,
+    protocolFees: new BN(0),
+    creatorFees: new BN(0),
     ...overrides,
   };
 }
@@ -219,6 +225,12 @@ function makeAmmGlobalConfig(
     mayhemModeEnabled: false,
     reservedFeeRecipients: [TEST_PUBKEY],
     isCashbackEnabled: true,
+    buybackFeeRecipients: [TEST_PUBKEY],
+    buybackBasisPoints: new BN(0),
+    boostAuthority: TEST_PUBKEY,
+    boostEnabled: false,
+    creatorFeeConfigurable: false,
+    maxConfigurableCreatorFeeBps: new BN(0),
     ...overrides,
   };
 }

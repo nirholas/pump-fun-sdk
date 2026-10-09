@@ -31,6 +31,7 @@ const AMM_UNPREFIXED: ReadonlySet<string> = new Set([
   "deposit",
   "withdraw",
   "createPool",
+  "sweepPoolFee",
 ]);
 
 /** PumpFees event types that do not carry the `fees` name prefix. */

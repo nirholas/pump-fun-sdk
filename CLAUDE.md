@@ -53,6 +53,8 @@ Three on-chain programs:
 | CU optimization, PDA bump effects | `docs/pump-public-docs/FAQ.md` |
 | create_v2, Token2022, mayhem mode, social fees | `docs/pump-public-docs/README.md` |
 | **2026-04-28 breaking fee-recipient upgrade** (trailing accounts on every buy/sell) | `docs/pump-public-docs/BREAKING_FEE_RECIPIENT.md` |
+| **October 2026 upgrade**: v3 curve trades, PumpSwap v2 trades, multi-hop swaps, fee sweeps, pump-coin quotes | `docs/pump-public-docs/instructions/` (`TRADE_V3.md`, `PUMP_SWAP_TRADE_V2.md`, `MULTI_HOP_SWAP.md`, `SWEEP_FEES.md`, `CREATE_WITH_PUMP_COIN_QUOTE.md`) |
+| Synthetic migration, signed pool `virtualQuoteReserves` | `docs/pump-public-docs/SYNTHETIC_MIGRATION.md`, `docs/pump-public-docs/NEGATIVE_VIRTUAL_QUOTE_RESERVES.md` |
 
 ## Code Examples
 
@@ -144,13 +146,18 @@ import BN from "bn.js";
 ```typescript
 interface BondingCurve {
   virtualTokenReserves: BN;
-  virtualSolReserves: BN;
+  virtualQuoteReserves: BN;  // in quoteMint units (lamports for SOL)
   realTokenReserves: BN;
-  realSolReserves: BN;
+  realQuoteReserves: BN;
   tokenTotalSupply: BN;
   complete: boolean;       // true = graduated to AMM, bonding curve trading disabled
   creator: PublicKey;
   isMayhemMode: boolean;
+  quoteMint: PublicKey;    // PublicKey.default = SOL
+  creatorFee: BN;          // left by v3 trades until sweepCreatorFeeInstruction
+  protocolFees: BN;        // left by v3 trades until sweepProtocolFeeInstruction
+  depth: number;           // pump-coin quote chain depth
+  // ... more fields, read src/state.ts for full definition
 }
 
 interface Shareholder {
@@ -179,7 +186,7 @@ interface Global {
 4. **Shares not summing to 10,000** — Fee sharing config requires exactly 10,000 BPS total.
 5. **Returning `Transaction` instead of `TransactionInstruction[]`** — SDK returns instructions, not transactions.
 6. **Calling `npx tsc --noEmit`** — FORBIDDEN. Use `npm run typecheck`.
-7. **Not extending accounts before migration** — `BONDING_CURVE_NEW_SIZE = 151`, accounts may need extension.
+7. **Prepending `extendAccount` to trades** is no longer needed: `BONDING_CURVE_NEW_SIZE = 166` and the program grows a pre-upgrade curve on its first new-style trade. Deposits and withdrawals on a PumpSwap pool nobody has traded since the upgrade still need `ammExtendAccountInstruction` first.
 8. **Importing from internal paths** — Import from `@nirholas/pump-sdk`, not `@nirholas/pump-sdk/dist/...`.
 9. **Hand-rolling buy/sell without the breaking fee recipient** — After the 2026-04-28 upgrade, every bonding curve buy/sell must carry one of 8 mutable trailing fee recipients (`pickBreakingFeeRecipient()`), and every AMM buy/sell must carry that recipient **plus** its quote-mint ATA (`buildAmmBreakingFeeRecipientAccounts()`). Using `PUMP_SDK.*` and `OnlinePumpSdk` gets this right automatically. See `docs/pump-public-docs/BREAKING_FEE_RECIPIENT.md`.
 10. **Widening the @pumpfunclaims Telegram feed** — that channel carries ONE event, a dev's first-ever GitHub reward claim on a coin. `channel-bot/` runs two feeds from one codebase, selected by `FEED_PROFILE`; the claims feed is `github-first-claims` and must never post creator-fee collections, repeat claims, graduations, or diagnostics. Read `channel-bot/CLAUDE.md` before touching anything in that directory.

@@ -73,7 +73,7 @@ The SDK randomly selects from `global.feeRecipients[]` (normal mode) or `global.
 
 - Circular dependency between `sdk.ts` and `onlineSdk.ts` — `sdk.ts` imports `OFFLINE_PUMP_PROGRAM` from `onlineSdk.ts` and vice versa
 - Buy instruction passes `{ 0: true }` as a flags argument — this is intentional, not a bug
-- `BONDING_CURVE_NEW_SIZE = 151` — accounts may need extension before certain operations
+- `BONDING_CURVE_NEW_SIZE = 166`: the program grows older curves on their first new-style trade, so buy/sell no longer prepend `extendAccount`
 - `BondingCurve.complete === true` means the token has graduated to AMM — bonding curve operations will fail
 - The `createInstruction` (v1) is deprecated in favor of `createV2Instruction` (Token-2022)
 

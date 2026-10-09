@@ -456,8 +456,11 @@ See [docs/api-reference.md](./docs/api-reference.md) for the complete API docume
 | `getBuyTokenAmountFromSolAmount(...)` | `BN` | Tokens received for a given SOL amount |
 | `getBuySolAmountFromTokenAmount(...)` | `BN` | SOL cost for a given token amount |
 | `getSellSolAmountFromTokenAmount(...)` | `BN` | SOL received for selling tokens |
-| `bondingCurveMarketCap(...)` | `BN` | Current market cap in lamports |
-| `newBondingCurve(global)` | `BondingCurve` | Fresh bonding curve from global config |
+| `bondingCurveMarketCap(...)` | `BN` | Current market cap in the quote mint's base units |
+| `newBondingCurve(global, quoteMint?, ...)` | `BondingCurve` | Fresh bonding curve from global config, for any quote mint |
+| `getBuyV3QuoteAmountFromTokenAmount(...)` | `BN` | `buy_v3` cost, including the post-completion leg of a synthetic migration |
+| `getBuyV3TokenAmountFromQuoteAmount(...)` | `BN` | Tokens `buy_exact_quote_in_v3` buys for a quote budget |
+| `pumpQuoteReserves(global, quote)` | `{ virtualQuoteReserves, depth }` | Starting reserves `create_v2` derives for a coin quoted in a pump coin |
 
 ### Analytics Functions
 
@@ -476,6 +479,20 @@ See [docs/api-reference.md](./docs/api-reference.md) for the complete API docume
 | `getFee(...)` | `BN` | Fee amount for a trade |
 | `computeFeesBps(...)` | `CalculatedFeesBps` | Current fee basis points (protocol + creator) |
 | `calculateFeeTier(...)` | `Fees` | Fee tier for a given market cap |
+| `selectCurveFeeSchedule(...)` | `Fees` | Fee schedule by quote mint (SOL-like tiers, stable tiers, or exotic flat fees) |
+
+### October 2026 Program Upgrade (3.0.0)
+
+| Builder | Description |
+|---------|-------------|
+| `buyV3Instructions` / `buyExactQuoteInV3Instructions` / `sellV3Instructions` | v3 curve trades for SOL and token-quoted curves; fees stay on the curve for a sweep |
+| `ammBuyV2Instruction` / `ammBuyExactQuoteInV2Instruction` / `ammSellV2Instruction` | PumpSwap v2 trades; fees stay in the pool for a sweep |
+| `multiHopSwapInstructions` | One exact-input route through pump pools and pump-coin quoted curves |
+| `sweepCreatorFeeInstruction` / `ammSweepCreatorFeeInstruction` (and the protocol variants) | Pay fees left by v3 / v2 trades out to the creator vault or protocol recipients |
+| `OnlinePumpSdk.creatorFeeSweepInstructions(mint, payer)` | Exactly the sweeps a coin needs before a distribution, CTO or fee-share change |
+| `createV2Instruction({ quoteMint, pumpQuote, ... })` | Launch a coin quoted in a whitelisted, `QuoteControl`-listed, or pump coin mint |
+
+Program guides for each are in [docs/pump-official/docs/instructions](./docs/pump-official/docs/instructions); the SDK side is in [docs/api-reference.md](./docs/api-reference.md), [docs/amm-trading.md](./docs/amm-trading.md) and [docs/bonding-curve-math.md](./docs/bonding-curve-math.md). Upgrading from 2.x: see the 3.0.0 entry in [CHANGELOG.md](./CHANGELOG.md).
 
 ### Token Incentive Functions
 

@@ -11,34 +11,37 @@ Each buy / sell instruction used CUs depend on all the inputs of the instruction
   more CUs to log than smaller values.
 - for sell inputs, it's similar.
 
-The PDA bump seed derivation is the most expensive part of the instruction execution, as it can take up to 256
-iterations to find the correct bump seed. The bump seed is deterministic for a given set of seeds, so the same
-`(user, mint, creator)` tuple will always result in the same CU cost.
+As an example, for the
+tx https://solscan.io/tx/5frph8gBFyX7ayBmqntvwpTPwzZ8aF4kdfJAvC52Li2iDnnaRwtmcZP839Cm4YQUFx7GzsUUStCfAy3hAG69ir4u:
 
-In practice, the CU cost of a buy / sell instruction varies between `20_000` and `80_000` CUs, depending on the
-inputs. For most practical purposes, a static CU limit of `100_000` is recommended to avoid failed transactions
-due to insufficient CU budget.
+```Rust
+    let mint = Pubkey::from_str("Coyj3LtKn1BNSgWc9HsGK5SKoGfEoDaymig4wrN6pump").unwrap();
 
-## What happens when a bonding curve completes?
+assert_eq!(
+    Pubkey::find_program_address(&[b"bonding-curve", mint.as_ref()], &pump::ID).1,
+    255
+);
+```
 
-When `real_token_reserves == 0` after a buy instruction, the `complete` field is set to `true`. After that:
-- No more buys or sells can be executed on the bonding curve
-- The `migrate` instruction can be called to move liquidity to PumpSwap AMM
-- The `migrate` instruction is permissionless and idempotent
+The `bonding_curve` bump seed for mint `Coyj3LtKn1BNSgWc9HsGK5SKoGfEoDaymig4wrN6pump` is `255`.
 
-## How do I detect if a token has graduated?
+While for the
+tx https://solscan.io/tx/5xozUcJFvRj4ySpE2epSSs95ySxs6cLjs1rV2uaFNkFgsEMBZW53VUa2uc3CVQLVJRYxfQ5JoSzZLiUvAgM4GEJM:
 
-Check the `BondingCurve::complete` field. If `true`, the token has graduated and should be traded on the AMM pool instead.
+```Rust
+    let mint = Pubkey::from_str("3cLSxG6eXcCD9NSMawkhUcrvVCUC8KHKHMCxx6bhpump").unwrap();
 
-## What are the fee recipients?
+assert_eq!(
+    Pubkey::find_program_address(&[b"bonding-curve", mint.as_ref()], &pump::ID).1,
+    251
+);
+```
 
-The Pump program has 8 fee recipients (1 in `Global::fee_recipient` + 7 in `Global::fee_recipients`). Any of them
-can be used in buy/sell instructions. It is recommended to randomly pick one for each transaction to improve
-throughput.
+The `bonding_curve` bump seed for mint `3cLSxG6eXcCD9NSMawkhUcrvVCUC8KHKHMCxx6bhpump` is `251`.
 
-Similarly, PumpSwap has 8 `protocol_fee_recipients` in the `GlobalConfig` account.
+So it is not possible to compute the used CUs without first simulating the buy / sell tx before submission and adding a
+buffer of 1% to the simulated CUs, because buy instruction executes a bit more code when the bonding curve completes on
+that buy.
 
-## How do I handle mayhem mode coins?
-
-For coins with `is_mayhem_mode == true`, you must pass a Mayhem fee recipient instead of the regular fee recipient.
-See the main README for the list of Mayhem fee recipients.
+But since tx simulation before buy / sell slows down tx submission and can increase the chances for slippage errors, it
+is recommended to use a static big enough CU limit like `100_000`.

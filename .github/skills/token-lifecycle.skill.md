@@ -88,15 +88,15 @@ const ixs = await PUMP_SDK.sellInstructions({
 ```
 
 **What `buyInstructions` does internally:**
-1. Optionally extends bonding curve account to `BONDING_CURVE_NEW_SIZE` (151 bytes)
-2. Creates user's ATA (idempotent — no-op if exists)
-3. Builds the buy instruction with slippage-adjusted `maxSolCost`
-4. Passes `{ 0: true }` flags argument (intentional)
+1. Creates user's ATA (idempotent: no-op if exists)
+2. Builds the buy instruction with slippage-adjusted `maxSolCost`
+3. Passes `{ 0: true }` flags argument (intentional)
+
+No `extendAccount` is prepended: the program grows a pre-upgrade curve to `BONDING_CURVE_NEW_SIZE` (166 bytes) on its first new-style trade.
 
 **What `sellInstructions` does internally:**
-1. Optionally extends bonding curve account
-2. Builds sell instruction with slippage-adjusted `minSolOutput`
-3. Adds user volume accumulator PDA as a remaining account (for cashback tracking)
+1. Builds sell instruction with slippage-adjusted `minSolOutput`
+2. Adds user volume accumulator PDA as a remaining account (for cashback tracking)
 
 ### Phase 3: Graduation Detection
 
@@ -162,8 +162,16 @@ const balance = await onlineSdk.getCreatorVaultBalanceBothPrograms(creator);
 // Set the creator on an existing bonding curve
 const ix = await PUMP_SDK.setCreator({ mint, creator, user });
 
-// Admin: change creator on both programs
-const ixs = await onlineSdk.adminSetCoinCreatorInstructions(newCreator, mint);
+// Community takeover (replaces the retired admin_set_creator / admin_set_coin_creator).
+// Sweep creator fees v3 or v2 trades left behind first, in the same transaction.
+const sweeps = await onlineSdk.creatorFeeSweepInstructions(mint, admin);
+const cto = await PUMP_SDK.adminCtoInstruction({
+  adminSetCreatorAuthority: global.adminSetCreatorAuthority,
+  mint,
+  currentCreator: bondingCurve.creator,
+  newCreator,
+});
+const ixs = [...sweeps, cto];
 ```
 
 ## Key Constants
@@ -174,7 +182,7 @@ const ixs = await onlineSdk.adminSetCoinCreatorInstructions(newCreator, mint);
 | `PUMP_AMM_PROGRAM_ID` | `pAMMBay6oceH9fJKBRHGP5D4bD4sWpmSwMn52FMfXEA` | AMM pool program |
 | `PUMP_FEE_PROGRAM_ID` | `pfeeUxB6jkeY1Hxd7CsFCAjcbHA9rWtchMGdZ6VojVZ` | Fee sharing program |
 | `MAYHEM_PROGRAM_ID` | `MAyhSmzXzV1pTf7LsNkrNwkWKTo4ougAJ1PPg47MD4e` | Mayhem mode program |
-| `BONDING_CURVE_NEW_SIZE` | `151` | Extended account size |
+| `BONDING_CURVE_NEW_SIZE` | `166` | Account size since the October 2026 upgrade |
 | `MAX_SHAREHOLDERS` | `10` | Max fee sharing participants |
 
 ## Key PDAs
@@ -224,7 +232,7 @@ const ixs = await onlineSdk.adminSetCoinCreatorInstructions(newCreator, mint);
 ## Common Pitfalls
 
 - Circular dependency between `sdk.ts` and `onlineSdk.ts` — `sdk.ts` imports `OFFLINE_PUMP_PROGRAM` from `onlineSdk.ts`
-- `BONDING_CURVE_NEW_SIZE = 151` — accounts may need `extendAccountInstruction` before migration or setCreator
+- `BONDING_CURVE_NEW_SIZE = 166`: the program grows older curves on their first new-style trade; `extendAccountInstruction` is only needed in front of an instruction that does not
 - `BondingCurve.complete === true` means graduated — bonding curve buy/sell will fail on-chain
 - Buy instruction deliberately passes `{ 0: true }` flags — this is not a bug
 - `createInstruction` (v1) is deprecated — always use `createV2Instruction`

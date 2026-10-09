@@ -23,9 +23,14 @@ import { formatSol, formatTokens, heading, row } from "./_lib/format";
 /**
  * The serialised size of a current-layout BondingCurve account:
  * 8 discriminator + 5 u64 + 1 bool + 32 pubkey + 2 bool + 32 pubkey
- * + 1 u64 + 2 bool.
+ * + 1 u64 + 2 bool, then the October 2026 fields: 2 u64 (fees kept on the
+ * curve) + 1 u8 (pump-coin quote depth) + 3 u64 (starting quote reserves and
+ * the synthetic-migration totals).
  */
-export const BONDING_CURVE_DATA_LEN = 125;
+export const BONDING_CURVE_DATA_LEN = 166;
+
+/** The 49-byte layout the first curves were written with: discriminator, 5 u64, complete. */
+export const BONDING_CURVE_MIN_LEN = 49;
 
 /** Where a curve sits in its life. */
 export type CurveStatus = "fresh" | "active" | "complete";
@@ -105,9 +110,9 @@ export function bondingCurveDiscriminator(): Buffer {
  * Serialise a curve into the exact bytes the program stores.
  *
  * Written out field by field because that layout is the thing this example
- * is about: it is what the decoder reads, and it is why a shorter account
- * fails to decode. Borsh here is little-endian u64s, a one-byte bool, and a
- * raw 32-byte pubkey, in declaration order.
+ * is about: it is what the decoder reads, and every older layout is a prefix
+ * of it. Borsh here is little-endian u64s, one-byte bools and u8s, and raw
+ * 32-byte pubkeys, in declaration order.
  */
 export function encodeBondingCurveAccount(bondingCurve: BondingCurve): Buffer {
   const u64 = (value: BN): Buffer => value.toArrayLike(Buffer, "le", 8);
@@ -126,6 +131,12 @@ export function encodeBondingCurveAccount(bondingCurve: BondingCurve): Buffer {
     u64(bondingCurve.creatorFeeBps),
     Buffer.from([bondingCurve.canEditCreatorFee ? 1 : 0]),
     Buffer.from([bondingCurve.isHolderReward ? 1 : 0]),
+    u64(bondingCurve.creatorFee),
+    u64(bondingCurve.protocolFees),
+    Buffer.from([bondingCurve.depth]),
+    u64(bondingCurve.initialVirtualQuoteReserves),
+    u64(bondingCurve.postCompleteBaseOut),
+    u64(bondingCurve.postCompleteQuoteIn),
   ]);
 }
 
@@ -187,17 +198,20 @@ export async function main(): Promise<void> {
   console.log("it at an address that is not a curve, or at an account written by an");
   console.log("older program version, and it logs a warning and returns null, so a");
   console.log("batch scan over thousands of addresses does not die on the first bad");
-  console.log("one. It also pads a short buffer before decoding, a carry-over from");
-  console.log("the pre-extension layout. That pad is 82 bytes and the current struct");
+  console.log("one. Every layout the program has written, from the original");
   console.log(
-    `needs ${BONDING_CURVE_DATA_LEN}, so a genuinely truncated account now returns null rather`,
+    `${BONDING_CURVE_MIN_LEN} bytes up to today's ${BONDING_CURVE_DATA_LEN}, is a prefix of the next, so the decoder`,
   );
-  console.log("than a partly-zeroed struct. Null is the honest answer; treat it as");
+  console.log("zero-fills the fields an older curve lacks, exactly as the program reads");
+  console.log(
+    `them. Below ${BONDING_CURVE_MIN_LEN} bytes the account is genuinely truncated and the nullable`,
+  );
+  console.log("variant returns null. Null is the honest answer; treat it as");
   console.log("'unreadable', never as 'empty curve'.");
 
   heading("A truncated account, decoded both ways");
   const truncated = curveAccountInfo(
-    Buffer.from(accountInfo.data.subarray(0, 49)),
+    Buffer.from(accountInfo.data.subarray(0, BONDING_CURVE_MIN_LEN - 1)),
     accountInfo.owner,
   );
   let strictError = "decoded without error";

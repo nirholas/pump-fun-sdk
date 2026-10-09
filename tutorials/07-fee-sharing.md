@@ -182,18 +182,6 @@ const transferIx = await PUMP_SDK.transferFeeSharingAuthorityInstruction({
 });
 ```
 
-### Reset Fee Sharing Config
-
-Wipe the existing shareholders and reassign admin. Useful when restructuring a team:
-
-```typescript
-const resetIx = await PUMP_SDK.resetFeeSharingConfigInstruction({
-  authority: creator.publicKey,
-  mint,
-  newAdmin: new PublicKey("NEW_ADMIN_ADDRESS"),
-});
-// After reset, set up new shareholders with updateFeeShares
-```
 
 ### Revoke Authority (Irreversible)
 

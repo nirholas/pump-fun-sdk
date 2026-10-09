@@ -29,8 +29,16 @@ Manage Pump protocol authority operations: set coin creator, update token incent
 ### Set Coin Creator
 ```typescript
 const ix = await PUMP_SDK.setCreator({ mint, creator: newCreator, user: admin });
-// Cross-program version:
-const ixs = await onlineSdk.adminSetCoinCreatorInstructions(newCreator, mint);
+// Community takeover (replaces the retired admin_set_creator / admin_set_coin_creator).
+// Sweep creator fees v3 or v2 trades left behind first, in the same transaction.
+const sweeps = await onlineSdk.creatorFeeSweepInstructions(mint, admin);
+const cto = await PUMP_SDK.adminCtoInstruction({
+  adminSetCreatorAuthority: global.adminSetCreatorAuthority,
+  mint,
+  currentCreator: bondingCurve.creator,
+  newCreator,
+});
+const ixs = [...sweeps, cto];
 ```
 
 ### Update Token Incentives
@@ -52,7 +60,7 @@ const ix = await PUMP_SDK.claimCashback({ user, backendSigner });
 
 | Method | Description |
 |--------|-------------|
-| `adminSetCoinCreatorInstructions` | Set creator on Pump + PumpAMM |
+| `creatorFeeSweepInstructions` | Sweep un-swept creator fees from the curve and the canonical pool |
 | `collectCoinCreatorFeeInstructions` | Collect fees from both vaults |
 | `syncUserVolumeAccumulatorBothPrograms` | Sync volume on both programs |
 

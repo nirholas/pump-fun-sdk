@@ -46,6 +46,64 @@ describe("public API exports", () => {
     expect(typeof sdk.patchAmmInstruction).toBe("function");
   });
 
+  // ── October 2026 upgrade surface ───────────────────────────────────
+
+  it("exports the v3, PumpSwap v2, multi-hop and pump-quote helpers", () => {
+    expect(typeof sdk.getBuyV3QuoteAmountFromTokenAmount).toBe("function");
+    expect(typeof sdk.getBuyV3TokenAmountFromQuoteAmount).toBe("function");
+    expect(typeof sdk.isBondingCurveMigrated).toBe("function");
+    expect(typeof sdk.pumpQuoteAdmission).toBe("function");
+    expect(typeof sdk.pumpQuoteReserves).toBe("function");
+    expect(typeof sdk.createV2QuoteRemainingAccounts).toBe("function");
+    expect(typeof sdk.tradeV3Accounts).toBe("function");
+    expect(typeof sdk.ammTradeV2Accounts).toBe("function");
+    expect(typeof sdk.multiHopRouteEnds).toBe("function");
+    expect(typeof sdk.multiHopHopAccounts).toBe("function");
+    expect(typeof sdk.selectCurveFeeSchedule).toBe("function");
+    expect(typeof sdk.isSolLikeQuoteMint).toBe("function");
+    expect(typeof sdk.isStableQuoteMint).toBe("function");
+    expect(typeof sdk.isExoticQuoteMint).toBe("function");
+    expect(typeof sdk.getBuybackFeeRecipientForTokenQuote).toBe("function");
+    expect(typeof sdk.poolQuoteTerms).toBe("function");
+    expect(typeof sdk.getPumpProgramError).toBe("function");
+    expect(sdk.QUOTE_CONTROL_PDA).toBeDefined();
+    expect(sdk.BONDING_CURVE_SIZE).toBe(166);
+    expect(sdk.POOL_SIZE).toBe(287);
+    expect(sdk.SweepFeeBucket.Creator).toBe(1);
+  });
+
+  it("exports the new PumpSdk builders and decoders", () => {
+    for (const method of [
+      "buyV3Instructions",
+      "buyExactQuoteInV3Instructions",
+      "sellV3Instructions",
+      "sweepProtocolFeeInstruction",
+      "sweepCreatorFeeInstruction",
+      "ammSweepProtocolFeeInstruction",
+      "ammSweepCreatorFeeInstruction",
+      "multiHopSwapInstruction",
+      "multiHopSwapInstructions",
+      "ammBuyV2Instruction",
+      "ammBuyExactQuoteInV2Instruction",
+      "ammSellV2Instruction",
+      "setMaxCurveDepthInstruction",
+      "decodeQuoteControl",
+      "decodePostCompleteBuyEvent",
+      "decodeSweepBondingCurveFeeEvent",
+      "decodeSweepPoolFeeEvent",
+    ] as const) {
+      expect(typeof sdk.PUMP_SDK[method]).toBe("function");
+    }
+    for (const method of [
+      "fetchPumpQuote",
+      "fetchQuoteControl",
+      "fetchQuoteTokenProgram",
+      "creatorFeeSweepInstructions",
+    ] as const) {
+      expect(typeof sdk.OnlinePumpSdk.prototype[method]).toBe("function");
+    }
+  });
+
   // ── SDK classes & singletons ───────────────────────────────────────
 
   it("exports PumpSdk and PUMP_SDK", () => {
