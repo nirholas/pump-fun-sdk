@@ -627,3 +627,7 @@ Full documentation site: **https://sdk.pumpk.it**
 
 - [Getting started](docs/getting-started.md) covers install and first run.
 - [Examples](docs/examples.md) has copy-paste snippets.
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=nirholas/pump-fun-sdk&type=Date)](https://www.star-history.com/#nirholas/pump-fun-sdk&Date)
