@@ -631,3 +631,26 @@ Full documentation site: **https://sdk.pumpk.it**
 ## Star History
 
 [![Star History Chart](https://api.star-history.com/svg?repos=nirholas/pump-fun-sdk&type=Date)](https://www.star-history.com/#nirholas/pump-fun-sdk&Date)
+
+<!-- three.ws:growth -->
+## Support the project
+
+If pump-fun-sdk saves you time, **[star it on GitHub](https://github.com/nirholas/pump-fun-sdk)**. Stars are how other developers and AI agents find the repositories worth trusting, and they cost you one click.
+
+Know someone who would use it? [Post on X](https://twitter.com/intent/tweet?text=pump-fun-sdk%3A%20Token%20creation%20launching%2C%20bonding%20curve%20trading%2C%20AMM%20migration%2C%20tiered%20fees%2C%20creator%20fee%20sharing&url=https%3A%2F%2Fgithub.com%2Fnirholas%2Fpump-fun-sdk) · [Share on Bluesky](https://bsky.app/intent/compose?text=pump-fun-sdk%3A%20Token%20creation%20launching%2C%20bonding%20curve%20trading%2C%20AMM%20migration%2C%20tiered%20fees%2C%20creator%20fee%20sharing%20https%3A%2F%2Fgithub.com%2Fnirholas%2Fpump-fun-sdk) · [Share on LinkedIn](https://www.linkedin.com/sharing/share-offsite/?url=https%3A%2F%2Fgithub.com%2Fnirholas%2Fpump-fun-sdk) · [Submit to Hacker News](https://news.ycombinator.com/submitlink?u=https%3A%2F%2Fgithub.com%2Fnirholas%2Fpump-fun-sdk&t=pump-fun-sdk%3A%20Token%20creation%20launching%2C%20bonding%20curve%20trading%2C%20AMM%20migration%2C%20tiered%20fees%2C%20creator%20fee%20sharing) · [Share on Reddit](https://www.reddit.com/submit?url=https%3A%2F%2Fgithub.com%2Fnirholas%2Fpump-fun-sdk&title=pump-fun-sdk%3A%20Token%20creation%20launching%2C%20bonding%20curve%20trading%2C%20AMM%20migration%2C%20tiered%20fees%2C%20creator%20fee%20sharing)
+
+## Built for AI agents too
+
+Coding agents and LLM tooling can read this repo directly: [AGENTS.md](./AGENTS.md), [llms.txt](./llms.txt), [llms-full.txt](./llms-full.txt). Point an agent at `https://github.com/nirholas/pump-fun-sdk` and it has the context it needs.
+
+## More from the same author
+
+- [All repositories by nirholas](https://github.com/nirholas/nirholas#readme): the full catalog, grouped by topic
+- [three.ws](https://three.ws): the platform for 3D AI agents with Solana wallets, a skill marketplace and x402 payments
+- Questions or ideas: [open an issue](https://github.com/nirholas/pump-fun-sdk/issues) or [start a discussion](https://github.com/nirholas/pump-fun-sdk/discussions)
+
+## Contributors
+
+[![Contributors](https://contrib.rocks/image?repo=nirholas/pump-fun-sdk)](https://github.com/nirholas/pump-fun-sdk/graphs/contributors)
+
+<!-- /three.ws:growth -->
