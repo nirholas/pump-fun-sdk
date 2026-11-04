@@ -2,7 +2,7 @@ import { consola } from 'consola';
 import { colors } from 'consola/utils';
 import dJSON from 'dirty-json';
 import 'dotenv/config';
-import { HumanMessage, SystemMessage } from 'langchain/schema';
+import { HumanMessage, SystemMessage } from '@langchain/core/messages';
 
 import { config } from './const';
 import { model } from './model';
@@ -14,7 +14,7 @@ export const translateJSON = async (
   entryLocale = config.entryLocale,
 ) => {
   consola.info(colors.yellow(filename), `i18n generating...`);
-  const res = await model.call(
+  const res = await model.invoke(
     [
       new SystemMessage(
         [

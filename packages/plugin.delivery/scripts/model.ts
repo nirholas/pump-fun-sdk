@@ -1,9 +1,10 @@
-import { ChatOpenAI } from 'langchain/chat_models/openai';
+import { ChatOpenAI } from '@langchain/openai';
 
 import { config } from './const';
 
-export const model = new ChatOpenAI(
-  { modelName: config.modelName, temperature: config.temperature, maxRetries: 4 },
-  { baseURL: process.env.OPENAI_PROXY_URL },
-);
-
+export const model = new ChatOpenAI({
+  configuration: { baseURL: process.env.OPENAI_PROXY_URL },
+  maxRetries: 4,
+  model: config.modelName,
+  temperature: config.temperature,
+});

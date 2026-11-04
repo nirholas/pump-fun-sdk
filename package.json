@@ -108,7 +108,7 @@
     "semantic-release": "^25.0.8",
     "ts-jest": "^29.3.2",
     "ts-node": "^10.9.2",
-    "tsup": "^8.0.0",
+    "tsup": "^9.0.0",
     "tsx": "^4.23.1",
     "typescript": "^5.0.0",
     "typescript-eslint": "^8.29.1",
@@ -118,7 +118,13 @@
     "access": "public"
   },
   "overrides": {
-    "uuid": "^11.1.1"
+    "uuid": "^11.1.1",
+    "js-yaml@^3": "^3.15.2",
+    "js-yaml@^4": "^4.3.2",
+    "jayson": "^5.0.0",
+    "toml": "^5.0.1",
+    "esbuild": "^0.28.2",
+    "npm": "^11.21.1"
   },
   "config": {
     "commitizen": {

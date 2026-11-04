@@ -1,13 +1,13 @@
 import { consola } from 'consola';
 import 'dotenv/config';
-import { HumanMessage, SystemMessage } from 'langchain/schema';
+import { HumanMessage, SystemMessage } from '@langchain/core/messages';
 
 import { category } from './const';
 import { model } from './model';
 
 export const addCategory = async (json) => {
   consola.info(`category generating...`);
-  const res = await model.call(
+  const res = await model.invoke(
     [
       new SystemMessage(
         [
