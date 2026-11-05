@@ -12,14 +12,16 @@
   <img src="https://img.shields.io/badge/TypeScript-5.0+-blue?style=flat-square&logo=typescript" alt="TypeScript" />
   <img src="https://img.shields.io/badge/Solana-1.98+-purple?style=flat-square&logo=solana" alt="Solana" />
 </p>
-**Docs: https://sdk.pumpk.it/** 
----
+
 
 ## What is Pump SDK?
 
 Pump SDK is the community TypeScript SDK for the [Pump.fun](https://pump.fun) protocol on Solana. It provides **offline-first instruction builders** for every on-chain operation — token creation, bonding curve trading, AMM pool management, tiered fee configuration, creator fee sharing, volume-based token incentives, and social referral fees.
 
 The SDK never sends transactions itself. It returns `TransactionInstruction[]` that you compose into transactions with your preferred signing and sending strategy.
+
+**Docs: https://sdk.pumpk.it/** · [Getting started](docs/getting-started.md) · [Examples](docs/examples.md)
+
 
 ---
 
