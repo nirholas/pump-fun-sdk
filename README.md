@@ -12,7 +12,7 @@
   <img src="https://img.shields.io/badge/TypeScript-5.0+-blue?style=flat-square&logo=typescript" alt="TypeScript" />
   <img src="https://img.shields.io/badge/Solana-1.98+-purple?style=flat-square&logo=solana" alt="Solana" />
 </p>
-
+**Docs: https://sdk.pumpk.it/** 
 ---
 
 ## What is Pump SDK?
