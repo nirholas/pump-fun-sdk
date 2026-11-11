@@ -1,0 +1,9 @@
+{
+  "name": "pump-sdk",
+  "version": "3.0.0",
+  "description": "Inspect, quote and build transactions for Pump bonding curves and AMM pools with the pump CLI, the TypeScript SDK and an MCP server.",
+  "author": {"name": "nirholas"},
+  "repository": "https://github.com/nirholas/pump-fun-sdk",
+  "homepage": "https://sdk.pumpk.it",
+  "keywords": ["solana", "pump", "bonding-curve", "sdk", "mcp", "cli"]
+}

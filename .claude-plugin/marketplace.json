@@ -1,0 +1,14 @@
+{
+  "name": "pump-fun-sdk",
+  "owner": {"name": "nirholas"},
+  "description": "Plugin for the Pump protocol SDK, CLI and MCP server on Solana.",
+  "plugins": [
+    {
+      "name": "pump-sdk",
+      "source": "./plugins/pump-sdk",
+      "description": "Inspect, quote and build transactions for Pump bonding curves and AMM pools with the pump CLI, the TypeScript SDK and an MCP server.",
+      "category": "finance",
+      "tags": ["solana", "pump", "bonding-curve", "sdk", "mcp"]
+    }
+  ]
+}

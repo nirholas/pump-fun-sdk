@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "pump-fun": {
+      "command": "npx",
+      "args": ["-y", "pump-fun-mcp"],
+      "env": {"SOLANA_RPC_URL": "${SOLANA_RPC_URL:-}"}
+    }
+  }
+}
