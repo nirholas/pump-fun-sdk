@@ -253,8 +253,8 @@ If discovery times out, the error names the fix: point `PUMP_RPC_URL` at an endp
 **Related documentation**
 
 - [AMM Trading](../../docs/amm-trading.md): the full PumpSwap surface, including sells, deposits, and withdrawals.
-- [PumpSwap protocol README](../../docs/pump-public-docs/PUMP_SWAP_README.md): the canonical spec for pool state and swap instructions.
-- [Breaking fee-recipient upgrade](../../docs/pump-public-docs/BREAKING_FEE_RECIPIENT.md): the trailing accounts every AMM buy and sell must carry since 2026-04-28.
+- [PumpSwap protocol README](https://github.com/pump-fun/pump-public-docs/blob/main/docs/PUMP_SWAP_README.md): the canonical spec for pool state and swap instructions.
+- [Breaking fee-recipient upgrade](https://github.com/pump-fun/pump-public-docs/blob/main/docs/BREAKING_FEE_RECIPIENT.md): the trailing accounts every AMM buy and sell must carry since 2026-04-28.
 - [Tutorial 34: AMM Liquidity Operations](../34-amm-liquidity-operations.md): the liquidity-provider side of the same pools.
 - [Tutorial 6: Token Migration to PumpAMM](../06-migration.md): how a token gets from a bonding curve to a pool.
 

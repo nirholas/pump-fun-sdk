@@ -23,15 +23,15 @@ Reference the official Pump protocol documentation when implementing or modifyin
 
 | Task | Read This File | Dedicated Skill |
 |------|---------------|-----------------|
-| Bonding curve buy/sell/create, Global/BondingCurve state | `docs/pump-official/PUMP_PROGRAM_README.md` | `pump-official-program.skill.md` |
-| Creator fees on bonding curve, creator vault PDA | `docs/pump-official/PUMP_CREATOR_FEE_README.md` | `pump-official-creator-fee.skill.md` |
-| AMM pool swap/deposit/withdraw, Pool/GlobalConfig state | `docs/pump-official/PUMP_SWAP_README.md` | `pump-official-swap.skill.md` |
-| PumpSwap SDK methods & autocomplete helpers | `docs/pump-official/PUMP_SWAP_SDK_README.md` | `pump-official-swap-sdk.skill.md` |
-| Creator fees on AMM pools, coin_creator_vault | `docs/pump-official/PUMP_SWAP_CREATOR_FEE_README.md` | `pump-official-swap-creator-fee.skill.md` |
-| Dynamic fee tiers, market-cap-based fee calculation | `docs/pump-official/FEE_PROGRAM_README.md` | `fee-system.skill.md` |
-| Cashback rewards, UserVolumeAccumulator PDA | `docs/pump-official/PUMP_CASHBACK_README.md` | `pump-official-cashback.skill.md` |
-| CU optimization, general FAQ | `docs/pump-official/FAQ.md` | `pump-official-faq.skill.md` |
-| Mayhem mode, create_v2, Token2022, social fees | `docs/pump-official/README.md` | (this skill) |
+| Bonding curve buy/sell/create, Global/BondingCurve state | `https://github.com/pump-fun/pump-public-docs/blob/main/docs/PUMP_PROGRAM_README.md` | `pump-official-program.skill.md` |
+| Creator fees on bonding curve, creator vault PDA | `https://github.com/pump-fun/pump-public-docs/blob/main/docs/PUMP_CREATOR_FEE_README.md` | `pump-official-creator-fee.skill.md` |
+| AMM pool swap/deposit/withdraw, Pool/GlobalConfig state | `https://github.com/pump-fun/pump-public-docs/blob/main/docs/PUMP_SWAP_README.md` | `pump-official-swap.skill.md` |
+| PumpSwap SDK methods & autocomplete helpers | `https://github.com/pump-fun/pump-public-docs/blob/main/docs/PUMP_SWAP_SDK_README.md` | `pump-official-swap-sdk.skill.md` |
+| Creator fees on AMM pools, coin_creator_vault | `https://github.com/pump-fun/pump-public-docs/blob/main/docs/PUMP_SWAP_CREATOR_FEE_README.md` | `pump-official-swap-creator-fee.skill.md` |
+| Dynamic fee tiers, market-cap-based fee calculation | `https://github.com/pump-fun/pump-public-docs/blob/main/docs/FEE_PROGRAM_README.md` | `fee-system.skill.md` |
+| Cashback rewards, UserVolumeAccumulator PDA | `https://github.com/pump-fun/pump-public-docs/blob/main/docs/PUMP_CASHBACK_README.md` | `pump-official-cashback.skill.md` |
+| CU optimization, general FAQ | `https://github.com/pump-fun/pump-public-docs/blob/main/docs/FAQ.md` | `pump-official-faq.skill.md` |
+| Mayhem mode, create_v2, Token2022, social fees | `https://github.com/pump-fun/pump-public-docs/blob/main/README.md` | (this skill) |
 
 ## On-Chain Programs
 

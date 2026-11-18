@@ -18,7 +18,7 @@ Reference the official PumpSwap creator fee documentation when implementing crea
 
 ## Official Documentation
 
-Read `docs/pump-official/PUMP_SWAP_CREATOR_FEE_README.md` for the full specification.
+Read `https://github.com/pump-fun/pump-public-docs/blob/main/docs/PUMP_SWAP_CREATOR_FEE_README.md` for the full specification.
 
 ## Key Concepts
 

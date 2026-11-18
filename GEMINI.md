@@ -49,20 +49,20 @@ The Pump SDK (`@nirholas/pump-sdk`) is a TypeScript SDK for the Pump protocol on
 
 ## Official Pump Protocol Docs
 
-**Canonical protocol specs** from pump-fun/pump-public-docs are in `docs/pump-official/`. Read these before modifying on-chain code:
+**Canonical protocol specs** from pump-fun/pump-public-docs are in `https://github.com/pump-fun/pump-public-docs`. Read these before modifying on-chain code:
 
 | Task | Read This File |
 |------|---------------|
-| Bonding curve buy/sell/create, Global/BondingCurve state | `docs/pump-official/PUMP_PROGRAM_README.md` |
-| Creator fees on bonding curve | `docs/pump-official/PUMP_CREATOR_FEE_README.md` |
-| AMM pool swap/deposit/withdraw, Pool/GlobalConfig state | `docs/pump-official/PUMP_SWAP_README.md` |
-| PumpSwap SDK methods & autocomplete helpers | `docs/pump-official/PUMP_SWAP_SDK_README.md` |
-| Creator fees on AMM pools | `docs/pump-official/PUMP_SWAP_CREATOR_FEE_README.md` |
-| Dynamic fee tiers, market-cap-based fee calculation | `docs/pump-official/FEE_PROGRAM_README.md` |
-| Cashback rewards, UserVolumeAccumulator PDA | `docs/pump-official/PUMP_CASHBACK_README.md` |
-| CU optimization, PDA bump effects | `docs/pump-official/FAQ.md` |
-| create_v2, Token2022, mayhem mode, social fees | `docs/pump-official/README.md` |
-| Official IDL files | `docs/pump-official/idl/pump.json`, `pump_amm.json`, `pump_fees.json` |
+| Bonding curve buy/sell/create, Global/BondingCurve state | `https://github.com/pump-fun/pump-public-docs/blob/main/docs/PUMP_PROGRAM_README.md` |
+| Creator fees on bonding curve | `https://github.com/pump-fun/pump-public-docs/blob/main/docs/PUMP_CREATOR_FEE_README.md` |
+| AMM pool swap/deposit/withdraw, Pool/GlobalConfig state | `https://github.com/pump-fun/pump-public-docs/blob/main/docs/PUMP_SWAP_README.md` |
+| PumpSwap SDK methods & autocomplete helpers | `https://github.com/pump-fun/pump-public-docs/blob/main/docs/PUMP_SWAP_SDK_README.md` |
+| Creator fees on AMM pools | `https://github.com/pump-fun/pump-public-docs/blob/main/docs/PUMP_SWAP_CREATOR_FEE_README.md` |
+| Dynamic fee tiers, market-cap-based fee calculation | `https://github.com/pump-fun/pump-public-docs/blob/main/docs/FEE_PROGRAM_README.md` |
+| Cashback rewards, UserVolumeAccumulator PDA | `https://github.com/pump-fun/pump-public-docs/blob/main/docs/PUMP_CASHBACK_README.md` |
+| CU optimization, PDA bump effects | `https://github.com/pump-fun/pump-public-docs/blob/main/docs/FAQ.md` |
+| create_v2, Token2022, mayhem mode, social fees | `https://github.com/pump-fun/pump-public-docs/blob/main/README.md` |
+| Official IDL files | `https://github.com/pump-fun/pump-public-docs/blob/main/idl/pump.json`, `pump_amm.json`, `pump_fees.json` |
 
 ## Security Rules
 

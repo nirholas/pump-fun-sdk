@@ -29,7 +29,7 @@
  *   SOL_AMOUNT         - Lamports to spend on the buy (default: 10_000_000 = 0.01 SOL)
  *
  * References:
- *   docs/pump-public-docs/BREAKING_FEE_RECIPIENT.md
+ *   https://github.com/pump-fun/pump-public-docs/blob/main/docs/BREAKING_FEE_RECIPIENT.md
  *   https://github.com/pump-fun/pump-public-docs/blob/main/docs/BREAKING_FEE_RECIPIENT.md
  */
 

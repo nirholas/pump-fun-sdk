@@ -17,7 +17,7 @@ Reference the official Pump cashback documentation when implementing cashback re
 
 ## Official Documentation
 
-Read `docs/pump-official/PUMP_CASHBACK_README.md` for the full specification.
+Read `https://github.com/pump-fun/pump-public-docs/blob/main/docs/PUMP_CASHBACK_README.md` for the full specification.
 
 ## Key Concepts
 

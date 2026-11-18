@@ -17,7 +17,7 @@ Reference the official PumpSwap SDK documentation when building AMM pool UI inte
 
 ## Official Documentation
 
-Read `docs/pump-official/PUMP_SWAP_SDK_README.md` for the full specification.
+Read `https://github.com/pump-fun/pump-public-docs/blob/main/docs/PUMP_SWAP_SDK_README.md` for the full specification.
 
 ## SDK Structure
 

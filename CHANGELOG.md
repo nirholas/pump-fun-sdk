@@ -182,7 +182,7 @@ Ships a command-line interface, and fixes three bugs it surfaced along the way.
 
 ## [1.32.0] - 2026-04-23
 
-Prepares the SDK for the **2026-04-28, 16:00 UTC** breaking on-chain program upgrade to the Pump bonding curve and PumpSwap AMM programs. See [docs/pump-public-docs/BREAKING_FEE_RECIPIENT.md](docs/pump-public-docs/BREAKING_FEE_RECIPIENT.md) for the protocol spec and [docs/MIGRATION.md](docs/MIGRATION.md#upgrading-to-v1320-latest) for call-site guidance.
+Prepares the SDK for the **2026-04-28, 16:00 UTC** breaking on-chain program upgrade to the Pump bonding curve and PumpSwap AMM programs. See [BREAKING_FEE_RECIPIENT.md](https://github.com/pump-fun/pump-public-docs/blob/main/docs/BREAKING_FEE_RECIPIENT.md) for the protocol spec and [docs/MIGRATION.md](docs/MIGRATION.md#upgrading-to-v1320-latest) for call-site guidance.
 
 Upstream breaking release: `@pump-fun/pump-sdk@1.33.0`, `@pump-fun/pump-swap-sdk@1.15.0`.
 
@@ -208,7 +208,7 @@ Upstream breaking release: `@pump-fun/pump-sdk@1.33.0`, `@pump-fun/pump-swap-sdk
 - **`BREAKING_FEE_RECIPIENTS`** (`PublicKey[]`) — the 8 new shared fee recipient pubkeys introduced by the upgrade.
 - **`pickBreakingFeeRecipient()`** — selects one of the 8 at random; used internally by every buy/sell builder.
 - **`buildAmmBreakingFeeRecipientAccounts(recipient?)`** — builds the two trailing AMM accounts (readonly recipient + mutable WSOL ATA) under `TOKEN_PROGRAM_ID`. Exported so manual-instruction builders share the same source of truth as the SDK.
-- **[docs/pump-public-docs/BREAKING_FEE_RECIPIENT.md](docs/pump-public-docs/BREAKING_FEE_RECIPIENT.md)** — mirror of the upstream upgrade spec.
+- **[BREAKING_FEE_RECIPIENT.md](https://github.com/pump-fun/pump-public-docs/blob/main/docs/BREAKING_FEE_RECIPIENT.md)** — the upstream upgrade spec.
 - **[docs/MIGRATION.md](docs/MIGRATION.md)** — v1.32.0 migration section with account-count deltas and the raw remaining-accounts pattern for manual builders.
 
 ### Fixed

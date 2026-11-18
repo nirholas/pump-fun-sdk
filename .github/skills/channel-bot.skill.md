@@ -69,12 +69,12 @@ Before modifying claim detection or event parsing, read:
 
 | Topic | File |
 |-------|------|
-| Fee claim instructions & creator vault PDAs | `docs/pump-official/PUMP_CREATOR_FEE_README.md` |
-| AMM creator fees & coin_creator_vault | `docs/pump-official/PUMP_SWAP_CREATOR_FEE_README.md` |
-| Cashback rewards & UserVolumeAccumulator | `docs/pump-official/PUMP_CASHBACK_README.md` |
-| Dynamic fee tiers | `docs/pump-official/FEE_PROGRAM_README.md` |
-| Social fee PDAs, GitHub recipients | `docs/pump-official/README.md` |
-| Instruction discriminators | `docs/pump-official/idl/pump.json`, `pump_amm.json` |
+| Fee claim instructions & creator vault PDAs | `https://github.com/pump-fun/pump-public-docs/blob/main/docs/PUMP_CREATOR_FEE_README.md` |
+| AMM creator fees & coin_creator_vault | `https://github.com/pump-fun/pump-public-docs/blob/main/docs/PUMP_SWAP_CREATOR_FEE_README.md` |
+| Cashback rewards & UserVolumeAccumulator | `https://github.com/pump-fun/pump-public-docs/blob/main/docs/PUMP_CASHBACK_README.md` |
+| Dynamic fee tiers | `https://github.com/pump-fun/pump-public-docs/blob/main/docs/FEE_PROGRAM_README.md` |
+| Social fee PDAs, GitHub recipients | `https://github.com/pump-fun/pump-public-docs/blob/main/README.md` |
+| Instruction discriminators | `https://github.com/pump-fun/pump-public-docs/blob/main/idl/pump.json`, `pump_amm.json` |
 
 ## Event Discriminators
 

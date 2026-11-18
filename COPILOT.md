@@ -70,22 +70,22 @@ All token/SOL amounts use `BN` (bn.js). Never use JavaScript `number` for financ
 
 ## Official Pump Protocol Docs
 
-**Canonical protocol specs** from pump-fun/pump-public-docs are in `docs/pump-official/`. Read these before modifying on-chain code:
+**Canonical protocol specs** from pump-fun/pump-public-docs are in `https://github.com/pump-fun/pump-public-docs`. Read these before modifying on-chain code:
 
 | Task | Read This File |
 |------|---------------|
-| Bonding curve buy/sell/create, Global/BondingCurve state | `docs/pump-official/PUMP_PROGRAM_README.md` |
-| Creator fees on bonding curve | `docs/pump-official/PUMP_CREATOR_FEE_README.md` |
-| AMM pool swap/deposit/withdraw, Pool/GlobalConfig state | `docs/pump-official/PUMP_SWAP_README.md` |
-| PumpSwap SDK methods & autocomplete helpers | `docs/pump-official/PUMP_SWAP_SDK_README.md` |
-| Creator fees on AMM pools | `docs/pump-official/PUMP_SWAP_CREATOR_FEE_README.md` |
-| Dynamic fee tiers, market-cap-based fee calculation | `docs/pump-official/FEE_PROGRAM_README.md` |
-| Cashback rewards, UserVolumeAccumulator PDA | `docs/pump-official/PUMP_CASHBACK_README.md` |
-| CU optimization, PDA bump effects | `docs/pump-official/FAQ.md` |
-| create_v2, Token2022, mayhem mode, social fees | `docs/pump-official/README.md` |
-| v3 curve trades, PumpSwap v2 trades, multi-hop swaps, fee sweeps, pump-coin quotes (October 2026 upgrade) | `docs/pump-official/docs/instructions/` (`TRADE_V3.md`, `PUMP_SWAP_TRADE_V2.md`, `MULTI_HOP_SWAP.md`, `SWEEP_FEES.md`, `CREATE_WITH_PUMP_COIN_QUOTE.md`) |
-| Synthetic migration, signed pool virtual quote reserves | `docs/pump-official/docs/SYNTHETIC_MIGRATION.md`, `docs/pump-official/docs/NEGATIVE_VIRTUAL_QUOTE_RESERVES.md` |
-| Official IDL files | `docs/pump-official/idl/pump.json`, `pump_amm.json`, `pump_fees.json` (refresh with `node scripts/sync-idl.mjs`) |
+| Bonding curve buy/sell/create, Global/BondingCurve state | `https://github.com/pump-fun/pump-public-docs/blob/main/docs/PUMP_PROGRAM_README.md` |
+| Creator fees on bonding curve | `https://github.com/pump-fun/pump-public-docs/blob/main/docs/PUMP_CREATOR_FEE_README.md` |
+| AMM pool swap/deposit/withdraw, Pool/GlobalConfig state | `https://github.com/pump-fun/pump-public-docs/blob/main/docs/PUMP_SWAP_README.md` |
+| PumpSwap SDK methods & autocomplete helpers | `https://github.com/pump-fun/pump-public-docs/blob/main/docs/PUMP_SWAP_SDK_README.md` |
+| Creator fees on AMM pools | `https://github.com/pump-fun/pump-public-docs/blob/main/docs/PUMP_SWAP_CREATOR_FEE_README.md` |
+| Dynamic fee tiers, market-cap-based fee calculation | `https://github.com/pump-fun/pump-public-docs/blob/main/docs/FEE_PROGRAM_README.md` |
+| Cashback rewards, UserVolumeAccumulator PDA | `https://github.com/pump-fun/pump-public-docs/blob/main/docs/PUMP_CASHBACK_README.md` |
+| CU optimization, PDA bump effects | `https://github.com/pump-fun/pump-public-docs/blob/main/docs/FAQ.md` |
+| create_v2, Token2022, mayhem mode, social fees | `https://github.com/pump-fun/pump-public-docs/blob/main/README.md` |
+| v3 curve trades, PumpSwap v2 trades, multi-hop swaps, fee sweeps, pump-coin quotes (October 2026 upgrade) | `https://github.com/pump-fun/pump-public-docs/tree/main/docs/instructions` (`TRADE_V3.md`, `PUMP_SWAP_TRADE_V2.md`, `MULTI_HOP_SWAP.md`, `SWEEP_FEES.md`, `CREATE_WITH_PUMP_COIN_QUOTE.md`) |
+| Synthetic migration, signed pool virtual quote reserves | `https://github.com/pump-fun/pump-public-docs/blob/main/docs/SYNTHETIC_MIGRATION.md`, `https://github.com/pump-fun/pump-public-docs/blob/main/docs/NEGATIVE_VIRTUAL_QUOTE_RESERVES.md` |
+| Official IDL files | `https://github.com/pump-fun/pump-public-docs/blob/main/idl/pump.json`, `pump_amm.json`, `pump_fees.json` (refresh with `node scripts/sync-idl.mjs`) |
 
 ## Security Rules
 

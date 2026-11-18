@@ -16,19 +16,19 @@ The Pump SDK (`@nirholas/pump-sdk`) is a TypeScript SDK for the Pump protocol on
 
 ## Official Pump Protocol Docs
 
-**Canonical protocol specs** from pump-fun/pump-public-docs are in `docs/pump-official/`. Read these before modifying on-chain code:
+**Canonical protocol specs** from pump-fun/pump-public-docs are in `https://github.com/pump-fun/pump-public-docs`. Read these before modifying on-chain code:
 
-- `docs/pump-official/PUMP_PROGRAM_README.md` — Pump bonding curve program (state, instructions)
-- `docs/pump-official/PUMP_SWAP_README.md` — PumpSwap AMM program (pool state, swap/deposit/withdraw)
-- `docs/pump-official/FEE_PROGRAM_README.md` — Dynamic fee tiers based on market cap
-- `docs/pump-official/PUMP_CREATOR_FEE_README.md` — Creator fees on bonding curve
-- `docs/pump-official/PUMP_SWAP_CREATOR_FEE_README.md` — Creator fees on AMM pools
-- `docs/pump-official/PUMP_CASHBACK_README.md` — Cashback rewards & UserVolumeAccumulator
-- `docs/pump-official/PUMP_SWAP_SDK_README.md` — PumpSwap SDK method reference
-- `docs/pump-official/OVERVIEW.md` — create_v2, Token2022, mayhem mode, social fees
-- `docs/pump-official/FAQ.md` — CU optimization tips
-- `docs/pump-official/idl/` — Official Anchor IDL files (pump.json, pump_amm.json, pump_fees.json)
-- `docs/pump-official/docs/instructions/`: October 2026 upgrade guides (`TRADE_V3.md`, `PUMP_SWAP_TRADE_V2.md`, `MULTI_HOP_SWAP.md`, `SWEEP_FEES.md`, `CREATE_WITH_PUMP_COIN_QUOTE.md`); refresh `src/idl/` with `node scripts/sync-idl.mjs`
+- `https://github.com/pump-fun/pump-public-docs/blob/main/docs/PUMP_PROGRAM_README.md` — Pump bonding curve program (state, instructions)
+- `https://github.com/pump-fun/pump-public-docs/blob/main/docs/PUMP_SWAP_README.md` — PumpSwap AMM program (pool state, swap/deposit/withdraw)
+- `https://github.com/pump-fun/pump-public-docs/blob/main/docs/FEE_PROGRAM_README.md` — Dynamic fee tiers based on market cap
+- `https://github.com/pump-fun/pump-public-docs/blob/main/docs/PUMP_CREATOR_FEE_README.md` — Creator fees on bonding curve
+- `https://github.com/pump-fun/pump-public-docs/blob/main/docs/PUMP_SWAP_CREATOR_FEE_README.md` — Creator fees on AMM pools
+- `https://github.com/pump-fun/pump-public-docs/blob/main/docs/PUMP_CASHBACK_README.md` — Cashback rewards & UserVolumeAccumulator
+- `https://github.com/pump-fun/pump-public-docs/blob/main/docs/PUMP_SWAP_SDK_README.md` — PumpSwap SDK method reference
+- `https://github.com/pump-fun/pump-public-docs/blob/main/README.md` — create_v2, Token2022, mayhem mode, social fees
+- `https://github.com/pump-fun/pump-public-docs/blob/main/docs/FAQ.md` — CU optimization tips
+- `https://github.com/pump-fun/pump-public-docs/tree/main/idl` — Official Anchor IDL files (pump.json, pump_amm.json, pump_fees.json)
+- `https://github.com/pump-fun/pump-public-docs/tree/main/docs/instructions`: October 2026 upgrade guides (`TRADE_V3.md`, `PUMP_SWAP_TRADE_V2.md`, `MULTI_HOP_SWAP.md`, `SWEEP_FEES.md`, `CREATE_WITH_PUMP_COIN_QUOTE.md`); refresh `src/idl/` with `node scripts/sync-idl.mjs`
 
 ## SDK Pattern
 

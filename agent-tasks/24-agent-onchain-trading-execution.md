@@ -139,5 +139,5 @@ Jest unit tests (mock Connection):
 - `src/sdk.ts` — how instructions are built today
 - `src/onlineSdk.ts` — existing RPC-aware wrapper patterns
 - `src/idl/pump.ts` — `errors` array for error code mapping
-- `docs/pump-public-docs/FAQ.md` — CU optimization guidance
+- `https://github.com/pump-fun/pump-public-docs/blob/main/docs/FAQ.md` — CU optimization guidance
 - `src/index.ts` — current public surface

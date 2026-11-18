@@ -22,21 +22,21 @@ Read these files for authoritative protocol details:
 
 | File | Content |
 |------|---------|
-| `docs/pump-official/PUMP_PROGRAM_README.md` | Pump program architecture: Global state, BondingCurve state, all instructions (create, buy, sell, migrate, extend_account) |
-| `docs/pump-official/PUMP_CREATOR_FEE_README.md` | Creator fee system: BondingCurve.creator field, creator_vault PDA, fee calculation, extendAccount requirement |
-| `docs/pump-official/FEE_PROGRAM_README.md` | Dynamic fee tiers based on market cap, computeFeesBps logic, fee_config account, calculateFeeTier algorithm |
-| `docs/pump-official/PUMP_CASHBACK_README.md` | Cashback rewards: UserVolumeAccumulator PDA, claim_cashback instruction, remaining accounts for buy/sell |
-| `docs/pump-official/FAQ.md` | CU optimization for buy/sell, PDA bump seed effects on compute |
-| `docs/pump-official/README.md` | Breaking changes: create_v2 with Token2022, mayhem mode, fee recipient changes, social fee PDAs |
+| `https://github.com/pump-fun/pump-public-docs/blob/main/docs/PUMP_PROGRAM_README.md` | Pump program architecture: Global state, BondingCurve state, all instructions (create, buy, sell, migrate, extend_account) |
+| `https://github.com/pump-fun/pump-public-docs/blob/main/docs/PUMP_CREATOR_FEE_README.md` | Creator fee system: BondingCurve.creator field, creator_vault PDA, fee calculation, extendAccount requirement |
+| `https://github.com/pump-fun/pump-public-docs/blob/main/docs/FEE_PROGRAM_README.md` | Dynamic fee tiers based on market cap, computeFeesBps logic, fee_config account, calculateFeeTier algorithm |
+| `https://github.com/pump-fun/pump-public-docs/blob/main/docs/PUMP_CASHBACK_README.md` | Cashback rewards: UserVolumeAccumulator PDA, claim_cashback instruction, remaining accounts for buy/sell |
+| `https://github.com/pump-fun/pump-public-docs/blob/main/docs/FAQ.md` | CU optimization for buy/sell, PDA bump seed effects on compute |
+| `https://github.com/pump-fun/pump-public-docs/blob/main/README.md` | Breaking changes: create_v2 with Token2022, mayhem mode, fee recipient changes, social fee PDAs |
 
 ## Official IDL Files
 
 | File | Program |
 |------|---------|
-| `docs/pump-official/idl/pump.json` | Pump program (bonding curve) IDL |
-| `docs/pump-official/idl/pump.ts` | Pump program TypeScript types |
-| `docs/pump-official/idl/pump_fees.json` | PumpFees program IDL |
-| `docs/pump-official/idl/pump_fees.ts` | PumpFees program TypeScript types |
+| `https://github.com/pump-fun/pump-public-docs/blob/main/idl/pump.json` | Pump program (bonding curve) IDL |
+| `https://github.com/pump-fun/pump-public-docs/blob/main/idl/pump.ts` | Pump program TypeScript types |
+| `https://github.com/pump-fun/pump-public-docs/blob/main/idl/pump_fees.json` | PumpFees program IDL |
+| `https://github.com/pump-fun/pump-public-docs/blob/main/idl/pump_fees.ts` | PumpFees program TypeScript types |
 
 ## Key Constants
 

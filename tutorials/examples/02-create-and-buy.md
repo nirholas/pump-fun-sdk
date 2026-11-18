@@ -201,7 +201,7 @@ Why each instruction is there:
 
 - **`extendAccount`** exists because the bonding curve account layout grew over the protocol's life. `BONDING_CURVE_NEW_SIZE` is 151 bytes; accounts created under an older layout are smaller and must be resized before the current program can write them. On a fresh launch this is cheap insurance, and the SDK includes it so you never have to reason about which layout a curve is on.
 - **`createAssociatedTokenAccountIdempotent`** is idempotent by design: if the account already exists the instruction succeeds and does nothing. That makes it safe to include unconditionally, which is simpler and cheaper than reading the account first to find out.
-- **`buy`** carries 18 accounts. That count is larger than a naive buy would need because of the 2026-04-28 fee recipient upgrade: every bonding curve trade now carries a mutable trailing fee recipient account. The SDK picks one for you. Hand-rolling a buy instruction without it produces a transaction the program rejects. See [`../../docs/pump-public-docs/BREAKING_FEE_RECIPIENT.md`](../../docs/pump-public-docs/BREAKING_FEE_RECIPIENT.md).
+- **`buy`** carries 18 accounts. That count is larger than a naive buy would need because of the 2026-04-28 fee recipient upgrade: every bonding curve trade now carries a mutable trailing fee recipient account. The SDK picks one for you. Hand-rolling a buy instruction without it produces a transaction the program rejects. See [`https://github.com/pump-fun/pump-public-docs/blob/main/docs/BREAKING_FEE_RECIPIENT.md`](https://github.com/pump-fun/pump-public-docs/blob/main/docs/BREAKING_FEE_RECIPIENT.md).
 
 ### Step 5: Stop before sending
 
@@ -282,8 +282,8 @@ Reading the numbers: 0.5 SOL bought about 17.38 million tokens out of a 1 billio
 
 **Reference documentation**
 
-- [`../../docs/pump-public-docs/PUMP_PROGRAM_README.md`](../../docs/pump-public-docs/PUMP_PROGRAM_README.md) is the canonical protocol specification for create, buy, and sell.
-- [`../../docs/pump-public-docs/BREAKING_FEE_RECIPIENT.md`](../../docs/pump-public-docs/BREAKING_FEE_RECIPIENT.md) explains the trailing fee recipient accounts.
+- [`https://github.com/pump-fun/pump-public-docs/blob/main/docs/PUMP_PROGRAM_README.md`](https://github.com/pump-fun/pump-public-docs/blob/main/docs/PUMP_PROGRAM_README.md) is the canonical protocol specification for create, buy, and sell.
+- [`https://github.com/pump-fun/pump-public-docs/blob/main/docs/BREAKING_FEE_RECIPIENT.md`](https://github.com/pump-fun/pump-public-docs/blob/main/docs/BREAKING_FEE_RECIPIENT.md) explains the trailing fee recipient accounts.
 - [`../../docs/api-reference.md`](../../docs/api-reference.md) for full method signatures.
 
 **SDK methods used here**

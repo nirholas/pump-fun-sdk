@@ -199,7 +199,7 @@ Consolidates 3 existing production bots into one:
 - [npm Packages](docs/npm.md) — Package installation and usage
 
 ### Pump Protocol Reference
-- [Protocol Overview](docs/pump-protocol/) — All 9 official protocol specs + IDLs
+- [Protocol Overview](https://github.com/pump-fun/pump-public-docs) — All 9 official protocol specs + IDLs
 - [Bonding Curve Math](docs/guides/bonding-curve-math.md) — Constant-product formula, buy/sell calculations
 - [Fee Tiers](docs/guides/fee-tiers.md) — Market-cap-based dynamic fee selection
 - [Fee Sharing](docs/guides/fee-sharing.md) — Multi-shareholder fee distribution

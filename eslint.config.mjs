@@ -33,8 +33,6 @@ export default typescriptEslint.config(
       "websocket-server/",
       "telegram-bot/",
       "x402/",
-      // Vendored upstream sources. Not ours to restyle; see DECODERS.md.
-      "pump-fun-repos/",
       "**/*.json",
     ],
   },

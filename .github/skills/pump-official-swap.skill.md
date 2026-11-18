@@ -22,17 +22,17 @@ Read these files for authoritative protocol details:
 
 | File | Content |
 |------|---------|
-| `docs/pump-official/PUMP_SWAP_README.md` | PumpSwap program: GlobalConfig state, Pool state, all instructions (create_pool, buy, sell, deposit, withdraw), SDK method mapping, autocomplete UI helpers |
-| `docs/pump-official/PUMP_SWAP_SDK_README.md` | PumpSwap SDK structure: PumpAmmSdk (high-level), PumpAmmInternalSdk (low-level), PumpAmmAdminSdk (admin), swap/deposit/withdraw flows |
-| `docs/pump-official/PUMP_SWAP_CREATOR_FEE_README.md` | Creator fees on AMM: Pool.coin_creator field, coin_creator_vault_authority PDA, extendAccount for pools, collectCoinCreatorFee instruction |
-| `docs/pump-official/FEE_PROGRAM_README.md` | Dynamic fee tiers for canonical pools, poolMarketCap calculation, isPumpPool check |
+| `https://github.com/pump-fun/pump-public-docs/blob/main/docs/PUMP_SWAP_README.md` | PumpSwap program: GlobalConfig state, Pool state, all instructions (create_pool, buy, sell, deposit, withdraw), SDK method mapping, autocomplete UI helpers |
+| `https://github.com/pump-fun/pump-public-docs/blob/main/docs/PUMP_SWAP_SDK_README.md` | PumpSwap SDK structure: PumpAmmSdk (high-level), PumpAmmInternalSdk (low-level), PumpAmmAdminSdk (admin), swap/deposit/withdraw flows |
+| `https://github.com/pump-fun/pump-public-docs/blob/main/docs/PUMP_SWAP_CREATOR_FEE_README.md` | Creator fees on AMM: Pool.coin_creator field, coin_creator_vault_authority PDA, extendAccount for pools, collectCoinCreatorFee instruction |
+| `https://github.com/pump-fun/pump-public-docs/blob/main/docs/FEE_PROGRAM_README.md` | Dynamic fee tiers for canonical pools, poolMarketCap calculation, isPumpPool check |
 
 ## Official IDL Files
 
 | File | Program |
 |------|---------|
-| `docs/pump-official/idl/pump_amm.json` | PumpSwap (AMM) program IDL |
-| `docs/pump-official/idl/pump_amm.ts` | PumpSwap (AMM) TypeScript types |
+| `https://github.com/pump-fun/pump-public-docs/blob/main/idl/pump_amm.json` | PumpSwap (AMM) program IDL |
+| `https://github.com/pump-fun/pump-public-docs/blob/main/idl/pump_amm.ts` | PumpSwap (AMM) TypeScript types |
 
 ## Key Constants
 

@@ -1,3 +1,4 @@
+// Portions derived from @pump-fun/pump-sdk (MIT License, Copyright (c) Pump Fun). See NOTICE.
 /**
  * Custom error types for the Pump SDK
  */

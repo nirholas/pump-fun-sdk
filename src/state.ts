@@ -1,3 +1,4 @@
+// Portions derived from @pump-fun/pump-sdk (MIT License, Copyright (c) Pump Fun). See NOTICE.
 import type { PublicKey } from "@solana/web3.js";
 import type BN from "bn.js";
 
