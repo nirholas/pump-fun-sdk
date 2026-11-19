@@ -1,10 +1,24 @@
-export { Pump } from "./idl/pump";
-export { default as pumpIdl } from "./idl/pump.json";
-export { default as PumpIdl } from "./idl/pump.json";
-export { default as PumpAmmIdl } from "./idl/pump_amm.json";
-export { default as PumpFeesIdl } from "./idl/pump_fees.json";
+import pumpAmmIdlJson from "./idl/pump_amm.json";
+import pumpIdlJson from "./idl/pump.json";
+import pumpFeesIdlJson from "./idl/pump_fees.json";
+
+export type { Pump } from "./idl/pump";
 export type { PumpFees } from "./idl/pump_fees";
 export type { PumpAmm } from "./idl/pump_amm";
+
+// The IDLs are re-exported through `const` bindings rather than
+// `export { default } from "./idl/*.json"`: the declaration bundler cannot
+// follow a re-export out of a JSON module, while a `const` makes `tsc` inline
+// the JSON's type into the emitted `.d.ts`.
+
+/** Raw Anchor IDL of the Pump bonding-curve program. */
+export const pumpIdl = pumpIdlJson;
+/** Alias of {@link pumpIdl}. */
+export const PumpIdl = pumpIdlJson;
+/** Raw Anchor IDL of the PumpAMM program. */
+export const PumpAmmIdl = pumpAmmIdlJson;
+/** Raw Anchor IDL of the PumpFees program. */
+export const PumpFeesIdl = pumpFeesIdlJson;
 export {
   getBuyTokenAmountFromSolAmount,
   getBuySolAmountFromTokenAmount,
