@@ -62,27 +62,24 @@ export function spotPriceLamports(bondingCurve: BondingCurve): BN {
  * Price impact in basis points, from reserves alone.
  *
  * impact = (priceAfter / priceBefore - 1) * 10000, where the two prices are
- * vSol/vTok before and after the buy. Dividing each price out first would
- * throw away most of the precision, so the ratio is evaluated as a single
- * cross-multiplied fraction:
+ * vSol/vTok before and after the buy. Only the net cost of the tokens enters
+ * the curve: the fees are paid on top and go to the protocol and the creator,
+ * so they are a separate cost (see `premiumOverSpotBps`) and must not be
+ * booked against the reserves. The curve therefore stays on vSol * vTok = k,
+ * and the new price depends on the tokens taken alone:
  *
- *   (vSol + in) * vTok * 10000 / ((vTok - out) * vSol) - 10000
+ *   priceAfter / priceBefore = (vTok / (vTok - out))^2
+ *
+ * Dividing each price out first would throw away most of the precision, so
+ * the ratio is evaluated as a single integer fraction.
  */
-export function priceImpactBps(
-  bondingCurve: BondingCurve,
-  solAmount: BN,
-  tokensOut: BN,
-): BN {
-  const newVirtualSol = bondingCurve.virtualQuoteReserves.add(solAmount);
-  const newVirtualTokens = bondingCurve.virtualTokenReserves.sub(tokensOut);
-  if (newVirtualTokens.lten(0) || bondingCurve.virtualQuoteReserves.isZero()) {
+export function priceImpactBps(bondingCurve: BondingCurve, tokensOut: BN): BN {
+  const before = bondingCurve.virtualTokenReserves;
+  const after = before.sub(tokensOut);
+  if (after.lten(0) || bondingCurve.virtualQuoteReserves.isZero()) {
     throw new Error("Buy consumes the entire curve; impact is unbounded");
   }
-  const numerator = newVirtualSol
-    .mul(bondingCurve.virtualTokenReserves)
-    .mul(BPS);
-  const denominator = newVirtualTokens.mul(bondingCurve.virtualQuoteReserves);
-  return numerator.div(denominator).sub(BPS);
+  return before.mul(before).mul(BPS).div(after.mul(after)).sub(BPS);
 }
 
 /** Everything a trader wants to know about one buy size. */
@@ -121,7 +118,7 @@ export function measureImpact({
   return {
     solAmount,
     tokensOut,
-    impactBps: priceImpactBps(bondingCurve, solAmount, tokensOut),
+    impactBps: priceImpactBps(bondingCurve, tokensOut),
     sdkImpactBps: calculateBuyPriceImpact({
       global,
       feeConfig,

@@ -333,7 +333,7 @@ describe("example 20: price impact", () => {
 
   it("refuses a buy that would consume the whole curve", () => {
     expect(() =>
-      priceImpactBps(curve, SOL(1), curve.virtualTokenReserves),
+      priceImpactBps(curve, curve.virtualTokenReserves),
     ).toThrow(/unbounded/);
   });
 });
