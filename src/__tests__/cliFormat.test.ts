@@ -18,6 +18,7 @@ import {
   formatTokens,
   lamportsToSol,
   meter,
+  plainText,
   normalizeForJson,
   rawToTokens,
   setColorEnabled,
@@ -159,5 +160,23 @@ describe("cli/format", () => {
     it("leaves short strings alone", () => {
       expect(shortAddress("abc")).toBe("abc");
     });
+  });
+});
+
+describe("plainText", () => {
+  it("leaves ordinary names, including non-Latin text and emoji, untouched", () => {
+    expect(plainText("Pump Coin 🚀 ポンプ")).toBe("Pump Coin 🚀 ポンプ");
+  });
+
+  it("neutralises ANSI colour, cursor and OSC title sequences", () => {
+    const hostile = "\u001b[2K\u001b[1A\u001b[32mSAFE\u001b]0;pwned\u0007";
+    const cleaned = plainText(hostile);
+    expect(cleaned).not.toContain("\u001b");
+    expect(cleaned).not.toContain("\u0007");
+    expect(cleaned).toContain("SAFE");
+  });
+
+  it("replaces 8-bit C1 controls, DEL, CR and newlines", () => {
+    expect(plainText("a\u009b31mb\u007fc\rd\ne")).toBe("a�31mb�c�d�e");
   });
 });

@@ -18,6 +18,7 @@ import {
   formatTokens,
   heading,
   keyValue,
+  plainText,
   shortAddress,
   solscanTx,
   toJson,
@@ -116,17 +117,17 @@ function describeEvent(event: PumpEvent): { label: string; value: string }[] {
           label: "Fees",
           value: `${formatSol(trade.fee)} protocol + ${formatSol(trade.creatorFee)} creator`,
         },
-        { label: "Instruction", value: trade.ixName },
+        { label: "Instruction", value: plainText(trade.ixName) },
       ];
     }
     case "create": {
       const created = event.data;
       return [
-        { label: "Name", value: created.name },
-        { label: "Symbol", value: created.symbol },
+        { label: "Name", value: plainText(created.name) },
+        { label: "Symbol", value: plainText(created.symbol) },
         { label: "Mint", value: created.mint.toBase58() },
         { label: "Creator", value: created.creator.toBase58() },
-        { label: "URI", value: created.uri },
+        { label: "URI", value: plainText(created.uri) },
       ];
     }
     case "complete": {
@@ -169,5 +170,5 @@ function renderScalar(value: unknown): string {
   ) {
     return (value as { toBase58: () => string }).toBase58();
   }
-  return String(value);
+  return plainText(String(value));
 }

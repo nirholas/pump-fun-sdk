@@ -118,6 +118,22 @@ function trimZeros(value: string): string {
 }
 
 /** Shorten a base58 address for dense views: `FeMbDo…JpumP`. */
+/**
+ * Make an untrusted string (a token name, symbol or URI read from chain) safe
+ * to write to a terminal. Anyone can launch a coin whose name carries ANSI or
+ * OSC escape sequences, which could recolour, rewrite or hide lines of the
+ * trade summary, or set the window title. Control characters (C0, DEL and C1,
+ * which includes the 8-bit CSI) are replaced with U+FFFD.
+ */
+export function plainText(value: string): string {
+  let out = "";
+  for (const char of value) {
+    const code = char.codePointAt(0) ?? 0;
+    out += code < 0x20 || (code >= 0x7f && code <= 0x9f) ? "\ufffd" : char;
+  }
+  return out;
+}
+
 export function shortAddress(address: string, edge = 6): string {
   if (address.length <= edge * 2 + 1) return address;
   return `${address.slice(0, edge)}…${address.slice(-edge)}`;
