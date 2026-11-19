@@ -10,15 +10,15 @@ import { maskRpcUrl } from '../rpc-fallback.js';
 
 describe('maskRpcUrl', () => {
 	it('drops a key held in the query string (Helius)', () => {
-		const masked = maskRpcUrl('https://mainnet.helius-rpc.com/?api-key=af3ab8dc-600c-45e2-881a-fea9bb3f6b68');
+		const masked = maskRpcUrl('https://mainnet.helius-rpc.com/?api-key=00000000-0000-4000-8000-000000000000');
 		expect(masked).toBe('mainnet.helius-rpc.com');
 		expect(masked).not.toContain('api-key');
 	});
 
 	it('drops a key held in the path (Phantom)', () => {
-		const masked = maskRpcUrl('https://solana-mainnet.phantom.app/YBPpkkN4g91xDiAnTE9r0RcMkjg0sKUIWvAfoFVJ');
+		const masked = maskRpcUrl('https://solana-mainnet.phantom.app/DummyPathKeyDummyPathKeyDummyPathKey0000');
 		expect(masked).toBe('solana-mainnet.phantom.app');
-		expect(masked).not.toContain('YBPpkk');
+		expect(masked).not.toContain('DummyPathKey');
 	});
 
 	it('masks websocket URLs the same way', () => {
