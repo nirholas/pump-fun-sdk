@@ -106,10 +106,10 @@ export {
   OnlinePumpSdk,
   parsePumpEventsFromLogs,
   poolQuoteTerms,
-  MinimumDistributableFeeResult,
-  DistributeCreatorFeeResult,
 } from "./onlineSdk";
 export type {
+  MinimumDistributableFeeResult,
+  DistributeCreatorFeeResult,
   AmmBuyQuote,
   AmmSellQuote,
   BuyQuote,
@@ -123,6 +123,13 @@ export type {
   DepositBaseAndLpTokenFromQuoteResult,
 } from "./onlineSdk";
 export {
+  SweepFeeBucket,
+  Platform,
+  SUPPORTED_SOCIAL_PLATFORMS,
+  platformToString,
+  stringToPlatform,
+} from "./state";
+export type {
   FeeConfig,
   Global,
   BondingCurve,
@@ -166,7 +173,6 @@ export {
   QuoteControl,
   QuoteControlMint,
   PostCompleteBuyEvent,
-  SweepFeeBucket,
   SweepBondingCurveFeeEvent,
   SweepPoolFeeEvent,
   AmmAdminUpdateTokenIncentivesEvent,
@@ -194,10 +200,6 @@ export {
   FeesUpdateAdminEvent,
   FeesUpdateFeeConfigEvent,
   FeesUpsertFeeTiersEvent,
-  Platform,
-  SUPPORTED_SOCIAL_PLATFORMS,
-  platformToString,
-  stringToPlatform,
 } from "./state";
 export type { Fees, FeeTier } from "./state";
 export { totalUnclaimedTokens, currentDayTokens } from "./tokenIncentives";

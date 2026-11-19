@@ -70,7 +70,7 @@
     "build:site": "node scripts/build-site.mjs",
     "lint": "eslint --cache --quiet \"${@:-.}\"",
     "lint:fix": "eslint --cache --fix --quiet \"${@:-.}\"",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit --isolatedModules",
     "idl:sync": "node scripts/sync-idl.mjs",
     "idl:check": "node scripts/sync-idl.mjs --check",
     "prepublishOnly": "npm run build"
