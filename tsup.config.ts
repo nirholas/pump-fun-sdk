@@ -6,13 +6,16 @@ const { version } = JSON.parse(
   readFileSync(new URL("./package.json", import.meta.url), "utf8"),
 ) as { version: string };
 
+// None of the three builds cleans: they run concurrently and share `dist`, so
+// a clean inside one could delete another's output. `npm run build` empties
+// `dist` first instead.
 export default defineConfig([
   {
     entry: ["src/index.ts"],
     format: ["cjs"],
     outDir: "dist",
     dts: true,
-    clean: true,
+    clean: false,
     sourcemap: true,
     splitting: false,
   },

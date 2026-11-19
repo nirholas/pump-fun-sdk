@@ -80,3 +80,6 @@ prompts/
 security/
 rick.png
 dist-site/
+
+# tsup writes this next to its config while loading it
+tsup.config.bundled_*.mjs
