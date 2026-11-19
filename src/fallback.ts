@@ -14,7 +14,11 @@ export interface FallbackConfig {
   maxRetriesPerEndpoint?: number;
   /** Base delay in ms for exponential backoff (default: 500) */
   baseDelayMs?: number;
-  /** Request timeout in ms (default: 10_000) */
+  /**
+   * Per-request timeout in ms for `fetchWithFallback` when the caller passes
+   * no `signal` of its own (default: 10_000). RPC calls made through
+   * `createFallbackConnection` use web3.js's own transport and ignore it.
+   */
   timeoutMs?: number;
   /** Time in ms before a failed endpoint is reconsidered (default: 60_000) */
   cooldownMs?: number;
@@ -23,6 +27,22 @@ export interface FallbackConfig {
 interface EndpointHealth {
   consecutiveFailures: number;
   lastFailureAt: number;
+}
+
+/**
+ * The private web3.js `Connection` request hooks the failover wraps. They are
+ * not part of the public typings, so they are named here once instead of
+ * reaching through `any` at every use.
+ */
+type RpcRequest = (method: string, args: unknown[]) => Promise<unknown>;
+type RpcBatchRequest = (requests: unknown[]) => Promise<unknown>;
+interface ConnectionInternals {
+  _rpcRequest: RpcRequest;
+  _rpcBatchRequest?: RpcBatchRequest;
+}
+
+function internals(connection: Connection): ConnectionInternals {
+  return connection as unknown as ConnectionInternals;
 }
 
 const DEFAULT_CONFIG: Required<FallbackConfig> = {
@@ -125,16 +145,19 @@ export function createFallbackConnection(
     endpoints.map((ep) => [ep, new Connection(ep, connectionConfig)]),
   );
   const primary = connections.get(endpoints[0]!)!;
-  const originals = new Map<string, (method: string, args: any[]) => Promise<any>>();
+  const originals = new Map<string, RpcRequest>();
+  const originalBatches = new Map<string, RpcBatchRequest | undefined>();
   for (const [ep, conn] of connections) {
-    originals.set(ep, (conn as any)._rpcRequest.bind(conn));
+    const hooks = internals(conn);
+    originals.set(ep, hooks._rpcRequest.bind(conn));
+    originalBatches.set(ep, hooks._rpcBatchRequest?.bind(conn));
   }
 
   async function requestWithFailover(
     method: string,
-    args: any[],
-  ): Promise<any> {
-    let lastError: Error | undefined;
+    args: unknown[],
+  ): Promise<unknown> {
+    let lastError: unknown;
 
     for (let attempt = 0; attempt < endpoints.length; attempt++) {
       const ep = getNextHealthyEndpoint();
@@ -145,7 +168,7 @@ export function createFallbackConnection(
           const result = await doRequest(method, args);
           markSuccess(ep);
           return result;
-        } catch (err: any) {
+        } catch (err: unknown) {
           lastError = err;
 
           // Don't retry on non-retryable errors
@@ -171,17 +194,20 @@ export function createFallbackConnection(
   // Subscriptions (onLogs etc.) still use the primary's websocket; callers
   // needing subscription failover should pick a websocket-capable endpoint
   // first in the list.
-  (primary as any)._rpcRequest = requestWithFailover;
-  const originalBatch = (primary as any)._rpcBatchRequest;
-  if (typeof originalBatch === "function") {
-    (primary as any)._rpcBatchRequest = async function (requests: any[]) {
-      // Batch goes to the current healthy endpoint's connection wholesale.
+  const primaryHooks = internals(primary);
+  primaryHooks._rpcRequest = requestWithFailover;
+  if (originalBatches.get(endpoints[0]!) !== undefined) {
+    primaryHooks._rpcBatchRequest = async (requests: unknown[]) => {
+      // A batch goes to the current healthy endpoint's connection wholesale.
+      // It is not retried: the failure only marks the endpoint, so the next
+      // call moves on.
       const ep = getNextHealthyEndpoint();
-      const conn = connections.get(ep)!;
+      const doBatch = originalBatches.get(ep);
+      if (doBatch === undefined) {
+        throw new Error(`Batch requests are not supported for ${ep}`);
+      }
       try {
-        const result = await (conn === primary
-          ? originalBatch.call(primary, requests)
-          : (conn as any)._rpcBatchRequest.call(conn, requests));
+        const result = await doBatch(requests);
         markSuccess(ep);
         return result;
       } catch (err) {
@@ -222,7 +248,7 @@ export async function fetchWithFallback(
   }
 
   const config = { ...DEFAULT_CONFIG, ...fallbackConfig };
-  let lastError: Error | undefined;
+  let lastError: unknown;
 
   for (const baseUrl of baseUrls) {
     for (let retry = 0; retry <= config.maxRetriesPerEndpoint; retry++) {
@@ -258,7 +284,12 @@ export async function fetchWithFallback(
 
         // 4xx (not 429) — don't retry, it's a client error
         return response;
-      } catch (err: any) {
+      } catch (err: unknown) {
+        // The caller cancelled: retrying with the same aborted signal can only
+        // fail again, after sleeping through every backoff.
+        if (init?.signal?.aborted) {
+          throw err;
+        }
         lastError = err;
         if (retry < config.maxRetriesPerEndpoint) {
           await sleep(config.baseDelayMs * 2 ** retry);
@@ -272,22 +303,25 @@ export async function fetchWithFallback(
 
 // ─── Helpers ────────────────────────────────────────────────────────────
 
-/** Parse a comma-separated env var into an array of endpoints. */
+/**
+ * Parse a comma-separated env var into an array of endpoints. A value with no
+ * entries (unset, empty, or only commas and spaces) yields `[fallback]`, so
+ * the result can always be passed to `createFallbackConnection`.
+ */
 export function parseEndpoints(
   envValue: string | undefined,
   fallback: string,
 ): string[] {
-  if (!envValue) return [fallback];
-  return envValue
+  const endpoints = (envValue ?? "")
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean);
+  return endpoints.length > 0 ? endpoints : [fallback];
 }
 
-
-function isNonRetryableError(err: any): boolean {
+function isNonRetryableError(err: unknown): boolean {
   // Transaction simulation failures, invalid params, etc. should not be retried
-  const message = String(err?.message ?? "");
+  const message = err instanceof Error ? err.message : String(err);
   return (
     message.includes("Transaction simulation failed") ||
     message.includes("Invalid param") ||
