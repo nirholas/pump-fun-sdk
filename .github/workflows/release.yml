@@ -28,8 +28,13 @@ jobs:
           cache: npm
           registry-url: https://registry.npmjs.org
       - run: npm ci
+      # The CI workflow runs in parallel and cannot block this job, so the
+      # same gates run here before anything is published.
+      - run: npm run typecheck
+      - run: npm run lint
       - run: npm run build
       - run: npm run test:coverage
+      - run: npm run check:package
       - run: npx semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
