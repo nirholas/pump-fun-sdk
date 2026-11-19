@@ -654,7 +654,7 @@ const sdk2 = OnlinePumpSdk.withFallback([
 
 #### Trading Conveniences
 
-These combine fetch + math + instruction building in one call.
+These combine fetch + math + instruction building in one call. `slippage` is in percent (1 = 1%) unless the row says otherwise.
 
 | Method | Description |
 |--------|-------------|
@@ -667,8 +667,8 @@ These combine fetch + math + instruction building in one call.
 | `sellToTargetSol({ mint, user, targetSol, slippage, ... })` | Binary-search the token amount that nets ~`targetSol` lamports |
 | `sellAllInstructions({ mint, user, slippage?, tokenProgram? })` | Sell the entire balance and close the ATA to reclaim rent |
 | `sellChunked({ mint, user, totalAmount, slippage, sendTx, ... })` | Split an oversized sell into safe chunks; sends each via your `sendTx` callback and returns all signatures |
-| `routedBuyInstructions({ mint, user, quoteAmountIn, slippage })` | Routes automatically: bonding curve if live, AMM pool if graduated |
-| `routedSellInstructions({ mint, user, baseAmountIn, slippage, ... })` | Same auto-routing for sells |
+| `routedBuyInstructions({ mint, user, quoteAmountIn, slippage })` | Routes automatically: bonding curve if live, AMM pool if graduated. `slippage` is a decimal (0.01 = 1%) |
+| `routedSellInstructions({ mint, user, baseAmountIn, slippage, ... })` | Same auto-routing for sells. `slippage` is a decimal (0.01 = 1%) |
 
 Example:
 
@@ -774,8 +774,8 @@ for (const ev of events) {
 | `fetchFeeProgramGlobal()` | `FeeProgramGlobal` |
 | `ammBuyInstructions({ mint, user, solAmount, slippageBps? })` | Buy on the AMM; fetches pool state and computes slippage. Also accepts low-level `{ quoteAmountIn, minBaseAmountOut }` |
 | `ammSellInstructions({ mint, user, tokenAmount, slippageBps? })` | Sell on the AMM. Also accepts `{ baseAmountIn, minQuoteAmountOut }` |
-| `ammBuyBySolAmount({ mint, user, solAmount, slippage })` | Percent-slippage variant |
-| `ammSellByTokenAmount({ mint, user, tokenAmount, slippage })` | Percent-slippage variant |
+| `ammBuyBySolAmount({ mint, user, solAmount, slippage })` | Decimal-slippage variant (0.01 = 1%) |
+| `ammSellByTokenAmount({ mint, user, tokenAmount, slippage })` | Decimal-slippage variant (0.01 = 1%) |
 | `ammQuoteBuy({ mint, user, quoteAmountIn })` | `AmmBuyQuote` with pool reserves and fees |
 | `ammQuoteSell({ mint, user, baseAmountIn })` | `AmmSellQuote` |
 | `ammDepositInstructions({...})` / `ammWithdrawInstructions({...})` | Liquidity ops with pool state fetched for you |

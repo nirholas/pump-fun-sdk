@@ -1503,7 +1503,8 @@ export class OnlinePumpSdk {
    * @param mint - Token mint address
    * @param user - Buyer wallet
    * @param solAmount - SOL to spend in lamports
-   * @param slippage - Slippage tolerance as a decimal (0.01 = 1%)
+   * @param slippage - Slippage tolerance in percent (1 = 1%), as
+   *   `PumpSdk.buyInstructions` takes it
    */
   async buyBySolAmount({
     mint,
@@ -1601,7 +1602,8 @@ export class OnlinePumpSdk {
       user,
       amount: tokensOut,
       solAmount: quoteAmountIn,
-      slippage,
+      // `buyInstructions` takes percent (1 = 1%); this method takes a decimal.
+      slippage: slippage * 100,
       tokenProgram: buyState.tokenProgram,
     });
   }
@@ -1667,7 +1669,8 @@ export class OnlinePumpSdk {
       user,
       amount: baseAmountIn,
       solAmount,
-      slippage,
+      // `sellInstructions` takes percent (1 = 1%); this method takes a decimal.
+      slippage: slippage * 100,
       tokenProgram: sellState.tokenProgram,
       cashback,
     });
@@ -1774,7 +1777,7 @@ export class OnlinePumpSdk {
    * @param mint - Token mint address
    * @param user - Seller wallet
    * @param percent - Percentage to sell, 0–100 (decimals accepted, e.g. 33.5)
-   * @param slippage - Slippage tolerance in percent (e.g. 0.05 for 5%)
+   * @param slippage - Slippage tolerance in percent (1 = 1%)
    * @param tokenProgram - Token program (default: TOKEN_PROGRAM_ID)
    * @param cashback - Enable cashback volume tracking (default: false)
    * @returns TransactionInstruction[] — empty if balance is zero

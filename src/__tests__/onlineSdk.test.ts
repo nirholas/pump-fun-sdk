@@ -147,7 +147,7 @@ describe("OnlinePumpSdk.buyBySolAmount", () => {
       mint: MINT,
       user: USER,
       solAmount: new BN(50_000_000),
-      slippage: 0.01,
+      slippage: 1,
     });
 
     expect(ixs.length).toBeGreaterThan(0);
@@ -182,7 +182,7 @@ describe("OnlinePumpSdk.buyBySolAmount", () => {
       });
 
     const solAmount = new BN(100_000_000);
-    await sdk.buyBySolAmount({ mint: MINT, user: USER, solAmount, slippage: 0.01 });
+    await sdk.buyBySolAmount({ mint: MINT, user: USER, solAmount, slippage: 1 });
 
     // amount should be tokens, not the same BN as solAmount
     expect(capturedAmount).toBeDefined();
@@ -302,6 +302,113 @@ describe("OnlinePumpSdk.routedSellInstructions", () => {
 
     expect(bcSpy).toHaveBeenCalledTimes(1);
     bcSpy.mockRestore();
+  });
+});
+
+// ─── slippage units ───────────────────────────────────────────────────────────
+//
+// The routed builders take slippage as a decimal (0.01 = 1%), while
+// `PumpSdk.buyInstructions` / `sellInstructions` take percent (1 = 1%). The
+// curve branch used to forward the decimal unchanged, so a requested 1%
+// became 0.01% and ordinary trades failed their slippage check on chain.
+
+describe("OnlinePumpSdk slippage units", () => {
+  const TOKEN_PROGRAM = new PublicKey(
+    "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+  );
+
+  function stubBuyState(sdk: OnlinePumpSdk) {
+    const bc = makeBondingCurve({ complete: false, creator: TEST_CREATOR });
+    jest.spyOn(sdk, "fetchBuyState").mockResolvedValue({
+      bondingCurveAccountInfo: makeBcAccountInfo(bc),
+      bondingCurve: bc,
+      associatedUserAccountInfo: null,
+      tokenProgram: TOKEN_PROGRAM,
+      curveBaseTokenBalance: new BN(0),
+      quoteMint: NATIVE_MINT,
+      quoteTokenProgram: TOKEN_PROGRAM,
+    });
+    jest.spyOn(sdk, "fetchGlobal").mockResolvedValue(makeGlobal());
+    jest.spyOn(sdk, "fetchFeeConfig").mockResolvedValue(makeFeeConfig());
+  }
+
+  function stubSellState(sdk: OnlinePumpSdk) {
+    const bc = makeBondingCurve({ complete: false, creator: TEST_CREATOR });
+    jest.spyOn(sdk, "fetchSellState").mockResolvedValue({
+      bondingCurveAccountInfo: makeBcAccountInfo(bc),
+      bondingCurve: bc,
+      tokenProgram: TOKEN_PROGRAM,
+      quoteMint: NATIVE_MINT,
+      quoteTokenProgram: TOKEN_PROGRAM,
+    });
+    jest.spyOn(sdk, "fetchGlobal").mockResolvedValue(makeGlobal());
+    jest.spyOn(sdk, "fetchFeeConfig").mockResolvedValue(makeFeeConfig());
+  }
+
+  afterEach(() => jest.restoreAllMocks());
+
+  it("routedBuyInstructions forwards a decimal 0.01 as 1 percent on the curve", async () => {
+    const sdk = makeSdk();
+    stubBuyState(sdk);
+    const spy = jest.spyOn(PUMP_SDK, "buyInstructions").mockResolvedValue([]);
+
+    await sdk.routedBuyInstructions({
+      mint: MINT,
+      user: USER,
+      quoteAmountIn: new BN(100_000_000),
+      slippage: 0.01,
+    });
+
+    expect(spy.mock.calls[0]![0].slippage).toBeCloseTo(1, 10);
+  });
+
+  it("routedSellInstructions forwards a decimal 0.05 as 5 percent on the curve", async () => {
+    const sdk = makeSdk();
+    stubSellState(sdk);
+    const spy = jest.spyOn(PUMP_SDK, "sellInstructions").mockResolvedValue([]);
+
+    await sdk.routedSellInstructions({
+      mint: MINT,
+      user: USER,
+      baseAmountIn: new BN(1_000_000_000),
+      slippage: 0.05,
+    });
+
+    expect(spy.mock.calls[0]![0].slippage).toBeCloseTo(5, 10);
+  });
+
+  it("a routed 1% curve buy caps the quote cost at solAmount + 1%", async () => {
+    const sdk = makeSdk();
+    stubBuyState(sdk);
+    const solAmount = new BN(1_000_000_000);
+
+    const ixs = await sdk.routedBuyInstructions({
+      mint: MINT,
+      user: USER,
+      quoteAmountIn: solAmount,
+      slippage: 0.01,
+    });
+
+    const buy = ixs.find((ix) => ix.programId.equals(PUMP_PROGRAM_ID));
+    expect(buy).toBeDefined();
+    // buy args: discriminator(8) | amount u64 | max_sol_cost u64 | ...
+    const maxSolCost = new BN(buy!.data.subarray(16, 24), "le");
+    expect(maxSolCost.toString()).toBe("1010000000");
+  });
+
+  it("buyBySolAmount forwards percent unchanged", async () => {
+    const sdk = makeSdk();
+    stubBuyState(sdk);
+    const spy = jest.spyOn(PUMP_SDK, "buyInstructions").mockResolvedValue([]);
+
+    await sdk.buyBySolAmount({
+      mint: MINT,
+      user: USER,
+      solAmount: new BN(100_000_000),
+      slippage: 2,
+    });
+
+    expect(spy.mock.calls[0]![0].slippage).toBe(2);
   });
 });
 
