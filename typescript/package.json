@@ -32,10 +32,11 @@
     "web3"
   ],
   "author": "",
-  "license": "MIT",
+  "license": "UNLICENSED",
   "repository": {
     "type": "git",
-    "url": "https://github.com/hippopotomonstrosesquippedaliophobi/solana-vanity-address"
+    "url": "https://github.com/nirholas/pump-fun-sdk",
+    "directory": "typescript"
   },
   "engines": {
     "node": ">=18.0.0"
