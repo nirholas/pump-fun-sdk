@@ -55,7 +55,8 @@
   "files": [
     "dist",
     "src",
-    "!src/__tests__"
+    "!src/__tests__",
+    "NOTICE"
   ],
   "scripts": {
     "build": "npm run clean && tsup",
