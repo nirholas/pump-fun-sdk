@@ -7,6 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.1.0] - 2026-11-19
+
+### Fixed
+
+- `routedBuyInstructions` and `routedSellInstructions` passed their decimal
+  slippage straight to the bonding-curve builders, which expect percent, so a
+  requested 1% was applied as 0.01%. `pump buy` and `pump sell` on a live
+  curve were affected.
+- The trade builders reject NaN, infinite and negative slippage with a
+  `RangeError` instead of an opaque bn.js error or an inverted guard.
+- Price-impact helpers no longer book fees against the simulated curve
+  reserves, the token summary reports the fee rates `getFee` actually charges,
+  and graduation progress can no longer go negative.
+- `fetchWithFallback` stops retrying once the caller aborts, and
+  `parseEndpoints` never returns an empty endpoint list.
+- CLI: inline secret keys are redacted from `config`, `doctor` and error
+  output; slippage, priority-fee and compute-limit settings are validated; the
+  config file is always written with mode 0600; `vanity --out` refuses to
+  overwrite an existing keypair file; `--json` shows the trade terms before
+  asking for confirmation; on-chain strings are stripped of terminal control
+  characters in `pump events`.
+- The package builds again (the DTS step failed on the IDL JSON re-exports).
+
+### Changed
+
+- ESM consumers now resolve `index.d.mts` instead of the CJS declarations.
+- `@types/bn.js` is a dependency, so `BN` in the public API is no longer
+  `any` for consumers.
+- The `./*` subpath export is removed. It only resolved to files that were
+  never built.
+- Tests are no longer shipped in the tarball, and the public API is free of
+  `any`.
+
 ## [3.0.0] - 2026-10-09
 
 Tracks the October 2026 Pump, PumpSwap and PumpFees program upgrade, using
