@@ -127,6 +127,7 @@ import type {
   QuoteControl,
   ResetFeeSharingConfigEvent,
   SetCreatorEvent,
+  SharingConfig,
   SocialFeePda,
   SocialFeePdaClaimedEvent,
   SocialFeePdaCreatedEvent,
@@ -170,7 +171,9 @@ import {
   type FallbackConfig,
 } from "./fallback";
 
-export const OFFLINE_PUMP_PROGRAM = getPumpProgram(null as any as Connection);
+export const OFFLINE_PUMP_PROGRAM = getPumpProgram(
+  null as unknown as Connection,
+);
 
 /**
  * The pool fields the PumpSwap quote math needs beyond the reserves: the
@@ -2381,7 +2384,7 @@ export class OnlinePumpSdk {
    * Fetch the PumpFees program global account.
    */
   async fetchFeeProgramGlobal(): Promise<FeeProgramGlobal> {
-    return await (this.pumpFeeProgram.account as any).feeProgramGlobal.fetch(
+    return await this.pumpFeeProgram.account.feeProgramGlobal.fetch(
       feeProgramGlobalPda(),
     );
   }
@@ -2394,7 +2397,7 @@ export class OnlinePumpSdk {
    * `Pool.coinCreator` — if it equals `feeSharingConfigPda(mint)`, the config
    * is active and this method will return it.
    */
-  async fetchSharingConfig(mint: PublicKey) {
+  async fetchSharingConfig(mint: PublicKey): Promise<SharingConfig> {
     const pda = feeSharingConfigPda(mint);
     const accountInfo = await this.connection.getAccountInfo(pda);
     if (!accountInfo) {
@@ -2411,7 +2414,9 @@ export class OnlinePumpSdk {
    *
    * Safe to call regardless of whether the creator has set up fee sharing.
    */
-  async fetchSharingConfigNullable(mint: PublicKey) {
+  async fetchSharingConfigNullable(
+    mint: PublicKey,
+  ): Promise<SharingConfig | null> {
     const accountInfo = await this.connection.getAccountInfo(
       feeSharingConfigPda(mint),
     );
@@ -2429,7 +2434,9 @@ export class OnlinePumpSdk {
    *   if (config) console.log(mint, "has", config.shareholders.length, "shareholders");
    * }
    */
-  async fetchMultipleSharingConfigs(mints: PublicKey[]) {
+  async fetchMultipleSharingConfigs(
+    mints: PublicKey[],
+  ): Promise<Map<string, SharingConfig | null>> {
     const pdas = mints.map(feeSharingConfigPda);
     const accountInfos = await this.connection.getMultipleAccountsInfo(pdas);
     const result = new Map<string, ReturnType<typeof PUMP_SDK.decodeSharingConfig> | null>();
@@ -2450,7 +2457,7 @@ export class OnlinePumpSdk {
     userId: string,
     platform: number,
   ): Promise<SocialFeePda> {
-    return await (this.pumpFeeProgram.account as any).socialFeePda.fetch(
+    return await this.pumpFeeProgram.account.socialFeePda.fetch(
       socialFeePda(userId, platform),
     );
   }
@@ -2942,9 +2949,7 @@ export class OnlinePumpSdk {
     newShareholders: Array<{ address: PublicKey; shareBps: number }>;
   }): Promise<TransactionInstruction[]> {
     const config = await this.fetchSharingConfig(mint);
-    const curShareholders = (config as any).shareholders.map(
-      (s: { address: PublicKey }) => s.address,
-    );
+    const curShareholders = config.shareholders.map((s) => s.address);
     const ix = await PUMP_SDK.updateFeeShares({
       authority,
       mint,

@@ -1,5 +1,5 @@
 import { AnchorProvider, Program } from "@coral-xyz/anchor";
-import type { BorshInstructionCoder } from "@coral-xyz/anchor";
+import type { BorshInstructionCoder, Wallet } from "@coral-xyz/anchor";
 import {
   coinCreatorVaultAtaPda,
   coinCreatorVaultAuthorityPda,
@@ -155,12 +155,30 @@ import {
   platformToString,
 } from "./state";
 
+/**
+ * An Anchor provider for instruction building and account decoding. Pass
+ * `null` for a fully offline provider (no RPC methods may be called on it).
+ *
+ * It carries no wallet, and that is load-bearing: the SDK never signs, and
+ * Anchor fills any signer account a caller leaves out with
+ * `provider.publicKey`, so without a wallet it throws instead of silently
+ * substituting a key. Anchor's typings require a `Wallet`, hence the cast.
+ *
+ * A hoisted function on purpose: sdk.ts and onlineSdk.ts import each other,
+ * and onlineSdk.ts builds a program at load time, possibly before this
+ * module's `const` bindings are initialized.
+ */
+function readOnlyProvider(connection: Connection | null): AnchorProvider {
+  return new AnchorProvider(
+    connection as Connection,
+    null as unknown as Wallet,
+    {},
+  );
+}
+
 /** Create an Anchor Program instance for the Pump bonding curve program. */
 export function getPumpProgram(connection: Connection): Program<Pump> {
-  return new Program(
-    pumpIdl as Pump,
-    new AnchorProvider(connection, null as any, {}),
-  );
+  return new Program(pumpIdl as Pump, readOnlyProvider(connection));
 }
 
 import {
@@ -173,18 +191,12 @@ export { MAYHEM_PROGRAM_ID, PUMP_AMM_PROGRAM_ID, PUMP_FEE_PROGRAM_ID, PUMP_PROGR
 
 /** Create an Anchor Program instance for the PumpAMM graduated pool program. */
 export function getPumpAmmProgram(connection: Connection): Program<PumpAmm> {
-  return new Program(
-    PumpAmmIdl as PumpAmm,
-    new AnchorProvider(connection, null as any, {}),
-  );
+  return new Program(PumpAmmIdl as PumpAmm, readOnlyProvider(connection));
 }
 
 /** Create an Anchor Program instance for the PumpFees fee-sharing program. */
 export function getPumpFeeProgram(connection: Connection): Program<PumpFees> {
-  return new Program(
-    PumpFeesIdl as PumpFees,
-    new AnchorProvider(connection, null as any, {}),
-  );
+  return new Program(PumpFeesIdl as PumpFees, readOnlyProvider(connection));
 }
 
 /**
@@ -900,11 +912,11 @@ export class PumpSdk {
     // Create offline programs for fee and AMM
     this.offlinePumpFeeProgram = new Program(
       PumpFeesIdl as PumpFees,
-      new AnchorProvider(null as any, null as any, {}),
+      readOnlyProvider(null),
     );
     this.offlinePumpAmmProgram = new Program(
       PumpAmmIdl as PumpAmm,
-      new AnchorProvider(null as any, null as any, {}),
+      readOnlyProvider(null),
     );
   }
 
@@ -921,7 +933,7 @@ export class PumpSdk {
     if (!this.lazyOfflinePumpProgram) {
       this.lazyOfflinePumpProgram =
         OFFLINE_PUMP_PROGRAM ??
-        new Program(pumpIdl as Pump, new AnchorProvider(null as any, null as any, {}));
+        new Program(pumpIdl as Pump, readOnlyProvider(null));
     }
     return this.lazyOfflinePumpProgram;
   }
@@ -4901,7 +4913,9 @@ export class PumpSdk {
       .instruction();
   }
 
-  normalizeSocialShareholders(params: Parameters<typeof normalizeSocialShareholders>[0]) {
+  normalizeSocialShareholders(
+    params: Parameters<typeof normalizeSocialShareholders>[0],
+  ): ReturnType<typeof normalizeSocialShareholders> {
     return normalizeSocialShareholders(params);
   }
 

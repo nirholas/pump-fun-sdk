@@ -80,7 +80,7 @@ export function bondingCurvePda(mint: PublicKeyInitData): PublicKey {
 }
 
 /** Derive the creator vault PDA that holds creator fee SOL. */
-export function creatorVaultPda(creator: PublicKey) {
+export function creatorVaultPda(creator: PublicKey): PublicKey {
   return pumpPda([Buffer.from("creator-vault"), creator.toBuffer()]);
 }
 

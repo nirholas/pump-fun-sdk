@@ -1,6 +1,6 @@
 import { NATIVE_MINT, TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
-import type { TransactionInstruction } from "@solana/web3.js";
+import type { Connection, TransactionInstruction } from "@solana/web3.js";
 import BN from "bn.js";
 
 // Import from `../pda` before `../sdk`: pda.ts -> sdk.ts -> onlineSdk.ts -> pda.ts
@@ -10,6 +10,7 @@ import { bondingCurveV2Pda, canonicalPumpPoolPda, feeSharingConfigPda, poolV2Pda
 import {
   PUMP_SDK,
   PumpSdk,
+  getPumpProgram,
   isCreatorUsingSharingConfig,
   PUMP_PROGRAM_ID,
   PUMP_AMM_PROGRAM_ID,
@@ -859,5 +860,32 @@ describe("slippage validation", () => {
   it("accepts zero slippage", async () => {
     const ixs = await PUMP_SDK.sellInstructions({ ...trade, slippage: 0 });
     expect(ixs).toHaveLength(1);
+  });
+});
+
+// ── Offline providers never sign ────────────────────────────────────
+//
+// The SDK's Anchor providers carry no wallet on purpose: Anchor fills a
+// signer account the caller leaves out with `provider.publicKey`, so a stub
+// wallet would silently put a wrong key in the instruction.
+
+describe("offline Anchor providers", () => {
+  it("refuse to auto-fill an omitted signer account", async () => {
+    const program = getPumpProgram(null as unknown as Connection);
+    await expect(
+      program.methods
+        .extendAccount()
+        .accountsPartial({ account: TEST_CREATOR })
+        .instruction(),
+    ).rejects.toThrow(/publicKey/);
+  });
+
+  it("build the instruction once the signer is named", async () => {
+    const ix = await PUMP_SDK.extendAccountInstruction({
+      account: TEST_CREATOR,
+      user: TEST_PUBKEY,
+    });
+    const user = ix.keys.find((key) => key.pubkey.equals(TEST_PUBKEY));
+    expect(user?.isSigner).toBe(true);
   });
 });

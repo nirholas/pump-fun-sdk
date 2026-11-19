@@ -73,7 +73,7 @@ export function getFee({
   bondingCurve: BondingCurve;
   amount: BN;
   isNewBondingCurve: boolean;
-}) {
+}): BN {
   const { virtualQuoteReserves, virtualTokenReserves, isMayhemMode } =
     bondingCurve;
   const { protocolFeeBps, creatorFeeBps } = computeFeesBps({
