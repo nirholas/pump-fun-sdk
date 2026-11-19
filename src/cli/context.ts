@@ -87,9 +87,12 @@ export class CliContext {
     setColorEnabled(!colorOff);
   }
 
-  /** The configured keypair path, whether or not it exists. */
+  /**
+   * The configured keypair path, whether or not it exists, or a redacted
+   * placeholder when the value is an inline secret key. Safe to print.
+   */
   get walletPath(): string {
-    return this.keypairPath;
+    return describeKeypairSource(this.keypairPath);
   }
 
   /** Load the signer, or explain precisely how to provide one. */
@@ -124,9 +127,13 @@ export function loadKeypair(pathOrSecret: string): Keypair {
     // Not a path: the only other thing it can be is an inline secret key.
     const inline = tryBase58Secret(trimmed);
     if (inline !== undefined) return inline;
+    // Never echo a value that may be (part of) a secret key: this message
+    // reaches the terminal, CI logs, and stdout in `--json` mode.
     throw new CliError(
-      `No keypair found at ${trimmed}`,
-      "Point the CLI at one with --keypair <path>, PUMP_KEYPAIR=<path or base58 secret>, or `pump config set keypair <path>`. Create one with `solana-keygen new`.",
+      looksLikeInlineSecret(trimmed)
+        ? "The configured keypair is neither an existing file nor a valid base58 secret key (value not shown)"
+        : `No keypair found at ${trimmed}`,
+      "Point the CLI at one with --keypair <path>, PUMP_KEYPAIR=<path or base58 secret>, or `pump config set keypair <path>`. Inline values must be a base58 secret key; JSON byte arrays have to be in a file. Create one with `solana-keygen new`.",
     );
   }
 
@@ -163,6 +170,28 @@ export function loadKeypair(pathOrSecret: string): Keypair {
     `Keypair at ${trimmed} is neither a JSON byte array nor a base58 secret key`,
     "Export it with `solana-keygen` or paste the base58 secret key into the file.",
   );
+}
+
+/**
+ * Whether a keypair setting that is not an existing file should be treated as
+ * secret material rather than a mistyped path: a JSON byte array, or a long run
+ * of base58 characters with no path separator. A base58 secret key is 87-88
+ * characters, so anything from 64 up is redacted even when it fails to decode.
+ */
+function looksLikeInlineSecret(value: string): boolean {
+  return value.startsWith("[") || /^[1-9A-HJ-NP-Za-km-z]{64,}$/.test(value);
+}
+
+/**
+ * Printable description of a keypair setting: the path itself, or a redacted
+ * placeholder when the setting holds an inline secret key.
+ */
+export function describeKeypairSource(pathOrSecret: string): string {
+  const trimmed = pathOrSecret.trim();
+  if (!existsSync(trimmed) && looksLikeInlineSecret(trimmed)) {
+    return "<inline secret key, redacted>";
+  }
+  return trimmed;
 }
 
 function tryBase58Secret(value: string): Keypair | undefined {

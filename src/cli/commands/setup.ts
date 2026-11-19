@@ -20,7 +20,7 @@ import {
   type CliConfig,
 } from "../config";
 import type { CliContext } from "../context";
-import { CliError } from "../context";
+import { CliError, describeKeypairSource } from "../context";
 import {
   c,
   failure,
@@ -52,21 +52,21 @@ export function registerSetupCommands(
     .command("get <key>")
     .description("Print a single configuration value")
     .action((key: string) => {
-      runConfigGet(getContext(), key);
+      runConfigGet(wantsJson(program), key);
     });
 
   config
     .command("set <key> <value>")
     .description(`Set a value (${Object.keys(CONFIG_KEYS).join(", ")})`)
     .action((key: string, value: string) => {
-      runConfigSet(getContext(), key, value);
+      runConfigSet(wantsJson(program), key, value);
     });
 
   config
     .command("unset <key>")
     .description("Remove a value and fall back to the default")
     .action((key: string) => {
-      runConfigUnset(getContext(), key);
+      runConfigUnset(wantsJson(program), key);
     });
 
   config
@@ -82,6 +82,15 @@ export function registerSetupCommands(
     .action(async () => {
       await runDoctor(getContext());
     });
+}
+
+/**
+ * `config get/set/unset` deliberately do not build a `CliContext`: that
+ * validates the saved values, and these commands are how a bad saved value
+ * gets fixed.
+ */
+function wantsJson(program: Command): boolean {
+  return program.opts<{ json?: boolean }>().json === true;
 }
 
 function assertKnownKey(key: string): keyof CliConfig {
@@ -101,7 +110,7 @@ function runConfigList(ctx: CliContext): void {
     process.stdout.write(
       `${toJson({
         path: configPath(),
-        saved: config,
+        saved: printableConfig(config),
         effective: {
           rpcUrls: ctx.endpoints,
           keypair: ctx.walletPath,
@@ -143,37 +152,52 @@ function runConfigList(ctx: CliContext): void {
   );
 }
 
-function runConfigGet(ctx: CliContext, key: string): void {
+/** A saved value as it may be printed: an inline keypair secret is redacted. */
+function printable(key: keyof CliConfig, value: unknown): unknown {
+  return key === "keypair" && typeof value === "string"
+    ? describeKeypairSource(value)
+    : value;
+}
+
+/** The saved config with secret values redacted, for display. */
+function printableConfig(config: CliConfig): CliConfig {
+  return config.keypair === undefined
+    ? config
+    : { ...config, keypair: describeKeypairSource(config.keypair) };
+}
+
+function runConfigGet(asJson: boolean, key: string): void {
   const typed = assertKnownKey(key);
-  const value = loadConfig()[typed];
-  if (ctx.json) {
+  const value = printable(typed, loadConfig()[typed]);
+  if (asJson) {
     process.stdout.write(`${toJson({ key, value: value ?? null })}\n`);
     return;
   }
   process.stdout.write(`${value === undefined ? "" : String(value)}\n`);
 }
 
-function runConfigSet(ctx: CliContext, key: string, value: string): void {
+function runConfigSet(asJson: boolean, key: string, value: string): void {
   const typed = assertKnownKey(key);
   const config = loadConfig();
   const parsed = CONFIG_KEYS[typed](value);
   const next = { ...config, [typed]: parsed };
   const path = saveConfig(next);
+  const shown = printable(typed, parsed);
 
-  if (ctx.json) {
-    process.stdout.write(`${toJson({ key, value: parsed, path })}\n`);
+  if (asJson) {
+    process.stdout.write(`${toJson({ key, value: shown, path })}\n`);
     return;
   }
-  process.stdout.write(`${success(`${key} = ${JSON.stringify(parsed)}`)}\n`);
+  process.stdout.write(`${success(`${key} = ${JSON.stringify(shown)}`)}\n`);
 }
 
-function runConfigUnset(ctx: CliContext, key: string): void {
+function runConfigUnset(asJson: boolean, key: string): void {
   const typed = assertKnownKey(key);
   const config = loadConfig();
   delete config[typed];
   const path = saveConfig(config);
 
-  if (ctx.json) {
+  if (asJson) {
     process.stdout.write(`${toJson({ key, value: null, path })}\n`);
     return;
   }

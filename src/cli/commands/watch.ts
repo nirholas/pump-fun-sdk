@@ -30,7 +30,7 @@ export function registerWatchCommand(
     .command("watch <mint>")
     .description("Live-refreshing price and graduation progress for a token")
     .option("-i, --interval <seconds>", "Seconds between refreshes", parseInterval, 5)
-    .option("-n, --count <n>", "Stop after this many refreshes", Number)
+    .option("-n, --count <n>", "Stop after this many refreshes", parseCount)
     .action(
       async (mint: string, options: { interval: number; count?: number }) => {
         await runWatch(getContext(), mint, options);
@@ -45,6 +45,14 @@ function parseInterval(value: string): number {
       `--interval must be at least 1 second, got "${value}"`,
       "Anything faster gets rate limited by public RPC endpoints.",
     );
+  }
+  return parsed;
+}
+
+function parseCount(value: string): number {
+  const parsed = Number(value);
+  if (!Number.isSafeInteger(parsed) || parsed < 1) {
+    throw new CliError(`--count must be a whole number of at least 1, got "${value}"`);
   }
   return parsed;
 }

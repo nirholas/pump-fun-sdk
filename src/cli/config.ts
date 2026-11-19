@@ -10,7 +10,13 @@
  * built-in default.
  */
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  chmodSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  writeFileSync,
+} from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 
@@ -40,10 +46,62 @@ export interface CliConfig {
   computeUnitLimit?: number;
 }
 
-function requireFiniteNumber(value: string, key: string): number {
+/** Solana's per-transaction compute ceiling. */
+export const MAX_COMPUTE_UNIT_LIMIT = 1_400_000;
+
+/**
+ * Slippage tolerance in percent, `0..100`. Past 100 a sell's minimum output is
+ * clamped to zero, so a larger number can only be a unit mistake (bps typed
+ * as percent, say), and it would remove the price guard entirely.
+ */
+export function validateSlippage(value: unknown, source: string): number {
   const parsed = Number(value);
-  if (!Number.isFinite(parsed)) {
-    throw new Error(`${key} must be a number, got "${value}"`);
+  if (
+    typeof value === "boolean" ||
+    value === "" ||
+    value === null ||
+    !Number.isFinite(parsed) ||
+    parsed < 0 ||
+    parsed > 100
+  ) {
+    throw new Error(
+      `${source}: slippage must be a percent between 0 and 100, got ${JSON.stringify(value)}`,
+    );
+  }
+  return parsed;
+}
+
+/** Priority fee in micro-lamports per compute unit: a non-negative integer. */
+export function validatePriorityFee(value: unknown, source: string): number {
+  const parsed = Number(value);
+  if (
+    typeof value === "boolean" ||
+    value === "" ||
+    value === null ||
+    !Number.isSafeInteger(parsed) ||
+    parsed < 0
+  ) {
+    throw new Error(
+      `${source}: priority fee must be a whole number of micro-lamports per compute unit, got ${JSON.stringify(value)}`,
+    );
+  }
+  return parsed;
+}
+
+/** Compute unit limit: an integer in `1..1_400_000`. */
+export function validateComputeUnitLimit(value: unknown, source: string): number {
+  const parsed = Number(value);
+  if (
+    typeof value === "boolean" ||
+    value === "" ||
+    value === null ||
+    !Number.isSafeInteger(parsed) ||
+    parsed < 1 ||
+    parsed > MAX_COMPUTE_UNIT_LIMIT
+  ) {
+    throw new Error(
+      `${source}: compute unit limit must be a whole number between 1 and ${MAX_COMPUTE_UNIT_LIMIT}, got ${JSON.stringify(value)}`,
+    );
   }
   return parsed;
 }
@@ -58,9 +116,9 @@ export const CONFIG_KEYS: Record<keyof CliConfig, (value: string) => unknown> =
         .map((s) => s.trim())
         .filter(Boolean),
     keypair: (v) => v,
-    slippage: (v) => requireFiniteNumber(v, "slippage"),
-    priorityFee: (v) => requireFiniteNumber(v, "priorityFee"),
-    computeUnitLimit: (v) => requireFiniteNumber(v, "computeUnitLimit"),
+    slippage: (v) => validateSlippage(v, "slippage"),
+    priorityFee: (v) => validatePriorityFee(v, "priorityFee"),
+    computeUnitLimit: (v) => validateComputeUnitLimit(v, "computeUnitLimit"),
   };
 
 export function configDir(): string {
@@ -84,10 +142,16 @@ export function loadConfig(): CliConfig {
   }
 }
 
+/**
+ * Write the config file owner-only. `mode` on `writeFileSync` applies only when
+ * the file is created, so an existing file is tightened explicitly: the config
+ * can hold a keypair path or an inline secret key.
+ */
 export function saveConfig(config: CliConfig): string {
   const path = configPath();
-  mkdirSync(dirname(path), { recursive: true });
+  mkdirSync(dirname(path), { recursive: true, mode: 0o700 });
   writeFileSync(path, `${JSON.stringify(config, null, 2)}\n`, { mode: 0o600 });
+  chmodSync(path, 0o600);
   return path;
 }
 
@@ -127,25 +191,37 @@ export function resolveKeypairPath(flagValue?: string): string {
   );
 }
 
+/**
+ * The resolvers below validate whichever source wins, so a bad flag, env var
+ * or hand-edited config value fails loudly instead of being sent as NaN or
+ * silently replaced by a default.
+ */
 export function resolveSlippage(flagValue?: number): number {
-  if (flagValue !== undefined) return flagValue;
+  if (flagValue !== undefined) return validateSlippage(flagValue, "--slippage");
   const fromEnv = process.env.PUMP_SLIPPAGE;
-  if (fromEnv !== undefined && Number.isFinite(Number(fromEnv))) {
-    return Number(fromEnv);
-  }
-  return loadConfig().slippage ?? 1;
+  if (fromEnv !== undefined) return validateSlippage(fromEnv, "PUMP_SLIPPAGE");
+  const saved = loadConfig().slippage;
+  return saved === undefined ? 1 : validateSlippage(saved, configPath());
 }
 
 export function resolvePriorityFee(flagValue?: number): number {
-  if (flagValue !== undefined) return flagValue;
-  const fromEnv = process.env.PUMP_PRIORITY_FEE;
-  if (fromEnv !== undefined && Number.isFinite(Number(fromEnv))) {
-    return Number(fromEnv);
+  if (flagValue !== undefined) {
+    return validatePriorityFee(flagValue, "--priority-fee");
   }
-  return loadConfig().priorityFee ?? 0;
+  const fromEnv = process.env.PUMP_PRIORITY_FEE;
+  if (fromEnv !== undefined) {
+    return validatePriorityFee(fromEnv, "PUMP_PRIORITY_FEE");
+  }
+  const saved = loadConfig().priorityFee;
+  return saved === undefined ? 0 : validatePriorityFee(saved, configPath());
 }
 
 export function resolveComputeUnitLimit(flagValue?: number): number {
-  if (flagValue !== undefined) return flagValue;
-  return loadConfig().computeUnitLimit ?? 300_000;
+  if (flagValue !== undefined) {
+    return validateComputeUnitLimit(flagValue, "--compute-unit-limit");
+  }
+  const saved = loadConfig().computeUnitLimit;
+  return saved === undefined
+    ? 300_000
+    : validateComputeUnitLimit(saved, configPath());
 }
