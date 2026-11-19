@@ -13,10 +13,12 @@ import BN from "bn.js";
 import {
   getBuyTokenAmountFromSolAmount,
   getBuySolAmountFromTokenAmount,
+  getBuySolAmountFromTokenAmountQuote,
   getSellSolAmountFromTokenAmount,
+  getSellSolAmountFromTokenAmountQuote,
   bondingCurveMarketCap,
 } from "./bondingCurve";
-import { computeFeesBps } from "./fees";
+import { computeFeesBps, ONE_BILLION_SUPPLY } from "./fees";
 import type { BondingCurve, FeeConfig, Global } from "./state";
 
 // ── Types ─────────────────────────────────────────────────────────────
@@ -156,8 +158,18 @@ export function calculateBuyPriceImpact({
     amount: solAmount,
   });
 
-  // Simulate new reserves after trade
-  const newVirtualSolReserves = bondingCurve.virtualQuoteReserves.add(solAmount);
+  // Simulate the reserves after the trade. Only the net cost of the tokens
+  // enters the curve; the protocol and creator fees are paid on top of it and
+  // go elsewhere, so adding the whole `solAmount` would overstate the move.
+  const curveQuoteIn = tokensReceived.isZero()
+    ? new BN(0)
+    : getBuySolAmountFromTokenAmountQuote({
+        minAmount: tokensReceived,
+        virtualTokenReserves: bondingCurve.virtualTokenReserves,
+        virtualSolReserves: bondingCurve.virtualQuoteReserves,
+      });
+  const newVirtualSolReserves =
+    bondingCurve.virtualQuoteReserves.add(curveQuoteIn);
   const newVirtualTokenReserves =
     bondingCurve.virtualTokenReserves.sub(tokensReceived);
 
@@ -214,8 +226,19 @@ export function calculateSellPriceImpact({
     amount: tokenAmount,
   });
 
-  // Simulate new reserves after trade
-  const newVirtualSolReserves = bondingCurve.virtualQuoteReserves.sub(solReceived);
+  // Simulate the reserves after the trade. The curve pays out the gross
+  // amount and the fees are taken from it, so the reserves drop by the gross
+  // amount, not by the `solReceived` the seller nets.
+  const curveQuoteOut =
+    tokenAmount.isZero() || isCurveRetired(bondingCurve)
+      ? new BN(0)
+      : getSellSolAmountFromTokenAmountQuote({
+          inputAmount: tokenAmount,
+          virtualTokenReserves: bondingCurve.virtualTokenReserves,
+          virtualSolReserves: bondingCurve.virtualQuoteReserves,
+        });
+  const newVirtualSolReserves =
+    bondingCurve.virtualQuoteReserves.sub(curveQuoteOut);
   const newVirtualTokenReserves =
     bondingCurve.virtualTokenReserves.add(tokenAmount);
 
@@ -315,7 +338,11 @@ export function getGraduationProgress(
     };
   }
 
-  const tokensSold = initialReal.sub(bondingCurve.realTokenReserves);
+  // Clamped so a curve holding more than the global starting reserves (a
+  // custom or pre-upgrade curve) reads as 0% instead of a negative progress.
+  const tokensSold = initialReal.sub(
+    BN.min(bondingCurve.realTokenReserves, initialReal),
+  );
   const progressBps = tokensSold.muln(10_000).div(initialReal).toNumber();
 
   const solNeededToGraduate = getBuySolAmountFromTokenAmount({
@@ -430,12 +457,17 @@ export function getBondingCurveSummary({
 }): BondingCurveSummary {
   const progress = getGraduationProgress(global, bondingCurve, feeConfig);
   const price = getTokenPrice({ global, feeConfig, mintSupply, bondingCurve });
+  // The same inputs `getFee` charges with: the curve's quote mint picks the
+  // schedule, its own creator rate can override the schedule's, and only a
+  // mayhem curve is priced at its live supply.
   const { protocolFeeBps, creatorFeeBps } = computeFeesBps({
     global,
     feeConfig,
-    mintSupply,
+    mintSupply: bondingCurve.isMayhemMode ? mintSupply : ONE_BILLION_SUPPLY,
     virtualQuoteReserves: bondingCurve.virtualQuoteReserves,
     virtualTokenReserves: bondingCurve.virtualTokenReserves,
+    quoteMint: bondingCurve.quoteMint,
+    creatorFeeBps: bondingCurve.creatorFeeBps,
   });
 
   return {

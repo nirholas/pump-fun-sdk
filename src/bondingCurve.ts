@@ -336,7 +336,12 @@ export function newBondingCurve(
   };
 }
 
-function getBuySolAmountFromTokenAmountQuote({
+/**
+ * Quote that enters the curve for `minAmount` tokens, before fees (the
+ * program's buy cost, rounded up by one unit). Internal: not re-exported from
+ * the package entry point.
+ */
+export function getBuySolAmountFromTokenAmountQuote({
   minAmount,
   virtualTokenReserves,
   virtualSolReserves,
@@ -365,7 +370,12 @@ function getBuyTokenAmountFromSolAmountQuote({
     .div(virtualSolReserves.add(inputAmount));
 }
 
-function getSellSolAmountFromTokenAmountQuote({
+/**
+ * Quote that leaves the curve for `inputAmount` tokens, before fees. Fees are
+ * taken out of this amount, so it is also what the curve's reserves drop by.
+ * Internal: not re-exported from the package entry point.
+ */
+export function getSellSolAmountFromTokenAmountQuote({
   inputAmount,
   virtualTokenReserves,
   virtualSolReserves,

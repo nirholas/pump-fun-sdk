@@ -10,11 +10,15 @@ import {
   getBondingCurveSummary,
 } from "../analytics";
 
+import { getFee } from "../fees";
+
 import {
   makeGlobal,
   makeBondingCurve,
+  makeFeeConfig,
   makeGraduatedBondingCurve,
   makeMigratedBondingCurve,
+  TEST_CREATOR,
 } from "./fixtures";
 
 const global = makeGlobal();
@@ -331,5 +335,126 @@ describe("analytics", () => {
       expect(standardSummary.isMayhemMode).toBe(false);
       expect(mayhemSummary.isMayhemMode).toBe(true);
     });
+  });
+});
+
+// ── Post-trade reserves and fee consistency ─────────────────────────
+//
+// Fees are paid on top of a buy's curve cost and out of a sell's curve
+// proceeds; neither reaches the curve. The simulated post-trade reserves must
+// therefore stay on the constant-product curve `vSol * vToken = k`, which
+// they did not when the fee-inclusive (buy) or fee-exclusive (sell) SOL
+// amount was booked against the reserves.
+
+describe("analytics post-trade reserves", () => {
+  const feeGlobal = makeGlobal({
+    feeBasisPoints: new BN(95),
+    creatorFeeBasisPoints: new BN(30),
+  });
+  const curve = makeBondingCurve({ creator: TEST_CREATOR });
+  const k = curve.virtualQuoteReserves.mul(curve.virtualTokenReserves);
+  const SCALE = new BN(1_000_000_000);
+
+  /** Relative distance (in parts per million) of the implied reserves from k. */
+  function driftPpm(priceAfter: BN, newVirtualTokenReserves: BN): number {
+    const impliedSol = priceAfter.mul(newVirtualTokenReserves).div(SCALE);
+    const onCurveSol = k.div(newVirtualTokenReserves);
+    return impliedSol.sub(onCurveSol).abs().muln(1_000_000).div(onCurveSol).toNumber();
+  }
+
+  it("a buy books only the net curve cost against the reserves", () => {
+    const result = calculateBuyPriceImpact({
+      global: feeGlobal,
+      feeConfig: null,
+      mintSupply,
+      bondingCurve: curve,
+      solAmount: new BN(5_000_000_000),
+    });
+    const newVtr = curve.virtualTokenReserves.sub(result.outputAmount);
+    // Booking the 1.25% fee against the curve drifts by ~12,000 ppm.
+    expect(driftPpm(result.priceAfter, newVtr)).toBeLessThan(10);
+  });
+
+  it("a sell books the gross curve proceeds against the reserves", () => {
+    const tokens = new BN("100000000000000");
+    const result = calculateSellPriceImpact({
+      global: feeGlobal,
+      feeConfig: null,
+      mintSupply,
+      bondingCurve: curve,
+      tokenAmount: tokens,
+    });
+    const newVtr = curve.virtualTokenReserves.add(tokens);
+    expect(driftPpm(result.priceAfter, newVtr)).toBeLessThan(10);
+  });
+
+  it("a zero-token sell leaves the price unchanged", () => {
+    const result = calculateSellPriceImpact({
+      global: feeGlobal,
+      feeConfig: null,
+      mintSupply,
+      bondingCurve: curve,
+      tokenAmount: new BN(0),
+    });
+    expect(result.priceAfter.eq(result.priceBefore)).toBe(true);
+    expect(result.impactBps).toBe(0);
+  });
+});
+
+describe("getBondingCurveSummary fee rates", () => {
+  it("reports the rates getFee charges on a non-mayhem curve (1B-supply market cap)", () => {
+    const feeConfig = makeFeeConfig();
+    const curve = makeBondingCurve({ creator: TEST_CREATOR });
+    // A live supply 10x the canonical one would put the market cap in the
+    // second tier, but non-mayhem curves are priced at ONE_BILLION_SUPPLY.
+    const inflatedSupply = mintSupply.muln(10);
+    const summary = getBondingCurveSummary({
+      global,
+      feeConfig,
+      mintSupply: inflatedSupply,
+      bondingCurve: curve,
+    });
+    expect(summary.protocolFeeBps.toNumber()).toBe(200);
+    expect(summary.creatorFeeBps.toNumber()).toBe(100);
+
+    const amount = new BN(1_000_000_000);
+    const charged = getFee({
+      global,
+      feeConfig,
+      mintSupply: inflatedSupply,
+      bondingCurve: curve,
+      amount,
+      isNewBondingCurve: false,
+    });
+    const ceil = (bps: BN) => amount.mul(bps).addn(9_999).divn(10_000);
+    expect(
+      ceil(summary.protocolFeeBps).add(ceil(summary.creatorFeeBps)).eq(charged),
+    ).toBe(true);
+  });
+
+  it("reports a curve's own creator rate while creator fees are configurable", () => {
+    const configurable = makeGlobal({ creatorFeeConfigurable: true });
+    const curve = makeBondingCurve({
+      creator: TEST_CREATOR,
+      creatorFeeBps: new BN(250),
+    });
+    const summary = getBondingCurveSummary({
+      global: configurable,
+      feeConfig: makeFeeConfig(),
+      mintSupply,
+      bondingCurve: curve,
+    });
+    expect(summary.creatorFeeBps.toNumber()).toBe(250);
+    expect(summary.protocolFeeBps.toNumber()).toBe(200);
+  });
+});
+
+describe("getGraduationProgress bounds", () => {
+  it("clamps to 0 when the curve holds more than the global starting reserves", () => {
+    const curve = makeBondingCurve({
+      realTokenReserves: global.initialRealTokenReserves.muln(2),
+    });
+    const progress = getGraduationProgress(global, curve);
+    expect(progress.progressBps).toBe(0);
   });
 });
