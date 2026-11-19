@@ -585,10 +585,25 @@ function buybackAtaInstructions(
 }
 
 /**
+ * Reject a slippage the builders cannot apply meaningfully. NaN and infinity
+ * would otherwise surface as an opaque bn.js "Assertion failed", and a
+ * negative value inverts the guard (a buy capped below its quote, a sell
+ * demanding more than it can get).
+ */
+function assertSlippage(slippage: number): void {
+  if (!Number.isFinite(slippage) || slippage < 0) {
+    throw new RangeError(
+      `slippage must be a finite, non-negative percent (1 = 1%), got ${slippage}`,
+    );
+  }
+}
+
+/**
  * `amount` raised by `slippage` percent, in the 0.1% steps the v3 builders
  * use (a buy's maximum cost).
  */
 function plusSlippage(amount: BN, slippage: number): BN {
+  assertSlippage(slippage);
   return amount.add(
     amount.mul(new BN(Math.floor(slippage * 10))).div(new BN(1000)),
   );
@@ -599,6 +614,7 @@ function plusSlippage(amount: BN, slippage: number): BN {
  * `min_tokens_out` must be at least 1, a sell's minimum may be 0).
  */
 function lessSlippage(amount: BN, slippage: number, floor = 0): BN {
+  assertSlippage(slippage);
   return BN.max(
     amount.sub(amount.mul(new BN(Math.floor(slippage * 10))).div(new BN(1000))),
     new BN(floor),
@@ -1474,7 +1490,8 @@ export class PumpSdk {
     slippage: number;
     tokenProgram: PublicKey;
     mayhemMode: boolean;
-  }) {
+  }): Promise<TransactionInstruction> {
+    assertSlippage(slippage);
     return await this.getBuyInstructionInternal({
       user,
       associatedUser,
@@ -1520,6 +1537,7 @@ export class PumpSdk {
     // overflow the on-chain u64 multiply. Prevents broadcasting a sell that
     // moves tokens via TransferChecked before the bonding-curve math aborts.
     validateSellAmount(amount, bondingCurve);
+    assertSlippage(slippage);
 
     const instructions: TransactionInstruction[] = [];
 

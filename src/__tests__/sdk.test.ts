@@ -30,7 +30,7 @@ import {
   patchAmmInstruction,
 } from "../fees";
 import { Platform } from "../state";
-import { TEST_PUBKEY, TEST_CREATOR, makeBondingCurveWithCreator } from "./fixtures";
+import { TEST_PUBKEY, TEST_CREATOR, makeBondingCurveWithCreator, makeGlobal } from "./fixtures";
 
 describe("sdk", () => {
   // ── Constants ──────────────────────────────────────────────────────
@@ -792,5 +792,72 @@ describe("sdk", () => {
       });
       expect(ix.keys).toHaveLength(26);
     });
+  });
+});
+
+// ── Slippage validation ─────────────────────────────────────────────
+//
+// Every percent-slippage builder rejects values it cannot apply: NaN used to
+// fail deep inside bn.js with "Assertion failed", and a negative value
+// silently inverted the guard.
+
+describe("slippage validation", () => {
+  const mint = new PublicKey("So11111111111111111111111111111111111111112");
+  const curve = makeBondingCurveWithCreator();
+  const global = makeGlobal();
+  const accountInfo = {
+    data: Buffer.alloc(0),
+    executable: false,
+    lamports: 0,
+    owner: PUMP_PROGRAM_ID,
+    rentEpoch: 0,
+  };
+  const trade = {
+    global,
+    bondingCurveAccountInfo: accountInfo,
+    bondingCurve: curve,
+    mint,
+    user: TEST_PUBKEY,
+    amount: new BN(1_000_000),
+    solAmount: new BN(1_000_000_000),
+    tokenProgram: TOKEN_PROGRAM_ID,
+  };
+
+  it.each([Number.NaN, -1, Number.POSITIVE_INFINITY])(
+    "buyInstructions rejects %p",
+    async (slippage) => {
+      await expect(
+        PUMP_SDK.buyInstructions({
+          ...trade,
+          associatedUserAccountInfo: null,
+          slippage,
+        }),
+      ).rejects.toThrow(RangeError);
+    },
+  );
+
+  it.each([Number.NaN, -0.5])("sellInstructions rejects %p", async (slippage) => {
+    await expect(
+      PUMP_SDK.sellInstructions({ ...trade, slippage }),
+    ).rejects.toThrow(/slippage must be a finite, non-negative percent/);
+  });
+
+  it.each([Number.NaN, -2])("buyV3Instructions rejects %p", async (slippage) => {
+    await expect(
+      PUMP_SDK.buyV3Instructions({
+        bondingCurve: curve,
+        associatedUserAccountInfo: null,
+        mint,
+        user: TEST_PUBKEY,
+        amount: new BN(1_000_000),
+        quoteAmount: new BN(10_000_000),
+        slippage,
+      }),
+    ).rejects.toThrow(RangeError);
+  });
+
+  it("accepts zero slippage", async () => {
+    const ixs = await PUMP_SDK.sellInstructions({ ...trade, slippage: 0 });
+    expect(ixs).toHaveLength(1);
   });
 });
