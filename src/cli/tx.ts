@@ -95,7 +95,11 @@ export async function submit(
 
   const unitsConsumed = simulation.value.unitsConsumed;
 
-  if (!ctx.json) {
+  // The terms go to stderr, so they never corrupt `--json` stdout. They are
+  // shown whenever a person is about to be asked, JSON mode included: a
+  // prompt must never ask someone to approve terms they have not seen.
+  const willPrompt = !ctx.simulateOnly && !ctx.assumeYes;
+  if (!ctx.json || willPrompt) {
     process.stderr.write(`${heading(action, "simulated OK")}\n`);
     process.stderr.write(
       `${keyValue([

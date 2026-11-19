@@ -8,7 +8,7 @@
  * and days and users deserve to know which one they just asked for.
  */
 
-import { chmodSync, mkdirSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type { Command } from "commander";
 import type { Keypair } from "@solana/web3.js";
@@ -56,6 +56,15 @@ async function runVanity(
     throw new CliError(
       "A vanity grind needs a pattern",
       "Pass --suffix pump to match the pump.fun convention, or --prefix <chars>.",
+    );
+  }
+
+  // Checked before grinding, so a taken path fails in a second rather than
+  // after hours of work. `writeKeypairFile` refuses to overwrite as well.
+  if (options.out !== undefined && existsSync(options.out)) {
+    throw new CliError(
+      `${options.out} already exists`,
+      "Choose a new --out path. Overwriting it could destroy a wallet keypair.",
     );
   }
 
@@ -168,15 +177,28 @@ async function runVanity(
  * Persist a ground keypair as a `solana-keygen` compatible JSON byte array.
  *
  * Written 0600 and never printed. A mint keypair that only exists in process
- * memory is one crash away from an address you can never launch.
+ * memory is one crash away from an address you can never launch. An existing
+ * file is never overwritten: `--out ~/.config/solana/id.json` would otherwise
+ * replace a wallet.
  */
 export function writeKeypairFile(keypair: Keypair, outPath?: string): string {
   const path =
     outPath ?? join(configDir(), "mints", `${keypair.publicKey.toBase58()}.json`);
-  mkdirSync(join(path, ".."), { recursive: true });
-  writeFileSync(path, JSON.stringify(Array.from(keypair.secretKey)), {
-    mode: 0o600,
-  });
+  mkdirSync(join(path, ".."), { recursive: true, mode: 0o700 });
+  try {
+    writeFileSync(path, JSON.stringify(Array.from(keypair.secretKey)), {
+      mode: 0o600,
+      flag: "wx",
+    });
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "EEXIST") {
+      throw new CliError(
+        `${path} already exists; the new keypair was not written`,
+        "Choose a new --out path. Overwriting it could destroy a wallet keypair.",
+      );
+    }
+    throw error;
+  }
   chmodSync(path, 0o600);
   return path;
 }
