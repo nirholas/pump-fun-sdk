@@ -334,15 +334,27 @@ validateSellAmount(amount, bondingCurve);
 Unit tests for your own code:
 
 ```typescript
-import { makeBondingCurve } from "@nirholas/pump-sdk/dist/__tests__/fixtures"; // if exported
-import BN from "bn.js";
-import { SellOverflowError, validateSellAmount } from "@nirholas/pump-sdk";
+import {
+  SellOverflowError,
+  maxSafeSellAmount,
+  validateSellAmount,
+  type BondingCurve,
+} from "@nirholas/pump-sdk";
+
+// The package does not publish test fixtures. Use a curve your code actually
+// sees: decode one fetched from chain once and saved as a fixture, or build
+// one with `newBondingCurve(global)`.
+declare const bc: BondingCurve;
 
 describe("overflow guard", () => {
-  it("throws on the issue #6 amount", () => {
-    const bc = makeBondingCurve({ virtualSolReserves: new BN("5000000000000000") });
-    expect(() => validateSellAmount(new BN("6325344957752"), bc))
-      .toThrow(SellOverflowError);
+  it("rejects a sell one unit above the safe single-instruction amount", () => {
+    const tooMuch = maxSafeSellAmount(bc.virtualQuoteReserves).addn(1);
+    expect(() => validateSellAmount(tooMuch, bc)).toThrow(SellOverflowError);
+  });
+
+  it("accepts the safe amount itself", () => {
+    const max = maxSafeSellAmount(bc.virtualQuoteReserves);
+    expect(() => validateSellAmount(max, bc)).not.toThrow();
   });
 });
 ```

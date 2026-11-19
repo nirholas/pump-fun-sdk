@@ -19,8 +19,11 @@ Fees vary based on the bonding curve's **market cap**. Higher market cap = diffe
 
 ```typescript
 import { Connection, PublicKey } from "@solana/web3.js";
-import { OnlinePumpSdk, bondingCurveMarketCap } from "@nirholas/pump-sdk";
-import { computeFeesBps } from "@nirholas/pump-sdk/fees";
+import {
+  OnlinePumpSdk,
+  bondingCurveMarketCap,
+  computeFeesBps,
+} from "@nirholas/pump-sdk";
 
 const connection = new Connection("https://api.devnet.solana.com", "confirmed");
 const onlineSdk = new OnlinePumpSdk(connection);

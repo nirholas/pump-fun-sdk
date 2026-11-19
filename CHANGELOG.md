@@ -135,7 +135,7 @@ Ships a command-line interface, and fixes three bugs it surfaced along the way.
   - **Operate**: `vanity`, `doctor`, `config`.
   - Every command supports `--json` and writes nothing else to stdout in that mode, so pipes into `jq` are always safe.
   - Every write path simulates first, prints the exact terms, and requires an explicit confirmation. `--simulate` sends nothing, `--yes` skips the prompt for scripts, and a non-interactive invocation with neither refuses rather than spending funds unattended.
-- **`formatScaledPrice`, `normalizeForJson`** and the rest of the CLI rendering layer, exported from `@nirholas/pump-sdk/cli` for anyone building on top of it.
+- **`formatScaledPrice`, `normalizeForJson`** and the rest of the CLI rendering layer. (Correction: these were never exported. `@nirholas/pump-sdk/cli` resolves to the `pump` executable itself, which runs on import; use the package root for library code.)
 
 ### Fixed
 
