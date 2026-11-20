@@ -16,8 +16,8 @@ A high-performance, secure vanity address generator for Solana written in Rust.
 
 ```bash
 # Clone the repository
-git clone https://github.com/hippopotomonstrosesquippedaliophobi/solana-vanity-address.git
-cd solana-vanity-address/rust
+git clone https://github.com/nirholas/pump-fun-sdk.git
+cd pump-fun-sdk/rust
 
 # Build release version
 cargo build --release
@@ -254,7 +254,7 @@ let address = generate_with_suffix("99", 4)?; // 4 threads
 
 ## License
 
-MIT OR Apache-2.0
+Proprietary. See [LICENSE](../LICENSE) and [NOTICE](../NOTICE).
 
 ## Contributing
 

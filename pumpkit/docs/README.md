@@ -20,7 +20,7 @@ Official documentation from pump-fun/pump-public-docs:
 
 | Doc | Description |
 |-----|-------------|
-| [Protocol Index](pump-protocol/) | All official specs + Anchor IDL files |
+| [Protocol Index](https://github.com/pump-fun/pump-public-docs) | All official specs + Anchor IDL files |
 
 Covers: Bonding curve program, PumpSwap AMM, Fee program, Creator fees, Cashback, create_v2, Token2022, Mayhem mode.
 

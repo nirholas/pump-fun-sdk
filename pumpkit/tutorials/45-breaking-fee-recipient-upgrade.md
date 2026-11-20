@@ -528,7 +528,7 @@ function ensureBcInstructionsCompliant(
 - [Tutorial 2: Buy Tokens](./02-buy-tokens.md)
 - [Tutorial 3: Sell Tokens](./03-sell-tokens.md)
 - [Tutorial 24: Cross-Program Trading (AMM)](./24-cross-program-trading.md)
-- [Full protocol spec](../../docs/pump-public-docs/BREAKING_FEE_RECIPIENT.md)
+- [Full protocol spec](https://github.com/pump-fun/pump-public-docs/blob/main/docs/BREAKING_FEE_RECIPIENT.md)
 - [Migration guide](../docs/migration.md#upgrading-to-v1320-latest)
 - [verify-accounts.ts — offline account layout checker](../../pumpkit/examples/breaking-fee-recipient/verify-accounts.ts)
 - [patch-legacy.ts — migration utilities demo](../../pumpkit/examples/breaking-fee-recipient/patch-legacy.ts)

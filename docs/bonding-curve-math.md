@@ -247,7 +247,7 @@ const tokens = getBuyV3TokenAmountFromQuoteAmount({
 });
 ```
 
-Both return zero on a complete or migrated curve. A v3 sell cannot cross, so `getSellSolAmountFromTokenAmount` (with `feeConfig` passed) quotes `sell_v3` too. See [TRADE_V3.md](./pump-official/docs/instructions/TRADE_V3.md) and [SYNTHETIC_MIGRATION.md](./pump-official/docs/SYNTHETIC_MIGRATION.md).
+Both return zero on a complete or migrated curve. A v3 sell cannot cross, so `getSellSolAmountFromTokenAmount` (with `feeConfig` passed) quotes `sell_v3` too. See [TRADE_V3.md](https://github.com/pump-fun/pump-public-docs/blob/main/docs/instructions/TRADE_V3.md) and [SYNTHETIC_MIGRATION.md](https://github.com/pump-fun/pump-public-docs/blob/main/docs/SYNTHETIC_MIGRATION.md).
 
 ## Pump-coin Quotes
 
@@ -269,7 +269,7 @@ if (pumpQuote) {
 }
 ```
 
-Each step throws the typed error the program's refusal maps to (`CurveDepthExceededError`, `QuoteBondingCurveNotEligibleError`, `QuoteCurveAwaitingMigrationError`, `QuoteReservesOutOfRangeError`). `pumpQuoteAdmission(global, pumpQuote.curve)` runs only steps 1 to 3, before Q's pool is fetched. See [CREATE_WITH_PUMP_COIN_QUOTE.md](./pump-official/docs/instructions/CREATE_WITH_PUMP_COIN_QUOTE.md).
+Each step throws the typed error the program's refusal maps to (`CurveDepthExceededError`, `QuoteBondingCurveNotEligibleError`, `QuoteCurveAwaitingMigrationError`, `QuoteReservesOutOfRangeError`). `pumpQuoteAdmission(global, pumpQuote.curve)` runs only steps 1 to 3, before Q's pool is fetched. See [CREATE_WITH_PUMP_COIN_QUOTE.md](https://github.com/pump-fun/pump-public-docs/blob/main/docs/instructions/CREATE_WITH_PUMP_COIN_QUOTE.md).
 
 ## Graduation
 

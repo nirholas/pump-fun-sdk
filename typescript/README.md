@@ -25,8 +25,8 @@ This tool generates **private keys** for cryptocurrency wallets. Please understa
 
 ```bash
 # Clone the repository
-git clone https://github.com/hippopotomonstrosesquippedaliophobi/solana-vanity-address.git
-cd solana-vanity-address/typescript
+git clone https://github.com/nirholas/pump-fun-sdk.git
+cd pump-fun-sdk/typescript
 
 # Install dependencies
 npm install
@@ -305,7 +305,7 @@ Longer patterns take exponentially longer. Consider:
 
 ## License
 
-MIT License - see [LICENSE](../LICENSE) for details.
+Proprietary. See [LICENSE](../LICENSE) and [NOTICE](../NOTICE).
 
 ## Contributing
 

@@ -495,7 +495,7 @@ See [docs/api-reference.md](./docs/api-reference.md) for the complete API docume
 | `OnlinePumpSdk.creatorFeeSweepInstructions(mint, payer)` | Exactly the sweeps a coin needs before a distribution, CTO or fee-share change |
 | `createV2Instruction({ quoteMint, pumpQuote, ... })` | Launch a coin quoted in a whitelisted, `QuoteControl`-listed, or pump coin mint |
 
-Program guides for each are in [docs/pump-official/docs/instructions](./docs/pump-official/docs/instructions); the SDK side is in [docs/api-reference.md](./docs/api-reference.md), [docs/amm-trading.md](./docs/amm-trading.md) and [docs/bonding-curve-math.md](./docs/bonding-curve-math.md). Upgrading from 2.x: see the 3.0.0 entry in [CHANGELOG.md](./CHANGELOG.md).
+Program guides for each are in [pump-public-docs/docs/instructions](https://github.com/pump-fun/pump-public-docs/tree/main/docs/instructions); the SDK side is in [docs/api-reference.md](./docs/api-reference.md), [docs/amm-trading.md](./docs/amm-trading.md) and [docs/bonding-curve-math.md](./docs/bonding-curve-math.md). Upgrading from 2.x: see the 3.0.0 entry in [CHANGELOG.md](./CHANGELOG.md).
 
 ### Token Incentive Functions
 
@@ -611,7 +611,7 @@ We welcome contributions! See [CONTRIBUTING.md](./CONTRIBUTING.md) for:
 
 ## 📄 License
 
-[Apache-2.0](./LICENSE) © [nirholas](https://github.com/nirholas)
+Proprietary. See [LICENSE](./LICENSE) and [NOTICE](./NOTICE). © [nirholas](https://github.com/nirholas)
 
 ---
 

@@ -448,7 +448,7 @@ cd pumpkit && npm install`}</pre>
             {protocol.map((p) => (
               <li key={p.file} className="text-sm">
                 <a
-                  href={`https://github.com/nicholasgasior/pump-fun-sdk/blob/main/docs/pump-official/${p.file}.md`}
+                  href={`https://github.com/pump-fun/pump-public-docs/blob/main/${p.file === 'OVERVIEW' ? 'README' : 'docs/' + p.file}.md`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-tg-blue hover:underline font-medium"

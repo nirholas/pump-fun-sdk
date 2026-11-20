@@ -90,7 +90,7 @@ export interface InstructionDef {
 /**
  * All claim/collect instructions we monitor across Pump and PumpSwap programs.
  * Discriminators extracted from official IDL files at:
- * vendor/pump-public-docs/idl/pump.json and pump_amm.json
+ * https://github.com/pump-fun/pump-public-docs/blob/main/idl/pump.json and pump_amm.json
  */
 export const CLAIM_INSTRUCTIONS: InstructionDef[] = [
     // ── Pump Bonding Curve Program ──────────────────────────────────────

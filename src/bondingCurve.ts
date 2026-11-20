@@ -1,3 +1,4 @@
+// Portions derived from @pump-fun/pump-sdk (MIT License, Copyright (c) Pump Fun). See NOTICE.
 import { NATIVE_MINT_2022 } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
 import BN from "bn.js";

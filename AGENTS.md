@@ -51,21 +51,21 @@ The repository also includes:
 | PumpFees | `pfeeUxB6jkeY1Hxd7CsFCAjcbHA9rWtchMGdZ6VojVZ` | Fee sharing |
 ## Official Pump Protocol Docs
 
-**Canonical protocol documentation** from pump-fun/pump-public-docs lives in `docs/pump-official/`. Always read the relevant file before modifying on-chain interaction code.
+**Canonical protocol documentation** from pump-fun/pump-public-docs lives in `https://github.com/pump-fun/pump-public-docs`. Always read the relevant file before modifying on-chain interaction code.
 
 | Topic | File |
 |-------|------|
-| Pump program (bonding curve state, instructions) | `docs/pump-official/PUMP_PROGRAM_README.md` |
-| Creator fees (bonding curve) | `docs/pump-official/PUMP_CREATOR_FEE_README.md` |
-| PumpSwap AMM (pool state, swap instructions) | `docs/pump-official/PUMP_SWAP_README.md` |
-| PumpSwap SDK (method mapping, autocomplete) | `docs/pump-official/PUMP_SWAP_SDK_README.md` |
-| Creator fees (AMM pools) | `docs/pump-official/PUMP_SWAP_CREATOR_FEE_README.md` |
-| Dynamic fee tiers | `docs/pump-official/FEE_PROGRAM_README.md` |
-| Cashback rewards | `docs/pump-official/PUMP_CASHBACK_README.md` |
-| CU optimization FAQ | `docs/pump-official/FAQ.md` |
-| create_v2, mayhem mode, Token2022, social fees | `docs/pump-official/OVERVIEW.md` |
-| Holder rewards and cashback deprecation | `docs/pump-official/HOLDER_REWARDS_README.md` |
-| Official IDL files | `docs/pump-official/idl/pump.json`, `pump_amm.json`, `pump_fees.json` |
+| Pump program (bonding curve state, instructions) | `https://github.com/pump-fun/pump-public-docs/blob/main/docs/PUMP_PROGRAM_README.md` |
+| Creator fees (bonding curve) | `https://github.com/pump-fun/pump-public-docs/blob/main/docs/PUMP_CREATOR_FEE_README.md` |
+| PumpSwap AMM (pool state, swap instructions) | `https://github.com/pump-fun/pump-public-docs/blob/main/docs/PUMP_SWAP_README.md` |
+| PumpSwap SDK (method mapping, autocomplete) | `https://github.com/pump-fun/pump-public-docs/blob/main/docs/PUMP_SWAP_SDK_README.md` |
+| Creator fees (AMM pools) | `https://github.com/pump-fun/pump-public-docs/blob/main/docs/PUMP_SWAP_CREATOR_FEE_README.md` |
+| Dynamic fee tiers | `https://github.com/pump-fun/pump-public-docs/blob/main/docs/FEE_PROGRAM_README.md` |
+| Cashback rewards | `https://github.com/pump-fun/pump-public-docs/blob/main/docs/PUMP_CASHBACK_README.md` |
+| CU optimization FAQ | `https://github.com/pump-fun/pump-public-docs/blob/main/docs/FAQ.md` |
+| create_v2, mayhem mode, Token2022, social fees | `https://github.com/pump-fun/pump-public-docs/blob/main/README.md` |
+| Holder rewards and cashback deprecation | `https://github.com/pump-fun/pump-public-docs/blob/main/docs/HOLDER_REWARDS_README.md` |
+| Official IDL files | `https://github.com/pump-fun/pump-public-docs/blob/main/idl/pump.json`, `pump_amm.json`, `pump_fees.json` |
 ## SDK Design
 
 - **`PumpSdk`** (offline) — Builds `TransactionInstruction[]` without a connection. Singleton: `PUMP_SDK`

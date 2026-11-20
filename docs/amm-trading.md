@@ -160,7 +160,7 @@ Rules to know:
 - The buyback recipient's quote ATA is checked on every trade and never created. It already exists for WSOL; when the quote is a pump coin, put an idempotent ATA create for it in front of the trade.
 - Creator fees from v2 trades only reach the creator vault after a sweep (see [Sweeping pool fees](#sweeping-pool-fees)).
 
-Full program guide: [PUMP_SWAP_TRADE_V2.md](./pump-official/docs/instructions/PUMP_SWAP_TRADE_V2.md).
+Full program guide: [PUMP_SWAP_TRADE_V2.md](https://github.com/pump-fun/pump-public-docs/blob/main/docs/instructions/PUMP_SWAP_TRADE_V2.md).
 
 ### Multi-hop swaps
 
@@ -192,11 +192,11 @@ const ixs = await PUMP_SDK.multiHopSwapInstructions({
 - **Accounts:** 16 fixed plus 5 per hop. Routes longer than three hops need a v0 transaction with an address lookup table.
 - `multiHopSwapInstructions` also creates the output ATA, the buyback recipient ATA for the user's currency, and wraps and unwraps SOL when SOL is an end of the route. `multiHopSwapInstruction` builds only the swap.
 
-Full program guide: [MULTI_HOP_SWAP.md](./pump-official/docs/instructions/MULTI_HOP_SWAP.md).
+Full program guide: [MULTI_HOP_SWAP.md](https://github.com/pump-fun/pump-public-docs/blob/main/docs/instructions/MULTI_HOP_SWAP.md).
 
 ### Pools from a synthetic migration
 
-A pool created by a synthetic migration (a pump-coin quoted curve that completed) carries a signed `Pool.virtualQuoteReserves` that the price adds to the quote vault balance. It turns negative once real quote outgrows the virtual offset, so read it as a signed `BN`. The online quote helpers include it; when you price a pool yourself, pass `poolQuoteTerms(pool)` (virtual quote reserves, quote mint, mayhem flag, creator fee rate) along with the reserves, or the pool is priced as a plain SOL pool. See [NEGATIVE_VIRTUAL_QUOTE_RESERVES.md](./pump-official/docs/NEGATIVE_VIRTUAL_QUOTE_RESERVES.md).
+A pool created by a synthetic migration (a pump-coin quoted curve that completed) carries a signed `Pool.virtualQuoteReserves` that the price adds to the quote vault balance. It turns negative once real quote outgrows the virtual offset, so read it as a signed `BN`. The online quote helpers include it; when you price a pool yourself, pass `poolQuoteTerms(pool)` (virtual quote reserves, quote mint, mayhem flag, creator fee rate) along with the reserves, or the pool is priced as a plain SOL pool. See [NEGATIVE_VIRTUAL_QUOTE_RESERVES.md](https://github.com/pump-fun/pump-public-docs/blob/main/docs/NEGATIVE_VIRTUAL_QUOTE_RESERVES.md).
 
 ---
 
@@ -299,7 +299,7 @@ const protocolSweep = await PUMP_SDK.ammSweepProtocolFeeInstruction({
 });
 ```
 
-Put the creator sweep first, in the same transaction, in front of `adminCtoInstruction`, `createFeeSharingConfig` (pump-amm 6081 `CreatorFeesNotSwept` while fees wait) and `updateFeeShares` (pump-fees 6033 `PoolCreatorFeesNotSwept`). In front of `ammCollectCoinCreatorFeeInstruction` or `ammTransferCreatorFeesToPumpInstruction` it makes the claim include the waiting fees. `onlineSdk.creatorFeeSweepInstructions(mint, payer)` returns exactly the sweeps a coin needs (curve and pool), or `[]`. Each sweep emits `SweepPoolFeeEvent` (`decodeSweepPoolFeeEvent`). See [SWEEP_FEES.md](./pump-official/docs/instructions/SWEEP_FEES.md).
+Put the creator sweep first, in the same transaction, in front of `adminCtoInstruction`, `createFeeSharingConfig` (pump-amm 6081 `CreatorFeesNotSwept` while fees wait) and `updateFeeShares` (pump-fees 6033 `PoolCreatorFeesNotSwept`). In front of `ammCollectCoinCreatorFeeInstruction` or `ammTransferCreatorFeesToPumpInstruction` it makes the claim include the waiting fees. `onlineSdk.creatorFeeSweepInstructions(mint, payer)` returns exactly the sweeps a coin needs (curve and pool), or `[]`. Each sweep emits `SweepPoolFeeEvent` (`decodeSweepPoolFeeEvent`). See [SWEEP_FEES.md](https://github.com/pump-fun/pump-public-docs/blob/main/docs/instructions/SWEEP_FEES.md).
 
 ### Set Coin Creator
 

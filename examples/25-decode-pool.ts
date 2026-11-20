@@ -92,7 +92,7 @@ export interface PoolInterpretation {
  * says who the token is and who earns creator fees; the GlobalConfig says
  * what a swap costs, because the fee rates live on the program, not on the
  * pool. `disableFlags` is a program-wide bitmask that the AMM currently
- * leaves at zero (see docs/pump-public-docs/PUMP_SWAP_README.md), so a
+ * leaves at zero (see https://github.com/pump-fun/pump-public-docs/blob/main/docs/PUMP_SWAP_README.md), so a
  * non-zero value means some instruction has been switched off globally.
  */
 export function interpretPool({

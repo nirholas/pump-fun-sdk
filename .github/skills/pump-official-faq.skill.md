@@ -17,7 +17,7 @@ Reference the official Pump FAQ when optimizing compute unit (CU) limits for buy
 
 ## Official Documentation
 
-Read `docs/pump-official/FAQ.md` for the full specification.
+Read `https://github.com/pump-fun/pump-public-docs/blob/main/docs/FAQ.md` for the full specification.
 
 ## CU Optimization for Buy/Sell
 

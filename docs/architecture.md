@@ -99,7 +99,7 @@ flowchart LR
 
 ### 2026-04-28 Breaking Fee Recipient Upgrade
 
-Since the 2026-04-28 program upgrade, every bonding curve buy/sell instruction must carry one of 8 designated fee recipient accounts as a mutable trailing account, and every AMM buy/sell must carry that recipient plus its WSOL ATA. All `PUMP_SDK` and `OnlinePumpSdk` builders handle this automatically. For hand-rolled instructions the SDK exports `pickBreakingFeeRecipient`, `buildAmmBreakingFeeRecipientAccounts`, `validateBcInstruction` / `validateAmmInstruction`, and `patchBcInstruction` / `patchAmmInstruction`. Canonical spec: `docs/pump-public-docs/BREAKING_FEE_RECIPIENT.md`.
+Since the 2026-04-28 program upgrade, every bonding curve buy/sell instruction must carry one of 8 designated fee recipient accounts as a mutable trailing account, and every AMM buy/sell must carry that recipient plus its WSOL ATA. All `PUMP_SDK` and `OnlinePumpSdk` builders handle this automatically. For hand-rolled instructions the SDK exports `pickBreakingFeeRecipient`, `buildAmmBreakingFeeRecipientAccounts`, `validateBcInstruction` / `validateAmmInstruction`, and `patchBcInstruction` / `patchAmmInstruction`. Canonical spec: `https://github.com/pump-fun/pump-public-docs/blob/main/docs/BREAKING_FEE_RECIPIENT.md`.
 
 ### PDA Derivation
 

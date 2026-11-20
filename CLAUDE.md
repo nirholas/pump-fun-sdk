@@ -39,22 +39,22 @@ Three on-chain programs:
 
 ## Official Pump Protocol Docs (MUST READ)
 
-**Before modifying any on-chain interaction code**, read the relevant official docs in `docs/pump-public-docs/`. These are the canonical protocol specifications from pump-fun/pump-public-docs.
+**Before modifying any on-chain interaction code**, read the relevant official docs in `https://github.com/pump-fun/pump-public-docs`. These are the canonical protocol specifications from pump-fun/pump-public-docs.
 
 | Task | Read This File |
 |------|---------------|
-| Bonding curve buy/sell/create, Global/BondingCurve state | `docs/pump-public-docs/PUMP_PROGRAM_README.md` |
-| Creator fees on bonding curve | `docs/pump-public-docs/PUMP_CREATOR_FEE_README.md` |
-| AMM pool swap/deposit/withdraw, Pool/GlobalConfig state | `docs/pump-public-docs/PUMP_SWAP_README.md` |
-| PumpSwap SDK methods & autocomplete helpers | `docs/pump-public-docs/PUMP_SWAP_SDK_README.md` |
-| Creator fees on AMM pools | `docs/pump-public-docs/PUMP_SWAP_CREATOR_FEE_README.md` |
-| Dynamic fee tiers, market-cap-based fee calculation | `docs/pump-public-docs/FEE_PROGRAM_README.md` |
-| Cashback rewards, UserVolumeAccumulator PDA | `docs/pump-public-docs/PUMP_CASHBACK_README.md` |
-| CU optimization, PDA bump effects | `docs/pump-public-docs/FAQ.md` |
-| create_v2, Token2022, mayhem mode, social fees | `docs/pump-public-docs/README.md` |
-| **2026-04-28 breaking fee-recipient upgrade** (trailing accounts on every buy/sell) | `docs/pump-public-docs/BREAKING_FEE_RECIPIENT.md` |
-| **October 2026 upgrade**: v3 curve trades, PumpSwap v2 trades, multi-hop swaps, fee sweeps, pump-coin quotes | `docs/pump-public-docs/instructions/` (`TRADE_V3.md`, `PUMP_SWAP_TRADE_V2.md`, `MULTI_HOP_SWAP.md`, `SWEEP_FEES.md`, `CREATE_WITH_PUMP_COIN_QUOTE.md`) |
-| Synthetic migration, signed pool `virtualQuoteReserves` | `docs/pump-public-docs/SYNTHETIC_MIGRATION.md`, `docs/pump-public-docs/NEGATIVE_VIRTUAL_QUOTE_RESERVES.md` |
+| Bonding curve buy/sell/create, Global/BondingCurve state | `https://github.com/pump-fun/pump-public-docs/blob/main/docs/PUMP_PROGRAM_README.md` |
+| Creator fees on bonding curve | `https://github.com/pump-fun/pump-public-docs/blob/main/docs/PUMP_CREATOR_FEE_README.md` |
+| AMM pool swap/deposit/withdraw, Pool/GlobalConfig state | `https://github.com/pump-fun/pump-public-docs/blob/main/docs/PUMP_SWAP_README.md` |
+| PumpSwap SDK methods & autocomplete helpers | `https://github.com/pump-fun/pump-public-docs/blob/main/docs/PUMP_SWAP_SDK_README.md` |
+| Creator fees on AMM pools | `https://github.com/pump-fun/pump-public-docs/blob/main/docs/PUMP_SWAP_CREATOR_FEE_README.md` |
+| Dynamic fee tiers, market-cap-based fee calculation | `https://github.com/pump-fun/pump-public-docs/blob/main/docs/FEE_PROGRAM_README.md` |
+| Cashback rewards, UserVolumeAccumulator PDA | `https://github.com/pump-fun/pump-public-docs/blob/main/docs/PUMP_CASHBACK_README.md` |
+| CU optimization, PDA bump effects | `https://github.com/pump-fun/pump-public-docs/blob/main/docs/FAQ.md` |
+| create_v2, Token2022, mayhem mode, social fees | `https://github.com/pump-fun/pump-public-docs/blob/main/README.md` |
+| **2026-04-28 breaking fee-recipient upgrade** (trailing accounts on every buy/sell) | `https://github.com/pump-fun/pump-public-docs/blob/main/docs/BREAKING_FEE_RECIPIENT.md` |
+| **October 2026 upgrade**: v3 curve trades, PumpSwap v2 trades, multi-hop swaps, fee sweeps, pump-coin quotes | `https://github.com/pump-fun/pump-public-docs/tree/main/docs/instructions` (`TRADE_V3.md`, `PUMP_SWAP_TRADE_V2.md`, `MULTI_HOP_SWAP.md`, `SWEEP_FEES.md`, `CREATE_WITH_PUMP_COIN_QUOTE.md`) |
+| Synthetic migration, signed pool `virtualQuoteReserves` | `https://github.com/pump-fun/pump-public-docs/blob/main/docs/SYNTHETIC_MIGRATION.md`, `https://github.com/pump-fun/pump-public-docs/blob/main/docs/NEGATIVE_VIRTUAL_QUOTE_RESERVES.md` |
 
 ## Code Examples
 
@@ -188,7 +188,7 @@ interface Global {
 6. **Calling `npx tsc --noEmit`** — FORBIDDEN. Use `npm run typecheck`.
 7. **Prepending `extendAccount` to trades** is no longer needed: `BONDING_CURVE_NEW_SIZE = 166` and the program grows a pre-upgrade curve on its first new-style trade. Deposits and withdrawals on a PumpSwap pool nobody has traded since the upgrade still need `ammExtendAccountInstruction` first.
 8. **Importing from internal paths** — Import from `@nirholas/pump-sdk`, not `@nirholas/pump-sdk/dist/...`.
-9. **Hand-rolling buy/sell without the breaking fee recipient** — After the 2026-04-28 upgrade, every bonding curve buy/sell must carry one of 8 mutable trailing fee recipients (`pickBreakingFeeRecipient()`), and every AMM buy/sell must carry that recipient **plus** its quote-mint ATA (`buildAmmBreakingFeeRecipientAccounts()`). Using `PUMP_SDK.*` and `OnlinePumpSdk` gets this right automatically. See `docs/pump-public-docs/BREAKING_FEE_RECIPIENT.md`.
+9. **Hand-rolling buy/sell without the breaking fee recipient** — After the 2026-04-28 upgrade, every bonding curve buy/sell must carry one of 8 mutable trailing fee recipients (`pickBreakingFeeRecipient()`), and every AMM buy/sell must carry that recipient **plus** its quote-mint ATA (`buildAmmBreakingFeeRecipientAccounts()`). Using `PUMP_SDK.*` and `OnlinePumpSdk` gets this right automatically. See `https://github.com/pump-fun/pump-public-docs/blob/main/docs/BREAKING_FEE_RECIPIENT.md`.
 10. **Widening the @pumpfunclaims Telegram feed** — that channel carries ONE event, a dev's first-ever GitHub reward claim on a coin. `channel-bot/` runs two feeds from one codebase, selected by `FEED_PROFILE`; the claims feed is `github-first-claims` and must never post creator-fee collections, repeat claims, graduations, or diagnostics. Read `channel-bot/CLAUDE.md` before touching anything in that directory.
 
 ## Project Layout

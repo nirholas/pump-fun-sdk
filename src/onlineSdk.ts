@@ -1,3 +1,4 @@
+// Portions derived from @pump-fun/pump-sdk (MIT License, Copyright (c) Pump Fun). See NOTICE.
 import type { Program } from "@coral-xyz/anchor";
 import {
   buyQuoteInput,

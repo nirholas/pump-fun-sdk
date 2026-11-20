@@ -294,7 +294,7 @@ Your run will select a different mint and different reserves. The instruction co
 
 - [`../../docs/errors.md`](../../docs/errors.md) for `SellOverflowError` and the AnchorError table.
 - [`../../docs/TROUBLESHOOTING.md`](../../docs/TROUBLESHOOTING.md) for the intermittent 6024 diagnosis.
-- [`../../docs/pump-public-docs/PUMP_PROGRAM_README.md`](../../docs/pump-public-docs/PUMP_PROGRAM_README.md) for the on-chain sell specification.
+- [`https://github.com/pump-fun/pump-public-docs/blob/main/docs/PUMP_PROGRAM_README.md`](https://github.com/pump-fun/pump-public-docs/blob/main/docs/PUMP_PROGRAM_README.md) for the on-chain sell specification.
 
 **SDK methods used here**
 

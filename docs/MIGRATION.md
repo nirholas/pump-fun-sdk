@@ -12,7 +12,7 @@
 
 On **2026-04-28, 16:00 UTC** the Pump bonding curve and PumpSwap AMM programs are being upgraded to require one of **8 new shared fee recipient pubkeys** as a trailing account on every `buy` and `sell`. On AMM, the recipient's quote-mint ATA must also be passed as the final account.
 
-See [docs/pump-public-docs/BREAKING_FEE_RECIPIENT.md](pump-public-docs/BREAKING_FEE_RECIPIENT.md) for the full protocol spec mirrored from pump-fun/pump-public-docs.
+See [https://github.com/pump-fun/pump-public-docs/blob/main/docs/BREAKING_FEE_RECIPIENT.md](https://github.com/pump-fun/pump-public-docs/blob/main/docs/BREAKING_FEE_RECIPIENT.md) for the full protocol spec mirrored from pump-fun/pump-public-docs.
 
 ### New account totals
 

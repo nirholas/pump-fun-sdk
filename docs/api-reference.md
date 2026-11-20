@@ -211,7 +211,7 @@ Low-level variants that build a single instruction without ATA management or acc
 
 #### v3 Curve Trades
 
-`buy_v3`, `buy_exact_quote_in_v3` and `sell_v3` price exactly like `buy` / `sell`, but only the buyback slice of the protocol fee leaves in the trade. The rest of the protocol fee and the creator fee stay on the curve (`BondingCurve.protocolFees` / `creatorFee`) until a [fee sweep](#fee-sweeps) pays them out. They work for SOL and token-quoted curves (`bondingCurve.quoteMint`) and refuse cashback coins (`CashbackCoinNotSupportedError`, program error 6094). The full guide is `docs/pump-official/docs/instructions/TRADE_V3.md`.
+`buy_v3`, `buy_exact_quote_in_v3` and `sell_v3` price exactly like `buy` / `sell`, but only the buyback slice of the protocol fee leaves in the trade. The rest of the protocol fee and the creator fee stay on the curve (`BondingCurve.protocolFees` / `creatorFee`) until a [fee sweep](#fee-sweeps) pays them out. They work for SOL and token-quoted curves (`bondingCurve.quoteMint`) and refuse cashback coins (`CashbackCoinNotSupportedError`, program error 6094). The full guide is `https://github.com/pump-fun/pump-public-docs/blob/main/docs/instructions/TRADE_V3.md`.
 
 A v3 buy past the remaining supply completes the curve and buys the rest from the pool the migration will create (a synthetic migration): `CompleteEvent` is followed by `PostCompleteBuyEvent`. Quote it with `getBuyV3QuoteAmountFromTokenAmount`, which needs the curve's base token balance (`fetchBuyState` returns it as `curveBaseTokenBalance`).
 
@@ -268,7 +268,7 @@ const ixs = await PUMP_SDK.sellV3Instructions({
 
 #### v2 Curve Trades
 
-`buy_v2`, `buy_exact_quote_in_v2` and `sell_v2` are the 27/26-account curve trades that pay the protocol and creator fees out in the trade: to a listed fee recipient, to the buyback recipient and to the creator vault (seeded by the curve's `creator`). They price exactly like `buy` / `sell`, take the curve's quote mint (SOL or a token quote) and are the lane for cashback coins, which the v3 trades refuse with 6094. Every other coin can use the smaller [v3 trades](#v3-curve-trades). The full guides are `docs/pump-official/docs/instructions/BUY.md` and `SELL.md`.
+`buy_v2`, `buy_exact_quote_in_v2` and `sell_v2` are the 27/26-account curve trades that pay the protocol and creator fees out in the trade: to a listed fee recipient, to the buyback recipient and to the creator vault (seeded by the curve's `creator`). They price exactly like `buy` / `sell`, take the curve's quote mint (SOL or a token quote) and are the lane for cashback coins, which the v3 trades refuse with 6094. Every other coin can use the smaller [v3 trades](#v3-curve-trades). The full guides are `https://github.com/pump-fun/pump-public-docs/blob/main/docs/instructions/BUY.md` and `SELL.md`.
 
 ##### `buyV2Instructions(params)` / `buyExactQuoteInV2Instructions(params)`
 
@@ -368,7 +368,7 @@ const claimIx = await PUMP_SDK.claimTokenIncentivesInstruction({
 
 #### Fee Sweeps
 
-v3 curve trades and PumpSwap v2 trades leave the protocol and creator fees in the curve or pool. Four permissionless instructions pay them out; nothing moves when a bucket is empty. Each emits `SweepBondingCurveFeeEvent` or `SweepPoolFeeEvent`. Full guide: `docs/pump-official/docs/instructions/SWEEP_FEES.md`.
+v3 curve trades and PumpSwap v2 trades leave the protocol and creator fees in the curve or pool. Four permissionless instructions pay them out; nothing moves when a bucket is empty. Each emits `SweepBondingCurveFeeEvent` or `SweepPoolFeeEvent`. Full guide: `https://github.com/pump-fun/pump-public-docs/blob/main/docs/instructions/SWEEP_FEES.md`.
 
 ```typescript
 // Pump curve: protocol fees to a Global fee recipient for the curve
@@ -569,7 +569,7 @@ const sell = await PUMP_SDK.ammSellV2Instruction({
 });
 ```
 
-Pools a synthetic migration created carry a signed `Pool.virtualQuoteReserves` that the PumpSwap price adds to the quote vault balance (negative once real quote outgrows the virtual offset). The quote helpers take it through `poolQuoteTerms(pool)`; see `docs/pump-official/docs/NEGATIVE_VIRTUAL_QUOTE_RESERVES.md`.
+Pools a synthetic migration created carry a signed `Pool.virtualQuoteReserves` that the PumpSwap price adds to the quote vault balance (negative once real quote outgrows the virtual offset). The quote helpers take it through `poolQuoteTerms(pool)`; see `https://github.com/pump-fun/pump-public-docs/blob/main/docs/NEGATIVE_VIRTUAL_QUOTE_RESERVES.md`.
 
 ##### `multiHopSwapInstruction(params)` / `multiHopSwapInstructions(params)`
 
@@ -592,7 +592,7 @@ const ixs = await PUMP_SDK.multiHopSwapInstructions({
 });
 ```
 
-`multiHopSwapInstructions` also creates the user's output account (and the WSOL account when SOL is an end), the buyback recipient's ATA for the user's currency, wraps SOL first and closes the WSOL account afterwards. `multiHopSwapInstruction` builds only the swap and expects those accounts to exist. Hops that do not chain throw `MultiHopDiscontinuousPathError` before anything is sent. `multiHopRouteEnds(hops, side)` and `multiHopHopAccounts(hop)` expose the route checks and per-hop accounts. Full guide: `docs/pump-official/docs/instructions/MULTI_HOP_SWAP.md`.
+`multiHopSwapInstructions` also creates the user's output account (and the WSOL account when SOL is an end), the buyback recipient's ATA for the user's currency, wraps SOL first and closes the WSOL account afterwards. `multiHopSwapInstruction` builds only the swap and expects those accounts to exist. Hops that do not chain throw `MultiHopDiscontinuousPathError` before anything is sent. `multiHopRouteEnds(hops, side)` and `multiHopHopAccounts(hop)` expose the route checks and per-hop accounts. Full guide: `https://github.com/pump-fun/pump-public-docs/blob/main/docs/instructions/MULTI_HOP_SWAP.md`.
 
 ##### `decodeMultiHopCurveSwapInstruction(ix)`
 
