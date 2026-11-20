@@ -1,13 +1,13 @@
 ---
 applyTo: "**"
 ---
-# Carbon — Solana Indexing Framework (pump-fun/carbon)
+# Carbon — Solana Indexing Framework (sevenlabs-hq/carbon)
 
 ## Skill Description
 
-Reference the official Carbon indexing framework documentation when building Solana indexers, decoding on-chain instructions/accounts, or setting up data pipelines. Carbon is maintained by the pump-fun team (originally sevenlabs-hq) and provides the infrastructure for indexing Pump protocol transactions.
+Reference the official Carbon indexing framework documentation when building Solana indexers, decoding on-chain instructions/accounts, or setting up data pipelines. Carbon is maintained by sevenlabs-hq and provides the infrastructure for indexing Pump protocol transactions.
 
-**Repository:** [pump-fun/carbon](https://github.com/pump-fun/carbon)
+**Repository:** [sevenlabs-hq/carbon](https://github.com/sevenlabs-hq/carbon)
 
 ## When to Use
 
