@@ -271,8 +271,8 @@ const PROGRAM_ERROR_TABLES: Record<
 /**
  * Resolve a failed transaction's `InstructionError: Custom(code)` to the
  * named error the program declares, from the bundled IDLs. Covers every code,
- * including the ones the October 2026 upgrade added (pump 6094 to 6108,
- * pump-amm 6059 to 6087, pump-fees 6031 to 6034).
+ * including the ones the October 2026 upgrades added (pump 6094 to 6109,
+ * pump-amm 6059 to 6087, pump-fees 6031 to 6036).
  *
  * @param program - `"pump"`, `"pumpAmm"`, `"pumpFees"`, or the program id.
  * @returns The error, or `undefined` for a code the program does not declare
